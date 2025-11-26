@@ -129,16 +129,18 @@ export const getWhereFilterExpressionIndex = (
     );
 };
 
+type MetricsViewName = string;
 export type DimensionFilterItem = {
-  name: string;
-  label: string;
+  // ident: string;
+  // label: string;
   mode: DimensionFilterMode;
-  selectedValues: string[];
+  dimensions: Map<MetricsViewName, MetricsViewSpecDimension>;
+  selectedValues?: string[];
   inputText?: string;
-  isInclude: boolean;
-  metricsViewNames?: string[];
+  isInclude?: boolean;
   pinned?: boolean;
 };
+
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
@@ -178,6 +180,10 @@ export function getDimensionFiltersMap(
           : DimensionFilterMode.Select,
         selectedValues: getValuesInExpression(e),
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+        inputText: undefined,
+        dimensions: new Map<string, MetricsViewSpecDimension>([[ident, dim]]),
+        pinned: false,
+        metricsViewNames: [],
       });
     } else if (
       op === V1Operation.OPERATION_LIKE ||
@@ -190,6 +196,9 @@ export function getDimensionFiltersMap(
         selectedValues: [],
         inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
         isInclude: e.cond?.op === V1Operation.OPERATION_LIKE,
+        dimensions: new Map<string, MetricsViewSpecDimension>([[ident, dim]]),
+        pinned: false,
+        metricsViewNames: [],
       });
     }
   });

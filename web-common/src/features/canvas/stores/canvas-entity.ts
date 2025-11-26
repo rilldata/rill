@@ -42,6 +42,7 @@ import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import { Explore } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -89,36 +90,6 @@ export class CanvasEntity {
   pinnedFilters = writable<Set<string>>(new Set());
   metricsFilters: Record<string, NewFilters> = {};
   filterManager: FilterManager;
-
-  setDefaultFilters = () => {
-    const yaml = get(this.parsedContent);
-    const filterMap = new YAMLMap();
-
-    this.filterManager.metricsViewFilters
-      .entries()
-      .forEach(([name, filters]) => {
-        filterMap.add({
-          key: name,
-          value: get(filters.parsed).string,
-        });
-      });
-
-    yaml.setIn(["defaults", "filters"], filterMap);
-
-    const newContent = yaml.toString();
-
-    this.fileArtifact?.updateEditorContent(newContent, false, true);
-  };
-
-  clearDefaultFilters = () => {
-    const yaml = get(this.parsedContent);
-
-    yaml.deleteIn(["defaults", "filters"]);
-
-    const newContent = yaml.toString();
-
-    this.fileArtifact?.updateEditorContent(newContent, false, true);
-  };
 
   constructor(
     public name: string,
@@ -259,6 +230,55 @@ export class CanvasEntity {
     );
   }
 
+  setDefaultFilters = () => {
+    const yaml = get(this.parsedContent);
+    const filterMap = new YAMLMap();
+
+    const pinnedFilters = get(this.filterManager.pinnedFilters);
+
+    yaml.setIn(
+      ["filters", "pinned"],
+      Array.from(pinnedFilters.values()).map(
+        (f) => Array.from(f.dimensions.values())[0]?.name ?? "",
+      ),
+    );
+
+    this.filterManager.metricsViewFilters
+      .entries()
+      .forEach(([name, filters]) => {
+        filterMap.add({
+          key: name,
+          value: get(filters.parsed).string,
+        });
+      });
+
+    yaml.setIn(["defaults", "filters"], filterMap);
+
+    const newContent = yaml.toString();
+
+    this.fileArtifact?.updateEditorContent(newContent, false, true);
+  };
+
+  clearDefaultFilters = () => {
+    const yaml = get(this.parsedContent);
+
+    try {
+      yaml.deleteIn(["defaults", "filters"]);
+    } catch {
+      // no-op
+    }
+
+    try {
+      yaml.delete("filters");
+    } catch {
+      // no-op
+    }
+
+    const newContent = yaml.toString();
+
+    this.fileArtifact?.updateEditorContent(newContent, false, true);
+  };
+
   onUrlParamsChange = async (
     urlParams: URLSearchParams,
     builderContext?: boolean,
@@ -274,10 +294,12 @@ export class CanvasEntity {
       if (redirected) return;
     }
 
+    const legacyFilter = urlParams.get(ExploreStateURLParams.Filters);
+
     this.filterManager.metricsViewFilters.forEach((filters, mvName) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
-      const filterString = urlParams.get(paramKey) ?? "";
-      // if (!filterString) return;
+      const filterString = urlParams.get(paramKey) ?? legacyFilter ?? "";
+
       filters.onFilterStringChange(filterString);
     });
 

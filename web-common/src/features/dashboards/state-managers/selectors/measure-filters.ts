@@ -21,9 +21,13 @@ export type MeasureFilterItem = {
   dimensionName: string;
   name: string;
   label: string;
+  measures?: Map<string, MetricsViewSpecMeasure>;
   dimensions?: MetricsViewSpecDimension[];
   filter?: MeasureFilterEntry;
+  pinned?: boolean;
+  metricsViewNames?: string[];
 };
+
 export const getMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {

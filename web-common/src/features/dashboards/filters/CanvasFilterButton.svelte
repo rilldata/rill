@@ -5,16 +5,14 @@
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import type {
-    MetricsViewSpecDimension,
-    MetricsViewSpecMeasure,
-  } from "@rilldata/web-common/runtime-client";
   import { getMeasureDisplayName } from "./getDisplayName";
-  import type { DimensionLookup } from "../../canvas/stores/filters";
+  import type {
+    DimensionLookup,
+    MeasureLookup,
+  } from "../../canvas/stores/filters";
 
   export let allDimensions: DimensionLookup;
-  export let filteredSimpleMeasures: MetricsViewSpecMeasure[];
+  export let filteredSimpleMeasures: MeasureLookup;
   export let addBorder = true;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let dimensionHasFilter: (dimensionName: string) => boolean;
@@ -24,6 +22,12 @@
   let open = false;
 
   $: consolidated = Array.from(allDimensions.entries()).map(
+    ([id, mvDimMap]) => {
+      return { ...Array.from(mvDimMap.values())[0], id: id };
+    },
+  );
+
+  $: consolidatedMeasures = Array.from(filteredSimpleMeasures.entries()).map(
     ([id, mvDimMap]) => {
       return { ...Array.from(mvDimMap.values())[0], id: id };
     },
@@ -44,10 +48,11 @@
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
       items:
-        filteredSimpleMeasures
+        consolidatedMeasures
           ?.map((m) => ({
-            name: m.name as string,
-            label: getMeasureDisplayName(m),
+            name: m.id,
+            // label: getMeasureDisplayName(m),
+            label: m.id,
           }))
           .filter((m) => !measureHasFilter(m.name)) ?? [],
     },

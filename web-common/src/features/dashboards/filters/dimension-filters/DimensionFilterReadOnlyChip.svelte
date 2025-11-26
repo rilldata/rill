@@ -17,7 +17,6 @@
   export let isInclude: boolean;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
-  export let pinned = false;
 
   $: ({ instanceId } = $runtime);
 

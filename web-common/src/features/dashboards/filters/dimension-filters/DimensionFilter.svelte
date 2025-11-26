@@ -30,14 +30,10 @@
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
+  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filters";
 
-  export let name: string;
-  export let metricsViewNames: string[];
-  export let label: string;
-  export let mode: DimensionFilterMode;
-  export let selectedValues: string[];
-  export let inputText: string | undefined;
-  export let excludeMode: boolean;
+  export let filterData: DimensionFilterItem;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
   export let timeStart: string | undefined;
@@ -47,18 +43,32 @@
   export let whereFilter: Map<string, V1Expression>;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let pinned = false;
-  export let onRemove: () => void;
-  export let onApplyInList: (values: string[]) => void;
-  export let onSelect: (value: string) => void;
-  export let onMultiSelect: (values: string[]) => void;
-  export let onApplyContainsMode: (inputText: string) => void = () => {};
-  export let onToggleFilterMode: () => void;
+  export let onRemove: FilterManager["actions"]["removeDimensionFilter"];
+  export let onApplyInList: FilterManager["actions"]["applyDimensionInListMode"];
+  export let onSelect: FilterManager["actions"]["toggleMultipleDimensionValueSelections"];
+  export let onApplyContainsMode: FilterManager["actions"]["applyDimensionContainsMode"];
+  export let onToggleFilterMode: FilterManager["actions"]["toggleDimensionFilterMode"];
   export let onPinFilter: () => void = () => {};
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
 
-  let open = openOnMount && !selectedValues.length && !inputText;
+  $: ({
+    mode,
+    selectedValues = [],
+    inputText,
+    isInclude,
+    dimensions,
+  } = filterData);
+
+  $: metricsViewNames = Array.from(dimensions.keys());
+  $: firstDimension = Array.from(dimensions.values())[0];
+  $: name = firstDimension.name || "";
+  $: label = firstDimension.displayName || name;
+
+  $: excludeMode = isInclude === false;
+
+  let open = openOnMount && !selectedValues?.length && !inputText;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
@@ -241,7 +251,7 @@
     }
   }
 
-  function handleOpenChange(open: boolean) {
+  async function handleOpenChange(open: boolean) {
     if (open) {
       curSearchText =
         mode === DimensionFilterMode.InList
@@ -250,14 +260,14 @@
     } else {
       // Apply proxy changes for Select mode when dropdown closes
       if (curMode === DimensionFilterMode.Select) {
-        applySelectModeChanges();
+        await applySelectModeChanges();
         // Don't reset immediately for Select mode - let props update first
         return;
       }
 
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
-        onRemove();
+        await onRemove(name, metricsViewNames);
       } else {
         // reset the settings on unmount (but not for Select mode)
         resetFilterSettings(mode, sanitisedSearchText);
@@ -288,65 +298,69 @@
         if (!allSelected && effectiveSelectedValues.includes(dimensionValue))
           return;
 
-        onSelect(dimensionValue);
+        onSelect(name, [dimensionValue], metricsViewNames);
       });
     }
   }
 
-  function onApply() {
+  async function onApply() {
     if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
         // Apply proxy changes for Select mode
-        applySelectModeChanges();
+        await applySelectModeChanges();
         open = false;
         break;
       case DimensionFilterMode.InList:
         if (searchedBulkValues.length === 0) return;
-        onApplyInList(searchedBulkValues);
-        if (curExcludeMode !== excludeMode) onToggleFilterMode();
+        await onApplyInList(name, searchedBulkValues, metricsViewNames);
+        if (curExcludeMode !== excludeMode)
+          await onToggleFilterMode(name, metricsViewNames);
         open = false;
         break;
       case DimensionFilterMode.Contains:
         if (curSearchText.length === 0) return;
-        onApplyContainsMode(curSearchText);
-        if (curExcludeMode !== excludeMode) onToggleFilterMode();
+        await onApplyContainsMode(name, curSearchText, metricsViewNames);
+        if (curExcludeMode !== excludeMode)
+          await onToggleFilterMode(name, metricsViewNames);
         open = false;
         break;
     }
   }
 
-  function applySelectModeChanges() {
+  async function applySelectModeChanges() {
     // Find values that were added or removed
     const currentValues = new Set(selectedValues);
     const proxyValues = new Set(selectedValuesProxy);
 
     // Apply all changes
-    onMultiSelect(
+    await onSelect(
+      name,
       [...currentValues, ...proxyValues].filter((value) => {
         const wasSelected = currentValues.has(value);
         const isSelected = proxyValues.has(value);
 
         return wasSelected !== isSelected;
       }),
+      metricsViewNames,
     );
 
     // Handle exclude mode toggle
     if (curExcludeMode !== excludeMode) {
-      onToggleFilterMode();
+      await onToggleFilterMode(name, metricsViewNames);
     }
   }
 
-  function handleItemClick(name: string) {
+  async function handleItemClick(value: string) {
     if (curMode === DimensionFilterMode.Select) {
       // Update proxy instead of calling onSelect immediately
-      if (selectedValuesProxy.includes(name)) {
-        selectedValuesProxy = selectedValuesProxy.filter((v) => v !== name);
+      if (selectedValuesProxy.includes(value)) {
+        selectedValuesProxy = selectedValuesProxy.filter((v) => v !== value);
       } else {
-        selectedValuesProxy = [...selectedValuesProxy, name];
+        selectedValuesProxy = [...selectedValuesProxy, value];
       }
     } else {
-      onSelect(name);
+      await onSelect(name, [value], metricsViewNames);
     }
   }
 </script>
@@ -381,7 +395,7 @@
         exclude={curExcludeMode}
         label={`${name} filter`}
         theme
-        {onRemove}
+        onRemove={() => onRemove(name, metricsViewNames)}
         removable={!readOnly && !pinned}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
@@ -427,7 +441,7 @@
       <div
         class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
       >
-        <b> {label}</b>
+        <b>{label}</b>
         <Button
           type="secondary"
           square

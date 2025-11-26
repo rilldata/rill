@@ -46,7 +46,6 @@
             values={entry.selectedValues}
             inputText={entry.inputText}
             isInclude={entry.isInclude}
-            pinned={entry.pinned}
             timeStart={interval?.start?.toISO()}
             timeEnd={interval?.end?.toISO()}
           />
@@ -57,8 +56,9 @@
 
   <div class="mt-auto border-t w-full px-5 py-3">
     <Button type="secondary" wide onClick={clearDefaultFilters}>
-      <Trash /> Clear default filters</Button
-    >
+      <Trash />
+      Clear default filters
+    </Button>
   </div>
 </div>
 
