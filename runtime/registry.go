@@ -520,7 +520,9 @@ func (r *registryCache) ensureRepoReady(ctx context.Context, instanceID string) 
 	}
 	defer release()
 
-	return repo.Pull(ctx, &drivers.PullOptions{})
+	// Pull the latest changes
+	// on rill developer do not pull latest changes - all pulls should be user triggered
+	return repo.Pull(ctx, &drivers.PullOptions{UserTriggered: !r.rt.AllowHostAccess()})
 }
 
 func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string, ctrl *Controller) {

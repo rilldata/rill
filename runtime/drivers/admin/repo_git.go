@@ -200,7 +200,7 @@ func (r *gitRepo) root() string {
 
 // commitToEditBranch auto-commits any current changes to the edit branch of the repository.
 // This is done to checkpoint progress when the handle is closed.
-// If there are conflicts, it should drop any local changes. Why ??
+// If there are conflicts, it should drop any local changes.
 func (r *gitRepo) commitToEditBranch(ctx context.Context) error {
 	if !r.editable() {
 		return fmt.Errorf("cannot commit to the edit branch because it is not configured")
@@ -266,7 +266,7 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 	}
 	defer func() {
 		// switch back to the edit branch
-		err = worktree.Checkout(&git.CheckoutOptions{
+		err := worktree.Checkout(&git.CheckoutOptions{
 			Branch: plumbing.ReferenceName("refs/heads/" + r.editBranch),
 			Force:  true,
 		})
@@ -290,7 +290,6 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 	// Merge the edit branch into the default branch
 	merged := true
 	if force {
-		// TODO : Maybe instead of merge with the "theirs" strategy should we just reset to the edit branch?
 		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.editBranch)
 	} else {
 		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.editBranch)
@@ -309,8 +308,12 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 	err = repo.PushContext(ctx, &git.PushOptions{
 		RemoteName: "origin",
 		RemoteURL:  r.remoteURL,
+		RefSpecs: []config.RefSpec{
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.editBranch, r.editBranch)),
+		},
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return fmt.Errorf("failed to push changes to remote default branch %q: %w", r.defaultBranch, err)
 	}
 

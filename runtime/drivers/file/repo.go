@@ -222,6 +222,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 			return nil, err
 		}
 		return &drivers.RepoStatus{
+			IsGitRepo: true,
 			Branch:    st.Branch,
 			RemoteURL: st.RemoteURL,
 			Subpath:   subPath,
@@ -272,17 +273,23 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 		// Not a git repo
 		return err
 	}
-	if c.gitConfig.Subpath != subpath {
-		// should not happen
-		return errors.New("detected subpath within git repo does not match project subpath")
-	}
 
-	remote, err := c.gitConfig.FullyQualifiedRemote()
+	gitConfig, err := c.loadGitConfig(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, c.gitConfig.RemoteName())
+	if gitConfig.Subpath != subpath {
+		// should not happen
+		return errors.New("detected subpath within git repo does not match project subpath")
+	}
+
+	remote, err := gitConfig.FullyQualifiedRemote()
+	if err != nil {
+		return err
+	}
+
+	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}
@@ -305,7 +312,12 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		return err
 	}
 
-	if c.gitConfig.Subpath != subpath {
+	gitConfig, err := c.loadGitConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	if gitConfig.Subpath != subpath {
 		// should not happen
 		return errors.New("detected subpath within git repo does not match project subpath")
 	}
@@ -315,8 +327,8 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		return err
 	}
 
-	// fetch the status again
-	gs, err := gitutil.RunGitStatus(gitPath, subpath, c.gitConfig.RemoteName())
+	// fetch the status
+	gs, err := gitutil.RunGitStatus(gitPath, subpath, gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}
@@ -327,24 +339,24 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	if force {
 		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
 		// This is not euivalent to a force push but is safer for users.
-		if c.gitConfig.Subpath != "" {
+		if gitConfig.Subpath != "" {
 			// force pushing in a monorepo can overwrite other subpaths
 			// we can check for changes in other subpaths but it is tricky and error prone
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
 			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
-		err := gitutil.RunUpstreamMerge(ctx, c.gitConfig.RemoteName(), c.root, c.gitConfig.DefaultBranch, true)
+		err := gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, true)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, c.root, c.gitConfig, message, author)
-	} else {
-		err := gitutil.RunUpstreamMerge(ctx, c.gitConfig.RemoteName(), c.root, c.gitConfig.DefaultBranch, false)
-		if err != nil {
-			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
-		}
-		return gitutil.CommitAndPush(ctx, c.root, c.gitConfig, message, author)
+		return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
 	}
+	err = gitutil.RunUpstreamMerge(ctx, gitConfig.RemoteName(), c.root, gitConfig.DefaultBranch, false)
+	if err != nil {
+		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+	}
+	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
+
 }
 
 // CommitHash implements drivers.RepoStore.
