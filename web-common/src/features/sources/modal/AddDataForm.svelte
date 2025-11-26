@@ -16,6 +16,7 @@
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
+    type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
@@ -130,6 +131,8 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+
+  let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -392,6 +395,7 @@
               paramsErrors={$paramsErrors}
               {onStringInputChange}
               {handleFileUpload}
+              bind:gcsAuthMethod
             />
           </AddDataFormSection>
         {:else}
@@ -448,33 +452,42 @@
           </Button>
         {/if}
 
-        {#if isMultiStepConnector && stepState.step === "connector"}
+        {#if isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod !== "public"}
           <Button onClick={() => formManager.handleSkip()} type="secondary"
             >Skip</Button
           >
         {/if}
 
         <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
+          disabled={isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+            ? false
+            : connector.name === "clickhouse"
+              ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+              : submitting || isSubmitDisabled}
           loading={connector.name === "clickhouse"
             ? clickhouseSubmitting
             : submitting}
           loadingCopy={connector.name === "clickhouse"
             ? "Connecting..."
             : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm
+          form={isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+            ? undefined
+            : connector.name === "clickhouse" ? clickhouseFormId : formId}
+          submitForm={!(isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public")}
+          onClick={isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+            ? () => formManager.handleSkip()
+            : undefined}
           type="primary"
         >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-          })}
+          {isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+            ? "Continue"
+            : formManager.getPrimaryButtonLabel({
+                isConnectorForm,
+                step: stepState.step,
+                submitting,
+                clickhouseConnectorType,
+                clickhouseSubmitting,
+              })}
         </Button>
       </div>
     </div>

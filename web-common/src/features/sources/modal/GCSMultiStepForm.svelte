@@ -14,7 +14,7 @@
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
 
-  let gcsAuthMethod: GCSAuthMethod = "credentials";
+  export let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   const filteredParamsProperties = properties;
 
