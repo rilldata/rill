@@ -2424,7 +2424,7 @@ paths:
                   $ref: '#/definitions/v1Expression'
                 title: Additional filters to inject into metrics SQL queries by metrics view name
               additionalTimeRange:
-                $ref: '#/definitions/v1TimeRange'
+                $ref: '#/definitions/v1Expression'
                 title: Additional time range to add to metrics SQL queries
       tags:
         - QueryService

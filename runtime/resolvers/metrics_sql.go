@@ -120,9 +120,9 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		query.TimeZone = props.TimeZone
 	}
 
-	// Encode the query to a map for the metrics resolver
-	metricProps, err := query.AsMap()
-	if err != nil {
+	// Build the options for the metrics resolver
+	metricProps := map[string]any{}
+	if err := mapstructure.WeakDecode(query, &metricProps); err != nil {
 		return nil, err
 	}
 	resolverOpts := &runtime.ResolverOptions{

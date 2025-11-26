@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 	"testing"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -14,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestResolveTemplatedString_MetricsSQL(t *testing.T) {
@@ -51,12 +49,36 @@ func TestResolveTemplatedString_MetricsSQL(t *testing.T) {
 			},
 		},
 	}
-	startTime, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
-	endTime, _ := time.Parse(time.RFC3339, "2024-02-01T00:00:00Z")
-	additionalTimeRange := &runtimev1.TimeRange{
-		Start:         timestamppb.New(startTime),
-		End:           timestamppb.New(endTime),
-		TimeDimension: "order_date",
+	additionalTimeRange := &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_AND,
+				Exprs: []*runtimev1.Expression{
+					{
+						Expression: &runtimev1.Expression_Cond{
+							Cond: &runtimev1.Condition{
+								Op: runtimev1.Operation_OPERATION_GTE,
+								Exprs: []*runtimev1.Expression{
+									{Expression: &runtimev1.Expression_Ident{Ident: "order_date"}},
+									{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("2024-01-01")}},
+								},
+							},
+						},
+					},
+					{
+						Expression: &runtimev1.Expression_Cond{
+							Cond: &runtimev1.Condition{
+								Op: runtimev1.Operation_OPERATION_LT,
+								Exprs: []*runtimev1.Expression{
+									{Expression: &runtimev1.Expression_Ident{Ident: "order_date"}},
+									{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("2024-02-01")}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	files := map[string]string{
@@ -109,7 +131,7 @@ measures:
 		body                string
 		useFormatTokens     bool
 		additionalWhere     map[string]*runtimev1.Expression
-		additionalTimeRange *runtimev1.TimeRange
+		additionalTimeRange *runtimev1.Expression
 		expected            []string
 		expectEqual         bool
 	}{

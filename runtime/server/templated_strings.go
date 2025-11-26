@@ -76,7 +76,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 }
 
 // executeMetricsSQL executes a metrics SQL query and returns a single scalar value
-func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, sql string, additionalWhereByMetricsView map[string]*runtimev1.Expression, additionalTimeRange *runtimev1.TimeRange) (value any, metricsViewName, fieldName string, err error) {
+func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, sql string, additionalWhereByMetricsView map[string]*runtimev1.Expression, additionalTimeRange *runtimev1.Expression) (value any, metricsViewName, fieldName string, err error) {
 	ctrl, err := s.runtime.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, "", "", err
@@ -116,12 +116,26 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 		Claims: claims,
 	}
 
+	var combinedWhere *metricsview.Expression
 	if additionalWhere, ok := additionalWhereByMetricsView[metricsViewName]; ok && additionalWhere != nil {
-		opts.ResolverProperties["additional_where"] = metricsview.NewExpressionFromProto(additionalWhere)
+		combinedWhere = metricsview.NewExpressionFromProto(additionalWhere)
 	}
 
 	if additionalTimeRange != nil {
-		opts.ResolverProperties["additional_time_range"] = convertProtoTimeRange(additionalTimeRange)
+		timeExpr := metricsview.NewExpressionFromProto(additionalTimeRange)
+		if combinedWhere != nil {
+			combinedWhere = &metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator:    metricsview.OperatorAnd,
+					Expressions: []*metricsview.Expression{combinedWhere, timeExpr},
+				},
+			}
+		} else {
+			combinedWhere = timeExpr
+		}
+	}
+	if combinedWhere != nil {
+		opts.ResolverProperties["additional_where"] = combinedWhere
 	}
 
 	resolveRes, err := s.runtime.Resolve(ctx, opts)
@@ -160,26 +174,4 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 	fieldName = schema.Fields[0].Name
 
 	return val, metricsViewName, fieldName, nil
-}
-
-// convertProtoTimeRange converts a proto TimeRange to a metricsview TimeRange
-func convertProtoTimeRange(tr *runtimev1.TimeRange) *metricsview.TimeRange {
-	if tr == nil {
-		return nil
-	}
-
-	res := &metricsview.TimeRange{
-		Expression:    tr.Expression,
-		IsoDuration:   tr.IsoDuration,
-		IsoOffset:     tr.IsoOffset,
-		RoundToGrain:  metricsview.TimeGrainFromProto(tr.RoundToGrain),
-		TimeDimension: tr.TimeDimension,
-	}
-	if tr.Start != nil {
-		res.Start = tr.Start.AsTime()
-	}
-	if tr.End != nil {
-		res.End = tr.End.AsTime()
-	}
-	return res
 }
