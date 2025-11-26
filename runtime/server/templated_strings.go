@@ -42,7 +42,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		},
 	}
 
-	templateData.CallbackFuncs = map[string]any{
+	templateData.ExtraFuncs = map[string]any{
 		"metrics_sql": func(sql string) (string, error) {
 			// Resolve any templates in the SQL string
 			resolvedSQL, err := parser.ResolveTemplate(sql, templateData, false)
@@ -136,7 +136,7 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 	}
 
 	if len(row) != 1 {
-		return nil, "", "", fmt.Errorf("expected one field, got %d", len(row))
+		return nil, "", "", fmt.Errorf("metrics_sql in templating only allows one result field, got %d", len(row))
 	}
 
 	var val any
@@ -148,7 +148,7 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 	// Check no more rows
 	_, err = resolveRes.Next()
 	if err == nil {
-		return nil, "", "", fmt.Errorf("multiple rows")
+		return nil, "", "", fmt.Errorf("metrics_sql in templating must return one row, but the query returned multiple")
 	}
 
 	// Get field name from schema
@@ -174,7 +174,6 @@ func convertProtoTimeRange(tr *runtimev1.TimeRange) *metricsview.TimeRange {
 		IsoOffset:     tr.IsoOffset,
 		RoundToGrain:  metricsview.TimeGrainFromProto(tr.RoundToGrain),
 		TimeDimension: tr.TimeDimension,
-		TimeZone:      tr.TimeZone,
 	}
 	if tr.Start != nil {
 		res.Start = tr.Start.AsTime()
