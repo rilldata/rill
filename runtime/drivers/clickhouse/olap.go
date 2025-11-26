@@ -77,11 +77,6 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 			"session_timezone":          "UTC",
 			"join_use_nulls":            1,
 		}
-		if len(stmt.QueryAttributes) > 0 {
-			for k, v := range stmt.QueryAttributes {
-				settings[k] = v
-			}
-		}
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 
 		if c.config.QuerySettingsOverride != "" {
@@ -146,25 +141,16 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 			"session_timezone":          "UTC",
 			"join_use_nulls":            1,
 		}
-
-		if c.supportSettings {
-			if len(stmt.QueryAttributes) > 0 {
-				for k, v := range stmt.QueryAttributes {
-					settings[k] = v
-				}
-			}
-
-			if c.config.QuerySettingsOverride != "" {
-				stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
-			} else {
-				stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
-				if c.config.QuerySettings != "" {
-					stmt.Query += ", " + c.config.QuerySettings
-				}
+		if len(stmt.QueryAttributes) > 0 {
+			for k, v := range stmt.QueryAttributes {
+				settings[k] = v
 			}
 		}
-
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+
+		if c.config.QuerySettingsOverride != "" {
+			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
+		}
 	}
 
 	// Gather metrics only for actual queries
