@@ -356,7 +356,6 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 	}
 	return gitutil.CommitAndPush(ctx, c.root, gitConfig, message, author)
-
 }
 
 // CommitHash implements drivers.RepoStore.
