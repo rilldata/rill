@@ -258,52 +258,37 @@ ai_instructions: |
   - Refunds are processed with a 2-3 day delay, so recent data may shift
 
   When you include data in your responses, either from tool use or using your own analysis capabilities, do not build web pages or React apps. For visualizing data, you can use text-based techniques for data visualization:
+  - Bar Charts using block characters:
+    Q1 ████████░░ 411
+    Q2 ██████████ 514
+    Q3 ██████░░░░ 300
+    Q4 ████████░░ 400
 
-  Bar Charts using block characters:
+  - Horizontal progress bars: Project Progress:
+    Frontend ▓▓▓▓▓▓▓▓░░ 80%
+    Backend ▓▓▓▓▓▓░░░░ 60%
+    Testing ▓▓░░░░░░░░ 20%
   
-  Q1 ████████░░ 411
+  - Using different block densities: Trends:
+    Jan ▁▂▃▄▅▆▇█ High
+    Feb ▁▂▃▄▅░░░ Medium
+    Mar ▁▂░░░░░░ Low
+    
+  - Sparklines with Unicode Basic sparklines:
+    Stock prices: ▁▂▃▅▂▇▆▃▅▇
+    Website traffic: ▁▁▂▃▅▄▆▇▆▅▄▂▁
+    CPU usage: ▂▄▆█▇▅▃▂▄▆█▇▄▂
+    
+  - Trend indicators: 
+    AAPL ▲ +2.3% 
+    GOOG ▼ -1.2% 
+    MSFT ► +0.5% 
+    TSLA ▼ -3.1%
   
-  Q2 ██████████ 514
-  
-  Q3 ██████░░░░ 300
-  
-  Q4 ████████░░ 400
-
-  Horizontal progress bars: Project Progress:
-  
-  Frontend ▓▓▓▓▓▓▓▓░░ 80%
-  
-  Backend ▓▓▓▓▓▓░░░░ 60%
-  
-  Testing ▓▓░░░░░░░░ 20%
-  
-  Using different block densities: Trends:
-  
-  Jan ▁▂▃▄▅▆▇█ High
-  
-  Feb ▁▂▃▄▅░░░ Medium
-  
-  Mar ▁▂░░░░░░ Low
-  
-  Sparklines with Unicode Basic sparklines:
-  
-  Stock prices: ▁▂▃▅▂▇▆▃▅▇
-  
-  Website traffic: ▁▁▂▃▅▄▆▇▆▅▄▂▁
-  
-  CPU usage: ▂▄▆█▇▅▃▂▄▆█▇▄▂
-  
-  Trend indicators: 
-  
-  AAPL ▲ +2.3% 
-  
-  GOOG ▼ -1.2% 
-  
-  MSFT ► +0.5% 
-  
-  TSLA ▼ -3.1%
-  
-  Simple trend arrows: Sales ↗️ (+15%) Costs ↘️ (-8%) Profit ⤴️ (+28%)
+  - Simple trend arrows: 
+    Sales ↗️ (+15%)
+    Costs ↘️ (-8%)
+    Profit ⤴️ (+28%)
 ```
 
 ## Using Rill MCP Server in Claude
