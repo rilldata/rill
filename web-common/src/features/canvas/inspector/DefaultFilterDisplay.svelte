@@ -18,7 +18,7 @@
     },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: ({ dimensions, measures } = $_defaultUIFilters);
+  $: ({ dimensionFilters, measureFilters } = $_defaultUIFilters);
 
   $: interval = $_interval;
 </script>
@@ -31,7 +31,7 @@
     </p>
 
     <div class="flex flex-col gap-y-2 w-full flex-none">
-      {#each dimensions as [id, filterData] (id)}
+      {#each dimensionFilters as [id, filterData] (id)}
         {@const metricsViewNames = Array.from(filterData.dimensions.keys())}
         {@const dimension = filterData.dimensions.get(metricsViewNames[0])}
 
@@ -53,7 +53,7 @@
         {/if}
       {/each}
 
-      {#each measures as [id, filterData] (id)}
+      {#each measureFilters as [id, filterData] (id)}
         {@const metricsViewNames = Array.from(
           filterData?.measures?.keys() ?? [],
         )}

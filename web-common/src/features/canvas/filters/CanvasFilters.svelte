@@ -6,7 +6,6 @@
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
-  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
@@ -49,14 +48,8 @@
         },
         clearAllFilters,
       },
-      filters: {
-        // setMeasureFilter,
-        // removeMeasureFilter,
-        allMeasureFilterItems,
-        measureHasFilter,
-      },
       spec,
-      metricsView: { allDimensions, allSimpleMeasures },
+      metricsView: { allDimensions },
       timeControls: {
         _canPan,
         allTimeRange,
@@ -83,9 +76,9 @@
   $: timeRanges = $spec?.timeRanges ?? [];
 
   $: ({
-    dimensions,
+    dimensionFilters,
     hasFilters,
-    measures: measureFilters,
+    measureFilters,
     complexFilters,
     hasClearableFilters,
   } = $_activeUIFilters);
@@ -97,24 +90,7 @@
       )
     : Interval.invalid("Unable to parse time range");
 
-  $: allMeasureFilters = $allMeasureFilterItems;
-
   $: canPan = $_canPan;
-
-  async function handleMeasureFilterApply(
-    dimension: string,
-    measureName: string,
-    oldDimension: string,
-    filter: MeasureFilterEntry,
-    metricsViewNames: string[],
-  ) {
-    console.log("component");
-    // console.log(dimensions, measureName, filter, oldDimension);
-    // if (oldDimension && oldDimension !== dimension) {
-    //   removeMeasureFilter(oldDimension, measureName);
-    // }
-    await setMeasureFilter(dimension, filter, metricsViewNames);
-  }
 
   function onPan(direction: "left" | "right") {
     const getPanRange = getPanRangeForTimeRange(
@@ -226,7 +202,7 @@
         <AdvancedFilter advancedFilter={filter} />
       {/each}
 
-      {#each dimensions as [id, filterData] (id)}
+      {#each dimensionFilters as [id, filterData] (id)}
         <DimensionFilter
           {readOnly}
           {filterData}
@@ -255,14 +231,8 @@
             {filter}
             onRemove={() =>
               removeMeasureFilter(dimensionName, name, metricsViewNames)}
-            onApply={({ dimension, oldDimension, filter }) =>
-              handleMeasureFilterApply(
-                dimension,
-                name,
-                oldDimension,
-                filter,
-                metricsViewNames,
-              )}
+            onApply={({ dimension, filter }) =>
+              setMeasureFilter(dimension, filter, metricsViewNames)}
           />
         </div>
       {/each}
@@ -271,8 +241,8 @@
         <CanvasFilterButton
           allDimensions={$_allDimensions}
           filteredSimpleMeasures={$_allMeasures}
-          dimensionHasFilter={(name) => dimensions.has(name)}
-          measureHasFilter={$measureHasFilter}
+          dimensionHasFilter={(name) => dimensionFilters.has(name)}
+          measureHasFilter={(name) => measureFilters.has(name)}
           setTemporaryFilterName={(n) => {
             justAdded = true;
             addTemporaryFilter(n);

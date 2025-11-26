@@ -33,16 +33,15 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager, Filters, getFilterParam, NewFilters } from "./filters";
+import { FilterManager } from "./filter-manager";
+import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
-
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { Explore } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -70,7 +69,8 @@ export class CanvasEntity {
   timeControls: TimeControls;
 
   // Dimension and measure filter state
-  filters: Filters;
+
+  filterManager: FilterManager;
 
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
@@ -87,9 +87,6 @@ export class CanvasEntity {
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
-  pinnedFilters = writable<Set<string>>(new Set());
-  metricsFilters: Record<string, NewFilters> = {};
-  filterManager: FilterManager;
 
   constructor(
     public name: string,
@@ -161,7 +158,7 @@ export class CanvasEntity {
       undefined,
       this.name,
     );
-    this.filters = new Filters(this.metricsView, searchParamsStore);
+    // this.filters = new Filters(this.metricsView, searchParamsStore);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
@@ -181,18 +178,6 @@ export class CanvasEntity {
           );
         }
       }
-
-      Object.entries(spec.data?.metricsViews ?? {}).forEach(([mvName, mv]) => {
-        console.log(mv);
-        if (!mv) return;
-        this.metricsFilters[mvName] = new Filters(
-          this.metricsView,
-          searchParamsStore,
-          mvName,
-        );
-      });
-
-      this.pinnedFilters.set(new Set(spec.data?.canvas?.pinnedFilters ?? []));
 
       if (!filePath) {
         return;
@@ -367,10 +352,6 @@ export class CanvasEntity {
       );
     });
 
-    console.log(
-      { defaultSearchParams: defaultSearchParams.toString() },
-      searchParams.size,
-    );
     // If there are no URL params, check for last visited state or home bookmark
     if (searchParams.size === 0) {
       const snapshotSearchParams = lastVisitedState.get(canvasName);

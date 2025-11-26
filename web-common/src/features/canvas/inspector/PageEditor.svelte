@@ -4,7 +4,6 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import ZoneDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -41,10 +40,7 @@
   export let canvasName: string;
 
   $: ({
-    canvasEntity: {
-      spec,
-      filters: { setFilters },
-    },
+    canvasEntity: { spec },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ instanceId } = $runtime);
@@ -108,7 +104,7 @@
     const updatedShowFilterBar = !showFilterBar;
 
     if (!updatedShowFilterBar) {
-      setFilters(createAndExpression([]));
+      // setFilters(createAndExpression([]));
     }
 
     await updateProperties({
