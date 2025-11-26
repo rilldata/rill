@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import { dragTableCell } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -7,15 +7,15 @@
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
 
-  const dispatch = createEventDispatcher();
-
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let borderRight = false;
   export let onClick: undefined | (() => void) = undefined;
   export let onShiftClick: undefined | (() => void) = undefined;
-
+  export let onResetColumnWidth: () => void = () => {};
+  export let onBlur: () => void = () => {};
+  export let onFocus: () => void = () => {};
   export let bgClass = "";
 
   let isResizing = false;
@@ -49,19 +49,11 @@
       : "border-b border-b-1 border-r border-r-1 border border-t-0 border-l-0 bg-gray-100");
 
   const borderClassesInnerDiv = isDimensionTable ? "" : "whitespace-nowrap";
-
-  function focus() {
-    dispatch("focus");
-  }
-
-  function blur() {
-    dispatch("blur");
-  }
 </script>
 
 <button
-  on:mouseover={focus}
-  on:mouseleave={blur}
+  on:mouseover={onFocus}
+  on:mouseleave={onBlur}
   on:focus={focus}
   on:blur={blur}
   on:click={(e) => {
@@ -100,9 +92,7 @@
         use:dragTableCell
         on:resize
         on:resizeend={suppressClickAfterResize}
-        on:dblclick={() => {
-          dispatch("reset-column-width");
-        }}
+        on:dblclick={onResetColumnWidth}
         on:click|stopPropagation
         class="absolute top-0 right-0 cursor-col-resize grid place-items-end"
         style:padding-right="1.25px"
