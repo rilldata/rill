@@ -28,6 +28,11 @@ Allowed values: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month
 smallest_time_grain: "day"
 ```
 
+:::warning smaller than actual time grain
+
+You cannot select a `smallest_time_grain` that is smaller than your actual data. For example, you cannot select `hour` if you time column's smallest unit is `day`.
+:::
+
 ### First Day of Week
 
 You can customize the start of the week for your analysis. This affects how weeks are grouped and displayed in time series charts and tables. The value is an integer from 1 (Monday) to 7 (Sunday).
