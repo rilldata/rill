@@ -8,7 +8,7 @@
  * - Error reporting and logging
  */
 
-import { debugLog } from "./graph-config";
+import { debugLog } from "../config";
 
 /**
  * Base error class for resource graph errors.

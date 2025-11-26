@@ -12,7 +12,7 @@
 import { page } from "$app/stores";
 import { goto } from "$app/navigation";
 import { derived, type Readable } from "svelte/store";
-import { debugLog } from "./graph-config";
+import { debugLog } from "../shared/config";
 
 /**
  * URL parameter names used for graph state.
