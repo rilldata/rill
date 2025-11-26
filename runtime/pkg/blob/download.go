@@ -72,7 +72,7 @@ func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (res drive
 		return nil, err
 	}
 
-	entries, err := b.ListObjects(ctx, opts.Glob)
+	entries, err := b.ListObjectsForGlob(ctx, opts.Glob)
 	if err != nil {
 		return nil, err
 	}

@@ -68,8 +68,8 @@ const config = {
         config: path.join(__dirname, 'redocly.yaml'),
         specs: [
           {
-            id: 'public',
-            spec: 'api/openapi.yaml',
+            id: 'admin',
+            spec: '../proto/gen/rill/admin/v1/public.openapi.yaml',
             route: '/api/admin/',
           },
         ],

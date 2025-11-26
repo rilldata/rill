@@ -32,11 +32,8 @@ func (t *DeveloperAgent) Spec() *mcp.Tool {
 	}
 }
 
-func (t *DeveloperAgent) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.EditRepo)
-	return false
+func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
@@ -131,4 +128,20 @@ You should not make many changes at a time. Carefully consider the minimum chang
 </additional_user_provided_instructions>
 {{ end }}
 `, data)
+}
+
+// checkDeveloperAgentAccess checks whether the developer agent and related tools should be available in the current session.
+func checkDeveloperAgentAccess(ctx context.Context, rt *runtime.Runtime) (bool, error) {
+	// Must be able to use AI and edit the project
+	s := GetSession(ctx)
+	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.EditRepo) {
+		return false, nil
+	}
+
+	// Must have the developer_agent feature flag
+	ff, err := rt.FeatureFlags(ctx, s.InstanceID(), s.Claims())
+	if err != nil {
+		return false, err
+	}
+	return ff["developer_agent"], nil
 }

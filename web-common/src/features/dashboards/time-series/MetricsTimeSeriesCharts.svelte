@@ -82,7 +82,6 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
-    dashboardStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -276,7 +275,6 @@
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,
-      selectedTimezone: $dashboardStore.selectedTimezone,
     }),
   );
 

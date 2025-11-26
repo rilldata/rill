@@ -33,11 +33,8 @@ func (t *WriteFile) Spec() *mcp.Tool {
 	}
 }
 
-func (t *WriteFile) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.EditRepo)
-	return false
+func (t *WriteFile) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {
