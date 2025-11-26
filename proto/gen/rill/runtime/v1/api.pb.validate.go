@@ -10916,6 +10916,8 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	// no validation rules for Agent
+
 	// no validation rules for Explore
 
 	if all {
@@ -11243,11 +11245,22 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_CompleteStreamingRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := CompleteStreamingRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for ConversationId
 
 	// no validation rules for Prompt
+
+	// no validation rules for Agent
 
 	// no validation rules for Explore
 
@@ -11417,6 +11430,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CompleteStreamingRequestValidationError{}
+
+var _CompleteStreamingRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on CompleteStreamingResponse with the rules
 // defined in the proto definition for this message. If any rules are

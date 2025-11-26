@@ -4509,23 +4509,39 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
  */
 export class CompleteRequest extends Message$1<CompleteRequest> {
   /**
+   * Instance to run the completion against.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * If not provided, creates a new conversation
+   * Conversation ID to continue. If empty, a new conversation is created.
    *
    * @generated from field: string conversation_id = 2;
    */
   conversationId = "";
 
   /**
+   * The prompt to complete.
+   *
    * @generated from field: string prompt = 3;
    */
   prompt = "";
 
   /**
+   * Optional agent to use for the completion.
+   * If not set, it will infer an agent based on the prompt and conversation history.
+   * Current supported agents: analyst_agent, developer_agent.
+   *
+   * @generated from field: string agent = 10;
+   */
+  agent = "";
+
+  /**
+   * Optional context for prompts handled by the analyst_agent.
+   * These fields are ignored if another agent is selected.
+   *
    * @generated from field: string explore = 4;
    */
   explore = "";
@@ -4566,6 +4582,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -4643,23 +4660,39 @@ export class CompleteResponse extends Message$1<CompleteResponse> {
  */
 export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest> {
   /**
+   * Instance to run the completion against.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * If not provided, creates a new conversation
+   * Conversation ID to continue. If empty, a new conversation is created.
    *
    * @generated from field: string conversation_id = 2;
    */
   conversationId = "";
 
   /**
+   * The prompt to complete.
+   *
    * @generated from field: string prompt = 3;
    */
   prompt = "";
 
   /**
+   * Optional agent to use for the completion.
+   * If not set, it will infer an agent based on the prompt and conversation history.
+   * Current supported agents: analyst_agent, developer_agent.
+   *
+   * @generated from field: string agent = 10;
+   */
+  agent = "";
+
+  /**
+   * Optional context for prompts handled by the analyst_agent.
+   * These fields are ignored if another agent is selected.
+   *
    * @generated from field: string explore = 4;
    */
   explore = "";
@@ -4700,6 +4733,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
