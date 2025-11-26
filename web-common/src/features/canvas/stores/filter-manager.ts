@@ -16,6 +16,7 @@ import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 
 import { goto } from "$app/navigation";
 import { MetricsViewFilter } from "./metrics-view-filter";
+import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
@@ -311,8 +312,12 @@ export class FilterManager {
     allDimensions.forEach((dimensions, key) => {
       const filters: DimensionFilterItem[] = [];
 
+      const firstDimension = Array.from(dimensions.values())[0];
+
       if (temporaryFilterKeys.has(key)) {
         filters.push({
+          name: firstDimension.name || "",
+          label: getDimensionDisplayName(firstDimension),
           mode: DimensionFilterMode.Select,
           selectedValues: [],
           dimensions: dimensions,
@@ -338,6 +343,8 @@ export class FilterManager {
         if (!dimFilter) {
           if (pinned) {
             filters.push({
+              name: firstDimension.name || "",
+              label: getDimensionDisplayName(firstDimension),
               mode: DimensionFilterMode.Select,
               selectedValues: [],
               dimensions: dimensions,

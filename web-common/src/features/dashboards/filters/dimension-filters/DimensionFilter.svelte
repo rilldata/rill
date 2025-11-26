@@ -31,7 +31,7 @@
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
-  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filters";
+  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
 
   type Actions = FilterManager["actions"];
 
@@ -49,12 +49,14 @@
   export let toggleDimensionValueSelections: Actions["toggleDimensionValueSelections"];
   export let applyDimensionContainsMode: Actions["applyDimensionContainsMode"];
   export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
-  export let toggleFilterPin: Actions["toggleFilterPin"];
+  export let toggleFilterPin: Actions["toggleFilterPin"] = () => {};
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
 
   $: ({
+    name,
+    label,
     mode,
     selectedValues = [],
     inputText,
@@ -64,9 +66,6 @@
   } = filterData);
 
   $: metricsViewNames = Array.from(dimensions.keys());
-  $: firstDimension = Array.from(dimensions.values())[0];
-  $: name = firstDimension.name || "";
-  $: label = firstDimension.displayName || name;
 
   $: excludeMode = isInclude === false;
 

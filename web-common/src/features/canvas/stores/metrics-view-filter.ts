@@ -36,6 +36,7 @@ import {
   type ParsedFilters,
   type UIFilters,
 } from "./filter-manager";
+import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 
 // wip - bgh
 export class MetricsViewFilter {
@@ -407,6 +408,8 @@ export function getDimensionFilterItemsMap(
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       const isInListMode = dimensionsWithInlistFilter.includes(ident);
       filteredDimensions.set(ident, {
+        name: ident,
+        label: getDimensionDisplayName(dim),
         dimensions: new Map([[metricsViewName, dim]]),
         mode: isInListMode
           ? DimensionFilterMode.InList
@@ -421,6 +424,8 @@ export function getDimensionFilterItemsMap(
       op === V1Operation.OPERATION_NLIKE
     ) {
       filteredDimensions.set(ident, {
+        name: ident,
+        label: getDimensionDisplayName(dim),
         mode: DimensionFilterMode.Contains,
         selectedValues: [],
         inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",

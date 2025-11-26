@@ -440,42 +440,31 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
-          {@const dimension = dimensions.find(
-            (d) => d.name === name || d.column === name,
-          )}
-          {@const dimensionName = dimension?.name || dimension?.column}
+        {#each allDimensionFilters as filterData (name)}
           <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName}
-              <DimensionFilter
-                whereFilter={new Map([
-                  [metricsViewName, $dashboardStore.whereFilter],
-                ])}
-                metricsViewNames={[metricsViewName]}
-                {readOnly}
-                {name}
-                {label}
-                {mode}
-                {selectedValues}
-                {inputText}
-                {timeStart}
-                {timeEnd}
-                {timeControlsReady}
-                excludeMode={$isFilterExcludeMode(name)}
-                onRemove={() => removeDimensionFilter(name)}
-                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                onSelect={(value) =>
-                  toggleMultipleDimensionValueSelections(name, [value], true)}
-                onMultiSelect={(values) =>
-                  toggleMultipleDimensionValueSelections(name, values, true)}
-                onApplyInList={(values) =>
-                  applyDimensionInListMode(name, values)}
-                onApplyContainsMode={(searchText) =>
-                  applyDimensionContainsMode(name, searchText)}
-                isUrlTooLongAfterInListFilter={(values) =>
-                  isUrlTooLongAfterInListFilter(name, values)}
-              />
-            {/if}
+            <DimensionFilter
+              expressionMap={new Map([
+                [metricsViewName, $dashboardStore.whereFilter],
+              ])}
+              {filterData}
+              {readOnly}
+              {timeStart}
+              {timeEnd}
+              {timeControlsReady}
+              removeDimensionFilter={async (name) =>
+                removeDimensionFilter(name)}
+              toggleDimensionFilterMode={async (name) => {
+                toggleDimensionFilterMode(name);
+              }}
+              toggleDimensionValueSelections={async (name, values) =>
+                toggleMultipleDimensionValueSelections(name, values, true)}
+              applyDimensionInListMode={async (name, values) =>
+                applyDimensionInListMode(name, values)}
+              applyDimensionContainsMode={async (name, searchText) =>
+                applyDimensionContainsMode(name, searchText)}
+              isUrlTooLongAfterInListFilter={(values) =>
+                isUrlTooLongAfterInListFilter(name, values)}
+            />
           </div>
         {/each}
         {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
