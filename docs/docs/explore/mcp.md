@@ -214,24 +214,48 @@ If you're still experiencing issues, check the logs in Claude Desktop. Click on 
 
 ## Adding AI instructions to your model
 
-LLMs give their best results when they have good context. For a conversation with Rill Data, this means things like knowing how to include Explore links in their responses. Rather than expecting the user to know how to do this, you can add `ai_instructions` to your model. This adds the context automatically for every conversation.
+LLMs give their best results when they have good context. For a conversation with Rill Data, this means things like clarifying project-specific terms, routing questions to the correct metrics view, or defining business rules. Rather than expecting the user to provide this context every time, you can add `ai_instructions` to your model. This adds the context automatically for every conversation.
 
 There are two places to add `ai_instructions`:
 
 1. `rill.yaml` for project-wide context, such as instructions on how to use Rill MCP Server
 2. Every `metrics.yaml`, with examples of Explore URLs for that metrics view
 
-You can look at one of our [example projects](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) to see how these are used. Experiment with the instructions and see what works best for your requirements.
-
 ### Sample AI Instructions
 
-```
-ai_instructions: |
-  You are a data analyst, responding to questions from business users with precision, clarity, and conciseness.
-  
-  When you run queries for actual data, run up to three queries in a row, and then provide the user with a summary, any insights you can see in the data, and suggest up to three things to investigate as a next step.
+Here's an example of how you might configure `ai_instructions` to provide project context, metrics routing, and business definitions:
 
-  When you run queries with rill, you also include corresponding Rill Explore URLs in your answer. Use the instructions in the metrics view for the structure of explores for that view.
+```yaml
+ai_instructions: |
+  # Project Context
+  This project tracks e-commerce metrics for our multi-brand retail business.
+  
+  # Metrics View Routing
+  - For questions about overall sales, revenue, or order volume → use `company_sales_metrics`
+  - For questions about customer behavior, retention, or cohorts → use `customer_analytics`
+  - For questions about product performance or inventory → use `product_metrics`
+  - For questions about marketing campaigns or attribution → use `marketing_performance`
+  - For questions about fulfillment, shipping, or logistics → use `operations_metrics`
+  
+  # Business Rules & Definitions
+  - "Revenue" always refers to net revenue (after returns and discounts)
+  - "Conversion rate" is calculated as orders/sessions, not users
+  - Our fiscal year starts in February, not January
+  - "Active customer" means a purchase within the last 90 days
+  - Weekend traffic patterns are anomalous due to our B2B focus
+  
+  # Company Acronyms
+  - GMV = Gross Merchandise Value
+  - AOV = Average Order Value
+  - ROAS = Return on Ad Spend
+  - SKU = Stock Keeping Unit
+  - NDR = Net Dollar Retention
+  - CLTV = Customer Lifetime Value
+  
+  # Known Data Quirks
+  - Mobile web data before March 2024 is incomplete due to tracking migration
+  - European region data excludes VAT (use `revenue_with_vat` dimension if needed)
+  - Refunds are processed with a 2-3 day delay, so recent data may shift
 
   When you include data in your responses, either from tool use or using your own analysis capabilities, do not build web pages or React apps. For visualizing data, you can use text-based techniques for data visualization:
 
@@ -281,8 +305,6 @@ ai_instructions: |
   
   Simple trend arrows: Sales ↗️ (+15%) Costs ↘️ (-8%) Profit ⤴️ (+28%)
 ```
-
-
 
 ## Using Rill MCP Server in Claude
 
