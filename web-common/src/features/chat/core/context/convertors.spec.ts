@@ -20,7 +20,7 @@ describe("should convert to and from inline prompt", () => {
         type: ChatContextEntryType.MetricsView,
         metricsView: "adbids",
       },
-      expectedPrompt: `<inline>type="metricsView" metricsView="adbids"</inline>`,
+      expectedPrompt: `<chat-reference>type="metricsView" metricsView="adbids"</chat-reference>`,
     },
 
     {
@@ -29,7 +29,7 @@ describe("should convert to and from inline prompt", () => {
         type: ChatContextEntryType.TimeRange,
         timeRange: "2025-11-21T00:00:00Z",
       },
-      expectedPrompt: `<inline>type="timeRange" timeRange="2025-11-21T00:00:00Z"</inline>`,
+      expectedPrompt: `<chat-reference>type="timeRange" timeRange="2025-11-21T00:00:00Z"</chat-reference>`,
     },
 
     {
@@ -39,7 +39,7 @@ describe("should convert to and from inline prompt", () => {
         metricsView: "adbids",
         measure: "impressions",
       },
-      expectedPrompt: `<inline>type="measure" metricsView="adbids" measure="impressions"</inline>`,
+      expectedPrompt: `<chat-reference>type="measure" metricsView="adbids" measure="impressions"</chat-reference>`,
     },
 
     {
@@ -49,7 +49,7 @@ describe("should convert to and from inline prompt", () => {
         metricsView: "adbids",
         dimension: "publisher",
       },
-      expectedPrompt: `<inline>type="dimension" metricsView="adbids" dimension="publisher"</inline>`,
+      expectedPrompt: `<chat-reference>type="dimension" metricsView="adbids" dimension="publisher"</chat-reference>`,
     },
   ];
 
@@ -58,7 +58,9 @@ describe("should convert to and from inline prompt", () => {
       const prompt = convertContextToInlinePrompt(ctx);
       expect(prompt).toEqual(expectedPrompt);
       const convertedCtx = convertPromptValueToContext(
-        expectedPrompt.replace("<inline>", "").replace("</inline>", ""),
+        expectedPrompt
+          .replace("<chat-reference>", "")
+          .replace("</chat-reference>", ""),
       );
       expect(convertedCtx).toEqual(ctx);
     });

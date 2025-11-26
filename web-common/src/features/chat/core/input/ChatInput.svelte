@@ -8,7 +8,6 @@
   import type { ConversationManager } from "../conversation-manager";
   import { Editor } from "@tiptap/core";
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/chat-plugins.ts";
-  import { Button } from "@rilldata/web-common/components/button";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;

@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, type Readable, writable, type Writable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import {
   ChatContextEntryType,
   type InlineChatContext,

@@ -20,7 +20,6 @@ import {
   type InlineChatContext,
   normalizeInlineChatContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import type { Transaction } from "prosemirror-state";
 
 export function getEditorPlugins(
   placeholder: string,

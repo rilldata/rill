@@ -4,9 +4,7 @@
     ScaleStore,
     SimpleDataGraphicConfiguration,
   } from "@rilldata/web-common/components/data-graphic/state/types";
-  import {
-    measureSelection,
-  } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types.ts";
   import { getContext } from "svelte";

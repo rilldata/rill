@@ -3,14 +3,12 @@
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import {
-    measureSelection
-  } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     type DashboardTimeControls,
     TimeComparisonOption,
-    TimeRangePreset
+    TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
@@ -27,10 +25,10 @@
   const {
     dashboardStore,
     selectors: {
-      charts: { canPanLeft, canPanRight, getNewPanRange }
+      charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
-    metricsViewName
+    metricsViewName,
   } = StateManagers;
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
@@ -44,9 +42,9 @@
 
   $: subInterval = selectedSubRange
     ? Interval.fromDateTimes(
-      DateTime.fromJSDate(selectedSubRange.start).setZone(activeTimeZone),
-      DateTime.fromJSDate(selectedSubRange.end).setZone(activeTimeZone)
-    )
+        DateTime.fromJSDate(selectedSubRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedSubRange.end).setZone(activeTimeZone),
+      )
     : null;
 
   function onKeyDown(e: KeyboardEvent) {
@@ -100,13 +98,13 @@
     const timeRange = {
       name: TimeRangePreset.CUSTOM,
       start: start,
-      end: end
+      end: end,
     };
 
     const comparisonTimeRange = showComparison
       ? ({
-        name: TimeComparisonOption.CONTIGUOUS
-      } as DashboardTimeControls) // FIXME wrong typecasting across application
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
       : undefined;
 
     metricsExplorerStore.selectTimeRange(
@@ -114,7 +112,7 @@
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      $validSpecStore.data?.metricsView ?? {}
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 
@@ -129,12 +127,12 @@
 
       const { start, end } = getOrderedStartEnd(
         selectedScrubRange.start,
-        selectedScrubRange.end
+        selectedScrubRange.end,
       );
       metricsExplorerStore.setSelectedTimeRange(exploreName, {
         name: TimeRangePreset.CUSTOM,
         start,
-        end
+        end,
       });
 
       window.addEventListener("click", cancelUndo, true);
