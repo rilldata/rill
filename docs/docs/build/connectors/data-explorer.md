@@ -34,7 +34,7 @@ Select a table to view a preview of its content. Rill displays a sample of rows 
 <!-- ![Data Explorer](/img/build/connectors/data-explorer/preview.png) -->
 
 
-### Import Data
+### Import Data (Rill Managed Only)
 
 The Data Explorer is integrated into the data import workflow. When you connect to a new data source, Rill presents a simplified view of the explorer, allowing you to select the specific tables you want to ingest.
 
@@ -44,6 +44,16 @@ The Data Explorer is integrated into the data import workflow. When you connect 
 :::tip Unsure of the table?
 
 If you're in the import flow and not sure you have the correct table selected, you can always close the modal and use the full Data Explorer in the sidebar to inspect schemas and preview data before committing to an import.
+
+:::
+
+### Live Connector
+
+When live connecting to your own OLAP database, Rill will not materialize any of your data into its embedded OLAP engine. Instead, all of the queries will be pushed down to your connected OLAP engine.
+
+:::warning Read only
+
+By default, when creating a live connector to your OLAP database, we set a `readonly` parameter in the `connector.yaml`. You can modify this setting to allow write access but is not recommended as this has the potential to drop data on your OLAP database.
 
 :::
 
