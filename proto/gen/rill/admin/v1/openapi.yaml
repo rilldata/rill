@@ -527,9 +527,13 @@ components:
             enum:
                 - DEPLOYMENT_STATUS_UNSPECIFIED
                 - DEPLOYMENT_STATUS_PENDING
-                - DEPLOYMENT_STATUS_OK
-                - DEPLOYMENT_STATUS_ERROR
+                - DEPLOYMENT_STATUS_RUNNING
+                - DEPLOYMENT_STATUS_ERRORED
                 - DEPLOYMENT_STATUS_STOPPED
+                - DEPLOYMENT_STATUS_UPDATING
+                - DEPLOYMENT_STATUS_STOPPING
+                - DEPLOYMENT_STATUS_DELETING
+                - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
             type: object
@@ -2225,7 +2229,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.76.1
+    version: v0.76.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete:

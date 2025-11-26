@@ -11,11 +11,13 @@ import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.sve
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
+import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
   bigquery: GoogleBigQueryIcon,
   clickhouse: ClickHouseIcon,
+  clickhousecloud: ClickHouseCloudIcon,
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
