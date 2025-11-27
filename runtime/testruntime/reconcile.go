@@ -64,7 +64,7 @@ func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1
 	require.NoError(t, err)
 }
 
-func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName, model *runtimev1.RefreshModelTrigger) {
+func RefreshModelAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName, model *runtimev1.RefreshModelTrigger) {
 	ctx := t.Context()
 	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
@@ -75,16 +75,46 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
-	spec := &runtimev1.RefreshTriggerSpec{}
-	if model != nil {
-		spec.Models = []*runtimev1.RefreshModelTrigger{model}
-	} else {
-		spec.Resources = []*runtimev1.ResourceName{n}
-	}
 	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
-				Spec: spec,
+				Spec: &runtimev1.RefreshTriggerSpec{
+					Models: []*runtimev1.RefreshModelTrigger{model},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Wait for refresh to complete
+	err = ctrl.WaitUntilIdle(ctx, false)
+	require.NoError(t, err)
+
+	// Get resource after refresh
+	rNew, err := ctrl.Get(ctx, n, false)
+	require.NoError(t, err)
+
+	// Check the resource's spec version has increased
+	require.Greater(t, rNew.Meta.SpecVersion, rPrev.Meta.SpecVersion)
+}
+
+func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
+	ctx := t.Context()
+	ctrl, err := rt.Controller(ctx, id)
+	require.NoError(t, err)
+
+	// Get resource before refresh
+	rPrev, err := ctrl.Get(ctx, n, false)
+	require.NoError(t, err)
+
+	// Create refresh trigger
+	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					Resources: []*runtimev1.ResourceName{n},
+				},
 			},
 		},
 	})
