@@ -27,7 +27,7 @@ type AnalystAgentArgs struct {
 	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	Where      *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
 	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
 	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
@@ -64,20 +64,19 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 	}
 }
 
-func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
+func (t *AnalystAgent) CheckAccess(ctx context.Context) (bool, error) {
+	// Must be allowed to use AI and query metrics
 	s := GetSession(ctx)
-
-	// Must be allowed to use AI features
-	if !s.Claims().Can(runtime.UseAI) {
-		return false
+	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.ReadMetrics) {
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {

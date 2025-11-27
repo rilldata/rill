@@ -161,9 +161,9 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 	}
 }
 
-func (t *QueryMetricsView) CheckAccess(ctx context.Context) bool {
+func (t *QueryMetricsView) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadMetrics)
+	return s.Claims().Can(runtime.ReadMetrics), nil
 }
 
 func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArgs) (*QueryMetricsViewResult, error) {

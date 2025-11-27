@@ -3,6 +3,7 @@ import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   type RpcStatus,
+  type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
@@ -16,8 +17,8 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { MessageContentType, MessageType, ToolName } from "./types";
 import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
+import { MessageContentType, MessageType, ToolName } from "./types";
 
 /**
  * Individual conversation state management.
@@ -82,14 +83,18 @@ export class Conversation {
   /**
    * Send a message and handle streaming response
    *
+   * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(options?: {
-    onStreamStart?: () => void;
-    onMessage?: (message: V1Message) => void;
-    onStreamComplete?: (conversationId: string) => void;
-    onError?: (error: string) => void;
-  }): Promise<void> {
+  public async sendMessage(
+    context: RuntimeServiceCompleteBody,
+    options?: {
+      onStreamStart?: () => void;
+      onMessage?: (message: V1Message) => void;
+      onStreamComplete?: (conversationId: string) => void;
+      onError?: (error: string) => void;
+    },
+  ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -108,8 +113,9 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
+      options?.onStreamStart?.();
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt);
+      const streamPromise = this.startStreaming(prompt, context);
 
       // Wait for streaming to complete
       await streamPromise;
@@ -169,7 +175,10 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    * Returns a Promise that resolves when streaming completes
    */
-  private async startStreaming(prompt: string): Promise<void> {
+  private async startStreaming(
+    prompt: string,
+    context: RuntimeServiceCompleteBody | undefined,
+  ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
       this.sseClient = new SSEFetchClient();
@@ -230,6 +239,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)

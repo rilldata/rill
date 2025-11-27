@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	goruntime "runtime"
@@ -184,7 +185,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 // Tool is an interface for an AI tool.
 type Tool[In, Out any] interface {
 	Spec() *mcp.Tool
-	CheckAccess(context.Context) bool
+	CheckAccess(context.Context) (bool, error)
 	Handler(ctx context.Context, args In) (Out, error)
 }
 
@@ -192,7 +193,7 @@ type Tool[In, Out any] interface {
 type CompiledTool struct {
 	Name                  string
 	Spec                  *mcp.Tool
-	CheckAccess           func(context.Context) bool
+	CheckAccess           func(context.Context) (bool, error)
 	UnmarshalArgs         func(content string) (any, error)
 	UnmarshalResult       func(content string) (any, error)
 	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
@@ -898,7 +899,11 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 			if !ok {
 				return nil, fmt.Errorf("unknown tool %q", opts.Tool)
 			}
-			if !t.CheckAccess(ctx) {
+			ok, err := t.CheckAccess(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check access for tool %q: %w", opts.Tool, err)
+			}
+			if !ok {
 				return nil, fmt.Errorf("access denied to tool %q", opts.Tool)
 			}
 			return t.JSONHandler(ctx, argsJSON)
@@ -941,6 +946,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			opts.MaxIterations = 1
 		}
 	}
+	if opts.MaxIterations == 1 && len(opts.Tools) > 0 {
+		return errors.New("max iterations must be greater than 1 when using tools")
+	}
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -949,7 +957,11 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
-		if !tool.CheckAccess(ctx) {
+		ok, err := tool.CheckAccess(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to check access for tool %q: %w", toolName, err)
+		}
+		if !ok {
 			continue
 		}
 		var inputSchema string
@@ -1057,7 +1069,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			final := i+1 == opts.MaxIterations
 			if final {
 				tools = nil
-				messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				if i != 0 {
+					messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				}
 			}
 
 			// Truncate messages to fit within LLM context window.

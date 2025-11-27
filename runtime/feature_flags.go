@@ -58,6 +58,8 @@ var defaultFeatureFlags = map[string]string{
 	"deploy": "true",
 	// Controls visibility of the "Create Canvas" dashboard buttons
 	"generate_canvas": "false",
+	// Controls if the developer agent tool is available.
+	"developer_agent": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

@@ -7,28 +7,91 @@ import (
 	"net/url"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"gocloud.dev/blob/azureblob"
 )
 
-// ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
-	url, err := c.parseBucketURL(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
+func (c *Connection) ListBuckets(ctx context.Context, pageSize uint32, pageToken string) ([]string, string, error) {
+	// If PathPrefixes is configured, return buckets derived from those prefixes.
+	// This is used when ListBuckets permissions may not be available, or when
+	// the user explicitly wants to restrict access to specific buckets.
+	if len(c.config.PathPrefixes) > 0 {
+		return drivers.ListBucketsFromPathPrefixes(c.config.PathPrefixes, pageSize, pageToken)
 	}
 
-	bucket, err := c.openBucket(ctx, url.Host, false)
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	unmarshalPageToken := ""
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &unmarshalPageToken); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	client, err := c.newStorageClient()
+	if err != nil {
+		return nil, "", err
+	}
+	opts := &azblob.ListContainersOptions{}
+	if validPageSize > 0 {
+		v := int32(validPageSize)
+		opts.MaxResults = &v
+	}
+	if unmarshalPageToken != "" {
+		opts.Marker = &unmarshalPageToken
+	}
+	pager := client.NewListContainersPager(opts)
+
+	var buckets []string
+	var next string
+
+	if pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("azure list containers failed: %w", err)
+		}
+
+		for _, c := range page.ContainerItems {
+			buckets = append(buckets, *c.Name)
+		}
+		if page.NextMarker != nil {
+			next = *page.NextMarker
+		}
+	}
+	if next != "" {
+		next = pagination.MarshalPageToken(next)
+	}
+	return buckets, next, nil
+}
+
+// ListObjects implements drivers.ObjectStore.
+func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	blobBucket, err := c.openBucket(ctx, bucket, false)
+	if err != nil {
+		return nil, "", err
+	}
+	defer blobBucket.Close()
+
+	blobListfn := func(ctx context.Context, p string, d string, s uint32, t string) ([]drivers.ObjectStoreEntry, string, error) {
+		return blobBucket.ListObjects(ctx, p, d, s, t)
+	}
+	return drivers.ListObjects(ctx, c.config.PathPrefixes, blobListfn, bucket, path, delimiter, pageSize, pageToken)
+}
+
+// ListObjectsForGlob implements drivers.ObjectStore.
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+	blobBucket, err := c.openBucket(ctx, bucket, false)
 	if err != nil {
 		return nil, err
 	}
-	defer bucket.Close()
+	defer blobBucket.Close()
 
-	return bucket.ListObjects(ctx, url.Path)
+	return blobBucket.ListObjectsForGlob(ctx, glob)
 }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
