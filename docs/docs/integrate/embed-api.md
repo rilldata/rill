@@ -46,6 +46,7 @@ window.addEventListener("message", (event) => {
 
   if (method === "navigation") {
     console.log("Navigated from:", params.from, "to:", params.to);
+    // params.from and params.to will be dashboard names or "dashboardListing"
   }
 
   if (method === "resized") {
@@ -124,18 +125,19 @@ Fired whenever the internal state of the iframe changes.
 { "method": "stateChanged", "params": { "state": "<rill state string>" } }
 ```
 
-### `navigation({ from: string | null, to: string })`
+### `navigation({ from: string, to: string })`
 
 Fired whenever a user navigates between dashboards. This event is only emitted when navigation is enabled in the embed configuration.
 
-- `from`: The name of the dashboard the user navigated from, or `null` if navigating from the dashboard listing page
-- `to`: The name of the dashboard the user navigated to
+- `from`: The name of the dashboard the user navigated from, or `"dashboardListing"` if navigating from the dashboard listing page
+- `to`: The name of the dashboard the user navigated to, or `"dashboardListing"` if navigating to the dashboard listing page
 
 This event fires for all dashboard navigation scenarios:
 - Navigating from one explore dashboard to another
 - Navigating from one canvas dashboard to another
 - Navigating from an explore dashboard to a canvas dashboard (or vice versa)
 - Navigating from the dashboard listing page to any dashboard
+- Navigating from any dashboard to the dashboard listing page
 
 ```json
 { "method": "navigation", "params": { "from": "dashboard-name", "to": "another-dashboard-name" } }
@@ -143,7 +145,12 @@ This event fires for all dashboard navigation scenarios:
 
 Example when navigating from the listing page:
 ```json
-{ "method": "navigation", "params": { "from": null, "to": "dashboard-name" } }
+{ "method": "navigation", "params": { "from": "dashboardListing", "to": "dashboard-name" } }
+```
+
+Example when navigating to the listing page:
+```json
+{ "method": "navigation", "params": { "from": "dashboard-name", "to": "dashboardListing" } }
 ```
 
 ### `resized({ width: number, height: number })`

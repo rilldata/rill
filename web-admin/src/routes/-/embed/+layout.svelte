@@ -75,8 +75,14 @@
     } else if (!fromDashboard && toDashboard) {
       // Navigating from listing page to a dashboard
       emitNotification("navigation", {
-        from: null,
+        from: "dashboardListing",
         to: toDashboard.name,
+      });
+    } else if (fromDashboard && !toDashboard) {
+      // Navigating from a dashboard to the listing page
+      emitNotification("navigation", {
+        from: fromDashboard.name,
+        to: "dashboardListing",
       });
     }
   });
