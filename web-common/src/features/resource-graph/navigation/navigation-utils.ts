@@ -1,25 +1,55 @@
 import { goto } from "$app/navigation";
 import { resourceNameToId } from "@rilldata/web-common/features/entity-management/resource-utils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import { buildGraphUrlNew, type KindToken } from "./seed-parser";
 
 /**
- * Navigate to the resource graph view with a seed for a specific resource.
+ * Navigate to the resource graph view for a specific resource.
+ *
+ * Uses the new URL API:
+ * - `/graph?resource=model:orders` for specific resources
+ *
  * @param kind - Resource kind (source, model, metrics, etc.)
  * @param name - Resource name
- * @param additionalSeeds - Optional additional seeds to include in the URL
+ * @param additionalResources - Optional additional resources to include in the URL
  */
 export function navigateToResourceGraph(
   kind: string,
   name: string,
-  additionalSeeds?: string[],
+  additionalResources?: string[],
 ): void {
-  const seedId = resourceNameToId({ kind, name });
-  if (!seedId) return; // Early return if invalid kind/name
-  const seeds = [seedId, ...(additionalSeeds || [])];
-  const seedParams = seeds
-    .map((s) => `seed=${encodeURIComponent(s)}`)
-    .join("&");
-  goto(`/graph?${seedParams}`);
+  // Build resource identifier: "shortKind:name" format
+  const shortKind = getShortKindName(kind);
+  const resourceId = shortKind ? `${shortKind}:${name}` : name;
+
+  const resources = [resourceId, ...(additionalResources || [])];
+  const url = buildGraphUrlNew({ resources });
+  goto(url);
+}
+
+/**
+ * Navigate to the resource graph view filtered by kind.
+ *
+ * @param kindToken - Kind token (metrics, models, sources, dashboards)
+ */
+export function navigateToResourceGraphByKind(kindToken: KindToken): void {
+  const url = buildGraphUrlNew({ kind: kindToken });
+  goto(url);
+}
+
+/**
+ * Convert a fully qualified kind to its short name.
+ * @param kind - Fully qualified kind (e.g., "rill.runtime.v1.Model")
+ * @returns Short kind name (e.g., "model") or null if unknown
+ */
+function getShortKindName(kind: string): string | null {
+  const lower = kind.toLowerCase();
+  if (lower.includes("source")) return "source";
+  if (lower.includes("model")) return "model";
+  if (lower.includes("metricsview")) return "metrics";
+  if (lower.includes("explore")) return "dashboard";
+  if (lower.includes("canvas")) return "canvas";
+  return null;
 }
 
 /**
@@ -71,19 +101,23 @@ export function createGraphNavigationHandler(
 }
 
 /**
- * Build a URL to the resource graph view with multiple seeds.
+ * Build a URL to the resource graph view with multiple resources.
+ *
+ * Uses the new URL API:
+ * - `/graph?resource=model:orders&resource=source:raw_data`
+ *
  * @param seeds - Array of seed objects with kind and name
  * @returns The constructed graph URL
  */
 export function buildGraphUrl(
   seeds: Array<{ kind: string; name: string }>,
 ): string {
-  const seedParams = seeds
+  const resources = seeds
     .map(({ kind, name }) => {
-      const id = resourceNameToId({ kind, name });
-      return id ? `seed=${encodeURIComponent(id)}` : "";
+      const shortKind = getShortKindName(kind);
+      return shortKind ? `${shortKind}:${name}` : name;
     })
-    .filter((s) => s) // Remove empty strings from invalid seeds
-    .join("&");
-  return `/graph?${seedParams}`;
+    .filter((r) => r);
+
+  return buildGraphUrlNew({ resources });
 }

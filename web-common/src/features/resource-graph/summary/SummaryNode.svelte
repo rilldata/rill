@@ -58,15 +58,19 @@
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;
   $: isActive = data?.active ?? selected;
+  $: isEmpty = count === 0;
 
   function navigateByKind() {
+    // Don't navigate if there are no resources of this kind
+    if (isEmpty) return;
+
     const kind = data?.kind;
     let token: string | null = null;
     if (kind === ResourceKind.Source) token = "sources";
     else if (kind === ResourceKind.MetricsView) token = "metrics";
     else if (kind === ResourceKind.Model) token = "models";
     else if (kind === ResourceKind.Explore) token = "dashboards";
-    if (token) goto(`/graph?seed=${token}`);
+    if (token) goto(`/graph?kind=${token}`);
   }
 </script>
 
@@ -75,10 +79,12 @@
 <div
   class="summary-node"
   class:active={isActive}
+  class:empty={isEmpty}
   style={`--summary-accent:${color}`}
   on:click={navigateByKind}
   role="button"
-  tabindex="0"
+  tabindex={isEmpty ? -1 : 0}
+  aria-disabled={isEmpty}
   on:keydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -133,6 +139,17 @@
       in srgb,
       var(--summary-accent, #94a3b8) 15%,
       var(--surface, #ffffff)
+    );
+  }
+  .summary-node.empty {
+    @apply opacity-50 cursor-default;
+  }
+  .summary-node:not(.empty):hover {
+    @apply cursor-pointer;
+    border-color: color-mix(
+      in srgb,
+      var(--summary-accent, #94a3b8) 50%,
+      var(--border, #e5e7eb)
     );
   }
   .icon {

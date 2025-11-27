@@ -63,11 +63,26 @@
 
   function navigateTokenForNode(id: string) {
     let token: "sources" | "metrics" | "models" | "dashboards" | null = null;
-    if (id === "sources") token = "sources";
-    else if (id === "metrics") token = "metrics";
-    else if (id === "models") token = "models";
-    else if (id === "dashboards") token = "dashboards";
-    if (token) goto(`/graph?seed=${token}`);
+    let count = 0;
+
+    if (id === "sources") {
+      token = "sources";
+      count = sources;
+    } else if (id === "metrics") {
+      token = "metrics";
+      count = metrics;
+    } else if (id === "models") {
+      token = "models";
+      count = models;
+    } else if (id === "dashboards") {
+      token = "dashboards";
+      count = dashboards;
+    }
+
+    // Only navigate if there are resources of this kind
+    if (token && count > 0) {
+      goto(`/graph?kind=${token}`);
+    }
   }
 
   // Build nodes spaced across the available width
@@ -196,7 +211,7 @@
           padding: 0.25,
           minZoom: 0.25,
           maxZoom: 1.2,
-          duration: 150,
+          duration: 0,
         }}
         preventScrolling={true}
         zoomOnScroll={false}

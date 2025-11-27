@@ -2,24 +2,8 @@
  * Centralized configuration for resource graph layout and visualization.
  *
  * This file consolidates all layout constants, sizing parameters, and visual
- * configuration to make them easier to maintain and adjust. When changing
- * layout parameters, bump CACHE_VERSION to invalidate stale cached layouts.
+ * configuration to make them easier to maintain and adjust.
  */
-
-/**
- * Cache version for localStorage persistence.
- *
- * INCREMENT THIS when:
- * - Changing any layout spacing constants (DAGRE_*)
- * - Modifying node sizing logic
- * - Altering graph algorithms
- * - Making any changes that affect node positions
- *
- * Version History:
- * - v1 (initial): Layout with DAGRE_NODESEP=27, RANKSEP=72, basic position caching
- * - v2: Centralized config, improved cache management, added debug utilities
- */
-export const CACHE_VERSION = 2;
 
 /**
  * Node sizing configuration
@@ -193,8 +177,9 @@ export const FIT_VIEW_CONFIG = {
 
   /**
    * Animation duration in milliseconds.
+   * Set to 0 to disable animation on initial render (removes distracting pan/zoom effect).
    */
-  DURATION: 200,
+  DURATION: 0,
 } as const;
 
 /**
@@ -284,14 +269,22 @@ export const DEBUG_CONFIG = {
 
 /**
  * Cache namespace for localStorage.
- * Uses CACHE_VERSION to ensure cache invalidation on breaking changes.
+ *
+ * Uses `rill:` prefix for namespacing since Rill Developer runs on localhost:9009,
+ * which may be shared with other applications. This follows the pattern established
+ * by `rill:theme` for consistency.
+ *
+ * Cache invalidation is handled via the debug utility `window.__RESOURCE_GRAPH_CACHE.clearAll()`
+ * rather than versioning, keeping the key simple and user-friendly.
  */
-export const CACHE_NAMESPACE = `rill.resourceGraph.v${CACHE_VERSION}` as const;
+export const CACHE_NAMESPACE = "rill:resource-graph" as const;
 
 /**
  * Pattern for matching old cache keys during cleanup.
+ * Matches both old versioned keys (rill.resourceGraph.v1, rill.resourceGraph.v2)
+ * and ensures cleanup during migration to new key format.
  */
-export const CACHE_KEY_PATTERN = /^rill\.resourceGraph\.v\d+$/;
+export const CACHE_KEY_PATTERN = /^rill[.:]resource[-.]?[Gg]raph(\.v\d+)?$/;
 
 /**
  * Helper to log debug messages only when debug mode is enabled.

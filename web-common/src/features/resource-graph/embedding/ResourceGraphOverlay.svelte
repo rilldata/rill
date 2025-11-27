@@ -49,7 +49,7 @@
 
   $: overlaySeeds = anchorSeed ? [anchorSeed] : undefined;
   $: graphHref = graphableKind
-    ? `/graph?seed=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
+    ? `/graph?kind=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
     : "/graph";
 
   $: emptyReason = !anchorSeed ? "unsupported" : null;

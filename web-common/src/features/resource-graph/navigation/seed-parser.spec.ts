@@ -6,6 +6,10 @@ import {
   tokenForSeedString,
   expandSeedsByKind,
   ALLOWED_FOR_GRAPH,
+  parseGraphUrlParams,
+  urlParamsToSeeds,
+  buildGraphUrlNew,
+  URL_PARAMS,
 } from "./seed-parser";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -742,6 +746,249 @@ describe("seed-utils", () => {
 
     it("should have exactly 4 kinds", () => {
       expect(ALLOWED_FOR_GRAPH.size).toBe(4);
+    });
+  });
+
+  describe("URL_PARAMS", () => {
+    it("should have correct parameter names", () => {
+      expect(URL_PARAMS.KIND).toBe("kind");
+      expect(URL_PARAMS.RESOURCE).toBe("resource");
+      expect(URL_PARAMS.EXPANDED).toBe("expanded");
+    });
+  });
+
+  describe("parseGraphUrlParams", () => {
+    it("should parse kind parameter", () => {
+      const url = new URL("http://localhost/graph?kind=metrics");
+      const result = parseGraphUrlParams(url);
+      expect(result.kind).toBe("metrics");
+      expect(result.resources).toEqual([]);
+      expect(result.expanded).toBeNull();
+    });
+
+    it("should parse all valid kind values", () => {
+      expect(
+        parseGraphUrlParams(new URL("http://localhost/graph?kind=metrics"))
+          .kind,
+      ).toBe("metrics");
+      expect(
+        parseGraphUrlParams(new URL("http://localhost/graph?kind=models")).kind,
+      ).toBe("models");
+      expect(
+        parseGraphUrlParams(new URL("http://localhost/graph?kind=sources"))
+          .kind,
+      ).toBe("sources");
+      expect(
+        parseGraphUrlParams(new URL("http://localhost/graph?kind=dashboards"))
+          .kind,
+      ).toBe("dashboards");
+    });
+
+    it("should be case-insensitive for kind", () => {
+      expect(
+        parseGraphUrlParams(new URL("http://localhost/graph?kind=METRICS"))
+          .kind,
+      ).toBe("metrics");
+      expect(
+        parseGraphUrlParams(new URL("http://localhost/graph?kind=Models")).kind,
+      ).toBe("models");
+    });
+
+    it("should return null for invalid kind", () => {
+      const url = new URL("http://localhost/graph?kind=invalid");
+      const result = parseGraphUrlParams(url);
+      expect(result.kind).toBeNull();
+    });
+
+    it("should parse single resource parameter", () => {
+      const url = new URL("http://localhost/graph?resource=orders");
+      const result = parseGraphUrlParams(url);
+      expect(result.kind).toBeNull();
+      expect(result.resources).toEqual(["orders"]);
+    });
+
+    it("should parse multiple resource parameters", () => {
+      const url = new URL(
+        "http://localhost/graph?resource=orders&resource=revenue",
+      );
+      const result = parseGraphUrlParams(url);
+      expect(result.resources).toEqual(["orders", "revenue"]);
+    });
+
+    it("should parse resource with kind prefix", () => {
+      const url = new URL("http://localhost/graph?resource=model:orders");
+      const result = parseGraphUrlParams(url);
+      expect(result.resources).toEqual(["model:orders"]);
+    });
+
+    it("should parse expanded parameter", () => {
+      const url = new URL(
+        "http://localhost/graph?resource=orders&expanded=rill.runtime.v1.Model:orders",
+      );
+      const result = parseGraphUrlParams(url);
+      expect(result.expanded).toBe("rill.runtime.v1.Model:orders");
+    });
+
+    it("should handle empty URL", () => {
+      const url = new URL("http://localhost/graph");
+      const result = parseGraphUrlParams(url);
+      expect(result.kind).toBeNull();
+      expect(result.resources).toEqual([]);
+      expect(result.expanded).toBeNull();
+    });
+
+    it("should trim whitespace from parameters", () => {
+      const url = new URL("http://localhost/graph?kind=%20metrics%20");
+      const result = parseGraphUrlParams(url);
+      expect(result.kind).toBe("metrics");
+    });
+
+    it("should filter out empty resource values", () => {
+      const url = new URL("http://localhost/graph?resource=&resource=orders");
+      const result = parseGraphUrlParams(url);
+      expect(result.resources).toEqual(["orders"]);
+    });
+
+    it("should work with URLSearchParams directly", () => {
+      const params = new URLSearchParams("kind=models&resource=orders");
+      const result = parseGraphUrlParams(params);
+      expect(result.kind).toBe("models");
+      expect(result.resources).toEqual(["orders"]);
+    });
+  });
+
+  describe("urlParamsToSeeds", () => {
+    it("should convert kind to seed", () => {
+      const result = urlParamsToSeeds({
+        kind: "metrics",
+        resources: [],
+        expanded: null,
+      });
+      expect(result).toEqual(["metrics"]);
+    });
+
+    it("should convert resources to seeds", () => {
+      const result = urlParamsToSeeds({
+        kind: null,
+        resources: ["orders", "model:revenue"],
+        expanded: null,
+      });
+      expect(result).toEqual(["orders", "model:revenue"]);
+    });
+
+    it("should prefer kind over resources", () => {
+      const result = urlParamsToSeeds({
+        kind: "metrics",
+        resources: ["orders"],
+        expanded: null,
+      });
+      expect(result).toEqual(["metrics"]);
+    });
+
+    it("should return empty array when no kind or resources", () => {
+      const result = urlParamsToSeeds({
+        kind: null,
+        resources: [],
+        expanded: null,
+      });
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("buildGraphUrlNew", () => {
+    it("should build URL with kind parameter", () => {
+      const result = buildGraphUrlNew({ kind: "metrics" });
+      expect(result).toBe("/graph?kind=metrics");
+    });
+
+    it("should build URL with single resource", () => {
+      const result = buildGraphUrlNew({ resources: ["orders"] });
+      expect(result).toBe("/graph?resource=orders");
+    });
+
+    it("should build URL with multiple resources", () => {
+      const result = buildGraphUrlNew({ resources: ["orders", "revenue"] });
+      expect(result).toBe("/graph?resource=orders&resource=revenue");
+    });
+
+    it("should build URL with resource and expanded", () => {
+      const result = buildGraphUrlNew({
+        resources: ["model:orders"],
+        expanded: "rill.runtime.v1.Model:orders",
+      });
+      expect(result).toBe(
+        "/graph?resource=model%3Aorders&expanded=rill.runtime.v1.Model%3Aorders",
+      );
+    });
+
+    it("should prefer kind over resources", () => {
+      const result = buildGraphUrlNew({
+        kind: "metrics",
+        resources: ["orders"],
+      });
+      expect(result).toBe("/graph?kind=metrics");
+    });
+
+    it("should return base path when no params", () => {
+      const result = buildGraphUrlNew({});
+      expect(result).toBe("/graph");
+    });
+
+    it("should use custom base path", () => {
+      const result = buildGraphUrlNew({
+        kind: "models",
+        basePath: "/custom/graph",
+      });
+      expect(result).toBe("/custom/graph?kind=models");
+    });
+
+    it("should filter out empty resources", () => {
+      const result = buildGraphUrlNew({ resources: ["", "orders", "  "] });
+      expect(result).toBe("/graph?resource=orders");
+    });
+
+    it("should handle null kind", () => {
+      const result = buildGraphUrlNew({ kind: null, resources: ["orders"] });
+      expect(result).toBe("/graph?resource=orders");
+    });
+  });
+
+  describe("URL API - No ambiguity for resources named after kind tokens", () => {
+    it("should allow accessing a resource literally named 'metrics'", () => {
+      // Using resource parameter, a resource named "metrics" is unambiguous
+      const url = new URL("http://localhost/graph?resource=metrics");
+      const params = parseGraphUrlParams(url);
+      expect(params.kind).toBeNull();
+      expect(params.resources).toEqual(["metrics"]);
+
+      // This converts to a seed that will be treated as a MetricsView named "metrics"
+      const seeds = urlParamsToSeeds(params);
+      expect(seeds).toEqual(["metrics"]);
+    });
+
+    it("should allow filtering by kind 'metrics'", () => {
+      // Using kind parameter to filter all MetricsView resources
+      const url = new URL("http://localhost/graph?kind=metrics");
+      const params = parseGraphUrlParams(url);
+      expect(params.kind).toBe("metrics");
+      expect(params.resources).toEqual([]);
+
+      // This converts to a seed that will expand to all MetricsView resources
+      const seeds = urlParamsToSeeds(params);
+      expect(seeds).toEqual(["metrics"]);
+    });
+
+    it("should build unambiguous URLs for resources named after kinds", () => {
+      // Building URL for a specific resource named "metrics"
+      const urlForResource = buildGraphUrlNew({ resources: ["metrics"] });
+      expect(urlForResource).toBe("/graph?resource=metrics");
+
+      // Building URL for all MetricsView resources
+      const urlForKind = buildGraphUrlNew({ kind: "metrics" });
+      expect(urlForKind).toBe("/graph?kind=metrics");
+
+      // The URLs are different and unambiguous
+      expect(urlForResource).not.toBe(urlForKind);
     });
   });
 });

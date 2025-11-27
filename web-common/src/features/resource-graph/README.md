@@ -36,16 +36,27 @@ The Resource Graph visualizes project dependencies (sources → models → metri
 
 ## URL Deep-Linking
 
-Navigate to `/graph?seed=<kind>:<name>` to show a specific resource's graph:
+The graph page supports two URL parameters:
 
-- `?seed=metrics:Orders` - Show metrics view named "Orders"
-- `?seed=model:clean_orders` - Show model named "clean_orders"
-- `?seed=source:raw_data` - Show source named "raw_data"
-- `?seed=metrics&seed=model:orders` - Multiple graphs
+### Filter by kind
+
+Navigate to `/graph?kind=<kind>` to show all graphs of a resource kind:
+
+- `?kind=metrics` - Show all MetricsView graphs
+- `?kind=models` - Show all Model graphs
+- `?kind=sources` - Show all Source graphs
+- `?kind=dashboards` - Show all Dashboard/Explore graphs
+
+### Show specific resources
+
+Navigate to `/graph?resource=<name>` or `/graph?resource=<kind>:<name>`:
+
+- `?resource=Orders` - Show resource named "Orders" (defaults to MetricsView)
+- `?resource=model:clean_orders` - Show model named "clean_orders"
+- `?resource=source:raw_data` - Show source named "raw_data"
+- `?resource=orders&resource=revenue` - Multiple resources
 
 **Kind aliases**: `metrics`, `model`, `source`, `dashboard`, `canvas`
-
-**Kind expansion**: `?seed=metrics` expands to one graph per MetricsView
 
 ## Embedding in Components
 

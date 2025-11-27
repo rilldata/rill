@@ -7,20 +7,22 @@
  * - Writing expansion state to URL
  * - Cleaning up stale parameters
  * - Type-safe parameter handling
+ *
+ * URL API:
+ * - `/graph?kind=metrics` - All MetricsView graphs
+ * - `/graph?resource=orders` - Specific resource (defaults to MetricsView)
+ * - `/graph?resource=model:orders` - Specific resource with explicit kind
  */
 
 import { page } from "$app/stores";
 import { goto } from "$app/navigation";
 import { derived, type Readable } from "svelte/store";
 import { debugLog } from "../shared/config";
-
-/**
- * URL parameter names used for graph state.
- */
-const PARAMS = {
-  SEED: "seed",
-  EXPANDED: "expanded",
-} as const;
+import {
+  URL_PARAMS,
+  parseGraphUrlParams,
+  urlParamsToSeeds,
+} from "./seed-parser";
 
 /**
  * Options for URL sync behavior.
@@ -120,13 +122,12 @@ export function useGraphUrlSync(
     onExpandedChange,
   } = options;
 
-  const seedParam = paramNames.seed ?? PARAMS.SEED;
-  const expandedParam = paramNames.expanded ?? PARAMS.EXPANDED;
+  const expandedParam = paramNames.expanded ?? URL_PARAMS.EXPANDED;
 
-  // Derive seeds from URL
+  // Derive seeds from URL using new kind/resource parameters
   const seeds = derived(page, ($page) => {
-    const rawSeeds = $page.url.searchParams.getAll(seedParam);
-    const filtered = rawSeeds.filter((s) => s && s.trim());
+    const params = parseGraphUrlParams($page.url);
+    const filtered = urlParamsToSeeds(params);
 
     debugLog("URLSync", `Seeds from URL: ${filtered.length}`, filtered);
 
@@ -193,6 +194,7 @@ export function useGraphUrlSync(
 
   /**
    * Navigate to a specific seed configuration.
+   * Uses the new URL API with kind/resource parameters.
    */
   function navigateToSeeds(newSeeds: string[]): void {
     debugLog("URLSync", `Navigating to seeds: ${newSeeds.length}`, newSeeds);
@@ -200,8 +202,9 @@ export function useGraphUrlSync(
     const currentUrl = new URL(window.location.href);
 
     if (newSeeds.length === 0) {
-      // Clear all seed parameters
-      currentUrl.searchParams.delete(seedParam);
+      // Clear all resource and kind parameters
+      currentUrl.searchParams.delete(URL_PARAMS.KIND);
+      currentUrl.searchParams.delete(URL_PARAMS.RESOURCE);
       goto(currentUrl.pathname + currentUrl.search, {
         replaceState: true,
         noScroll: true,
@@ -210,18 +213,33 @@ export function useGraphUrlSync(
       return;
     }
 
-    // Build URL with multiple seed parameters
+    // Build URL with new API
     const params = new URLSearchParams();
 
-    for (const seed of newSeeds) {
-      if (seed && seed.trim()) {
-        params.append(seedParam, seed.trim());
+    // Check if this is a kind-only filter
+    const validKinds = ["metrics", "sources", "models", "dashboards"];
+    if (
+      newSeeds.length === 1 &&
+      validKinds.includes(newSeeds[0].toLowerCase())
+    ) {
+      params.set(URL_PARAMS.KIND, newSeeds[0].toLowerCase());
+    } else {
+      // Use resource parameters for specific resources
+      for (const seed of newSeeds) {
+        if (seed && seed.trim()) {
+          params.append(URL_PARAMS.RESOURCE, seed.trim());
+        }
       }
     }
 
-    // Preserve other query parameters
+    // Preserve other query parameters (except old seed param for migration)
     for (const [key, value] of currentUrl.searchParams) {
-      if (key !== seedParam && key !== expandedParam) {
+      if (
+        key !== URL_PARAMS.KIND &&
+        key !== URL_PARAMS.RESOURCE &&
+        key !== expandedParam &&
+        key !== "seed" // Remove old seed param during migration
+      ) {
         params.append(key, value);
       }
     }
@@ -284,16 +302,18 @@ export function useGraphUrlSync(
 
 /**
  * Parse seed parameters from a URL.
+ * Uses the new kind/resource URL API.
  * Useful for server-side rendering or testing.
  */
 export function parseSeedsFromUrl(url: URL | string): string[] {
   const urlObj = typeof url === "string" ? new URL(url) : url;
-  const rawSeeds = urlObj.searchParams.getAll(PARAMS.SEED);
-  return rawSeeds.filter((s) => s && s.trim());
+  const params = parseGraphUrlParams(urlObj);
+  return urlParamsToSeeds(params);
 }
 
 /**
  * Build a URL with seed parameters.
+ * Uses the new kind/resource URL API.
  * Useful for constructing links.
  */
 export function buildGraphUrl(
@@ -303,14 +323,20 @@ export function buildGraphUrl(
 ): string {
   const url = new URL(baseUrl, window.location.origin);
 
-  for (const seed of seeds) {
-    if (seed && seed.trim()) {
-      url.searchParams.append(PARAMS.SEED, seed.trim());
+  // Check if this is a kind-only filter
+  const validKinds = ["metrics", "sources", "models", "dashboards"];
+  if (seeds.length === 1 && validKinds.includes(seeds[0].toLowerCase())) {
+    url.searchParams.set(URL_PARAMS.KIND, seeds[0].toLowerCase());
+  } else {
+    for (const seed of seeds) {
+      if (seed && seed.trim()) {
+        url.searchParams.append(URL_PARAMS.RESOURCE, seed.trim());
+      }
     }
   }
 
   if (expandedId) {
-    url.searchParams.set(PARAMS.EXPANDED, expandedId);
+    url.searchParams.set(URL_PARAMS.EXPANDED, expandedId);
   }
 
   return url.pathname + url.search;

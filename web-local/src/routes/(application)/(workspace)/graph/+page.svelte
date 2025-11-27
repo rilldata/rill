@@ -2,9 +2,14 @@
   import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import { page } from "$app/stores";
+  import {
+    parseGraphUrlParams,
+    urlParamsToSeeds,
+  } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
 
-  // Collect `seed` params from URL (supports multiple)
-  $: seeds = Array.from($page.url.searchParams.getAll("seed"));
+  // Parse URL parameters using new API (kind/resource instead of seed)
+  $: urlParams = parseGraphUrlParams($page.url);
+  $: seeds = urlParamsToSeeds(urlParams);
 </script>
 
 <svelte:head>

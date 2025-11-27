@@ -7,6 +7,29 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 
 /**
+ * URL parameter names for graph navigation.
+ * - `kind`: Filter by resource kind (e.g., "metrics", "models", "sources", "dashboards")
+ * - `resource`: Show graph for a specific resource by name (e.g., "orders", "revenue")
+ *
+ * These parameters are mutually exclusive:
+ * - `/graph?kind=metrics` - Shows all MetricsView graphs
+ * - `/graph?resource=orders` - Shows graph for resource named "orders"
+ *
+ * The `resource` parameter defaults to MetricsView kind if no kind is specified.
+ * To specify a different kind, use the format: `/graph?resource=model:orders`
+ */
+export const URL_PARAMS = {
+  KIND: "kind",
+  RESOURCE: "resource",
+  EXPANDED: "expanded",
+} as const;
+
+/**
+ * Valid kind tokens that can be used in the `kind` URL parameter.
+ */
+export type KindToken = "metrics" | "sources" | "models" | "dashboards";
+
+/**
  * Normalize plural forms to singular forms for graph seed parsing.
  * The graph feature accepts both singular and plural forms for user convenience,
  * but internally normalizes to the singular forms used by the rest of the app.
@@ -242,4 +265,145 @@ export function expandSeedsByKind(
   }
 
   return expanded;
+}
+
+/**
+ * Parsed graph URL parameters.
+ */
+export interface GraphUrlParams {
+  /**
+   * Kind filter (e.g., "metrics", "models", "sources", "dashboards").
+   * When set, shows all graphs of this resource kind.
+   */
+  kind: KindToken | null;
+
+  /**
+   * Specific resources to show graphs for.
+   * Format: "name" (defaults to MetricsView) or "kind:name".
+   */
+  resources: string[];
+
+  /**
+   * Currently expanded graph ID.
+   */
+  expanded: string | null;
+}
+
+/**
+ * Parse graph URL parameters from a URL.
+ *
+ * Handles the new URL API:
+ * - `/graph?kind=metrics` - All MetricsView graphs
+ * - `/graph?resource=orders` - Specific resource (defaults to MetricsView)
+ * - `/graph?resource=model:orders` - Specific resource with explicit kind
+ * - `/graph?resource=orders&resource=revenue` - Multiple resources
+ *
+ * @param url - URL or URLSearchParams to parse
+ * @returns Parsed parameters
+ *
+ * @example
+ * parseGraphUrlParams(new URL('/graph?kind=metrics'))
+ * // { kind: 'metrics', resources: [], expanded: null }
+ *
+ * parseGraphUrlParams(new URL('/graph?resource=orders'))
+ * // { kind: null, resources: ['orders'], expanded: null }
+ */
+export function parseGraphUrlParams(
+  url: URL | URLSearchParams,
+): GraphUrlParams {
+  const params = url instanceof URL ? url.searchParams : url;
+
+  // Parse kind parameter
+  const kindParam = params.get(URL_PARAMS.KIND)?.trim().toLowerCase() || null;
+  const validKind = kindParam as KindToken | null;
+  const kind =
+    validKind &&
+    ["metrics", "sources", "models", "dashboards"].includes(validKind)
+      ? validKind
+      : null;
+
+  // Parse resource parameters (supports multiple)
+  const resources = params
+    .getAll(URL_PARAMS.RESOURCE)
+    .map((r) => r.trim())
+    .filter((r) => r.length > 0);
+
+  // Parse expanded parameter
+  const expanded = params.get(URL_PARAMS.EXPANDED)?.trim() || null;
+
+  return { kind, resources, expanded };
+}
+
+/**
+ * Convert parsed URL params to internal seed format.
+ *
+ * This bridges the new URL API to the existing internal processing.
+ * The `kind` parameter becomes a kind token (e.g., "metrics"),
+ * and `resource` parameters become explicit seeds (e.g., "model:orders").
+ *
+ * @param params - Parsed URL parameters
+ * @returns Array of seed strings for internal processing
+ *
+ * @example
+ * urlParamsToSeeds({ kind: 'metrics', resources: [], expanded: null })
+ * // ['metrics']
+ *
+ * urlParamsToSeeds({ kind: null, resources: ['orders'], expanded: null })
+ * // ['orders']
+ *
+ * urlParamsToSeeds({ kind: null, resources: ['model:orders'], expanded: null })
+ * // ['model:orders']
+ */
+export function urlParamsToSeeds(params: GraphUrlParams): string[] {
+  // If kind is specified, use it as the seed (expands to all resources of that kind)
+  if (params.kind) {
+    return [params.kind];
+  }
+
+  // Otherwise, use the resource parameters as seeds
+  return params.resources;
+}
+
+/**
+ * Build a graph URL with the new API.
+ *
+ * @param options - URL building options
+ * @returns URL path with query string
+ *
+ * @example
+ * buildGraphUrlNew({ kind: 'metrics' })
+ * // '/graph?kind=metrics'
+ *
+ * buildGraphUrlNew({ resources: ['orders', 'revenue'] })
+ * // '/graph?resource=orders&resource=revenue'
+ *
+ * buildGraphUrlNew({ resources: ['model:orders'], expanded: 'rill.runtime.v1.Model:orders' })
+ * // '/graph?resource=model:orders&expanded=rill.runtime.v1.Model:orders'
+ */
+export function buildGraphUrlNew(options: {
+  kind?: KindToken | null;
+  resources?: string[];
+  expanded?: string | null;
+  basePath?: string;
+}): string {
+  const { kind, resources = [], expanded, basePath = "/graph" } = options;
+
+  const params = new URLSearchParams();
+
+  if (kind) {
+    params.set(URL_PARAMS.KIND, kind);
+  } else {
+    for (const resource of resources) {
+      if (resource && resource.trim()) {
+        params.append(URL_PARAMS.RESOURCE, resource.trim());
+      }
+    }
+  }
+
+  if (expanded) {
+    params.set(URL_PARAMS.EXPANDED, expanded);
+  }
+
+  const queryString = params.toString();
+  return queryString ? `${basePath}?${queryString}` : basePath;
 }

@@ -26,21 +26,19 @@ describe("navigation-utils", () => {
   });
 
   describe("navigateToResourceGraph", () => {
-    it("should navigate to graph page with single seed", () => {
+    it("should navigate to graph page with single resource", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders");
 
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Aorders");
     });
 
-    it("should navigate with multiple seeds", () => {
+    it("should navigate with multiple resources", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders", [
-        "rill.runtime.v1.Source:users",
+        "source:users",
       ]);
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders&seed=rill.runtime.v1.Source%3Ausers",
+        "/graph?resource=model%3Aorders&resource=source%3Ausers",
       );
     });
 
@@ -48,110 +46,112 @@ describe("navigation-utils", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "my-model_v2");
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Amy-model_v2",
+        "/graph?resource=model%3Amy-model_v2",
       );
     });
 
     it("should handle names with spaces", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "my model");
 
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Amy%20model",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Amy+model");
     });
 
-    it("should not navigate when kind is empty", () => {
+    it("should navigate with name only when kind is not recognized", () => {
+      navigateToResourceGraph("unknown", "orders");
+
+      // When kind is not recognized, just use the name
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=orders");
+    });
+
+    it("should navigate with name only when kind is empty", () => {
       navigateToResourceGraph("", "orders");
 
-      expect(gotoMock).not.toHaveBeenCalled();
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=orders");
     });
 
-    it("should not navigate when name is empty", () => {
+    it("should navigate with kind only when name is empty but kind is recognized", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "");
 
-      expect(gotoMock).not.toHaveBeenCalled();
+      // model: with empty name - still creates URL
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3A");
     });
 
-    it("should handle empty additional seeds array", () => {
+    it("should handle empty additional resources array", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders", []);
 
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Aorders");
     });
 
-    it("should handle undefined additional seeds", () => {
+    it("should handle undefined additional resources", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders", undefined);
 
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Aorders");
     });
 
     it("should navigate for different resource kinds", () => {
       navigateToResourceGraph("rill.runtime.v1.Source", "raw_data");
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Source%3Araw_data",
+        "/graph?resource=source%3Araw_data",
       );
 
       gotoMock.mockClear();
 
       navigateToResourceGraph("rill.runtime.v1.MetricsView", "revenue");
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.MetricsView%3Arevenue",
+        "/graph?resource=metrics%3Arevenue",
       );
 
       gotoMock.mockClear();
 
       navigateToResourceGraph("rill.runtime.v1.Explore", "dashboard");
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Explore%3Adashboard",
+        "/graph?resource=dashboard%3Adashboard",
       );
     });
   });
 
   describe("buildGraphUrl", () => {
-    it("should build URL with single seed", () => {
+    it("should build URL with single resource", () => {
       const url = buildGraphUrl([
         { kind: "rill.runtime.v1.Model", name: "orders" },
       ]);
 
-      expect(url).toBe("/graph?seed=rill.runtime.v1.Model%3Aorders");
+      expect(url).toBe("/graph?resource=model%3Aorders");
     });
 
-    it("should build URL with multiple seeds", () => {
+    it("should build URL with multiple resources", () => {
       const url = buildGraphUrl([
         { kind: "rill.runtime.v1.Model", name: "orders" },
         { kind: "rill.runtime.v1.Source", name: "users" },
       ]);
 
       expect(url).toBe(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders&seed=rill.runtime.v1.Source%3Ausers",
+        "/graph?resource=model%3Aorders&resource=source%3Ausers",
       );
     });
 
-    it("should handle empty seeds array", () => {
+    it("should handle empty resources array", () => {
       const url = buildGraphUrl([]);
 
-      expect(url).toBe("/graph?");
+      expect(url).toBe("/graph");
     });
 
-    it("should filter out invalid seeds with empty kind", () => {
+    it("should include resource with unknown kind as name only", () => {
       const url = buildGraphUrl([
         { kind: "rill.runtime.v1.Model", name: "orders" },
         { kind: "", name: "invalid" },
       ]);
 
-      expect(url).toBe("/graph?seed=rill.runtime.v1.Model%3Aorders");
+      expect(url).toBe("/graph?resource=model%3Aorders&resource=invalid");
     });
 
-    it("should filter out invalid seeds with empty name", () => {
+    it("should include resource with empty name", () => {
       const url = buildGraphUrl([
         { kind: "rill.runtime.v1.Model", name: "orders" },
         { kind: "rill.runtime.v1.Model", name: "" },
       ]);
 
-      expect(url).toBe("/graph?seed=rill.runtime.v1.Model%3Aorders");
+      expect(url).toBe("/graph?resource=model%3Aorders&resource=model%3A");
     });
 
     it("should properly encode special characters", () => {
@@ -159,7 +159,7 @@ describe("navigation-utils", () => {
         { kind: "rill.runtime.v1.Model", name: "my-model_v2" },
       ]);
 
-      expect(url).toBe("/graph?seed=rill.runtime.v1.Model%3Amy-model_v2");
+      expect(url).toBe("/graph?resource=model%3Amy-model_v2");
     });
 
     it("should handle names with spaces", () => {
@@ -167,7 +167,7 @@ describe("navigation-utils", () => {
         { kind: "rill.runtime.v1.Model", name: "my model" },
       ]);
 
-      expect(url).toBe("/graph?seed=rill.runtime.v1.Model%3Amy%20model");
+      expect(url).toBe("/graph?resource=model%3Amy+model");
     });
   });
 
@@ -203,9 +203,7 @@ describe("navigation-utils", () => {
 
       handler();
 
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Aorders");
     });
 
     it("should warn when resource name is missing", () => {
@@ -333,7 +331,7 @@ describe("navigation-utils", () => {
       handler();
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Source%3Araw_data",
+        "/graph?resource=source%3Araw_data",
       );
     });
 
@@ -354,9 +352,7 @@ describe("navigation-utils", () => {
       );
 
       handler();
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Aorders");
 
       gotoMock.mockClear();
 
@@ -371,9 +367,7 @@ describe("navigation-utils", () => {
       };
 
       handler();
-      expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Ausers",
-      );
+      expect(gotoMock).toHaveBeenCalledWith("/graph?resource=model%3Ausers");
     });
 
     it("should handle resource names with special characters", () => {
@@ -395,7 +389,7 @@ describe("navigation-utils", () => {
       handler();
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Amy-model_v2",
+        "/graph?resource=model%3Amy-model_v2",
       );
     });
   });

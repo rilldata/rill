@@ -330,7 +330,7 @@
             padding: fitViewPadding,
             minZoom: fitViewMinZoom,
             maxZoom: fitViewMaxZoom,
-            duration: 200,
+            duration: 0,
           }}
           preventScrolling={false}
           zoomOnScroll={false}

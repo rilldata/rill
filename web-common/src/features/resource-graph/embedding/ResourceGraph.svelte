@@ -418,10 +418,20 @@
       </div>
     </slot>
   {:else}
-    <div class="resource-graph-grid" style:--grid-columns={gridColumns}>
+    {@const hasExpandedItem = currentExpandedId !== null}
+    <div
+      class="resource-graph-grid"
+      class:has-expanded={hasExpandedItem}
+      style:--grid-columns={gridColumns}
+    >
       {#each visibleResourceGroups as group, index (group.id)}
         {@const isExpanded = currentExpandedId === group.id}
-        <div class="grid-item" class:expanded={isExpanded}>
+        {@const isHidden = hasExpandedItem && !isExpanded}
+        <div
+          class="grid-item"
+          class:expanded={isExpanded}
+          class:hidden={isHidden}
+        >
           {#if isExpanded && overlayMode !== "inline"}
             <!-- Fullscreen or modal overlay -->
             <GraphOverlay
@@ -509,6 +519,10 @@
 
   .grid-item {
     @apply relative;
+  }
+
+  .grid-item.hidden {
+    display: none;
   }
 
   .grid-item.expanded {
