@@ -790,31 +790,3 @@ func resourceNamesToPB(resources []database.ResourceName) []*adminv1.ResourceNam
 	}
 	return rs
 }
-
-func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {
-	if len(resources) == 0 {
-		return nil
-	}
-
-	seen := make(map[string]struct{}, len(resources))
-	res := make([]database.ResourceName, 0, len(resources))
-	for _, r := range resources {
-		if r == nil || r.Type == "" || r.Name == "" {
-			continue
-		}
-		key := normalizeResourceKey(r.Type, r.Name)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		res = append(res, database.ResourceName{Type: r.Type, Name: r.Name})
-	}
-	if len(res) == 0 {
-		return nil
-	}
-	return res
-}
-
-func normalizeResourceKey(typ, name string) string {
-	return strings.ToLower(typ) + "|" + strings.ToLower(name)
-}

@@ -1107,9 +1107,14 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProjectMemberUserRequest) (*adminv1.AddProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.role", req.Role),
+		attribute.Bool("args.restrict_resources", req.RestrictResources),
 	)
+	if len(req.Resources) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -1364,9 +1369,16 @@ func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.Remov
 func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetProjectMemberUserRoleRequest) (*adminv1.SetProjectMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.role", req.Role),
+		attribute.Bool("args.restrict_resources", req.RestrictResources),
 	)
+	if len(req.Resources) > 0 {
+		observability.AddRequestAttributes(ctx,
+			attribute.StringSlice("args.resources", resourcesString(req.Resources)),
+		)
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -2311,4 +2323,40 @@ func valOrDefault[T any](ptr *T, def T) T {
 		return *ptr
 	}
 	return def
+}
+
+func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {
+	if len(resources) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(resources))
+	res := make([]database.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		if r == nil || r.Type == "" || r.Name == "" {
+			continue
+		}
+		key := normalizeResourceKey(r.Type, r.Name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		res = append(res, database.ResourceName{Type: r.Type, Name: r.Name})
+	}
+	if len(res) == 0 {
+		return nil
+	}
+	return res
+}
+
+func normalizeResourceKey(typ, name string) string {
+	return strings.ToLower(typ) + "|" + strings.ToLower(name)
+}
+
+func resourcesString(res []*adminv1.ResourceName) []string {
+	var resources []string
+	for _, r := range res {
+		resources = append(resources, fmt.Sprintf("%s:%s", r.Type, r.Name))
+	}
+	return resources
 }

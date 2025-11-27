@@ -421,7 +421,11 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 		attribute.String("args.project", req.Project),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
+		attribute.Bool("args.restrict_resources", req.RestrictResources),
 	)
+	if len(req.Resources) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -472,7 +476,11 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		attribute.String("args.project", req.Project),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
+		attribute.Bool("args.restrict_resources", req.RestrictResources),
 	)
+	if len(req.Resources) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
