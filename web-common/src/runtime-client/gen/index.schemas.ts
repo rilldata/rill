@@ -1207,6 +1207,10 @@ export interface V1ListTablesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListToolsResponse {
+  tools?: V1Tool[];
+}
+
 export interface V1Log {
   level?: V1LogLevel;
   time?: string;
@@ -2423,6 +2427,17 @@ export interface V1TimeSeriesValue {
   ts?: string;
   bin?: number;
   records?: V1TimeSeriesValueRecords;
+}
+
+export type V1ToolMeta = { [key: string]: unknown };
+
+export interface V1Tool {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  meta?: V1ToolMeta;
+  inputSchema?: string;
+  outputSchema?: string;
 }
 
 export type V1ToolCallInput = { [key: string]: unknown };
