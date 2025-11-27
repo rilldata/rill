@@ -22,6 +22,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const DevelopMetricsViewName = "develop_metrics_view"
+
 type DevelopMetricsView struct {
 	Runtime *runtime.Runtime
 }
@@ -39,9 +41,13 @@ type DevelopMetricsViewResult struct {
 
 func (t *DevelopMetricsView) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "develop_metrics_view",
+		Name:        DevelopMetricsViewName,
 		Title:       "Develop Metrics View",
 		Description: "Agent that develops a single Rill metrics view.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Developing metrics view...",
+			"openai/toolInvocation/invoked":  "Developed metrics view",
+		},
 	}
 }
 

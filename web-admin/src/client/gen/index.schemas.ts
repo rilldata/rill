@@ -1412,10 +1412,15 @@ export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
 
+export type V1ToolMeta = { [key: string]: unknown };
+
 export interface V1Tool {
   name?: string;
+  displayName?: string;
   description?: string;
+  meta?: V1ToolMeta;
   inputSchema?: string;
+  outputSchema?: string;
 }
 
 export type V1ToolCallInput = { [key: string]: unknown };

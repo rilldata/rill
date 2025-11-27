@@ -44,7 +44,10 @@
     try {
       if (beforeSend) await beforeSend();
       await currentConversation.sendMessage(
-        { ...$context, ...additionalContext },
+        {
+          analystAgentContext: $context,
+          ...additionalContext,
+        },
         {
           onStreamStart: () => editor.commands.setContent(""),
         },

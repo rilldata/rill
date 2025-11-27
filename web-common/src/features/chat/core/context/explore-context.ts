@@ -2,15 +2,15 @@ import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/na
 import { useStableExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
+import type { V1AnalystAgentContext } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 
 /**
  * Creates a store that contains the active explore context sent to the Complete API.
- * It returns the RuntimeServiceCompleteBody that is passed to the API directly.
+ * It returns the V1AnalystAgentContext that is passed to the API.
  */
 export function getActiveExploreContext(): Readable<
-  Partial<RuntimeServiceCompleteBody>
+  Partial<V1AnalystAgentContext>
 > {
   const exploreNameStore = getExploreNameStore();
 
@@ -21,7 +21,7 @@ export function getActiveExploreContext(): Readable<
   return derived(
     [exploreNameStore, exploreState, timeControlsStore],
     ([exploreName, exploreState, timeControlsStore]) => {
-      const context: RuntimeServiceCompleteBody = {
+      const context: V1AnalystAgentContext = {
         explore: exploreName,
       };
 

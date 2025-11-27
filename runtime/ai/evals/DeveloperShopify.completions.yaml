@@ -31,7 +31,7 @@
   response:
     - role: assistant
       content_type: tool_call
-      id: call_ydJ0JDUW72GBCBYDQAAsm5eR
+      id: call_KHNzzaqgy04vPMCxptWhyXFx
       tool_name: list_files
       content: '{}'
 - index: 3
@@ -44,19 +44,19 @@
       content: Develop a dashboard of Shopify orders
     - role: assistant
       content_type: tool_call
-      id: fad64be5ad564d39
+      id: 28a42ba8061a43ca
       tool_name: list_files
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: fad64be5ad564d39
+      id: 28a42ba8061a43ca
       content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
   response:
     - role: assistant
       content_type: tool_call
-      id: call_HeDmg6nXvP6N0nKZZTFxRuZY
+      id: call_1lfujW2rkKZIvoMfyF6aEvpz
       tool_name: develop_model
-      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically present in Shopify order exports."}'
+      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, order_date, customer_id, total_amount, currency, order_status, and any other relevant order-level fields. If possible, infer appropriate data types and include basic transformations to ensure clean and usable data."}'
 - index: 4
   input:
     - role: system
@@ -97,7 +97,7 @@
     - role: user
       content_type: text
       content: |-
-        Task: Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically present in Shopify order exports.
+        Task: Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, order_date, customer_id, total_amount, currency, order_status, and any other relevant order-level fields. If possible, infer appropriate data types and include basic transformations to ensure clean and usable data.
 
         Output path: /models/shopify_orders.yaml
 
@@ -105,7 +105,7 @@
   response:
     - role: assistant
       content_type: tool_call
-      id: call_8K7L5Rdlh3D4xQzkeoZqW67V
+      id: call_2edXdsK6zE3P4eX14oMEMsl3
       tool_name: read_file
       content: '{"path":"/models/shopify_orders.yaml"}'
 - index: 5
@@ -148,27 +148,27 @@
     - role: user
       content_type: text
       content: |-
-        Task: Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically present in Shopify order exports.
+        Task: Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, order_date, customer_id, total_amount, currency, order_status, and any other relevant order-level fields. If possible, infer appropriate data types and include basic transformations to ensure clean and usable data.
 
         Output path: /models/shopify_orders.yaml
 
         SQL dialect: duckdb
     - role: assistant
       content_type: tool_call
-      id: 1fe95c2b2a704444
+      id: b733fedf0ede4803
       tool_name: read_file
       content: '{"path":"/models/shopify_orders.yaml"}'
     - role: tool
       content_type: tool_response
-      id: 1fe95c2b2a704444
+      id: b733fedf0ede4803
       is_error: true
       content: open /models/shopify_orders.yaml no such file or directory
   response:
     - role: assistant
       content_type: tool_call
-      id: call_xWdGAp08T0HVOFt4JickYZ7I
+      id: call_HgTNspPOlvwdCR7JFL8qW9LW
       tool_name: write_file
-      content: '{"contents":"type: model\nmaterialize: true\n\nsql: |\n  SELECT\n    CAST(order_id AS VARCHAR) AS order_id,\n    CAST(customer_id AS VARCHAR) AS customer_id,\n    CAST(order_number AS VARCHAR) AS order_number,\n    CAST(order_date AS TIMESTAMP) AS order_date,\n    CAST(total_amount AS DOUBLE) AS total_amount,\n    CAST(currency AS VARCHAR) AS currency,\n    CAST(order_status AS VARCHAR) AS order_status,\n    CAST(financial_status AS VARCHAR) AS financial_status,\n    CAST(fulfillment_status AS VARCHAR) AS fulfillment_status,\n    CAST(email AS VARCHAR) AS email,\n    CAST(phone AS VARCHAR) AS phone,\n    CAST(shipping_address AS VARCHAR) AS shipping_address,\n    CAST(billing_address AS VARCHAR) AS billing_address,\n    CAST(created_at AS TIMESTAMP) AS created_at,\n    CAST(updated_at AS TIMESTAMP) AS updated_at\n  FROM (\n    VALUES\n      (''1001'', ''501'', ''20001'', ''2024-06-01T10:15:00Z'', 120.50, ''USD'', ''paid'', ''paid'', ''fulfilled'', ''alice@example.com'', ''+1234567890'', ''123 Main St, NY'', ''123 Main St, NY'', ''2024-06-01T10:10:00Z'', ''2024-06-01T10:20:00Z''),\n      (''1002'', ''502'', ''20002'', ''2024-06-02T11:20:00Z'', 75.00, ''USD'', ''pending'', ''pending'', ''unfulfilled'', ''bob@example.com'', ''+1987654321'', ''456 Elm St, CA'', ''456 Elm St, CA'', ''2024-06-02T11:15:00Z'', ''2024-06-02T11:25:00Z''),\n      (''1003'', ''503'', ''20003'', ''2024-06-03T12:30:00Z'', 200.00, ''EUR'', ''paid'', ''paid'', ''fulfilled'', ''carol@example.com'', ''+1122334455'', ''789 Oak St, TX'', ''789 Oak St, TX'', ''2024-06-03T12:25:00Z'', ''2024-06-03T12:35:00Z''),\n      (''1004'', ''504'', ''20004'', ''2024-06-04T13:45:00Z'', 50.00, ''USD'', ''cancelled'', ''voided'', ''unfulfilled'', ''dan@example.com'', ''+1222333444'', ''321 Pine St, FL'', ''321 Pine St, FL'', ''2024-06-04T13:40:00Z'', ''2024-06-04T13:50:00Z''),\n      (''1005'', ''505'', ''20005'', ''2024-06-05T14:55:00Z'', 300.00, ''GBP'', ''paid'', ''paid'', ''fulfilled'', ''eve@example.com'', ''+1444555666'', ''654 Maple St, WA'', ''654 Maple St, WA'', ''2024-06-05T14:50:00Z'', ''2024-06-05T15:00:00Z'')\n      -- Add more mock rows as needed\n      \n  ) AS t(order_id, customer_id, order_number, order_date, total_amount, currency, order_status, financial_status, fulfillment_status, email, phone, shipping_address, billing_address, created_at, updated_at)\n","path":"/models/shopify_orders.yaml"}'
+      content: '{"contents":"type: model\nmaterialize: true\n\nsql: |\n  SELECT\n    CAST(order_id AS VARCHAR) AS order_id,\n    CAST(order_date AS TIMESTAMP) AS order_date,\n    CAST(customer_id AS VARCHAR) AS customer_id,\n    CAST(total_amount AS DOUBLE) AS total_amount,\n    CAST(currency AS VARCHAR) AS currency,\n    CAST(order_status AS VARCHAR) AS order_status,\n    CAST(email AS VARCHAR) AS customer_email,\n    CAST(shipping_address AS VARCHAR) AS shipping_address,\n    CAST(billing_address AS VARCHAR) AS billing_address,\n    CAST(created_at AS TIMESTAMP) AS created_at,\n    CAST(updated_at AS TIMESTAMP) AS updated_at\n  FROM (\n    SELECT\n      ''1001'' AS order_id,\n      ''2024-06-01T10:15:00Z'' AS order_date,\n      ''CUST001'' AS customer_id,\n      120.50 AS total_amount,\n      ''USD'' AS currency,\n      ''paid'' AS order_status,\n      ''alice@example.com'' AS email,\n      ''123 Main St, Springfield'' AS shipping_address,\n      ''123 Main St, Springfield'' AS billing_address,\n      ''2024-06-01T10:10:00Z'' AS created_at,\n      ''2024-06-01T10:20:00Z'' AS updated_at\n    UNION ALL\n    SELECT\n      ''1002'',\n      ''2024-06-02T14:30:00Z'',\n      ''CUST002'',\n      75.00,\n      ''USD'',\n      ''pending'',\n      ''bob@example.com'',\n      ''456 Oak Ave, Metropolis'',\n      ''789 Pine Rd, Metropolis'',\n      ''2024-06-02T14:25:00Z'',\n      ''2024-06-02T14:35:00Z''\n    UNION ALL\n    SELECT\n      ''1003'',\n      ''2024-06-03T09:00:00Z'',\n      ''CUST003'',\n      200.00,\n      ''EUR'',\n      ''fulfilled'',\n      ''carol@example.com'',\n      ''321 Maple St, Gotham'',\n      ''321 Maple St, Gotham'',\n      ''2024-06-03T08:55:00Z'',\n      ''2024-06-03T09:05:00Z''\n    UNION ALL\n    SELECT\n      ''1004'',\n      ''2024-06-04T16:45:00Z'',\n      ''CUST004'',\n      50.25,\n      ''GBP'',\n      ''cancelled'',\n      ''dave@example.com'',\n      ''654 Elm St, Star City'',\n      ''654 Elm St, Star City'',\n      ''2024-06-04T16:40:00Z'',\n      ''2024-06-04T16:50:00Z''\n    UNION ALL\n    SELECT\n      ''1005'',\n      ''2024-06-05T12:20:00Z'',\n      ''CUST005'',\n      300.75,\n      ''USD'',\n      ''refunded'',\n      ''eve@example.com'',\n      ''987 Cedar St, Central City'',\n      ''987 Cedar St, Central City'',\n      ''2024-06-05T12:15:00Z'',\n      ''2024-06-05T12:25:00Z''\n  )","path":"/models/shopify_orders.yaml"}'
 - index: 6
   input:
     - role: system
@@ -209,34 +209,34 @@
     - role: user
       content_type: text
       content: |-
-        Task: Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically present in Shopify order exports.
+        Task: Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, order_date, customer_id, total_amount, currency, order_status, and any other relevant order-level fields. If possible, infer appropriate data types and include basic transformations to ensure clean and usable data.
 
         Output path: /models/shopify_orders.yaml
 
         SQL dialect: duckdb
     - role: assistant
       content_type: tool_call
-      id: 1fe95c2b2a704444
+      id: b733fedf0ede4803
       tool_name: read_file
       content: '{"path":"/models/shopify_orders.yaml"}'
     - role: tool
       content_type: tool_response
-      id: 1fe95c2b2a704444
+      id: b733fedf0ede4803
       is_error: true
       content: open /models/shopify_orders.yaml no such file or directory
     - role: assistant
       content_type: tool_call
-      id: 49fb3595cfa84db1
+      id: 3f80df31c49343d4
       tool_name: write_file
-      content: '{"contents":"type: model\nmaterialize: true\n\nsql: |\n  SELECT\n    CAST(order_id AS VARCHAR) AS order_id,\n    CAST(customer_id AS VARCHAR) AS customer_id,\n    CAST(order_number AS VARCHAR) AS order_number,\n    CAST(order_date AS TIMESTAMP) AS order_date,\n    CAST(total_amount AS DOUBLE) AS total_amount,\n    CAST(currency AS VARCHAR) AS currency,\n    CAST(order_status AS VARCHAR) AS order_status,\n    CAST(financial_status AS VARCHAR) AS financial_status,\n    CAST(fulfillment_status AS VARCHAR) AS fulfillment_status,\n    CAST(email AS VARCHAR) AS email,\n    CAST(phone AS VARCHAR) AS phone,\n    CAST(shipping_address AS VARCHAR) AS shipping_address,\n    CAST(billing_address AS VARCHAR) AS billing_address,\n    CAST(created_at AS TIMESTAMP) AS created_at,\n    CAST(updated_at AS TIMESTAMP) AS updated_at\n  FROM (\n    VALUES\n      (''1001'', ''501'', ''20001'', ''2024-06-01T10:15:00Z'', 120.50, ''USD'', ''paid'', ''paid'', ''fulfilled'', ''alice@example.com'', ''+1234567890'', ''123 Main St, NY'', ''123 Main St, NY'', ''2024-06-01T10:10:00Z'', ''2024-06-01T10:20:00Z''),\n      (''1002'', ''502'', ''20002'', ''2024-06-02T11:20:00Z'', 75.00, ''USD'', ''pending'', ''pending'', ''unfulfilled'', ''bob@example.com'', ''+1987654321'', ''456 Elm St, CA'', ''456 Elm St, CA'', ''2024-06-02T11:15:00Z'', ''2024-06-02T11:25:00Z''),\n      (''1003'', ''503'', ''20003'', ''2024-06-03T12:30:00Z'', 200.00, ''EUR'', ''paid'', ''paid'', ''fulfilled'', ''carol@example.com'', ''+1122334455'', ''789 Oak St, TX'', ''789 Oak St, TX'', ''2024-06-03T12:25:00Z'', ''2024-06-03T12:35:00Z''),\n      (''1004'', ''504'', ''20004'', ''2024-06-04T13:45:00Z'', 50.00, ''USD'', ''cancelled'', ''voided'', ''unfulfilled'', ''dan@example.com'', ''+1222333444'', ''321 Pine St, FL'', ''321 Pine St, FL'', ''2024-06-04T13:40:00Z'', ''2024-06-04T13:50:00Z''),\n      (''1005'', ''505'', ''20005'', ''2024-06-05T14:55:00Z'', 300.00, ''GBP'', ''paid'', ''paid'', ''fulfilled'', ''eve@example.com'', ''+1444555666'', ''654 Maple St, WA'', ''654 Maple St, WA'', ''2024-06-05T14:50:00Z'', ''2024-06-05T15:00:00Z'')\n      -- Add more mock rows as needed\n      \n  ) AS t(order_id, customer_id, order_number, order_date, total_amount, currency, order_status, financial_status, fulfillment_status, email, phone, shipping_address, billing_address, created_at, updated_at)\n","path":"/models/shopify_orders.yaml"}'
+      content: '{"contents":"type: model\nmaterialize: true\n\nsql: |\n  SELECT\n    CAST(order_id AS VARCHAR) AS order_id,\n    CAST(order_date AS TIMESTAMP) AS order_date,\n    CAST(customer_id AS VARCHAR) AS customer_id,\n    CAST(total_amount AS DOUBLE) AS total_amount,\n    CAST(currency AS VARCHAR) AS currency,\n    CAST(order_status AS VARCHAR) AS order_status,\n    CAST(email AS VARCHAR) AS customer_email,\n    CAST(shipping_address AS VARCHAR) AS shipping_address,\n    CAST(billing_address AS VARCHAR) AS billing_address,\n    CAST(created_at AS TIMESTAMP) AS created_at,\n    CAST(updated_at AS TIMESTAMP) AS updated_at\n  FROM (\n    SELECT\n      ''1001'' AS order_id,\n      ''2024-06-01T10:15:00Z'' AS order_date,\n      ''CUST001'' AS customer_id,\n      120.50 AS total_amount,\n      ''USD'' AS currency,\n      ''paid'' AS order_status,\n      ''alice@example.com'' AS email,\n      ''123 Main St, Springfield'' AS shipping_address,\n      ''123 Main St, Springfield'' AS billing_address,\n      ''2024-06-01T10:10:00Z'' AS created_at,\n      ''2024-06-01T10:20:00Z'' AS updated_at\n    UNION ALL\n    SELECT\n      ''1002'',\n      ''2024-06-02T14:30:00Z'',\n      ''CUST002'',\n      75.00,\n      ''USD'',\n      ''pending'',\n      ''bob@example.com'',\n      ''456 Oak Ave, Metropolis'',\n      ''789 Pine Rd, Metropolis'',\n      ''2024-06-02T14:25:00Z'',\n      ''2024-06-02T14:35:00Z''\n    UNION ALL\n    SELECT\n      ''1003'',\n      ''2024-06-03T09:00:00Z'',\n      ''CUST003'',\n      200.00,\n      ''EUR'',\n      ''fulfilled'',\n      ''carol@example.com'',\n      ''321 Maple St, Gotham'',\n      ''321 Maple St, Gotham'',\n      ''2024-06-03T08:55:00Z'',\n      ''2024-06-03T09:05:00Z''\n    UNION ALL\n    SELECT\n      ''1004'',\n      ''2024-06-04T16:45:00Z'',\n      ''CUST004'',\n      50.25,\n      ''GBP'',\n      ''cancelled'',\n      ''dave@example.com'',\n      ''654 Elm St, Star City'',\n      ''654 Elm St, Star City'',\n      ''2024-06-04T16:40:00Z'',\n      ''2024-06-04T16:50:00Z''\n    UNION ALL\n    SELECT\n      ''1005'',\n      ''2024-06-05T12:20:00Z'',\n      ''CUST005'',\n      300.75,\n      ''USD'',\n      ''refunded'',\n      ''eve@example.com'',\n      ''987 Cedar St, Central City'',\n      ''987 Cedar St, Central City'',\n      ''2024-06-05T12:15:00Z'',\n      ''2024-06-05T12:25:00Z''\n  )","path":"/models/shopify_orders.yaml"}'
     - role: tool
       content_type: tool_response
-      id: 49fb3595cfa84db1
+      id: 3f80df31c49343d4
       content: '{"resources":[{"kind":"rill.runtime.v1.Model","name":"shopify_orders","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]}'
   response:
     - role: assistant
       content_type: text
-      content: The Shopify orders model has been created at /models/shopify_orders.yaml. It includes fields such as order_id, customer_id, order_number, order_date, total_amount, currency, order_status, financial_status, fulfillment_status, email, phone, shipping_address, billing_address, created_at, and updated_at, with realistic mock data representing typical Shopify order exports. The model is ready for use in your Rill project.
+      content: The Shopify orders model has been created at /models/shopify_orders.yaml. It includes fields such as order_id, order_date, customer_id, total_amount, currency, order_status, customer_email, shipping_address, billing_address, created_at, and updated_at. Data types are inferred and basic transformations are applied for clean, usable data. The model uses mock data to represent typical Shopify order records.
 - index: 7
   input:
     - role: system
@@ -247,26 +247,26 @@
       content: Develop a dashboard of Shopify orders
     - role: assistant
       content_type: tool_call
-      id: fad64be5ad564d39
+      id: 28a42ba8061a43ca
       tool_name: list_files
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: fad64be5ad564d39
+      id: 28a42ba8061a43ca
       content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
     - role: assistant
       content_type: tool_call
-      id: f706b024f12447ed
+      id: dadc2c7cce1144f8
       tool_name: develop_model
-      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically present in Shopify order exports."}'
+      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, order_date, customer_id, total_amount, currency, order_status, and any other relevant order-level fields. If possible, infer appropriate data types and include basic transformations to ensure clean and usable data."}'
     - role: tool
       content_type: tool_response
-      id: f706b024f12447ed
+      id: dadc2c7cce1144f8
       content: '{"model_name":"shopify_orders"}'
   response:
     - role: assistant
       content_type: tool_call
-      id: call_5Z5kPCOsZzhGZUbPBaFrj5FL
+      id: call_dCm8ta7UDRg1RxEVOxJnPePp
       tool_name: develop_metrics_view
       content: '{"model":"shopify_orders","path":"metrics/shopify_orders.yaml"}'
 - index: 8
@@ -291,16 +291,12 @@
       content: |2
         Give me up to 10 suggested metrics using the "duckdb" SQL dialect based on the table named "shopify_orders", which has the following schema:
         - column=order_id, type=CODE_STRING
-        - column=customer_id, type=CODE_STRING
-        - column=order_number, type=CODE_STRING
         - column=order_date, type=CODE_TIMESTAMP
+        - column=customer_id, type=CODE_STRING
         - column=total_amount, type=CODE_FLOAT64
         - column=currency, type=CODE_STRING
         - column=order_status, type=CODE_STRING
-        - column=financial_status, type=CODE_STRING
-        - column=fulfillment_status, type=CODE_STRING
-        - column=email, type=CODE_STRING
-        - column=phone, type=CODE_STRING
+        - column=customer_email, type=CODE_STRING
         - column=shipping_address, type=CODE_STRING
         - column=billing_address, type=CODE_STRING
         - column=created_at, type=CODE_TIMESTAMP
@@ -314,52 +310,52 @@
           - name: total_orders
             display_name: Total Orders
             expression: COUNT(order_id)
-            description: The total number of orders placed in the Shopify store.
+            description: Total number of orders placed.
 
-          - name: unique_customers
-            display_name: Unique Customers
-            expression: COUNT(DISTINCT customer_id)
-            description: The number of distinct customers who have placed orders.
-
-          - name: total_sales_amount
-            display_name: Total Sales Amount
+          - name: total_revenue
+            display_name: Total Revenue
             expression: SUM(total_amount)
-            description: The total value of all orders.
+            description: Sum of the total amount from all orders.
 
           - name: average_order_value
             display_name: Average Order Value
             expression: AVG(total_amount)
-            description: The average value of an order.
-
-          - name: max_order_value
-            display_name: Maximum Order Value
-            expression: MAX(total_amount)
-            description: The highest value among all orders.
+            description: Average value of an order.
 
           - name: min_order_value
             display_name: Minimum Order Value
             expression: MIN(total_amount)
-            description: The lowest value among all orders.
+            description: Minimum order amount across all orders.
 
-          - name: total_currencies_used
-            display_name: Total Currencies Used
-            expression: COUNT(DISTINCT currency)
-            description: The number of different currencies used in orders.
+          - name: max_order_value
+            display_name: Maximum Order Value
+            expression: MAX(total_amount)
+            description: Maximum order amount across all orders.
 
-          - name: total_emails_provided
-            display_name: Total Emails Provided
-            expression: COUNT(email)
-            description: The total number of orders with an email address provided.
+          - name: unique_customers
+            display_name: Unique Customers
+            expression: COUNT(DISTINCT customer_id)
+            description: Number of unique customers who placed orders.
 
-          - name: total_phones_provided
-            display_name: Total Phones Provided
-            expression: COUNT(phone)
-            description: The total number of orders with a phone number provided.
+          - name: orders_with_shipping_address
+            display_name: Orders with Shipping Address
+            expression: COUNT(shipping_address)
+            description: Number of orders with a shipping address provided.
 
-          - name: total_fulfilled_orders
-            display_name: Total Fulfilled Orders
-            expression: COUNT(fulfillment_status)
-            description: The total number of orders with a fulfillment status recorded.
+          - name: orders_with_billing_address
+            display_name: Orders with Billing Address
+            expression: COUNT(billing_address)
+            description: Number of orders with a billing address provided.
+
+          - name: earliest_order_date
+            display_name: Earliest Order Date
+            expression: MIN(order_date)
+            description: The earliest order date in the dataset.
+
+          - name: latest_order_date
+            display_name: Latest Order Date
+            expression: MAX(order_date)
+            description: The most recent order date in the dataset.
 - index: 9
   input:
     - role: system
@@ -370,38 +366,38 @@
       content: Develop a dashboard of Shopify orders
     - role: assistant
       content_type: tool_call
-      id: fad64be5ad564d39
+      id: 28a42ba8061a43ca
       tool_name: list_files
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: fad64be5ad564d39
+      id: 28a42ba8061a43ca
       content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
     - role: assistant
       content_type: tool_call
-      id: f706b024f12447ed
+      id: dadc2c7cce1144f8
       tool_name: develop_model
-      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically present in Shopify order exports."}'
+      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest and represent order data from Shopify, including fields such as order_id, order_date, customer_id, total_amount, currency, order_status, and any other relevant order-level fields. If possible, infer appropriate data types and include basic transformations to ensure clean and usable data."}'
     - role: tool
       content_type: tool_response
-      id: f706b024f12447ed
+      id: dadc2c7cce1144f8
       content: '{"model_name":"shopify_orders"}'
     - role: assistant
       content_type: tool_call
-      id: 7d90ffabc1064bd1
+      id: 080d83421c674c88
       tool_name: develop_metrics_view
       content: '{"model":"shopify_orders","path":"metrics/shopify_orders.yaml"}'
     - role: tool
       content_type: tool_response
-      id: 7d90ffabc1064bd1
+      id: 080d83421c674c88
       content: '{"metrics_view_name":"shopify_orders"}'
   response:
     - role: assistant
       content_type: text
       content: |-
-        To develop a dashboard of Shopify orders, I am creating:
+        To develop a dashboard for Shopify orders, I am creating:
 
-        1. A new model (models/shopify_orders.yaml) that represents Shopify order data, including fields like order_id, customer_id, order_date, total_amount, currency, and order_status.
+        1. A new model (models/shopify_orders.yaml) that ingests and represents Shopify order data, including fields such as order_id, order_date, customer_id, total_amount, currency, and order_status.
         2. A new metrics view (metrics/shopify_orders.yaml) based on this model, which will serve as the dashboard for analyzing Shopify orders.
 
-        Once these resources are in place, Rill will automatically generate a visual dashboard for your Shopify orders. If you have specific metrics or dimensions you'd like to see, let me know and I can further customize the dashboard.
+        Once these resources are in place, Rill will automatically generate a visual dashboard for your Shopify orders data. If you have specific metrics or dimensions you'd like to see, let me know!
