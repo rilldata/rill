@@ -36,6 +36,7 @@ const (
 	QueryService_MetricsViewAnnotations_FullMethodName      = "/rill.runtime.v1.QueryService/MetricsViewAnnotations"
 	QueryService_ResolveCanvas_FullMethodName               = "/rill.runtime.v1.QueryService/ResolveCanvas"
 	QueryService_ResolveComponent_FullMethodName            = "/rill.runtime.v1.QueryService/ResolveComponent"
+	QueryService_ResolveTemplatedString_FullMethodName      = "/rill.runtime.v1.QueryService/ResolveTemplatedString"
 	QueryService_ColumnRollupInterval_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
 	QueryService_ColumnTopK_FullMethodName                  = "/rill.runtime.v1.QueryService/ColumnTopK"
 	QueryService_ColumnNullCount_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnNullCount"
@@ -122,6 +123,8 @@ type QueryServiceClient interface {
 	ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
 	ResolveComponent(ctx context.Context, in *ResolveComponentRequest, opts ...grpc.CallOption) (*ResolveComponentResponse, error)
+	// ResolveTemplatedString resolves a templated strings.
+	ResolveTemplatedString(ctx context.Context, in *ResolveTemplatedStringRequest, opts ...grpc.CallOption) (*ResolveTemplatedStringResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -338,6 +341,16 @@ func (c *queryServiceClient) ResolveComponent(ctx context.Context, in *ResolveCo
 	return out, nil
 }
 
+func (c *queryServiceClient) ResolveTemplatedString(ctx context.Context, in *ResolveTemplatedStringRequest, opts ...grpc.CallOption) (*ResolveTemplatedStringResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveTemplatedStringResponse)
+	err := c.cc.Invoke(ctx, QueryService_ResolveTemplatedString_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryServiceClient) ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ColumnRollupIntervalResponse)
@@ -539,6 +552,8 @@ type QueryServiceServer interface {
 	ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
 	ResolveComponent(context.Context, *ResolveComponentRequest) (*ResolveComponentResponse, error)
+	// ResolveTemplatedString resolves a templated strings.
+	ResolveTemplatedString(context.Context, *ResolveTemplatedStringRequest) (*ResolveTemplatedStringResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -626,6 +641,9 @@ func (UnimplementedQueryServiceServer) ResolveCanvas(context.Context, *ResolveCa
 }
 func (UnimplementedQueryServiceServer) ResolveComponent(context.Context, *ResolveComponentRequest) (*ResolveComponentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveComponent not implemented")
+}
+func (UnimplementedQueryServiceServer) ResolveTemplatedString(context.Context, *ResolveTemplatedStringRequest) (*ResolveTemplatedStringResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveTemplatedString not implemented")
 }
 func (UnimplementedQueryServiceServer) ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ColumnRollupInterval not implemented")
@@ -986,6 +1004,24 @@ func _QueryService_ResolveComponent_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_ResolveTemplatedString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveTemplatedStringRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).ResolveTemplatedString(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_ResolveTemplatedString_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).ResolveTemplatedString(ctx, req.(*ResolveTemplatedStringRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _QueryService_ColumnRollupInterval_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ColumnRollupIntervalRequest)
 	if err := dec(in); err != nil {
@@ -1290,6 +1326,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResolveComponent",
 			Handler:    _QueryService_ResolveComponent_Handler,
+		},
+		{
+			MethodName: "ResolveTemplatedString",
+			Handler:    _QueryService_ResolveTemplatedString_Handler,
 		},
 		{
 			MethodName: "ColumnRollupInterval",
