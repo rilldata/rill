@@ -15,9 +15,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/sorting";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  V1MetricsViewSpec,
-  V1Resource,
+import {
+  MetricsViewSpecDimensionType,
+  type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
@@ -125,7 +126,11 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
       metricsViewSpec?.measures?.slice(0, 1).map((m) => m.name as string) ?? []; // TODO: change to 3
 
     const dimensions =
-      metricsViewSpec?.dimensions
+      [...(metricsViewSpec?.dimensions || [])]
+        .filter(
+          (d) =>
+            d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+        )
         ?.slice(0, 3)
         .map((d) => d.name || (d.column as string)) ?? [];
 

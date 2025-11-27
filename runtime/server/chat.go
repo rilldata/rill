@@ -89,6 +89,27 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}, nil
 }
 
+func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest) (*runtimev1.ListToolsResponse, error) {
+	// Access check
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	// List all registered tools
+	var pbs []*aiv1.Tool
+	for _, tool := range s.ai.Tools {
+		pb, err := tool.AsProto()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert tool %q to proto: %w", tool.Name, err)
+		}
+		pbs = append(pbs, pb)
+	}
+	return &runtimev1.ListToolsResponse{
+		Tools: pbs,
+	}, nil
+}
+
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, resErr error) {
 	// Access check
@@ -144,7 +165,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 
 	// Make the call
 	var res *ai.RouterAgentResult
-	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+	msg, err := session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 		Prompt:           req.Prompt,
 		Agent:            req.Agent,
 		AnalystAgentArgs: analystAgentArgs,
@@ -255,7 +276,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 
 	// Make the call
 	var res *ai.RouterAgentResult
-	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+	_, err = session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 		Prompt:           req.Prompt,
 		Agent:            req.Agent,
 		AnalystAgentArgs: analystAgentArgs,

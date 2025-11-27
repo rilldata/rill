@@ -10879,6 +10879,244 @@ var _ interface {
 	ErrorName() string
 } = GetConversationResponseValidationError{}
 
+// Validate checks the field values on ListToolsRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ListToolsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListToolsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListToolsRequestMultiError, or nil if none found.
+func (m *ListToolsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListToolsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return ListToolsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListToolsRequestMultiError is an error wrapping multiple validation errors
+// returned by ListToolsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ListToolsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListToolsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListToolsRequestMultiError) AllErrors() []error { return m }
+
+// ListToolsRequestValidationError is the validation error returned by
+// ListToolsRequest.Validate if the designated constraints aren't met.
+type ListToolsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListToolsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListToolsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListToolsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListToolsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListToolsRequestValidationError) ErrorName() string { return "ListToolsRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ListToolsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListToolsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListToolsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListToolsRequestValidationError{}
+
+// Validate checks the field values on ListToolsResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ListToolsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListToolsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListToolsResponseMultiError, or nil if none found.
+func (m *ListToolsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListToolsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetTools() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListToolsResponseValidationError{
+						field:  fmt.Sprintf("Tools[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListToolsResponseValidationError{
+						field:  fmt.Sprintf("Tools[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListToolsResponseValidationError{
+					field:  fmt.Sprintf("Tools[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListToolsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListToolsResponseMultiError is an error wrapping multiple validation errors
+// returned by ListToolsResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ListToolsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListToolsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListToolsResponseMultiError) AllErrors() []error { return m }
+
+// ListToolsResponseValidationError is the validation error returned by
+// ListToolsResponse.Validate if the designated constraints aren't met.
+type ListToolsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListToolsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListToolsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListToolsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListToolsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListToolsResponseValidationError) ErrorName() string {
+	return "ListToolsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListToolsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListToolsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListToolsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListToolsResponseValidationError{}
+
 // Validate checks the field values on CompleteRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.

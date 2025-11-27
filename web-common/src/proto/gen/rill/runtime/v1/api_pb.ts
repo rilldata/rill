@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
-import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 
 /**
@@ -4499,6 +4499,84 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 
   static equals(a: GetConversationResponse | PlainMessage<GetConversationResponse> | undefined, b: GetConversationResponse | PlainMessage<GetConversationResponse> | undefined): boolean {
     return proto3.util.equals(GetConversationResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListTools
+ *
+ * @generated from message rill.runtime.v1.ListToolsRequest
+ */
+export class ListToolsRequest extends Message$1<ListToolsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ListToolsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListToolsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListToolsRequest | PlainMessage<ListToolsRequest> | undefined, b: ListToolsRequest | PlainMessage<ListToolsRequest> | undefined): boolean {
+    return proto3.util.equals(ListToolsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListTools
+ *
+ * @generated from message rill.runtime.v1.ListToolsResponse
+ */
+export class ListToolsResponse extends Message$1<ListToolsResponse> {
+  /**
+   * @generated from field: repeated rill.ai.v1.Tool tools = 1;
+   */
+  tools: Tool[] = [];
+
+  constructor(data?: PartialMessage<ListToolsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListToolsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tools", kind: "message", T: Tool, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListToolsResponse | PlainMessage<ListToolsResponse> | undefined, b: ListToolsResponse | PlainMessage<ListToolsResponse> | undefined): boolean {
+    return proto3.util.equals(ListToolsResponse, a, b);
   }
 }
 

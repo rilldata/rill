@@ -241,6 +241,12 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+  // Note that it covers all registered tools, but the current user may not have access to all of them.
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/tools"};
+  }
+
   // Complete runs a language model completion (LLM chat) using the configured AI connector.
   rpc Complete(CompleteRequest) returns (CompleteResponse) {
     option (google.api.http) = {
@@ -951,6 +957,16 @@ message GetConversationRequest {
 message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.ListTools
+message ListToolsRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.ListTools
+message ListToolsResponse {
+  repeated rill.ai.v1.Tool tools = 1;
 }
 
 // Request message for RuntimeService.Complete
