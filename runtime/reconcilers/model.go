@@ -1750,7 +1750,7 @@ func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Re
 	// Manual mode requires a manual full or incremental trigger to run when the model spec changes.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL:
 		// If it's the first run or the spec changed, we block until we observe a manual trigger.
-		if specChanged {
+		if specChanged || !prevResultExists {
 			if !model.Spec.Trigger && !model.Spec.TriggerFull && !model.Spec.TriggerPartitions {
 				if !prevResultExists {
 					return nil, fmt.Errorf("execution paused because the model has no prior state and the 'change_mode' is 'manual': you must manually trigger either an incremental or full refresh")
