@@ -971,9 +971,19 @@ message ListToolsResponse {
 
 // Request message for RuntimeService.Complete
 message CompleteRequest {
+  // Instance to run the completion against.
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string conversation_id = 2; // If not provided, creates a new conversation
+  // Conversation ID to continue. If empty, a new conversation is created.
+  string conversation_id = 2;
+  // The prompt to complete.
   string prompt = 3;
+  // Optional agent to use for the completion.
+  // If not set, it will infer an agent based on the prompt and conversation history.
+  // Current supported agents: analyst_agent, developer_agent.
+  string agent = 10; 
+
+  // Optional context for prompts handled by the analyst_agent.
+  // These fields are ignored if another agent is selected.
   string explore = 4;
   repeated string dimensions = 5;
   repeated string measures = 6;
@@ -990,9 +1000,19 @@ message CompleteResponse {
 
 // Request message for RuntimeService.CompleteStreaming
 message CompleteStreamingRequest {
-  string instance_id = 1;
-  string conversation_id = 2; // If not provided, creates a new conversation
+  // Instance to run the completion against.
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Conversation ID to continue. If empty, a new conversation is created.
+  string conversation_id = 2;
+  // The prompt to complete.
   string prompt = 3;
+  // Optional agent to use for the completion.
+  // If not set, it will infer an agent based on the prompt and conversation history.
+  // Current supported agents: analyst_agent, developer_agent.
+  string agent = 10; 
+
+  // Optional context for prompts handled by the analyst_agent.
+  // These fields are ignored if another agent is selected.
   string explore = 4;
   repeated string dimensions = 5;
   repeated string measures = 6;

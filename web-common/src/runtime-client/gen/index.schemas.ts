@@ -2507,8 +2507,16 @@ export type RuntimeServiceEditInstanceBody = {
 };
 
 export type RuntimeServiceCompleteBody = {
+  /** Conversation ID to continue. If empty, a new conversation is created. */
   conversationId?: string;
+  /** The prompt to complete. */
   prompt?: string;
+  /** Optional agent to use for the completion.
+If not set, it will infer an agent based on the prompt and conversation history.
+Current supported agents: analyst_agent, developer_agent. */
+  agent?: string;
+  /** Optional context for prompts handled by the analyst_agent.
+These fields are ignored if another agent is selected. */
   explore?: string;
   dimensions?: string[];
   measures?: string[];
@@ -2518,8 +2526,16 @@ export type RuntimeServiceCompleteBody = {
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
+  /** Conversation ID to continue. If empty, a new conversation is created. */
   conversationId?: string;
+  /** The prompt to complete. */
   prompt?: string;
+  /** Optional agent to use for the completion.
+If not set, it will infer an agent based on the prompt and conversation history.
+Current supported agents: analyst_agent, developer_agent. */
+  agent?: string;
+  /** Optional context for prompts handled by the analyst_agent.
+These fields are ignored if another agent is selected. */
   explore?: string;
   dimensions?: string[];
   measures?: string[];
