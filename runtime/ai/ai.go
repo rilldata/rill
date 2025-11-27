@@ -242,7 +242,7 @@ func (t *CompiledTool) AsProto() (*aiv1.Tool, error) {
 
 	return &aiv1.Tool{
 		Name:         t.Spec.Name,
-		Title:        t.Spec.Title,
+		DisplayName:  t.Spec.Title,
 		Description:  t.Spec.Description,
 		Meta:         meta,
 		InputSchema:  inputSchema,

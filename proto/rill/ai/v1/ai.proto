@@ -7,8 +7,8 @@ import "google/protobuf/struct.proto";
 message Tool {
   // The name of the tool
   string name = 1;
-  // The title of the tool
-  string title = 4;
+  // The display name of the tool
+  string display_name = 4;
   // A human-readable description of the tool
   string description = 2;
   // Metadata about the tool

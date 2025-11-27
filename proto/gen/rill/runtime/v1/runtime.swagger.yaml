@@ -7134,9 +7134,9 @@ definitions:
       name:
         type: string
         title: The name of the tool
-      title:
+      displayName:
         type: string
-        title: The title of the tool
+        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool

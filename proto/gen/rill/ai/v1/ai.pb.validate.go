@@ -58,7 +58,7 @@ func (m *Tool) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 

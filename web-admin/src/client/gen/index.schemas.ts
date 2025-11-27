@@ -1416,7 +1416,7 @@ export type V1ToolMeta = { [key: string]: unknown };
 
 export interface V1Tool {
   name?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
   meta?: V1ToolMeta;
   inputSchema?: string;

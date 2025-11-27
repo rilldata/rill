@@ -1997,6 +1997,9 @@ components:
                 description:
                     title: A human-readable description of the tool
                     type: string
+                displayName:
+                    title: The display name of the tool
+                    type: string
                 inputSchema:
                     title: JSON Schema defining the expected parameters for the tool (as JSON string)
                     type: string
@@ -2008,9 +2011,6 @@ components:
                     type: string
                 outputSchema:
                     title: JSON Schema defining the expected output of the tool (as JSON string)
-                    type: string
-                title:
-                    title: The title of the tool
                     type: string
             title: Tool represents a tool definition for AI usage
             type: object

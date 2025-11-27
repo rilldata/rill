@@ -20,11 +20,11 @@ export class Tool extends Message<Tool> {
   name = "";
 
   /**
-   * The title of the tool
+   * The display name of the tool
    *
-   * @generated from field: string title = 4;
+   * @generated from field: string display_name = 4;
    */
-  title = "";
+  displayName = "";
 
   /**
    * A human-readable description of the tool
@@ -63,7 +63,7 @@ export class Tool extends Message<Tool> {
   static readonly typeName = "rill.ai.v1.Tool";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "meta", kind: "message", T: Struct },
     { no: 3, name: "input_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
