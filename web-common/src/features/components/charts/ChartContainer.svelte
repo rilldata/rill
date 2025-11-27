@@ -12,13 +12,21 @@
 
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
-  import type { Readable } from "svelte/store";
+  import ThemeProvider, {
+    THEME_STORE_CONTEXT_KEY,
+  } from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
+  import { getContext, hasContext } from "svelte";
+  import type { Readable, Writable } from "svelte/store";
   import { derived, readable } from "svelte/store";
   import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
   import type { ChartProvider, ChartSpec, ChartType } from "./types";
+
+  const hasParentTheme = hasContext(THEME_STORE_CONTEXT_KEY);
+  const parentThemeStore = getContext<Writable<Theme | undefined>>(
+    THEME_STORE_CONTEXT_KEY,
+  );
 
   export let chartType: ChartType;
   export let spec: Readable<ChartSpec>;
@@ -35,12 +43,17 @@
     chartProvider = new chartConfig.provider(spec, {});
   }
 
+  // Use parent theme from context if available, otherwise use the prop
+  $: effectiveTheme = hasParentTheme ? $parentThemeStore : theme;
+
   /**
    * Full theme object with all CSS variables for current mode
    * If not provided, chart will fall back to defaults
    */
   $: currentTheme =
-    theme?.resolvedThemeObject?.[themeMode === "dark" ? "dark" : "light"];
+    effectiveTheme?.resolvedThemeObject?.[
+      themeMode === "dark" ? "dark" : "light"
+    ];
 
   $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
 
@@ -64,7 +77,7 @@
     config: $spec,
     chartDataQuery,
     metricsView: metricsViewSelectors,
-    themeStore: readable(theme),
+    themeStore: readable(effectiveTheme),
     timeAndFilterStore,
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
     isThemeModeDark: themeMode === "dark",
@@ -107,7 +120,7 @@
 </script>
 
 {#if $spec}
-  <ThemeProvider {theme}>
+  <ThemeProvider theme={effectiveTheme}>
     <div class="size-full flex flex-col">
       {#if chartTitle}
         <div class="flex items-center justify-between px-4 py-2">

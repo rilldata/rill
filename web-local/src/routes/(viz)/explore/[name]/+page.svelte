@@ -5,7 +5,6 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
@@ -92,15 +91,10 @@
   />
 {:else}
   {#key exploreName}
-    <div class="flex h-full overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <StateManagersProvider {metricsViewName} {exploreName}>
-          <DashboardStateManager {exploreName}>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardStateManager>
-        </StateManagersProvider>
-      </div>
-      <ExploreChat />
-    </div>
+    <StateManagersProvider {metricsViewName} {exploreName}>
+      <DashboardStateManager {exploreName}>
+        <Dashboard {metricsViewName} {exploreName} />
+      </DashboardStateManager>
+    </StateManagersProvider>
   {/key}
 {/if}
