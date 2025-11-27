@@ -590,6 +590,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to run the completion against.
           in: path
           required: true
           type: string
@@ -601,11 +602,21 @@ paths:
             properties:
               conversationId:
                 type: string
-                title: If not provided, creates a new conversation
+                description: Conversation ID to continue. If empty, a new conversation is created.
               prompt:
                 type: string
+                description: The prompt to complete.
+              agent:
+                type: string
+                description: |-
+                  Optional agent to use for the completion.
+                  If not set, it will infer an agent based on the prompt and conversation history.
+                  Current supported agents: analyst_agent, developer_agent.
               explore:
                 type: string
+                description: |-
+                  Optional context for prompts handled by the analyst_agent.
+                  These fields are ignored if another agent is selected.
               dimensions:
                 type: array
                 items:
@@ -646,6 +657,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to run the completion against.
           in: path
           required: true
           type: string
@@ -657,11 +669,21 @@ paths:
             properties:
               conversationId:
                 type: string
-                title: If not provided, creates a new conversation
+                description: Conversation ID to continue. If empty, a new conversation is created.
               prompt:
                 type: string
+                description: The prompt to complete.
+              agent:
+                type: string
+                description: |-
+                  Optional agent to use for the completion.
+                  If not set, it will infer an agent based on the prompt and conversation history.
+                  Current supported agents: analyst_agent, developer_agent.
               explore:
                 type: string
+                description: |-
+                  Optional context for prompts handled by the analyst_agent.
+                  These fields are ignored if another agent is selected.
               dimensions:
                 type: array
                 items:

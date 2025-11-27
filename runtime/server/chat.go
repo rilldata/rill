@@ -167,6 +167,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	var res *ai.RouterAgentResult
 	msg, err := session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 		Prompt:           req.Prompt,
+		Agent:            req.Agent,
 		AnalystAgentArgs: analystAgentArgs,
 	})
 	if err != nil {
@@ -277,6 +278,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	var res *ai.RouterAgentResult
 	_, err = session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 		Prompt:           req.Prompt,
+		Agent:            req.Agent,
 		AnalystAgentArgs: analystAgentArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) {
