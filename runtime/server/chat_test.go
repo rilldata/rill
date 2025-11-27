@@ -175,12 +175,6 @@ func TestAgentChoiceAndContext(t *testing.T) {
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		EnableLLM: true,
-		Files: map[string]string{
-			`rill.yaml`: `
-features:
-  developer_agent: true
-`,
-		},
 	})
 	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
