@@ -3,7 +3,6 @@ package static
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"sync/atomic"
@@ -85,10 +84,10 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 
 	// Exit early if the resource has already been provisioned.
 	if state.Slots != 0 {
-		if args.Slots == state.Slots {
-			return r, nil
+		if args.Slots != state.Slots {
+			p.logger.Warn("static provisioner cannot update the slots assignment", observability.ZapCtx(ctx))
 		}
-		return nil, errors.New("static provisioner cannot update the slots assignment")
+		return r, nil
 	}
 
 	// Get slots currently used

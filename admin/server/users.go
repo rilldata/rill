@@ -692,7 +692,7 @@ func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.Organization
 	return &adminv1.OrganizationInvite{
 		Email:     i.Email,
 		RoleName:  i.RoleName,
-		InvitedBy: i.InvitedBy,
+		InvitedBy: safeStr(i.InvitedBy),
 	}
 }
 
@@ -701,7 +701,7 @@ func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 		Email:       i.Email,
 		RoleName:    i.RoleName,
 		OrgRoleName: i.OrgRoleName,
-		InvitedBy:   i.InvitedBy,
+		InvitedBy:   safeStr(i.InvitedBy),
 		Resources:   resourceNamesToPB(i.Resources),
 	}
 }

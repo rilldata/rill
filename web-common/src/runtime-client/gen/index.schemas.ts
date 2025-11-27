@@ -359,16 +359,6 @@ export const V1AssertionStatus = {
   ASSERTION_STATUS_ERROR: "ASSERTION_STATUS_ERROR",
 } as const;
 
-export interface V1BigQueryListDatasetsResponse {
-  nextPageToken?: string;
-  names?: string[];
-}
-
-export interface V1BigQueryListTablesResponse {
-  nextPageToken?: string;
-  names?: string[];
-}
-
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -991,28 +981,6 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
-export interface V1GCSGetCredentialsInfoResponse {
-  exist?: boolean;
-  projectId?: string;
-}
-
-export interface V1GCSListBucketsResponse {
-  nextPageToken?: string;
-  buckets?: string[];
-}
-
-export interface V1GCSListObjectsResponse {
-  nextPageToken?: string;
-  objects?: V1GCSObject[];
-}
-
-export interface V1GCSObject {
-  name?: string;
-  modifiedOn?: string;
-  size?: string;
-  isDir?: boolean;
-}
-
 export interface V1GenerateMetricsViewFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -1167,6 +1135,11 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export interface V1ListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
 export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
@@ -1196,6 +1169,11 @@ export interface V1ListInstancesResponse {
 export interface V1ListNotifierConnectorsResponse {
   /** Note: In this list, the Connector.config property will always be empty. */
   connectors?: V1Connector[];
+}
+
+export interface V1ListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1Object[];
 }
 
 export interface V1ListResourcesResponse {
@@ -1843,6 +1821,13 @@ export interface V1OLAPListTablesResponse {
   nextPageToken?: string;
 }
 
+export interface V1Object {
+  name?: string;
+  modifiedOn?: string;
+  size?: string;
+  isDir?: boolean;
+}
+
 export interface V1OlapTableInfo {
   database?: string;
   databaseSchema?: string;
@@ -2163,32 +2148,6 @@ export interface V1ResourceName {
   name?: string;
 }
 
-export interface V1S3GetBucketMetadataResponse {
-  region?: string;
-}
-
-export interface V1S3GetCredentialsInfoResponse {
-  exist?: boolean;
-  provider?: string;
-}
-
-export interface V1S3ListBucketsResponse {
-  nextPageToken?: string;
-  buckets?: string[];
-}
-
-export interface V1S3ListObjectsResponse {
-  nextPageToken?: string;
-  objects?: V1S3Object[];
-}
-
-export interface V1S3Object {
-  name?: string;
-  modifiedOn?: string;
-  size?: string;
-  isDir?: boolean;
-}
-
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2467,21 +2426,6 @@ export interface V1WatchResourcesResponse {
   resource?: V1Resource;
 }
 
-export type ConnectorServiceBigQueryListDatasetsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceBigQueryListTablesParams = {
-  instanceId?: string;
-  connector?: string;
-  dataset?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
@@ -2512,29 +2456,6 @@ export type ConnectorServiceListTablesParams = {
   databaseSchema?: string;
   pageSize?: number;
   pageToken?: string;
-};
-
-export type ConnectorServiceGCSListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-  prefix?: string;
-  startOffset?: string;
-  endOffset?: string;
-  delimiter?: string;
-};
-
-export type ConnectorServiceGCSListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceGCSGetCredentialsInfoParams = {
-  instanceId?: string;
-  connector?: string;
 };
 
 export type RuntimeServiceListInstancesParams = {
@@ -2595,6 +2516,25 @@ export type RuntimeServiceCompleteStreamingBody = {
 export type RuntimeServiceCompleteStreaming200 = {
   result?: V1CompleteStreamingResponse;
   error?: RpcStatus;
+};
+
+export type RuntimeServiceListConversationsParams = {
+  /**
+   * Optional search pattern for filtering by user agent.
+   */
+  userAgentPattern?: string;
+};
+
+export type ConnectorServiceListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceListObjectsParams = {
+  path?: string;
+  delimiter?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type RuntimeServiceListFilesParams = {
@@ -3157,31 +3097,4 @@ If the connector supports schema/database names, it searches against both the pl
   searchPattern?: string;
   pageSize?: number;
   pageToken?: string;
-};
-
-export type ConnectorServiceS3GetBucketMetadataParams = {
-  instanceId?: string;
-  connector?: string;
-};
-
-export type ConnectorServiceS3ListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-  prefix?: string;
-  startAfter?: string;
-  delimiter?: string;
-};
-
-export type ConnectorServiceS3ListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceS3GetCredentialsInfoParams = {
-  instanceId?: string;
-  connector?: string;
 };

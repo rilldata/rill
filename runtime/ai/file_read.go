@@ -30,11 +30,8 @@ func (t *ReadFile) Spec() *mcp.Tool {
 	}
 }
 
-func (t *ReadFile) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.ReadRepo)
-	return false
+func (t *ReadFile) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {

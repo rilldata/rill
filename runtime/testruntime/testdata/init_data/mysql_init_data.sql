@@ -34,18 +34,21 @@ CREATE TABLE all_datatypes (
 
     -- Special Data Types
     boolean_col BOOLEAN,
-    bit_col BIT(8),
-    json_col JSON,
+    bit_col BIT(1),
+    json_col JSON
 
-    -- Spatial Data Types (For GIS/Geometric Data)
-    geometry_col GEOMETRY,
-    -- point_col POINT, clickhouse is throwing error for this column type (clickhouse Nested type Point cannot be inside Nullable type)
-    linestring_col LINESTRING,
-    polygon_col POLYGON,
-    multipoint_col MULTIPOINT,
-    multilinestring_col MULTILINESTRING,
-    multipolygon_col MULTIPOLYGON,
-    geometrycollection_col GEOMETRYCOLLECTION
+    -- Commented because does not work as of duckdb 1.4.2
+    --
+    --
+    -- -- Spatial Data Types (For GIS/Geometric Data)
+    -- geometry_col GEOMETRY,
+    -- -- point_col POINT, clickhouse is throwing error for this column type (clickhouse Nested type Point cannot be inside Nullable type)
+    -- linestring_col LINESTRING,
+    -- polygon_col POLYGON,
+    -- multipoint_col MULTIPOINT,
+    -- multilinestring_col MULTILINESTRING,
+    -- multipolygon_col MULTIPOLYGON,
+    -- geometrycollection_col GEOMETRYCOLLECTION
 );
 
 
@@ -56,11 +59,7 @@ INSERT INTO all_datatypes (
     binary_col, varbinary_col, tinyblob_col, blob_col, mediumblob_col, longblob_col,
     enum_col, set_col,
     date_col, datetime_col, timestamp_col, time_col, year_col,
-    boolean_col, bit_col, json_col,
-    geometry_col,
-	-- point_col, 
-	linestring_col, polygon_col,
-    multipoint_col, multilinestring_col, multipolygon_col, geometrycollection_col
+    boolean_col, bit_col, json_col
 ) VALUES 
 (
     -- Row 1: All NULL values
@@ -70,11 +69,7 @@ INSERT INTO all_datatypes (
     NULL, NULL, NULL, NULL, NULL, NULL,
     NULL, NULL,
     NULL, NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL,
-    NULL, 
-	-- NULL, 
-	NULL, NULL,
-    NULL, NULL, NULL, NULL
+    NULL, NULL, NULL
 ), 
 (
     -- Row 2: Non NUll values
@@ -84,27 +79,16 @@ INSERT INTO all_datatypes (
     'Binary', 'VarBinary', 'Tiny Blob', 'Blob', 'Medium Blob', 'Long Blob',
     'medium', 'a,b',
     '2024-02-14', '2025-02-14 12:34:56', '2025-02-14 12:34:56', '12:34:56', 2024,
-    1, '1', '{"key": "value"}',
-    ST_GeomFromText('POINT(1 1)'), 
-	-- ST_GeomFromText('POINT(2 2)'),
-    ST_GeomFromText('LINESTRING(0 0, 1 1)'),
-    ST_GeomFromText('POLYGON((0 0, 1 1, 1 0, 0 0))'),
-    ST_GeomFromText('MULTIPOINT((1 1), (2 2))'),
-    ST_GeomFromText('MULTILINESTRING((0 0, 1 1), (1 1, 2 2))'),
-    ST_GeomFromText('MULTIPOLYGON(((0 0, 1 1, 1 0, 0 0)))'),
-    ST_GeomFromText('GEOMETRYCOLLECTION(POINT(1 1), LINESTRING(0 0, 1 1))')
+    1, b'1', '{"key": "value"}'
 ), 
 (
     -- Row 3: All Zero Values
+    -- Time'00:00:00' will be scanned as NULL in duckdb. It is likely a bug. TODO: fix this when duckdb fixes it.
     0, 0, 0, 0, 0,
     0.0, 0.0, 0.00,
     '', '', '', '', '', '',
     '', '', '', '', '', '',
     'small', '',
     '1970-01-01', '1970-01-01 00:00:00', NULL, '00:00:00', 1970,
-    0, B'0', '{}',
-    NULL, 
-	-- NULL, 
-	NULL, NULL,
-    NULL, NULL, NULL, NULL
+    0, B'0', '{}'
 );

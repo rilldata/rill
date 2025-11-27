@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"strings"
 	"time"
@@ -347,6 +348,20 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 	}
 
+	// Compute OLAP queue size
+	var olapSemSize int
+	if conf.MaxOpenConns < 1 {
+		// MaxOpenConns <= 0 means unlimited connections
+		olapSemSize = math.MaxInt
+	} else if conf.MaxOpenConns > 1 {
+		// Leave one connection for meta queries. All others can be used for OLAP.
+		olapSemSize = conf.MaxOpenConns - 1
+	} else {
+		// If there is only one connection, both meta and olap queries need to share it.
+		// There will be contention at the database/sql layer, but it will work.
+		olapSemSize = 1
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
 		readDB:          db,
@@ -359,7 +374,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		ctx:             ctx,
 		cancel:          cancel,
 		metaSem:         semaphore.NewWeighted(1),
-		olapSem:         priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
+		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
 		opts:            opts,
 		embed:           embed,
 	}

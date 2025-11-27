@@ -23,6 +23,7 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
@@ -81,7 +82,6 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
-    dashboardStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -275,7 +275,6 @@
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,
-      selectedTimezone: $dashboardStore.selectedTimezone,
     }),
   );
 
@@ -326,12 +325,15 @@
   let open = false;
 </script>
 
+<svelte:window on:click={() => measureSelection.clear()} />
+
 <TimeSeriesChartContainer
   enableFullWidth={showTimeDimensionDetail}
   end={endValue}
   start={startValue}
   {workspaceWidth}
   {timeSeriesWidth}
+  bottom={showTimeDimensionDetail ? 20 : 4}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
