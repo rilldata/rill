@@ -981,6 +981,11 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1GenerateCanvasDashboardFileResponse {
+  /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
+  aiSucceeded?: boolean;
+}
+
 export interface V1GenerateMetricsViewFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -2561,6 +2566,16 @@ export type RuntimeServicePutFileBody = {
   /** Will cause the operation to fail if the file already exists.
 It should only be set when create = true. */
   createOnly?: boolean;
+};
+
+export type RuntimeServiceGenerateCanvasDashboardFileBody = {
+  /** Metrics view name to base the canvas dashboard on. */
+  metricsViewName?: string;
+  /** Path to save the canvas dashboard file to. */
+  path?: string;
+  /** If true, the AI will be used to generate the canvas dashboard file.
+Otherwise, it falls back to a simpler heuristic approach. */
+  useAi?: boolean;
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {

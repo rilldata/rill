@@ -62,6 +62,7 @@ class FeatureFlags {
   chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
+  generateCanvas = new FeatureFlag("user", false);
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {
