@@ -43,7 +43,7 @@
     dashboardStore,
   } = StateManagers;
 
-  const { cloudDataViewer, readOnly } = featureFlags;
+  const { cloudDataViewer, dashboardChat, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -248,7 +248,9 @@
         {/if}
       </article>
     </div>
-    <ExploreChat />
+    {#if $dashboardChat}
+      <ExploreChat />
+    {/if}
   </div>
 </ThemeProvider>
 
