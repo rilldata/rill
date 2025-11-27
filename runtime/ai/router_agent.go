@@ -25,10 +25,11 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt           string            `json:"prompt" jsonschema:"The user's prompt to be routed."`
-	Agent            string            `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	AnalystAgentArgs *AnalystAgentArgs `json:"analyst_agent_args,omitempty" jsonschema:"Arguments to pass to the analyst agent if the selected agent is analyst_agent."`
-	SkipHandoff      bool              `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
+	Prompt             string              `json:"prompt" jsonschema:"The user's prompt to be routed."`
+	Agent              string              `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	AnalystAgentArgs   *AnalystAgentArgs   `json:"analyst_agent_args,omitempty" jsonschema:"Optional arguments to pass to the analyst agent if the selected agent is analyst_agent."`
+	DeveloperAgentArgs *DeveloperAgentArgs `json:"developer_agent_args,omitempty" jsonschema:"Optional arguments to pass to the developer agent if the selected agent is developer_agent."`
+	SkipHandoff        bool                `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
 type RouterAgentResult struct {
