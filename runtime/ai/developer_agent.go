@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -139,6 +140,11 @@ func checkDeveloperAgentAccess(ctx context.Context, rt *runtime.Runtime) (bool, 
 	// Must be able to use AI and edit the project
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.EditRepo) {
+		return false, nil
+	}
+
+	// Don't expose it to external clients (like MCP)
+	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
 		return false, nil
 	}
 
