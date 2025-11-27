@@ -106,9 +106,11 @@ export function mergeFilters(
   // add all the other expressions that couldnt be merged
   otherExprMap.forEach((otherExprs) => {
     if (!filter2.cond?.exprs) {
-      filter2.cond!.exprs = otherExprs.map(copyFilterExpression);
+      filter2.cond!.exprs = otherExprs.map((e) => copyFilterExpression(e));
     }
-    filter2.cond?.exprs?.push(...otherExprs.map(copyFilterExpression));
+    filter2.cond?.exprs?.push(
+      ...otherExprs.map((e) => copyFilterExpression(e)),
+    );
   });
 
   return filter2;

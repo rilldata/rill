@@ -204,22 +204,22 @@ func (tr *TimeRange) IsZero() bool {
 }
 
 type Expression struct {
-	Name      string     `mapstructure:"name"`
-	Value     any        `mapstructure:"val"`
-	Condition *Condition `mapstructure:"cond"`
-	Subquery  *Subquery  `mapstructure:"subquery"`
+	Name      string     `mapstructure:"name" json:"name"`
+	Value     any        `mapstructure:"val" json:"val"`
+	Condition *Condition `mapstructure:"cond" json:"cond"`
+	Subquery  *Subquery  `mapstructure:"subquery" json:"subquery"`
 }
 
 type Condition struct {
-	Operator    Operator      `mapstructure:"op"`
-	Expressions []*Expression `mapstructure:"exprs"`
+	Operator    Operator      `mapstructure:"op" json:"op"`
+	Expressions []*Expression `mapstructure:"exprs" json:"exprs"`
 }
 
 type Subquery struct {
-	Dimension Dimension   `mapstructure:"dimension"`
-	Measures  []Measure   `mapstructure:"measures"`
-	Where     *Expression `mapstructure:"where"`
-	Having    *Expression `mapstructure:"having"`
+	Dimension Dimension   `mapstructure:"dimension" json:"dimension"`
+	Measures  []Measure   `mapstructure:"measures" json:"measures"`
+	Where     *Expression `mapstructure:"where" json:"where"`
+	Having    *Expression `mapstructure:"having" json:"having"`
 }
 
 type Operator string

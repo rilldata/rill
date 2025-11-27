@@ -22,7 +22,7 @@ test.describe("Deploy journey", () => {
 
   test.describe.configure({
     mode: "serial",
-    timeout: 60_000,
+    timeout: 180_000,
   });
 
   test.afterAll(async () => {
@@ -228,9 +228,17 @@ async function assertAndSkipInvite(page: Page) {
 
 async function ensureProjectRedeployed(page: Page) {
   // Project homepage is opened on a re-deploy. This can take a while, so it has increased timeout.
-  await expect(page.getByText("Welcome to")).toBeVisible({
-    timeout: 120_000,
-  });
+  // Temporary fix to wait for the project to be ready.
+  // TODO: add a refetch to the project API
+  await expect
+    .poll(
+      async () => {
+        await page.reload();
+        return page.getByLabel("Project title").textContent();
+      },
+      { intervals: Array(4).fill(30_000), timeout: 120_000 },
+    )
+    .toContain("Welcome to");
 }
 
 async function ensureDashboardTitle(page: Page, title: string) {

@@ -51,7 +51,7 @@ export class ConversationManager {
   private conversationSelector: ConversationSelector;
 
   constructor(
-    private instanceId: string,
+    public readonly instanceId: string,
     options: ConversationManagerOptions,
   ) {
     this.newConversation = new Conversation(
@@ -277,7 +277,7 @@ export class ConversationManager {
         const cachedGetConversationResponse =
           queryClient.getQueryData<V1GetConversationResponse>(
             conversationCacheKey,
-          ) as V1GetConversationResponse | undefined;
+          );
         const conversation = cachedGetConversationResponse?.conversation;
 
         // Create conversation object for the list
