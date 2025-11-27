@@ -1,5 +1,4 @@
 import { goto } from "$app/navigation";
-import { resourceNameToId } from "@rilldata/web-common/features/entity-management/resource-utils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { buildGraphUrlNew, type KindToken } from "./seed-parser";
 
