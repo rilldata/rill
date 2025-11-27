@@ -6319,12 +6319,21 @@ definitions:
       name:
         type: string
         title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
       inputSchema:
         type: string
         title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
     title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
