@@ -664,15 +664,16 @@ func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.Organization
 
 func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUser {
 	return &adminv1.ProjectMemberUser{
-		UserId:       m.ID,
-		UserEmail:    m.Email,
-		UserName:     m.DisplayName,
-		UserPhotoUrl: m.PhotoURL,
-		RoleName:     m.RoleName,
-		OrgRoleName:  m.OrgRoleName,
-		CreatedOn:    timestamppb.New(m.CreatedOn),
-		UpdatedOn:    timestamppb.New(m.UpdatedOn),
-		Resources:    resourceNamesToPB(m.Resources),
+		UserId:            m.ID,
+		UserEmail:         m.Email,
+		UserName:          m.DisplayName,
+		UserPhotoUrl:      m.PhotoURL,
+		RoleName:          m.RoleName,
+		OrgRoleName:       m.OrgRoleName,
+		CreatedOn:         timestamppb.New(m.CreatedOn),
+		UpdatedOn:         timestamppb.New(m.UpdatedOn),
+		Resources:         resourceNamesToPB(m.Resources),
+		RestrictResources: m.RestrictResources,
 	}
 }
 
@@ -812,72 +813,6 @@ func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.Resour
 		return nil
 	}
 	return res
-}
-
-func mergeResourceNames(base, additions []database.ResourceName) []database.ResourceName {
-	if len(additions) == 0 {
-		// Ensure we never return nil if base was non-nil to avoid accidental null writes.
-		return append([]database.ResourceName{}, base...)
-	}
-
-	seen := make(map[string]struct{}, len(base)+len(additions))
-	merged := make([]database.ResourceName, 0, len(base)+len(additions))
-
-	for _, r := range base {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		key := normalizeResourceKey(r.Type, r.Name)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		merged = append(merged, r)
-	}
-
-	for _, r := range additions {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		key := normalizeResourceKey(r.Type, r.Name)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		merged = append(merged, r)
-	}
-
-	return merged
-}
-
-func subtractResourceNames(base, removals []database.ResourceName) []database.ResourceName {
-	if len(base) == 0 {
-		return nil
-	}
-	if len(removals) == 0 {
-		return append([]database.ResourceName{}, base...)
-	}
-
-	removeSet := make(map[string]struct{}, len(removals))
-	for _, r := range removals {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		removeSet[normalizeResourceKey(r.Type, r.Name)] = struct{}{}
-	}
-
-	out := make([]database.ResourceName, 0, len(base))
-	for _, r := range base {
-		if _, ok := removeSet[normalizeResourceKey(r.Type, r.Name)]; ok {
-			continue
-		}
-		out = append(out, r)
-	}
-
-	if len(out) == 0 {
-		return nil
-	}
-	return out
 }
 
 func normalizeResourceKey(typ, name string) string {

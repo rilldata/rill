@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -162,9 +163,11 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 	allMembers := make([]*projectMemberUserWithRole, 0, len(members))
 	for _, m := range members {
 		allMembers = append(allMembers, &projectMemberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+			Email:      m.UserEmail,
+			Name:       m.UserName,
+			RoleName:   m.RoleName,
+			Restricted: m.RestrictResources,
+			Resources:  formatResourceNamesPB(m.Resources),
 		})
 	}
 
@@ -249,9 +252,11 @@ type memberUserWithRole struct {
 }
 
 type projectMemberUserWithRole struct {
-	Email    string `header:"email" json:"email"`
-	Name     string `header:"name" json:"display_name"`
-	RoleName string `header:"role" json:"role_name"`
+	Email      string `header:"email" json:"email"`
+	Name       string `header:"name" json:"display_name"`
+	RoleName   string `header:"role" json:"role_name"`
+	Restricted bool   `header:"restricted" json:"restricted"`
+	Resources  string `header:"resources" json:"resources"`
 }
 
 type orgMemberService struct {
@@ -588,18 +593,40 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 		role = "-"
 	}
 	return &memberUsergroup{
-		Name:      ug.GroupName,
-		Role:      role,
-		CreatedOn: ug.CreatedOn.AsTime().Local().Format(time.DateTime),
-		UpdatedOn: ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
+		Name:       ug.GroupName,
+		Role:       role,
+		Restricted: ug.RestrictResources,
+		Resources:  formatResourceNamesPB(ug.Resources),
+		CreatedOn:  ug.CreatedOn.AsTime().Local().Format(time.DateTime),
+		UpdatedOn:  ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
 type memberUsergroup struct {
-	Name      string `header:"name" json:"name"`
-	Role      string `header:"role" json:"role"`
-	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
-	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
+	Name       string `header:"name" json:"name"`
+	Role       string `header:"role" json:"role"`
+	Restricted bool   `header:"restricted" json:"restricted"`
+	Resources  string `header:"resources" json:"resources"`
+	CreatedOn  string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
+	UpdatedOn  string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
+}
+
+func formatResourceNamesPB(resources []*adminv1.ResourceName) string {
+	if len(resources) == 0 {
+		return "-"
+	}
+	var parts []string
+	for _, r := range resources {
+		if r == nil || r.Type == "" || r.Name == "" {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%s/%s", r.Type, r.Name))
+	}
+	if len(parts) == 0 {
+		return "-"
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ", ")
 }
 
 func (p *Printer) PrintModelPartitions(partitions []*runtimev1.ModelPartition) {

@@ -8,50 +8,46 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
-// ParseResourceStrings converts user supplied resource strings (formatted as kind/name)
-// into proto resource names while deduping and validating input.
-func ParseResourceStrings(inputs []string) ([]*adminv1.ResourceName, error) {
-	if len(inputs) == 0 {
-		return nil, fmt.Errorf("at least one resource must be specified")
+// ParseResourceStrings converts user supplied resource strings into proto resource names while deduping and validating input.
+func ParseResourceStrings(explores, canvases []string) ([]*adminv1.ResourceName, error) {
+	if len(explores) == 0 && len(canvases) == 0 {
+		return nil, nil
 	}
 
-	res := make([]*adminv1.ResourceName, 0, len(inputs))
-	seen := make(map[string]struct{}, len(inputs))
+	res := make([]*adminv1.ResourceName, 0, len(explores)+len(canvases))
+	exploreMap := make(map[string]struct{}, len(explores))
+	canvasMap := make(map[string]struct{}, len(canvases))
 
-	for _, raw := range inputs {
-		raw = strings.TrimSpace(raw)
-		if raw == "" {
+	for _, raw := range explores {
+		name := strings.TrimSpace(raw)
+		if name == "" {
 			continue
 		}
 
-		var kind, name string
-		if strings.Contains(raw, "/") {
-			parts := strings.SplitN(raw, "/", 2)
-			kind = strings.TrimSpace(parts[0])
-			if len(parts) > 1 {
-				name = strings.TrimSpace(parts[1])
-			}
-		} else {
-			return nil, fmt.Errorf("invalid resource %q, expected format kind/name", raw)
-		}
-
-		if kind == "" || name == "" {
-			return nil, fmt.Errorf("invalid resource %q, expected format kind/name", raw)
-		}
-
-		kind = runtime.ResourceKindFromShorthand(kind)
-		if !runtime.IsKnownResourceKind(kind) {
-			return nil, fmt.Errorf("unknown resource kind %q in resource %q", kind, raw)
-		}
-
-		key := kind + "|" + strings.ToLower(name)
-		if _, ok := seen[key]; ok {
+		if _, ok := exploreMap[name]; ok {
 			continue
 		}
-		seen[key] = struct{}{}
+		exploreMap[name] = struct{}{}
 
 		res = append(res, &adminv1.ResourceName{
-			Type: kind,
+			Type: runtime.ResourceKindExplore,
+			Name: name,
+		})
+	}
+
+	for _, raw := range canvases {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			continue
+		}
+
+		if _, ok := canvasMap[name]; ok {
+			continue
+		}
+		canvasMap[name] = struct{}{}
+
+		res = append(res, &adminv1.ResourceName{
+			Type: runtime.ResourceKindCanvas,
 			Name: name,
 		})
 	}

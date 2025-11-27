@@ -227,8 +227,8 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 
 	// ignore resource level security rules if the user has a full role
-	if attrUserID != "" && permissions.FullyResourceRestricted {
-		rules = securityRulesFromResources(permissions.Resources)
+	if attrUserID != "" {
+		rules = securityRulesFromResources(permissions.FullyResourceRestricted, permissions.Resources)
 		if err != nil {
 			return nil, err
 		}
@@ -627,8 +627,8 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	// ignore resource level security rules if the user has a full role
-	if attrUserID != "" && permissions.FullyResourceRestricted {
-		rules = securityRulesFromResources(permissions.Resources)
+	if attrUserID != "" {
+		rules = securityRulesFromResources(permissions.FullyResourceRestricted, permissions.Resources)
 		if err != nil {
 			return nil, err
 		}
@@ -776,8 +776,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	// ignore resource level security rules if the user has a full role
-	if attrUserID != "" && permissions.FullyResourceRestricted {
-		rules = securityRulesFromResources(permissions.Resources)
+	if attrUserID != "" {
+		rules = securityRulesFromResources(permissions.FullyResourceRestricted, permissions.Resources)
 		if err != nil {
 			return nil, err
 		}

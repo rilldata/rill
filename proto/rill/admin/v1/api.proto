@@ -405,6 +405,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
   }
 
+  // GetProjectMemberUsergroup returns the user groups for a user within a project
+  rpc GetProjectMemberUsergroup(GetProjectMemberUsergroupRequest) returns (GetProjectMemberUsergroupResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}/usergroups"};
+  }
+
   // UpdateOrganizationMemberUserAttributes updates the attributes for a member
   rpc UpdateOrganizationMemberUserAttributes(UpdateOrganizationMemberUserAttributesRequest) returns (UpdateOrganizationMemberUserAttributesResponse) {
     option (google.api.http) = {
@@ -431,14 +436,6 @@ service AdminService {
     };
   }
 
-  // AddProjectMemberUserResources grants resource-scoped access to an existing or invited user (viewer role implied).
-  rpc AddProjectMemberUserResources(AddProjectMemberUserResourcesRequest) returns (AddProjectMemberUserResourcesResponse) {
-    option (google.api.http) = {
-      post: "/v1/orgs/{org}/projects/{project}/members/{email}/resources",
-      body: "*"
-    };
-  }
-
   // RemoveProjectMemberUser removes member from the project
   rpc RemoveProjectMemberUser(RemoveProjectMemberUserRequest) returns (RemoveProjectMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/members/{email}"};
@@ -452,12 +449,9 @@ service AdminService {
     };
   }
 
-  // RemoveProjectMemberUserResources revokes resource-scoped access for a project member.
-  rpc RemoveProjectMemberUserResources(RemoveProjectMemberUserResourcesRequest) returns (RemoveProjectMemberUserResourcesResponse) {
-    option (google.api.http) = {
-      post: "/v1/orgs/{org}/projects/{project}/members/{email}/resources:remove",
-      body: "*"
-    };
+  // GetProjectMemberUser gets the member details
+  rpc GetProjectMemberUser(GetProjectMemberUserRequest) returns (GetProjectMemberUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}"};
   }
 
   // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -538,14 +532,6 @@ service AdminService {
     };
   }
 
-  // AddProjectMemberUsergroupResources grants resource-scoped access to an existing project user group.
-  rpc AddProjectMemberUsergroupResources(AddProjectMemberUsergroupResourcesRequest) returns (AddProjectMemberUsergroupResourcesResponse) {
-    option (google.api.http) = {
-      post: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources",
-      body: "*"
-    };
-  }
-
   // SetProjectMemberUsergroupRole sets the role for the user group
   rpc SetProjectMemberUsergroupRole(SetProjectMemberUsergroupRoleRequest) returns (SetProjectMemberUsergroupRoleResponse) {
     option (google.api.http) = {
@@ -558,14 +544,6 @@ service AdminService {
   rpc RemoveProjectMemberUsergroup(RemoveProjectMemberUsergroupRequest) returns (RemoveProjectMemberUsergroupResponse) {
     option (google.api.http) = {
       delete: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles"
-    };
-  }
-
-  // RemoveProjectMemberUsergroupResources revokes resource-scoped access for a project user group.
-  rpc RemoveProjectMemberUsergroupResources(RemoveProjectMemberUsergroupResourcesRequest) returns (RemoveProjectMemberUsergroupResourcesResponse) {
-    option (google.api.http) = {
-      post: "/v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:remove",
-      body: "*"
     };
   }
 
@@ -1822,6 +1800,26 @@ message GetOrganizationMemberUserResponse {
   OrganizationMemberUser member = 1;
 }
 
+message GetProjectMemberUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message GetProjectMemberUserResponse {
+  ProjectMemberUser member = 1;
+}
+
+message GetProjectMemberUsergroupRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.min_len = 1];
+}
+
+message GetProjectMemberUsergroupResponse {
+  repeated MemberUsergroup usergroups = 1;
+}
+
 message UpdateOrganizationMemberUserAttributesRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
@@ -1976,20 +1974,11 @@ message AddProjectMemberUserRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
   string role = 4 [(validate.rules).string.min_len = 1];
+  repeated ResourceName resources = 5;
+  bool restrict_resources = 6;
 }
 
 message AddProjectMemberUserResponse {
-  bool pending_signup = 1;
-}
-
-message AddProjectMemberUserResourcesRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string email = 3 [(validate.rules).string.email = true];
-  repeated ResourceName resources = 4;
-}
-
-message AddProjectMemberUserResourcesResponse {
   bool pending_signup = 1;
 }
 
@@ -2006,18 +1995,11 @@ message SetProjectMemberUserRoleRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
   string role = 4 [(validate.rules).string.min_len = 1];
+  repeated ResourceName resources = 5;
+  bool restrict_resources = 6;
 }
 
 message SetProjectMemberUserRoleResponse {}
-
-message RemoveProjectMemberUserResourcesRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string email = 3 [(validate.rules).string.email = true];
-  repeated ResourceName resources = 4;
-}
-
-message RemoveProjectMemberUserResourcesResponse {}
 
 message ListUsergroupsForOrganizationAndUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
@@ -2130,36 +2112,22 @@ message AddProjectMemberUsergroupRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
+  repeated ResourceName resources = 5;
+  bool restrict_resources = 6;
 }
 
 message AddProjectMemberUsergroupResponse {}
-
-message AddProjectMemberUsergroupResourcesRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string usergroup = 3 [(validate.rules).string.min_len = 1];
-  repeated ResourceName resources = 4;
-}
-
-message AddProjectMemberUsergroupResourcesResponse {}
 
 message SetProjectMemberUsergroupRoleRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
+  repeated ResourceName resources = 5;
+  bool restrict_resources = 6;
 }
 
 message SetProjectMemberUsergroupRoleResponse {}
-
-message RemoveProjectMemberUsergroupResourcesRequest {
-  string org = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string usergroup = 3 [(validate.rules).string.min_len = 1];
-  repeated ResourceName resources = 4;
-}
-
-message RemoveProjectMemberUsergroupResourcesResponse {}
 
 message RemoveProjectMemberUsergroupRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
@@ -3150,6 +3118,7 @@ message ProjectMemberUser {
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
   repeated ResourceName resources = 9;
+  bool restrict_resources = 10;
 }
 
 message UsergroupMemberUser {
@@ -3342,6 +3311,7 @@ message MemberUsergroup {
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
   repeated ResourceName resources = 8;
+  bool restrict_resources = 9;
 }
 
 enum BillingIssueType {

@@ -68,16 +68,8 @@ export interface V1AddOrganizationMemberUsergroupResponse {
   [key: string]: unknown;
 }
 
-export interface V1AddProjectMemberUserResourcesResponse {
-  pendingSignup?: boolean;
-}
-
 export interface V1AddProjectMemberUserResponse {
   pendingSignup?: boolean;
-}
-
-export interface V1AddProjectMemberUsergroupResourcesResponse {
-  [key: string]: unknown;
 }
 
 export interface V1AddProjectMemberUsergroupResponse {
@@ -590,6 +582,14 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectMemberUserResponse {
+  member?: V1ProjectMemberUser;
+}
+
+export interface V1GetProjectMemberUsergroupResponse {
+  usergroups?: V1MemberUsergroup[];
+}
+
 export interface V1GetProjectResponse {
   project?: V1Project;
   prodDeployment?: V1Deployment;
@@ -864,6 +864,7 @@ export interface V1MemberUsergroup {
   createdOn?: string;
   updatedOn?: string;
   resources?: V1ResourceName[];
+  restrictResources?: boolean;
 }
 
 export interface V1Organization {
@@ -1019,6 +1020,7 @@ export interface V1ProjectMemberUser {
   createdOn?: string;
   updatedOn?: string;
   resources?: V1ResourceName[];
+  restrictResources?: boolean;
 }
 
 export interface V1ProjectPermissions {
@@ -1139,15 +1141,7 @@ export interface V1RemoveProjectMemberServiceResponse {
   [key: string]: unknown;
 }
 
-export interface V1RemoveProjectMemberUserResourcesResponse {
-  [key: string]: unknown;
-}
-
 export interface V1RemoveProjectMemberUserResponse {
-  [key: string]: unknown;
-}
-
-export interface V1RemoveProjectMemberUsergroupResourcesResponse {
   [key: string]: unknown;
 }
 
@@ -1583,10 +1577,6 @@ export interface V1WhitelistedDomain {
   role?: string;
 }
 
-export type AdminServiceAddProjectMemberUserResourcesBodyBody = {
-  resources?: V1ResourceName[];
-};
-
 export type AdminServiceUpdateBillingSubscriptionBodyBody = {
   planName?: string;
   superuserForceAccess?: boolean;
@@ -1594,7 +1584,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
 
@@ -1610,6 +1600,12 @@ export type AdminServiceCreateAlertBodyBody = {
 export type AdminServiceUnsubscribeAlertBodyBody = {
   email?: string;
   slackUser?: string;
+};
+
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+  role?: string;
+  resources?: V1ResourceName[];
+  restrictResources?: boolean;
 };
 
 export type AdminServiceCreateReportBodyBody = {
@@ -1905,6 +1901,8 @@ export type AdminServiceListProjectMemberUsersParams = {
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
+  resources?: V1ResourceName[];
+  restrictResources?: boolean;
 };
 
 export type AdminServiceRedeployProjectParams = {
