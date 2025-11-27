@@ -117,8 +117,6 @@
   $: urlThemeName.set($page.url.searchParams.get("theme"));
 
   $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
-
-  $: console.log("parent theme", $theme?.resolvedThemeObject.light);
 </script>
 
 <ThemeProvider theme={$theme}>
