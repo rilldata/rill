@@ -1452,6 +1452,8 @@ components:
                     items:
                         $ref: '#/components/schemas/v1ResourceName'
                     type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
             type: object
@@ -1521,9 +1523,6 @@ components:
                     type: boolean
                 createReports:
                     type: boolean
-                fullyResourceRestricted:
-                    title: indicates whether all the roles have resource-restricted access
-                    type: boolean
                 manageAlerts:
                     type: boolean
                 manageBookmarks:
@@ -1561,8 +1560,11 @@ components:
                 resources:
                     items:
                         $ref: '#/components/schemas/v1ResourceName'
-                    title: list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+                    title: list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
                     type: array
+                restrictResources:
+                    title: indicates whether the permissions are restricted to specific resources
+                    type: boolean
             type: object
         v1ProjectRole:
             properties:

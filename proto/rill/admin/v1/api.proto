@@ -1984,8 +1984,8 @@ message AddProjectMemberUserRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
   string role = 4 [(validate.rules).string.min_len = 1];
-  repeated ResourceName resources = 5;
-  bool restrict_resources = 6;
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message AddProjectMemberUserResponse {
@@ -2005,8 +2005,8 @@ message SetProjectMemberUserRoleRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
   string role = 4 [(validate.rules).string.min_len = 1];
-  repeated ResourceName resources = 5;
-  bool restrict_resources = 6;
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message SetProjectMemberUserRoleResponse {}
@@ -2122,8 +2122,8 @@ message AddProjectMemberUsergroupRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
-  repeated ResourceName resources = 5;
-  bool restrict_resources = 6;
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message AddProjectMemberUsergroupResponse {}
@@ -2133,8 +2133,8 @@ message SetProjectMemberUsergroupRoleRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
-  repeated ResourceName resources = 5;
-  bool restrict_resources = 6;
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message SetProjectMemberUsergroupRoleResponse {}
@@ -3126,8 +3126,8 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
-  bool fully_resource_restricted = 23; // indicates whether all the roles have resource-restricted access
-  repeated ResourceName resources = 24; // list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+  bool restrict_resources = 23; // indicates whether the permissions are restricted to specific resources
+  repeated ResourceName resources = 24; // list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
 }
 
 message OrganizationRole {
@@ -3164,8 +3164,8 @@ message ProjectMemberUser {
   string org_role_name = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
-  repeated ResourceName resources = 9;
-  bool restrict_resources = 10;
+  bool restrict_resources = 9;
+  repeated ResourceName resources = 10;
 }
 
 message UsergroupMemberUser {
@@ -3188,7 +3188,8 @@ message ProjectInvite {
   string role_name = 2;
   string org_role_name = 4;
   string invited_by = 3;
-  repeated ResourceName resources = 5;
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message WhitelistedDomain {
@@ -3357,8 +3358,8 @@ message MemberUsergroup {
   uint32 users_count = 7;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
-  repeated ResourceName resources = 8;
-  bool restrict_resources = 9;
+  bool restrict_resources = 8;
+  repeated ResourceName resources = 9;
 }
 
 enum BillingIssueType {

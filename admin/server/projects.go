@@ -308,7 +308,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}
 
 		// ignore resource level security rules if the user has a full project role
-		userRules := securityRulesFromResources(permissions.FullyResourceRestricted, permissions.Resources)
+		userRules := securityRulesFromResources(permissions.RestrictResources, permissions.Resources)
 		rules = append(rules, userRules...)
 	} else if claims.OwnerType() == auth.OwnerTypeService {
 		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
@@ -440,18 +440,19 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 }
 
 func securityRulesFromResources(restricted bool, resources []*adminv1.ResourceName) []*runtimev1.SecurityRule {
-	if len(resources) == 0 {
-		if restricted {
-			// No access to any resources
-			return []*runtimev1.SecurityRule{{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Allow: false,
-					},
-				},
-			}}
-		}
+	if !restricted {
+		// No resource restrictions
 		return nil
+	}
+	if len(resources) == 0 {
+		// No access to any resources
+		return []*runtimev1.SecurityRule{{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
+				},
+			},
+		}}
 	}
 
 	rules := make([]*runtimev1.SecurityRule, 0, len(resources))

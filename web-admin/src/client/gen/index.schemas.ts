@@ -875,8 +875,8 @@ export interface V1MemberUsergroup {
   usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
-  resources?: V1ResourceName[];
   restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1Organization {
@@ -1003,6 +1003,7 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+  restrictResources?: boolean;
   resources?: V1ResourceName[];
 }
 
@@ -1031,8 +1032,8 @@ export interface V1ProjectMemberUser {
   orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
-  resources?: V1ResourceName[];
   restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectPermissions {
@@ -1058,7 +1059,7 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
-  fullyResourceRestricted?: boolean;
+  restrictResources?: boolean;
   resources?: V1ResourceName[];
 }
 
@@ -1616,8 +1617,8 @@ export type AdminServiceUnsubscribeAlertBodyBody = {
 
 export type AdminServiceSetProjectMemberUserRoleBodyBody = {
   role?: string;
-  resources?: V1ResourceName[];
   restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceCreateReportBodyBody = {
@@ -1913,8 +1914,8 @@ export type AdminServiceListProjectMemberUsersParams = {
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
-  resources?: V1ResourceName[];
   restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceRedeployProjectParams = {

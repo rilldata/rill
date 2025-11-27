@@ -698,11 +698,12 @@ func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.Organization
 
 func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 	return &adminv1.ProjectInvite{
-		Email:       i.Email,
-		RoleName:    i.RoleName,
-		OrgRoleName: i.OrgRoleName,
-		InvitedBy:   safeStr(i.InvitedBy),
-		Resources:   resourceNamesToPB(i.Resources),
+		Email:             i.Email,
+		RoleName:          i.RoleName,
+		OrgRoleName:       i.OrgRoleName,
+		InvitedBy:         safeStr(i.InvitedBy),
+		RestrictResources: i.RestrictResources,
+		Resources:         resourceNamesToPB(i.Resources),
 	}
 }
 

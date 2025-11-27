@@ -1722,13 +1722,13 @@ paths:
                 type: string
               role:
                 type: string
+              restrictResources:
+                type: boolean
               resources:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
-              restrictResources:
-                type: boolean
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
       summary: GetProjectMemberUser gets the member details
@@ -1813,13 +1813,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
               resources:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
-              restrictResources:
-                type: boolean
   /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
     get:
       summary: GetProjectMemberUsergroup returns the user groups for a user within a project
@@ -2325,13 +2325,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
               resources:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
-              restrictResources:
-                type: boolean
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2365,13 +2365,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
               resources:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
-              restrictResources:
-                type: boolean
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -5611,13 +5611,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
       resources:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
-      restrictResources:
-        type: boolean
   v1Organization:
     type: object
     properties:
@@ -5849,6 +5849,8 @@ definitions:
         type: string
       invitedBy:
         type: string
+      restrictResources:
+        type: boolean
       resources:
         type: array
         items:
@@ -5902,13 +5904,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
       resources:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
-      restrictResources:
-        type: boolean
   v1ProjectPermissions:
     type: object
     properties:
@@ -5956,15 +5958,15 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
-      fullyResourceRestricted:
+      restrictResources:
         type: boolean
-        title: indicates whether all the roles have resource-restricted access
+        title: indicates whether the permissions are restricted to specific resources
       resources:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
-        title: list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+        title: list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
   v1ProjectRole:
     type: object
     properties:

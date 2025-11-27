@@ -302,20 +302,24 @@ func (p *Printer) PrintProjectInvites(invites []*adminv1.ProjectInvite) {
 	rows := make([]*projectInvite, 0, len(invites))
 	for _, i := range invites {
 		rows = append(rows, &projectInvite{
-			Email:       i.Email,
-			RoleName:    i.RoleName,
-			OrgRoleName: i.OrgRoleName,
-			InvitedBy:   i.InvitedBy,
+			Email:             i.Email,
+			RoleName:          i.RoleName,
+			OrgRoleName:       i.OrgRoleName,
+			InvitedBy:         i.InvitedBy,
+			RestrictResources: i.RestrictResources,
+			Resources:         formatResourceNamesPB(i.Resources),
 		})
 	}
 	p.PrintDataWithTitle(rows, "Invites pending acceptance")
 }
 
 type projectInvite struct {
-	Email       string `header:"email" json:"email"`
-	RoleName    string `header:"role" json:"role_name"`
-	OrgRoleName string `header:"org_role" json:"org_role_name"`
-	InvitedBy   string `header:"invited_by" json:"invited_by"`
+	Email             string `header:"email" json:"email"`
+	RoleName          string `header:"role" json:"role_name"`
+	OrgRoleName       string `header:"org_role" json:"org_role_name"`
+	InvitedBy         string `header:"invited_by" json:"invited_by"`
+	RestrictResources bool   `header:"restrict_resources" json:"restrict_resources"`
+	Resources         string `header:"resources" json:"resources"`
 }
 
 func (p *Printer) PrintServices(svcs []*adminv1.Service) {

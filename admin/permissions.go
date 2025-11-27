@@ -138,7 +138,7 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 		return composite, nil
 	}
 
-	composite.FullyResourceRestricted = true
+	composite.RestrictResources = true
 	for _, role := range roles {
 		composite = UnionUserProjectRoles(composite, role)
 	}
@@ -321,30 +321,28 @@ func UnionUserProjectRoles(a *adminv1.ProjectPermissions, b *database.UserProjec
 	}
 
 	var mergedResources []*adminv1.ResourceName
-	if b.RestrictResources && len(b.Resources) > 0 {
-		seen := make(map[string]struct{})
-		for _, res := range a.Resources {
-			key := res.Type + "|" + res.Name
-			seen[key] = struct{}{}
-			mergedResources = append(mergedResources, res)
-		}
-		for _, res := range b.Resources {
-			key := res.Type + "|" + res.Name
-			if _, ok := seen[key]; !ok {
+	restricted := a.RestrictResources && b.RestrictResources
+	if restricted {
+		if len(b.Resources) > 0 {
+			seen := make(map[string]struct{})
+			for _, res := range a.Resources {
+				key := res.Type + "|" + res.Name
 				seen[key] = struct{}{}
-				mergedResources = append(mergedResources, &adminv1.ResourceName{
-					Type: res.Type,
-					Name: res.Name,
-				})
+				mergedResources = append(mergedResources, res)
 			}
+			for _, res := range b.Resources {
+				key := res.Type + "|" + res.Name
+				if _, ok := seen[key]; !ok {
+					seen[key] = struct{}{}
+					mergedResources = append(mergedResources, &adminv1.ResourceName{
+						Type: res.Type,
+						Name: res.Name,
+					})
+				}
+			}
+		} else {
+			mergedResources = a.Resources
 		}
-	} else {
-		mergedResources = a.Resources
-	}
-
-	fullyRestricted := a.FullyResourceRestricted && b.RestrictResources
-	if !fullyRestricted {
-		mergedResources = nil
 	}
 
 	return &adminv1.ProjectPermissions{
@@ -370,7 +368,7 @@ func UnionUserProjectRoles(a *adminv1.ProjectPermissions, b *database.UserProjec
 		ManageAlerts:               a.ManageAlerts || b.Role.ManageAlerts,
 		CreateBookmarks:            a.CreateBookmarks || b.Role.CreateBookmarks,
 		ManageBookmarks:            a.ManageBookmarks || b.Role.ManageBookmarks,
-		FullyResourceRestricted:    fullyRestricted,
+		RestrictResources:          restricted,
 		Resources:                  mergedResources,
 	}
 }

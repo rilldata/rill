@@ -6818,14 +6818,14 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
   role = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 5;
-   */
-  resources: ResourceName[] = [];
-
-  /**
-   * @generated from field: bool restrict_resources = 6;
+   * @generated from field: bool restrict_resources = 5;
    */
   restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
@@ -6839,8 +6839,8 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 6, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
@@ -7002,14 +7002,14 @@ export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUse
   role = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 5;
-   */
-  resources: ResourceName[] = [];
-
-  /**
-   * @generated from field: bool restrict_resources = 6;
+   * @generated from field: bool restrict_resources = 5;
    */
   restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<SetProjectMemberUserRoleRequest>) {
     super();
@@ -7023,8 +7023,8 @@ export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUse
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 6, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberUserRoleRequest {
@@ -8066,14 +8066,14 @@ export class AddProjectMemberUsergroupRequest extends Message<AddProjectMemberUs
   role = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 5;
-   */
-  resources: ResourceName[] = [];
-
-  /**
-   * @generated from field: bool restrict_resources = 6;
+   * @generated from field: bool restrict_resources = 5;
    */
   restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<AddProjectMemberUsergroupRequest>) {
     super();
@@ -8087,8 +8087,8 @@ export class AddProjectMemberUsergroupRequest extends Message<AddProjectMemberUs
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 6, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUsergroupRequest {
@@ -8164,14 +8164,14 @@ export class SetProjectMemberUsergroupRoleRequest extends Message<SetProjectMemb
   role = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 5;
-   */
-  resources: ResourceName[] = [];
-
-  /**
-   * @generated from field: bool restrict_resources = 6;
+   * @generated from field: bool restrict_resources = 5;
    */
   restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<SetProjectMemberUsergroupRoleRequest>) {
     super();
@@ -8185,8 +8185,8 @@ export class SetProjectMemberUsergroupRoleRequest extends Message<SetProjectMemb
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 6, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberUsergroupRoleRequest {
@@ -15935,14 +15935,14 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   manageBookmarks = false;
 
   /**
-   * indicates whether all the roles have resource-restricted access
+   * indicates whether the permissions are restricted to specific resources
    *
-   * @generated from field: bool fully_resource_restricted = 23;
+   * @generated from field: bool restrict_resources = 23;
    */
-  fullyResourceRestricted = false;
+  restrictResources = false;
 
   /**
-   * list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+   * list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
    *
    * @generated from field: repeated rill.admin.v1.ResourceName resources = 24;
    */
@@ -15978,7 +15978,7 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 14, name: "manage_alerts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "create_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "manage_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 23, name: "fully_resource_restricted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 24, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
@@ -16233,14 +16233,14 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
   updatedOn?: Timestamp;
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 9;
-   */
-  resources: ResourceName[] = [];
-
-  /**
-   * @generated from field: bool restrict_resources = 10;
+   * @generated from field: bool restrict_resources = 9;
    */
   restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 10;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<ProjectMemberUser>) {
     super();
@@ -16258,8 +16258,8 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
     { no: 8, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
-    { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 10, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectMemberUser {
@@ -16420,7 +16420,12 @@ export class ProjectInvite extends Message<ProjectInvite> {
   invitedBy = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 5;
+   * @generated from field: bool restrict_resources = 5;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
    */
   resources: ResourceName[] = [];
 
@@ -16436,7 +16441,8 @@ export class ProjectInvite extends Message<ProjectInvite> {
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectInvite {
@@ -17511,14 +17517,14 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
   updatedOn?: Timestamp;
 
   /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 8;
-   */
-  resources: ResourceName[] = [];
-
-  /**
-   * @generated from field: bool restrict_resources = 9;
+   * @generated from field: bool restrict_resources = 8;
    */
   restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 9;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<MemberUsergroup>) {
     super();
@@ -17535,8 +17541,8 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
     { no: 7, name: "users_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
-    { no: 8, name: "resources", kind: "message", T: ResourceName, repeated: true },
-    { no: 9, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MemberUsergroup {

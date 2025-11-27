@@ -18779,6 +18779,8 @@ func (m *AddProjectMemberUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for RestrictResources
+
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -18812,8 +18814,6 @@ func (m *AddProjectMemberUserRequest) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for RestrictResources
 
 	if len(errors) > 0 {
 		return AddProjectMemberUserRequestMultiError(errors)
@@ -19408,6 +19408,8 @@ func (m *SetProjectMemberUserRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for RestrictResources
+
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -19441,8 +19443,6 @@ func (m *SetProjectMemberUserRoleRequest) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for RestrictResources
 
 	if len(errors) > 0 {
 		return SetProjectMemberUserRoleRequestMultiError(errors)
@@ -22547,6 +22547,8 @@ func (m *AddProjectMemberUsergroupRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for RestrictResources
+
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -22580,8 +22582,6 @@ func (m *AddProjectMemberUsergroupRequest) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for RestrictResources
 
 	if len(errors) > 0 {
 		return AddProjectMemberUsergroupRequestMultiError(errors)
@@ -22837,6 +22837,8 @@ func (m *SetProjectMemberUsergroupRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for RestrictResources
+
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -22870,8 +22872,6 @@ func (m *SetProjectMemberUsergroupRoleRequest) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for RestrictResources
 
 	if len(errors) > 0 {
 		return SetProjectMemberUsergroupRoleRequestMultiError(errors)
@@ -43158,7 +43158,7 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageBookmarks
 
-	// no validation rules for FullyResourceRestricted
+	// no validation rules for RestrictResources
 
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
@@ -43834,6 +43834,8 @@ func (m *ProjectMemberUser) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for RestrictResources
+
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -43867,8 +43869,6 @@ func (m *ProjectMemberUser) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for RestrictResources
 
 	if len(errors) > 0 {
 		return ProjectMemberUserMultiError(errors)
@@ -44255,6 +44255,8 @@ func (m *ProjectInvite) validate(all bool) error {
 	// no validation rules for OrgRoleName
 
 	// no validation rules for InvitedBy
+
+	// no validation rules for RestrictResources
 
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
@@ -46295,6 +46297,8 @@ func (m *MemberUsergroup) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for RestrictResources
+
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -46328,8 +46332,6 @@ func (m *MemberUsergroup) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for RestrictResources
 
 	if len(errors) > 0 {
 		return MemberUsergroupMultiError(errors)
