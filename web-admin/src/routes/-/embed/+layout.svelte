@@ -2,15 +2,14 @@
   import { page } from "$app/stores";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
-  import { onMount } from "svelte";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -86,12 +85,7 @@
     {/if}
 
     <div class="flex h-full overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <slot />
-      </div>
-      {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-        <ExploreChat />
-      {/if}
+      <slot />
     </div>
   </RuntimeProvider>
 {/if}

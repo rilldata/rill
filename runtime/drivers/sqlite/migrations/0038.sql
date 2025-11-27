@@ -1,0 +1,2 @@
+ALTER TABLE instances ADD COLUMN theme TEXT NOT NULL DEFAULT '';
+

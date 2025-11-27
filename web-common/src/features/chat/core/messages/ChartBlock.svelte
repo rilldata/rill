@@ -4,7 +4,15 @@
     ChartContainer,
     type ChartType,
   } from "@rilldata/web-common/features/components/charts";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
+  import { Theme } from "@rilldata/web-common/features/themes/theme";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { readable } from "svelte/store";
 
   export let chartType: ChartType;
@@ -12,6 +20,8 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  $: instanceId = $runtime.instanceId;
 
   $: spec = readable(chartSpec);
 
@@ -43,6 +53,36 @@
     comparisonTimeRangeState: undefined,
     hasTimeSeries: true,
   });
+
+  $: defaultThemeQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) => data?.instance?.theme,
+      },
+    },
+    queryClient,
+  );
+
+  $: themeName = $defaultThemeQuery?.data;
+
+  $: themeQuery = useResource(
+    instanceId,
+    themeName!,
+    ResourceKind.Theme,
+    {
+      enabled: !!themeName,
+      select: (data) => {
+        if (data.resource?.theme?.spec) {
+          return new Theme(data.resource?.theme?.spec);
+        } else {
+          return undefined;
+        }
+      },
+    },
+    queryClient,
+  );
 </script>
 
 <div
@@ -53,6 +93,7 @@
     {spec}
     {timeAndFilterStore}
     {project}
+    theme={$themeQuery?.data}
     showExploreLink
     {organization}
     themeMode="light"

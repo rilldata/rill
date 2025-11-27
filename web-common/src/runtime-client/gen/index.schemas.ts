@@ -753,6 +753,7 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -1098,6 +1099,7 @@ export interface V1Instance {
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
   frontendUrl?: string;
+  theme?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -2489,6 +2491,7 @@ export type RuntimeServiceEditInstanceBody = {
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   frontendUrl?: string;
+  theme?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
