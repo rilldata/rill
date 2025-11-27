@@ -1276,6 +1276,9 @@ func (s *Server) validateResources(ctx context.Context, proj *database.Project, 
 	if len(resources) == 0 {
 		return nil
 	}
+	if proj.ProdDeploymentID == nil {
+		return fmt.Errorf("project %q does not have a production deployment", proj.Name)
+	}
 	// validate resources
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 	if err != nil {
