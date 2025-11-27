@@ -4526,6 +4526,11 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
   prompt = "";
 
   /**
+   * @generated from field: string agent = 10;
+   */
+  agent = "";
+
+  /**
    * @generated from field: string explore = 4;
    */
   explore = "";
@@ -4566,6 +4571,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -4660,6 +4666,11 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   prompt = "";
 
   /**
+   * @generated from field: string agent = 10;
+   */
+  agent = "";
+
+  /**
    * @generated from field: string explore = 4;
    */
   explore = "";
@@ -4700,6 +4711,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

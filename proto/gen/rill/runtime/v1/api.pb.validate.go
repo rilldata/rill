@@ -10916,6 +10916,8 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	// no validation rules for Agent
+
 	// no validation rules for Explore
 
 	if all {
@@ -11248,6 +11250,8 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 	// no validation rules for ConversationId
 
 	// no validation rules for Prompt
+
+	// no validation rules for Agent
 
 	// no validation rules for Explore
 

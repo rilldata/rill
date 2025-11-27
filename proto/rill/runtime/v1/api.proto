@@ -958,6 +958,7 @@ message CompleteRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
+  string agent = 10;
   string explore = 4;
   repeated string dimensions = 5;
   repeated string measures = 6;
@@ -977,6 +978,7 @@ message CompleteStreamingRequest {
   string instance_id = 1;
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
+  string agent = 10;
   string explore = 4;
   repeated string dimensions = 5;
   repeated string measures = 6;

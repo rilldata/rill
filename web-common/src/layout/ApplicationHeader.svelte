@@ -20,6 +20,7 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import GenerateSampleData from "@rilldata/web-common/features/welcome/GenerateSampleData.svelte";
 
   const { darkMode, deploy } = featureFlags;
 
@@ -125,6 +126,7 @@
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
+    <GenerateSampleData />
     <LocalAvatarButton darkMode={$darkMode} />
   </div>
 </header>

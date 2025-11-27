@@ -424,6 +424,8 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              agent:
+                type: string
               explore:
                 type: string
               dimensions:
@@ -479,6 +481,8 @@ paths:
                 type: string
                 title: If not provided, creates a new conversation
               prompt:
+                type: string
+              agent:
                 type: string
               explore:
                 type: string

@@ -53,11 +53,11 @@ export class WatchFilesClient {
 
           if (res.path === "/rill.yaml") {
             // If it's a rill.yaml file, invalidate the dev JWT queries
-            void queryClient.invalidateQueries({
-              queryKey: getRuntimeServiceIssueDevJWTQueryKey({}),
-            });
-
-            await invalidate("init");
+            // void queryClient.invalidateQueries({
+            //   queryKey: getRuntimeServiceIssueDevJWTQueryKey({}),
+            // });
+            //
+            // await invalidate("init");
           }
           this.seenFiles.add(res.path);
           break;

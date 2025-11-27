@@ -2494,6 +2494,7 @@ export type RuntimeServiceEditInstanceBody = {
 export type RuntimeServiceCompleteBody = {
   conversationId?: string;
   prompt?: string;
+  agent?: string;
   explore?: string;
   dimensions?: string[];
   measures?: string[];
@@ -2505,6 +2506,7 @@ export type RuntimeServiceCompleteBody = {
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  agent?: string;
   explore?: string;
   dimensions?: string[];
   measures?: string[];
