@@ -1041,7 +1041,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		}
 	}
 
-	// when no prior state is availble then mark all but the first partition as executed to force an incremental run
+	// when no prior state is available then mark all but the first partition as executed
 	if prevResult == nil && incrementalRun {
 		err = r.markPartitionsExecutedExceptFirst(ctx, model)
 		if err != nil {
