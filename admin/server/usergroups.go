@@ -710,7 +710,7 @@ func (s *Server) GetProjectMemberUsergroup(ctx context.Context, req *adminv1.Get
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	usergroups, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, proj.ID, user.ID)
