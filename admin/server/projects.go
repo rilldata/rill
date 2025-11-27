@@ -994,6 +994,9 @@ func (s *Server) GetProjectMemberUser(ctx context.Context, req *adminv1.GetProje
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
 		return nil, err
 	}
 
