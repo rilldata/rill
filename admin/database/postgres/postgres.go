@@ -2267,39 +2267,6 @@ func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, u
 	return role, nil
 }
 
-func (c *connection) FindProjectMemberResourcesForUser(ctx context.Context, projectID, userID string) ([]database.ResourceName, error) {
-	type resourceRow struct {
-		Resources         pgtype.JSONB `db:"resources"`
-		RestrictResources bool         `db:"restrict_resources"`
-	}
-
-	var rows []resourceRow
-	err := c.getDB(ctx).SelectContext(ctx, &rows, `
-		SELECT resources, restrict_resources FROM users_projects_roles WHERE project_id = $1 AND user_id = $2
-		UNION ALL
-		SELECT upr.resources, upr.restrict_resources FROM usergroups_projects_roles upr
-		JOIN usergroups_users uug ON upr.usergroup_id = uug.usergroup_id
-		WHERE upr.project_id = $1 AND uug.user_id = $2
-	`, projectID, userID)
-	if err != nil {
-		return nil, parseErr("project member resources", err)
-	}
-
-	var resources []database.ResourceName
-	for _, row := range rows {
-		if !row.RestrictResources {
-			continue
-		}
-		resNames, err := assignResourceNames(row.Resources)
-		if err != nil {
-			return nil, err
-		}
-		resources = append(resources, resNames...)
-	}
-
-	return dedupeResourceNames(resources), nil
-}
-
 func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)

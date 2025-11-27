@@ -1665,17 +1665,14 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	}
 
 	if ok {
-		// User is already a project member, update the role.
-		currentResources, err := s.admin.DB.FindProjectMemberResourcesForUser(ctx, proj.ID, user.ID)
+		// User is already a project member, update the role, keep existing resource restrictions.
+		member, err := s.admin.DB.FindProjectMemberUser(ctx, proj.ID, user.ID)
 		if err != nil {
 			return nil, err
 		}
+		currentResources := member.Resources
+		restrictResources := member.RestrictResources
 
-		// clear resources if the new role is not viewer
-		if role.Name != database.ProjectRoleNameViewer {
-			currentResources = nil
-		}
-		restrictResources := len(currentResources) > 0
 		err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, restrictResources, currentResources)
 		if err != nil {
 			return nil, err

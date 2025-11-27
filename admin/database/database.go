@@ -248,7 +248,6 @@ type DB interface {
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string, restrictResources bool, resources []ResourceName) error
-	FindProjectMemberResourcesForUser(ctx context.Context, projectID, userID string) ([]ResourceName, error)
 	UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error
 	DeleteOrganizationMemberService(ctx context.Context, serviceID, orgID string) error
 	DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error
