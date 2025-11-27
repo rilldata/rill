@@ -3,6 +3,7 @@ package river
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
@@ -60,8 +61,12 @@ func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Cont
 				if !ok {
 					w.logger.Error("invalid github url", zap.String("remote", repo.Remote), zap.String("repo_id", repo.ID))
 				}
-				_, err := client.Repositories.Delete(cctx, account, name)
+				resp, err := client.Repositories.Delete(cctx, account, name)
 				if err != nil {
+					if resp != nil && resp.StatusCode == http.StatusNotFound {
+						// already deleted, ignore
+						return nil
+					}
 					return fmt.Errorf("failed to delete github repo %q: %w", repo.Remote, err)
 				}
 				return nil
