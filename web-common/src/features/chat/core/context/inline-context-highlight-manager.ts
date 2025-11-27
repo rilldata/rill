@@ -1,15 +1,15 @@
 import {
-  ChatContextEntryType,
-  type InlineChatContext,
+  InlineContextType,
+  type InlineContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import type { MetricsViewContextOption } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
-import { inlineChatContextsAreEqual } from "web-common/src/features/chat/core/context/inline-context.ts";
+import { inlineContextsAreEqual } from "web-common/src/features/chat/core/context/inline-context.ts";
 import { writable } from "svelte/store";
 
 export class InlineContextHighlightManager {
-  public highlightedContext = writable<InlineChatContext | null>(null);
+  public highlightedContext = writable<InlineContext | null>(null);
 
-  private highlightableContexts: InlineChatContext[] = [];
+  private highlightableContexts: InlineContext[] = [];
   private highlightedIndex = -1;
 
   public filterOptionsUpdated(filteredOptions: MetricsViewContextOption[]) {
@@ -23,7 +23,7 @@ export class InlineContextHighlightManager {
     // Prefer non-metrics context if available for the 1st metrics view.
     const nonMetricsViewAvailable =
       this.highlightableContexts.length > 1 &&
-      this.highlightableContexts[1].type !== ChatContextEntryType.MetricsView;
+      this.highlightableContexts[1].type !== InlineContextType.MetricsView;
     this.highlightedIndex = nonMetricsViewAvailable ? 1 : 0;
     this.updateHighlightedContext();
   }
@@ -43,9 +43,9 @@ export class InlineContextHighlightManager {
     this.updateHighlightedContext();
   }
 
-  public highlightContext(context: InlineChatContext) {
+  public highlightContext(context: InlineContext) {
     const newIndex = this.highlightableContexts.findIndex((hc) =>
-      inlineChatContextsAreEqual(context, hc),
+      inlineContextsAreEqual(context, hc),
     );
     if (newIndex !== -1) {
       this.highlightedIndex = newIndex;

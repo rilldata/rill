@@ -1,15 +1,12 @@
-import Mention, {
-  type MentionNodeAttrs,
-  type MentionOptions,
-} from "@tiptap/extension-mention";
+import Mention, { type MentionOptions } from "@tiptap/extension-mention";
 import { Extension } from "@tiptap/core";
-import InlineChatContextPicker from "@rilldata/web-common/features/chat/core/context/InlineChatContextPicker.svelte";
+import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
-import InlineChatContextComponent from "@rilldata/web-common/features/chat/core/context/InlineChatContext.svelte";
+import InlineContextComponent from "@rilldata/web-common/features/chat/core/context/InlineContext.svelte";
 import {
   convertContextToInlinePrompt,
   parseInlineAttr,
-} from "@rilldata/web-common/features/chat/core/context/convertors.ts";
+} from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 import type { EditorView } from "@tiptap/pm/view";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
@@ -17,8 +14,8 @@ import Text from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 import {
   INLINE_CHAT_CONTEXT_TAG,
-  type InlineChatContext,
-  normalizeInlineChatContext,
+  type InlineContext,
+  normalizeInlineContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function getEditorPlugins(
@@ -92,17 +89,32 @@ const EditorSubmitExtension = Extension.create(() => {
   };
 });
 
+type InlineContextOptions = MentionOptions<never, InlineContext> & {
+  manager: ConversationManager;
+  sharedEditorStore: SharedEditorStore;
+};
+
+// Add the startMention command to the Commands type.
+declare module "@tiptap/core" {
+  interface Commands<ReturnType> {
+    mention: {
+      startMention: () => ReturnType;
+    };
+  }
+}
+
 /**
  * Extends the existing Mention extension to support inline chat context.
  * Creates InlineChatContext svelte component to display an interactive inline chat context block.
  */
-const InlineContextExtension = Mention.extend({
+const InlineContextExtension = Mention.extend<InlineContextOptions>({
   // Add a param for ConversationManager on top of Mention's options.
   addOptions() {
     return {
-      ...this.parent?.(),
-      manager: null as ConversationManager | null,
-      sharedEditorStore: <SharedEditorStore>{},
+      ...((this.parent?.() ?? {}) as MentionOptions<never, InlineContext>),
+      // These have to be configured for the extension to work
+      manager: {} as ConversationManager,
+      sharedEditorStore: {} as SharedEditorStore,
     };
   },
 
@@ -124,7 +136,7 @@ const InlineContextExtension = Mention.extend({
         ({ tr, view, commands }) => {
           commands.focus();
           // Only focus the editor if context is already open.
-          if ((this.options as any).sharedEditorStore.contextOpen) return false;
+          if (this.options.sharedEditorStore.contextOpen) return false;
 
           tr.insertText("@");
           view.dispatchEvent(new KeyboardEvent("keyup", { key: "@" }));
@@ -146,7 +158,7 @@ const InlineContextExtension = Mention.extend({
   },
 
   renderText({ node }) {
-    return convertContextToInlinePrompt(node.attrs as InlineChatContext);
+    return convertContextToInlinePrompt(node.attrs as InlineContext);
   },
 
   addNodeView() {
@@ -157,18 +169,16 @@ const InlineContextExtension = Mention.extend({
       // We need this here to make sure the component is rendered inline.
       target.className = "inline-block";
 
-      // TODO: fix type so that InlineContextExtension has manager in options
-      const sharedEditorStore = (this.options as any)
-        .sharedEditorStore as SharedEditorStore;
+      const sharedEditorStore = this.options.sharedEditorStore;
 
       // Create the inline chat context component. Pass the wrapper as the target.
-      const comp = new InlineChatContextComponent({
+      const comp = new InlineContextComponent({
         target,
         props: {
           // TODO: fix type so that InlineContextExtension has manager in options
-          conversationManager: (this.options as any).manager,
-          selectedChatContext: normalizeInlineChatContext(
-            node.attrs as InlineChatContext,
+          conversationManager: this.options.manager,
+          selectedChatContext: normalizeInlineContext(
+            node.attrs as InlineContext,
           ),
           onSelect: (selectedChatContext) => {
             const pos = getPos();
@@ -200,22 +210,22 @@ const InlineContextExtension = Mention.extend({
 
 /**
  * Configures the InlineContextExtension to show a dropdown when the user types "@".
- * Renders the InlineChatContextPicker svelte component.
+ * Renders the InlineContextPicker svelte component.
  */
 export function configureInlineContextTipTapExtension(
   manager: ConversationManager,
   sharedEditorStore: SharedEditorStore,
 ) {
-  let comp: InlineChatContextPicker | null = null;
+  let comp: InlineContextPicker | null = null;
   let selected = false;
 
-  return InlineContextExtension.configure(<Partial<MentionOptions>>{
+  return InlineContextExtension.configure({
     manager,
     sharedEditorStore,
     suggestion: {
       char: "@",
       allowSpaces: true,
-      items: () => [],
+      items: () => [], // TODO: would it make sense to manage the options here?
       render: () => ({
         onStart: (props) => {
           const rect = props.clientRect?.();
@@ -223,7 +233,7 @@ export function configureInlineContextTipTapExtension(
           const bottom = window.innerHeight - (rect?.bottom ?? 0) + 16;
           selected = false;
 
-          comp = new InlineChatContextPicker({
+          comp = new InlineContextPicker({
             target: document.body,
             props: {
               conversationManager: manager,
@@ -231,7 +241,7 @@ export function configureInlineContextTipTapExtension(
               bottom,
               onSelect: (item) => {
                 selected = true;
-                props.command(item as unknown as MentionNodeAttrs);
+                props.command(item);
               },
               focusEditor: () => props.editor.commands.focus(),
             },
@@ -272,18 +282,18 @@ export function configureInlineContextTipTapExtension(
  */
 class SharedEditorStore {
   public contextOpen: boolean = false;
-  private components: InlineChatContextComponent[] = [];
+  private components: InlineContextComponent[] = [];
 
-  public componentAdded(comp: InlineChatContextComponent) {
+  public componentAdded(comp: InlineContextComponent) {
     this.components.push(comp);
   }
 
-  public componentsRemoved(comp: InlineChatContextComponent) {
+  public componentsRemoved(comp: InlineContextComponent) {
     this.components = this.components.filter((c) => c !== comp);
     this.contextOpen = false;
   }
 
-  public dropdownToggled(comp: InlineChatContextComponent, isOpen: boolean) {
+  public dropdownToggled(comp: InlineContextComponent, isOpen: boolean) {
     this.contextOpen = isOpen;
     if (!isOpen) return;
 
@@ -296,7 +306,7 @@ class SharedEditorStore {
 }
 
 function getTransactionForContext(
-  inlineChatContext: InlineChatContext,
+  inlineChatContext: InlineContext,
   view: EditorView,
   pos: number,
 ) {

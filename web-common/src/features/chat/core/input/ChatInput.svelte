@@ -7,7 +7,8 @@
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import { Editor } from "@tiptap/core";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/chat-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -65,8 +66,7 @@
   }
 
   function startMention() {
-    (editor.commands as any).startMention();
-    editor.view.state.tr;
+    editor.commands.startMention();
   }
 
   onMount(() => {
@@ -87,14 +87,17 @@
       },
     });
 
-    const offStartChat = eventBus.on("start-chat", (prompt) => {
+    const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
       editor.commands.setContent(prompt);
       editor.commands.focus();
     });
 
+    chatMounted.set(true);
+
     return () => {
+      chatMounted.set(false);
       editor.destroy();
-      offStartChat();
+      unsubStartChatEvent();
     };
   });
 </script>

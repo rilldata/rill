@@ -11,7 +11,7 @@ import type {
 
 export const INLINE_CHAT_CONTEXT_TAG = "chat-reference";
 
-export enum ChatContextEntryType {
+export enum InlineContextType {
   Explore = "explore",
   MetricsView = "metricsView",
   TimeRange = "timeRange",
@@ -21,8 +21,8 @@ export enum ChatContextEntryType {
   DimensionValues = "dimensionValues",
 }
 
-export type InlineChatContext = {
-  type: ChatContextEntryType;
+export type InlineContext = {
+  type: InlineContextType;
   label?: string;
   metricsView?: string;
   measure?: string;
@@ -31,9 +31,9 @@ export type InlineChatContext = {
   values?: string[];
 };
 
-export function inlineChatContextsAreEqual(
-  ctx1: InlineChatContext,
-  ctx2: InlineChatContext,
+export function inlineContextsAreEqual(
+  ctx1: InlineContext,
+  ctx2: InlineContext,
 ) {
   const nonValuesAreEqual =
     ctx1.type === ctx2.type &&
@@ -51,13 +51,13 @@ export function inlineChatContextsAreEqual(
   );
 }
 
-export function normalizeInlineChatContext(ctx: InlineChatContext) {
+export function normalizeInlineContext(ctx: InlineContext) {
   return Object.fromEntries(
     Object.entries(ctx).filter(([, v]) => v !== null && v !== undefined),
-  ) as InlineChatContext;
+  ) as InlineContext;
 }
 
-export type InlineChatContextMetadata = Record<string, MetricsViewMetadata>;
+export type InlineContextMetadata = Record<string, MetricsViewMetadata>;
 export type MetricsViewMetadata = {
   metricsViewSpec: V1MetricsViewSpec;
   measures: Record<string, MetricsViewSpecMeasure>;
@@ -65,18 +65,18 @@ export type MetricsViewMetadata = {
 };
 
 type ContextConfigPerType = {
-  getLabel: (ctx: InlineChatContext, meta: InlineChatContextMetadata) => string;
+  getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
 };
 
 export const InlineContextConfig: Partial<
-  Record<ChatContextEntryType, ContextConfigPerType>
+  Record<InlineContextType, ContextConfigPerType>
 > = {
-  [ChatContextEntryType.MetricsView]: {
+  [InlineContextType.MetricsView]: {
     getLabel: (ctx, meta) =>
       meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
   },
 
-  [ChatContextEntryType.TimeRange]: {
+  [InlineContextType.TimeRange]: {
     getLabel: (ctx) => {
       if (!ctx.timeRange) return "";
       const [start, end] = ctx.timeRange.split(" to ");
@@ -87,21 +87,21 @@ export const InlineContextConfig: Partial<
     },
   },
 
-  [ChatContextEntryType.Measure]: {
+  [InlineContextType.Measure]: {
     getLabel: (ctx, meta) => {
       const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
       return getMeasureDisplayName(mes) || ctx.measure!;
     },
   },
 
-  [ChatContextEntryType.Dimension]: {
+  [InlineContextType.Dimension]: {
     getLabel: (ctx, meta) => {
       const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
       return getDimensionDisplayName(dim) || ctx.dimension!;
     },
   },
 
-  [ChatContextEntryType.DimensionValues]: {
+  [InlineContextType.DimensionValues]: {
     getLabel: (ctx, meta) => {
       const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
       const dimLabel = getDimensionDisplayName(dim) || ctx.dimension!;

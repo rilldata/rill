@@ -4,16 +4,16 @@
   import { ChevronDownIcon } from "lucide-svelte";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
   import {
-    ChatContextEntryType,
+    InlineContextType,
     InlineContextConfig,
-    type InlineChatContext,
+    type InlineContext,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
-  import InlineChatContextPicker from "@rilldata/web-common/features/chat/core/context/InlineChatContextPicker.svelte";
+  import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
 
   export let conversationManager: ConversationManager;
-  export let selectedChatContext: InlineChatContext;
-  export let onSelect: (ctx: InlineChatContext) => void;
+  export let selectedChatContext: InlineContext;
+  export let onSelect: (ctx: InlineContext) => void;
   export let onDropdownToggle: (open: boolean) => void;
   export let focusEditor: () => void;
 
@@ -32,19 +32,19 @@
     typeData?.getLabel(selectedChatContext!, $contextMetadataStore) ?? "";
 
   $: isMetricsViewContext =
-    selectedChatContext.type === ChatContextEntryType.Measure ||
-    selectedChatContext.type === ChatContextEntryType.Dimension;
+    selectedChatContext.type === InlineContextType.Measure ||
+    selectedChatContext.type === InlineContextType.Dimension;
   $: metricsViewName = isMetricsViewContext
-    ? InlineContextConfig[ChatContextEntryType.MetricsView]!.getLabel(
+    ? InlineContextConfig[InlineContextType.MetricsView]!.getLabel(
         selectedChatContext,
         $contextMetadataStore,
       )
     : "";
 
   $: supportsEditing =
-    selectedChatContext.type === ChatContextEntryType.MetricsView ||
-    selectedChatContext.type === ChatContextEntryType.Measure ||
-    selectedChatContext.type === ChatContextEntryType.Dimension;
+    selectedChatContext.type === InlineContextType.MetricsView ||
+    selectedChatContext.type === InlineContextType.Measure ||
+    selectedChatContext.type === InlineContextType.Dimension;
 
   function toggleDropdown() {
     const rect = chatElement.getBoundingClientRect();
@@ -111,7 +111,7 @@
   </svelte:element>
 
   {#if supportsEditing && open}
-    <InlineChatContextPicker
+    <InlineContextPicker
       {conversationManager}
       {left}
       {bottom}

@@ -1,6 +1,8 @@
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { localStorageStore } from "../../../../lib/store-utils/local-storage";
 import { sessionStorageStore } from "../../../../lib/store-utils/session-storage";
+import { get, writable } from "svelte/store";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 
 // =============================================================================
 // SIDEBAR CONSTANTS
@@ -22,6 +24,8 @@ export const chatOpen = sessionStorageStore<boolean>(
   SIDEBAR_DEFAULTS.CHAT_OPEN,
 );
 
+export const chatMounted = writable(false);
+
 export const sidebarWidth = localStorageStore<number>(
   "sidebar-width",
   SIDEBAR_DEFAULTS.SIDEBAR_WIDTH,
@@ -42,9 +46,9 @@ export const sidebarActions = {
 
   startChat(prompt: string): void {
     chatOpen.set(true);
-    setTimeout(() => {
-      eventBus.emit("start-chat", prompt);
-    }, 50);
+    void waitUntil(() => get(chatMounted)).then(() =>
+      eventBus.emit("start-chat", prompt),
+    );
   },
 
   closeChat(): void {

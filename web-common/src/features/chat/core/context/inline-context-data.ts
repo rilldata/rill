@@ -3,9 +3,9 @@ import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { derived, type Readable } from "svelte/store";
 import {
-  ChatContextEntryType,
-  type InlineChatContext,
-  type InlineChatContextMetadata,
+  InlineContextType,
+  type InlineContext,
+  type InlineContextMetadata,
   type MetricsViewMetadata,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import {
@@ -50,16 +50,16 @@ export function getInlineChatContextMetadata() {
           },
         ];
       }),
-    ) as InlineChatContextMetadata;
+    ) as InlineContextMetadata;
   });
 }
 
 export type MetricsViewContextOption = {
-  metricsViewContext: InlineChatContext;
+  metricsViewContext: InlineContext;
   recentlyUsed: boolean;
   currentlyActive: boolean;
-  measures: InlineChatContext[];
-  dimensions: InlineChatContext[];
+  measures: InlineContext[];
+  dimensions: InlineContext[];
 };
 
 /**
@@ -83,8 +83,8 @@ export function getInlineChatContextOptions() {
       const measures =
         metricsViewSpec?.measures?.map(
           (m) =>
-            <InlineChatContext>{
-              type: ChatContextEntryType.Measure,
+            <InlineContext>{
+              type: InlineContextType.Measure,
               label: getMeasureDisplayName(m),
               metricsView: mvName,
               measure: m.name!,
@@ -94,8 +94,8 @@ export function getInlineChatContextOptions() {
       const dimensions =
         metricsViewSpec?.dimensions?.map(
           (d) =>
-            <InlineChatContext>{
-              type: ChatContextEntryType.Dimension,
+            <InlineContext>{
+              type: InlineContextType.Dimension,
               label: getDimensionDisplayName(d),
               metricsView: mvName,
               dimension: d.name!,
@@ -104,7 +104,7 @@ export function getInlineChatContextOptions() {
 
       return {
         metricsViewContext: {
-          type: ChatContextEntryType.MetricsView,
+          type: InlineContextType.MetricsView,
           metricsView: mvName,
           label: mvDisplayName,
         },

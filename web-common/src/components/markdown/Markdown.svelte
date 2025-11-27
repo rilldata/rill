@@ -9,9 +9,6 @@
   $: sanitisedContext = content
     .replace(/^```markdown\n/m, "")
     .replace(/\n```$/m, "");
-
-  // Safeguard to make sure converter is not undefined/null
-  $: converter ??= (c: string) => marked(c);
 </script>
 
 <div class="chat-markdown">

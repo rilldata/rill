@@ -1,10 +1,10 @@
 import {
-  ChatContextEntryType,
-  type InlineChatContext,
+  InlineContextType,
+  type InlineContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { get, writable } from "svelte/store";
-import { convertContextToInlinePrompt } from "@rilldata/web-common/features/chat/core/context/convertors.ts";
+import { convertContextToInlinePrompt } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 
 export class MeasureSelection {
   public readonly measure = writable<string | null>(null);
@@ -38,7 +38,7 @@ export class MeasureSelection {
     const measure = get(this.measure)!;
 
     const measureMention = convertContextToInlinePrompt({
-      type: ChatContextEntryType.Measure,
+      type: InlineContextType.Measure,
       metricsView,
       measure,
     });
@@ -47,8 +47,8 @@ export class MeasureSelection {
     const end = get(this.end)?.toISOString();
     if (!start) return;
 
-    const timeRangeCtx = <InlineChatContext>{
-      type: ChatContextEntryType.TimeRange,
+    const timeRangeCtx = <InlineContext>{
+      type: InlineContextType.TimeRange,
     };
     if (end) {
       timeRangeCtx.timeRange = `${start} to ${end}`;

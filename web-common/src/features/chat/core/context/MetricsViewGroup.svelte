@@ -2,18 +2,18 @@
   import * as Collapsible from "@rilldata/web-common/components/collapsible/index.ts";
   import { getAttrs, builderActions } from "bits-ui";
   import {
-    type InlineChatContext,
-    inlineChatContextsAreEqual,
+    type InlineContext,
+    inlineContextsAreEqual,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { MetricsViewContextOption } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
   import type { Readable } from "svelte/store";
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
 
   export let metricsViewContextOption: MetricsViewContextOption;
-  export let selectedChatContext: InlineChatContext | null = null;
-  export let highlightedContext: InlineChatContext | null = null;
+  export let selectedChatContext: InlineContext | null = null;
+  export let highlightedContext: InlineContext | null = null;
   export let searchTextStore: Readable<string>;
-  export let onSelect: (ctx: InlineChatContext) => void;
+  export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
   $: ({
@@ -25,12 +25,12 @@
   } = metricsViewContextOption);
   $: metricsViewSelected =
     selectedChatContext !== null &&
-    inlineChatContextsAreEqual(metricsViewContext, selectedChatContext);
+    inlineContextsAreEqual(metricsViewContext, selectedChatContext);
   $: withinMetricsViewSelected =
     selectedChatContext?.metricsView === metricsViewContext.metricsView;
   $: metricsViewHighlighted =
     highlightedContext !== null &&
-    inlineChatContextsAreEqual(metricsViewContext, highlightedContext);
+    inlineContextsAreEqual(metricsViewContext, highlightedContext);
   $: withinMetricsViewHighlighted =
     highlightedContext?.metricsView === metricsViewContext.metricsView;
 
@@ -43,6 +43,19 @@
   $: if (shouldForceOpen) {
     open = true;
   }
+
+  function ensureInView(node: HTMLElement, active: boolean) {
+    if (active) {
+      node.scrollIntoView({ block: "nearest" });
+    }
+    return {
+      update(active: boolean) {
+        if (active) {
+          node.scrollIntoView({ block: "nearest" });
+        }
+      },
+    };
+  }
 </script>
 
 <Collapsible.Root bind:open class="border-b last:border-b-0">
@@ -53,6 +66,7 @@
       type="button"
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
+      use:ensureInView={metricsViewHighlighted}
       on:click={focusEditor}
     >
       {#if open}
@@ -78,15 +92,16 @@
     {#each measures as measure (measure.measure)}
       {@const selected =
         selectedChatContext !== null &&
-        inlineChatContextsAreEqual(measure, selectedChatContext)}
+        inlineContextsAreEqual(measure, selectedChatContext)}
       {@const highlighted =
         highlightedContext !== null &&
-        inlineChatContextsAreEqual(measure, highlightedContext)}
+        inlineContextsAreEqual(measure, highlightedContext)}
       <button
         class="context-item"
         class:highlight={highlighted}
         type="button"
         on:click={() => onSelect(measure)}
+        use:ensureInView={highlighted}
       >
         <div class="context-item-checkbox">
           {#if selected}
@@ -105,15 +120,16 @@
     {#each dimensions as dimension (dimension.dimension)}
       {@const selected =
         selectedChatContext !== null &&
-        inlineChatContextsAreEqual(dimension, selectedChatContext)}
+        inlineContextsAreEqual(dimension, selectedChatContext)}
       {@const highlighted =
         highlightedContext !== null &&
-        inlineChatContextsAreEqual(dimension, highlightedContext)}
+        inlineContextsAreEqual(dimension, highlightedContext)}
       <button
         class="context-item"
         class:highlight={highlighted}
         type="button"
         on:click={() => onSelect(dimension)}
+        use:ensureInView={highlighted}
       >
         <div class="context-item-checkbox">
           {#if selected}

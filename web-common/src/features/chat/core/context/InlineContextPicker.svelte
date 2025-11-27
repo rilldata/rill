@@ -5,16 +5,16 @@
     getInlineChatContextFilteredOptions,
     type MetricsViewContextOption,
   } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
-  import { type InlineChatContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-  import InlineChatMetricsViewContextPicker from "@rilldata/web-common/features/chat/core/context/InlineChatMetricsViewContextPicker.svelte";
+  import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+  import MetricsViewGroup from "@rilldata/web-common/features/chat/core/context/MetricsViewGroup.svelte";
   import { InlineContextHighlightManager } from "@rilldata/web-common/features/chat/core/context/inline-context-highlight-manager.ts";
 
   export let conversationManager: ConversationManager;
   export let left: number;
   export let bottom: number;
-  export let selectedChatContext: InlineChatContext | null = null;
+  export let selectedChatContext: InlineContext | null = null;
   export let searchText: string = "";
-  export let onSelect: (ctx: InlineChatContext) => void;
+  export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
   const searchTextStore = writable("");
@@ -66,7 +66,7 @@
   style="left: {left}px; bottom: {bottom}px;"
 >
   {#each $filteredOptions as metricsViewContextOption (metricsViewContextOption.metricsViewContext.metricsView)}
-    <InlineChatMetricsViewContextPicker
+    <MetricsViewGroup
       {metricsViewContextOption}
       {selectedChatContext}
       highlightedContext={$highlightedContext}

@@ -1,23 +1,23 @@
 import {
-  ChatContextEntryType,
-  type InlineChatContext,
+  InlineContextType,
+  type InlineContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import {
   convertContextToInlinePrompt,
   convertPromptValueToContext,
-} from "@rilldata/web-common/features/chat/core/context/convertors.ts";
+} from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 import { describe, it, expect } from "vitest";
 
 describe("should convert to and from inline prompt", () => {
   const testCases: {
     title: string;
-    ctx: InlineChatContext;
+    ctx: InlineContext;
     expectedPrompt: string;
   }[] = [
     {
       title: "metrics view",
       ctx: {
-        type: ChatContextEntryType.MetricsView,
+        type: InlineContextType.MetricsView,
         metricsView: "adbids",
       },
       expectedPrompt: `<chat-reference>type="metricsView" metricsView="adbids"</chat-reference>`,
@@ -26,7 +26,7 @@ describe("should convert to and from inline prompt", () => {
     {
       title: "time range",
       ctx: {
-        type: ChatContextEntryType.TimeRange,
+        type: InlineContextType.TimeRange,
         timeRange: "2025-11-21T00:00:00Z",
       },
       expectedPrompt: `<chat-reference>type="timeRange" timeRange="2025-11-21T00:00:00Z"</chat-reference>`,
@@ -35,7 +35,7 @@ describe("should convert to and from inline prompt", () => {
     {
       title: "measure",
       ctx: {
-        type: ChatContextEntryType.Measure,
+        type: InlineContextType.Measure,
         metricsView: "adbids",
         measure: "impressions",
       },
@@ -45,7 +45,7 @@ describe("should convert to and from inline prompt", () => {
     {
       title: "dimension",
       ctx: {
-        type: ChatContextEntryType.Dimension,
+        type: InlineContextType.Dimension,
         metricsView: "adbids",
         dimension: "publisher",
       },

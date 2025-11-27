@@ -1,11 +1,11 @@
 import {
   InlineContextConfig,
   INLINE_CHAT_CONTEXT_TAG,
-  type InlineChatContext,
-  type InlineChatContextMetadata,
+  type InlineContext,
+  type InlineContextMetadata,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
-export function convertContextToInlinePrompt(ctx: InlineChatContext) {
+export function convertContextToInlinePrompt(ctx: InlineContext) {
   const parts: string[] = [`type="${ctx.type}"`];
 
   if (ctx.metricsView) {
@@ -30,10 +30,10 @@ const PARTS_REGEX = /(\w+?)="([^"]+?)"/g;
 
 export function convertPromptValueToContext(
   contextValue: string,
-): InlineChatContext | null {
+): InlineContext | null {
   const parts = contextValue.matchAll(PARTS_REGEX);
 
-  const ctx = <InlineChatContext>{};
+  const ctx = <InlineContext>{};
 
   for (const [, key, value] of parts) {
     ctx[key] = value;
@@ -56,7 +56,7 @@ const ChatContextRegex = new RegExp(
 );
 export function convertPromptWithInlineContextToHTML(
   prompt: string,
-  meta: InlineChatContextMetadata,
+  meta: InlineContextMetadata,
 ) {
   const lines = prompt.split("\n");
   const htmlLines = lines.map((line) =>
