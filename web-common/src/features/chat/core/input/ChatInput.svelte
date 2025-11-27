@@ -39,9 +39,14 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage($context, {
-        onStreamStart: () => editor.commands.setContent(""),
-      });
+      await currentConversation.sendMessage(
+        {
+          analystAgentContext: $context,
+        },
+        {
+          onStreamStart: () => editor.commands.setContent(""),
+        },
+      );
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
