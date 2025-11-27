@@ -30,7 +30,7 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 	testruntime.ReconcileParserAndWait(t, rt, instanceID)
 
 	// Create a manual full trigger
-	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "patch_model"}, &runtimev1.RefreshModelTrigger{Model: "patch_model", Full: true})
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "patch_model", Full: true})
 
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 

@@ -64,10 +64,11 @@ func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1
 	require.NoError(t, err)
 }
 
-func RefreshModelAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName, model *runtimev1.RefreshModelTrigger) {
+func RefreshModelAndWait(t testing.TB, rt *runtime.Runtime, id string, model *runtimev1.RefreshModelTrigger) {
 	ctx := t.Context()
 	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: model.Model}
 
 	// Get resource before refresh
 	rPrev, err := ctrl.Get(ctx, n, false)
