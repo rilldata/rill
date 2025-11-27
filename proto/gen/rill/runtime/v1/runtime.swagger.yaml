@@ -550,6 +550,28 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/tools:
+    get:
+      summary: |-
+        ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+        Note that it covers all registered tools, but the current user may not have access to all of them.
+      operationId: RuntimeService_ListTools
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListToolsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/connectors/{connector}/buckets:
     get:
       summary: ListBuckets lists buckets accessible with the configured credentials.
@@ -5016,6 +5038,15 @@ definitions:
           $ref: '#/definitions/v1TableInfo'
       nextPageToken:
         type: string
+  v1ListToolsResponse:
+    type: object
+    properties:
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+    title: Response message for RuntimeService.ListTools
   v1Log:
     type: object
     properties:
@@ -7097,6 +7128,28 @@ definitions:
       records:
         type: object
         title: Not optional, not null
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
     properties:
