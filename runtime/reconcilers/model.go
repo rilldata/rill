@@ -1777,7 +1777,7 @@ func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Re
 		}
 
 		// if the catalog has no prior state we take explicit action from user to avoid dropping existing data.
-		if !prevResultExists && !model.Spec.Trigger && !model.Spec.TriggerFull {
+		if !prevResultExists && !model.Spec.Trigger && !model.Spec.TriggerFull && !model.Spec.TriggerPartitions {
 			return nil, fmt.Errorf("execution paused because the model has no prior state and the 'change_mode' is 'patch': you must manually trigger either an incremental or full refresh")
 		}
 
