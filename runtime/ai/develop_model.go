@@ -128,11 +128,11 @@ Additional instructions:
   In these cases, you should generate a SQL query that emits realistic synthetic realistic-looking column names and values instead of mock values, include a time column, and realistic data distributions.
   Generate substantial datasets covering 6-12 months of historical data with approx 10,000 rows to enable meaningful analysis and dashboard visualization.
   Space out timestamps realistically across the time period rather than clustering them.
-- The SQL expression should be a plain SELECT query without a semicolon at the end.
+- The SQL expression should be a a valid plain SELECT in specified dialect without a semicolon at the end.
 </process>
 
 <example>
-A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will be creates as a table in the project's database using "CREATE TABLE name AS SELECT ...". Here is an example Rill model:
+A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will create as a table in the project's database using "CREATE TABLE name AS <SQL statement>". Here is an example Rill model:
 {{ backticks }}
 type: model
 materialize: true
@@ -167,7 +167,11 @@ func (t *DevelopModel) userPrompt(ctx context.Context, args *DevelopModelArgs) (
 		return "", err
 	}
 	defer release()
-	data["dialect"] = olap.Dialect().String()
+	dialect := olap.Dialect().String()
+	if dialect == "" {
+		dialect = "DuckDB"
+	}
+	data["dialect"] = dialect
 
 	// Generate the user prompt
 	return executeTemplate(`
