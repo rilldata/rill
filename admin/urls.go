@@ -398,10 +398,16 @@ func (u *URLs) PaymentPortal(org string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing", "payment")
 }
 
+// OAuthExternal returns the URL for the OAuth 2.0 Authorization Server's external base URL. It replaces `admin` with `api` in the host.
+func (u *URLs) OAuthExternal() string {
+	external := u.External()
+	return strings.Replace("admin.rilldata", "api.rilldata", external, 1)
+}
+
 // OAuthProtectedResourceMetadata returns the URL for the OAuth 2.0 Protected Resource Metadata endpoint.
-// This endpoint is used by MCP clients to discover authorization server information.
+// This endpoint is used by MCP clients to discover authorization server information. The origin should match the resource URL, so if api.rilldata.com is used as the resource, it should also be used here.
 func (u *URLs) OAuthProtectedResourceMetadata() string {
-	return urlutil.MustJoinURL(u.External(), "/.well-known/oauth-protected-resource")
+	return urlutil.MustJoinURL(u.OAuthExternal(), "/.well-known/oauth-protected-resource")
 }
 
 // OAuthRegister returns the URL for the OAuth 2.0 Dynamic Client Registration endpoint.
