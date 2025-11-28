@@ -13,6 +13,7 @@
   export let readOnly = false;
   export let type: "measure" | "dimension" | "time" | "special" | "amber" =
     "dimension";
+  export let gray = false;
   export let exclude = false;
   export let grab = false;
   export let compact = false;
@@ -45,6 +46,7 @@
     class:theme
     class:active
     class:grab
+    class:gray
     class:exclude
     class:compact
     class:fullWidth
@@ -104,9 +106,9 @@
   }
 
   .chip {
-    @apply flex flex-none gap-x-1;
+    @apply flex  gap-x-1;
     @apply items-center justify-center;
-    @apply px-2 py-[3px] border w-fit;
+    @apply px-2 py-[3px] border w-full max-w-fit truncate;
   }
 
   .dimension {
@@ -213,6 +215,20 @@
   .amber:active,
   .amber.active {
     @apply bg-amber-100;
+  }
+
+  .gray,
+  .gray.theme {
+    @apply bg-gray-100 border-gray-300 text-gray-600;
+  }
+
+  .gray:hover,
+  .gray:active,
+  .gray.active,
+  .gray.theme:hover,
+  .gray.theme:active,
+  .gray.theme.active {
+    @apply bg-gray-200 border-gray-400;
   }
 
   .compact {

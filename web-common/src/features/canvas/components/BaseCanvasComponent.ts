@@ -65,6 +65,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
   getExploreTransformerProperties?(): Partial<ExploreState>;
 
+  metricsViewName: string;
+
   constructor(
     resource: V1Resource,
     public parent: CanvasEntity,
@@ -74,6 +76,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
 
     const mergedSpec = { ...defaultSpec, ...yamlSpec };
+    this.metricsViewName = mergedSpec["metrics_view"] as string;
     this.specStore = writable(mergedSpec);
     this.pathInYAML = path;
 
@@ -182,6 +185,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   get timeAndFilterStore() {
+    const parsedFilterStore = this.parent.filterManager.metricsViewFilters.get(
+      this.metricsViewName,
+    )?.parsed;
+
+    if (!parsedFilterStore) {
+      throw new Error("Parsed filter store not found for component");
+    }
+
     return derived(
       [
         this.parent.timeControls.timeRangeStateStore,
@@ -189,8 +200,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeControls.comparisonRangeStateStore,
         this.localTimeControls.comparisonRangeStateStore,
         this.parent.timeControls.selectedTimezone,
-        this.parent.filters.whereFilter,
-        this.parent.filters.dimensionThresholdFilters,
+        parsedFilterStore,
         this.parent.specStore,
         this.parent.timeControls.hasTimeSeries,
         this.specStore,
@@ -201,8 +211,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         globalComparisonRangeState,
         localComparisonRangeState,
         timeZone,
-        whereFilter,
-        dtf,
+
+        parsedFilter,
         canvasData,
         hasTimeSeries,
         componentSpec,
@@ -260,8 +270,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
         // Dimension Filters
         const globalWhere =
-          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
-          createAndExpression([]);
+          buildValidMetricsViewFilter(
+            parsedFilter.where,
+            parsedFilter.dimensionThresholdFilters,
+            dimensions,
+            measures,
+          ) ?? createAndExpression([]);
 
         let where: V1Expression | undefined = globalWhere;
 

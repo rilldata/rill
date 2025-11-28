@@ -24,6 +24,8 @@
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import { useCanvas } from "../canvas/selector";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import LeaderboardIcon from "../canvas/icons/LeaderboardIcon.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -41,7 +43,7 @@
   } = fileArtifact);
 
   $: ({
-    canvasEntity: { _rows },
+    canvasEntity: { _rows, setDefaultFilters },
   } = getCanvasStore(canvasName, instanceId));
 
   $: resourceQuery = getResource(queryClient, instanceId);
@@ -96,6 +98,16 @@
       resourceKind={ResourceKind.Canvas}
     >
       <div class="flex gap-x-2" slot="cta">
+        <Button
+          label="Preview"
+          type="secondary"
+          preload={false}
+          compact
+          onClick={setDefaultFilters}
+        >
+          <LeaderboardIcon size="16px" color="currentColor" />
+          <div class="flex gap-x-1 items-center">Save as default</div>
+        </Button>
         <PreviewButton
           href="/canvas/{canvasName}"
           disabled={allErrors.length > 0 || resourceIsReconciling}

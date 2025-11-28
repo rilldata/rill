@@ -402,6 +402,11 @@ export interface V1CanvasItem {
   widthUnit?: string;
 }
 
+/**
+ * Filter expressions as key-value pairs for the canvas.
+ */
+export type V1CanvasPresetFilterExpr = { [key: string]: string };
+
 export interface V1CanvasPreset {
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -410,6 +415,8 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonMode?: V1ExploreComparisonMode;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
+  /** Filter expressions as key-value pairs for the canvas. */
+  filterExpr?: V1CanvasPresetFilterExpr;
 }
 
 export interface V1CanvasRow {
@@ -452,6 +459,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  pinnedFilters?: string[];
 }
 
 export interface V1CanvasState {

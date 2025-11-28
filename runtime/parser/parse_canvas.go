@@ -29,11 +29,13 @@ type CanvasYAML struct {
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
 		Enable *bool `yaml:"enable"`
+		Pinned []string `yaml:"pinned"`
 	}
 	Defaults *struct {
 		TimeRange           string `yaml:"time_range"`
 		ComparisonMode      string `yaml:"comparison_mode"`
 		ComparisonDimension string `yaml:"comparison_dimension"`
+		Filters 		   map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
@@ -45,6 +47,7 @@ type CanvasYAML struct {
 		} `yaml:"items"`
 	}
 	Security *SecurityPolicyYAML `yaml:"security"`
+	FilterExpr map[string]string `yaml:"filter_expr"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -227,10 +230,14 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
+		
+	
+
 		defaultPreset = &runtimev1.CanvasPreset{
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
+			FilterExpr:          tmp.Defaults.Filters,
 		}
 	}
 
@@ -273,6 +280,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Rows = rows
 	r.CanvasSpec.SecurityRules = rules
+	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
