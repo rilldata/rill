@@ -300,7 +300,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Build the model
-	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, trigger, prevResult)
+	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, specHash, refsHash, trigger, prevResult)
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -324,25 +324,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// If the build(full or partial) succeeded, update the model's state accordingly
-	if execRes != nil {
-		model.State.ExecutorConnector = executorConnector
-		model.State.SpecHash = specHash
-		model.State.RefsHash = refsHash
-		model.State.TestHash = ""    // Updated below if tests are configured
-		model.State.TestErrors = nil // Updated below if tests are configured
-		model.State.RefreshedOn = timestamppb.Now()
-		model.State.IncrementalState = newIncrementalState
-		model.State.IncrementalStateSchema = newIncrementalStateSchema
-		model.State.PartitionsHaveErrors = partitionsHaveErrors
-		model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
-		if firstRunIncremental {
-			model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
-		} else {
-			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
-		}
-
-		err = r.updateStateWithResult(ctx, self, execRes)
+	// If the build succeeded, update the model's state accordingly
+	// NOTE: If making any change here, also update executeAll
+	if execErr == nil {
+		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -636,6 +621,36 @@ func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// updateStateAfterExecution updates the model's state after a successful execution.
+func (r *ModelReconciler) updateStateAfterExecution(
+	ctx context.Context,
+	self *runtimev1.Resource,
+	model *runtimev1.Model,
+	executorConnector, specHash, refsHash string,
+	incrementalState *structpb.Struct,
+	incrementalStateSchema *runtimev1.StructType,
+	partitionsHaveErrors, firstRunIncremental bool,
+	execRes *drivers.ModelResult,
+) error {
+	model.State.ExecutorConnector = executorConnector
+	model.State.SpecHash = specHash
+	model.State.RefsHash = refsHash
+	model.State.TestHash = ""    // Updated later if tests are configured
+	model.State.TestErrors = nil // Updated later if tests are configured
+	model.State.RefreshedOn = timestamppb.Now()
+	model.State.IncrementalState = incrementalState
+	model.State.IncrementalStateSchema = incrementalStateSchema
+	model.State.PartitionsHaveErrors = partitionsHaveErrors
+	model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
+	if firstRunIncremental {
+		model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
+	} else {
+		model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
+	}
+
+	return r.updateStateWithResult(ctx, self, execRes)
 }
 
 // updateStateWithResult updates the model resource's state with the result of a model execution.
@@ -934,8 +949,7 @@ func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Mo
 }
 
 // executeAll executes all partitions (if any) of a model with the given execution options.
-// both partial result and an error can be returned when running with partitions.
-func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, trigger *resolvedTrigger, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, specHash, refsHash string, trigger *resolvedTrigger, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
 	// Prepare the incremental state to pass to the executor
 	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
@@ -1056,7 +1070,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
-	var partialResult *drivers.ModelResult
 	if !incrementalRun {
 		// Find the first partition
 		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
@@ -1083,11 +1096,15 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 		// Update the state so the next invocations will be incremental
 		prevResult = res
-		partialResult = res
 		incrementalRun = true
 		totalExecDuration.Add(int64(res.ExecDuration))
+
+		// also update the model state so that if there are errors in subsequent partitions the model state will reflect that some partitions have succeeded
+		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res)
+		if err != nil {
+			return "", nil, false, err
+		}
 	}
-	// after this point always return the partial result in case of errors
 
 	// Repeatedly load a batch of pending partitions and execute it with a pool of worker goroutines.
 	for {
@@ -1156,7 +1173,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Wait for all workers to finish
 		err = grp.Wait()
 		if err != nil {
-			return "", partialResult, false, err
+			return "", nil, false, err
 		}
 
 		// Finally combine the results of each worker into the prevResult
@@ -1171,10 +1188,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 			prevResult, err = executor.finalResultManager.MergePartitionResults(prevResult, r)
 			if err != nil {
-				return "", partialResult, false, fmt.Errorf("failed to merge partition task results: %w", err)
+				return "", nil, false, fmt.Errorf("failed to merge partition task results: %w", err)
 			}
-			partialResult = prevResult
-			partialResult.ExecDuration = time.Duration(totalExecDuration.Load())
 		}
 
 		// If we got fewer partitions than the batch size, we've processed all pending partitions and can stop.
