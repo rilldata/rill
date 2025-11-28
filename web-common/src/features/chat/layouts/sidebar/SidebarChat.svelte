@@ -16,11 +16,14 @@
     sidebarWidth,
   } from "./sidebar-store";
 
+  export let agent: string | undefined = undefined;
+
   $: ({ instanceId } = $runtime);
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
+    agent,
   });
 
   let chatInputComponent: ChatInput;
@@ -71,11 +74,12 @@
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <Messages {conversationManager} layout="sidebar" />
+    <Messages {conversationManager} layout="sidebar" {agent} />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}
       onSend={onMessageSend}
+      {agent}
     />
   </div>
 </div>

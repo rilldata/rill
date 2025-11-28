@@ -28,6 +28,10 @@ export interface ConversationManagerOptions {
    * - "browserStorage": Use session storage (for sidebar chat)
    */
   conversationState: ConversationStateType;
+  /**
+   * The agent to use for conversations (e.g., "analyst_agent", "developer_agent")
+   */
+  agent?: string;
 }
 
 /**
@@ -49,15 +53,18 @@ export class ConversationManager {
   private newConversation: Conversation;
   private conversations = new Map<string, Conversation>();
   private conversationSelector: ConversationSelector;
+  private agent?: string;
 
   constructor(
     public readonly instanceId: string,
     options: ConversationManagerOptions,
   ) {
+    this.agent = options.agent;
     this.newConversation = new Conversation(
       this.instanceId,
       NEW_CONVERSATION_ID,
       {
+        agent: this.agent,
         onStreamStart: () => this.enforceMaxConcurrentStreams(),
         onConversationCreated: (conversationId: string) => {
           this.handleConversationCreated(conversationId);
@@ -120,6 +127,7 @@ export class ConversationManager {
           this.instanceId,
           $conversationId,
           {
+            agent: this.agent,
             onStreamStart: () => this.enforceMaxConcurrentStreams(),
           },
         );
@@ -222,6 +230,7 @@ export class ConversationManager {
       this.instanceId,
       NEW_CONVERSATION_ID,
       {
+        agent: this.agent,
         onStreamStart: () => this.enforceMaxConcurrentStreams(),
         onConversationCreated: (conversationId: string) => {
           this.handleConversationCreated(conversationId);
