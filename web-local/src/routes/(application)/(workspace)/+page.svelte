@@ -5,6 +5,8 @@
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
   import GenerateSampleData from "@rilldata/web-common/features/welcome/GenerateSampleData.svelte";
+  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
+  import { ToolName } from "@rilldata/web-common/features/chat/core/types";
 
   export let data: LayoutData;
 </script>
@@ -13,19 +15,24 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-{#if data.initialized}
-  <OnboardingWorkspace />
-{:else}
-  <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
-    <div class="wrapper column p-10 2xl:py-16">
-      <TitleContent />
-      <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
-        <ProjectCards />
+<div class="flex h-full overflow-hidden">
+  <div class="flex-1 overflow-hidden">
+    {#if data.initialized}
+      <OnboardingWorkspace />
+    {:else}
+      <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
+        <div class="wrapper column p-10 2xl:py-16">
+          <TitleContent />
+          <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
+            <ProjectCards />
+          </div>
+          <GenerateSampleData isInit />
+        </div>
       </div>
-      <GenerateSampleData isInit />
-    </div>
+    {/if}
   </div>
-{/if}
+  <ExploreChat agent={ToolName.DEVELOPER_AGENT} />
+</div>
 
 <style lang="postcss">
   .scroll {
