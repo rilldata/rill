@@ -30,7 +30,7 @@ import (
 
 const (
 	composeFile    = "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	minGoVersion   = "1.24"
+	minGoVersion   = "1.25"
 	minNodeVersion = "18"
 	stateDirLocal  = "dev-project"
 	rillGitRemote  = "https://github.com/rilldata/rill.git"
