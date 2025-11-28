@@ -3,14 +3,13 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
+  import { WandIcon, GitBranch } from "lucide-svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import Model from "../../../components/icons/Model.svelte";
@@ -20,6 +19,7 @@
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -32,12 +32,23 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
+  $: modelResource = $modelQuery.data;
+  $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
+    modelResource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-  $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
+  $: tableName = modelResource?.model?.state?.resultTable ?? "";
+
+  function viewGraph() {
+    if (!modelResource) {
+      console.warn(
+        "[ModelMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(modelResource);
+  }
 
   async function handleCreateModel() {
     try {
@@ -115,6 +126,11 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
+<NavigationMenuItem on:click={viewGraph}>
+  <GitBranch slot="icon" size="14px" />
+  View dependency graph
+</NavigationMenuItem>
+
 <NavigationMenuItem
   disabled={disableCreateDashboard}
   on:click={createExploreFromTable}
@@ -135,5 +151,3 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-
-<NavigationMenuSeparator />

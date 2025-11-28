@@ -34,6 +34,8 @@
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
+  import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
+  import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
@@ -158,6 +160,10 @@
             <ModelMenuItems {filePath} />
           {:else if resourceKind === ResourceKind.MetricsView}
             <MetricsViewMenuItems {filePath} />
+          {:else if resourceKind === ResourceKind.Explore}
+            <ExploreMenuItems {filePath} />
+          {:else if resourceKind === ResourceKind.Canvas}
+            <CanvasMenuItems {filePath} />
           {/if}
         {/if}
         {#if $hasUnsavedChanges}

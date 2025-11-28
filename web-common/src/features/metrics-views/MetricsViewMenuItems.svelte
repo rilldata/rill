@@ -16,6 +16,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import { GitBranch } from "lucide-svelte";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   export let filePath: string;
 
@@ -53,6 +55,16 @@
       MetricsEventScreenName.Model,
     );
   };
+
+  function viewGraph() {
+    if (!resource) {
+      console.warn(
+        "[MetricsViewMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(resource);
+  }
 </script>
 
 {#if hasMenuItems}
@@ -73,3 +85,8 @@
   {/if}
   <NavigationMenuSeparator />
 {/if}
+
+<NavigationMenuItem on:click={viewGraph}>
+  <GitBranch slot="icon" size="14px" />
+  View dependency graph
+</NavigationMenuItem>
