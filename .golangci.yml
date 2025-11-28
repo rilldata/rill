@@ -51,6 +51,7 @@ linters:
         - ifElseChain
         - unnamedResult
         - importShadow
+        - deprecatedComment
       enabled-tags:
         - diagnostic
         - style
