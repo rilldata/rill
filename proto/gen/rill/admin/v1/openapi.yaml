@@ -757,6 +757,18 @@ components:
                 project:
                     $ref: '#/components/schemas/v1Project'
             type: object
+        v1GetProjectMemberUserResponse:
+            properties:
+                member:
+                    $ref: '#/components/schemas/v1ProjectMemberUser'
+            type: object
+        v1GetProjectMemberUsergroupResponse:
+            properties:
+                usergroups:
+                    items:
+                        $ref: '#/components/schemas/v1MemberUsergroup'
+                    type: array
+            type: object
         v1GetProjectResponse:
             properties:
                 jwt:
@@ -1193,6 +1205,12 @@ components:
                     type: boolean
                 groupName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -1430,6 +1448,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
             type: object
@@ -1467,6 +1491,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -1526,6 +1556,14 @@ components:
                 readProjectMembers:
                     type: boolean
                 readProvisionerResources:
+                    type: boolean
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    title: list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
+                    type: array
+                restrictResources:
+                    title: indicates whether the permissions are restricted to specific resources
                     type: boolean
             type: object
         v1ProjectRole:
@@ -4308,6 +4346,12 @@ paths:
                             properties:
                                 email:
                                     type: string
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object
@@ -4360,6 +4404,38 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: RemoveProjectMemberUser removes member from the project
+        get:
+            operationId: AdminService_GetProjectMemberUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetProjectMemberUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetProjectMemberUser gets the member details
         put:
             operationId: AdminService_SetProjectMemberUserRole
             parameters:
@@ -4383,6 +4459,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object
@@ -4402,6 +4484,39 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: SetProjectMemberUserRole sets the role for the member
+    /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
+        get:
+            operationId: AdminService_GetProjectMemberUsergroup
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: email
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetProjectMemberUsergroupResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetProjectMemberUsergroup returns the user groups for a user within a project
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject
@@ -4974,6 +5089,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object
@@ -5016,6 +5137,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                resources:
+                                    items:
+                                        $ref: '#/components/schemas/v1ResourceName'
+                                    type: array
+                                restrictResources:
+                                    type: boolean
                                 role:
                                     type: string
                             type: object

@@ -757,6 +757,18 @@ components:
                 project:
                     $ref: '#/components/schemas/v1Project'
             type: object
+        v1GetProjectMemberUserResponse:
+            properties:
+                member:
+                    $ref: '#/components/schemas/v1ProjectMemberUser'
+            type: object
+        v1GetProjectMemberUsergroupResponse:
+            properties:
+                usergroups:
+                    items:
+                        $ref: '#/components/schemas/v1MemberUsergroup'
+                    type: array
+            type: object
         v1GetProjectResponse:
             properties:
                 jwt:
@@ -1193,6 +1205,12 @@ components:
                     type: boolean
                 groupName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -1430,6 +1448,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
             type: object
@@ -1467,6 +1491,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -1526,6 +1556,14 @@ components:
                 readProjectMembers:
                     type: boolean
                 readProvisionerResources:
+                    type: boolean
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    title: list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
+                    type: array
+                restrictResources:
+                    title: indicates whether the permissions are restricted to specific resources
                     type: boolean
             type: object
         v1ProjectRole:
@@ -2813,6 +2851,7 @@ paths:
     /v1/orgs/{org}/projects/{project}/invites: {}
     /v1/orgs/{org}/projects/{project}/members: {}
     /v1/orgs/{org}/projects/{project}/members/{email}: {}
+    /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}

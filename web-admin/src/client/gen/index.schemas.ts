@@ -590,6 +590,14 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectMemberUserResponse {
+  member?: V1ProjectMemberUser;
+}
+
+export interface V1GetProjectMemberUsergroupResponse {
+  usergroups?: V1MemberUsergroup[];
+}
+
 export interface V1GetProjectResponse {
   project?: V1Project;
   prodDeployment?: V1Deployment;
@@ -867,6 +875,8 @@ export interface V1MemberUsergroup {
   usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1Organization {
@@ -993,6 +1003,8 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
@@ -1020,6 +1032,8 @@ export interface V1ProjectMemberUser {
   orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectPermissions {
@@ -1045,6 +1059,8 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectRole {
@@ -1586,7 +1602,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
 
@@ -1602,6 +1618,12 @@ export type AdminServiceCreateAlertBodyBody = {
 export type AdminServiceUnsubscribeAlertBodyBody = {
   email?: string;
   slackUser?: string;
+};
+
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+  role?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceCreateReportBodyBody = {
@@ -1897,6 +1919,8 @@ export type AdminServiceListProjectMemberUsersParams = {
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceRedeployProjectParams = {

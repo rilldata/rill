@@ -19,8 +19,10 @@ Manage users
 
 * [rill](../cli.md)	 - A CLI for Rill
 * [rill user add](add.md)	 - Add user to a project, organization or group
+* [rill user grant-resource](grant-resource.md)	 - Grant a user access to specific project resources (viewer scoped)
 * [rill user list](list.md)	 - List users
 * [rill user remove](remove.md)	 - Remove a user
+* [rill user revoke-resource](revoke-resource.md)	 - Remove resource-level access previously granted to a user
 * [rill user set-attributes](set-attributes.md)	 - Set custom attributes for a user
 * [rill user set-role](set-role.md)	 - Change a user's role
 * [rill user show](show.md)	 - Show detailed information about a user
