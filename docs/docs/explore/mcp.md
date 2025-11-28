@@ -89,6 +89,21 @@ Custom connectors are only available in the paid plan of Claude Desktop. [Learn 
 5. Log in to Rill and authorize the connection
 6. Claude Desktop will receive an access token and your Rill app will be connected
 
+### Claude Code (Paid Plan)
+
+1. On terminal, run the following command to add mcp server with Claude Code:
+    ```bash
+    claude mcp add --transport http <rill-mcp-server-name> https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp 
+    ```
+    Replace `{org_name}` and `{project_name}` with your organization and project names. `<rill-mcp-server-name>` will be the name you assign to this MCP server.
+
+2. Open Claude Code using `claude` cmd.
+3. In Claude Code, use `/mcp` command to see the list of MCP servers.
+4. Choose the Rill MCP server you just added.
+5. Select `Authenticate` to start the OAuth flow in your browser.
+6. Log in to Rill and authorize the connection.
+7. Claude Code will receive an access token, and your Rill app will be connected.
+
 ### ChatGPT Web Interface (Paid Plan)
 
 :::info Paid ChatGPT Required
