@@ -35,4 +35,3 @@ export function isDifferentDashboard(
   if (!from || !to) return false;
   return from.name !== to.name || from.kind !== to.kind;
 }
-

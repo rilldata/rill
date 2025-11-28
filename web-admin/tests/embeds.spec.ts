@@ -344,7 +344,7 @@ test.describe("Embeds", () => {
     await frame
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
       .click();
- 
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
@@ -361,7 +361,7 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
- 
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
@@ -405,7 +405,7 @@ test.describe("Embeds", () => {
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
- 
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
