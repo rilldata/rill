@@ -16,7 +16,7 @@ import (
 // This endpoint helps MCP clients discover the authorization server for this protected resource. https://www.rfc-editor.org/rfc/rfc9728.html
 func (a *Authenticator) handleOAuthProtectedResourceMetadata(w http.ResponseWriter, r *http.Request) {
 	metadata := oauth.ProtectedResourceMetadata{
-		Resource:             a.admin.URLs.OAuthExternal(r),
+		Resource:             a.admin.URLs.OAuthExternalResourceURL(r),
 		AuthorizationServers: []string{a.admin.URLs.External()},
 		BearerMethodsSupported: []string{
 			"header", // Authorization: Bearer <token>

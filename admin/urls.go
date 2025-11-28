@@ -399,20 +399,24 @@ func (u *URLs) PaymentPortal(org string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing", "payment")
 }
 
-// OAuthExternal returns the URL for the OAuth 2.0 Authorization Server's external base URL. It replaces `admin` with `api` in the host.
-func (u *URLs) OAuthExternal(r *http.Request) string {
-	external := u.External()
-	// if the request is coming to admin.rilldata.com, that means client already has admin.rilldata.com url so we don't need to replace it with api.rilldata.com
-	if r != nil && strings.HasPrefix(r.Host, "admin.rilldata") {
-		return external
+// OAuthExternalResourceURL returns the external URL for OAuth 2.0 resource access.
+// If a request is provided, it uses the request's Host header to construct the URL to make sure protected resource URLs origin matches with the resource URL being accessed by the client.
+// This helps in cases, for example, where the MCP server url starts with api.rilldata.com instead of admin.rilldata.com.
+func (u *URLs) OAuthExternalResourceURL(r *http.Request) string {
+	if r != nil {
+		scheme := "http"
+		if u.IsHTTPS() {
+			scheme = "https"
+		}
+		return fmt.Sprintf("%s://%s", scheme, r.Host)
 	}
-	return strings.Replace(external, "admin.rilldata", "api.rilldata", 1)
+	return u.External()
 }
 
 // OAuthProtectedResourceMetadata returns the URL for the OAuth 2.0 Protected Resource Metadata endpoint.
-// This endpoint is used by MCP clients to discover authorization server information. The origin should match the resource URL, so if api.rilldata.com is used as the resource, it should also be used here.
+// This endpoint is used by MCP clients to discover authorization server information.
 func (u *URLs) OAuthProtectedResourceMetadata(r *http.Request) string {
-	return urlutil.MustJoinURL(u.OAuthExternal(r), "/.well-known/oauth-protected-resource")
+	return urlutil.MustJoinURL(u.OAuthExternalResourceURL(r), "/.well-known/oauth-protected-resource")
 }
 
 // OAuthRegister returns the URL for the OAuth 2.0 Dynamic Client Registration endpoint.
