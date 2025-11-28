@@ -53,8 +53,14 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 		args.Path = "/" + args.Path
 	}
 
-	// Pre-invoke file read
+	// Pre-invoke file listing to get context about existing models
 	session := GetSession(ctx)
+	_, err := session.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Pre-invoke file read for the target file
 	_, _ = session.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
 		Path: args.Path,
 	})
@@ -81,7 +87,7 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 			NewTextCompletionMessage(RoleSystem, systemPrompt),
 			NewTextCompletionMessage(RoleUser, userPrompt),
 		},
-		Tools:         []string{ReadFileName, WriteFileName},
+		Tools:         []string{SearchFilesName, ReadFileName, WriteFileName},
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})
@@ -117,13 +123,16 @@ At a high level, you should follow these steps:
 3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
 
 Additional instructions:
-- The user will often ask you to create or update models that require external data, such as from a SaaS application or their data warehouse. In these cases, you should generate a SQL query that emits mock data that resembles the expected structure and contents of the external data. You may generate up to 100 rows of mock data.
-- You should not attempt to reference other models in the project, unless the model already exists and already references them.
-- The SQL expression should be a plain SELECT query without a semicolon at the end.
+- If the user asks you to join, combine, or reference existing models in the project, you MUST use the existing models by referencing them in SQL (e.g., "SELECT * FROM model_name"). Check the list_files output to see what models exist.
+- Only generate synthetic data when the user asks for data from EXTERNAL sources (like SaaS applications or data warehouses) that don't exist in the project yet.
+  In these cases, you should generate a SQL query that emits realistic synthetic realistic-looking column names and values instead of mock values, include a time column, and realistic data distributions.
+  Generate substantial datasets covering 6-12 months of historical data with approx 10,000 rows to enable meaningful analysis and dashboard visualization.
+  Space out timestamps realistically across the time period rather than clustering them.
+- The SQL expression should be a a valid plain SELECT in specified dialect without a semicolon at the end.
 </process>
 
 <example>
-A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will be creates as a table in the project's database using "CREATE TABLE name AS SELECT ...". Here is an example Rill model:
+A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will create as a table in the project's database using "CREATE TABLE name AS <SQL statement>". Here is an example Rill model:
 {{ backticks }}
 type: model
 materialize: true
@@ -158,7 +167,11 @@ func (t *DevelopModel) userPrompt(ctx context.Context, args *DevelopModelArgs) (
 		return "", err
 	}
 	defer release()
-	data["dialect"] = olap.Dialect().String()
+	dialect := olap.Dialect().String()
+	if dialect == "" {
+		dialect = "DuckDB"
+	}
+	data["dialect"] = dialect
 
 	// Generate the user prompt
 	return executeTemplate(`
