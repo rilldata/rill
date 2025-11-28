@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { ColumnDef, TableOptions } from "@tanstack/svelte-table";
+  import type {
+    ColumnDef,
+    SortingState,
+    TableOptions,
+  } from "@tanstack/svelte-table";
   import {
     createSvelteTable,
     flexRender,
@@ -17,8 +21,9 @@
   export let kind: string;
   export let toolbar: boolean = true;
   export let fixedRowHeight: boolean = true;
+  export let initialSorting: SortingState = [];
 
-  let sorting = [];
+  let sorting: SortingState = initialSorting;
   function setSorting(updater) {
     if (updater instanceof Function) {
       sorting = updater(sorting);
