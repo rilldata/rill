@@ -52,7 +52,7 @@ func TestCompile(t *testing.T) {
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}
-			e, err := executor.New(ctx, rt, instanceID, mv.GetMetricsView().State.ValidSpec, false, sec, 0)
+			e, err := executor.New(ctx, rt, instanceID, mv.GetMetricsView().State.ValidSpec, false, sec, 0, nil)
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}

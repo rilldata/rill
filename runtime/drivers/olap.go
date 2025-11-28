@@ -73,6 +73,9 @@ type Statement struct {
 	// Unlike a timeout on ctx, it will be enforced only for query execution, not for time spent waiting in queues.
 	// It may not be supported by all drivers.
 	ExecutionTimeout time.Duration
+	// QueryAttributes provides additional attributes for the query (if supported by the driver).
+	// These can be used to customize the behavior of the query "{{ .user.partnerId }}"
+	QueryAttributes map[string]string
 }
 
 // Rows is an iterator for rows returned by a query. It mimics the behavior of sqlx.Rows.

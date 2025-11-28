@@ -114,7 +114,12 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		}
 	}
 
-	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	var userAttrs map[string]any
+	if q.SecurityClaims != nil {
+		userAttrs = q.SecurityClaims.UserAttributes
+	}
+
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}

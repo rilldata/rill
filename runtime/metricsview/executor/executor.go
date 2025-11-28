@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
@@ -37,11 +38,12 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	timestamps map[string]metricsview.TimestampsResult
+	timestamps      map[string]metricsview.TimestampsResult
+	queryAttributes map[string]string
 }
 
 // New creates a new Executor for the provided metrics view.
-func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
+func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int, userAttrs map[string]any) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -52,17 +54,44 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		return nil, err
 	}
 
+	// Resolve query attributes once during initialization
+	var queryAttrs map[string]string
+	if len(mv.QueryAttributes) > 0 {
+		// Get instance for template data
+		inst, err := rt.Instance(ctx, instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance for query attributes: %w", err)
+		}
+
+		td := parser.TemplateData{
+			Environment: inst.Environment,
+			Variables:   inst.ResolveVariables(false),
+			User:        userAttrs,
+		}
+
+		// Resolve templates
+		queryAttrs = make(map[string]string)
+		for key, template := range mv.QueryAttributes {
+			val, err := parser.ResolveTemplate(template, td, false)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve query attribute %q: %w", key, err)
+			}
+			queryAttrs[key] = val
+		}
+	}
+
 	return &Executor{
-		rt:          rt,
-		instanceID:  instanceID,
-		metricsView: mv,
-		streaming:   streaming,
-		security:    sec,
-		priority:    priority,
-		olap:        olap,
-		olapRelease: release,
-		instanceCfg: instanceCfg,
-		timestamps:  make(map[string]metricsview.TimestampsResult),
+		rt:              rt,
+		instanceID:      instanceID,
+		metricsView:     mv,
+		streaming:       streaming,
+		security:        sec,
+		priority:        priority,
+		olap:            olap,
+		olapRelease:     release,
+		instanceCfg:     instanceCfg,
+		timestamps:      make(map[string]metricsview.TimestampsResult),
+		queryAttributes: queryAttrs,
 	}, nil
 }
 
@@ -95,8 +124,9 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	}
 
 	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:    spec.CacheKeySql,
-		Priority: e.priority,
+		Query:           spec.CacheKeySql,
+		Priority:        e.priority,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return nil, false, err
@@ -332,6 +362,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 			Args:             args,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultInteractiveTimeout,
+			QueryAttributes:  e.queryAttributes,
 		})
 		if err != nil {
 			return nil, err
@@ -478,7 +509,6 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		finalSQL  strings.Builder
 		finalArgs []any
 		rowsCap   int64
-		err       error
 	)
 	for i, d := range qry.Dimensions {
 		if i > 0 {
@@ -503,7 +533,8 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
-		if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+		err := e.rewriteQueryTimeRanges(ctx, q, executionTime)
+		if err != nil {
 			return nil, err
 		}
 
@@ -534,6 +565,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		Args:             finalArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultInteractiveTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return nil, err
@@ -618,6 +650,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 	if qry.TimeRange == nil {
 		return nil, errDruidNativeSearchUnimplemented
 	}
+
 	dimensions := make([]metricsview.Dimension, len(qry.Dimensions))
 	for i, d := range qry.Dimensions {
 		dimensions[i] = metricsview.Dimension{Name: d}
@@ -667,6 +700,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			Args:             a.Root.Where.Args,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultInteractiveTimeout,
+			QueryAttributes:  e.queryAttributes,
 		})
 		if err != nil {
 			return nil, err

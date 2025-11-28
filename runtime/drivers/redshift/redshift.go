@@ -88,6 +88,7 @@ type configProperties struct {
 	Workgroup         string `mapstructure:"workgroup"`
 	ClusterIdentifier string `mapstructure:"cluster_identifier"`
 	AllowHostAccess   bool   `mapstructure:"allow_host_access"`
+	LogQueries        bool   `mapstructure:"log_queries"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
