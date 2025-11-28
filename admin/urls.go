@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -399,15 +400,19 @@ func (u *URLs) PaymentPortal(org string) string {
 }
 
 // OAuthExternal returns the URL for the OAuth 2.0 Authorization Server's external base URL. It replaces `admin` with `api` in the host.
-func (u *URLs) OAuthExternal() string {
+func (u *URLs) OAuthExternal(r *http.Request) string {
 	external := u.External()
-	return strings.Replace("admin.rilldata", "api.rilldata", external, 1)
+	// if the request is coming from admin.rilldata.com then we don't need to replace it with api.rilldata.com
+	if r != nil && strings.Contains(r.Host, "admin.rilldata") {
+		return external
+	}
+	return strings.Replace(external, "admin.rilldata", "api.rilldata", 1)
 }
 
 // OAuthProtectedResourceMetadata returns the URL for the OAuth 2.0 Protected Resource Metadata endpoint.
 // This endpoint is used by MCP clients to discover authorization server information. The origin should match the resource URL, so if api.rilldata.com is used as the resource, it should also be used here.
-func (u *URLs) OAuthProtectedResourceMetadata() string {
-	return urlutil.MustJoinURL(u.OAuthExternal(), "/.well-known/oauth-protected-resource")
+func (u *URLs) OAuthProtectedResourceMetadata(r *http.Request) string {
+	return urlutil.MustJoinURL(u.OAuthExternal(r), "/.well-known/oauth-protected-resource")
 }
 
 // OAuthRegister returns the URL for the OAuth 2.0 Dynamic Client Registration endpoint.
