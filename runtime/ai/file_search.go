@@ -84,6 +84,10 @@ func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*Sear
 		// Read file contents
 		blob, _, err := t.Runtime.GetFile(ctx, s.InstanceID(), file.Path)
 		if err != nil {
+			// Exit early for cancellations or timeouts
+			if errors.Is(err, ctx.Err()) {
+				return nil, err
+			}
 			// Skip files that can't be read
 			continue
 		}
