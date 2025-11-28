@@ -10,7 +10,9 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
+  runtimeServiceAnalyzeConnectors,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
   runtimeServicePutFile,
@@ -22,6 +24,7 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
+import { connectorStepStore } from "./connectorStepStore";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
@@ -34,7 +37,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
-import { OLAP_ENGINES } from "./constants";
+import { CONNECTORS_USING_INSTANCE_SECRETS, OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -145,6 +148,42 @@ async function getOriginalEnvBlob(
   }
 }
 
+async function resolveConnectorInstanceName(
+  queryClient: QueryClient,
+  instanceId: string,
+  driverName: string,
+): Promise<string | undefined> {
+  try {
+    const analyzeConnectorsQueryKey =
+      getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+    const analyzeConnectorsQueryFn = async () =>
+      runtimeServiceAnalyzeConnectors(instanceId);
+    const connectors = await queryClient.fetchQuery({
+      queryKey: analyzeConnectorsQueryKey,
+      queryFn: analyzeConnectorsQueryFn,
+    });
+
+    const matchingConnectorNames =
+      connectors?.connectors
+        ?.filter((c) => c.driver?.name === driverName)
+        .map((c) => c.name)
+        .filter(Boolean) ?? [];
+
+    if (matchingConnectorNames.length === 0) return undefined;
+
+    // Prefer an instance literally named after the driver (e.g., "s3" or "azure") if present,
+    // otherwise pick the first one.
+    const preferred =
+      matchingConnectorNames.find((name) => name === driverName) ??
+      matchingConnectorNames[0];
+
+    return preferred as string;
+  } catch {
+    // If lookup fails, return undefined and rely on auto-detection.
+    return undefined;
+  }
+}
+
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -160,6 +199,27 @@ export async function submitAddSourceForm(
     formValues,
   );
 
+  let connectorInstanceName: string | undefined;
+  const stepState = get(connectorStepStore);
+  if (stepState?.step === "source") {
+    connectorInstanceName = stepState.connectorInstanceName || undefined;
+  }
+  const connectorName = connector.name as string;
+
+  // Resolve the connector instance name(s) for create_secrets_from_connectors.
+  // For supported remote storage sources (e.g., S3, Azure), look up available
+  // connectors and use their instance names.
+  if (
+    !connectorInstanceName &&
+    CONNECTORS_USING_INSTANCE_SECRETS.includes(connectorName)
+  ) {
+    connectorInstanceName = await resolveConnectorInstanceName(
+      queryClient,
+      instanceId,
+      connectorName,
+    );
+  }
+
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
@@ -167,7 +227,11 @@ export async function submitAddSourceForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    blob: compileSourceYAML(
+      rewrittenConnector,
+      rewrittenFormValues,
+      connectorInstanceName,
+    ),
     create: true,
     createOnly: false,
   });
@@ -297,7 +361,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
-): Promise<void> {
+): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
 
@@ -332,12 +396,12 @@ export async function submitAddConnectorForm(
         newConnectorName,
         instanceId,
       );
-      return;
+      return newConnectorName;
     } else if (!existingSubmission.completed) {
       // If Test and Connect is clicked while another operation is running,
       // wait for it to complete
       await existingSubmission.promise;
-      return;
+      return existingSubmission.connectorName;
     }
   }
 
@@ -494,4 +558,5 @@ export async function submitAddConnectorForm(
 
   // Wait for the submission to complete
   await submissionPromise;
+  return newConnectorName;
 }
