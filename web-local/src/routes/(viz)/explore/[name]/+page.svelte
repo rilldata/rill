@@ -16,6 +16,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { ToolName } from "@rilldata/web-common/features/chat/core/types";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -100,7 +101,7 @@
           </DashboardStateManager>
         </StateManagersProvider>
       </div>
-      <ExploreChat />
+      <ExploreChat agent={ToolName.ANALYST_AGENT} />
     </div>
   {/key}
 {/if}

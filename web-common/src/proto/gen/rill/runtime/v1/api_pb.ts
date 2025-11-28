@@ -4421,6 +4421,14 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
    */
   initProject = false;
 
+  /**
+   * Optional path to the file that the user is currently viewing/editing.
+   * This helps the agent understand which file the user is referring to in their request.
+   *
+   * @generated from field: string current_file_path = 2;
+   */
+  currentFilePath = "";
+
   constructor(data?: PartialMessage<DeveloperAgentContext>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4430,6 +4438,7 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
   static readonly typeName = "rill.runtime.v1.DeveloperAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "init_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "current_file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeveloperAgentContext {

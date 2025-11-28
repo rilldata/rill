@@ -9,6 +9,7 @@
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
+  export let agent: string | undefined = undefined;
 
   let messagesContainer: HTMLDivElement;
 
@@ -80,7 +81,13 @@
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
-      <div class="chat-empty-subtitle">Happy to help explore your data</div>
+      <div class="chat-empty-subtitle">
+        {#if agent === ToolName.DEVELOPER_AGENT}
+          Happy to assist you make changes to the project
+        {:else}
+          Happy to help explore your data
+        {/if}
+      </div>
     </div>
   {:else}
     {#each displayMessages as msg (msg.id)}

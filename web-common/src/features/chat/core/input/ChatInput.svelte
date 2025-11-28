@@ -9,13 +9,21 @@
   import { Editor } from "@tiptap/core";
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+  import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
+  import { ToolName } from "../types";
 
   export let conversationManager: ConversationManager;
+  export let beforeSend: (() => Promise<void>) | undefined = undefined;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
+  export let additionalContext: Partial<RuntimeServiceCompleteBody> = {};
+  export let agent: string | undefined = undefined;
 
-  const placeholder = "Ask about your data...";
+  $: placeholder =
+    agent === ToolName.DEVELOPER_AGENT
+      ? "What change can I help you make..."
+      : "Ask about your data...";
   let value = "";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -39,9 +47,11 @@
 
     // Message handling with input focus
     try {
+      if (beforeSend) await beforeSend();
       await currentConversation.sendMessage(
         {
           analystAgentContext: $context,
+          ...additionalContext,
         },
         {
           onStreamStart: () => editor.commands.setContent(""),

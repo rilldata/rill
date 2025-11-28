@@ -59,6 +59,7 @@
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
+    featureFlags.set(true, "developerChat");
   });
 
   /**

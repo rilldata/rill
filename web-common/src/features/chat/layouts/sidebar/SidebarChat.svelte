@@ -1,6 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
+  import type { RuntimeServiceCompleteBody } from "../../../../runtime-client";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -16,11 +17,15 @@
     sidebarWidth,
   } from "./sidebar-store";
 
+  export let agent: string | undefined = undefined;
+  export let additionalContext: Partial<RuntimeServiceCompleteBody> = {};
+
   $: ({ instanceId } = $runtime);
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
+    agent,
   });
 
   let chatInputComponent: ChatInput;
@@ -71,11 +76,13 @@
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <Messages {conversationManager} layout="sidebar" />
+    <Messages {conversationManager} layout="sidebar" {agent} />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}
       onSend={onMessageSend}
+      {agent}
+      {additionalContext}
     />
   </div>
 </div>

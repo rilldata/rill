@@ -166,7 +166,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	var developerAgentArgs *ai.DeveloperAgentArgs
 	if req.DeveloperAgentContext != nil {
 		developerAgentArgs = &ai.DeveloperAgentArgs{
-			InitProject: req.DeveloperAgentContext.InitProject,
+			InitProject:     req.DeveloperAgentContext.InitProject,
+			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
 
@@ -286,7 +287,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	var developerAgentArgs *ai.DeveloperAgentArgs
 	if req.DeveloperAgentContext != nil {
 		developerAgentArgs = &ai.DeveloperAgentArgs{
-			InitProject: req.DeveloperAgentContext.InitProject,
+			InitProject:     req.DeveloperAgentContext.InitProject,
+			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
 
