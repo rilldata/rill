@@ -1,21 +1,100 @@
 <script lang="ts">
   import DOMPurify from "dompurify";
   import { marked } from "marked";
+  import { queryServiceResolveTemplatedString } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { MarkdownCanvasComponent } from "./";
-  import { getPositionClasses } from "./util";
+  import {
+    getPositionClasses,
+    hasTemplatingSyntax,
+    formatResolvedContent,
+    buildRequestBody,
+  } from "./util";
 
   export let component: MarkdownCanvasComponent;
 
-  $: ({ specStore } = component);
-  $: markdownProperties = $specStore;
+  $: specStore = component?.specStore;
+  $: parent = component?.parent;
+  $: markdownProperties = specStore ? $specStore : undefined;
+  $: positionClasses = getPositionClasses(markdownProperties?.alignment);
+  $: content = markdownProperties?.content ?? "";
+  $: needsTemplating = hasTemplatingSyntax(content);
+  $: applyFormatting = markdownProperties?.apply_formatting === true;
 
-  $: positionClasses = getPositionClasses(markdownProperties.alignment);
+  $: timeAndFilterStore = component?.timeAndFilterStore;
+  $: timeAndFilters = timeAndFilterStore ? $timeAndFilterStore : undefined;
+
+  $: parentFilters = parent?.filters;
+  $: parentWhereFilterStore = parentFilters?.whereFilter;
+  $: parentDimensionThresholdStore = parentFilters?.dimensionThresholdFilters;
+  $: globalWhereFilter =
+    parentWhereFilterStore !== undefined ? $parentWhereFilterStore : undefined;
+  $: globalDimensionThresholdFilters =
+    parentDimensionThresholdStore !== undefined
+      ? $parentDimensionThresholdStore
+      : [];
+
+  $: parentSpecStore = parent?.specStore;
+  $: canvasData = parentSpecStore ? $parentSpecStore?.data : undefined;
+  $: metricsViews = canvasData?.metricsViews ?? {};
+  $: ({ instanceId } = $runtime);
+
+  $: requestBody =
+    needsTemplating && content && instanceId
+      ? buildRequestBody({
+          content,
+          applyFormatting,
+          timeRange: timeAndFilters?.timeRange,
+          globalWhereFilter,
+          globalDimensionThresholdFilters,
+          metricsViews,
+        })
+      : null;
+
+  $: resolveQuery = createQuery(
+    {
+      queryKey: [
+        "resolveTemplatedString",
+        instanceId,
+        content,
+        JSON.stringify(globalWhereFilter),
+        JSON.stringify(globalDimensionThresholdFilters),
+        JSON.stringify(timeAndFilters?.timeRange),
+        Object.keys(metricsViews).join(","),
+        applyFormatting,
+      ],
+      queryFn: async () => {
+        if (!instanceId || !requestBody) return null;
+        return await queryServiceResolveTemplatedString(
+          instanceId,
+          requestBody,
+        );
+      },
+      enabled:
+        needsTemplating &&
+        !!requestBody &&
+        !!instanceId &&
+        !!requestBody.additionalTimeRange,
+    },
+    queryClient,
+  );
+
+  $: resolvedContent =
+    needsTemplating && $resolveQuery?.data?.body
+      ? applyFormatting && metricsViews && Object.keys(metricsViews).length > 0
+        ? formatResolvedContent($resolveQuery.data.body, metricsViews)
+        : $resolveQuery.data.body
+      : content;
+
+  $: renderPromise = marked(resolvedContent);
 </script>
 
 <div class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface">
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
-    {#await marked(markdownProperties.content) then content}
-      {@html DOMPurify.sanitize(content)}
+    {#await renderPromise then htmlContent}
+      {@html DOMPurify.sanitize(htmlContent)}
     {/await}
   </div>
 </div>
