@@ -402,8 +402,8 @@ func (u *URLs) PaymentPortal(org string) string {
 // OAuthExternal returns the URL for the OAuth 2.0 Authorization Server's external base URL. It replaces `admin` with `api` in the host.
 func (u *URLs) OAuthExternal(r *http.Request) string {
 	external := u.External()
-	// if the request is coming from admin.rilldata.com then we don't need to replace it with api.rilldata.com
-	if r != nil && strings.Contains(r.Host, "admin.rilldata") {
+	// if the request is coming to admin.rilldata.com, that means client already has admin.rilldata.com url so we don't need to replace it with api.rilldata.com
+	if r != nil && strings.HasPrefix(r.Host, "admin.rilldata") {
 		return external
 	}
 	return strings.Replace(external, "admin.rilldata", "api.rilldata", 1)
