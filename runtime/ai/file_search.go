@@ -19,9 +19,9 @@ type SearchFiles struct {
 var _ Tool[*SearchFilesArgs, *SearchFilesResult] = (*SearchFiles)(nil)
 
 type SearchFilesArgs struct {
-	Pattern     string `json:"pattern" jsonschema:"The pattern to search for. Supports regular expressions."`
-	CaseSensitive bool `json:"case_sensitive,omitempty" jsonschema:"Whether the search should be case-sensitive. Defaults to false."`
-	GlobPattern string `json:"glob_pattern,omitempty" jsonschema:"Optional glob pattern to filter files (e.g., '**.yaml', '**models/**'). If not provided, searches all files."`
+	Pattern       string `json:"pattern" jsonschema:"The pattern to search for. Supports regular expressions."`
+	CaseSensitive bool   `json:"case_sensitive,omitempty" jsonschema:"Whether the search should be case-sensitive. Defaults to false."`
+	GlobPattern   string `json:"glob_pattern,omitempty" jsonschema:"Optional glob pattern to filter files (e.g., '**.yaml', '**models/**'). If not provided, searches all files."`
 }
 
 type SearchFilesResult struct {
@@ -99,34 +99,35 @@ func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*Sear
 		var snippets []string
 
 		for i, line := range lines {
-			if re.MatchString(line) {
-				lineNum := i + 1
-				matchingLines = append(matchingLines, lineNum)
+			if !re.MatchString(line) {
+				continue
+			}
+			lineNum := i + 1
+			matchingLines = append(matchingLines, lineNum)
 
-				// Create a snippet with context (2 lines before and after)
-				start := i - 2
-				if start < 0 {
-					start = 0
-				}
-				end := i + 3
-				if end > len(lines) {
-					end = len(lines)
-				}
+			// Create a snippet with context (2 lines before and after)
+			start := i - 2
+			if start < 0 {
+				start = 0
+			}
+			end := i + 3
+			if end > len(lines) {
+				end = len(lines)
+			}
 
-				snippetLines := []string{}
-				for j := start; j < end; j++ {
-					prefix := "  "
-					if j == i {
-						prefix = "> " // Highlight the matching line
-					}
-					snippetLines = append(snippetLines, fmt.Sprintf("%s%d: %s", prefix, j+1, lines[j]))
+			snippetLines := []string{}
+			for j := start; j < end; j++ {
+				prefix := "  "
+				if j == i {
+					prefix = "> " // Highlight the matching line
 				}
-				snippets = append(snippets, strings.Join(snippetLines, "\n"))
+				snippetLines = append(snippetLines, fmt.Sprintf("%s%d: %s", prefix, j+1, lines[j]))
+			}
+			snippets = append(snippets, strings.Join(snippetLines, "\n"))
 
-				// Limit to 5 matches per file to avoid overwhelming results
-				if len(matchingLines) >= 5 {
-					break
-				}
+			// Limit to 5 matches per file to avoid overwhelming results
+			if len(matchingLines) >= 5 {
+				break
 			}
 		}
 
@@ -148,4 +149,5 @@ func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*Sear
 		Matches: matches,
 	}, nil
 }
+
 
