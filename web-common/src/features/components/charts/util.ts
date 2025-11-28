@@ -328,7 +328,9 @@ export function colorToVariableReference(
   return resolvedColor;
 }
 
-export function sanitizeSortFieldForVega(sort: ChartSortDirection) {
+export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
+  if (!sort) return undefined;
+
   if (sort === "measure" || sort === "-measure") {
     return undefined;
   }

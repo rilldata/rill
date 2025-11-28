@@ -9,11 +9,18 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "@rilldata/web-common/features/components/charts/builder";
+import {
+  ColorWithComparisonField,
+  createComparisonOpacityEncoding,
+  createComparisonTransforms,
+  createComparisonXOffsetEncoding,
+  SortOrderField,
+} from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
+import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLBarChartSpec(
   config: CartesianChartSpec,
@@ -38,42 +45,79 @@ export function generateVLBarChartSpec(
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
-  const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
-    buildHoverRuleLayer({
-      xField,
-      domainValues: data.domainValues,
-      isBarMark: true,
-      defaultTooltip: defaultTooltipChannel,
-      multiValueTooltipChannel,
-      xSort: config.x?.sort,
-      primaryColor: data.theme.primary,
-      isDarkMode: data.isDarkMode,
-      xBand: config.x?.type === "temporal" ? 0.5 : undefined,
-      pivot:
-        xField && yField && colorField && multiValueTooltipChannel?.length
-          ? { field: colorField, value: yField, groupby: [xField] }
-          : undefined,
-    }),
-    {
-      mark: { type: "bar", clip: true, width: { band: 0.9 } },
-      encoding: {
-        y: createPositionEncoding(config.y, data),
-        color: createColorEncoding(config.color, data),
-        ...(config.color && typeof config.color === "object" && config.x
-          ? {
-              xOffset: {
-                field: config.color.field,
-                title:
-                  data.fields[config.color.field]?.displayName ||
-                  config.color.field,
-              },
-            }
-          : {}),
-      },
-    },
-  ];
+  // Check if comparison mode is enabled
+  const hasComparison = data.hasComparison;
 
-  spec.layer = layers;
+  const hoverRuleLayer = buildHoverRuleLayer({
+    xField,
+    domainValues: data.domainValues,
+    isBarMark: true,
+    defaultTooltip: defaultTooltipChannel,
+    multiValueTooltipChannel,
+    xSort: config.x?.sort,
+    primaryColor: data.theme.primary,
+    isDarkMode: data.isDarkMode,
+    xBand: config.x?.type === "temporal" ? 0.5 : undefined,
+    pivot: createVegaTransformPivotConfig(
+      xField,
+      yField,
+      colorField,
+      !!hasComparison,
+      !!multiValueTooltipChannel?.length,
+    ),
+  });
+
+  const barLayer: UnitSpec<Field> = {
+    mark: { type: "bar", clip: true, width: { band: 0.9 } },
+    encoding: {
+      y: createPositionEncoding(config.y, data),
+      color: createColorEncoding(config.color, data),
+      // Only add xOffset for color field when NOT in comparison mode
+      // In comparison mode, we'll handle xOffset separately to include comparison grouping
+      ...(config.color &&
+      typeof config.color === "object" &&
+      config.x &&
+      !hasComparison
+        ? {
+            xOffset: {
+              field: config.color.field,
+              title:
+                data.fields[config.color.field]?.displayName ||
+                config.color.field,
+            },
+          }
+        : {}),
+    },
+  };
+
+  if (hasComparison && colorField) {
+    // Comparison mode with color dimension: use transforms to create synthetic fields
+    const transforms = createComparisonTransforms(
+      config.x?.field,
+      config.y?.field,
+      colorField,
+    );
+
+    spec.transform = transforms;
+
+    // Use the synthetic color_with_comparison field for xOffset to group by both color and period
+    barLayer.encoding!.xOffset = {
+      field: ColorWithComparisonField,
+      sort: { field: SortOrderField },
+    };
+    barLayer.encoding!.opacity = createComparisonOpacityEncoding(yField);
+  } else if (hasComparison) {
+    const transforms = createComparisonTransforms(
+      config.x?.field,
+      config.y?.field,
+    );
+
+    spec.transform = transforms;
+    barLayer.encoding!.xOffset = createComparisonXOffsetEncoding();
+    barLayer.encoding!.opacity = createComparisonOpacityEncoding(yField);
+  }
+
+  spec.layer = [hoverRuleLayer, barLayer];
 
   return {
     ...spec,

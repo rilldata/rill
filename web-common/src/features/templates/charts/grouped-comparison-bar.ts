@@ -1,4 +1,5 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
+import { SortOrderField } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { ChartField } from "./build-template";
 import { singleLayerBaseSpec } from "./utils";
@@ -78,7 +79,7 @@ export function buildGroupedComparisonBar(
     },
     xOffset: {
       field: "nominalField",
-      sort: { field: "sortOrder" },
+      sort: { field: SortOrderField },
     },
     tooltip: [
       {

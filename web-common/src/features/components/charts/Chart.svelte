@@ -14,9 +14,9 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
+  import { getChroma } from "../../themes/theme-utils";
   import type { ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
-  import { getChroma } from "../../themes/theme-utils";
 
   export let chartType: ChartType;
   export let chartSpec: CanvasChartSpec;
@@ -32,7 +32,7 @@
 
   let viewVL: View;
 
-  $: ({ data, domainValues, isFetching, error } = $chartData);
+  $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
   $: hasNoData = !isFetching && data.length === 0;
 
@@ -112,6 +112,7 @@
     {colorMapping}
     renderer="canvas"
     {expressionFunctions}
+    {hasComparison}
     config={getRillTheme(true, isThemeModeDark, theme)}
   />
 {/if}
