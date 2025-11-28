@@ -97,7 +97,7 @@ Custom connectors are only available in the paid plan of Claude Desktop. [Learn 
     ```
     Replace `{org_name}` and `{project_name}` with your organization and project names. `<rill-mcp-server-name>` will be the name you assign to this MCP server.
 
-2. Open Claude Code using `calude` cmd.
+2. Open Claude Code using `claude` cmd.
 3. In Claude Code, use `/mcp` command to see the list of MCP servers.
 4. Choose the Rill MCP server you just added.
 5. Select `Authenticate` to start the OAuth flow in your browser.
