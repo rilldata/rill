@@ -1004,17 +1004,16 @@ type OrganizationMemberUser struct {
 
 // ProjectMemberUser is a convenience type used for display-friendly representation of a project member
 type ProjectMemberUser struct {
-	ID          string
-	Email       string
-	DisplayName string    `db:"display_name"`
-	PhotoURL    string    `db:"photo_url"`
-	RoleName    string    `db:"role_name"`
-	OrgRoleName string    `db:"org_role_name"`
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
-	Resources   []ResourceName
-	// RestrictResources determines if the Resources field limits access; when false resources are ignored.
-	RestrictResources bool `db:"restrict_resources"`
+	ID                string
+	Email             string
+	DisplayName       string `db:"display_name"`
+	PhotoURL          string `db:"photo_url"`
+	RoleName          string `db:"role_name"`
+	OrgRoleName       string `db:"org_role_name"`
+	RestrictResources bool   `db:"restrict_resources"` // determines if the Resources field limits access; when false resources are ignored.
+	Resources         []ResourceName
+	CreatedOn         time.Time `db:"created_on"`
+	UpdatedOn         time.Time `db:"updated_on"`
 }
 
 // UsergroupMemberUser is a convenience type used for display-friendly representation of a usergroup member
@@ -1030,16 +1029,15 @@ type UsergroupMemberUser struct {
 
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
 type MemberUsergroup struct {
-	ID         string    `db:"id"`
-	Name       string    `db:"name"`
-	Managed    bool      `db:"managed"`
-	RoleName   string    `db:"role_name"`
-	UsersCount int       `db:"users_count"`
-	CreatedOn  time.Time `db:"created_on"`
-	UpdatedOn  time.Time `db:"updated_on"`
-	Resources  []ResourceName
-	// RestrictResources determines if the Resources field limits access; when false resources are ignored.
-	RestrictResources bool `db:"restrict_resources"`
+	ID                string `db:"id"`
+	Name              string `db:"name"`
+	Managed           bool   `db:"managed"`
+	RoleName          string `db:"role_name"`
+	UsersCount        int    `db:"users_count"`
+	RestrictResources bool   `db:"restrict_resources"` // determines if the Resources field limits access; when false resources are ignored.
+	Resources         []ResourceName
+	CreatedOn         time.Time `db:"created_on"`
+	UpdatedOn         time.Time `db:"updated_on"`
 }
 
 // OrganizationInvite represents an outstanding invitation to join an org.
@@ -1066,13 +1064,13 @@ type OrganizationInviteWithRole struct {
 type ProjectInvite struct {
 	ID                string
 	Email             string
-	OrgInviteID       string    `db:"org_invite_id"`
-	ProjectID         string    `db:"project_id"`
-	ProjectRoleID     string    `db:"project_role_id"`
-	InvitedByUserID   *string   `db:"invited_by_user_id"`
-	CreatedOn         time.Time `db:"created_on"`
+	OrgInviteID       string  `db:"org_invite_id"`
+	ProjectID         string  `db:"project_id"`
+	ProjectRoleID     string  `db:"project_role_id"`
+	InvitedByUserID   *string `db:"invited_by_user_id"`
+	RestrictResources bool    `db:"restrict_resources"`
 	Resources         []ResourceName
-	RestrictResources bool `db:"restrict_resources"`
+	CreatedOn         time.Time `db:"created_on"`
 }
 
 // ProjectInviteWithRole is a convenience type used for display-friendly representation of a ProjectInvite.
@@ -1082,8 +1080,8 @@ type ProjectInviteWithRole struct {
 	RoleName          string  `db:"role_name"`
 	OrgRoleName       string  `db:"org_role_name"`
 	InvitedBy         *string `db:"invited_by"`
+	RestrictResources bool    `db:"restrict_resources"`
 	Resources         []ResourceName
-	RestrictResources bool `db:"restrict_resources"`
 }
 
 type ProjectsQuotaUsage struct {
@@ -1146,8 +1144,8 @@ type InsertProjectInviteOptions struct {
 	ProjectID         string `validate:"required"`
 	RoleID            string `validate:"required"`
 	InviterID         string
-	Resources         []ResourceName
 	RestrictResources bool
+	Resources         []ResourceName
 }
 
 type ProjectAccessRequest struct {

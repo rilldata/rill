@@ -1984,7 +1984,7 @@ message AddProjectMemberUserRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
   string role = 4 [(validate.rules).string.min_len = 1];
-  bool restrict_resources = 5;
+  optional bool restrict_resources = 5;
   repeated ResourceName resources = 6;
 }
 
@@ -2004,8 +2004,8 @@ message SetProjectMemberUserRoleRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
-  string role = 4 [(validate.rules).string.min_len = 1];
-  bool restrict_resources = 5;
+  optional string role = 4 [(validate.rules).string.min_len = 1];
+  optional bool restrict_resources = 5;
   repeated ResourceName resources = 6;
 }
 
@@ -2122,7 +2122,7 @@ message AddProjectMemberUsergroupRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
-  bool restrict_resources = 5;
+  optional bool restrict_resources = 5;
   repeated ResourceName resources = 6;
 }
 
@@ -2132,8 +2132,8 @@ message SetProjectMemberUsergroupRoleRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
-  string role = 4 [(validate.rules).string.min_len = 1];
-  bool restrict_resources = 5;
+  optional string role = 4 [(validate.rules).string.min_len = 1];
+  optional bool restrict_resources = 5;
   repeated ResourceName resources = 6;
 }
 

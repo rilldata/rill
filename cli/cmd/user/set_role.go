@@ -66,9 +66,9 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 					Org:               ch.Org,
 					Project:           projectName,
 					Email:             email,
-					Role:              role,
+					Role:              &role,
 					Resources:         currentResources,
-					RestrictResources: currentRestrict,
+					RestrictResources: &currentRestrict,
 				})
 				if err != nil {
 					return err

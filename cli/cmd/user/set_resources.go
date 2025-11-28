@@ -11,7 +11,6 @@ import (
 func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
-	var role string
 	var explores []string
 	var canvases []string
 	var restrict bool
@@ -70,9 +69,8 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 				Org:               ch.Org,
 				Project:           projectName,
 				Email:             email,
-				Role:              role,
 				Resources:         resources,
-				RestrictResources: restrict,
+				RestrictResources: &restrict,
 			})
 			if err != nil {
 				return err
@@ -85,7 +83,7 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 			} else if restrict {
 				status = "restricted with no resources"
 			}
-			ch.PrintfSuccess("Updated resources for %q in project \"%s/%s\" (role %s, resources %s)\n", email, ch.Org, projectName, role, status)
+			ch.PrintfSuccess("Updated resources for %q in project \"%s/%s\" (resources %s)\n", email, ch.Org, projectName, status)
 			return nil
 		},
 	}
@@ -93,7 +91,6 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	cmd.Flags().StringVar(&projectName, "project", "", "Project (required)")
 	cmd.Flags().StringVar(&email, "email", "", "Email of the user (required)")
-	cmd.Flags().StringVar(&role, "role", "current", "Role of the user (defaults to current project role)")
 	cmd.Flags().StringArrayVar(&explores, "explore", nil, "Explore Resource to set (repeat for multiple)")
 	cmd.Flags().StringArrayVar(&canvases, "canvas", nil, "Canvas Resource to set (repeat for multiple)")
 	cmd.Flags().BoolVar(&restrict, "restrict-resources", false, "Whether to restrict the user to the provided resources (defaults to true when resources are provided)")

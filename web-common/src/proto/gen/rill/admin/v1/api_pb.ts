@@ -6818,9 +6818,9 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
   role = "";
 
   /**
-   * @generated from field: bool restrict_resources = 5;
+   * @generated from field: optional bool restrict_resources = 5;
    */
-  restrictResources = false;
+  restrictResources?: boolean;
 
   /**
    * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
@@ -6839,7 +6839,7 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
@@ -6997,14 +6997,14 @@ export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUse
   email = "";
 
   /**
-   * @generated from field: string role = 4;
+   * @generated from field: optional string role = 4;
    */
-  role = "";
+  role?: string;
 
   /**
-   * @generated from field: bool restrict_resources = 5;
+   * @generated from field: optional bool restrict_resources = 5;
    */
-  restrictResources = false;
+  restrictResources?: boolean;
 
   /**
    * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
@@ -7022,8 +7022,8 @@ export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUse
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
@@ -8066,9 +8066,9 @@ export class AddProjectMemberUsergroupRequest extends Message<AddProjectMemberUs
   role = "";
 
   /**
-   * @generated from field: bool restrict_resources = 5;
+   * @generated from field: optional bool restrict_resources = 5;
    */
-  restrictResources = false;
+  restrictResources?: boolean;
 
   /**
    * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
@@ -8087,7 +8087,7 @@ export class AddProjectMemberUsergroupRequest extends Message<AddProjectMemberUs
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
@@ -8159,14 +8159,14 @@ export class SetProjectMemberUsergroupRoleRequest extends Message<SetProjectMemb
   usergroup = "";
 
   /**
-   * @generated from field: string role = 4;
+   * @generated from field: optional string role = 4;
    */
-  role = "";
+  role?: string;
 
   /**
-   * @generated from field: bool restrict_resources = 5;
+   * @generated from field: optional bool restrict_resources = 5;
    */
-  restrictResources = false;
+  restrictResources?: boolean;
 
   /**
    * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
@@ -8184,8 +8184,8 @@ export class SetProjectMemberUsergroupRoleRequest extends Message<SetProjectMemb
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 

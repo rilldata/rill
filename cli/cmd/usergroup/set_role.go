@@ -38,7 +38,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 					Org:       ch.Org,
 					Project:   projectName,
 					Usergroup: groupName,
-					Role:      role,
+					Role:      &role,
 				})
 				if err != nil {
 					return err

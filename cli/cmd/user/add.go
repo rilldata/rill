@@ -99,7 +99,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					Email:             email,
 					Role:              role,
 					Resources:         resources,
-					RestrictResources: restrictResources,
+					RestrictResources: &restrictResources,
 				})
 				if err != nil {
 					// We don't need to handle org membership errors since AddProjectMemberUser automatically invites the user to the org with role guest if needed.

@@ -51,7 +51,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					Usergroup:         groupName,
 					Role:              role,
 					Resources:         resources,
-					RestrictResources: restrictResources,
+					RestrictResources: &restrictResources,
 				})
 				if err != nil {
 					return err

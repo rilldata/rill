@@ -18779,8 +18779,6 @@ func (m *AddProjectMemberUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for RestrictResources
-
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -18813,6 +18811,10 @@ func (m *AddProjectMemberUserRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if m.RestrictResources != nil {
+		// no validation rules for RestrictResources
 	}
 
 	if len(errors) > 0 {
@@ -19397,19 +19399,6 @@ func (m *SetProjectMemberUserRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetRole()) < 1 {
-		err := SetProjectMemberUserRoleRequestValidationError{
-			field:  "Role",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RestrictResources
-
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -19442,6 +19431,25 @@ func (m *SetProjectMemberUserRoleRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if m.Role != nil {
+
+		if utf8.RuneCountInString(m.GetRole()) < 1 {
+			err := SetProjectMemberUserRoleRequestValidationError{
+				field:  "Role",
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.RestrictResources != nil {
+		// no validation rules for RestrictResources
 	}
 
 	if len(errors) > 0 {
@@ -22547,8 +22555,6 @@ func (m *AddProjectMemberUsergroupRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for RestrictResources
-
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -22581,6 +22587,10 @@ func (m *AddProjectMemberUsergroupRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if m.RestrictResources != nil {
+		// no validation rules for RestrictResources
 	}
 
 	if len(errors) > 0 {
@@ -22826,19 +22836,6 @@ func (m *SetProjectMemberUsergroupRoleRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetRole()) < 1 {
-		err := SetProjectMemberUsergroupRoleRequestValidationError{
-			field:  "Role",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RestrictResources
-
 	for idx, item := range m.GetResources() {
 		_, _ = idx, item
 
@@ -22871,6 +22868,25 @@ func (m *SetProjectMemberUsergroupRoleRequest) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if m.Role != nil {
+
+		if utf8.RuneCountInString(m.GetRole()) < 1 {
+			err := SetProjectMemberUsergroupRoleRequestValidationError{
+				field:  "Role",
+				reason: "value length must be at least 1 runes",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.RestrictResources != nil {
+		// no validation rules for RestrictResources
 	}
 
 	if len(errors) > 0 {

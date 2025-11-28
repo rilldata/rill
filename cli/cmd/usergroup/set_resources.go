@@ -69,9 +69,8 @@ func SetResourcesCmd(ch *cmdutil.Helper) *cobra.Command {
 				Org:               ch.Org,
 				Project:           projectName,
 				Usergroup:         groupName,
-				Role:              role,
 				Resources:         resources,
-				RestrictResources: restrict,
+				RestrictResources: &restrict,
 			})
 			if err != nil {
 				return err
@@ -92,7 +91,6 @@ func SetResourcesCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	cmd.Flags().StringVar(&projectName, "project", "", "Project (required)")
 	cmd.Flags().StringVar(&groupName, "group", "", "User group (required)")
-	cmd.Flags().StringVar(&role, "role", "current", "Role of the user group (defaults to current project role)")
 	cmd.Flags().StringArrayVar(&explores, "explore", nil, "Explore resource to restrict to (repeat for multiple)")
 	cmd.Flags().StringArrayVar(&canvases, "canvas", nil, "Canvas resource to restrict to (repeat for multiple)")
 	cmd.Flags().BoolVar(&restrict, "restrict-resources", false, "Whether to restrict the group to the provided resources (defaults to true when resources are provided)")

@@ -51,50 +51,6 @@ type connection struct {
 	encKeyring []*database.EncryptionKey
 }
 
-func marshalResourceNames(resources []database.ResourceName) ([]byte, error) {
-	resources = dedupeResourceNames(resources)
-	if resources == nil {
-		resources = []database.ResourceName{}
-	}
-	return json.Marshal(resources)
-}
-
-func assignResourceNames(jsonb pgtype.JSONB) ([]database.ResourceName, error) {
-	if jsonb.Status != pgtype.Present {
-		return nil, nil
-	}
-	var res []database.ResourceName
-	err := jsonb.AssignTo(&res)
-	if err != nil {
-		return nil, err
-	}
-	return dedupeResourceNames(res), nil
-}
-
-func dedupeResourceNames(resources []database.ResourceName) []database.ResourceName {
-	if len(resources) == 0 {
-		return nil
-	}
-
-	seen := make(map[string]struct{}, len(resources))
-	deduped := make([]database.ResourceName, 0, len(resources))
-	for _, r := range resources {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		key := strings.ToLower(r.Type) + "|" + strings.ToLower(r.Name)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		deduped = append(deduped, r)
-	}
-	if len(deduped) == 0 {
-		return nil
-	}
-	return deduped
-}
-
 func (c *connection) Close() error {
 	return c.db.Close()
 }
@@ -1617,7 +1573,7 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	resources, err := json.Marshal(opts.Resources)
+	resources, err := marshalResourceNames(opts.Resources)
 	if err != nil {
 		return nil, err
 	}
@@ -2230,7 +2186,7 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 }
 
 func (c *connection) FindProjectMemberUser(ctx context.Context, projectID, userID string) (*database.ProjectMemberUser, error) {
-	dto := &projectMemberUserDTO{ProjectMemberUser: &database.ProjectMemberUser{}}
+	dto := &projectMemberUserDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT
 			u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on,
@@ -2251,7 +2207,7 @@ func (c *connection) FindProjectMemberUser(ctx context.Context, projectID, userI
 	if err != nil {
 		return nil, parseErr("project member", err)
 	}
-	return c.projectMemberUserFromDTO(dto)
+	return dto.asModel()
 }
 
 func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*database.ProjectRole, error) {
@@ -2417,7 +2373,7 @@ func (c *connection) FindProjectMemberUsergroupsForUser(ctx context.Context, pro
 }
 
 func (c *connection) FindProjectMemberUsergroup(ctx context.Context, groupID, projectID string) (*database.MemberUsergroup, error) {
-	dto := &memberUsergroupDTO{MemberUsergroup: &database.MemberUsergroup{}}
+	dto := &memberUsergroupDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources, upr.restrict_resources
 		FROM usergroups ug
@@ -2428,7 +2384,7 @@ func (c *connection) FindProjectMemberUsergroup(ctx context.Context, groupID, pr
 	if err != nil {
 		return nil, parseErr("project group member", err)
 	}
-	return c.memberUsergroupFromDTO(dto)
+	return dto.asModel()
 }
 
 func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*database.ProjectRole, error) {
@@ -2653,7 +2609,7 @@ func (c *connection) FindProjectInvitesByEmail(ctx context.Context, userEmail st
 }
 
 func (c *connection) FindProjectInvite(ctx context.Context, projectID, userEmail string) (*database.ProjectInvite, error) {
-	dto := &projectInviteDTO{ProjectInvite: &database.ProjectInvite{}}
+	dto := &projectInviteDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("project invite", err)
@@ -3486,24 +3442,22 @@ type userProjectRoleDTO struct {
 	RestrictResources bool         `db:"restrict_resources"`
 }
 
-func (c *connection) userProjectRoleFromDTO(dto *userProjectRoleDTO) (*database.UserProjectRole, error) {
-	resources, err := assignResourceNames(dto.Resources)
+func (dto *userProjectRoleDTO) asModel() (*database.UserProjectRole, error) {
+	userProjectRole := &database.UserProjectRole{
+		Role:              &dto.ProjectRole,
+		RestrictResources: dto.RestrictResources,
+	}
+	err := dto.Resources.AssignTo(userProjectRole.Resources)
 	if err != nil {
 		return nil, err
 	}
-
-	role := dto.ProjectRole
-	return &database.UserProjectRole{
-		Role:              &role,
-		Resources:         resources,
-		RestrictResources: dto.RestrictResources,
-	}, nil
+	return userProjectRole, nil
 }
 
 func (c *connection) userProjectRolesFromDTOs(dtos []*userProjectRoleDTO) ([]*database.UserProjectRole, error) {
 	res := make([]*database.UserProjectRole, len(dtos))
 	for i, dto := range dtos {
-		role, err := c.userProjectRoleFromDTO(dto)
+		role, err := dto.asModel()
 		if err != nil {
 			return nil, err
 		}
@@ -3514,27 +3468,21 @@ func (c *connection) userProjectRolesFromDTOs(dtos []*userProjectRoleDTO) ([]*da
 
 type projectMemberUserDTO struct {
 	*database.ProjectMemberUser
-	Resources         pgtype.JSONB `db:"resources"`
-	RestrictResources bool         `db:"restrict_resources"`
+	Resources pgtype.JSONB `db:"resources"`
 }
 
-func (c *connection) projectMemberUserFromDTO(dto *projectMemberUserDTO) (*database.ProjectMemberUser, error) {
-	if dto.ProjectMemberUser == nil {
-		dto.ProjectMemberUser = &database.ProjectMemberUser{}
-	}
-	resources, err := assignResourceNames(dto.Resources)
+func (dto *projectMemberUserDTO) asModel() (*database.ProjectMemberUser, error) {
+	err := dto.Resources.AssignTo(dto.ProjectMemberUser.Resources)
 	if err != nil {
 		return nil, err
 	}
-	dto.ProjectMemberUser.Resources = resources
-	dto.ProjectMemberUser.RestrictResources = dto.RestrictResources
 	return dto.ProjectMemberUser, nil
 }
 
 func (c *connection) projectMemberUsersFromDTOs(dtos []*projectMemberUserDTO) ([]*database.ProjectMemberUser, error) {
 	res := make([]*database.ProjectMemberUser, len(dtos))
 	for i, dto := range dtos {
-		member, err := c.projectMemberUserFromDTO(dto)
+		member, err := dto.asModel()
 		if err != nil {
 			return nil, err
 		}
@@ -3545,27 +3493,21 @@ func (c *connection) projectMemberUsersFromDTOs(dtos []*projectMemberUserDTO) ([
 
 type memberUsergroupDTO struct {
 	*database.MemberUsergroup
-	Resources         pgtype.JSONB `db:"resources"`
-	RestrictResources bool         `db:"restrict_resources"`
+	Resources pgtype.JSONB `db:"resources"`
 }
 
-func (c *connection) memberUsergroupFromDTO(dto *memberUsergroupDTO) (*database.MemberUsergroup, error) {
-	if dto.MemberUsergroup == nil {
-		dto.MemberUsergroup = &database.MemberUsergroup{}
-	}
-	resources, err := assignResourceNames(dto.Resources)
+func (dto *memberUsergroupDTO) asModel() (*database.MemberUsergroup, error) {
+	err := dto.Resources.AssignTo(dto.MemberUsergroup.Resources)
 	if err != nil {
 		return nil, err
 	}
-	dto.MemberUsergroup.Resources = resources
-	dto.MemberUsergroup.RestrictResources = dto.RestrictResources
 	return dto.MemberUsergroup, nil
 }
 
 func (c *connection) memberUsergroupsFromDTOs(dtos []*memberUsergroupDTO) ([]*database.MemberUsergroup, error) {
 	res := make([]*database.MemberUsergroup, len(dtos))
 	for i, dto := range dtos {
-		group, err := c.memberUsergroupFromDTO(dto)
+		group, err := dto.asModel()
 		if err != nil {
 			return nil, err
 		}
@@ -3576,20 +3518,14 @@ func (c *connection) memberUsergroupsFromDTOs(dtos []*memberUsergroupDTO) ([]*da
 
 type projectInviteDTO struct {
 	*database.ProjectInvite
-	Resources         pgtype.JSONB `db:"resources"`
-	RestrictResources bool         `db:"restrict_resources"`
+	Resources pgtype.JSONB `db:"resources"`
 }
 
 func (dto *projectInviteDTO) asModel() (*database.ProjectInvite, error) {
-	if dto.ProjectInvite == nil {
-		dto.ProjectInvite = &database.ProjectInvite{}
-	}
-	resources, err := assignResourceNames(dto.Resources)
+	err := dto.Resources.AssignTo(&dto.ProjectInvite.Resources)
 	if err != nil {
 		return nil, err
 	}
-	dto.ProjectInvite.Resources = resources
-	dto.ProjectInvite.RestrictResources = dto.RestrictResources
 	return dto.ProjectInvite, nil
 }
 
@@ -3607,27 +3543,21 @@ func projectInvitesFromDTOs(dtos []*projectInviteDTO) ([]*database.ProjectInvite
 
 type projectInviteWithRoleDTO struct {
 	*database.ProjectInviteWithRole
-	Resources         pgtype.JSONB `db:"resources"`
-	RestrictResources bool         `db:"restrict_resources"`
+	Resources pgtype.JSONB `db:"resources"`
 }
 
-func (c *connection) projectInviteWithRoleFromDTO(dto *projectInviteWithRoleDTO) (*database.ProjectInviteWithRole, error) {
-	if dto.ProjectInviteWithRole == nil {
-		dto.ProjectInviteWithRole = &database.ProjectInviteWithRole{}
-	}
-	resources, err := assignResourceNames(dto.Resources)
+func (dto *projectInviteWithRoleDTO) asModel() (*database.ProjectInviteWithRole, error) {
+	err := dto.Resources.AssignTo(&dto.ProjectInviteWithRole.Resources)
 	if err != nil {
 		return nil, err
 	}
-	dto.ProjectInviteWithRole.Resources = resources
-	dto.ProjectInviteWithRole.RestrictResources = dto.RestrictResources
 	return dto.ProjectInviteWithRole, nil
 }
 
 func (c *connection) projectInviteWithRolesFromDTOs(dtos []*projectInviteWithRoleDTO) ([]*database.ProjectInviteWithRole, error) {
 	res := make([]*database.ProjectInviteWithRole, len(dtos))
 	for i, dto := range dtos {
-		model, err := c.projectInviteWithRoleFromDTO(dto)
+		model, err := dto.asModel()
 		if err != nil {
 			return nil, err
 		}
@@ -4064,4 +3994,28 @@ func isValidAttributeKey(key string) bool {
 		}
 	}
 	return true
+}
+
+func marshalResourceNames(resources []database.ResourceName) ([]byte, error) {
+	resources = dedupeResourceNames(resources)
+	if resources == nil {
+		resources = []database.ResourceName{}
+	}
+	return json.Marshal(resources)
+}
+
+func dedupeResourceNames(resources []database.ResourceName) []database.ResourceName {
+	seen := make(map[database.ResourceName]struct{}, len(resources))
+	deduped := make([]database.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		if _, ok := seen[r]; ok {
+			continue
+		}
+		seen[r] = struct{}{}
+		deduped = append(deduped, r)
+	}
+	return deduped
 }

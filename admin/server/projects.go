@@ -1114,8 +1114,10 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		attribute.String("args.email", req.Email),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.role", req.Role),
-		attribute.Bool("args.restrict_resources", req.RestrictResources),
 	)
+	if req.RestrictResources != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.restrict_resources", *req.RestrictResources))
+	}
 	if len(req.Resources) > 0 {
 		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
 	}
@@ -1163,10 +1165,10 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		}
 	}
 
+	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
+	restrictResources := valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
 	resources := resourceNamesFromProto(req.Resources)
-	restrictResources := req.RestrictResources || len(resources) > 0
-	err = s.validateResources(ctx, proj, resources)
-	if err != nil {
+	if err := s.validateResources(ctx, proj, resources); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -1175,7 +1177,6 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, err
 		}
-
 		// Find the guest role
 		guestRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
 		if err != nil {
@@ -1210,8 +1211,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			ProjectID:         proj.ID,
 			RoleID:            role.ID,
 			InviterID:         invitedByUserID,
-			Resources:         resources,
 			RestrictResources: restrictResources,
+			Resources:         resources,
 		})
 		// continue sending an email if an invitation entry already exists
 		if err != nil {
@@ -1221,6 +1222,10 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 			if err != nil {
 				return nil, err
+			}
+			if keepExistingRestrictions {
+				restrictResources = invite.RestrictResources
+				resources = invite.Resources
 			}
 			if err := s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID, restrictResources, resources); err != nil {
 				return nil, err
@@ -1251,6 +1256,14 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
+		}
+		if keepExistingRestrictions {
+			member, err := s.admin.DB.FindProjectMemberUser(ctx, proj.ID, user.ID)
+			if err != nil {
+				return nil, err
+			}
+			restrictResources = member.RestrictResources
+			resources = member.Resources
 		}
 		if err := s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, restrictResources, resources); err != nil {
 			return nil, err
@@ -1378,13 +1391,21 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 		attribute.String("args.org", req.Org),
 		attribute.String("args.email", req.Email),
 		attribute.String("args.project", req.Project),
-		attribute.String("args.role", req.Role),
-		attribute.Bool("args.restrict_resources", req.RestrictResources),
 	)
+	if req.Role != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.role", *req.Role))
+	}
+	if req.RestrictResources != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.restrict_resources", *req.RestrictResources))
+	}
 	if len(req.Resources) > 0 {
 		observability.AddRequestAttributes(ctx,
 			attribute.StringSlice("args.resources", resourcesString(req.Resources)),
 		)
+	}
+
+	if req.Role == nil && req.RestrictResources == nil && len(req.Resources) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "at least one of role, restrict_resources, or resources must be set")
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
@@ -1402,49 +1423,72 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 		return nil, err
 	}
 
+	// figure out the invite or member info
+	var invite *database.ProjectInvite
+	var member *database.ProjectMemberUser
+	if user == nil {
+		// find pending invite to get the current role
+		invite, err = s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		member, err = s.admin.DB.FindProjectMemberUser(ctx, proj.ID, user.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if invite == nil && member == nil {
+		return nil, status.Error(codes.NotFound, "user is neither a project member nor has a pending invite")
+	}
+
+	// determine the new role or keep the existing one
 	var role *database.ProjectRole
-	if req.Role == "current" {
-		if user == nil {
-			// find pending invite to get the current role
-			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
-			if err != nil {
-				return nil, err
-			}
-			role, err = s.admin.DB.FindProjectRoleByID(ctx, invite.ProjectRoleID)
+	if req.Role == nil {
+		// keep existing role
+		if member != nil {
+			role, err = s.admin.DB.FindProjectRole(ctx, member.RoleName)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			role, err = s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
+			role, err = s.admin.DB.FindProjectRoleByID(ctx, invite.ProjectRoleID)
 			if err != nil {
 				return nil, err
 			}
 		}
-	}
-
-	if role == nil {
-		role, err = s.admin.DB.FindProjectRole(ctx, req.Role)
+	} else {
+		role, err = s.admin.DB.FindProjectRole(ctx, *req.Role)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
-		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
-	}
-
-	resources := resourceNamesFromProto(req.Resources)
-	restrictResources := req.RestrictResources || len(resources) > 0
-	err = s.validateResources(ctx, proj, resources)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if user == nil {
-		// Check if there is a pending invite for this user
-		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
-		if err != nil {
-			return nil, err
+		if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 		}
+	}
+
+	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
+	var restrictResources bool
+	var resources []database.ResourceName
+	if keepExistingRestrictions {
+		if member != nil {
+			restrictResources = member.RestrictResources
+			resources = member.Resources
+		} else {
+			restrictResources = invite.RestrictResources
+			resources = invite.Resources
+		}
+	} else {
+		restrictResources = valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
+		resources = resourceNamesFromProto(req.Resources)
+		if err := s.validateResources(ctx, proj, resources); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	// update the invite or member info
+	if invite != nil {
 		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID, restrictResources, resources)
 		if err != nil {
 			return nil, err
