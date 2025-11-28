@@ -325,7 +325,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// If the build succeeded, update the model's state accordingly
-	// NOTE: If making any change here, also update executeAll
 	if execErr == nil {
 		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes)
 		if err != nil {
