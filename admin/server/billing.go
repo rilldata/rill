@@ -376,7 +376,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		if err != nil {
 			return nil, err
 		}
-	} else if sub.EndDate == sub.CurrentBillingCycleEndDate {
+	} else if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
 		// To make request idempotent, if subscription is still on cancellation schedule, unschedule it
 		sub, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {
@@ -724,7 +724,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	}
 
 	// if trial subscription was cancelled then unschedule the cancellation
-	if sub.EndDate == sub.CurrentBillingCycleEndDate {
+	if sub.EndDate.Equal(sub.CurrentBillingCycleEndDate) {
 		// if trial subscription was cancelled then unschedule the cancellation
 		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {

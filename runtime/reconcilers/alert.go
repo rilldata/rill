@@ -494,7 +494,7 @@ func (r *AlertReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.R
 		curr = a.State.NextRunOn.AsTime()
 	}
 
-	if next == curr {
+	if next.Equal(curr) {
 		return nil
 	}
 

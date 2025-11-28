@@ -87,7 +87,7 @@ type rillYAML struct {
 	// Default YAML values for metric views
 	MetricsViews yaml.Node `yaml:"metrics_views"`
 	// Default YAML values for metric views.
-	// Deprecated: Use "metrics_views" instead
+	// Deprecated: Use "metrics_views" instead.
 	MetricsViewsLegacy yaml.Node `yaml:"dashboards"`
 	// Default YAML values for explores
 	Explores yaml.Node `yaml:"explores"`

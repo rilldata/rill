@@ -622,10 +622,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	if err != nil {
 		return nil, errors.New("failed to get assumed user email")
 	}
-	isRepresentingUser := false
-	if representingUser != "" {
-		isRepresentingUser = true
-	}
+	isRepresentingUser := representingUser != ""
 
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
 		User: &adminv1.User{
