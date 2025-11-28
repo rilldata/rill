@@ -96,6 +96,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return ToValue(map[any]any(v), t)
 	case *chcol.JSON:
 		return ToValue(v.NestedMap(), t)
+	case chcol.JSON:
+		return ToValue(v.NestedMap(), t)
+	case *chcol.Variant:
+		return ToValue(v.Any(), t)
 	case chcol.Variant:
 		return ToValue(v.Any(), t)
 	case map[any]any:
