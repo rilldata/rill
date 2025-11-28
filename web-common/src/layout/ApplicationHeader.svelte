@@ -122,8 +122,7 @@
       {:else if route.id?.includes("canvas")}
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
-    {/if}
-    {#if $developerChat}
+    {:else if $developerChat}
       <ChatToggle />
     {/if}
     {#if showDeployCTA}

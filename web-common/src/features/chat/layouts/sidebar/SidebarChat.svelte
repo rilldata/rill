@@ -1,6 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
+  import type { RuntimeServiceCompleteBody } from "../../../../runtime-client";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -17,6 +18,7 @@
   } from "./sidebar-store";
 
   export let agent: string | undefined = undefined;
+  export let additionalContext: Partial<RuntimeServiceCompleteBody> = {};
 
   $: ({ instanceId } = $runtime);
 
@@ -80,6 +82,7 @@
       bind:this={chatInputComponent}
       onSend={onMessageSend}
       {agent}
+      {additionalContext}
     />
   </div>
 </div>

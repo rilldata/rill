@@ -116,5 +116,12 @@
       </WorkspaceContainer>
     {/if}
   </div>
-  <ExploreChat agent={ToolName.DEVELOPER_AGENT} />
+  <ExploreChat
+    agent={ToolName.DEVELOPER_AGENT}
+    additionalContext={{
+      developerAgentContext: {
+        currentFilePath: path,
+      },
+    }}
+  />
 </div>

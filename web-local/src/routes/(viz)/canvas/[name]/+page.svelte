@@ -2,6 +2,7 @@
   import { onNavigate } from "$app/navigation";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
+  import { ToolName } from "@rilldata/web-common/features/chat/core/types";
   import type { PageData } from "./$types";
   import {
     DashboardBannerID,
@@ -39,5 +40,5 @@
       canvasName={data.dashboardName}
     />
   </div>
-  <ExploreChat />
+  <ExploreChat agent={ToolName.ANALYST_AGENT} />
 </div>
