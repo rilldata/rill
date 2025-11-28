@@ -302,6 +302,8 @@ test.describe("Embeds", () => {
       })
       .click();
 
+    await embedPage.waitForTimeout(500);
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
@@ -318,6 +320,8 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
+
+    await embedPage.waitForTimeout(500);
 
     expect(
       logMessages.some((msg) =>
@@ -345,6 +349,8 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
       .click();
 
+    await embedPage.waitForTimeout(500);
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
@@ -362,6 +368,8 @@ test.describe("Embeds", () => {
       .first()
       .click();
 
+    await embedPage.waitForTimeout(500);
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
@@ -375,6 +383,8 @@ test.describe("Embeds", () => {
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
+    await embedPage.waitForTimeout(500);
+
     expect(
       logMessages.some((msg) =>
         msg.includes(
@@ -392,6 +402,7 @@ test.describe("Embeds", () => {
 
     // Go to `Programmatic Ads Auction` using the links on home
     await frame.getByRole("link", { name: "Programmatic Ads Bids" }).click();
+    await embedPage.waitForTimeout(500);
 
     expect(
       logMessages.some((msg) =>
@@ -405,6 +416,7 @@ test.describe("Embeds", () => {
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
+    await embedPage.waitForTimeout(500);
 
     expect(
       logMessages.some((msg) =>
@@ -418,6 +430,8 @@ test.describe("Embeds", () => {
       .getByRole("link", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
+
+    await embedPage.waitForTimeout(500);
 
     expect(
       logMessages.some((msg) =>
