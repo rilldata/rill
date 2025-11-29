@@ -15,6 +15,7 @@ import {
 import {
   getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -52,11 +53,47 @@ export function useMetricsView(
   );
 }
 
+export function getValidMetricsViewsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      {
+        kind: ResourceKind.MetricsView,
+      },
+      {
+        query: {
+          select: (data) =>
+            data?.resources?.filter(
+              (res) => !!res.metricsView?.state?.validSpec,
+            ),
+        },
+      },
+    );
+  });
+}
+
 export function useValidExplores(instanceId: string) {
   // This is used in cloud as well so do not use "useClientFilteredResources"
   return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
     data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
+}
+
+export function getValidDashboardsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      {
+        kind: ResourceKind.Explore,
+      },
+      {
+        query: {
+          select: (data) =>
+            data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
+        },
+      },
+    );
+  });
 }
 
 export function useValidCanvases(instanceId: string) {

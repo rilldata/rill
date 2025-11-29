@@ -11,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
+const DevelopModelName = "develop_model"
+
 type DevelopModel struct {
 	Runtime *runtime.Runtime
 }
@@ -28,17 +30,18 @@ type DevelopModelResult struct {
 
 func (t *DevelopModel) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "develop_model",
+		Name:        DevelopModelName,
 		Title:       "Develop model",
 		Description: "Agent that develops a single Rill model.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Developing model...",
+			"openai/toolInvocation/invoked":  "Developed model",
+		},
 	}
 }
 
-func (t *DevelopModel) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.EditRepo)
-	return false
+func (t *DevelopModel) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*DevelopModelResult, error) {
@@ -52,7 +55,7 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 
 	// Pre-invoke file read
 	session := GetSession(ctx)
-	_, _ = session.CallTool(ctx, RoleAssistant, "read_file", nil, &ReadFileArgs{
+	_, _ = session.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
 		Path: args.Path,
 	})
 	if ctx.Err() != nil { // Ignore tool error since the file may not exist
@@ -78,7 +81,7 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 			NewTextCompletionMessage(RoleSystem, systemPrompt),
 			NewTextCompletionMessage(RoleUser, userPrompt),
 		},
-		Tools:         []string{"read_file", "write_file"},
+		Tools:         []string{ReadFileName, WriteFileName},
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})

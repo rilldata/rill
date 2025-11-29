@@ -49,19 +49,19 @@ measures:
 
 	// Analyst agent question
 	var res *ai.RouterAgentResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 		Prompt: "What country has the highest revenue? Answer with a single country name and nothing else.",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "analyst_agent", res.Agent)
+	require.Equal(t, ai.AnalystAgentName, res.Agent)
 	require.Equal(t, "United States", res.Response)
 
 	// Analyst agent question that references the previous response
-	_, err = s.CallTool(t.Context(), ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 		Prompt: "Repeat the answer you gave to my last question.",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "analyst_agent", res.Agent)
+	require.Equal(t, ai.AnalystAgentName, res.Agent)
 	require.Equal(t, "United States", res.Response)
 }
 
@@ -93,7 +93,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
 		require.Len(t, calls, 1)
-		require.Equal(t, "get_metrics_view", calls[0].Tool)
+		require.Equal(t, ai.GetMetricsViewName, calls[0].Tool)
 
 		// It should make two sub-calls: get_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
@@ -102,7 +102,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
 		require.Len(t, calls, 1)
-		require.Equal(t, "get_metrics_view", calls[0].Tool)
+		require.Equal(t, ai.GetMetricsViewName, calls[0].Tool)
 
 		// It should remember the previous turns and only make one sub-call: query_metrics_view_summary and query_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
@@ -111,8 +111,8 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
 		require.Len(t, calls, 2)
-		require.Equal(t, "query_metrics_view_summary", calls[0].Tool)
-		require.Equal(t, "query_metrics_view", calls[1].Tool)
+		require.Equal(t, ai.QueryMetricsViewSummaryName, calls[0].Tool)
+		require.Equal(t, ai.QueryMetricsViewName, calls[1].Tool)
 	})
 
 	t.Run("DashboardContext", func(t *testing.T) {
@@ -137,9 +137,9 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.NoError(t, err)
 		calls := s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
 		require.Len(t, calls, 3)
-		require.Equal(t, "query_metrics_view_summary", calls[0].Tool)
-		require.Equal(t, "get_metrics_view", calls[1].Tool)
-		require.Equal(t, "query_metrics_view", calls[2].Tool)
+		require.Equal(t, ai.QueryMetricsViewSummaryName, calls[0].Tool)
+		require.Equal(t, ai.GetMetricsViewName, calls[1].Tool)
+		require.Equal(t, ai.QueryMetricsViewName, calls[2].Tool)
 
 		// Map the request sent and assert that context was honored.
 		rawQry, err := s.UnmarshalMessageContent(calls[2])

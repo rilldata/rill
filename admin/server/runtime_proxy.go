@@ -73,7 +73,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			if claims.OwnerType() == auth.OwnerTypeAnon {
 				// This means no token was provided, so return instructions for how to initiate an OAuth flow.
 				// This is currently used by MCP clients that authenticate with OAuth.
-				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata()))
+				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata(r)))
 			}
 			return httputil.Errorf(http.StatusUnauthorized, "does not have permission to access the production deployment")
 		}

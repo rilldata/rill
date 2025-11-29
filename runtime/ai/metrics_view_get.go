@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+const GetMetricsViewName = "get_metrics_view"
+
 type GetMetricsView struct {
 	Runtime *runtime.Runtime
 }
@@ -27,19 +29,19 @@ type GetMetricsViewResult struct {
 
 func (t *GetMetricsView) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "get_metrics_view",
+		Name:        GetMetricsViewName,
 		Title:       "Get Metrics View",
 		Description: "Get the specification for a given metrics view, including available measures and dimensions",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Getting metrics definition…",
+			"openai/toolInvocation/invoking": "Getting metrics definition...",
 			"openai/toolInvocation/invoked":  "Found metrics definition",
 		},
 	}
 }
 
-func (t *GetMetricsView) CheckAccess(ctx context.Context) bool {
+func (t *GetMetricsView) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadObjects)
+	return s.Claims().Can(runtime.ReadObjects), nil
 }
 
 func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) (*GetMetricsViewResult, error) {

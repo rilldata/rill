@@ -22,6 +22,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const DevelopMetricsViewName = "develop_metrics_view"
+
 type DevelopMetricsView struct {
 	Runtime *runtime.Runtime
 }
@@ -39,17 +41,18 @@ type DevelopMetricsViewResult struct {
 
 func (t *DevelopMetricsView) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "develop_metrics_view",
+		Name:        DevelopMetricsViewName,
 		Title:       "Develop Metrics View",
 		Description: "Agent that develops a single Rill metrics view.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Developing metrics view...",
+			"openai/toolInvocation/invoked":  "Developed metrics view",
+		},
 	}
 }
 
-func (t *DevelopMetricsView) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.EditRepo)
-	return false
+func (t *DevelopMetricsView) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *DevelopMetricsView) Handler(ctx context.Context, args *DevelopMetricsViewArgs) (*DevelopMetricsViewResult, error) {
