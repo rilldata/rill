@@ -24,6 +24,7 @@ host: <HOSTNAME>
 port: 9030
 username: <USERNAME>
 password: "{{ .env.connector.starrocks.password }}"
+catalog: default_catalog  # Optional: for external catalogs (Iceberg, Hive, etc.)
 database: <DATABASE>
 ssl: false
 
@@ -59,21 +60,21 @@ connector.starrocks.dsn="starrocks://root:password@localhost:9030/analytics_db"
 ### MySQL DSN Format
 
 ```bash
-connector.starrocks.dsn="user:password@tcp(host:port)/database?parseTime=true"
+connector.starrocks.dsn="user:password@tcp(host:port)/database"
 ```
 
 This format is also supported for compatibility. For example:
 
 ```bash
-connector.starrocks.dsn="root:password@tcp(localhost:9030)/analytics_db?parseTime=true"
+connector.starrocks.dsn="root:password@tcp(localhost:9030)/analytics_db"
 ```
 
 :::note Important Notes
 
 - If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`)
 - StarRocks uses the MySQL wire protocol, so both DSN formats are compatible
-- The `parseTime=true` parameter is automatically added when using the StarRocks URL format
 - The DSN property takes precedence over individual connection fields (host, port, username, etc.)
+- **Both DSN formats (StarRocks URL and MySQL DSN) do not support external catalogs.** For external catalogs (Iceberg, Hive, etc.), use individual connection parameters with the `catalog` field instead.
 
 :::
 
@@ -83,6 +84,7 @@ connector.starrocks.dsn="root:password@tcp(localhost:9030)/analytics_db?parseTim
 - **port**: MySQL protocol port of the StarRocks FE node (default: 9030)
 - **username**: Username for authentication (default: root)
 - **password**: Password for authentication
+- **catalog**: Name of the StarRocks catalog (default: `default_catalog`). Use this for external catalogs like Iceberg, Hive, etc.
 - **database**: Name of the StarRocks database to connect to
 - **ssl**: Enable SSL/TLS encryption for the connection (default: false)
 - **log_queries**: Enable query logging for debugging purposes (default: false)
@@ -117,9 +119,60 @@ Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-ola
 
 Rill supports connecting to StarRocks v2.5 or newer versions.
 
+## External Catalogs (Iceberg, Hive, etc.)
+
+StarRocks supports [external catalogs](https://docs.starrocks.io/docs/data_source/catalog/catalog_overview/) that allow you to query data stored in external data sources like Apache Iceberg, Apache Hive, Delta Lake, and more without data ingestion.
+
+### Configuring External Catalog Connection
+
+To connect Rill to a StarRocks external catalog, specify the `catalog` parameter in your connector configuration:
+
+```yaml
+type: connector
+
+driver: starrocks
+host: <HOSTNAME>
+port: 9030
+username: <USERNAME>
+password: "{{ .env.connector.starrocks.password }}"
+catalog: iceberg_catalog  # Your external catalog name
+database: <DATABASE>      # Database within the external catalog
+```
+
+### How It Works
+
+When using an external catalog:
+1. Rill connects to StarRocks and switches to the specified catalog using `SET CATALOG`
+2. Queries are executed against tables in the external catalog
+3. StarRocks handles the data federation transparently
+
+### Example: Iceberg Catalog
+
+If you have an Iceberg catalog named `iceberg_lakehouse` with a database `analytics`:
+
+```yaml
+type: connector
+
+driver: starrocks
+host: starrocks-fe.example.com
+port: 9030
+username: admin
+password: "{{ .env.connector.starrocks.password }}"
+catalog: iceberg_lakehouse
+database: analytics
+```
+
+:::note External Catalog Limitations
+
+- External catalogs are read-only; Rill cannot create models or tables in external catalogs
+- Some advanced features like temporary tables are not supported with external catalogs
+- Query performance depends on the underlying data source and StarRocks cache settings
+
+:::
+
 ## Additional Notes
 
 - StarRocks supports both materialized views and regular tables. Rill can query both types as external tables.
-- For dashboards powered by StarRocks, [measure definitions](/build/metrics-view/#measures) are required to follow standard [StarRocks SQL](https://docs.starrocks.io/docs/sql-reference/sql-statements/account-management/CREATE%20USER/) syntax.
+- For dashboards powered by StarRocks, [measure definitions](/build/metrics-view/#measures) are required to follow standard [StarRocks SQL](https://docs.starrocks.io/docs/sql-reference/sql-statements/) syntax.
 - StarRocks uses a MySQL-compatible protocol, making it easy to integrate with existing MySQL-based tools and workflows.
 - The default MySQL protocol port for StarRocks FE nodes is 9030 (not to be confused with the HTTP port 8030).

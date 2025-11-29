@@ -8,9 +8,9 @@
   const { readOnly } = featureFlags;
 
   $: name = $page.params.name;
+  // StarRocks: database = catalog, schema = database
   $: database = $page.params.database;
-  // StarRocks does not have a database "schema" concept
-  // Rill considers the StarRocks "database" as the "database schema"
+  $: databaseSchema = $page.params.schema;
   $: table = $page.params.table;
 
   onMount(() => {
@@ -24,4 +24,4 @@
   <title>Rill Developer | {table}</title>
 </svelte:head>
 
-<TablePreviewWorkspace connector={name} databaseSchema={database} {table} />
+<TablePreviewWorkspace connector={name} {database} {databaseSchema} {table} />

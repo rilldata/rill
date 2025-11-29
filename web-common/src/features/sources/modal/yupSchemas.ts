@@ -225,6 +225,7 @@ export const getYupSchema = {
       .optional(),
     username: yup.string().optional(),
     password: yup.string().optional(),
+    catalog: yup.string().optional(), // StarRocks catalog (default: default_catalog)
     database: yup.string().optional(),
     ssl: yup.boolean().optional(),
     log_queries: yup.boolean().optional(),

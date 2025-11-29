@@ -22,6 +22,10 @@ export function makeFullyQualifiedTableName(
     case "pinot":
       return table;
     case "starrocks":
+      // StarRocks: database=catalog, databaseSchema=database, table=table
+      if (database) {
+        return `${database}.${databaseSchema}.${table}`;
+      }
       return `${databaseSchema}.${table}`;
     // Non-OLAP connectors: use standard database.schema.table format
     default:
@@ -62,9 +66,18 @@ export function makeSufficientlyQualifiedTableName(
       // TODO
       return table;
     case "starrocks":
-      // StarRocks uses database.table format (similar to ClickHouse)
-      if (databaseSchema === "default" || databaseSchema === "") return table;
-      return `${databaseSchema}.${table}`;
+      // StarRocks: database=catalog, databaseSchema=database, table=table
+      // Use default_catalog if catalog is empty
+      if (database && database !== "default_catalog") {
+        if (databaseSchema && databaseSchema !== "") {
+          return `${database}.${databaseSchema}.${table}`;
+        }
+        return `${database}.${table}`;
+      }
+      if (databaseSchema && databaseSchema !== "") {
+        return `${databaseSchema}.${table}`;
+      }
+      return table;
     case "mysql":
       // MySQL uses database.table format (no schema concept like PostgreSQL)
       if (database && database !== "default") {
@@ -113,6 +126,10 @@ export function makeTablePreviewHref(
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
     case "starrocks":
+      // StarRocks: database=catalog, databaseSchema=database
+      if (database) {
+        return `/connector/starrocks/${connectorName}/${database}/${databaseSchema}/${table}`;
+      }
       return `/connector/starrocks/${connectorName}/${databaseSchema}/${table}`;
     default:
       return null;
