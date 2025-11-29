@@ -28,6 +28,7 @@ var supportedTableHeadDialects = map[drivers.Dialect]bool{
 	drivers.DialectDuckDB:     true,
 	drivers.DialectClickHouse: true,
 	drivers.DialectDruid:      true,
+	drivers.DialectStarRocks:  true,
 	drivers.DialectPinot:      true,
 	drivers.DialectBigQuery:   true,
 	drivers.DialectSnowflake:  true,
@@ -135,6 +136,10 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 			return err
 		}
 	case drivers.DialectClickHouse:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
+			return err
+		}
+	case drivers.DialectStarRocks:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}

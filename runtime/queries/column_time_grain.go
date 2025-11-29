@@ -71,7 +71,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	var estimateSQL string
 	var useSample string
 	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
+	case drivers.DialectDuckDB, drivers.DialectStarRocks:
 		if sampleSize <= cq.Result {
 			useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
 		}

@@ -57,10 +57,12 @@ function createModelingSupportQueryOptions(
 
       // Modeling is supported if:
       // - DuckDB (embedded database with full SQL support)
+      // - StarRocks (supports model materialization)
       // - Provisioned (managed) connectors
       // - Read-write mode connectors
       return (
         spec.driver === "duckdb" ||
+        spec.driver === "starrocks" ||
         spec.provision === true ||
         spec.properties?.mode === "readwrite"
       );

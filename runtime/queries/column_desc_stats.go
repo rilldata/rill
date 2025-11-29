@@ -70,15 +70,28 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			"FROM %[2]s WHERE NOT isinf(%[1]s) ",
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
+	case drivers.DialectStarRocks:
+		// StarRocks uses percentile_approx for quantiles
+		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
+			"min(%[1]s) as min, "+
+			"percentile_approx(%[1]s, 0.25) as q25, "+
+			"percentile_approx(%[1]s, 0.5) as q50, "+
+			"percentile_approx(%[1]s, 0.75) as q75, "+
+			"max(%[1]s) as max, "+
+			"avg(%[1]s) as mean, "+
+			"stddev_samp(%[1]s) as sd "+
+			"FROM %[2]s WHERE %[1]s IS NOT NULL ",
+			sanitizedColumnName,
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
-		descriptiveStatisticsSQL = fmt.Sprintf(`SELECT 
-			min(%[1]s)::DOUBLE as min, 
-			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25, 
-			quantileTDigest(0.5)(%[1]s)::DOUBLE as q50, 
-			quantileTDigest(0.75)(%[1]s)::DOUBLE as q75, 
-			max(%[1]s)::DOUBLE as max, 
-			avg(%[1]s)::DOUBLE as mean, 
-			stddevSamp(%[1]s)::DOUBLE as sd 
+		descriptiveStatisticsSQL = fmt.Sprintf(`SELECT
+			min(%[1]s)::DOUBLE as min,
+			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25,
+			quantileTDigest(0.5)(%[1]s)::DOUBLE as q50,
+			quantileTDigest(0.75)(%[1]s)::DOUBLE as q75,
+			max(%[1]s)::DOUBLE as max,
+			avg(%[1]s)::DOUBLE as mean,
+			stddevSamp(%[1]s)::DOUBLE as sd
 			FROM %[2]s WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+``,
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))

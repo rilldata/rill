@@ -93,7 +93,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -127,7 +127,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		var querySQL string
 		var args []any
 		switch olap.Dialect() {
-		case drivers.DialectDuckDB:
+		case drivers.DialectDuckDB, drivers.DialectStarRocks:
+			// StarRocks uses DuckDB-style SQL for timeseries
 			querySQL, args = timeSeriesDuckDBSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
 		case drivers.DialectClickHouse:
 			querySQL, args = timeSeriesClickHouseSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
