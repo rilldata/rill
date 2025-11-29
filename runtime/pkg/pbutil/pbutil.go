@@ -1,6 +1,7 @@
 package pbutil
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math"
 	"math/big"
@@ -121,10 +122,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 				return structpb.NewStringValue(uid.String()), nil
 			}
 		}
+		// For actual binary data, encode as base64
+		return structpb.NewStringValue(base64.StdEncoding.EncodeToString(v)), nil
 	case string:
 		if t != nil {
 			switch t.Code {
-			case runtimev1.Type_CODE_DECIMAL:
+			case runtimev1.Type_CODE_DECIMAL, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256:
 				// Evil cast to float until frontend can deal with bigs:
 				v2, ok := new(big.Float).SetString(v)
 				if ok {

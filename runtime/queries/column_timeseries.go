@@ -112,6 +112,12 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		timezone = q.TimeZone
 	}
 
+	// StarRocks external catalogs don't support TEMPORARY TABLE or table creation
+	// Handle StarRocks separately with direct query execution
+	if olap.Dialect() == drivers.DialectStarRocks {
+		return q.resolveStarRocks(ctx, olap, timeRange, priority)
+	}
+
 	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
@@ -127,8 +133,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		var querySQL string
 		var args []any
 		switch olap.Dialect() {
-		case drivers.DialectDuckDB, drivers.DialectStarRocks:
-			// StarRocks uses DuckDB-style SQL for timeseries
+		case drivers.DialectDuckDB:
 			querySQL, args = timeSeriesDuckDBSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
 		case drivers.DialectClickHouse:
 			querySQL, args = timeSeriesClickHouseSQL(timeRange, q, temporaryTableName, tsAlias, timezone, olap.Dialect())
@@ -148,14 +153,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		defer func() {
 			// NOTE: Using ensuredCtx
 			_ = olap.Exec(ensuredCtx, &drivers.Statement{
-				Query:            `DROP TABLE "` + temporaryTableName + `"`,
+				Query:            "DROP TABLE `" + temporaryTableName + "`",
 				Priority:         priority,
 				ExecutionTimeout: defaultExecutionTimeout,
 			})
 		}()
 
 		rows, err := olap.Query(ctx, &drivers.Statement{
-			Query:            fmt.Sprintf(`SELECT * FROM %q`, temporaryTableName),
+			Query:            "SELECT * FROM `" + temporaryTableName + "`",
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 		})
@@ -253,7 +258,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 	}
 	timeSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(?::DATETIME64, ?))))`
 	// start and end are not null else we would have an empty time range but column can still have null values
-	colSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(` + safeName(q.TimestampColumnName) + `::Nullable(DATETIME64), ?))))`
+	colSQL = `date_sub(` + unit + `, ?, date_trunc(?, date_add(` + unit + `, ?, toTimeZone(` + safeName(dialect, q.TimestampColumnName) + `::Nullable(DATETIME64), ?))))`
 	// nolint
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.Start.AsTime(), timezone) // compute start
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.End.AsTime(), timezone)   // compute end
@@ -282,7 +287,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			-- transform the original data, and optionally sample it.
 			series AS (
 				SELECT
-					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(dialect, measures) + `
 				FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -292,7 +297,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
 				SELECT
-				` + getCoalesceStatementsMeasures(measures) + `,
+				` + getCoalesceStatementsMeasures(dialect, measures) + `,
 				toTimeZone(template.` + tsAlias + `::DATETIME64, ?) AS ` + tsAlias + ` FROM template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
@@ -335,7 +340,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(dialect, q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(dialect, measures) + `
 			FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -345,7 +350,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
 				SELECT
-				` + getCoalesceStatementsMeasures(measures) + `,
+				` + getCoalesceStatementsMeasures(dialect, measures) + `,
 				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
@@ -360,6 +365,165 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			timezone,
 			timezone,
 		}
+}
+
+// resolveStarRocks handles StarRocks-specific time series resolution.
+// StarRocks external catalogs don't support temporary tables, so we:
+// 1. Create temp tables in default_catalog (StarRocks native)
+// 2. Use fully qualified table names for source data in external catalog
+// 3. Clean up temp tables afterward
+func (q *ColumnTimeseries) resolveStarRocks(ctx context.Context, olap drivers.OLAPStore, timeRange *runtimev1.TimeSeriesTimeRange, priority int) error {
+	tsAlias := tempName("_ts_")
+	temporaryTableName := tempName("_timeseries_")
+
+	if q.FirstDayOfWeek > 7 || q.FirstDayOfWeek <= 0 {
+		q.FirstDayOfWeek = 1
+	}
+
+	if q.FirstMonthOfYear > 12 || q.FirstMonthOfYear <= 0 {
+		q.FirstMonthOfYear = 1
+	}
+
+	dialect := olap.Dialect()
+	dateTruncSpecifier := dialect.ConvertToDateTruncSpecifier(timeRange.Interval)
+	measures := normaliseMeasures(q.Measures, q.Pixels != 0)
+	filter := ""
+
+	startTimeStr := timeRange.Start.AsTime().Format("2006-01-02 15:04:05")
+	endTimeStr := timeRange.End.AsTime().Format("2006-01-02 15:04:05")
+
+	// Build COALESCE statements
+	var coalesceStatements string
+	for i, measure := range measures {
+		safeMeasureName := safeName(dialect, measure.SqlName)
+		coalesceStatements += `COALESCE(` + safeMeasureName + `, 0) as ` + safeMeasureName
+		if i < len(measures)-1 {
+			coalesceStatements += ", "
+		}
+	}
+
+	colSQL := `date_trunc('` + dateTruncSpecifier + `', ` + safeName(dialect, q.TimestampColumnName) + `)`
+
+	// Source table uses fully qualified name (external catalog)
+	sourceTable := dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName)
+
+	// For StarRocks, we need to:
+	// 1. Switch to default_catalog to create temp table
+	// 2. Run query with fully qualified source table name
+	// 3. Read results and cleanup
+
+	// First, switch to default_catalog for temp table operations
+	err := olap.Exec(ctx, &drivers.Statement{
+		Query:            "SET CATALOG `default_catalog`",
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return fmt.Errorf("switch to default_catalog: %w", err)
+	}
+
+	// Ensure we clean up the temp table even on error
+	defer func() {
+		_ = olap.Exec(ctx, &drivers.Statement{
+			Query:            "DROP TABLE IF EXISTS `" + temporaryTableName + "`",
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+	}()
+
+	// Create temp table in default_catalog with data from external catalog
+	createSQL := `CREATE TABLE ` + "`" + temporaryTableName + "`" + ` AS
+		WITH template AS (
+			SELECT DATE_ADD('` + startTimeStr + `', INTERVAL generate_series ` + dateTruncSpecifier + `) AS ` + tsAlias + `
+			FROM TABLE(generate_series(0, TIMESTAMPDIFF(` + dateTruncSpecifier + `, '` + startTimeStr + `', '` + endTimeStr + `')))
+		),
+		series AS (
+			SELECT ` + colSQL + ` AS ` + tsAlias + `, ` + getExpressionColumnsFromMeasures(dialect, measures) + `
+			FROM ` + sourceTable + ` ` + filter + `
+			GROUP BY ` + tsAlias + `
+		)
+		SELECT template.` + tsAlias + `, ` + coalesceStatements + `
+		FROM template
+		LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
+		ORDER BY template.` + tsAlias
+
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query:            createSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return fmt.Errorf("create temp table: %w", err)
+	}
+
+	// Query results from temp table
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query:            "SELECT * FROM `" + temporaryTableName + "`",
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return fmt.Errorf("query temp table: %w", err)
+	}
+	defer rows.Close()
+
+	// Omit the time value from the result schema
+	schema := rows.Schema
+	if schema != nil {
+		for i, f := range schema.Fields {
+			if f.Name == tsAlias {
+				schema.Fields = slices.Delete(schema.Fields, i, i+1)
+				break
+			}
+		}
+	}
+
+	var data []*runtimev1.TimeSeriesValue
+	rowMap := make(map[string]any)
+	for rows.Next() {
+		err := rows.MapScan(rowMap)
+		if err != nil {
+			return err
+		}
+
+		var t time.Time
+		switch v := rowMap[tsAlias].(type) {
+		case time.Time:
+			t = v
+		default:
+			return fmt.Errorf("unexpected type for timestamp column: %T", v)
+		}
+		delete(rowMap, tsAlias)
+
+		records, err := pbutil.ToStruct(rowMap, schema)
+		if err != nil {
+			return err
+		}
+
+		tpb := timestamppb.New(t)
+		if err := tpb.CheckValid(); err != nil {
+			return err
+		}
+
+		data = append(data, &runtimev1.TimeSeriesValue{
+			Ts:      tpb,
+			Records: records,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	meta := structTypeToMetricsViewColumn(rows.Schema)
+
+	// Note: For StarRocks, we skip spark values generation for external catalogs
+	// as it requires temp tables which have limitations
+	q.Result = &ColumnTimeseriesResult{
+		Meta:    meta,
+		Results: data,
+		Spark:   nil, // Spark values not supported for external catalogs
+	}
+	return nil
 }
 
 func (q *ColumnTimeseries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -457,7 +621,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	timestampColumnName string,
 	valueColumn string,
 ) ([]*runtimev1.TimeSeriesValue, error) {
-	safeTimestampColumnName := safeName(timestampColumnName)
+	safeTimestampColumnName := safeName(olap.Dialect(), timestampColumnName)
 
 	rowCount, err := q.resolveRowCount(ctx, olap, priority)
 	if err != nil {
@@ -466,7 +630,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 	if rowCount < int64(q.Pixels*4) {
 		rows, err := olap.Query(ctx, &drivers.Statement{
-			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `"::DOUBLE as count FROM "` + tableName + `"`,
+			Query:            "SELECT " + safeTimestampColumnName + " as ts, " + olap.Dialect().CastAs("`"+valueColumn+"`", "DOUBLE") + " as count FROM `" + tableName + "`",
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 		})
@@ -508,37 +672,39 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 		return results, nil
 	}
 
-	querySQL := ` -- extract unix time
-      WITH Q as (
-		SELECT ` + epochFromTimestamp(safeTimestampColumnName, olap.Dialect()) + `::BIGINT as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
-      ),
-      -- generate bounds
-      M as (
-        SELECT min(t) as t1, max(t) as t2, max(t) - min(t) as diff FROM Q
-      )
-      -- core logic
-      SELECT 
-        -- left boundary point
-        min(t) * 1000  as min_t, 
-        ` + argMin(olap.Dialect()) + `(v, t) as argmin_tv, 
+	dialect := olap.Dialect()
+	pixels := strconv.FormatInt(int64(q.Pixels), 10)
+	safeTableName := dialect.EscapeTable("", "", tableName)
+	safeValueColumn := safeName(dialect, valueColumn)
+	epochExpr := dialect.CastAs(epochFromTimestamp(safeTimestampColumnName, dialect), "BIGINT")
+	valueExpr := dialect.CastAs(safeValueColumn, "DOUBLE")
+	diffExpr := dialect.CastAs("(SELECT diff FROM M)", "DECIMAL(18,3)")
 
-        -- right boundary point
-        max(t) * 1000 as max_t, 
-        ` + argMax(olap.Dialect()) + `(v, t) as argmax_tv,
-
-        -- smallest point within boundary
-        min(v) as min_v, 
-        ` + argMin(olap.Dialect()) + `(t, v) * 1000  as argmin_vt,
-
-        -- largest point within boundary
-        max(v) as max_v, 
-        ` + argMax(olap.Dialect()) + `(t, v) * 1000  as argmax_vt,
-
-        round(` + strconv.FormatInt(int64(q.Pixels), 10) + ` * (t - (SELECT t1 FROM M)) / (SELECT diff FROM M)::Decimal(18,3)) AS bin
-  
-      FROM Q GROUP BY bin
-      ORDER BY bin
-    `
+	querySQL := `
+		WITH Q AS (
+			SELECT ` + epochExpr + ` AS t, ` + valueExpr + ` AS v
+			FROM ` + safeTableName + `
+		),
+		M AS (
+			SELECT MIN(t) AS t1, MAX(t) AS t2, MAX(t) - MIN(t) AS diff FROM Q
+		),
+		Q_binned AS (
+			SELECT t, v, ROUND(` + pixels + ` * (t - (SELECT t1 FROM M)) / ` + diffExpr + `) AS bin
+			FROM Q
+		)
+		SELECT
+			MIN(t) * 1000 AS min_t,
+			` + argMin(dialect) + `(v, t) AS argmin_tv,
+			MAX(t) * 1000 AS max_t,
+			` + argMax(dialect) + `(v, t) AS argmax_tv,
+			MIN(v) AS min_v,
+			` + argMin(dialect) + `(t, v) * 1000 AS argmin_vt,
+			MAX(v) AS max_v,
+			` + argMax(dialect) + `(t, v) * 1000 AS argmax_vt,
+			bin
+		FROM Q_binned
+		GROUP BY bin
+		ORDER BY bin`
 
 	rows, err := olap.Query(ctx, &drivers.Statement{
 		Query:            querySQL,
@@ -631,10 +797,10 @@ func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLA
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+func getExpressionColumnsFromMeasures(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += measure.Expression + " as " + safeName(measure.SqlName)
+		result += measure.Expression + " as " + safeName(dialect, measure.SqlName)
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -643,10 +809,10 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequ
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
-func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+func getCoalesceStatementsMeasures(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`series.%[1]s as %[1]s`, safeName(measure.SqlName))
+		result += fmt.Sprintf(`series.%[1]s as %[1]s`, safeName(dialect, measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -661,9 +827,9 @@ func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runt
 		case drivers.DialectDuckDB:
 			// "last" function of DuckDB returns non-deterministic results by default so requires an ORDER BY clause
 			// https://duckdb.org/docs/sql/functions/aggregates.html#order-by-clause-in-aggregate-functions
-			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeName(measure.SqlName))
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeName(dialect, measure.SqlName))
 		default:
-			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(measure.SqlName))
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(dialect, measure.SqlName))
 		}
 		if i < len(measures)-1 {
 			result += ", "
@@ -734,6 +900,8 @@ func argMin(dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return "argMin"
+	case drivers.DialectStarRocks:
+		return "min_by"
 	default:
 		return "arg_min"
 	}
@@ -743,6 +911,8 @@ func argMax(dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return "argMax"
+	case drivers.DialectStarRocks:
+		return "max_by"
 	default:
 		return "arg_max"
 	}
@@ -752,6 +922,8 @@ func epochFromTimestamp(safeColName string, dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return `toUnixTimestamp(` + safeColName + `)`
+	case drivers.DialectStarRocks:
+		return `UNIX_TIMESTAMP(` + safeColName + `)`
 	default:
 		return `extract('epoch' from ` + safeColName + `)`
 	}

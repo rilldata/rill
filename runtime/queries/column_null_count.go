@@ -62,7 +62,7 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	nullCountSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL",
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		safeName(q.ColumnName),
+		safeName(olap.Dialect(), q.ColumnName),
 	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{

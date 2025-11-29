@@ -71,7 +71,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	var estimateSQL string
 	var useSample string
 	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectStarRocks:
+	case drivers.DialectDuckDB:
 		if sampleSize <= cq.Result {
 			useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
 		}
@@ -112,7 +112,54 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		  ) as estimatedSmallestTimeGrain
 		FROM time_grains
 		`,
-			safeName(q.ColumnName),
+			safeName(olap.Dialect(), q.ColumnName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			useSample,
+		)
+	case drivers.DialectStarRocks:
+		// StarRocks doesn't support USING SAMPLE syntax
+		// Use LIMIT instead for sampling
+		if sampleSize <= cq.Result {
+			useSample = fmt.Sprintf("LIMIT %d", sampleSize)
+		}
+		estimateSQL = fmt.Sprintf(`
+		WITH cleaned_column AS (
+			SELECT %s as cd
+			from %s
+			%s
+		),
+		time_grains as (
+		SELECT
+			approx_count_distinct(YEAR(cd)) as year,
+			approx_count_distinct(MONTH(cd)) as month,
+			approx_count_distinct(DAYOFYEAR(cd)) as dayofyear,
+			approx_count_distinct(DAY(cd)) as dayofmonth,
+			MIN(cd = LAST_DAY(cd)) = TRUE as lastdayofmonth,
+			approx_count_distinct(WEEK(cd)) as weekofyear,
+			approx_count_distinct(DAYOFWEEK(cd)) as dayofweek,
+			approx_count_distinct(HOUR(cd)) as hour,
+			approx_count_distinct(MINUTE(cd)) as minute,
+			approx_count_distinct(SECOND(cd)) as second,
+			approx_count_distinct(milliseconds_diff(cd, date_trunc('second', cd))) as ms
+		FROM cleaned_column
+		)
+		SELECT
+		  COALESCE(
+			  case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
+			  CASE WHEN second > 1 THEN 'SECOND' else NULL END,
+			  CASE WHEN minute > 1 THEN 'MINUTE' else null END,
+			  CASE WHEN hour > 1 THEN 'HOUR' else null END,
+			  -- cases above, if equal to 1, then we have some candidates for
+			  -- bigger time grains. We need to reverse from here
+			  -- years, months, weeks, days.
+			  CASE WHEN dayofyear = 1 and year > 1 THEN 'YEAR' else null END,
+			  CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'MONTH' else null END,
+			  CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'WEEK' else null END,
+			  CASE WHEN hour = 1 THEN 'DAY' else null END
+		  ) as estimatedSmallestTimeGrain
+		FROM time_grains
+		`,
+			safeName(olap.Dialect(), q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
@@ -158,7 +205,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		  ) as estimatedSmallestTimeGrain
 		FROM time_grains
 		`,
-			safeName(q.ColumnName),
+			safeName(olap.Dialect(), q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
