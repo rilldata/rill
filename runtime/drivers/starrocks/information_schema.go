@@ -11,9 +11,27 @@ import (
 var _ drivers.InformationSchema = (*connection)(nil)
 
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
-// StarRocks uses databases (similar to MySQL schemas).
+// StarRocks structure: Catalog -> Database -> Table
+// We map: Database = catalog, DatabaseSchema = database
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	// Determine catalog (defaultCatalog if not configured)
+	catalog := c.configProp.Catalog
+	if catalog == "" {
+		catalog = defaultCatalog
+	}
+
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Switch to the configured catalog (each catalog has its own information_schema)
+	_, err = db.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
+	if err != nil {
+		return nil, "", fmt.Errorf("set catalog %s: %w", catalog, err)
+	}
 
 	// Query information_schema.schemata to list databases
 	// Exclude system databases: information_schema, _statistics_, mysql
@@ -39,11 +57,6 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	LIMIT %d
 	`, limit+1)
 
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
@@ -56,9 +69,10 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		if err := rows.Scan(&schema); err != nil {
 			return nil, "", err
 		}
+		// StarRocks mapping: Database = catalog, DatabaseSchema = database
 		res = append(res, &drivers.DatabaseSchemaInfo{
-			Database:       "",
-			DatabaseSchema: schema,
+			Database:       catalog, // Catalog name (e.g., default_catalog, iceberg_catalog)
+			DatabaseSchema: schema,  // Database name (e.g., sales, analytics)
 		})
 	}
 
@@ -78,14 +92,34 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 // ListTables returns a list of tables in a specific database schema.
 // Includes both regular tables and materialized views.
+// database parameter = catalog, databaseSchema parameter = database
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	// Use default database if schema is empty
-	// In StarRocks, schema is equivalent to database
+	// database parameter is the catalog
+	catalog := database
+	if catalog == "" {
+		catalog = c.configProp.Catalog
+		if catalog == "" {
+			catalog = defaultCatalog
+		}
+	}
+
+	// databaseSchema is the actual database name
 	if databaseSchema == "" {
 		databaseSchema = c.configProp.Database
 	}
 
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Switch to the correct catalog (each catalog has its own information_schema)
+	_, err = db.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
+	if err != nil {
+		return nil, "", fmt.Errorf("set catalog %s: %w", catalog, err)
+	}
 
 	// Query information_schema.tables
 	// StarRocks table_type values: BASE TABLE, VIEW, MATERIALIZED VIEW
@@ -115,11 +149,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	ORDER BY table_name
 	LIMIT %d
 	`, limit+1)
-
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, "", err
-	}
 
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
@@ -155,11 +184,32 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 // GetTable returns metadata for a specific table including column information.
+// StarRocks mapping: database parameter = catalog, databaseSchema = database, table = table
+// Each catalog has its own information_schema.
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
-	// Use default database if schema is empty
-	// In StarRocks, schema is equivalent to database
+	// database parameter is the catalog
+	catalog := database
+	if catalog == "" {
+		catalog = c.configProp.Catalog
+		if catalog == "" {
+			catalog = defaultCatalog
+		}
+	}
+
+	// databaseSchema is the actual database name
 	if databaseSchema == "" {
 		databaseSchema = c.configProp.Database
+	}
+
+	db, err := c.getDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Switch to the correct catalog (each catalog has its own information_schema)
+	_, err = db.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
+	if err != nil {
+		return nil, fmt.Errorf("set catalog %s: %w", catalog, err)
 	}
 
 	// Query to get table type and column information
@@ -178,11 +228,6 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	WHERE c.table_schema = ? AND c.table_name = ?
 	ORDER BY c.ordinal_position
 	`
-
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {

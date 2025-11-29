@@ -77,6 +77,16 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 		{
+			Key:         "catalog",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Catalog",
+			Required:    false,
+			Placeholder: "default_catalog",
+			Default:     "default_catalog",
+			Description: "Name of the StarRocks catalog (for external catalogs like Iceberg, Hive)",
+			Hint:        "Use default_catalog for internal tables, or specify external catalog name",
+		},
+		{
 			Key:         "database",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
@@ -121,6 +131,8 @@ type ConfigProperties struct {
 	Username string `mapstructure:"username"`
 	// Password for authentication.
 	Password string `mapstructure:"password"`
+	// Catalog is the StarRocks catalog (for external catalogs like Iceberg, Hive).
+	Catalog string `mapstructure:"catalog"`
 	// Database is the default database to use.
 	Database string `mapstructure:"database"`
 	// SSL enables TLS encryption.
@@ -145,6 +157,8 @@ func (c *ConfigProperties) Validate() error {
 }
 
 // ResolveDSN builds a connection string from individual fields if DSN is not set.
+// For external catalogs, the database is NOT included in DSN because it doesn't exist in default_catalog.
+// The database will be set after connection using SET CATALOG and USE database.
 func (c *ConfigProperties) ResolveDSN() (string, error) {
 	if c.DSN != "" {
 		// Check if DSN uses starrocks:// protocol and convert to MySQL format
@@ -152,26 +166,6 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		if err != nil {
 			return "", err
 		}
-
-		// Debug: log DSN (without password)
-		if c.Password != "" || strings.Contains(dsn, "@") {
-			// Mask password in DSN
-			parts := strings.Split(dsn, "@")
-			if len(parts) >= 2 {
-				userPass := strings.Split(parts[0], ":")
-				if len(userPass) == 2 {
-					masked := userPass[0] + ":***@" + strings.Join(parts[1:], "@")
-					fmt.Printf("DEBUG: StarRocks DSN (masked): %s\n", masked)
-				} else {
-					fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
-				}
-			} else {
-				fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
-			}
-		} else {
-			fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
-		}
-
 		return dsn, nil
 	}
 
@@ -192,22 +186,21 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		cfg.Addr = fmt.Sprintf("%s:%d", c.Host, port)
 	}
 
-	cfg.DBName = c.Database
+	// For external catalogs (non-defaultCatalog), don't include database in DSN
+	// because the database exists in the external catalog, not in defaultCatalog.
+	// MySQL driver would fail to connect if database doesn't exist in defaultCatalog.
+	// The database will be set after connection using SET CATALOG and USE database.
+	if c.Catalog == "" || c.Catalog == defaultCatalog {
+		cfg.DBName = c.Database
+	}
+	// For external catalogs: cfg.DBName remains empty
 
-	// Enable parseTime to automatically parse DATE and DATETIME into time.Time
+	// Enable parseTime for DATE/DATETIME conversion
+	// Custom driver will handle edge cases where parsing fails
 	cfg.ParseTime = true
 
 	// Format DSN
-	dsn := cfg.FormatDSN()
-
-	// Debug: log DSN (without password)
-	if c.Password != "" {
-		fmt.Printf("DEBUG: StarRocks DSN (masked): %s\n", strings.Replace(dsn, c.Password, "***", -1))
-	} else {
-		fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
-	}
-
-	return dsn, nil
+	return cfg.FormatDSN(), nil
 }
 
 // parseDSN parses a StarRocks DSN and converts it to MySQL format.
@@ -231,7 +224,7 @@ func (c *ConfigProperties) parseDSN(dsn string) (string, error) {
 	// Split into user:password@host:port/database parts
 	// Format: [user[:password]@]host[:port]/database
 	var username, password, host, database string
-	var port int = 9030
+	port := 9030
 
 	// Find @ to separate credentials from host
 	atIdx := strings.Index(rest, "@")
@@ -287,11 +280,10 @@ func (c *ConfigProperties) parseDSN(dsn string) (string, error) {
 	cfg.Net = "tcp"
 	cfg.Addr = fmt.Sprintf("%s:%d", host, port)
 	cfg.DBName = database
-	cfg.ParseTime = true
+	cfg.ParseTime = true // Enable date/time parsing
 
 	return cfg.FormatDSN(), nil
 }
-
 
 // Open creates a new StarRocks connection handle.
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -468,6 +460,8 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return nil, c.dbErr
 	}
 
+	// Use MySQL driver directly (StarRocks is MySQL-compatible)
+	// Type conversions are handled in the OLAP layer
 	c.db, c.dbErr = sqlx.Open("mysql", dsn)
 	if c.dbErr != nil {
 		return nil, c.dbErr
