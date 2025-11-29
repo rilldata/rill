@@ -320,14 +320,10 @@ func (d Dialect) GetRegexMatchFunction() string {
 }
 
 // EscapeTable returns an escaped table name with database, schema and table.
+// For StarRocks: db=catalog, schema=database, table=table (catalog.database.table)
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
 		return d.EscapeIdentifier(table)
-	}
-	// StarRocks doesn't use catalog in table references, only schema.table
-	// The 'db' parameter would be interpreted as a catalog, which causes errors
-	if d == DialectStarRocks {
-		db = ""
 	}
 	var sb strings.Builder
 	if db != "" {
@@ -473,6 +469,17 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 		res += " NULLS LAST"
 	}
 	return res
+}
+
+// CastAs returns dialect-specific type casting syntax.
+// StarRocks uses CAST(expr AS TYPE), others use PostgreSQL-style expr::TYPE.
+func (d Dialect) CastAs(expr, typeName string) string {
+	switch d {
+	case DialectStarRocks:
+		return "CAST(" + expr + " AS " + typeName + ")"
+	default:
+		return expr + "::" + typeName
+	}
 }
 
 func (d Dialect) JoinOnExpression(lhs, rhs string) string {
