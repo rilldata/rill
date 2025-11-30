@@ -79,10 +79,22 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	var dataRefreshedOn *timestamppb.Timestamp
 	if mv.Spec.Model != "" {
 		res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Model, Kind: runtime.ResourceKindModel}, false)
-		if err == nil && res.GetModel().State.ResultTable != "" {
-			mv.Spec.Table = res.GetModel().State.ResultTable
-			mv.Spec.Connector = res.GetModel().State.ResultConnector
-			dataRefreshedOn = res.GetModel().State.RefreshedOn
+		model := res.GetModel()
+		if err == nil && model != nil && model.State != nil && model.State.ResultTable != "" {
+			mv.Spec.Table = model.State.ResultTable
+			mv.Spec.Connector = model.State.ResultConnector
+			dataRefreshedOn = model.State.RefreshedOn
+			// Extract catalog/database from model result properties for proper table lookup
+			// StarRocks mapping: catalog -> Rill database, database -> Rill databaseSchema
+			if props := model.State.ResultProperties; props != nil {
+				propsMap := props.AsMap()
+				if catalog, ok := propsMap["catalog"].(string); ok && catalog != "" {
+					mv.Spec.Database = catalog
+				}
+				if db, ok := propsMap["database"].(string); ok && db != "" {
+					mv.Spec.DatabaseSchema = db
+				}
+			}
 		} else {
 			mv.Spec.Table = mv.Spec.Model
 		}
