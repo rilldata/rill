@@ -1,6 +1,9 @@
 package starrocks
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
 	"strings"
 )
 
@@ -45,4 +48,30 @@ func EscapeReservedKeyword(keyword string) string {
 		return "`" + keyword + "`"
 	}
 	return keyword
+}
+
+// Executor is an interface for executing SQL statements.
+// Both *sqlx.DB and *sqlx.Conn implement this interface.
+type Executor interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+// switchCatalogContext switches to the specified catalog and database.
+// This is used to set the context for queries that need to run in a specific catalog/database.
+//
+// For StarRocks, the hierarchy is: Catalog → Database → Table
+// - SET CATALOG switches to a different catalog (e.g., external Iceberg catalog)
+// - USE database switches to a different database within the current catalog
+func switchCatalogContext(ctx context.Context, exec Executor, catalog, database string) error {
+	if catalog != "" && catalog != defaultCatalog {
+		if _, err := exec.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog)); err != nil {
+			return fmt.Errorf("set catalog %s: %w", catalog, err)
+		}
+	}
+	if database != "" {
+		if _, err := exec.ExecContext(ctx, "USE "+safeSQLName(database)); err != nil {
+			return fmt.Errorf("use database %s: %w", database, err)
+		}
+	}
+	return nil
 }

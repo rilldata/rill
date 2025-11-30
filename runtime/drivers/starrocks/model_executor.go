@@ -311,16 +311,8 @@ func (e *starrocksToSelfExecutor) createTableAsSelectCrossConnector(ctx context.
 
 	// Set INPUT connector's catalog/database context for SELECT
 	// This allows unqualified table references in SQL to resolve to input catalog
-	inputCatalog := e.inputConn.configProp.Catalog
-	if inputCatalog != "" && inputCatalog != defaultCatalog {
-		if _, err := conn.ExecContext(ctx, "SET CATALOG "+safeSQLName(inputCatalog)); err != nil {
-			return fmt.Errorf("set input catalog %s: %w", inputCatalog, err)
-		}
-	}
-	if e.inputConn.configProp.Database != "" {
-		if _, err := conn.ExecContext(ctx, "USE "+safeSQLName(e.inputConn.configProp.Database)); err != nil {
-			return fmt.Errorf("use input database %s: %w", e.inputConn.configProp.Database, err)
-		}
+	if err := switchCatalogContext(ctx, conn, e.inputConn.configProp.Catalog, e.inputConn.configProp.Database); err != nil {
+		return fmt.Errorf("switch to input catalog context: %w", err)
 	}
 
 	// Build fully qualified OUTPUT table name: catalog.database.table
@@ -364,16 +356,8 @@ func (e *starrocksToSelfExecutor) insertIntoTableCrossConnector(ctx context.Cont
 	defer conn.Close()
 
 	// Set INPUT connector's catalog/database context for SELECT
-	inputCatalog := e.inputConn.configProp.Catalog
-	if inputCatalog != "" && inputCatalog != defaultCatalog {
-		if _, err := conn.ExecContext(ctx, "SET CATALOG "+safeSQLName(inputCatalog)); err != nil {
-			return fmt.Errorf("set input catalog %s: %w", inputCatalog, err)
-		}
-	}
-	if e.inputConn.configProp.Database != "" {
-		if _, err := conn.ExecContext(ctx, "USE "+safeSQLName(e.inputConn.configProp.Database)); err != nil {
-			return fmt.Errorf("use input database %s: %w", e.inputConn.configProp.Database, err)
-		}
+	if err := switchCatalogContext(ctx, conn, e.inputConn.configProp.Catalog, e.inputConn.configProp.Database); err != nil {
+		return fmt.Errorf("switch to input catalog context: %w", err)
 	}
 
 	// Build fully qualified OUTPUT table name
@@ -556,7 +540,10 @@ func (props *ModelOutputProperties) tblConfig() string {
 		if sb.Len() > 0 {
 			sb.WriteString(" ")
 		}
-		fmt.Fprintf(&sb, "COMMENT '%s'", strings.ReplaceAll(props.Comment, "'", "''"))
+		// Escape backslashes first, then single quotes
+		escaped := strings.ReplaceAll(props.Comment, "\\", "\\\\")
+		escaped = strings.ReplaceAll(escaped, "'", "''")
+		fmt.Fprintf(&sb, "COMMENT '%s'", escaped)
 	}
 
 	// 3. Partitioning

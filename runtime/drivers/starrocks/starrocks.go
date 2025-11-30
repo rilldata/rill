@@ -261,8 +261,10 @@ func (c *ConfigProperties) parseDSN(dsn string) (string, error) {
 	if colonIdx >= 0 {
 		host = hostPortPart[:colonIdx]
 		portStr := hostPortPart[colonIdx+1:]
-		if p, err := fmt.Sscanf(portStr, "%d", &port); err != nil || p != 1 {
-			return "", fmt.Errorf("invalid port in StarRocks DSN: %s", portStr)
+		if p, err := fmt.Sscanf(portStr, "%d", &port); err != nil {
+			return "", fmt.Errorf("invalid port in StarRocks DSN: %q is not a valid number: %w", portStr, err)
+		} else if p != 1 {
+			return "", fmt.Errorf("invalid port in StarRocks DSN: expected numeric port, got %q", portStr)
 		}
 	} else {
 		host = hostPortPart

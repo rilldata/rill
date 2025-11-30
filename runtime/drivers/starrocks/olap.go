@@ -221,25 +221,7 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 // For external catalogs: SET CATALOG → USE database
 // For default_catalog: USE database only
 func (c *connection) setCatalogContext(ctx context.Context, conn *sqlx.Conn) error {
-	catalog := c.configProp.Catalog
-
-	// For external catalogs, switch catalog first
-	if catalog != "" && catalog != defaultCatalog {
-		_, err := conn.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
-		if err != nil {
-			return fmt.Errorf("set catalog %s: %w", catalog, err)
-		}
-	}
-
-	// Set database context if configured
-	if c.configProp.Database != "" {
-		_, err := conn.ExecContext(ctx, "USE "+safeSQLName(c.configProp.Database))
-		if err != nil {
-			return fmt.Errorf("use database %s: %w", c.configProp.Database, err)
-		}
-	}
-
-	return nil
+	return switchCatalogContext(ctx, conn, c.configProp.Catalog, c.configProp.Database)
 }
 
 // InformationSchema implements drivers.OLAPStore.
@@ -528,7 +510,12 @@ func (r *starrocksRows) MapScan(dest map[string]any) error {
 				dest[fieldName] = nil
 			}
 		default:
-			dest[fieldName] = *(valPtr.(*any))
+			// Safe type assertion for unknown types
+			if ptr, ok := valPtr.(*any); ok && ptr != nil {
+				dest[fieldName] = *ptr
+			} else {
+				dest[fieldName] = nil
+			}
 		}
 	}
 	return nil
@@ -550,6 +537,9 @@ var scanDestFactory = map[runtimev1.Type_Code]func() any{
 	runtimev1.Type_CODE_TIMESTAMP: func() any { return &sql.NullTime{} },
 	runtimev1.Type_CODE_JSON:      func() any { return &sql.NullString{} },
 	runtimev1.Type_CODE_INT128:    func() any { return &sql.NullString{} }, // LARGEINT as string
+	runtimev1.Type_CODE_ARRAY:     func() any { return &sql.NullString{} }, // ARRAY as JSON string
+	runtimev1.Type_CODE_MAP:       func() any { return &sql.NullString{} }, // MAP as JSON string
+	runtimev1.Type_CODE_STRUCT:    func() any { return &sql.NullString{} }, // STRUCT as JSON string
 }
 
 // prepareScanDest creates scan destinations for each field in the schema
