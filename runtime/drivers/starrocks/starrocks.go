@@ -414,11 +414,30 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
+// Supports both same-connector and cross-connector (StarRocks→StarRocks) execution.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
-	if opts.InputHandle == c && opts.OutputHandle == c {
-		// Self-to-self execution: both input and output are StarRocks
+	// Output must be this connector (follows ClickHouse pattern)
+	if opts.OutputHandle != c {
+		return nil, drivers.ErrNotImplemented
+	}
+
+	// Case 1: Self-to-self execution (same connector instance)
+	if opts.InputHandle == c {
 		return &selfToSelfExecutor{c: c}, nil
 	}
+
+	// Case 2: StarRocks → StarRocks (different connector, e.g., external catalog → default catalog)
+	if opts.InputHandle.Driver() == "starrocks" {
+		inputConn, ok := opts.InputHandle.(*connection)
+		if !ok {
+			return nil, fmt.Errorf("invalid input handle type for StarRocks connector")
+		}
+		return &starrocksToSelfExecutor{
+			inputConn:  inputConn,
+			outputConn: c,
+		}, nil
+	}
+
 	return nil, drivers.ErrNotImplemented
 }
 

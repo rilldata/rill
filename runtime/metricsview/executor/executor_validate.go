@@ -166,18 +166,29 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Find the smallest possible grain
 		var smallestPossibleGrain runtimev1.TimeGrain
 		var typeCode runtimev1.Type_Code
+		var timeDimensionFound bool
 		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
 		if ok {
 			typeCode = col.Type.Code
+			timeDimensionFound = true
 		} else {
 			// Time dimension not found in the column list, find it in the defined dimension list
 			for _, d := range mv.Dimensions {
 				if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
-					typeCode = d.DataType.Code
+					timeDimensionFound = true
+					if d.DataType != nil {
+						typeCode = d.DataType.Code
+					}
 					break
 				}
 			}
 		}
+
+		// Report error if time dimension was not found
+		if !timeDimensionFound {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time dimension %q not found in table columns or defined dimensions; please check that the timeseries field matches an existing column name", e.metricsView.TimeDimension))
+		}
+
 		if typeCode != runtimev1.Type_CODE_DATE {
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
 		} else {
@@ -497,9 +508,10 @@ func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runt
 
 		if annotation.Model != "" {
 			res, err := ct.Get(ctx, &runtimev1.ResourceName{Name: annotation.Model, Kind: runtime.ResourceKindModel}, false)
-			if err == nil && res.GetModel().State.ResultTable != "" {
-				annotation.Table = res.GetModel().State.ResultTable
-				annotation.Connector = res.GetModel().State.ResultConnector
+			model := res.GetModel()
+			if err == nil && model != nil && model.State != nil && model.State.ResultTable != "" {
+				annotation.Table = model.State.ResultTable
+				annotation.Connector = model.State.ResultConnector
 			} else {
 				annotation.Table = annotation.Model
 			}

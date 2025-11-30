@@ -51,8 +51,10 @@
   $: resource = $resourceQuery.data;
   $: model = $resourceQuery.data?.model;
   $: connector = (model as V1Model)?.spec?.outputConnector as string;
-  const database = ""; // models use the default database
-  const databaseSchema = ""; // models use the default databaseSchema
+  // Extract catalog/database from model's resultProperties for StarRocks multi-catalog support
+  // StarRocks mapping: catalog -> Rill database, database -> Rill databaseSchema
+  $: database = ((model as V1Model)?.state?.resultProperties?.catalog as string) ?? "";
+  $: databaseSchema = ((model as V1Model)?.state?.resultProperties?.database as string) ?? "";
   $: tableName = (model as V1Model)?.state?.resultTable as string;
 
   $: refreshedOn = model?.state?.refreshedOn;
@@ -141,7 +143,7 @@
         {#if isResourceReconciling}
           <ReconcilingSpinner />
         {:else if connector && tableName}
-          <ConnectedPreviewTable {connector} table={tableName} />
+          <ConnectedPreviewTable {connector} {database} {databaseSchema} table={tableName} />
         {/if}
         <svelte:fragment slot="error">
           {#if allErrors.length > 0}

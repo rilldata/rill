@@ -88,8 +88,14 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	duration := time.Since(start)
 
-	// Build result properties
+	// Build result properties with catalog/database info for downstream propagation
+	catalog := e.c.configProp.Catalog
+	if catalog == "" {
+		catalog = defaultCatalog
+	}
 	resultProps := &ModelResultProperties{
+		Catalog:       catalog,
+		Database:      e.c.configProp.Database,
 		Table:         tableName,
 		View:          asView,
 		UsedModelName: usedModelName,
@@ -164,10 +170,227 @@ type ModelOutputProperties struct {
 }
 
 // ModelResultProperties defines result properties for StarRocks models.
+// StarRocks mapping: Catalog = Rill database, Database = Rill databaseSchema
 type ModelResultProperties struct {
+	Catalog       string `mapstructure:"catalog"`        // StarRocks catalog (maps to Rill database)
+	Database      string `mapstructure:"database"`       // StarRocks database (maps to Rill databaseSchema)
 	Table         string `mapstructure:"table"`
 	View          bool   `mapstructure:"view"`
 	UsedModelName bool   `mapstructure:"used_model_name"`
+}
+
+// starrocksToSelfExecutor executes models where input is from a different StarRocks connector
+// (e.g., external catalog) and output is to this StarRocks connector (e.g., default catalog).
+type starrocksToSelfExecutor struct {
+	inputConn  *connection // Input connector (e.g., external catalog for reading)
+	outputConn *connection // Output connector (e.g., default catalog for writing)
+}
+
+var _ drivers.ModelExecutor = &starrocksToSelfExecutor{}
+
+// Concurrency returns the recommended concurrency for model execution.
+func (e *starrocksToSelfExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return desired, true
+	}
+	return 1, true
+}
+
+// Execute runs the model SQL from input connector and materializes results in output connector.
+// Uses input connector's catalog/database context for SELECT, output connector for CREATE.
+func (e *starrocksToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
+	// Parse input and output properties
+	inputProps := &ModelInputProperties{}
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	outputProps := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	// Validate and apply defaults
+	if err := validateAndApplyDefaults(opts, outputProps); err != nil {
+		return nil, fmt.Errorf("invalid model properties: %w", err)
+	}
+
+	// Use model name as table name if not specified
+	usedModelName := false
+	if outputProps.Table == "" {
+		outputProps.Table = opts.ModelName
+		usedModelName = true
+	}
+
+	tableName := outputProps.Table
+	asView := strings.EqualFold(outputProps.Materialize, "VIEW")
+
+	// Views are not supported for cross-connector execution
+	if asView {
+		return nil, fmt.Errorf("VIEW materialization is not supported for cross-connector execution; use TABLE instead")
+	}
+
+	start := time.Now()
+
+	// Determine output catalog/database
+	outputCatalog := e.outputConn.configProp.Catalog
+	if outputCatalog == "" {
+		outputCatalog = defaultCatalog
+	}
+	outputDB := e.outputConn.configProp.Database
+
+	// Execute the cross-connector model
+	if !opts.IncrementalRun {
+		// Full refresh: drop and recreate
+		stagingTableName := tableName
+		if opts.Env.StageChanges {
+			stagingTableName = stagingTableNameFor(tableName)
+		}
+
+		// Drop staging table if exists (using output connector)
+		_ = e.outputConn.dropTableOrView(ctx, stagingTableName)
+
+		// Create table using cross-connector execution
+		err := e.createTableAsSelectCrossConnector(ctx, stagingTableName, inputProps.SQL, outputProps, outputCatalog, outputDB)
+		if err != nil {
+			_ = e.outputConn.dropTableOrView(ctx, stagingTableName)
+			return nil, fmt.Errorf("failed to create model: %w", err)
+		}
+
+		// Rename staging table to final table
+		if stagingTableName != tableName {
+			err = e.outputConn.renameTable(ctx, stagingTableName, tableName, false)
+			if err != nil {
+				return nil, fmt.Errorf("failed to rename staged model: %w", err)
+			}
+		}
+	} else {
+		// Incremental: insert into existing table
+		err := e.insertIntoTableCrossConnector(ctx, tableName, inputProps.SQL, outputProps, outputCatalog, outputDB)
+		if err != nil {
+			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
+		}
+	}
+
+	duration := time.Since(start)
+
+	// Build result properties with output catalog/database info
+	resultProps := &ModelResultProperties{
+		Catalog:       outputCatalog,
+		Database:      outputDB,
+		Table:         tableName,
+		View:          false,
+		UsedModelName: usedModelName,
+	}
+	resultPropsMap := map[string]interface{}{}
+	if err := mapstructure.WeakDecode(resultProps, &resultPropsMap); err != nil {
+		return nil, fmt.Errorf("failed to encode result properties: %w", err)
+	}
+
+	return &drivers.ModelResult{
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: duration,
+	}, nil
+}
+
+// createTableAsSelectCrossConnector creates a table from a SELECT using cross-connector execution.
+// Sets input connector's catalog/database context for SELECT, uses fully qualified name for CREATE.
+func (e *starrocksToSelfExecutor) createTableAsSelectCrossConnector(ctx context.Context, name, sql string, props *ModelOutputProperties, outputCatalog, outputDB string) error {
+	// Use output connector's database connection
+	db, err := e.outputConn.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	conn, err := db.Connx(ctx)
+	if err != nil {
+		return fmt.Errorf("create connection: %w", err)
+	}
+	defer conn.Close()
+
+	// Set INPUT connector's catalog/database context for SELECT
+	// This allows unqualified table references in SQL to resolve to input catalog
+	inputCatalog := e.inputConn.configProp.Catalog
+	if inputCatalog != "" && inputCatalog != defaultCatalog {
+		if _, err := conn.ExecContext(ctx, "SET CATALOG "+safeSQLName(inputCatalog)); err != nil {
+			return fmt.Errorf("set input catalog %s: %w", inputCatalog, err)
+		}
+	}
+	if e.inputConn.configProp.Database != "" {
+		if _, err := conn.ExecContext(ctx, "USE "+safeSQLName(e.inputConn.configProp.Database)); err != nil {
+			return fmt.Errorf("use input database %s: %w", e.inputConn.configProp.Database, err)
+		}
+	}
+
+	// Build fully qualified OUTPUT table name: catalog.database.table
+	fullTableName := safeSQLName(outputCatalog)
+	if outputDB != "" {
+		fullTableName += "." + safeSQLName(outputDB)
+	}
+	fullTableName += "." + safeSQLName(name)
+
+	// Build CTAS query
+	var builder strings.Builder
+	builder.WriteString("CREATE TABLE ")
+	builder.WriteString(fullTableName)
+
+	// Build table configuration
+	tableConfig := props.tblConfig()
+	if tableConfig != "" {
+		builder.WriteString(" ")
+		builder.WriteString(tableConfig)
+	}
+
+	builder.WriteString(" AS ")
+	builder.WriteString(sql)
+
+	_, err = conn.ExecContext(ctx, builder.String())
+	return err
+}
+
+// insertIntoTableCrossConnector inserts data into an existing table using cross-connector execution.
+func (e *starrocksToSelfExecutor) insertIntoTableCrossConnector(ctx context.Context, name, sql string, props *ModelOutputProperties, outputCatalog, outputDB string) error {
+	// Use output connector's database connection
+	db, err := e.outputConn.getDB(ctx)
+	if err != nil {
+		return err
+	}
+
+	conn, err := db.Connx(ctx)
+	if err != nil {
+		return fmt.Errorf("create connection: %w", err)
+	}
+	defer conn.Close()
+
+	// Set INPUT connector's catalog/database context for SELECT
+	inputCatalog := e.inputConn.configProp.Catalog
+	if inputCatalog != "" && inputCatalog != defaultCatalog {
+		if _, err := conn.ExecContext(ctx, "SET CATALOG "+safeSQLName(inputCatalog)); err != nil {
+			return fmt.Errorf("set input catalog %s: %w", inputCatalog, err)
+		}
+	}
+	if e.inputConn.configProp.Database != "" {
+		if _, err := conn.ExecContext(ctx, "USE "+safeSQLName(e.inputConn.configProp.Database)); err != nil {
+			return fmt.Errorf("use input database %s: %w", e.inputConn.configProp.Database, err)
+		}
+	}
+
+	// Build fully qualified OUTPUT table name
+	fullTableName := safeSQLName(outputCatalog)
+	if outputDB != "" {
+		fullTableName += "." + safeSQLName(outputDB)
+	}
+	fullTableName += "." + safeSQLName(name)
+
+	strategy := props.IncrementalStrategy
+	if strategy == "" || strategy == drivers.IncrementalStrategyAppend {
+		query := fmt.Sprintf("INSERT INTO %s %s", fullTableName, sql)
+		_, err = conn.ExecContext(ctx, query)
+		return err
+	}
+
+	return fmt.Errorf("incremental strategy %q not supported for cross-connector StarRocks execution", strategy)
 }
 
 // stagingTableNameFor returns a staging table name.
