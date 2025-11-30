@@ -28,9 +28,8 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 
 	// Switch to the configured catalog (each catalog has its own information_schema)
-	_, err = db.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
-	if err != nil {
-		return nil, "", fmt.Errorf("set catalog %s: %w", catalog, err)
+	if err := switchCatalogContext(ctx, db, catalog, ""); err != nil {
+		return nil, "", err
 	}
 
 	// Query information_schema.schemata to list databases
@@ -116,9 +115,8 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	}
 
 	// Switch to the correct catalog (each catalog has its own information_schema)
-	_, err = db.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
-	if err != nil {
-		return nil, "", fmt.Errorf("set catalog %s: %w", catalog, err)
+	if err := switchCatalogContext(ctx, db, catalog, ""); err != nil {
+		return nil, "", err
 	}
 
 	// Query information_schema.tables
@@ -207,9 +205,8 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 
 	// Switch to the correct catalog (each catalog has its own information_schema)
-	_, err = db.ExecContext(ctx, "SET CATALOG "+safeSQLName(catalog))
-	if err != nil {
-		return nil, fmt.Errorf("set catalog %s: %w", catalog, err)
+	if err := switchCatalogContext(ctx, db, catalog, ""); err != nil {
+		return nil, err
 	}
 
 	// Query to get table type and column information

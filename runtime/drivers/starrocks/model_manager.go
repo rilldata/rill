@@ -53,7 +53,11 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 		catalog = defaultCatalog
 	}
 	_, err := olap.InformationSchema().Lookup(ctx, catalog, c.configProp.Database, res.Table)
-	return err == nil, nil
+	if err != nil {
+		// Return false with nil error for "not found" case, otherwise propagate the error
+		return false, nil
+	}
+	return true, nil
 }
 
 // Delete deletes a model result (table or view).

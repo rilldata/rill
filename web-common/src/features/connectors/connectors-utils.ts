@@ -70,14 +70,14 @@ export function makeSufficientlyQualifiedTableName(
       // Use default_catalog if catalog is empty
       if (database && database !== "default_catalog") {
         if (databaseSchema && databaseSchema !== "") {
-          return `${database}.${databaseSchema}.${table}`;
+          return `${database}.${databaseSchema}.${table ?? ""}`;
         }
-        return `${database}.${table}`;
+        return `${database}.${table ?? ""}`;
       }
       if (databaseSchema && databaseSchema !== "") {
-        return `${databaseSchema}.${table}`;
+        return `${databaseSchema}.${table ?? ""}`;
       }
-      return table;
+      return table ?? "";
     case "mysql":
       // MySQL uses database.table format (no schema concept like PostgreSQL)
       if (database && database !== "default") {
