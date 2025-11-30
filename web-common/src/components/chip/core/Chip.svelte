@@ -220,6 +220,10 @@
   }
 
   .fullWidth {
-    @apply w-full;
+    @apply w-full justify-start;
+  }
+
+  .fullWidth button {
+    @apply text-left;
   }
 </style>
