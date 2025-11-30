@@ -762,13 +762,6 @@ components:
                 member:
                     $ref: '#/components/schemas/v1ProjectMemberUser'
             type: object
-        v1GetProjectMemberUsergroupResponse:
-            properties:
-                usergroups:
-                    items:
-                        $ref: '#/components/schemas/v1MemberUsergroup'
-                    type: array
-            type: object
         v1GetProjectResponse:
             properties:
                 jwt:
@@ -1141,6 +1134,13 @@ components:
                 usergroups:
                     items:
                         $ref: '#/components/schemas/v1Usergroup'
+                    type: array
+            type: object
+        v1ListUsergroupsForProjectAndUserResponse:
+            properties:
+                usergroups:
+                    items:
+                        $ref: '#/components/schemas/v1MemberUsergroup'
                     type: array
             type: object
         v1ListWhitelistedDomainsResponse:
@@ -1556,14 +1556,6 @@ components:
                 readProjectMembers:
                     type: boolean
                 readProvisionerResources:
-                    type: boolean
-                resources:
-                    items:
-                        $ref: '#/components/schemas/v1ResourceName'
-                    title: list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
-                    type: array
-                restrictResources:
-                    title: indicates whether the permissions are restricted to specific resources
                     type: boolean
             type: object
         v1ProjectRole:
@@ -4477,7 +4469,7 @@ paths:
             summary: SetProjectMemberUserRole sets the role for the member
     /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
         get:
-            operationId: AdminService_GetProjectMemberUsergroup
+            operationId: AdminService_ListUsergroupsForProjectAndUser
             parameters:
                 - in: path
                   name: org
@@ -4499,7 +4491,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/v1GetProjectMemberUsergroupResponse'
+                                $ref: '#/components/schemas/v1ListUsergroupsForProjectAndUserResponse'
                     description: A successful response.
                 default:
                     content:
@@ -4507,7 +4499,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
-            summary: GetProjectMemberUsergroup returns the user groups for a user within a project
+            summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
     /v1/orgs/{org}/projects/{project}/redeploy:
         post:
             operationId: AdminService_RedeployProject

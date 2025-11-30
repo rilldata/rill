@@ -13,10 +13,13 @@ rill usergroup add [flags]
 ### Flags
 
 ```
-      --group string     User group
-      --org string       Organization
-      --project string   Project
-      --role string      Role of the user group (options: admin, editor, viewer)
+      --canvas stringArray    Canvas resource to restrict to (repeat for multiple)
+      --explore stringArray   Explore resource to restrict to (repeat for multiple)
+      --group string          User group
+      --org string            Organization
+      --project string        Project
+      --restrict-resources    Restrict the user group to provided resources (defaults to true when resources are provided)
+      --role string           Role of the user group (options: admin, editor, viewer)
 ```
 
 ### Global flags

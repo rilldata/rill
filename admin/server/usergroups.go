@@ -455,9 +455,6 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
 	restrictResources := valOrDefault(req.RestrictResources, false)
 	resources := resourceNamesFromProto(req.Resources)
-	if err := s.validateResources(ctx, proj, resources); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 
 	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, restrictResources, resources)
 	if err != nil {
@@ -532,9 +529,6 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
 	restrictResources := valOrDefault(req.RestrictResources, false)
 	resources := resourceNamesFromProto(req.Resources)
-	if err := s.validateResources(ctx, proj, resources); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 
 	if keepExistingRestrictions {
 		ug, err := s.admin.DB.FindProjectMemberUsergroup(ctx, usergroup.ID, proj.ID)
@@ -714,7 +708,7 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 	}, nil
 }
 
-func (s *Server) GetProjectMemberUsergroup(ctx context.Context, req *adminv1.GetProjectMemberUsergroupRequest) (*adminv1.GetProjectMemberUsergroupResponse, error) {
+func (s *Server) ListUsergroupsForProjectAndUser(ctx context.Context, req *adminv1.ListUsergroupsForProjectAndUserRequest) (*adminv1.ListUsergroupsForProjectAndUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
@@ -741,12 +735,12 @@ func (s *Server) GetProjectMemberUsergroup(ctx context.Context, req *adminv1.Get
 	usergroups, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, proj.ID, user.ID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return &adminv1.GetProjectMemberUsergroupResponse{}, nil
+			return &adminv1.ListUsergroupsForProjectAndUserResponse{}, nil
 		}
 		return nil, err
 	}
 
-	return &adminv1.GetProjectMemberUsergroupResponse{
+	return &adminv1.ListUsergroupsForProjectAndUserResponse{
 		Usergroups: memberUsergroupsToPB(usergroups),
 	}, nil
 }

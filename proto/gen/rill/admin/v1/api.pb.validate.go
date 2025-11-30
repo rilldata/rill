@@ -14375,23 +14375,24 @@ var _ interface {
 	ErrorName() string
 } = GetProjectMemberUserResponseValidationError{}
 
-// Validate checks the field values on GetProjectMemberUsergroupRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *GetProjectMemberUsergroupRequest) Validate() error {
+// Validate checks the field values on ListUsergroupsForProjectAndUserRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ListUsergroupsForProjectAndUserRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetProjectMemberUsergroupRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// GetProjectMemberUsergroupRequestMultiError, or nil if none found.
-func (m *GetProjectMemberUsergroupRequest) ValidateAll() error {
+// ValidateAll checks the field values on
+// ListUsergroupsForProjectAndUserRequest with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// ListUsergroupsForProjectAndUserRequestMultiError, or nil if none found.
+func (m *ListUsergroupsForProjectAndUserRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetProjectMemberUsergroupRequest) validate(all bool) error {
+func (m *ListUsergroupsForProjectAndUserRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -14399,7 +14400,7 @@ func (m *GetProjectMemberUsergroupRequest) validate(all bool) error {
 	var errors []error
 
 	if utf8.RuneCountInString(m.GetOrg()) < 1 {
-		err := GetProjectMemberUsergroupRequestValidationError{
+		err := ListUsergroupsForProjectAndUserRequestValidationError{
 			field:  "Org",
 			reason: "value length must be at least 1 runes",
 		}
@@ -14410,7 +14411,7 @@ func (m *GetProjectMemberUsergroupRequest) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetProject()) < 1 {
-		err := GetProjectMemberUsergroupRequestValidationError{
+		err := ListUsergroupsForProjectAndUserRequestValidationError{
 			field:  "Project",
 			reason: "value length must be at least 1 runes",
 		}
@@ -14421,7 +14422,7 @@ func (m *GetProjectMemberUsergroupRequest) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetEmail()) < 1 {
-		err := GetProjectMemberUsergroupRequestValidationError{
+		err := ListUsergroupsForProjectAndUserRequestValidationError{
 			field:  "Email",
 			reason: "value length must be at least 1 runes",
 		}
@@ -14432,20 +14433,20 @@ func (m *GetProjectMemberUsergroupRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetProjectMemberUsergroupRequestMultiError(errors)
+		return ListUsergroupsForProjectAndUserRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetProjectMemberUsergroupRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// GetProjectMemberUsergroupRequest.ValidateAll() if the designated
+// ListUsergroupsForProjectAndUserRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// ListUsergroupsForProjectAndUserRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GetProjectMemberUsergroupRequestMultiError []error
+type ListUsergroupsForProjectAndUserRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetProjectMemberUsergroupRequestMultiError) Error() string {
+func (m ListUsergroupsForProjectAndUserRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -14454,12 +14455,12 @@ func (m GetProjectMemberUsergroupRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetProjectMemberUsergroupRequestMultiError) AllErrors() []error { return m }
+func (m ListUsergroupsForProjectAndUserRequestMultiError) AllErrors() []error { return m }
 
-// GetProjectMemberUsergroupRequestValidationError is the validation error
-// returned by GetProjectMemberUsergroupRequest.Validate if the designated
-// constraints aren't met.
-type GetProjectMemberUsergroupRequestValidationError struct {
+// ListUsergroupsForProjectAndUserRequestValidationError is the validation
+// error returned by ListUsergroupsForProjectAndUserRequest.Validate if the
+// designated constraints aren't met.
+type ListUsergroupsForProjectAndUserRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -14467,24 +14468,24 @@ type GetProjectMemberUsergroupRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetProjectMemberUsergroupRequestValidationError) Field() string { return e.field }
+func (e ListUsergroupsForProjectAndUserRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetProjectMemberUsergroupRequestValidationError) Reason() string { return e.reason }
+func (e ListUsergroupsForProjectAndUserRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetProjectMemberUsergroupRequestValidationError) Cause() error { return e.cause }
+func (e ListUsergroupsForProjectAndUserRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetProjectMemberUsergroupRequestValidationError) Key() bool { return e.key }
+func (e ListUsergroupsForProjectAndUserRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetProjectMemberUsergroupRequestValidationError) ErrorName() string {
-	return "GetProjectMemberUsergroupRequestValidationError"
+func (e ListUsergroupsForProjectAndUserRequestValidationError) ErrorName() string {
+	return "ListUsergroupsForProjectAndUserRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetProjectMemberUsergroupRequestValidationError) Error() string {
+func (e ListUsergroupsForProjectAndUserRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -14496,14 +14497,14 @@ func (e GetProjectMemberUsergroupRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetProjectMemberUsergroupRequest.%s: %s%s",
+		"invalid %sListUsergroupsForProjectAndUserRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetProjectMemberUsergroupRequestValidationError{}
+var _ error = ListUsergroupsForProjectAndUserRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -14511,25 +14512,26 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetProjectMemberUsergroupRequestValidationError{}
+} = ListUsergroupsForProjectAndUserRequestValidationError{}
 
-// Validate checks the field values on GetProjectMemberUsergroupResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *GetProjectMemberUsergroupResponse) Validate() error {
+// Validate checks the field values on ListUsergroupsForProjectAndUserResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ListUsergroupsForProjectAndUserResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetProjectMemberUsergroupResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// GetProjectMemberUsergroupResponseMultiError, or nil if none found.
-func (m *GetProjectMemberUsergroupResponse) ValidateAll() error {
+// ValidateAll checks the field values on
+// ListUsergroupsForProjectAndUserResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// ListUsergroupsForProjectAndUserResponseMultiError, or nil if none found.
+func (m *ListUsergroupsForProjectAndUserResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetProjectMemberUsergroupResponse) validate(all bool) error {
+func (m *ListUsergroupsForProjectAndUserResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -14543,7 +14545,7 @@ func (m *GetProjectMemberUsergroupResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetProjectMemberUsergroupResponseValidationError{
+					errors = append(errors, ListUsergroupsForProjectAndUserResponseValidationError{
 						field:  fmt.Sprintf("Usergroups[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -14551,7 +14553,7 @@ func (m *GetProjectMemberUsergroupResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetProjectMemberUsergroupResponseValidationError{
+					errors = append(errors, ListUsergroupsForProjectAndUserResponseValidationError{
 						field:  fmt.Sprintf("Usergroups[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -14560,7 +14562,7 @@ func (m *GetProjectMemberUsergroupResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetProjectMemberUsergroupResponseValidationError{
+				return ListUsergroupsForProjectAndUserResponseValidationError{
 					field:  fmt.Sprintf("Usergroups[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -14571,20 +14573,20 @@ func (m *GetProjectMemberUsergroupResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetProjectMemberUsergroupResponseMultiError(errors)
+		return ListUsergroupsForProjectAndUserResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetProjectMemberUsergroupResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// GetProjectMemberUsergroupResponse.ValidateAll() if the designated
+// ListUsergroupsForProjectAndUserResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// ListUsergroupsForProjectAndUserResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GetProjectMemberUsergroupResponseMultiError []error
+type ListUsergroupsForProjectAndUserResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetProjectMemberUsergroupResponseMultiError) Error() string {
+func (m ListUsergroupsForProjectAndUserResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -14593,12 +14595,12 @@ func (m GetProjectMemberUsergroupResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetProjectMemberUsergroupResponseMultiError) AllErrors() []error { return m }
+func (m ListUsergroupsForProjectAndUserResponseMultiError) AllErrors() []error { return m }
 
-// GetProjectMemberUsergroupResponseValidationError is the validation error
-// returned by GetProjectMemberUsergroupResponse.Validate if the designated
-// constraints aren't met.
-type GetProjectMemberUsergroupResponseValidationError struct {
+// ListUsergroupsForProjectAndUserResponseValidationError is the validation
+// error returned by ListUsergroupsForProjectAndUserResponse.Validate if the
+// designated constraints aren't met.
+type ListUsergroupsForProjectAndUserResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -14606,24 +14608,24 @@ type GetProjectMemberUsergroupResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetProjectMemberUsergroupResponseValidationError) Field() string { return e.field }
+func (e ListUsergroupsForProjectAndUserResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetProjectMemberUsergroupResponseValidationError) Reason() string { return e.reason }
+func (e ListUsergroupsForProjectAndUserResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetProjectMemberUsergroupResponseValidationError) Cause() error { return e.cause }
+func (e ListUsergroupsForProjectAndUserResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetProjectMemberUsergroupResponseValidationError) Key() bool { return e.key }
+func (e ListUsergroupsForProjectAndUserResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetProjectMemberUsergroupResponseValidationError) ErrorName() string {
-	return "GetProjectMemberUsergroupResponseValidationError"
+func (e ListUsergroupsForProjectAndUserResponseValidationError) ErrorName() string {
+	return "ListUsergroupsForProjectAndUserResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetProjectMemberUsergroupResponseValidationError) Error() string {
+func (e ListUsergroupsForProjectAndUserResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -14635,14 +14637,14 @@ func (e GetProjectMemberUsergroupResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetProjectMemberUsergroupResponse.%s: %s%s",
+		"invalid %sListUsergroupsForProjectAndUserResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetProjectMemberUsergroupResponseValidationError{}
+var _ error = ListUsergroupsForProjectAndUserResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -14650,7 +14652,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetProjectMemberUsergroupResponseValidationError{}
+} = ListUsergroupsForProjectAndUserResponseValidationError{}
 
 // Validate checks the field values on
 // UpdateOrganizationMemberUserAttributesRequest with the rules defined in the
@@ -43173,42 +43175,6 @@ func (m *ProjectPermissions) validate(all bool) error {
 	// no validation rules for CreateBookmarks
 
 	// no validation rules for ManageBookmarks
-
-	// no validation rules for RestrictResources
-
-	for idx, item := range m.GetResources() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ProjectPermissionsValidationError{
-						field:  fmt.Sprintf("Resources[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ProjectPermissionsValidationError{
-						field:  fmt.Sprintf("Resources[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ProjectPermissionsValidationError{
-					field:  fmt.Sprintf("Resources[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
 
 	if len(errors) > 0 {
 		return ProjectPermissionsMultiError(errors)

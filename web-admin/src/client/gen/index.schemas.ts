@@ -594,10 +594,6 @@ export interface V1GetProjectMemberUserResponse {
   member?: V1ProjectMemberUser;
 }
 
-export interface V1GetProjectMemberUsergroupResponse {
-  usergroups?: V1MemberUsergroup[];
-}
-
 export interface V1GetProjectResponse {
   project?: V1Project;
   prodDeployment?: V1Deployment;
@@ -841,6 +837,10 @@ export interface V1ListUsergroupsForOrganizationAndUserResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListUsergroupsForProjectAndUserResponse {
+  usergroups?: V1MemberUsergroup[];
+}
+
 export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
@@ -1059,8 +1059,6 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
-  restrictResources?: boolean;
-  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectRole {

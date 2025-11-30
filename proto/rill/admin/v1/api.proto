@@ -405,8 +405,8 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
   }
 
-  // GetProjectMemberUsergroup returns the user groups for a user within a project
-  rpc GetProjectMemberUsergroup(GetProjectMemberUsergroupRequest) returns (GetProjectMemberUsergroupResponse) {
+  // ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+  rpc ListUsergroupsForProjectAndUser(ListUsergroupsForProjectAndUserRequest) returns (ListUsergroupsForProjectAndUserResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}/usergroups"};
   }
 
@@ -1820,13 +1820,13 @@ message GetProjectMemberUserResponse {
   ProjectMemberUser member = 1;
 }
 
-message GetProjectMemberUsergroupRequest {
+message ListUsergroupsForProjectAndUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.min_len = 1];
 }
 
-message GetProjectMemberUsergroupResponse {
+message ListUsergroupsForProjectAndUserResponse {
   repeated MemberUsergroup usergroups = 1;
 }
 
@@ -3126,8 +3126,6 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
-  bool restrict_resources = 23; // indicates whether the permissions are restricted to specific resources
-  repeated ResourceName resources = 24; // list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
 }
 
 message OrganizationRole {

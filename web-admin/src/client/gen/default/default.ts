@@ -160,7 +160,6 @@ import type {
   V1GetProjectAccessRequestResponse,
   V1GetProjectByIDResponse,
   V1GetProjectMemberUserResponse,
-  V1GetProjectMemberUsergroupResponse,
   V1GetProjectResponse,
   V1GetProjectVariablesResponse,
   V1GetRepoMetaResponse,
@@ -202,6 +201,7 @@ import type {
   V1ListUserAuthTokensResponse,
   V1ListUsergroupMemberUsersResponse,
   V1ListUsergroupsForOrganizationAndUserResponse,
+  V1ListUsergroupsForProjectAndUserResponse,
   V1ListWhitelistedDomainsResponse,
   V1PingResponse,
   V1ProvisionResponse,
@@ -6578,22 +6578,22 @@ export const createAdminServiceSetProjectMemberUserRole = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GetProjectMemberUsergroup returns the user groups for a user within a project
+ * @summary ListUsergroupsForProjectAndUser returns the user groups for a user within a project
  */
-export const adminServiceGetProjectMemberUsergroup = (
+export const adminServiceListUsergroupsForProjectAndUser = (
   org: string,
   project: string,
   email: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetProjectMemberUsergroupResponse>({
+  return httpClient<V1ListUsergroupsForProjectAndUserResponse>({
     url: `/v1/orgs/${org}/projects/${project}/members/${email}/usergroups`,
     method: "GET",
     signal,
   });
 };
 
-export const getAdminServiceGetProjectMemberUsergroupQueryKey = (
+export const getAdminServiceListUsergroupsForProjectAndUserQueryKey = (
   org: string,
   project: string,
   email: string,
@@ -6603,8 +6603,10 @@ export const getAdminServiceGetProjectMemberUsergroupQueryKey = (
   ] as const;
 };
 
-export const getAdminServiceGetProjectMemberUsergroupQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>,
+export const getAdminServiceListUsergroupsForProjectAndUserQueryOptions = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>
+  >,
   TError = RpcStatus,
 >(
   org: string,
@@ -6613,7 +6615,7 @@ export const getAdminServiceGetProjectMemberUsergroupQueryOptions = <
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>,
+        Awaited<ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>>,
         TError,
         TData
       >
@@ -6624,12 +6626,12 @@ export const getAdminServiceGetProjectMemberUsergroupQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetProjectMemberUsergroupQueryKey(org, project, email);
+    getAdminServiceListUsergroupsForProjectAndUserQueryKey(org, project, email);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>
+    Awaited<ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>>
   > = ({ signal }) =>
-    adminServiceGetProjectMemberUsergroup(org, project, email, signal);
+    adminServiceListUsergroupsForProjectAndUser(org, project, email, signal);
 
   return {
     queryKey,
@@ -6637,23 +6639,26 @@ export const getAdminServiceGetProjectMemberUsergroupQueryOptions = <
     enabled: !!(org && project && email),
     ...queryOptions,
   } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>,
+    Awaited<ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type AdminServiceGetProjectMemberUsergroupQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>
->;
-export type AdminServiceGetProjectMemberUsergroupQueryError = RpcStatus;
+export type AdminServiceListUsergroupsForProjectAndUserQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>>
+  >;
+export type AdminServiceListUsergroupsForProjectAndUserQueryError = RpcStatus;
 
 /**
- * @summary GetProjectMemberUsergroup returns the user groups for a user within a project
+ * @summary ListUsergroupsForProjectAndUser returns the user groups for a user within a project
  */
 
-export function createAdminServiceGetProjectMemberUsergroup<
-  TData = Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>,
+export function createAdminServiceListUsergroupsForProjectAndUser<
+  TData = Awaited<
+    ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>
+  >,
   TError = RpcStatus,
 >(
   org: string,
@@ -6662,7 +6667,7 @@ export function createAdminServiceGetProjectMemberUsergroup<
   options?: {
     query?: Partial<
       CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceGetProjectMemberUsergroup>>,
+        Awaited<ReturnType<typeof adminServiceListUsergroupsForProjectAndUser>>,
         TError,
         TData
       >
@@ -6672,12 +6677,13 @@ export function createAdminServiceGetProjectMemberUsergroup<
 ): CreateQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getAdminServiceGetProjectMemberUsergroupQueryOptions(
-    org,
-    project,
-    email,
-    options,
-  );
+  const queryOptions =
+    getAdminServiceListUsergroupsForProjectAndUserQueryOptions(
+      org,
+      project,
+      email,
+      options,
+    );
 
   const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
     TData,

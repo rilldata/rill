@@ -302,13 +302,13 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	var attr map[string]any
 	var rules []*runtimev1.SecurityRule
 	if claims.OwnerType() == auth.OwnerTypeUser {
-		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+		a, restrictResources, resources, err := s.getAttributesAndResourceRestrictionsForUser(ctx, proj.OrganizationID, proj.ID, claims.OwnerID(), "")
 		if err != nil {
 			return nil, err
 		}
-
+		attr = a
 		// ignore resource level security rules if the user has a full project role
-		userRules := securityRulesFromResources(permissions.RestrictResources, permissions.Resources)
+		userRules := securityRulesFromResources(restrictResources, resources)
 		rules = append(rules, userRules...)
 	} else if claims.OwnerType() == auth.OwnerTypeService {
 		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
@@ -439,7 +439,7 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 	}, nil
 }
 
-func securityRulesFromResources(restricted bool, resources []*adminv1.ResourceName) []*runtimev1.SecurityRule {
+func securityRulesFromResources(restricted bool, resources []database.ResourceName) []*runtimev1.SecurityRule {
 	if !restricted {
 		// No resource restrictions
 		return nil
@@ -1168,9 +1168,6 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
 	restrictResources := valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
 	resources := resourceNamesFromProto(req.Resources)
-	if err := s.validateResources(ctx, proj, resources); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
@@ -1288,42 +1285,6 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	}, nil
 }
 
-func (s *Server) validateResources(ctx context.Context, proj *database.Project, resources []database.ResourceName) error {
-	if len(resources) == 0 {
-		return nil
-	}
-	if proj.ProdDeploymentID == nil {
-		return fmt.Errorf("project %q does not have a production deployment", proj.Name)
-	}
-	// validate resources
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-	if err != nil {
-		return err
-	}
-	rt, err := s.admin.OpenRuntimeClient(depl)
-	if err != nil {
-		return err
-	}
-	defer rt.Close()
-
-	for _, r := range resources {
-		if !(r.Type == runtime.ResourceKindMetricsView || r.Type == runtime.ResourceKindExplore) {
-			return fmt.Errorf("unsupported resource type %q for resource %q", r.Type, r.Name)
-		}
-		_, err = rt.GetResource(ctx, &runtimev1.GetResourceRequest{
-			InstanceId: depl.RuntimeInstanceID,
-			Name: &runtimev1.ResourceName{
-				Kind: r.Type,
-				Name: r.Name,
-			},
-		})
-		if err != nil {
-			return fmt.Errorf("failed to validate resource %q of type %q: %w", r.Name, r.Type, err)
-		}
-	}
-	return nil
-}
-
 func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.RemoveProjectMemberUserRequest) (*adminv1.RemoveProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
@@ -1399,9 +1360,7 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 		observability.AddRequestAttributes(ctx, attribute.Bool("args.restrict_resources", *req.RestrictResources))
 	}
 	if len(req.Resources) > 0 {
-		observability.AddRequestAttributes(ctx,
-			attribute.StringSlice("args.resources", resourcesString(req.Resources)),
-		)
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
 	}
 
 	if req.Role == nil && req.RestrictResources == nil && len(req.Resources) == 0 {
@@ -1482,9 +1441,6 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	} else {
 		restrictResources = valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
 		resources = resourceNamesFromProto(req.Resources)
-		if err := s.validateResources(ctx, proj, resources); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
 	}
 
 	// update the invite or member info
@@ -1717,10 +1673,8 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		if err != nil {
 			return nil, err
 		}
-		currentResources := member.Resources
-		restrictResources := member.RestrictResources
 
-		err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, restrictResources, currentResources)
+		err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, member.RestrictResources, member.Resources)
 		if err != nil {
 			return nil, err
 		}
@@ -2360,6 +2314,22 @@ func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable 
 	}
 }
 
+func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {
+	res := make([]database.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		res = append(res, database.ResourceName{Type: r.Type, Name: r.Name})
+	}
+	return res
+}
+
+func resourcesString(res []*adminv1.ResourceName) []string {
+	var resources []string
+	for _, r := range res {
+		resources = append(resources, fmt.Sprintf("%s:%s", r.Type, r.Name))
+	}
+	return resources
+}
+
 func safeStr(s *string) string {
 	if s == nil {
 		return ""
@@ -2379,40 +2349,4 @@ func valOrDefault[T any](ptr *T, def T) T {
 		return *ptr
 	}
 	return def
-}
-
-func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {
-	if len(resources) == 0 {
-		return nil
-	}
-
-	seen := make(map[string]struct{}, len(resources))
-	res := make([]database.ResourceName, 0, len(resources))
-	for _, r := range resources {
-		if r == nil || r.Type == "" || r.Name == "" {
-			continue
-		}
-		key := normalizeResourceKey(r.Type, r.Name)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		res = append(res, database.ResourceName{Type: r.Type, Name: r.Name})
-	}
-	if len(res) == 0 {
-		return nil
-	}
-	return res
-}
-
-func normalizeResourceKey(typ, name string) string {
-	return strings.ToLower(typ) + "|" + strings.ToLower(name)
-}
-
-func resourcesString(res []*adminv1.ResourceName) []string {
-	var resources []string
-	for _, r := range res {
-		resources = append(resources, fmt.Sprintf("%s:%s", r.Type, r.Name))
-	}
-	return resources
 }

@@ -1831,23 +1831,21 @@ func (c *connection) ResolveOrganizationRolesForUser(ctx context.Context, userID
 	return res, nil
 }
 
-func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*database.UserProjectRole, error) {
-	var dtos []*userProjectRoleDTO
-	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
-		SELECT r.*, upr.resources, upr.restrict_resources FROM users_projects_roles upr
+func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*database.ProjectRole, error) {
+	var res []*database.ProjectRole
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT r.* FROM users_projects_roles upr
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.user_id = $1 AND upr.project_id = $2
 		UNION
-		SELECT r.*, upr.resources, upr.restrict_resources FROM usergroups_projects_roles upr
-		JOIN project_roles r ON upr.project_role_id = r.id
-		JOIN usergroups_users uug ON upr.usergroup_id = uug.usergroup_id
-		WHERE uug.user_id = $1 AND upr.project_id = $2
-	`, userID, projectID)
+		SELECT * FROM project_roles WHERE id IN (
+			SELECT project_role_id FROM usergroups_projects_roles upr JOIN usergroups_users uug
+			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
+		)`, userID, projectID)
 	if err != nil {
 		return nil, parseErr("project roles", err)
 	}
-
-	return c.userProjectRolesFromDTOs(dtos)
+	return res, nil
 }
 
 // ResolveOrganizationRoleForService returns the organization role for the service
@@ -3436,36 +3434,6 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	return dto.MagicAuthTokenWithUser, nil
 }
 
-type userProjectRoleDTO struct {
-	database.ProjectRole
-	Resources         pgtype.JSONB `db:"resources"`
-	RestrictResources bool         `db:"restrict_resources"`
-}
-
-func (dto *userProjectRoleDTO) asModel() (*database.UserProjectRole, error) {
-	userProjectRole := &database.UserProjectRole{
-		Role:              &dto.ProjectRole,
-		RestrictResources: dto.RestrictResources,
-	}
-	err := dto.Resources.AssignTo(userProjectRole.Resources)
-	if err != nil {
-		return nil, err
-	}
-	return userProjectRole, nil
-}
-
-func (c *connection) userProjectRolesFromDTOs(dtos []*userProjectRoleDTO) ([]*database.UserProjectRole, error) {
-	res := make([]*database.UserProjectRole, len(dtos))
-	for i, dto := range dtos {
-		role, err := dto.asModel()
-		if err != nil {
-			return nil, err
-		}
-		res[i] = role
-	}
-	return res, nil
-}
-
 type projectMemberUserDTO struct {
 	*database.ProjectMemberUser
 	Resources pgtype.JSONB `db:"resources"`
@@ -3998,15 +3966,12 @@ func isValidAttributeKey(key string) bool {
 
 func marshalResourceNames(resources []database.ResourceName) ([]byte, error) {
 	resources = dedupeResourceNames(resources)
-	if resources == nil {
-		resources = []database.ResourceName{}
-	}
 	return json.Marshal(resources)
 }
 
 func dedupeResourceNames(resources []database.ResourceName) []database.ResourceName {
 	seen := make(map[database.ResourceName]struct{}, len(resources))
-	deduped := make([]database.ResourceName, 0, len(resources))
+	var deduped []database.ResourceName
 	for _, r := range resources {
 		if r.Type == "" || r.Name == "" {
 			continue

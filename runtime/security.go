@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
@@ -680,12 +681,15 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *ru
 // This involves looking up the referenced resource, determining its dependencies, and adding the necessary access rules for those dependencies.
 // For example, a transitive access rule on a report will add access rules for the underlying metrics view, explore, and any fields or rows that are accessible in the report.
 func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
+	hasTransitive := false
+	transitiveCount := 0
 	var rules []*runtimev1.SecurityRule
 	for _, rule := range claims.AdditionalRules {
 		if rule.GetTransitiveAccess() == nil {
 			rules = append(rules, rule)
 			continue
 		}
+		hasTransitive = true
 		// If the rule is a transitive access rule, we need to resolve it
 		resName := rule.GetTransitiveAccess().GetResource()
 		if resName == nil {
@@ -697,13 +701,29 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 		}
 		res, err := ctr.Get(ctx, resName, false)
 		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				// resource not found, skip transitive access
+				continue
+			}
 			return nil, fmt.Errorf("failed to get resource %q of kind %q: %w", resName.Name, resName.Kind, err)
 		}
 		resolvedRules, err := ctr.reconciler(res.Meta.Name.Kind).ResolveTransitiveAccess(ctx, claims, res)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve transitive access rule: %w", err)
 		}
+		transitiveCount++
 		rules = append(rules, resolvedRules...)
+	}
+
+	if hasTransitive && transitiveCount == 0 {
+		// add access: false rule as no transitive access could be resolved
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
+				},
+			},
+		})
 	}
 	// gather all conditions kinds and resources mentioned in the rules so that we can add a single security rule access policy for them at the end.
 	// making sure only a single rule with the exclusive flag is added, otherwise we may get false rejections depending on which rule with the exclusive flag is evaluated first

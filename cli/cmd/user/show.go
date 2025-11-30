@@ -68,7 +68,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				cmd.Printf("No membership found for user %q in project %q\n", email, project)
 			}
 
-			groupResp, err := client.GetProjectMemberUsergroup(cmd.Context(), &adminv1.GetProjectMemberUsergroupRequest{
+			groupResp, err := client.ListUsergroupsForProjectAndUser(cmd.Context(), &adminv1.ListUsergroupsForProjectAndUserRequest{
 				Org:     ch.Org,
 				Project: project,
 				Email:   email,
@@ -77,7 +77,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if len(groupResp.Usergroups) > 0 {
-				ch.PrintfSuccess("\nUsergroups Info:\n")
+				ch.PrintfSuccess("\nThe user has project access through the following user groups:\n")
 				ch.PrintMemberUsergroups(groupResp.Usergroups)
 			}
 

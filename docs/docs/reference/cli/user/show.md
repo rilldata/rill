@@ -13,8 +13,9 @@ rill user show [flags]
 ### Flags
 
 ```
-      --email string   Email of the user (required)
-      --org string     Organization
+      --email string     Email of the user (required)
+      --org string       Organization
+      --project string   Project name to include project membership details (optional)
 ```
 
 ### Global flags

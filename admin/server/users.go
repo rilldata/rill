@@ -773,21 +773,12 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 }
 
 func resourceNamesToPB(resources []database.ResourceName) []*adminv1.ResourceName {
-	if len(resources) == 0 {
-		return nil
-	}
 	rs := make([]*adminv1.ResourceName, 0, len(resources))
 	for _, r := range resources {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
 		rs = append(rs, &adminv1.ResourceName{
 			Type: r.Type,
 			Name: r.Name,
 		})
-	}
-	if len(rs) == 0 {
-		return nil
 	}
 	return rs
 }

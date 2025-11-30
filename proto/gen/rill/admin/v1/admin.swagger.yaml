@@ -1822,13 +1822,13 @@ paths:
                   $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
     get:
-      summary: GetProjectMemberUsergroup returns the user groups for a user within a project
-      operationId: AdminService_GetProjectMemberUsergroup
+      summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+      operationId: AdminService_ListUsergroupsForProjectAndUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetProjectMemberUsergroupResponse'
+            $ref: '#/definitions/v1ListUsergroupsForProjectAndUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -5126,14 +5126,6 @@ definitions:
     properties:
       member:
         $ref: '#/definitions/v1ProjectMemberUser'
-  v1GetProjectMemberUsergroupResponse:
-    type: object
-    properties:
-      usergroups:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MemberUsergroup'
   v1GetProjectResponse:
     type: object
     properties:
@@ -5538,6 +5530,14 @@ definitions:
           $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1ListUsergroupsForProjectAndUserResponse:
+    type: object
+    properties:
+      usergroups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -5958,15 +5958,6 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
-      restrictResources:
-        type: boolean
-        title: indicates whether the permissions are restricted to specific resources
-      resources:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ResourceName'
-        title: list of resources the permissions is restricted to, if empty and restrict_resources is true then no resources are accessible
   v1ProjectRole:
     type: object
     properties:

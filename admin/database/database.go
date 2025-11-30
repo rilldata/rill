@@ -223,7 +223,7 @@ type DB interface {
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	FindProjectRoleByID(ctx context.Context, id string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
-	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*UserProjectRole, error)
+	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 	ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*OrganizationRole, error)
 	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 

@@ -22,11 +22,10 @@ Manage user groups
 * [rill usergroup create](create.md)	 - Create a group
 * [rill usergroup delete](delete.md)	 - Delete a group
 * [rill usergroup edit](edit.md)	 - Edit a group
-* [rill usergroup grant-resource](grant-resource.md)	 - Grant a user group access to specific project resources (viewer scoped)
 * [rill usergroup list](list.md)	 - List groups
 * [rill usergroup remove](remove.md)	 - Remove a group's role on a project or organization
 * [rill usergroup rename](rename.md)	 - Rename a group
-* [rill usergroup revoke-resource](revoke-resource.md)	 - Remove resource-level access previously granted to a user group
+* [rill usergroup set-resources](set-resources.md)	 - Set a user group's project resources and restriction flag (overwrites existing list)
 * [rill usergroup set-role](set-role.md)	 - Change a group's role on a project or organization
 * [rill usergroup show](show.md)	 - Show group
 
