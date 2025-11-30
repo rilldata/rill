@@ -24,8 +24,8 @@ host: <HOSTNAME>
 port: 9030
 username: <USERNAME>
 password: "{{ .env.connector.starrocks.password }}"
-catalog: default_catalog  # Optional: for external catalogs (Iceberg, Hive, etc.)
-database: <DATABASE>
+catalog: default_catalog  # Required (default: default_catalog)
+database: <DATABASE>      # Required
 ssl: false
 
 # or
@@ -80,12 +80,12 @@ connector.starrocks.dsn="root:password@tcp(localhost:9030)/analytics_db"
 
 ### Connection Parameters
 
-- **host**: Hostname or IP address of the StarRocks FE (Frontend) node
+- **host**: (Required) Hostname or IP address of the StarRocks FE (Frontend) node
 - **port**: MySQL protocol port of the StarRocks FE node (default: 9030)
-- **username**: Username for authentication (default: root)
+- **username**: (Required) Username for authentication (default: root)
 - **password**: Password for authentication
-- **catalog**: Name of the StarRocks catalog (default: `default_catalog`). Use this for external catalogs like Iceberg, Hive, etc.
-- **database**: Name of the StarRocks database to connect to
+- **catalog**: (Required) Name of the StarRocks catalog (default: `default_catalog`). Use `default_catalog` for internal tables, or specify external catalog name for Iceberg, Hive, etc.
+- **database**: (Required) Name of the StarRocks database to connect to
 - **ssl**: Enable SSL/TLS encryption for the connection (default: false)
 - **log_queries**: Enable query logging for debugging purposes (default: false)
 
