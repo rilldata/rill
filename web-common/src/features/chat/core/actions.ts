@@ -9,14 +9,16 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
-import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { get } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
-import OptionToAIAction from "@rilldata/web-common/features/chat/core/OptionToAIAction.svelte";
+import OptionCancelToAIAction from "@rilldata/web-common/features/chat/core/OptionCancelToAIAction.svelte";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
+
+const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
 export async function generateModel(
   isInit: boolean,
@@ -29,19 +31,23 @@ export async function generateModel(
         title: `Hang tight! We're initialising an empty project.`,
       });
 
+      const projectResetPromise = new Promise<void>((resolve, reject) => {
+        eventBus.once("project-reset", () => resolve());
+        setTimeout(reject, PROJECT_INIT_TIMEOUT_MS);
+      });
+
       await runtimeServiceUnpackEmpty(instanceId, {
         displayName: EMPTY_PROJECT_TITLE,
         force: true,
       });
 
-      // TODO: be deterministic about this wait instead
-      await asyncWait(1000);
+      await projectResetPromise;
     }
 
     overlay.set({
       title: `Hang tight! We're generating the data you requested.`,
       detail: {
-        component: OptionToAIAction,
+        component: OptionCancelToAIAction,
         props: {
           onCancel: () => {
             conversation.cancelStream();

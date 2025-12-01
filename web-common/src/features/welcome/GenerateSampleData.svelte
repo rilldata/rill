@@ -2,7 +2,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { generateModel } from "@rilldata/web-common/features/chat/core/actions.ts";
 
   export let isInit: boolean;
@@ -38,9 +37,27 @@
         <div>What is the business context or domain of your data?</div>
       </Dialog.Description>
     </Dialog.Header>
-    <Input id="sample-data" bind:value={prompt} />
+    <textarea
+      class="prompt-input"
+      bind:value={prompt}
+      class:empty={prompt.length === 0}
+      placeholder="e.g. sales transaction of an e-commerce store"
+    />
     <Button type="primary" large onClick={initProjectWithSampleData}>
       Generate
     </Button>
   </Dialog.Content>
 </Dialog.Root>
+
+<style lang="postcss">
+  .prompt-input {
+    @apply w-full p-2 min-h-[2.5rem];
+    @apply border border-gray-300 rounded-[2px];
+    @apply text-sm leading-relaxed;
+  }
+
+  .prompt-input.empty::before {
+    content: attr(data-placeholder);
+    @apply text-gray-400 pointer-events-none absolute;
+  }
+</style>
