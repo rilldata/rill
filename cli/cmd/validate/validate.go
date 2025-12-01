@@ -232,33 +232,6 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App)
 	return nil
 }
 
-func parseErrorsFromParser(parserResource *runtimev1.Resource) []*parseErrorTableRow {
-	if parserResource == nil {
-		return nil
-	}
-
-	state := parserResource.GetProjectParser().State
-	var res []*parseErrorTableRow
-
-	if parserResource.Meta.ReconcileError != "" {
-		res = append(res, &parseErrorTableRow{
-			Path:  "<meta>",
-			Error: parserResource.Meta.ReconcileError,
-		})
-	}
-
-	if state != nil {
-		for _, e := range state.ParseErrors {
-			res = append(res, &parseErrorTableRow{
-				Path:  e.FilePath,
-				Error: e.Message,
-			})
-		}
-	}
-
-	return res
-}
-
 type resourceTableRow struct {
 	Type   string `header:"type"`
 	Name   string `header:"name"`
