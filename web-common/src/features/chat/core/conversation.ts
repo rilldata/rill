@@ -39,11 +39,18 @@ export class Conversation {
   constructor(
     private readonly instanceId: string,
     public conversationId: string,
-    private readonly options?: {
+    private readonly options: {
+      agent?: string;
       onStreamStart?: () => void;
       onConversationCreated?: (conversationId: string) => void;
+    } = {
+      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
     },
-  ) {}
+  ) {
+    if (this.options) {
+      this.options.agent ??= ToolName.ANALYST_AGENT;
+    }
+  }
 
   // ===== PUBLIC API =====
 
@@ -239,6 +246,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      agent: this.options?.agent,
       ...context,
     };
 

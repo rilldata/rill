@@ -42,7 +42,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"chatCharts":          true,
 				"deploy":              true,
 				"generateCanvas":      false,
-				"developerAgent":      false,
+				"developerAgent":      true,
 			},
 		},
 		{
@@ -66,7 +66,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"chatCharts":          true,
 				"deploy":              true,
 				"generateCanvas":      false,
-				"developerAgent":      false,
+				"developerAgent":      true,
 			},
 		},
 		{
@@ -90,7 +90,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"chatCharts":          true,
 				"deploy":              true,
 				"generateCanvas":      false,
-				"developerAgent":      false,
+				"developerAgent":      true,
 			},
 		},
 		{
@@ -114,7 +114,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"chatCharts":          true,
 				"deploy":              true,
 				"generateCanvas":      false,
-				"developerAgent":      false,
+				"developerAgent":      true,
 			},
 		},
 	}
