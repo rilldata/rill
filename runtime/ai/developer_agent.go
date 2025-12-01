@@ -128,12 +128,13 @@ At a high level, you should follow these steps:
 4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.
    - To CREATE a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
    - To EDIT an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
-5. After successfully creating/updating the artifacts, provide a summary with links.
-<summary_format>
-### Summary of Changes
-I've created the following artifacts for you:
-### <File type>: [<file_name>](/files/[path])</summary_format>
-(note: use absolute paths starting with /):
+5. After successfully creating/updating the artifacts, provide a summary with links using the following format:
+{{ backticks }}
+## Summary of Changes
+I've created the following files for you:
+- <resource_type>: [<file_name>](<absolute file path starting with '/'>)
+...
+{{ backticks }}
 
 You should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the "read_file" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.
 
