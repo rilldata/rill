@@ -31,6 +31,9 @@ annotations:
 <img src = '/img/build/metrics-view/annotations.png' class='rounded-gif' />
 <br />
 
+:::info
+Refer to the [`annotations` section](/reference/project-files/metrics-views#annotations) in Metrics View YAML reference for more details on how to implement annotations.
+:::
 ## Time Configuration
 
 For time-related settings such as `smallest_time_grain`, `first_day_of_week`, `first_month_of_year`, and `watermark`, please refer to our dedicated [Time Series Configuration](/build/metrics-view/time-series) guide.
