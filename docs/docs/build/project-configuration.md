@@ -224,7 +224,7 @@ WHERE status = '{{ .env.string_var }}'
 
 ### `ai_instructions`
 
-Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/explore/mcp#adding-ai-instructions-to-your-model).
+Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs.
 
 **What to include:**
 - Guidance on which metrics views are most important or should be prioritized for your project
@@ -232,28 +232,45 @@ Use the `ai_instructions` field to provide information that is **unique to your 
 - Preferences for aggregations, filters, or dimensions that are especially relevant to your use case
 - Specific business context that helps the AI understand your domain
 
-**Examples:**
+**Example:**
 
-*E-commerce project:*
+Here's an example of how you might configure `ai_instructions` in your `rill.yaml` to provide project context, metrics routing, and business definitions:
+
 ```yaml
 ai_instructions: |
-  Focus on the `ad_performance` and `revenue_overview` metrics views, as these are most critical for our business users.
-  When possible, highlight trends by region and product category.
-  Use our internal terminology: "campaign" refers to a single ad initiative, and "placement" refers to a specific ad slot.
-  Always include conversion rates when discussing revenue metrics.
-```
-
-*SaaS analytics project:*
-```yaml
-ai_instructions: |
-  Prioritize user engagement metrics over raw user counts.
-  Our key business metrics are monthly recurring revenue (MRR) and customer lifetime value (CLV).
-  Segment analysis by customer tier (Enterprise, Pro, Basic) is essential.
-  Churn analysis should focus on the 30-day and 90-day windows.
+  # Project Context
+  This project tracks e-commerce metrics for our multi-brand retail business.
+  
+  # Metrics View Routing
+  - For questions about overall sales, revenue, or order volume → use `company_sales_metrics`
+  - For questions about customer behavior, retention, or cohorts → use `customer_analytics`
+  - For questions about product performance or inventory → use `product_metrics`
+  - For questions about marketing campaigns or attribution → use `marketing_performance`
+  - For questions about fulfillment, shipping, or logistics → use `operations_metrics`
+  
+  # Business Rules & Definitions
+  - "Revenue" always refers to net revenue (after returns and discounts)
+  - "Conversion rate" is calculated as orders/sessions, not users
+  - Our fiscal year starts in February, not January
+  - "Active customer" means a purchase within the last 90 days
+  - Weekend traffic patterns are anomalous due to our B2B focus
+  
+  # Company Acronyms
+  - GMV = Gross Merchandise Value
+  - AOV = Average Order Value
+  - ROAS = Return on Ad Spend
+  - SKU = Stock Keeping Unit
+  - NDR = Net Dollar Retention
+  - CLTV = Customer Lifetime Value
+  
+  # Known Data Quirks
+  - Mobile web data before March 2024 is incomplete due to tracking migration
+  - European region data excludes VAT (use `revenue_with_vat` dimension if needed)
+  - Refunds are processed with a 2-3 day delay, so recent data may shift
 ```
 
 :::note 
-For metric-level specific instructions, `ai_instructions` can also be applied there. 
+For metric-level specific instructions, `ai_instructions` can also be applied in the [metrics view configuration](/build/metrics-view/customization#ai-configuration). 
 :::
 
 ## Testing Security

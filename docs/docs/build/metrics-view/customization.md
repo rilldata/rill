@@ -1,11 +1,11 @@
 ---
-title: Customization
-description: Customize Metrics views
-sidebar_label: Customization
+title: Customization 
+description: Configure display properties and metadata for your metrics views
+sidebar_label: Customization 
 sidebar_position: 20
 ---
 
-Rill provides several top-level configuration options to customize how your metrics view behaves and appears. These properties help define the context, calendar logic, and data boundaries of your metrics.
+Rill provides several top-level configuration options to customize how your metrics view is presented to users and enriched with external context.
 
 ## Display Name & Description
 
@@ -16,67 +16,6 @@ display_name: "Revenue Metrics View"
 description: "Daily revenue metrics broken down by product and region"
 ```
 
-## Time Logic
-
-### Smallest Time Grain
-
-The `smallest_time_grain` property sets the minimum granularity available for time-based analysis. This is useful when your data is captured at a high frequency (e.g., milliseconds) but business analysis only makes sense at a coarser level (e.g., hours or days).
-
-Allowed values: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`.
-
-```yaml
-smallest_time_grain: "day"
-```
-
-:::warning smaller than actual time grain
-
-You cannot select a `smallest_time_grain` that is smaller than your actual data. For example, you cannot select `hour` if you time column's smallest unit is `day`.
-:::
-
-### First Day of Week
-
-You can customize the start of the week for your analysis. This affects how weeks are grouped and displayed in time series charts and tables. The value is an integer from 1 (Monday) to 7 (Sunday).
-
-```yaml
-# Set Monday as the first day of the week (Default: 1)
-first_day_of_week: 1
-```
-
-### First Month of Year
-
-For businesses that operate on a fiscal year different from the calendar year, you can set the `first_month_of_year`. This affects how "Year to Date" calculations and year groupings are handled. The value is an integer from 1 (January) to 12 (December).
-
-```yaml
-# Set February as the start of the fiscal year
-first_month_of_year: 2
-```
-
-## Data freshness
-
-### Watermark
-
-The `watermark` field allows you to define the maximum valid timestamp for your data. This is particularly useful for filtering out incomplete data periods (e.g., the current partially complete day) or for aligning your dashboard's "current" time to the last successful ETL load.
-
-The value should be a SQL expression that returns a timestamp.
-
-```yaml
-# Set the effective "end" of the data to midnight of the current day
-watermark: "date_trunc('day', now())"
-```
-
-```yaml
-# Set watermark to the maximum timestamp found in the table
-watermark: "max(timestamp_col)"
-```
-
-## AI Instructions
-
-The `ai_instructions` field allows you to provide context and guidance to AI tools that interact with your metrics view (like Rill's AI Chat or external agents). This helps ensure that AI-generated answers are accurate and aligned with your specific business logic.
-
-```yaml
-ai_instructions: "This metrics view tracks recurring revenue. When asked about 'churn', always refer to the 'churn_rate' measure, not just raw cancellations."
-```
-
 ## Annotations
 
 Annotations allow you to enrich your metrics view with external data sources or context that isn't directly part of the primary model. This is often used to overlay events, holidays, or deployment markers onto your time series charts.
@@ -85,8 +24,29 @@ Each annotation requires a reference to a `table` or `model` and a `measures` ma
 
 ```yaml
 annotations:
-  - name: "holidays"
-    model: "public_holidays"
-    measures:
-      holiday_name: "name"
+  - model: annotations_auction
+    name: auction_annotations
+    measures: ['requests']
 ```
+<img src = '/img/build/metrics-view/annotations.png' class='rounded-gif' />
+<br />
+
+## Time Configuration
+
+For time-related settings such as `smallest_time_grain`, `first_day_of_week`, `first_month_of_year`, and `watermark`, please refer to our dedicated [Time Series Configuration](/build/metrics-view/time-series) guide.
+
+## AI Configuration
+
+You can provide context and instructions for AI tools interacting with your metrics view using the `ai_instructions` field. This is useful for clarifying specific metrics, dimensions, or data quirks that apply only to this specific view. For project-wide instructions, see the [Project Configuration](/build/project-configuration#ai-configuration) guide.
+
+```yaml
+ai_instructions: |
+  # Metric Definitions
+  - "Churn Rate" excludes trial users who cancelled within 7 days.
+  - "Active Users" are defined as users with at least one login in the selected period.
+
+  # Data Context
+  - Data for the "Legacy Plan" is static and will not update after Dec 2023.
+  - When analyzing "Revenue", always breakdown by "Region" to see currency impacts.
+```
+
