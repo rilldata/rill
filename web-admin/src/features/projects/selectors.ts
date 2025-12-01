@@ -100,18 +100,21 @@ export async function fetchProjectDeploymentDetails(
   orgName: string,
   projectName: string,
   token: string | undefined,
+  branch?: string,
 ) {
   let queryKey: QueryKey;
   let queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetProject>>
   >;
 
+  const params = branch ? { branch } : {};
+
   if (token) {
     queryKey = getAdminServiceGetProjectWithBearerTokenQueryKey(
       orgName,
       projectName,
       token,
-      {},
+      params,
     );
 
     queryFn = ({ signal }) =>
@@ -119,14 +122,14 @@ export async function fetchProjectDeploymentDetails(
         orgName,
         projectName,
         token,
-        {},
+        params,
         signal,
       );
   } else {
-    queryKey = getAdminServiceGetProjectQueryKey(orgName, projectName);
+    queryKey = getAdminServiceGetProjectQueryKey(orgName, projectName, params);
 
     queryFn = ({ signal }) =>
-      adminServiceGetProject(orgName, projectName, {}, signal);
+      adminServiceGetProject(orgName, projectName, params, signal);
   }
 
   const projResp = await queryClient.fetchQuery({

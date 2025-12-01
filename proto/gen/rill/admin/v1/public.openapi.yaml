@@ -2722,6 +2722,10 @@ paths:
                   name: issueSuperuserToken
                   schema:
                     type: boolean
+                - in: query
+                  name: branch
+                  schema:
+                    type: string
             responses:
                 "200":
                     content:

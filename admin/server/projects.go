@@ -250,6 +250,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
+		attribute.String("args.branch", req.Branch),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
@@ -283,20 +284,43 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
-		return &adminv1.GetProjectResponse{
-			Project:            s.projToDTO(proj, org.Name),
-			ProjectPermissions: permissions,
-		}, nil
-	}
+	// Determine which deployment to return based on the branch parameter
+	var depl *database.Deployment
+	if req.Branch != "" {
+		// If branch is specified, find the dev deployment for that branch
+		depl, err = s.admin.FindDevDeployment(ctx, proj.ID, req.Branch)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Errorf(codes.NotFound, "no deployment found for branch %q", req.Branch)
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+		// Check if user has permission to read dev deployments
+		if !permissions.ReadDev {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
 
-	if !permissions.ReadProdStatus {
-		depl.StatusMessage = ""
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
+		}
+	} else {
+		// If no branch specified, return prod deployment
+		if proj.ProdDeploymentID == nil || !permissions.ReadProd {
+			return &adminv1.GetProjectResponse{
+				Project:            s.projToDTO(proj, org.Name),
+				ProjectPermissions: permissions,
+			}, nil
+		}
+
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if !permissions.ReadProdStatus {
+			depl.StatusMessage = ""
+		}
 	}
 
 	var attr map[string]any

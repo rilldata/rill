@@ -129,12 +129,35 @@ export const load = async ({ params, url, route, depends }) => {
     };
   }
 
+  // Get branch from URL query parameters or sessionStorage
+  const sessionStorageKey = `rill:deployment-branch:${organization}:${project}`;
+  let branch = url.searchParams.get("branch") ?? undefined;
+  
+  // If branch is in URL, store it in sessionStorage for persistence
+  if (branch) {
+    try {
+      sessionStorage.setItem(sessionStorageKey, branch);
+    } catch (e) {
+      // Ignore storage errors (e.g., in private browsing mode)
+    }
+  } else {
+    // If no branch in URL, try to get it from sessionStorage
+    try {
+      const storedBranch = sessionStorage.getItem(sessionStorageKey);
+      if (storedBranch) {
+        branch = storedBranch;
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
   try {
     const {
       projectPermissions,
       project: proj,
       runtime: runtimeData,
-    } = await fetchProjectDeploymentDetails(organization, project, token);
+    } = await fetchProjectDeploymentDetails(organization, project, token, branch);
 
     await runtime.setRuntime(
       queryClient,

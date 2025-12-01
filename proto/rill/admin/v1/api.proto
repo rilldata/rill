@@ -1338,6 +1338,7 @@ message GetProjectRequest {
   uint32 access_token_ttl_seconds = 3;
   bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
+  string branch = 6;
 }
 
 message GetProjectResponse {

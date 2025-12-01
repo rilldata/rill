@@ -1106,6 +1106,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: branch
+          in: query
+          required: false
+          type: string
       x-visibility: public
     delete:
       summary: DeleteProject deletes an project

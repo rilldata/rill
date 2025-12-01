@@ -1674,6 +1674,11 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
    */
   issueSuperuserToken = false;
 
+  /**
+   * @generated from field: string branch = 6;
+   */
+  branch = "";
+
   constructor(data?: PartialMessage<GetProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1687,6 +1692,7 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
     { no: 3, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "issue_superuser_token", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectRequest {

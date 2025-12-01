@@ -1789,6 +1789,7 @@ export type AdminServiceGetProjectParams = {
   accessTokenTtlSeconds?: number;
   superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;
+  branch?: string;
 };
 
 export type AdminServiceUpdateProjectBody = {
