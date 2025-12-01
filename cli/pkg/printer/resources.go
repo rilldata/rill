@@ -707,6 +707,50 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
+func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment) {
+	if len(deployments) == 0 {
+		p.PrintfWarn("No deployments found\n")
+		return
+	}
+
+	p.PrintData(toDeploymentsTable(deployments))
+}
+
+func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
+	res := make([]*deployment, 0, len(deployments))
+	for _, d := range deployments {
+		res = append(res, toDeploymentRow(d))
+	}
+	return res
+}
+
+func toDeploymentRow(d *adminv1.Deployment) *deployment {
+	var updatedOn string
+	if d.UpdatedOn != nil {
+		updatedOn = d.UpdatedOn.AsTime().Local().Format(time.DateTime)
+	}
+
+	return &deployment{
+		ID:            d.Id,
+		Environment:   d.Environment,
+		Branch:        d.Branch,
+		Status:        d.Status.String(),
+		RuntimeHost:   d.RuntimeHost,
+		StatusMessage: d.StatusMessage,
+		UpdatedOn:     updatedOn,
+	}
+}
+
+type deployment struct {
+	ID            string `header:"id" json:"id"`
+	Environment   string `header:"environment" json:"environment"`
+	Branch        string `header:"branch" json:"branch"`
+	Status        string `header:"status" json:"status"`
+	RuntimeHost   string `header:"runtime_host" json:"runtime_host"`
+	StatusMessage string `header:"message" json:"message"`
+	UpdatedOn     string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)
 func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 	if len(res.Data) == 0 {

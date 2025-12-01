@@ -33,6 +33,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(GitPushCmd(ch))
 	projectCmd.AddCommand(DeployCmd(ch))
 	projectCmd.AddCommand(TablesCmd(ch))
+	projectCmd.AddCommand(DeploymentsCmd(ch))
 
 	return projectCmd
 }
