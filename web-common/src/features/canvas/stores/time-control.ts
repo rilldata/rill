@@ -272,13 +272,11 @@ export class TimeControls {
       selectedTimezone,
     );
 
-    const didSet = false;
-
-    // const didSet = this.set.range(
-    //   initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
-    //   true,
-    //   true,
-    // );
+    const didSet = this.set.range(
+      initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
+      true,
+      true,
+    );
 
     const newComparisonRange = getComparisonTimeRange(
       timeRanges,
