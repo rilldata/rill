@@ -66,18 +66,21 @@ export const getYupSchema = {
   }),
 
   azure: yup.object().shape({
+    azure_storage_connection_string: yup.string(),
+    azure_storage_account: yup.string(),
+    azure_storage_key: yup.string(),
+    azure_storage_sas_token: yup.string(),
     path: yup
       .string()
       .matches(
         /^azure:\/\//,
         "Must be an Azure URI (e.g. azure://container/path)",
       )
-      .required("Path is required"),
-    azure_storage_account: yup.string(),
+      .optional(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+      .optional(),
   }),
 
   postgres: yup.object().shape({

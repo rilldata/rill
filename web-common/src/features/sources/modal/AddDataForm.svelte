@@ -22,6 +22,7 @@
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
+  import AzureMultiStepForm from "./AzureMultiStepForm.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
@@ -386,13 +387,30 @@
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            <GCSMultiStepForm
-              properties={filteredParamsProperties}
-              {paramsForm}
-              paramsErrors={$paramsErrors}
-              {onStringInputChange}
-              {handleFileUpload}
-            />
+            {#if connector.name === "gcs"}
+              <GCSMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else if connector.name === "azure"}
+              <AzureMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+              />
+            {:else}
+              <FormRenderer
+                properties={filteredParamsProperties}
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
+            {/if}
           </AddDataFormSection>
         {:else}
           <!-- GCS Step 2: Source configuration -->
