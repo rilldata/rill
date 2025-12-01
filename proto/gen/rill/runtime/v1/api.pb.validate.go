@@ -5411,31 +5411,30 @@ var _ interface {
 	ErrorName() string
 } = GenerateMetricsViewFileResponseValidationError{}
 
-// Validate checks the field values on GenerateCanvasDashboardFileRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *GenerateCanvasDashboardFileRequest) Validate() error {
+// Validate checks the field values on GenerateCanvasFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateCanvasFileRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GenerateCanvasDashboardFileRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// GenerateCanvasDashboardFileRequestMultiError, or nil if none found.
-func (m *GenerateCanvasDashboardFileRequest) ValidateAll() error {
+// ValidateAll checks the field values on GenerateCanvasFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateCanvasFileRequestMultiError, or nil if none found.
+func (m *GenerateCanvasFileRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateCanvasDashboardFileRequest) validate(all bool) error {
+func (m *GenerateCanvasFileRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if !_GenerateCanvasDashboardFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := GenerateCanvasDashboardFileRequestValidationError{
+	if !_GenerateCanvasFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateCanvasFileRequestValidationError{
 			field:  "InstanceId",
 			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
 		}
@@ -5452,20 +5451,19 @@ func (m *GenerateCanvasDashboardFileRequest) validate(all bool) error {
 	// no validation rules for UseAi
 
 	if len(errors) > 0 {
-		return GenerateCanvasDashboardFileRequestMultiError(errors)
+		return GenerateCanvasFileRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateCanvasDashboardFileRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// GenerateCanvasDashboardFileRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GenerateCanvasDashboardFileRequestMultiError []error
+// GenerateCanvasFileRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateCanvasFileRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GenerateCanvasFileRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateCanvasDashboardFileRequestMultiError) Error() string {
+func (m GenerateCanvasFileRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5474,12 +5472,11 @@ func (m GenerateCanvasDashboardFileRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateCanvasDashboardFileRequestMultiError) AllErrors() []error { return m }
+func (m GenerateCanvasFileRequestMultiError) AllErrors() []error { return m }
 
-// GenerateCanvasDashboardFileRequestValidationError is the validation error
-// returned by GenerateCanvasDashboardFileRequest.Validate if the designated
-// constraints aren't met.
-type GenerateCanvasDashboardFileRequestValidationError struct {
+// GenerateCanvasFileRequestValidationError is the validation error returned by
+// GenerateCanvasFileRequest.Validate if the designated constraints aren't met.
+type GenerateCanvasFileRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5487,24 +5484,24 @@ type GenerateCanvasDashboardFileRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateCanvasDashboardFileRequestValidationError) Field() string { return e.field }
+func (e GenerateCanvasFileRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateCanvasDashboardFileRequestValidationError) Reason() string { return e.reason }
+func (e GenerateCanvasFileRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateCanvasDashboardFileRequestValidationError) Cause() error { return e.cause }
+func (e GenerateCanvasFileRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateCanvasDashboardFileRequestValidationError) Key() bool { return e.key }
+func (e GenerateCanvasFileRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateCanvasDashboardFileRequestValidationError) ErrorName() string {
-	return "GenerateCanvasDashboardFileRequestValidationError"
+func (e GenerateCanvasFileRequestValidationError) ErrorName() string {
+	return "GenerateCanvasFileRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateCanvasDashboardFileRequestValidationError) Error() string {
+func (e GenerateCanvasFileRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5516,14 +5513,14 @@ func (e GenerateCanvasDashboardFileRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateCanvasDashboardFileRequest.%s: %s%s",
+		"invalid %sGenerateCanvasFileRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateCanvasDashboardFileRequestValidationError{}
+var _ error = GenerateCanvasFileRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -5531,27 +5528,26 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateCanvasDashboardFileRequestValidationError{}
+} = GenerateCanvasFileRequestValidationError{}
 
-var _GenerateCanvasDashboardFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+var _GenerateCanvasFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
-// Validate checks the field values on GenerateCanvasDashboardFileResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *GenerateCanvasDashboardFileResponse) Validate() error {
+// Validate checks the field values on GenerateCanvasFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateCanvasFileResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GenerateCanvasDashboardFileResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// GenerateCanvasDashboardFileResponseMultiError, or nil if none found.
-func (m *GenerateCanvasDashboardFileResponse) ValidateAll() error {
+// ValidateAll checks the field values on GenerateCanvasFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateCanvasFileResponseMultiError, or nil if none found.
+func (m *GenerateCanvasFileResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GenerateCanvasDashboardFileResponse) validate(all bool) error {
+func (m *GenerateCanvasFileResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5561,20 +5557,19 @@ func (m *GenerateCanvasDashboardFileResponse) validate(all bool) error {
 	// no validation rules for AiSucceeded
 
 	if len(errors) > 0 {
-		return GenerateCanvasDashboardFileResponseMultiError(errors)
+		return GenerateCanvasFileResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GenerateCanvasDashboardFileResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// GenerateCanvasDashboardFileResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GenerateCanvasDashboardFileResponseMultiError []error
+// GenerateCanvasFileResponseMultiError is an error wrapping multiple
+// validation errors returned by GenerateCanvasFileResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GenerateCanvasFileResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GenerateCanvasDashboardFileResponseMultiError) Error() string {
+func (m GenerateCanvasFileResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5583,12 +5578,11 @@ func (m GenerateCanvasDashboardFileResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GenerateCanvasDashboardFileResponseMultiError) AllErrors() []error { return m }
+func (m GenerateCanvasFileResponseMultiError) AllErrors() []error { return m }
 
-// GenerateCanvasDashboardFileResponseValidationError is the validation error
-// returned by GenerateCanvasDashboardFileResponse.Validate if the designated
-// constraints aren't met.
-type GenerateCanvasDashboardFileResponseValidationError struct {
+// GenerateCanvasFileResponseValidationError is the validation error returned
+// by GenerateCanvasFileResponse.Validate if the designated constraints aren't met.
+type GenerateCanvasFileResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5596,24 +5590,24 @@ type GenerateCanvasDashboardFileResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GenerateCanvasDashboardFileResponseValidationError) Field() string { return e.field }
+func (e GenerateCanvasFileResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GenerateCanvasDashboardFileResponseValidationError) Reason() string { return e.reason }
+func (e GenerateCanvasFileResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GenerateCanvasDashboardFileResponseValidationError) Cause() error { return e.cause }
+func (e GenerateCanvasFileResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GenerateCanvasDashboardFileResponseValidationError) Key() bool { return e.key }
+func (e GenerateCanvasFileResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GenerateCanvasDashboardFileResponseValidationError) ErrorName() string {
-	return "GenerateCanvasDashboardFileResponseValidationError"
+func (e GenerateCanvasFileResponseValidationError) ErrorName() string {
+	return "GenerateCanvasFileResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GenerateCanvasDashboardFileResponseValidationError) Error() string {
+func (e GenerateCanvasFileResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5625,14 +5619,14 @@ func (e GenerateCanvasDashboardFileResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGenerateCanvasDashboardFileResponse.%s: %s%s",
+		"invalid %sGenerateCanvasFileResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GenerateCanvasDashboardFileResponseValidationError{}
+var _ error = GenerateCanvasFileResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -5640,7 +5634,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GenerateCanvasDashboardFileResponseValidationError{}
+} = GenerateCanvasFileResponseValidationError{}
 
 // Validate checks the field values on GenerateResolverRequest with the rules
 // defined in the proto definition for this message. If any rules are

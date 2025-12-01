@@ -22,8 +22,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// GenerateCanvasDashboardFile generates a canvas dashboard YAML file from a metrics view
-func (s *Server) GenerateCanvasDashboardFile(ctx context.Context, req *runtimev1.GenerateCanvasDashboardFileRequest) (*runtimev1.GenerateCanvasDashboardFileResponse, error) {
+// GenerateCanvasFile generates a canvas YAML file from a metrics view
+func (s *Server) GenerateCanvasFile(ctx context.Context, req *runtimev1.GenerateCanvasFileRequest) (*runtimev1.GenerateCanvasFileResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metrics_view_name", req.MetricsViewName),
@@ -127,7 +127,7 @@ func (s *Server) GenerateCanvasDashboardFile(ctx context.Context, req *runtimev1
 		return nil, err
 	}
 
-	return &runtimev1.GenerateCanvasDashboardFileResponse{AiSucceeded: aiSucceeded}, nil
+	return &runtimev1.GenerateCanvasFileResponse{AiSucceeded: aiSucceeded}, nil
 }
 
 // generateCanvasDashboardYAMLWithAI attempts to generate a canvas dashboard YAML definition using AI
@@ -1005,4 +1005,3 @@ func insertEmptyLinesInCanvasYaml(node *yaml.Node) {
 		}
 	}
 }
-

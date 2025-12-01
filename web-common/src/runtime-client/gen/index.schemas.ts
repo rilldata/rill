@@ -1007,7 +1007,7 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
-export interface V1GenerateCanvasDashboardFileResponse {
+export interface V1GenerateCanvasFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
 }
@@ -2611,12 +2611,12 @@ It should only be set when create = true. */
   createOnly?: boolean;
 };
 
-export type RuntimeServiceGenerateCanvasDashboardFileBody = {
-  /** Metrics view name to base the canvas dashboard on. */
+export type RuntimeServiceGenerateCanvasFileBody = {
+  /** Metrics view name to base the canvas on. */
   metricsViewName?: string;
-  /** Path to save the canvas dashboard file to. */
+  /** Path to save the canvas file to. */
   path?: string;
-  /** If true, the AI will be used to generate the canvas dashboard file.
+  /** If true, the AI will be used to generate the canvas file.
 Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
 };

@@ -19,7 +19,7 @@ import {
   type RuntimeServiceGenerateMetricsViewFileBody,
   type V1GenerateMetricsViewFileResponse,
   type V1Resource,
-  runtimeServiceGenerateCanvasDashboardFile,
+  runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
@@ -525,7 +525,7 @@ export async function createCanvasDashboardWithoutNavigation(
 
   try {
     // Request AI-generated canvas dashboard
-    void runtimeServiceGenerateCanvasDashboardFile(
+    void runtimeServiceGenerateCanvasFile(
       instanceId,
       {
         metricsViewName: metricsViewName,
@@ -553,7 +553,7 @@ export async function createCanvasDashboardWithoutNavigation(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (isAICancelled) {
-      await runtimeServiceGenerateCanvasDashboardFile(instanceId, {
+      await runtimeServiceGenerateCanvasFile(instanceId, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,
@@ -788,7 +788,7 @@ export async function createCanvasDashboardFromMetricsView(
 
   try {
     // Request AI-generated canvas dashboard
-    void runtimeServiceGenerateCanvasDashboardFile(
+    void runtimeServiceGenerateCanvasFile(
       instanceId,
       {
         metricsViewName: metricsViewName,
@@ -816,7 +816,7 @@ export async function createCanvasDashboardFromMetricsView(
 
     // If the user canceled the AI request, submit another request with `useAi=false`
     if (isAICancelled) {
-      await runtimeServiceGenerateCanvasDashboardFile(instanceId, {
+      await runtimeServiceGenerateCanvasFile(instanceId, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,

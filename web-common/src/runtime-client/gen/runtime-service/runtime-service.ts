@@ -34,7 +34,7 @@ import type {
   RuntimeServiceDeleteFileParams,
   RuntimeServiceDeleteInstanceBody,
   RuntimeServiceEditInstanceBody,
-  RuntimeServiceGenerateCanvasDashboardFileBody,
+  RuntimeServiceGenerateCanvasFileBody,
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
@@ -69,7 +69,7 @@ import type {
   V1DeleteFileResponse,
   V1DeleteInstanceResponse,
   V1EditInstanceResponse,
-  V1GenerateCanvasDashboardFileResponse,
+  V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
@@ -2168,39 +2168,39 @@ export const createRuntimeServicePutFile = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GenerateCanvasDashboardFile generates a canvas dashboard YAML file from a metrics view
+ * @summary GenerateCanvasFile generates a canvas YAML file from a metrics view
  */
-export const runtimeServiceGenerateCanvasDashboardFile = (
+export const runtimeServiceGenerateCanvasFile = (
   instanceId: string,
-  runtimeServiceGenerateCanvasDashboardFileBody: RuntimeServiceGenerateCanvasDashboardFileBody,
+  runtimeServiceGenerateCanvasFileBody: RuntimeServiceGenerateCanvasFileBody,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GenerateCanvasDashboardFileResponse>({
-    url: `/v1/instances/${instanceId}/files/generate-canvas-dashboard`,
+  return httpClient<V1GenerateCanvasFileResponse>({
+    url: `/v1/instances/${instanceId}/files/generate-canvas`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServiceGenerateCanvasDashboardFileBody,
+    data: runtimeServiceGenerateCanvasFileBody,
     signal,
   });
 };
 
-export const getRuntimeServiceGenerateCanvasDashboardFileMutationOptions = <
+export const getRuntimeServiceGenerateCanvasFileMutationOptions = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasFile>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody },
+    { instanceId: string; data: RuntimeServiceGenerateCanvasFileBody },
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasFile>>,
   TError,
-  { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody },
+  { instanceId: string; data: RuntimeServiceGenerateCanvasFileBody },
   TContext
 > => {
-  const mutationKey = ["runtimeServiceGenerateCanvasDashboardFile"];
+  const mutationKey = ["runtimeServiceGenerateCanvasFile"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -2210,53 +2210,49 @@ export const getRuntimeServiceGenerateCanvasDashboardFileMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
-    { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody }
+    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasFile>>,
+    { instanceId: string; data: RuntimeServiceGenerateCanvasFileBody }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
-    return runtimeServiceGenerateCanvasDashboardFile(instanceId, data);
+    return runtimeServiceGenerateCanvasFile(instanceId, data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type RuntimeServiceGenerateCanvasDashboardFileMutationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>
-  >;
-export type RuntimeServiceGenerateCanvasDashboardFileMutationBody =
-  RuntimeServiceGenerateCanvasDashboardFileBody;
-export type RuntimeServiceGenerateCanvasDashboardFileMutationError =
+export type RuntimeServiceGenerateCanvasFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasFile>>
+>;
+export type RuntimeServiceGenerateCanvasFileMutationBody =
+  RuntimeServiceGenerateCanvasFileBody;
+export type RuntimeServiceGenerateCanvasFileMutationError =
   ErrorType<RpcStatus>;
 
 /**
- * @summary GenerateCanvasDashboardFile generates a canvas dashboard YAML file from a metrics view
+ * @summary GenerateCanvasFile generates a canvas YAML file from a metrics view
  */
-export const createRuntimeServiceGenerateCanvasDashboardFile = <
+export const createRuntimeServiceGenerateCanvasFile = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+      Awaited<ReturnType<typeof runtimeServiceGenerateCanvasFile>>,
       TError,
-      {
-        instanceId: string;
-        data: RuntimeServiceGenerateCanvasDashboardFileBody;
-      },
+      { instanceId: string; data: RuntimeServiceGenerateCanvasFileBody },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasFile>>,
   TError,
-  { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody },
+  { instanceId: string; data: RuntimeServiceGenerateCanvasFileBody },
   TContext
 > => {
   const mutationOptions =
-    getRuntimeServiceGenerateCanvasDashboardFileMutationOptions(options);
+    getRuntimeServiceGenerateCanvasFileMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
