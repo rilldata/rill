@@ -26,7 +26,6 @@
   import { useCanvas } from "../canvas/selector";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import LeaderboardIcon from "../canvas/icons/LeaderboardIcon.svelte";
-  import CheckerFull from "@rilldata/web-common/components/icons/CheckerFull.svelte";
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
 
   export let fileArtifact: FileArtifact;
