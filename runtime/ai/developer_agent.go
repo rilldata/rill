@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -52,8 +51,12 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		return nil, err
 	}
 
-	// Add the developer agent system prompt.
+	// Generate the prompts
 	systemPrompt, err := t.systemPrompt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userPrompt, err := t.userPrompt(args)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +64,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByRoot()))...)
-	messages = append(messages, NewTextCompletionMessage(RoleUser, t.userPrompt(args)))
+	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
 
 	// Run an LLM tool call loop
@@ -146,25 +149,28 @@ You should not make many changes at a time. Carefully consider the minimum chang
 `, data)
 }
 
-func (t *DeveloperAgent) userPrompt(args *DeveloperAgentArgs) string {
-	var prompt strings.Builder
-
-	// Add context about initialization if applicable
-	if args.InitProject {
-		prompt.WriteString("The project is currently empty apart from a few boilerplate files (like rill.yaml).\n")
-		prompt.WriteString("The user has asked you to help them set up their initial project based on the following instructions: ")
+func (t *DeveloperAgent) userPrompt(args *DeveloperAgentArgs) (string, error) {
+	// Prepare template data.
+	data := map[string]any{
+		"init_project":      args.InitProject,
+		"current_file_path": args.CurrentFilePath,
+		"prompt":            args.Prompt,
 	}
 
-	// Add context about current file if available
-	if args.CurrentFilePath != "" {
-		prompt.WriteString(fmt.Sprintf("The user is currently viewing/editing the file: %s\n", args.CurrentFilePath))
-		prompt.WriteString("Their request may relate to this file.\n\n")
-	}
+	// Generate the system prompt
+	return executeTemplate(`
+{{ if .current_file_path }}
+The user is currently viewing/editing the file: {{ .current_file_path }}
+Their request may relate to this file.
+{{ end }}
 
-	// Add the main prompt
-	prompt.WriteString(args.Prompt)
+{{ if .init_project }}
+The project is currently empty apart from a few boilerplate files (like rill.yaml).
+The user has asked you to help them set up their initial project based on the following instructions:
+{{ end }}
 
-	return prompt.String()
+{{ .prompt }}
+`, data)
 }
 
 // checkDeveloperAgentAccess checks whether the developer agent and related tools should be available in the current session.

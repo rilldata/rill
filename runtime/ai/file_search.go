@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -29,8 +30,8 @@ type SearchFilesResult struct {
 }
 
 type SearchMatch struct {
-	Path    string   `json:"path"`
-	Lines   []int    `json:"lines"`
+	Path     string   `json:"path"`
+	Lines    []int    `json:"lines"`
 	Snippets []string `json:"snippets"`
 }
 
@@ -137,8 +138,8 @@ func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*Sear
 
 		if len(matchingLines) > 0 {
 			matches = append(matches, SearchMatch{
-				Path:    file.Path,
-				Lines:   matchingLines,
+				Path:     file.Path,
+				Lines:    matchingLines,
 				Snippets: snippets,
 			})
 		}
@@ -153,5 +154,3 @@ func (t *SearchFiles) Handler(ctx context.Context, args *SearchFilesArgs) (*Sear
 		Matches: matches,
 	}, nil
 }
-
-
