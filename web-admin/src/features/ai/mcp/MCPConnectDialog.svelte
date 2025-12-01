@@ -6,6 +6,7 @@
     TabsList,
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import ManualSection from "./ManualSection.svelte";
   import OAuthSection from "./OAuthSection.svelte";
 
@@ -40,11 +41,7 @@
           class="text-sm pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-gray-900"
         >
           OAuth
-          <span
-            class="ml-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
-          >
-            Recommended
-          </span>
+          <Tag color="gray" text="Recommended" height={18} class="ml-1.5" />
         </TabsTrigger>
         <TabsTrigger
           value="manual"
