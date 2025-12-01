@@ -162,7 +162,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Validate or infer the smallest time grains for the default time dimension and for any additional time dimensions.
 	// We require the smallest time grain to be at least at second grain.
 	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
-	if e.metricsView.TimeDimension != "" {
+	if e.metricsView.TimeDimension != "" && res.TimeDimensionErr == nil {
 		// Find the smallest possible grain
 		var smallestPossibleGrain runtimev1.TimeGrain
 		var typeCode runtimev1.Type_Code
@@ -173,6 +173,9 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 			// Time dimension not found in the column list, find it in the defined dimension list
 			for _, d := range mv.Dimensions {
 				if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+					if d.DataType == nil {
+						break // data type discovery must have failed
+					}
 					typeCode = d.DataType.Code
 					break
 				}
