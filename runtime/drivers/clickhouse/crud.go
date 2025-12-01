@@ -63,7 +63,7 @@ func (c *Connection) createTableAsSelect(ctx context.Context, name, sql string, 
 
 	// wrap in WithConnection to ensure all queries use the same connection
 	t := time.Now()
-	err := c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	err := c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 	return &tableWriteMetrics{duration: time.Since(t)}, err
@@ -271,7 +271,7 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }
@@ -357,7 +357,7 @@ func (c *Connection) renameEntity(ctx context.Context, oldName, newName string) 
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }
@@ -412,7 +412,7 @@ func (c *Connection) renameView(ctx context.Context, oldName, newName, onCluster
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }
@@ -423,6 +423,9 @@ func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluste
 		res, err := c.Query(ctx, &drivers.Statement{
 			Query: fmt.Sprintf("EXISTS %s", safeSQLName(newName)),
 		})
+		if err != nil {
+			return err
+		}
 		for res.Next() {
 			if err := res.Scan(&exists); err != nil {
 				res.Close()
@@ -451,7 +454,7 @@ func (c *Connection) renameTable(ctx context.Context, oldName, newName, onCluste
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }
@@ -519,7 +522,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }
@@ -552,7 +555,7 @@ func (c *Connection) createDistributedTable(ctx context.Context, name string, ou
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }
@@ -616,7 +619,7 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 	}
 
 	// wrap in WithConnection to ensure all queries use the same connection
-	return c.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context) error {
+	return c.WithConnection(ctx, 100, func(ctx, _ context.Context) error {
 		return fn(ctx)
 	})
 }

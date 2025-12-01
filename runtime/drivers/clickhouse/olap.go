@@ -61,7 +61,7 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 	// embed session ID in context so that nested calls can fetch session ID
 	sessionID := uuid.New().String()
 	wrappedCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(ctx, sessionID), conn), sessionID)
-	ensuredCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(ctx, sessionID), conn), sessionID)
+	ensuredCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(context.Background(), sessionID), conn), sessionID)
 	return fn(wrappedCtx, ensuredCtx)
 }
 
