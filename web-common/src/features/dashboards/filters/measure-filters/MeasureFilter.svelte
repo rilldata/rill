@@ -9,11 +9,11 @@
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import MeasureFilterForm from "./MeasureFilterForm.svelte";
+  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
+  import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";
 
-  export let dimensionName: string;
-  export let name: string;
-  export let label: string | undefined = undefined;
-  export let filter: MeasureFilterEntry | undefined = undefined;
+  export let filterData: MeasureFilterItem;
+
   export let onRemove: () => void;
   export let onApply: (params: {
     dimension: string;
@@ -22,6 +22,13 @@
   }) => void;
   export let allDimensions: MetricsViewSpecDimension[];
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let toggleFilterPin:
+    | FilterManager["actions"]["toggleFilterPin"]
+    | undefined = undefined;
+
+  $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
+
+  $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 
   let open = !filter;
 </script>
@@ -48,9 +55,10 @@
         active={open}
         builders={[builder]}
         {label}
+        gray={pinned && !filter}
         theme
         {onRemove}
-        removable
+        removable={!pinned}
         removeTooltipText="Remove {label}"
       >
         <MeasureFilterBody
@@ -83,6 +91,10 @@
       {dimensionName}
       {allDimensions}
       {onApply}
+      {pinned}
+      toggleFilterPin={toggleFilterPin
+        ? () => toggleFilterPin(name, metricsViewNames)
+        : undefined}
       {side}
     />
   {/if}

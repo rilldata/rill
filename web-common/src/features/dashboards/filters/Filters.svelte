@@ -80,7 +80,6 @@
         dimensionHasFilter,
         getDimensionFilterItems,
         getAllDimensionFilterItems,
-        isFilterExcludeMode,
       },
       measures: { allMeasures, filteredSimpleMeasures },
       measureFilters: {
@@ -440,7 +439,7 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as filterData (name)}
+        {#each allDimensionFilters as filterData (filterData.name)}
           <div animate:flip={{ duration: 200 }}>
             <DimensionFilter
               expressionMap={new Map([
@@ -463,21 +462,24 @@
               applyDimensionContainsMode={async (name, searchText) =>
                 applyDimensionContainsMode(name, searchText)}
               isUrlTooLongAfterInListFilter={(values) =>
-                isUrlTooLongAfterInListFilter(name, values)}
+                isUrlTooLongAfterInListFilter(filterData.name, values)}
             />
           </div>
         {/each}
-        {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
+        {#each allMeasureFilters as filterData (filterData.name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
+              {filterData}
               allDimensions={dimensions}
-              {name}
-              {label}
-              {dimensionName}
-              {filter}
-              onRemove={() => removeMeasureFilter(dimensionName, name)}
+              onRemove={() =>
+                removeMeasureFilter(filterData.dimensionName, filterData.name)}
               onApply={({ dimension, oldDimension, filter }) =>
-                handleMeasureFilterApply(dimension, name, oldDimension, filter)}
+                handleMeasureFilterApply(
+                  dimension,
+                  filterData.name,
+                  oldDimension,
+                  filter,
+                )}
             />
           </div>
         {/each}

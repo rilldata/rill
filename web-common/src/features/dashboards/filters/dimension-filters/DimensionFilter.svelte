@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -28,10 +27,12 @@
     useAllSearchResultsCount,
     useDimensionSearch,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
-  import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
+  import PinOff from "@rilldata/web-common/components/icons/PinOff.svelte";
+  import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
+  import { builderActions, getAttrs } from "bits-ui";
+  import * as BitsTooltip from "@rilldata/web-common/components/tooltip-v2";
 
   type Actions = FilterManager["actions"];
 
@@ -49,7 +50,8 @@
   export let toggleDimensionValueSelections: Actions["toggleDimensionValueSelections"];
   export let applyDimensionContainsMode: Actions["applyDimensionContainsMode"];
   export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
-  export let toggleFilterPin: Actions["toggleFilterPin"] = () => {};
+  export let toggleFilterPin: Actions["toggleFilterPin"] | undefined =
+    undefined;
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
@@ -447,21 +449,40 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
-      <div
-        class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
-      >
-        <b>{label}</b>
-        <Button
-          type="secondary"
-          square
-          small
-          onClick={() => {
-            toggleFilterPin(name, metricsViewNames);
-          }}
+      {#if toggleFilterPin}
+        <div
+          class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
         >
-          <Pin />
-        </Button>
-      </div>
+          <b>{label}</b>
+
+          <BitsTooltip.Root portal="body">
+            <BitsTooltip.Trigger asChild let:builder>
+              <button
+                on:click={() => {
+                  toggleFilterPin(name, metricsViewNames);
+                }}
+                {...getAttrs([builder])}
+                use:builderActions={{ builders: [builder] }}
+                aria-label={pinned ? "Unpin filter" : "Pin filter"}
+              >
+                {#if pinned}
+                  <PinOff size="15px" />
+                {:else}
+                  <Pin size="15px" />
+                {/if}
+              </button>
+            </BitsTooltip.Trigger>
+            <BitsTooltip.Content
+              side="right"
+              class="z-[100000] max-w-56 bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1"
+              sideOffset={8}
+            >
+              Click to pin or unpin : Keep this filter visible at the top so it
+              can’t be removed by other users.
+            </BitsTooltip.Content>
+          </BitsTooltip.Root>
+        </div>
+      {/if}
       <div class="flex flex-row">
         <DimensionFilterModeSelector
           bind:mode={curMode}

@@ -247,7 +247,7 @@ export class CanvasEntity {
       }
     }
 
-    this.filterManager.metricsViewFilters
+    get(this.filterManager.metricsViewFilters)
       .entries()
       .forEach(([name, filters]) => {
         filterMap.add({

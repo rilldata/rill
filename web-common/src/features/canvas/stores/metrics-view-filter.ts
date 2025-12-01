@@ -57,6 +57,9 @@ export class MetricsViewFilter {
   }
 
   onFilterStringChange(filterString: string) {
+    const { string } = get(this.parsed);
+    if (string === filterString) return;
+
     this.parsed.set(this.parseFilterString(filterString));
   }
 

@@ -11,7 +11,13 @@ import type {
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-import { derived, get, type Readable, writable } from "svelte/store";
+import {
+  derived,
+  get,
+  type Readable,
+  type Writable,
+  writable,
+} from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 
 import { goto } from "$app/navigation";
@@ -75,9 +81,38 @@ function mergeFilters<T>(
   return merged;
 }
 
+class StoreOfStores<T> {
+  private store: Writable<Map<string, T>>;
+  subscribe: Readable<Map<string, T>>["subscribe"];
+
+  constructor() {
+    this.store = writable<Map<string, T>>(new Map());
+    this.subscribe = this.store.subscribe;
+  }
+
+  forEach = (
+    callback: (value: T, key: string, map: Map<string, T>) => void,
+  ) => {
+    const map = get(this.store);
+    map.forEach(callback);
+  };
+
+  get(key: string): T | undefined {
+    const map = get(this.store);
+    return map.get(key);
+  }
+
+  set(key: string, value: T) {
+    this.store.update((map) => {
+      map.set(key, value);
+      return map;
+    });
+  }
+}
+
 // wip - bgh
 export class FilterManager {
-  metricsViewFilters: Map<string, MetricsViewFilter> = new Map();
+  metricsViewFilters = new StoreOfStores<MetricsViewFilter>();
   _pinnedFilterKeys = writable<Set<string>>(new Set());
   _temporaryFilterKeys = writable<Set<string>>(new Set());
   _allDimensions = writable<DimensionLookup>(new Map());
@@ -94,8 +129,8 @@ export class FilterManager {
   > = new Map();
   metricsViewNameMeasureMap: Map<string, Map<string, MetricsViewSpecMeasure>> =
     new Map();
-
   _viewingDefaults: Readable<boolean>;
+  _filterMap: Readable<Map<string, V1Expression>>;
 
   constructor(
     metricsViews: Record<string, V1MetricsView | undefined>,
@@ -105,13 +140,14 @@ export class FilterManager {
     this.updateConfig(metricsViews, pinnedFilters, defaultFilters);
 
     this._defaultUIFilters = derived(
-      [
-        ...Array.from(this.metricsViewFilters.values()).map(
+      [this.metricsViewFilters],
+      ([metricsViewFilters], set) => {
+        const stores = Array.from(metricsViewFilters.values()).map(
           (f) => f.parsedDefaultFilters,
-        ),
-      ],
-      (filters) => {
-        return this.convertToUIFilters(filters, new Set(), new Set());
+        );
+        derived(stores, (filters) => {
+          return this.convertToUIFilters(filters, new Set(), new Set());
+        }).subscribe(set);
       },
     );
 
@@ -119,14 +155,39 @@ export class FilterManager {
       [
         this._pinnedFilterKeys,
         this._temporaryFilterKeys,
-        ...Array.from(this.metricsViewFilters.values()).map((f) => f.parsed),
+        this.metricsViewFilters,
       ],
-      ([pinnedFilters, temporaryFilterKeys, ...parsedFilters]) => {
-        return this.convertToUIFilters(
-          parsedFilters,
-          temporaryFilterKeys,
-          pinnedFilters,
+      ([pinnedFilters, temporaryFilterKeys, metricsViewFilters], set) => {
+        const stores = Array.from(metricsViewFilters.values()).map(
+          (f) => f.parsed,
         );
+
+        derived(stores, (filters) => {
+          console.log({ pinnedFilters });
+          return this.convertToUIFilters(
+            filters,
+            temporaryFilterKeys,
+            pinnedFilters,
+          );
+        }).subscribe(set);
+      },
+    );
+
+    this._filterMap = derived(
+      [this.metricsViewFilters],
+      ([metricsViewFilters], set) => {
+        const stores = Array.from(metricsViewFilters.values()).map(
+          (f) => f.parsed,
+        );
+
+        derived(stores, (filters) => {
+          const map = new Map<string, V1Expression>();
+          filters.forEach((expr, i) => {
+            const mvName = Array.from(metricsViewFilters.keys())[i];
+            map.set(mvName, expr.where);
+          });
+          return map;
+        }).subscribe(set);
       },
     );
 
@@ -163,10 +224,6 @@ export class FilterManager {
     pinnedFilters?: string[],
     defaultFilters?: V1CanvasPresetFilterExpr,
   ) {
-    // const allMetricsViewNames = Object.keys(metricsViews);
-    // const allMetricsViewNamesPrefix = allMetricsViewNames.join(".");
-    // this.allMetricsViewNamesPrefix.set(allMetricsViewNamesPrefix);
-
     const dimensionIdMap: Map<string, string[]> = new Map();
     const measureIdMap: Map<string, string[]> = new Map();
 
@@ -228,18 +285,24 @@ export class FilterManager {
       const keys = new Set<string>();
 
       pinnedFilters.forEach((filterName) => {
-        const foundDimensions = new Map();
+        const foundDimensionsOrMeasures = new Map();
 
         this.metricsViewFilters.forEach((filters, name) => {
           const foundDimension = this.metricsViewNameDimensionMap
             .get(name)
             ?.get(filterName);
           if (foundDimension) {
-            foundDimensions.set(name, foundDimension);
+            foundDimensionsOrMeasures.set(name, foundDimension);
+          }
+          const foundMeasure = this.metricsViewNameMeasureMap
+            .get(name)
+            ?.get(filterName);
+          if (foundMeasure) {
+            foundDimensionsOrMeasures.set(name, foundMeasure);
           }
         });
 
-        const filterKey = `${Array.from(foundDimensions.keys()).join("//")}::${filterName}`;
+        const filterKey = `${Array.from(foundDimensionsOrMeasures.keys()).join("//")}::${filterName}`;
 
         keys.add(filterKey);
       });
@@ -267,8 +330,6 @@ export class FilterManager {
     };
 
     const allMeasures = get(this._allMeasures);
-
-    console.log({ temporaryFilterKeys });
 
     allMeasures.forEach((measures, key) => {
       const filters: MeasureFilterItem[] = [];
@@ -314,6 +375,8 @@ export class FilterManager {
         } else {
           if (pinned) {
             dimFilter.pinned = true;
+          } else {
+            dimFilter.pinned = false;
           }
           filters.push(dimFilter);
         }
@@ -387,6 +450,8 @@ export class FilterManager {
         } else {
           if (pinned) {
             dimFilter.pinned = true;
+          } else {
+            dimFilter.pinned = false;
           }
           filters.push(dimFilter);
         }
@@ -587,9 +652,9 @@ export class FilterManager {
     ) => {
       this._pinnedFilterKeys.update((pinned) => {
         const key = metricsViewNames.sort().join("//") + "::" + name;
-        if (pinned.has(key)) {
-          pinned.delete(key);
-        } else {
+        const deleted = pinned.delete(key);
+
+        if (!deleted) {
           pinned.add(key);
         }
         return pinned;

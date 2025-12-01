@@ -11,14 +11,12 @@
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { DateTime, Interval } from "luxon";
-  import { flip } from "svelte/animate";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
-  import { derived } from "svelte/store";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
   export let readOnly = false;
   export let maxWidth: number;
+  export let builder = false;
   export let canvasName: string;
 
   /** the height of a row of chips */
@@ -34,7 +32,7 @@
         _allDimensions,
         _allMeasures,
         _activeUIFilters,
-        metricsViewFilters,
+        _filterMap,
         actions: {
           toggleDimensionValueSelections,
           toggleDimensionFilterMode,
@@ -106,18 +104,6 @@
     set.range(`${start.toISOString()},${end.toISOString()}`);
     set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
-
-  $: filterMap = derived(
-    Array.from(metricsViewFilters.values()).map((p) => p.parsed),
-    ($metricsViewFilters) => {
-      const map = new Map<string, V1Expression>();
-      $metricsViewFilters.forEach((expr, i) => {
-        const mvName = Array.from(metricsViewFilters.keys())[i];
-        map.set(mvName, expr.where);
-      });
-      return map;
-    },
-  );
 </script>
 
 <div
@@ -210,31 +196,34 @@
           {timeEnd}
           openOnMount={justAdded}
           timeControlsReady={!!$timeRangeStateStore}
-          expressionMap={$filterMap}
+          expressionMap={$_filterMap}
           {removeDimensionFilter}
           {toggleDimensionFilterMode}
           {toggleDimensionValueSelections}
           {applyDimensionInListMode}
           {applyDimensionContainsMode}
-          {toggleFilterPin}
+          toggleFilterPin={builder ? toggleFilterPin : undefined}
         />
       {/each}
 
-      {#each measureFilters as [id, { name, label, measures, dimensionName, filter, dimensions: dimensionsForMeasure }] (id)}
-        {@const metricsViewNames = measures ? Array.from(measures.keys()) : []}
-        <div animate:flip={{ duration: 200 }}>
-          <MeasureFilter
-            allDimensions={dimensionsForMeasure || $allDimensions}
-            {name}
-            {label}
-            {dimensionName}
-            {filter}
-            onRemove={() =>
-              removeMeasureFilter(dimensionName, name, metricsViewNames)}
-            onApply={({ dimension, filter }) =>
-              setMeasureFilter(dimension, filter, metricsViewNames)}
-          />
-        </div>
+      {#each measureFilters as [id, filterData] (id)}
+        {@const metricsViewNames = filterData.measures
+          ? Array.from(filterData.measures.keys())
+          : []}
+
+        <MeasureFilter
+          {filterData}
+          allDimensions={filterData.dimensions || $allDimensions}
+          onRemove={() =>
+            removeMeasureFilter(
+              filterData.dimensionName,
+              filterData.name,
+              metricsViewNames,
+            )}
+          onApply={({ dimension, filter }) =>
+            setMeasureFilter(dimension, filter, metricsViewNames)}
+          toggleFilterPin={builder ? toggleFilterPin : undefined}
+        />
       {/each}
 
       {#if !readOnly}
