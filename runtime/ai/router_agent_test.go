@@ -22,28 +22,28 @@ func TestRouterAgent(t *testing.T) {
 	}{
 		{
 			prompt: "What country has the highest revenue?",
-			agent:  "analyst_agent",
+			agent:  ai.AnalystAgentName,
 		},
 		{
 			prompt: "Repeat the answer you gave to my last question",
-			agent:  "analyst_agent",
+			agent:  ai.AnalystAgentName,
 		},
 		{
 			prompt: "Create a model called 'sales_data' that selects all columns from the 'orders' table.",
-			agent:  "developer_agent",
+			agent:  ai.DeveloperAgentName,
 		},
 		{
 			prompt: "Do another one for the 'customers' table.",
-			agent:  "developer_agent",
+			agent:  ai.DeveloperAgentName,
 		},
 		{
 			prompt: "What is 2 + 2?",
-			agent:  "analyst_agent",
+			agent:  ai.AnalystAgentName,
 		},
 	}
 	for _, c := range cases {
 		var res *ai.RouterAgentResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
 			Prompt:      c.prompt,
 			SkipHandoff: true,
 		})

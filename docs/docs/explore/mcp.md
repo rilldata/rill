@@ -89,6 +89,21 @@ Custom connectors are only available in the paid plan of Claude Desktop. [Learn 
 5. Log in to Rill and authorize the connection
 6. Claude Desktop will receive an access token and your Rill app will be connected
 
+### Claude Code (Paid Plan)
+
+1. On terminal, run the following command to add mcp server with Claude Code:
+    ```bash
+    claude mcp add --transport http <rill-mcp-server-name> https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp 
+    ```
+    Replace `{org_name}` and `{project_name}` with your organization and project names. `<rill-mcp-server-name>` will be the name you assign to this MCP server.
+
+2. Open Claude Code using `claude` cmd.
+3. In Claude Code, use `/mcp` command to see the list of MCP servers.
+4. Choose the Rill MCP server you just added.
+5. Select `Authenticate` to start the OAuth flow in your browser.
+6. Log in to Rill and authorize the connection.
+7. Claude Code will receive an access token, and your Rill app will be connected.
+
 ### ChatGPT Web Interface (Paid Plan)
 
 :::info Paid ChatGPT Required
@@ -214,7 +229,7 @@ If you're still experiencing issues, check the logs in Claude Desktop. Click on 
 
 ## Adding AI instructions to your metrics view or project YAML
 
-LLMs give their best results when they have good context. For a conversation with Rill Data, this means things like knowing how to include Explore links in their responses. Rather than expecting the user to know how to do this, you can add `ai_instructions` to your model. This adds the context automatically for every conversation.
+LLMs give their best results when they have good context. For a conversation with Rill Data, this means things like clarifying project-specific terms, routing questions to the correct metrics view, or defining business rules. Rather than expecting the user to provide this context every time, you can add `ai_instructions` to your model. This adds the context automatically for every conversation.
 
 There are two places to add `ai_instructions`:
 

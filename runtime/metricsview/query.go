@@ -1,10 +1,12 @@
 package metricsview
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
@@ -204,22 +206,22 @@ func (tr *TimeRange) IsZero() bool {
 }
 
 type Expression struct {
-	Name      string     `mapstructure:"name"`
-	Value     any        `mapstructure:"val"`
-	Condition *Condition `mapstructure:"cond"`
-	Subquery  *Subquery  `mapstructure:"subquery"`
+	Name      string     `mapstructure:"name" json:"name"`
+	Value     any        `mapstructure:"val" json:"val"`
+	Condition *Condition `mapstructure:"cond" json:"cond"`
+	Subquery  *Subquery  `mapstructure:"subquery" json:"subquery"`
 }
 
 type Condition struct {
-	Operator    Operator      `mapstructure:"op"`
-	Expressions []*Expression `mapstructure:"exprs"`
+	Operator    Operator      `mapstructure:"op" json:"op"`
+	Expressions []*Expression `mapstructure:"exprs" json:"exprs"`
 }
 
 type Subquery struct {
-	Dimension Dimension   `mapstructure:"dimension"`
-	Measures  []Measure   `mapstructure:"measures"`
-	Where     *Expression `mapstructure:"where"`
-	Having    *Expression `mapstructure:"having"`
+	Dimension Dimension   `mapstructure:"dimension" json:"dimension"`
+	Measures  []Measure   `mapstructure:"measures" json:"measures"`
+	Where     *Expression `mapstructure:"where" json:"where"`
+	Having    *Expression `mapstructure:"having" json:"having"`
 }
 
 type Operator string
@@ -431,6 +433,32 @@ var timeDecodeFunc mapstructure.DecodeHookFunc = func(from reflect.Type, to refl
 		}, nil
 	}
 	return data, nil
+}
+
+// TypeSchemas returns a map of JSON schemas for this package's query types (currently Query and Expression).
+// This is designed to integrate with jsonschema.ForOptions to enable JSON schema inference on types that have sub-fields that use this package's types.
+func TypeSchemas() map[reflect.Type]*jsonschema.Schema {
+	// Query schema
+	queryType := reflect.TypeFor[Query]()
+	var querySchema *jsonschema.Schema
+	err := json.Unmarshal([]byte(QueryJSONSchema), &querySchema)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal schema: %w", err))
+	}
+
+	// Expression schema
+	expressionType := reflect.TypeFor[Expression]()
+	var expressionSchema *jsonschema.Schema
+	err = json.Unmarshal([]byte(ExpressionJSONSchema), &expressionSchema)
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal schema: %w", err))
+	}
+
+	// Return map
+	return map[reflect.Type]*jsonschema.Schema{
+		queryType:      querySchema,
+		expressionType: expressionSchema,
+	}
 }
 
 const QueryJSONSchema = `

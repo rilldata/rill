@@ -212,9 +212,17 @@ setup.describe("global setup", () => {
 
     // Expect to land on the project home page
     await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
-    await expect(
-      adminPage.getByText(`Welcome to ${RILL_PROJECT_DISPLAY_NAME}`),
-    ).toBeVisible();
+    // Temporary fix to wait for the project to be ready.
+    // TODO: add a refetch to the project API
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          return adminPage.getByLabel("Project title").textContent();
+        },
+        { intervals: Array(4).fill(30_000), timeout: 120_000 },
+      )
+      .toContain(`Welcome to ${RILL_PROJECT_DISPLAY_NAME}`);
 
     // Navigate to the dashboards page to validate the deployment
     await adminPage.getByRole("link", { name: "Dashboards" }).click();

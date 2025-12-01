@@ -1,8 +1,8 @@
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-import type {
-  CreateQueryOptions,
-  QueryFunction,
-  QueryClient,
+import {
+  type CreateQueryOptions,
+  type QueryFunction,
+  type QueryClient,
 } from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
