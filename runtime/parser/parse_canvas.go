@@ -28,14 +28,14 @@ type CanvasYAML struct {
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
-		Enable *bool `yaml:"enable"`
+		Enable *bool    `yaml:"enable"`
 		Pinned []string `yaml:"pinned"`
 	}
 	Defaults *struct {
-		TimeRange           string `yaml:"time_range"`
-		ComparisonMode      string `yaml:"comparison_mode"`
-		ComparisonDimension string `yaml:"comparison_dimension"`
-		Filters 		   map[string]string `yaml:"filters"`
+		TimeRange           string            `yaml:"time_range"`
+		ComparisonMode      string            `yaml:"comparison_mode"`
+		ComparisonDimension string            `yaml:"comparison_dimension"`
+		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
@@ -46,8 +46,8 @@ type CanvasYAML struct {
 			InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
-	Security *SecurityPolicyYAML `yaml:"security"`
-	FilterExpr map[string]string `yaml:"filter_expr"`
+	Security   *SecurityPolicyYAML `yaml:"security"`
+	FilterExpr map[string]string   `yaml:"filter_expr"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -229,9 +229,6 @@ func (p *Parser) parseCanvas(node *Node) error {
 		if tmp.Defaults.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
-
-		
-	
 
 		defaultPreset = &runtimev1.CanvasPreset{
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
