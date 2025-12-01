@@ -2,22 +2,30 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { generateModel } from "@rilldata/web-common/features/chat/core/actions.ts";
+  import { generateSampleData } from "@rilldata/web-common/features/chat/core/actions.ts";
+  import { createForm } from "svelte-forms-lib";
+  import * as yup from "yup";
 
   export let isInit: boolean;
   export let open = false;
 
   $: ({ instanceId } = $runtime);
-  let prompt = "";
 
-  async function initProjectWithSampleData() {
-    void generateModel(
-      isInit,
-      instanceId,
-      `Generate a model for the following user prompt: ${prompt}`,
-    );
-    open = false;
-  }
+  const { form, errors, handleSubmit } = createForm({
+    initialValues: {
+      prompt: "",
+    },
+    validationSchema: yup.object({
+      prompt: yup
+        .string()
+        .required("Please describe your data")
+        .min(10, "Please provide more detail (at least 10 characters)"),
+    }),
+    onSubmit: (values) => {
+      void generateSampleData(isInit, instanceId, values.prompt);
+      open = false;
+    },
+  });
 </script>
 
 <Dialog.Root bind:open>
@@ -37,15 +45,19 @@
         <div>What is the business context or domain of your data?</div>
       </Dialog.Description>
     </Dialog.Header>
-    <textarea
-      class="prompt-input"
-      bind:value={prompt}
-      class:empty={prompt.length === 0}
-      placeholder="e.g. sales transaction of an e-commerce store"
-    />
-    <Button type="primary" large onClick={initProjectWithSampleData}>
-      Generate
-    </Button>
+    <form on:submit|preventDefault={handleSubmit}>
+      <textarea
+        class="prompt-input"
+        bind:value={$form.prompt}
+        class:empty={$form.prompt.length === 0}
+        placeholder="e.g. sales transaction of an e-commerce store"
+      />
+      {#if $errors.prompt}
+        <div class="error">{$errors.prompt}</div>
+      {/if}
+
+      <Button type="primary" large onClick={handleSubmit}>Generate</Button>
+    </form>
   </Dialog.Content>
 </Dialog.Root>
 
@@ -59,5 +71,9 @@
   .prompt-input.empty::before {
     content: attr(data-placeholder);
     @apply text-gray-400 pointer-events-none absolute;
+  }
+
+  .error {
+    @apply text-xs text-red-600 font-normal;
   }
 </style>

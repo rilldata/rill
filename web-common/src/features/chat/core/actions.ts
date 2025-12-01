@@ -20,20 +20,23 @@ import { sourceImportedPath } from "@rilldata/web-common/features/sources/source
 
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
-export async function generateModel(
-  isInit: boolean,
+export async function generateSampleData(
+  initializeProject: boolean,
   instanceId: string,
-  prompt: string,
+  userPrompt: string,
 ) {
   try {
-    if (isInit) {
+    if (initializeProject) {
       overlay.set({
         title: `Hang tight! We're initialising an empty project.`,
       });
 
       const projectResetPromise = new Promise<void>((resolve, reject) => {
-        eventBus.once("project-reset", () => resolve());
-        setTimeout(reject, PROJECT_INIT_TIMEOUT_MS);
+        const unsub = eventBus.once("project-reset", () => resolve());
+        setTimeout(() => {
+          reject(new Error("Project init timed out"));
+          unsub();
+        }, PROJECT_INIT_TIMEOUT_MS);
       });
 
       await runtimeServiceUnpackEmpty(instanceId, {
@@ -59,16 +62,20 @@ export async function generateModel(
     const conversation = new Conversation(instanceId, NEW_CONVERSATION_ID, {
       agent: ToolName.DEVELOPER_AGENT,
     });
-    conversation.draftMessage.set(prompt);
+    const agentPrompt = `Generate a model for the following user prompt: ${userPrompt}`;
+    conversation.draftMessage.set(agentPrompt);
 
     let created = false;
-    const fileCreated = (msg: V1Message, messagePrefix: string) => {
-      const content = JSON.parse(msg.contentData!);
-      const path = content.path as string;
+    const fileCreated = (msg: V1Message) => {
+      let path = "";
+      try {
+        const content = JSON.parse(msg.contentData!);
+        path = content.path as string;
+      } catch {
+        // json parse errors shouldn't happen. ignore if it ever does.
+      }
       if (!path) return null;
-      eventBus.emit("notification", {
-        message: `${messagePrefix} ${path}`,
-      });
+
       created = true;
       overlay.set(null);
       void goto(`/files${path}`);
@@ -92,24 +99,20 @@ export async function generateModel(
         case ToolName.READ_FILE: {
           const callMsg = messages.get(msg.parentId!);
           if (!callMsg) break;
-          try {
-            fileCreated(callMsg, "Data already present at");
-          } catch {
-            // no-op
-          }
+
+          const path = fileCreated(callMsg);
+          eventBus.emit("notification", {
+            message: `Data already present at ${path}`,
+          });
           break;
         }
 
         case ToolName.WRITE_FILE: {
           const callMsg = messages.get(msg.parentId!);
           if (!callMsg) break;
-          try {
-            sourceImportedPath.set(
-              fileCreated(callMsg, "Data generated successfully at"),
-            );
-          } catch {
-            // no-op
-          }
+
+          const path = fileCreated(callMsg);
+          sourceImportedPath.set(path);
           break;
         }
       }
@@ -121,7 +124,7 @@ export async function generateModel(
 
     await conversation.sendMessage({}, { onMessage: handleMessage });
 
-    await waitUntil(() => get(conversation.isStreaming));
+    await waitUntil(() => !get(conversation.isStreaming));
 
     overlay.set(null);
     if (cancelled) return;
@@ -133,5 +136,9 @@ export async function generateModel(
     }
   } catch {
     overlay.set(null);
+    eventBus.emit("notification", {
+      message: "Failed to generate sample data. Please try again.",
+      type: "error",
+    });
   }
 }

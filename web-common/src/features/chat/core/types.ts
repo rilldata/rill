@@ -38,7 +38,6 @@ export const ToolName = {
   CREATE_CHART: "create_chart",
   QUERY_METRICS_VIEW: "query_metrics_view",
   LIST_FILES: "list_files",
-  READ_FILES: "read_file",
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
   DEVELOP_MODEL: "develop_model",

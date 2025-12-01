@@ -30,6 +30,8 @@ class EventBus {
       callback(payload);
       unsubscribe();
     });
+
+    return unsubscribe;
   }
 
   emit<Event extends T>(event: Event, payload: Events[Event]) {
