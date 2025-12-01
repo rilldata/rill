@@ -3,8 +3,8 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
     Tabs,
-    TabsList,
-    TabsTrigger,
+    UnderlineTabsList,
+    UnderlineTabsTrigger,
   } from "@rilldata/web-common/components/tabs";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import ManualSection from "./ManualSection.svelte";
@@ -35,21 +35,13 @@
       onValueChange={(value) => (activeTab = value)}
       class="mt-2 min-w-0"
     >
-      <TabsList class="gap-x-4 border-b-0">
-        <TabsTrigger
-          value="oauth"
-          class="text-sm pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-gray-900"
-        >
+      <UnderlineTabsList>
+        <UnderlineTabsTrigger value="oauth">
           OAuth
           <Tag color="gray" text="Recommended" height={18} class="ml-1.5" />
-        </TabsTrigger>
-        <TabsTrigger
-          value="manual"
-          class="text-sm pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-gray-900"
-        >
-          Manual
-        </TabsTrigger>
-      </TabsList>
+        </UnderlineTabsTrigger>
+        <UnderlineTabsTrigger value="manual">Manual</UnderlineTabsTrigger>
+      </UnderlineTabsList>
 
       <div class="pt-4 min-w-0 overflow-x-auto">
         {#if activeTab === "oauth"}
