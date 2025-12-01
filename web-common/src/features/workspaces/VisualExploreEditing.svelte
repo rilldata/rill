@@ -504,62 +504,61 @@
       }}
     />
 
-    <svelte:fragment slot="footer">
-      {#if viewingDashboard}
-        <footer
-          class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
+    <!-- <svelte:fragment slot="footer"> -->
+    {#if viewingDashboard}
+      <footer
+        class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
+      >
+        <p>
+          For more options,
+          <button on:click={switchView} class="text-primary-600 font-medium">
+            edit in YAML
+          </button>
+        </p>
+
+        <Button
+          class="group"
+          type="subtle"
+          gray={viewingDefaults}
+          large
+          onClick={() => {
+            if (viewingDefaults) {
+              updateProperties({}, ["defaults"]);
+            } else {
+              updateProperties({ defaults: newDefaults });
+            }
+          }}
         >
-          <p>
-            For more options,
-            <button on:click={switchView} class="text-primary-600 font-medium">
-              edit in YAML
-            </button>
-          </p>
+          {#if viewingDefaults}
+            <span class="flex gap-x-1">
+              <p class="group-hover:block hidden">Remove</p>
+              <p class="group-hover:hidden">Viewing</p>
+              <p>default state</p>
+            </span>
+          {:else}
+            Save dashboard state as default
+          {/if}
 
-          <Button
-            class="group"
-            type="subtle"
-            gray={viewingDefaults}
-            large
-            onClick={() => {
-              if (viewingDefaults) {
-                updateProperties({}, ["defaults"]);
-              } else {
-                updateProperties({ defaults: newDefaults });
-              }
-            }}
-          >
-            {#if viewingDefaults}
-              <span class="flex gap-x-1">
-                <p class="group-hover:block hidden">Remove</p>
-                <p class="group-hover:hidden">Viewing</p>
-                <p>default state</p>
-              </span>
-            {:else}
-              Save dashboard state as default
-            {/if}
-
-            <Tooltip distance={8} location="top">
-              <InfoIcon
-                size="14px"
-                strokeWidth={2}
-                class={viewingDefaults ? "group-hover:block hidden" : ""}
-              />
-              <TooltipContent slot="tooltip-content">
-                {#if viewingDefaults}
-                  Remove default settings for time range, comparison modes and
-                  displayed measures/dimensions
-                {:else}
-                  Overwrite default settings for time range, comparison modes
-                  and displayed measures/dimensions with the current dashboard
-                  view
-                {/if}
-              </TooltipContent>
-            </Tooltip>
-          </Button>
-        </footer>
-      {/if}
-    </svelte:fragment>
+          <Tooltip distance={8} location="top">
+            <InfoIcon
+              size="14px"
+              strokeWidth={2}
+              class={viewingDefaults ? "group-hover:block hidden" : ""}
+            />
+            <TooltipContent slot="tooltip-content">
+              {#if viewingDefaults}
+                Remove default settings for time range, comparison modes and
+                displayed measures/dimensions
+              {:else}
+                Overwrite default settings for time range, comparison modes and
+                displayed measures/dimensions with the current dashboard view
+              {/if}
+            </TooltipContent>
+          </Tooltip>
+        </Button>
+      </footer>
+    {/if}
+    <!-- </svelte:fragment> -->
   </SidebarWrapper>
 </Inspector>
 
