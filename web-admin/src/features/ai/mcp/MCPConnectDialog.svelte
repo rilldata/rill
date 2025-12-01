@@ -1,0 +1,66 @@
+<script lang="ts">
+  import { CANONICAL_ADMIN_API_URL } from "@rilldata/web-admin/client/http-client";
+  import * as Dialog from "@rilldata/web-common/components/dialog";
+  import {
+    Tabs,
+    TabsList,
+    TabsTrigger,
+  } from "@rilldata/web-common/components/tabs";
+  import ManualSection from "./ManualSection.svelte";
+  import OAuthSection from "./OAuthSection.svelte";
+
+  export let open = false;
+  export let organization: string;
+  export let project: string;
+  export let isPublic: boolean;
+
+  let activeTab = "oauth";
+
+  $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/orgs/${organization}/projects/${project}/runtime/mcp`;
+</script>
+
+<Dialog.Root bind:open>
+  <Dialog.Content class="max-w-3xl overflow-x-hidden">
+    <Dialog.Header>
+      <Dialog.Title>Connect your own AI client</Dialog.Title>
+      <Dialog.Description>
+        Ask questions of your Rill project using natural language in any AI
+        client that supports the Model Context Protocol (MCP).
+      </Dialog.Description>
+    </Dialog.Header>
+
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => (activeTab = value)}
+      class="mt-2 min-w-0"
+    >
+      <TabsList class="gap-x-4 border-b-0">
+        <TabsTrigger
+          value="oauth"
+          class="text-sm pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-gray-900"
+        >
+          OAuth
+          <span
+            class="ml-1.5 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+          >
+            Recommended
+          </span>
+        </TabsTrigger>
+        <TabsTrigger
+          value="manual"
+          class="text-sm pb-2 rounded-none border-b-2 border-transparent data-[state=active]:border-primary-500 data-[state=active]:text-gray-900"
+        >
+          Manual
+        </TabsTrigger>
+      </TabsList>
+
+      <div class="pt-4 min-w-0 overflow-x-auto">
+        {#if activeTab === "oauth"}
+          <OAuthSection {apiUrl} />
+        {:else}
+          <ManualSection {apiUrl} {isPublic} />
+        {/if}
+      </div>
+    </Tabs>
+  </Dialog.Content>
+</Dialog.Root>
