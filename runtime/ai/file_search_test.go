@@ -62,7 +62,7 @@ This project analyzes order data and customer information.
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Len(t, res.Matches, 2) // Should find both model files
-		
+
 		// Verify we found the expected files
 		foundPaths := make(map[string]bool)
 		for _, match := range res.Matches {
@@ -105,7 +105,7 @@ This project analyzes order data and customer information.
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Len(t, res.Matches, 2) // Should only find files in models directory
-		
+
 		for _, match := range res.Matches {
 			require.Contains(t, match.Path, "/models/")
 		}
@@ -119,7 +119,7 @@ This project analyzes order data and customer information.
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.NotEmpty(t, res.Matches)
-		
+
 		// Verify snippets contain context lines
 		for _, match := range res.Matches {
 			for _, snippet := range match.Snippets {
@@ -156,7 +156,7 @@ This project analyzes order data and customer information.
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.NotEmpty(t, res.Matches)
-		
+
 		// Verify that line numbers are present and valid
 		for _, match := range res.Matches {
 			require.NotEmpty(t, match.Lines)
@@ -166,4 +166,3 @@ This project analyzes order data and customer information.
 		}
 	})
 }
-

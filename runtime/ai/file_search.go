@@ -22,7 +22,7 @@ var _ Tool[*SearchFilesArgs, *SearchFilesResult] = (*SearchFiles)(nil)
 type SearchFilesArgs struct {
 	Pattern       string `json:"pattern" jsonschema:"The pattern to search for. Supports regular expressions."`
 	CaseSensitive bool   `json:"case_sensitive,omitempty" jsonschema:"Whether the search should be case-sensitive. Defaults to false."`
-	GlobPattern   string `json:"glob_pattern,omitempty" jsonschema:"Optional glob pattern to filter files (e.g., '**.yaml', '**models/**'). If not provided, searches all files."`
+	GlobPattern   string `json:"glob_pattern,omitempty" jsonschema:"Optional glob pattern to filter files (e.g., '**/*.sql', 'models/**/*'). If not provided, searches all files."`
 }
 
 type SearchFilesResult struct {

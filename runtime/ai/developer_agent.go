@@ -126,8 +126,8 @@ At a high level, you should follow these steps:
 2. Make a plan for how to implement the user's request. If the user asks to join, combine, or analyze data from multiple existing models, you should create a new model that references those existing models in SQL.
 3. Only if necessary, add a new model or update an existing model to reflect the user's request. Use "develop_model" with a prompt describing what to create or change.
 4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.
-   - To CREATE a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
-   - To EDIT an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
+   - To *create* a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
+   - To *edit* an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
 5. After successfully creating/updating the artifacts, provide a summary with links using the following format:
 {{ backticks }}
 ## Summary of Changes
@@ -167,10 +167,10 @@ Their request may relate to this file.
 
 {{ if .init_project }}
 The project is currently empty apart from a few boilerplate files (like rill.yaml).
-The user has asked you to help them set up their initial project based on the following instructions:
+You should help them set up their initial project based on their task description.
 {{ end }}
 
-{{ .prompt }}
+Task: {{ .prompt }}
 `, data)
 }
 
