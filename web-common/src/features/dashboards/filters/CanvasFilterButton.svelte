@@ -5,11 +5,14 @@
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getMeasureDisplayName } from "./getDisplayName";
+  import {
+    getDimensionDisplayName,
+    getMeasureDisplayName,
+  } from "./getDisplayName";
   import type {
     DimensionLookup,
     MeasureLookup,
-  } from "../../canvas/stores/filters";
+  } from "../../canvas/stores/filter-manager";
 
   export let allDimensions: DimensionLookup;
   export let filteredSimpleMeasures: MeasureLookup;
@@ -21,40 +24,32 @@
 
   let open = false;
 
-  $: consolidated = Array.from(allDimensions.entries()).map(
-    ([id, mvDimMap]) => {
-      return { ...Array.from(mvDimMap.values())[0], id: id };
-    },
-  );
+  $: dimensionEntries = Array.from(allDimensions.entries())
+    .map(([_, mvDimMap]) => {
+      const representativeDimension = Array.from(mvDimMap.values())[0];
+      const name = representativeDimension.name as string;
+      const label = getDimensionDisplayName(representativeDimension);
+      return { label, name };
+    })
+    .filter((entry) => !dimensionHasFilter(entry.name));
 
-  $: consolidatedMeasures = Array.from(filteredSimpleMeasures.entries()).map(
-    ([id, mvDimMap]) => {
-      return { ...Array.from(mvDimMap.values())[0], id: id };
-    },
-  );
+  $: measureEntries = Array.from(filteredSimpleMeasures.entries())
+    .map(([_, mvDimMap]) => {
+      const representativeMeasure = Array.from(mvDimMap.values())[0];
+      const name = representativeMeasure.name as string;
+      const label = getMeasureDisplayName(representativeMeasure);
+      return { label, name };
+    })
+    .filter((entry) => !measureHasFilter(entry.name));
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
-      items:
-        consolidated
-          ?.map((d) => ({
-            name: d.id,
-            // label: getDimensionDisplayName(d),
-            label: d.id,
-          }))
-          .filter((d) => !dimensionHasFilter(d.name)) ?? [],
+      items: dimensionEntries,
     },
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
-      items:
-        consolidatedMeasures
-          ?.map((m) => ({
-            name: m.id,
-            // label: getMeasureDisplayName(m),
-            label: m.id,
-          }))
-          .filter((m) => !measureHasFilter(m.name)) ?? [],
+      items: measureEntries,
     },
   ];
 </script>
