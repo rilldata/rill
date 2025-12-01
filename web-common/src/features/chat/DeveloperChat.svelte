@@ -2,11 +2,11 @@
   import { featureFlags } from "../feature-flags";
   import SidebarChat from "./layouts/sidebar/SidebarChat.svelte";
   import { chatOpen } from "./layouts/sidebar/sidebar-store";
-  import { dashboardChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+  import { developerChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
   const { developerChat } = featureFlags;
 </script>
 
 {#if $developerChat && $chatOpen}
-  <SidebarChat config={dashboardChatConfig} />
+  <SidebarChat config={developerChatConfig} />
 {/if}

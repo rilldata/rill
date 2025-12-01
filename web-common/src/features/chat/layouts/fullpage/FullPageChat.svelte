@@ -9,6 +9,7 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
+  import { dashboardChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
   $: ({ instanceId } = $runtime);
 
@@ -69,6 +70,7 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
+          config={dashboardChatConfig}
         />
       </div>
     </div>

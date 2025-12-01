@@ -2,8 +2,7 @@
   import { afterNavigate } from "$app/navigation";
   import type { EditorView } from "@codemirror/view";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
-  import { ToolName } from "@rilldata/web-common/features/chat/core/types";
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
@@ -116,12 +115,5 @@
       </WorkspaceContainer>
     {/if}
   </div>
-  <ExploreChat
-    agent={ToolName.DEVELOPER_AGENT}
-    additionalContext={{
-      developerAgentContext: {
-        currentFilePath: path,
-      },
-    }}
-  />
+  <DeveloperChat />
 </div>

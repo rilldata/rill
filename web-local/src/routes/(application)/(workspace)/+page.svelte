@@ -5,8 +5,7 @@
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
   import GenerateSampleData from "@rilldata/web-common/features/welcome/GenerateSampleData.svelte";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
-  import { ToolName } from "@rilldata/web-common/features/chat/core/types";
+  import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
 
   export let data: LayoutData;
 </script>
@@ -31,7 +30,7 @@
       </div>
     {/if}
   </div>
-  <ExploreChat agent={ToolName.DEVELOPER_AGENT} />
+  <DeveloperChat />
 </div>
 
 <style lang="postcss">

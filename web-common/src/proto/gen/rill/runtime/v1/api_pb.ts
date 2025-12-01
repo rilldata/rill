@@ -4422,9 +4422,6 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
   initProject = false;
 
   /**
-   * Optional path to the file that the user is currently viewing/editing.
-   * This helps the agent understand which file the user is referring to in their request.
-   *
    * @generated from field: string current_file_path = 2;
    */
   currentFilePath = "";

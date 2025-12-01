@@ -101,7 +101,7 @@
           </DashboardStateManager>
         </StateManagersProvider>
       </div>
-      <ExploreChat agent={ToolName.ANALYST_AGENT} />
+      <ExploreChat />
     </div>
   {/key}
 {/if}

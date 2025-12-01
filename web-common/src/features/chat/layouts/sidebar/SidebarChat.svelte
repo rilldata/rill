@@ -1,7 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
-  import type { RuntimeServiceCompleteBody } from "../../../../runtime-client";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -16,16 +15,16 @@
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
+  import { type ChatInputConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
-  export let agent: string | undefined = undefined;
-  export let additionalContext: Partial<RuntimeServiceCompleteBody> = {};
+  export let config: ChatInputConfig;
 
   $: ({ instanceId } = $runtime);
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
-    agent,
+    agent: config.agent,
   });
 
   let chatInputComponent: ChatInput;
@@ -81,8 +80,7 @@
       {conversationManager}
       bind:this={chatInputComponent}
       onSend={onMessageSend}
-      {agent}
-      {additionalContext}
+      {config}
     />
   </div>
 </div>
