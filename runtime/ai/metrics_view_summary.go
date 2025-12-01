@@ -8,6 +8,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const QueryMetricsViewSummaryName = "query_metrics_view_summary"
+
 type QueryMetricsViewSummary struct {
 	Runtime *runtime.Runtime
 }
@@ -24,7 +26,7 @@ type QueryMetricsViewSummaryResult struct {
 
 func (t *QueryMetricsViewSummary) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:  "query_metrics_view_summary",
+		Name:  QueryMetricsViewSummaryName,
 		Title: "Query Metrics View Summary",
 		Description: `
 			Retrieve summary statistics for a metrics view including:
@@ -32,12 +34,16 @@ func (t *QueryMetricsViewSummary) Spec() *mcp.Tool {
 			- Sample values and data types for each dimension
 			Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
 		`,
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Summarizing metrics...",
+			"openai/toolInvocation/invoked":  "Summarized metrics",
+		},
 	}
 }
 
-func (t *QueryMetricsViewSummary) CheckAccess(ctx context.Context) bool {
+func (t *QueryMetricsViewSummary) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadMetrics)
+	return s.Claims().Can(runtime.ReadMetrics), nil
 }
 
 func (t *QueryMetricsViewSummary) Handler(ctx context.Context, args *QueryMetricsViewSummaryArgs) (*QueryMetricsViewSummaryResult, error) {

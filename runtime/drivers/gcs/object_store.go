@@ -4,26 +4,88 @@ import (
 	"context"
 	"fmt"
 
+	"cloud.google.com/go/storage"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
+	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"gocloud.dev/blob/gcsblob"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
-// ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
-	url, err := c.parseBucketURL(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
+func (c *Connection) ListBuckets(ctx context.Context, pageSize uint32, pageToken string) ([]string, string, error) {
+	// If PathPrefixes is configured, return buckets derived from those prefixes.
+	// This is used when ListBuckets permissions may not be available, or when
+	// the user explicitly wants to restrict access to specific buckets.
+	if len(c.config.PathPrefixes) > 0 {
+		return drivers.ListBucketsFromPathPrefixes(c.config.PathPrefixes, pageSize, pageToken)
 	}
 
-	bucket, err := c.openBucket(ctx, url.Host)
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	unmarshalPageToken := ""
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &unmarshalPageToken); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	credentials, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
+	if err != nil {
+		return nil, "", err
+	}
+
+	client, err := storage.NewClient(ctx, option.WithCredentials(credentials))
+	if err != nil {
+		return nil, "", err
+	}
+	defer client.Close()
+
+	projectID, err := gcputil.ProjectID(credentials)
+	if err != nil {
+		return nil, "", err
+	}
+
+	pager := iterator.NewPager(client.Buckets(ctx, projectID), validPageSize, unmarshalPageToken)
+	buckets := make([]*storage.BucketAttrs, 0)
+	next, err := pager.NextPage(&buckets)
+	if err != nil {
+		return nil, "", err
+	}
+	names := make([]string, len(buckets))
+	for i := 0; i < len(buckets); i++ {
+		names[i] = buckets[i].Name
+	}
+
+	if next != "" {
+		next = pagination.MarshalPageToken(next)
+	}
+	return names, next, nil
+}
+
+// ListObjects implements drivers.ObjectStore.
+func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	blobBucket, err := c.openBucket(ctx, bucket)
+	if err != nil {
+		return nil, "", err
+	}
+	defer blobBucket.Close()
+	blobListfn := func(ctx context.Context, p string, d string, s uint32, t string) ([]drivers.ObjectStoreEntry, string, error) {
+		return blobBucket.ListObjects(ctx, p, d, s, t)
+	}
+	return drivers.ListObjects(ctx, c.config.PathPrefixes, blobListfn, bucket, path, delimiter, pageSize, pageToken)
+}
+
+// ListObjectsForGlob implements drivers.ObjectStore.
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+	blobBucket, err := c.openBucket(ctx, bucket)
 	if err != nil {
 		return nil, err
 	}
-	defer bucket.Close()
+	defer blobBucket.Close()
 
-	return bucket.ListObjects(ctx, url.Path)
+	return blobBucket.ListObjectsForGlob(ctx, glob)
 }
 
 // DownloadFiles returns a file iterator over objects stored in gcs.

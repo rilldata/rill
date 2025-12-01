@@ -382,6 +382,10 @@ export interface V1DeleteUsergroupResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteVirtualFileResponse {
+  [key: string]: unknown;
+}
+
 export interface V1DenyProjectAccessResponse {
   [key: string]: unknown;
 }
@@ -407,9 +411,13 @@ export type V1DeploymentStatus =
 export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
-  DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
-  DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_RUNNING: "DEPLOYMENT_STATUS_RUNNING",
+  DEPLOYMENT_STATUS_ERRORED: "DEPLOYMENT_STATUS_ERRORED",
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
+  DEPLOYMENT_STATUS_UPDATING: "DEPLOYMENT_STATUS_UPDATING",
+  DEPLOYMENT_STATUS_STOPPING: "DEPLOYMENT_STATUS_STOPPING",
+  DEPLOYMENT_STATUS_DELETING: "DEPLOYMENT_STATUS_DELETING",
+  DEPLOYMENT_STATUS_DELETED: "DEPLOYMENT_STATUS_DELETED",
 } as const;
 
 export interface V1EditAlertResponse {
@@ -654,6 +662,10 @@ export interface V1GetUserResponse {
 export interface V1GetUsergroupResponse {
   usergroup?: V1Usergroup;
   nextPageToken?: string;
+}
+
+export interface V1GetVirtualFileResponse {
+  file?: V1VirtualFile;
 }
 
 export type V1GithubPermission =
@@ -1188,6 +1200,11 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RevokeAllUserAuthTokensResponse {
+  /** Number of tokens revoked. */
+  tokensRevoked?: number;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   [key: string]: unknown;
 }
@@ -1395,10 +1412,15 @@ export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
 
+export type V1ToolMeta = { [key: string]: unknown };
+
 export interface V1Tool {
   name?: string;
+  displayName?: string;
   description?: string;
+  meta?: V1ToolMeta;
   inputSchema?: string;
+  outputSchema?: string;
 }
 
 export type V1ToolCallInput = { [key: string]: unknown };
@@ -1512,6 +1534,7 @@ export interface V1UserAuthToken {
   representingUserId?: string;
   prefix?: string;
   attributes?: V1UserAuthTokenAttributes;
+  refresh?: boolean;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -2033,6 +2056,42 @@ It is optional. If the call is made with a deployment access token, it defaults 
    * Page token for pagination.
    */
   pageToken?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetVirtualFileParams = {
+  /**
+ * The environment to get the virtual file for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to get.
+   */
+  path?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteVirtualFileParams = {
+  /**
+ * The environment to delete the virtual file from.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to delete.
+   */
+  path?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetReportMetaBody = {
@@ -2089,6 +2148,17 @@ export type AdminServiceListUserAuthTokensParams = {
    * Page token for pagination. If set, the first page of results will be returned.
    */
   pageToken?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+  /**
+   * Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+   */
+  refresh?: boolean;
+};
+
+export type AdminServiceRevokeAllUserAuthTokensParams = {
   /**
    * Flag for superusers to override normal access checks.
    */

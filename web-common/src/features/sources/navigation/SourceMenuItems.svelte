@@ -12,6 +12,7 @@
     useSourceFromYaml,
   } from "@rilldata/web-common/features/sources/selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -191,3 +192,5 @@
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
+
+<NavigationMenuSeparator />

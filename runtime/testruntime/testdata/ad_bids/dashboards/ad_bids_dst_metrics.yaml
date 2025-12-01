@@ -1,0 +1,45 @@
+model: ad_bids_dst
+display_name: Ad bids
+description:
+
+timeseries: timestamp
+smallest_time_grain: 
+
+dimensions:
+  - display_name: Publisher
+    property: publisher
+    description: ""
+  - display_name: Domain Label
+    property: domain
+    description: ""
+  - display_name: Id
+    property: id
+  - display_name: Numeric Dim
+    property: numeric_dim
+  - display_name: Device
+    property: device
+  - display_name: Ad Words
+    property: ad words
+  - display_name: Domain Parts
+    name: domain_parts
+    expression: "string_split(domain, '.')"
+    unnest: true
+  - display_name: TLD
+    name: tld
+    expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
+
+measures:
+  - display_name: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: humanize
+  - display_name: "Total volume"
+    expression: sum(volume)
+    description: ""
+    format_preset: humanize
+  - display_name: "Total impressions"
+    expression: sum(impressions)
+    format_preset: humanize
+  - display_name: "Total clicks"
+    expression: sum(clicks)
+    format_preset: humanize

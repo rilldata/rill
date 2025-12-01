@@ -2,6 +2,7 @@ package pagination
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 )
@@ -38,4 +39,30 @@ func ValidPageSize(pageSize uint32, defaultPageSize int) int {
 		return defaultPageSize
 	}
 	return int(pageSize)
+}
+
+// CollectAll invokes pageFn repeatedly to retrieve all pages and returns a
+// combined slice of results. Pagination stops when pageFn returns an empty
+// nextToken. The pageFn callback must have the form:
+//
+//	pageFn(ctx, pageSize, token) → (items, nextToken, error)
+func CollectAll[T any](ctx context.Context, pageFn func(context.Context, uint32, string) ([]T, string, error), pageSize uint32) ([]T, error) {
+	var token string
+	var out []T
+	for {
+		items, nextToken, err := pageFn(ctx, pageSize, token)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(items) > 0 {
+			out = append(out, items...)
+		}
+
+		if nextToken == "" {
+			break
+		}
+		token = nextToken
+	}
+	return out, nil
 }

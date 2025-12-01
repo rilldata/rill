@@ -44,14 +44,14 @@ type CatalogStore interface {
 	CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error)
 	InsertModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
-	UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error
-	UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error
+	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
+	UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
 	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 
-	FindAISessions(ctx context.Context, ownerID string) ([]*AISession, error)
+	FindAISessions(ctx context.Context, ownerID string, userAgentPattern string) ([]*AISession, error)
 	FindAISession(ctx context.Context, sessionID string) (*AISession, error)
 	InsertAISession(ctx context.Context, s *AISession) error
 	UpdateAISession(ctx context.Context, s *AISession) error

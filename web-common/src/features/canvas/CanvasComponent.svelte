@@ -3,9 +3,28 @@
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
+  import { onMount } from "svelte";
 </script>
 
 <script lang="ts">
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        component.visible.set(true);
+        observer.unobserve(container);
+      }
+    },
+    {
+      root: document.querySelector(".dashboard-theme-boundary"),
+      rootMargin: "120px",
+      threshold: 0,
+    },
+  );
+
+  onMount(() => {
+    observer.observe(container);
+  });
+
   export let component: BaseCanvasComponent;
   export let selected = false;
   export let ghost = false;
@@ -17,6 +36,7 @@
   export let onDelete: () => void = () => {};
 
   let open = false;
+  let container: HTMLElement;
 
   $: ({ id: componentName, type: renderer } = component);
 
@@ -24,6 +44,7 @@
 </script>
 
 <article
+  bind:this={container}
   role="presentation"
   id={componentName}
   class:selected
