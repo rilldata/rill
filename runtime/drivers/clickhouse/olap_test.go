@@ -854,18 +854,6 @@ func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPSt
 func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 
-	// Create test table
-	err := olap.Exec(ctx, &drivers.Statement{
-		Query: "CREATE TABLE test_attrs (id Int32, value String) ENGINE=Memory",
-	})
-	require.NoError(t, err)
-
-	// Insert test data
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query: "INSERT INTO test_attrs VALUES (1, 'test')",
-	})
-	require.NoError(t, err)
-
 	t.Run("SingleQueryAttribute", func(t *testing.T) {
 		stmt := &drivers.Statement{
 			Query: "SELECT getSetting('max_threads') as max_threads",

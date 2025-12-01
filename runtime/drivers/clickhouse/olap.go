@@ -68,6 +68,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
 	// Instead, we set the settings in the context.
+	// TODO: Fix query_settings_override not honoured here.
 	ctx = contextWithQueryID(ctx)
 	if c.supportSettings {
 		settings := map[string]any{
@@ -78,10 +79,6 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 			"join_use_nulls":            1,
 		}
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
-
-		if c.config.QuerySettingsOverride != "" {
-			stmt.Query += " SETTINGS " + c.config.QuerySettingsOverride
-		}
 	}
 
 	// We use the meta conn for dry run queries
@@ -134,22 +131,23 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	if c.supportSettings {
-		settings := map[string]any{
-			"cast_keep_nullable":        1,
-			"insert_distributed_sync":   1,
-			"prefer_global_in_and_join": 1,
-			"session_timezone":          "UTC",
-			"join_use_nulls":            1,
+		if c.config.QuerySettingsOverride != "" {
+			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
+		} else {
+			stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+			if c.config.QuerySettings != "" {
+				stmt.Query += ", " + c.config.QuerySettings
+			}
 		}
+
+		settings := make(map[string]any)
 		if len(stmt.QueryAttributes) > 0 {
 			for k, v := range stmt.QueryAttributes {
 				settings[k] = v
 			}
 		}
-		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
-
-		if c.config.QuerySettingsOverride != "" {
-			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
+		if len(settings) > 0 {
+			ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 		}
 	}
 
