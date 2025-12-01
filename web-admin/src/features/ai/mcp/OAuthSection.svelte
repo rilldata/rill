@@ -15,7 +15,6 @@
       href="https://docs.rilldata.com/explore/mcp#connect-using-oauth-recommended"
       target="_blank"
       rel="noopener"
-      class="text-primary-600 hover:text-primary-700 underline"
     >
       Learn more
     </a>

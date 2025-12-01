@@ -50,7 +50,6 @@
         href="https://docs.rilldata.com/explore/mcp#manual-configuration-alternative-method"
         target="_blank"
         rel="noopener"
-        class="text-primary-600 hover:text-primary-700 underline"
       >
         Learn more
       </a>
