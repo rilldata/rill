@@ -3440,7 +3440,7 @@ type projectMemberUserDTO struct {
 }
 
 func (dto *projectMemberUserDTO) asModel() (*database.ProjectMemberUser, error) {
-	err := dto.Resources.AssignTo(dto.ProjectMemberUser.Resources)
+	err := dto.Resources.AssignTo(&dto.ProjectMemberUser.Resources)
 	if err != nil {
 		return nil, err
 	}
@@ -3465,7 +3465,7 @@ type memberUsergroupDTO struct {
 }
 
 func (dto *memberUsergroupDTO) asModel() (*database.MemberUsergroup, error) {
-	err := dto.Resources.AssignTo(dto.MemberUsergroup.Resources)
+	err := dto.Resources.AssignTo(&dto.MemberUsergroup.Resources)
 	if err != nil {
 		return nil, err
 	}
