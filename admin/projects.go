@@ -95,6 +95,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		OwnerUserID: nil,
 		Environment: "prod",
 		Branch:      proj.ProdBranch,
+		Editable:    false,
 	})
 	if err != nil {
 		return nil, err
@@ -294,6 +295,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		OwnerUserID: nil,
 		Environment: "prod",
 		Branch:      proj.ProdBranch,
+		Editable:    false,
 	})
 	if err != nil {
 		return nil, err
