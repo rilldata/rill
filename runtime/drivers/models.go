@@ -77,9 +77,6 @@ type ModelExecuteOptions struct {
 	// PartitionKey is the unique key for the partition currently being run.
 	// It is empty when PartitionRun is false.
 	PartitionKey string
-	// PreviousResult is the result of a previous execution.
-	// For concurrent partition execution, it may not be the most recent previous result.
-	PreviousResult *ModelResult
 	// TempDir is a temporary directory for storing intermediate data.
 	TempDir string
 }

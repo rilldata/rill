@@ -162,7 +162,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 		args = append(args, opts.BeforeExecutedOn, opts.BeforeExecutedOn, opts.AfterKey)
 	}
 
-	qry.WriteString(" ORDER BY executed_on DESC, idx")
+	qry.WriteString(" ORDER BY executed_on DESC, idx DESC")
 
 	if opts.Limit != 0 {
 		qry.WriteString(" LIMIT ?")
@@ -335,6 +335,27 @@ func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, model
 	}
 
 	return nil
+}
+
+func (c *catalogStore) UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error {
+	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("UPDATE model_partitions SET executed_on=CURRENT_TIMESTAMP WHERE instance_id=? AND model_id=? AND key IN (")
+	args = append(args, c.instanceID, modelID)
+
+	for i, k := range keys {
+		if i == 0 {
+			qry.WriteString("?")
+		} else {
+			qry.WriteString(",?")
+		}
+		args = append(args, k)
+	}
+	qry.WriteString(")")
+
+	_, err := c.db.ExecContext(ctx, qry.String(), args...)
+	return err
 }
 
 func (c *catalogStore) DeleteModelPartitions(ctx context.Context, modelID string) error {

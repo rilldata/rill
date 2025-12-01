@@ -25,7 +25,7 @@ func TestOAuthProtectedResourceMetadata(t *testing.T) {
 	}
 
 	// Create test request
-	req := httptest.NewRequest(http.MethodGet, "/.well-known/oauth-protected-resource", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/.well-known/oauth-protected-resource", nil)
 	w := httptest.NewRecorder()
 
 	// Call handler
