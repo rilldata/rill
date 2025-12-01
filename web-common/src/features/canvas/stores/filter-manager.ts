@@ -239,6 +239,8 @@ export class FilterManager {
 
     const allMeasures = get(this._allMeasures);
 
+    console.log({ temporaryFilterKeys });
+
     allMeasures.forEach((measures, key) => {
       const filters: MeasureFilterItem[] = [];
 
@@ -509,7 +511,7 @@ export class FilterManager {
       filter: MeasureFilterEntry,
       metricsViewNames: string[],
     ) => {
-      this.checkTemporaryFilter(dimensionName, metricsViewNames);
+      this.checkTemporaryFilter(filter.measure, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
 
@@ -573,6 +575,7 @@ export class FilterManager {
     const key =
       metricsViewNames.sort().join("//") + "::" + measureOrDimensionName;
     const tempFilters = get(this._temporaryFilterKeys);
+
     const test = tempFilters.delete(key);
     if (test) {
       this._temporaryFilterKeys.set(tempFilters);
