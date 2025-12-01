@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
@@ -68,7 +69,6 @@ export function useCreateMetricsViewFromTableUIAction(
 
   // Return a function that can be called to create a dashboard from a table
   return async () => {
-    let isAICancelled = false;
     const abortController = new AbortController();
 
     overlay.set({
@@ -78,7 +78,6 @@ export function useCreateMetricsViewFromTableUIAction(
         props: {
           onCancel: () => {
             abortController.abort("AI generation cancelled by user");
-            isAICancelled = true;
           },
         },
       },
@@ -106,24 +105,15 @@ export function useCreateMetricsViewFromTableUIAction(
         abortController.signal,
       );
 
-      // Poll every second until the AI generation is complete or canceled
-      while (!isAICancelled) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        try {
-          await runtimeServiceGetFile(instanceId, {
-            path: newMetricsViewFilePath,
-          });
-
-          // success, AI is done
-          break;
-        } catch {
-          // 404 error, AI is not done
-        }
-      }
+      // Poll until file creation is complete or canceled
+      const fileCreated = await pollForFileCreation(
+        instanceId,
+        newMetricsViewFilePath,
+        abortController.signal,
+      );
 
       // If the user canceled the AI request, submit another request with `useAi=false`
-      if (isAICancelled) {
+      if (!fileCreated) {
         await runtimeServiceGenerateMetricsViewFile(instanceId, {
           connector: connector,
           database: database,
@@ -513,7 +503,6 @@ export async function createCanvasDashboardWithoutNavigation(
   metricsViewName: string,
 ): Promise<string | null> {
   const isAiEnabled = get(featureFlags.ai);
-  const isAICancelled = false;
   const abortController = new AbortController();
 
   // Get a unique name for the canvas dashboard
@@ -535,35 +524,29 @@ export async function createCanvasDashboardWithoutNavigation(
       abortController.signal,
     );
 
-    // Poll every 2 seconds until the generation is complete or canceled
-    while (!isAICancelled) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      try {
-        await runtimeServiceGetFile(instanceId, {
-          path: canvasFilePath,
-        });
-
-        // success, generation is done
-        return canvasFilePath;
-      } catch {
-        // 404 error, generation is not done
-      }
-    }
+    // Poll until file creation is complete or canceled
+    const fileCreated = await pollForFileCreation(
+      instanceId,
+      canvasFilePath,
+      abortController.signal,
+      1000,
+    );
 
     // If the user canceled the AI request, submit another request with `useAi=false`
-    if (isAICancelled) {
+    if (!fileCreated) {
       await runtimeServiceGenerateCanvasFile(instanceId, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
         useAi: false,
       });
-      return canvasFilePath;
     }
 
     return canvasFilePath;
   } catch (err) {
-    console.error("Failed to create Canvas dashboard:", err);
+    eventBus.emit("notification", {
+      message: "Failed to create Canvas dashboard for " + metricsViewName,
+      detail: err.response?.data?.message ?? err.message,
+    });
     return null;
   }
 }
@@ -587,7 +570,6 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
 
   // Return a function that can be called to create dashboards from a table
   return async () => {
-    let isAICancelled = false;
     const abortController = new AbortController();
 
     overlay.set({
@@ -597,7 +579,6 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         props: {
           onCancel: () => {
             abortController.abort("AI generation cancelled by user");
-            isAICancelled = true;
           },
         },
       },
@@ -628,24 +609,15 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         abortController.signal,
       );
 
-      // Poll every second until the AI generation is complete or canceled
-      while (!isAICancelled) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        try {
-          await runtimeServiceGetFile(instanceId, {
-            path: newMetricsViewFilePath,
-          });
-
-          // success, AI is done
-          break;
-        } catch {
-          // 404 error, AI is not done
-        }
-      }
+      // Poll until file creation is complete or canceled
+      const fileCreated = await pollForFileCreation(
+        instanceId,
+        newMetricsViewFilePath,
+        abortController.signal,
+      );
 
       // If the user canceled the AI request, submit another request with `useAi=false`
-      if (isAICancelled) {
+      if (!fileCreated) {
         await runtimeServiceGenerateMetricsViewFile(instanceId, {
           connector: connector,
           database: database,
@@ -676,7 +648,6 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
           props: {
             onCancel: () => {
               abortController.abort("Dashboard creation cancelled by user");
-              isAICancelled = true;
             },
           },
         },
@@ -696,7 +667,6 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
           props: {
             onCancel: () => {
               abortController.abort("Canvas creation cancelled by user");
-              isAICancelled = true;
             },
           },
         },
@@ -763,7 +733,6 @@ export async function createCanvasDashboardFromMetricsView(
   metricsViewName: string,
 ) {
   const isAiEnabled = get(featureFlags.ai);
-  let isAICancelled = false;
   const abortController = new AbortController();
 
   overlay.set({
@@ -773,7 +742,6 @@ export async function createCanvasDashboardFromMetricsView(
       props: {
         onCancel: () => {
           abortController.abort("Canvas dashboard creation cancelled by user");
-          isAICancelled = true;
         },
       },
     },
@@ -798,24 +766,15 @@ export async function createCanvasDashboardFromMetricsView(
       abortController.signal,
     );
 
-    // Poll every second until the generation is complete or canceled
-    while (!isAICancelled) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      try {
-        await runtimeServiceGetFile(instanceId, {
-          path: canvasFilePath,
-        });
-
-        // success, generation is done
-        break;
-      } catch {
-        // 404 error, generation is not done
-      }
-    }
+    // Poll until file creation is complete or canceled
+    const fileCreated = await pollForFileCreation(
+      instanceId,
+      canvasFilePath,
+      abortController.signal,
+    );
 
     // If the user canceled the AI request, submit another request with `useAi=false`
-    if (isAICancelled) {
+    if (!fileCreated) {
       await runtimeServiceGenerateCanvasFile(instanceId, {
         metricsViewName: metricsViewName,
         path: canvasFilePath,
@@ -823,7 +782,7 @@ export async function createCanvasDashboardFromMetricsView(
       });
     }
 
-    // Navigate to the Canvas preview page
+    // Navigate to the Canvas file
     await goto(`/files${canvasFilePath}`);
   } catch (err) {
     eventBus.emit("notification", {
