@@ -682,9 +682,12 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 
 	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
-		if typ, ok := types[d.Name]; ok {
-			d.DataType = typ
-		} // ignore dimensions that don't have a type in the schema
+		typ, ok := types[d.Name]
+		if !ok {
+			// ignore dimensions that don't have a type in the schema
+			continue
+		}
+		d.DataType = typ
 		switch d.DataType.GetCode() {
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
