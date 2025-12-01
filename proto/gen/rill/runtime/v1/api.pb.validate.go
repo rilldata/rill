@@ -10784,6 +10784,8 @@ func (m *DeveloperAgentContext) validate(all bool) error {
 
 	// no validation rules for InitProject
 
+	// no validation rules for CurrentFilePath
+
 	if len(errors) > 0 {
 		return DeveloperAgentContextMultiError(errors)
 	}

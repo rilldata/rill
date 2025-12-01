@@ -27,9 +27,25 @@ func connFromContext(ctx context.Context) *SQLConn {
 	return nil
 }
 
+type sessionCtxKey struct{}
+
+// contextWithSession adds a session ID to the context.
+func contextWithSessionID(ctx context.Context, sessionID string) context.Context {
+	return context.WithValue(ctx, sessionCtxKey{}, sessionID)
+}
+
+// sessionFromContext retrieves the session ID from the context.
+func sessionIDFromContext(ctx context.Context) string {
+	sessionID := ctx.Value(sessionCtxKey{})
+	if sessionID != nil {
+		return sessionID.(string)
+	}
+	return ""
+}
+
 // sessionAwareContext sets a session_id in context which is used to tie queries to a certain session.
-// This is used to use certain session aware features like temporary tables.
-func (c *Connection) sessionAwareContext(ctx context.Context) context.Context {
+// This also makes sure that successive queries in a clickhouse cluster are routed to the same node.
+func (c *Connection) sessionAwareContext(ctx context.Context, sessionID string) context.Context {
 	if c.opts.Protocol == clickhouse.Native {
 		// native protocol already has session context
 		return ctx
@@ -40,7 +56,7 @@ func (c *Connection) sessionAwareContext(ctx context.Context) context.Context {
 	} else {
 		settings = maps.Clone(c.opts.Settings)
 	}
-	settings["session_id"] = uuid.New().String()
+	settings["session_id"] = sessionID
 	return clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 }
 

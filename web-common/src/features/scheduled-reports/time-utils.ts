@@ -182,7 +182,7 @@ export function getExistingScheduleFormValues(
   return {
     frequency: getFrequencyFromCronExpression(schedule?.cron),
     dayOfWeek: getDayOfWeekFromCronExpression(schedule?.cron),
-    dayOfMonth: getDayOfMonthFromCronExpression(schedule?.cron),
+    dayOfMonth: 1, // We only support 1st day of month as of now.
     timeOfDay: getTimeOfDayFromCronExpression(schedule?.cron),
     timeZone: schedule?.timeZone ?? getLocalIANA(),
   };
