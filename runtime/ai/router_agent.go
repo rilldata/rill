@@ -7,9 +7,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const RouterAgentName = "router_agent"
@@ -23,10 +25,11 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt           string            `json:"prompt"`
-	Agent            string            `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	AnalystAgentArgs *AnalystAgentArgs `json:"analyst_agent_args,omitempty" jsonschema:"Arguments to pass to the analyst agent if the selected agent is analyst_agent."`
-	SkipHandoff      bool              `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
+	Prompt             string              `json:"prompt" jsonschema:"The user's prompt to be routed."`
+	Agent              string              `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	AnalystAgentArgs   *AnalystAgentArgs   `json:"analyst_agent_args,omitempty" jsonschema:"Optional arguments to pass to the analyst agent if the selected agent is analyst_agent."`
+	DeveloperAgentArgs *DeveloperAgentArgs `json:"developer_agent_args,omitempty" jsonschema:"Optional arguments to pass to the developer agent if the selected agent is developer_agent."`
+	SkipHandoff        bool                `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
 type RouterAgentResult struct {
@@ -35,31 +38,38 @@ type RouterAgentResult struct {
 }
 
 func (t *RouterAgent) Spec() *mcp.Tool {
+	// It can't automatically infer schemas that use the metricsview.Expression type (which is used in AnalystAgentArgs), so we manually do that here.
+	inputSchema, err := jsonschema.For[*RouterAgentArgs](&jsonschema.ForOptions{
+		TypeSchemas: metricsview.TypeSchemas(),
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to infer input schema: %w", err))
+	}
+
 	return &mcp.Tool{
-		Name:        "router_agent",
+		Name:        RouterAgentName,
 		Title:       "Router Agent",
 		Description: "Agent that routes messages to the appropriate handler agent.",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Routing prompt…",
-			"openai/toolInvocation/invoked":  "Prompt completed",
+			"openai/toolInvocation/invoking": "Routing prompt...",
+			"openai/toolInvocation/invoked":  "Routed prompt",
 		},
+		InputSchema: inputSchema,
 	}
 }
 
-func (t *RouterAgent) CheckAccess(ctx context.Context) bool {
-	s := GetSession(ctx)
-
+func (t *RouterAgent) CheckAccess(ctx context.Context) (bool, error) {
 	// Must be allowed to use AI features
+	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) {
-		return false
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
-
-	return true
+	return true, nil
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
@@ -78,8 +88,12 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		must(s.Tool(DeveloperAgentName)),
 	}
 	candidates = slices.DeleteFunc(candidates, func(agent *CompiledTool) bool {
-		return !agent.CheckAccess(ctx)
+		ok, _ := agent.CheckAccess(ctx)
+		return !ok
 	})
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 
 	// Find agent to invoke
 	switch {

@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "./setup/base";
+import { test } from "../setup/base";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { writeFileSync, unlinkSync, existsSync } from "fs";

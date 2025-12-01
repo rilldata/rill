@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
-import { test } from "./setup/base";
-import { ClickHouseTestContainer } from "./utils/clickhouse";
+import { test } from "../setup/base";
+import { ClickHouseTestContainer } from "../utils/clickhouse";
 
 test.describe("ClickHouse connector", () => {
   /*

@@ -43,6 +43,7 @@ import type {
   RuntimeServiceGetLogsParams,
   RuntimeServiceGetModelPartitionsParams,
   RuntimeServiceGetResourceParams,
+  RuntimeServiceListConversationsParams,
   RuntimeServiceListFilesParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,
@@ -88,6 +89,7 @@ import type {
   V1ListInstancesResponse,
   V1ListNotifierConnectorsResponse,
   V1ListResourcesResponse,
+  V1ListToolsResponse,
   V1PingResponse,
   V1PutFileResponse,
   V1QueryResolverResponse,
@@ -1178,19 +1180,25 @@ export const createRuntimeServiceCompleteStreaming = <
  */
 export const runtimeServiceListConversations = (
   instanceId: string,
+  params?: RuntimeServiceListConversationsParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListConversationsResponse>({
     url: `/v1/instances/${instanceId}/ai/conversations`,
     method: "GET",
+    params,
     signal,
   });
 };
 
 export const getRuntimeServiceListConversationsQueryKey = (
   instanceId: string,
+  params?: RuntimeServiceListConversationsParams,
 ) => {
-  return [`/v1/instances/${instanceId}/ai/conversations`] as const;
+  return [
+    `/v1/instances/${instanceId}/ai/conversations`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getRuntimeServiceListConversationsQueryOptions = <
@@ -1198,6 +1206,7 @@ export const getRuntimeServiceListConversationsQueryOptions = <
   TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
+  params?: RuntimeServiceListConversationsParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1212,11 +1221,12 @@ export const getRuntimeServiceListConversationsQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceListConversationsQueryKey(instanceId);
+    getRuntimeServiceListConversationsQueryKey(instanceId, params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceListConversations>>
-  > = ({ signal }) => runtimeServiceListConversations(instanceId, signal);
+  > = ({ signal }) =>
+    runtimeServiceListConversations(instanceId, params, signal);
 
   return {
     queryKey,
@@ -1244,6 +1254,7 @@ export function createRuntimeServiceListConversations<
   TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
+  params?: RuntimeServiceListConversationsParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1259,6 +1270,7 @@ export function createRuntimeServiceListConversations<
 } {
   const queryOptions = getRuntimeServiceListConversationsQueryOptions(
     instanceId,
+    params,
     options,
   );
 
@@ -1366,6 +1378,104 @@ export function createRuntimeServiceGetConversation<
   const queryOptions = getRuntimeServiceGetConversationQueryOptions(
     instanceId,
     conversationId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+Note that it covers all registered tools, but the current user may not have access to all of them.
+ */
+export const runtimeServiceListTools = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListToolsResponse>({
+    url: `/v1/instances/${instanceId}/ai/tools`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListToolsQueryKey = (instanceId: string) => {
+  return [`/v1/instances/${instanceId}/ai/tools`] as const;
+};
+
+export const getRuntimeServiceListToolsQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListTools>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListTools>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceListToolsQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListTools>>
+  > = ({ signal }) => runtimeServiceListTools(instanceId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListTools>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListToolsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListTools>>
+>;
+export type RuntimeServiceListToolsQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+Note that it covers all registered tools, but the current user may not have access to all of them.
+ */
+
+export function createRuntimeServiceListTools<
+  TData = Awaited<ReturnType<typeof runtimeServiceListTools>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListTools>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListToolsQueryOptions(
+    instanceId,
     options,
   );
 

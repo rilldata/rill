@@ -19,7 +19,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.24
+        go-version: 1.25
     - name: Go test with coverage
       run: |-
         # Build list of packages to include in coverage, excluding generated code in 'proto/gen'

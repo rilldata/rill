@@ -30,15 +30,15 @@ driver: duckdb
 
 	// Ask it to add a Shopify dashboard
 	var res *ai.RouterAgentResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt: "Develop a dashboard of Shopify orders",
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt: "Develop a dashboard of Shopify orders. Please proceed without asking clarifying questions.",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "developer_agent", res.Agent)
+	require.Equal(t, ai.DeveloperAgentName, res.Agent)
 
 	// Verify it created a Shopify orders model
 	msg, ok := s.LatestMessage(
-		ai.FilterByTool("develop_model"),
+		ai.FilterByTool(ai.DevelopModelName),
 		ai.FilterByType(ai.MessageTypeResult),
 	)
 	require.True(t, ok)

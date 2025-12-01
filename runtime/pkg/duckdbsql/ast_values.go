@@ -32,6 +32,7 @@ const (
 	astKeyLimit            string = "limit"
 	astKeyClass            string = "class"
 	astKeyCTE              string = "cte_map"
+	astKeyCTEName          string = "cte_name"
 	astKeyMap              string = "map"
 	astKeyQuery            string = "query"
 	astKeySubQuery         string = "subquery"

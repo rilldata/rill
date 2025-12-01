@@ -491,6 +491,8 @@ components:
             type: object
         v1DeleteUsergroupResponse:
             type: object
+        v1DeleteVirtualFileResponse:
+            type: object
         v1DenyProjectAccessResponse:
             type: object
         v1Deployment:
@@ -525,9 +527,13 @@ components:
             enum:
                 - DEPLOYMENT_STATUS_UNSPECIFIED
                 - DEPLOYMENT_STATUS_PENDING
-                - DEPLOYMENT_STATUS_OK
-                - DEPLOYMENT_STATUS_ERROR
+                - DEPLOYMENT_STATUS_RUNNING
+                - DEPLOYMENT_STATUS_ERRORED
                 - DEPLOYMENT_STATUS_STOPPED
+                - DEPLOYMENT_STATUS_UPDATING
+                - DEPLOYMENT_STATUS_STOPPING
+                - DEPLOYMENT_STATUS_DELETING
+                - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
             type: object
@@ -852,6 +858,11 @@ components:
                     type: string
                 usergroup:
                     $ref: '#/components/schemas/v1Usergroup'
+            type: object
+        v1GetVirtualFileResponse:
+            properties:
+                file:
+                    $ref: '#/components/schemas/v1VirtualFile'
             type: object
         v1GithubPermission:
             default: GITHUB_PERMISSION_UNSPECIFIED
@@ -1708,6 +1719,13 @@ components:
                 type:
                     type: string
             type: object
+        v1RevokeAllUserAuthTokensResponse:
+            properties:
+                tokensRevoked:
+                    description: Number of tokens revoked.
+                    format: int32
+                    type: integer
+            type: object
         v1RevokeCurrentAuthTokenResponse:
             type: object
         v1RevokeMagicAuthTokenResponse:
@@ -1979,11 +1997,20 @@ components:
                 description:
                     title: A human-readable description of the tool
                     type: string
+                displayName:
+                    title: The display name of the tool
+                    type: string
                 inputSchema:
                     title: JSON Schema defining the expected parameters for the tool (as JSON string)
                     type: string
+                meta:
+                    title: Metadata about the tool
+                    type: object
                 name:
                     title: The name of the tool
+                    type: string
+                outputSchema:
+                    title: JSON Schema defining the expected output of the tool (as JSON string)
                     type: string
             title: Tool represents a tool definition for AI usage
             type: object
@@ -2129,6 +2156,8 @@ components:
                     type: string
                 prefix:
                     type: string
+                refresh:
+                    type: boolean
                 representingUserId:
                     type: string
                 usedOn:
@@ -2209,7 +2238,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.75.2
+    version: v0.76.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
@@ -2867,6 +2896,7 @@ paths:
     /v1/projects/{projectId}/alerts/meta: {}
     /v1/projects/{projectId}/repo/meta: {}
     /v1/projects/{projectId}/repo/virtual: {}
+    /v1/projects/{projectId}/repo/virtual/file: {}
     /v1/projects/{projectId}/reports/meta: {}
     /v1/roles: {}
     /v1/services/tokens/{tokenId}: {}

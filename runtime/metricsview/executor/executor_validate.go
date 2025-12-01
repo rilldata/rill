@@ -165,8 +165,20 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	if e.metricsView.TimeDimension != "" {
 		// Find the smallest possible grain
 		var smallestPossibleGrain runtimev1.TimeGrain
+		var typeCode runtimev1.Type_Code
 		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
-		if ok && col.Type.Code != runtimev1.Type_CODE_DATE {
+		if ok {
+			typeCode = col.Type.Code
+		} else {
+			// Time dimension not found in the column list, find it in the defined dimension list
+			for _, d := range mv.Dimensions {
+				if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+					typeCode = d.DataType.Code
+					break
+				}
+			}
+		}
+		if typeCode != runtimev1.Type_CODE_DATE {
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
 		} else {
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
