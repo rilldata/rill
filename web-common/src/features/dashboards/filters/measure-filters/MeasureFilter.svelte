@@ -30,7 +30,7 @@
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 
-  let open = !filter;
+  let open = !filterData.filter;
 </script>
 
 <Popover.Root

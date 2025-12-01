@@ -25,20 +25,20 @@
   let open = false;
 
   $: dimensionEntries = Array.from(allDimensions.entries())
-    .map(([_, mvDimMap]) => {
+    .map(([id, mvDimMap]) => {
       const representativeDimension = Array.from(mvDimMap.values())[0];
-      const name = representativeDimension.name as string;
+
       const label = getDimensionDisplayName(representativeDimension);
-      return { label, name };
+      return { label, name: id };
     })
     .filter((entry) => !dimensionHasFilter(entry.name));
 
   $: measureEntries = Array.from(filteredSimpleMeasures.entries())
-    .map(([_, mvDimMap]) => {
+    .map(([id, mvDimMap]) => {
       const representativeMeasure = Array.from(mvDimMap.values())[0];
-      const name = representativeMeasure.name as string;
+
       const label = getMeasureDisplayName(representativeMeasure);
-      return { label, name };
+      return { label, name: id };
     })
     .filter((entry) => !measureHasFilter(entry.name));
 

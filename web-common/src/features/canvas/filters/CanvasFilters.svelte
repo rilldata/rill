@@ -33,6 +33,7 @@
         _allMeasures,
         _activeUIFilters,
         _filterMap,
+        _temporaryFilterKeys,
         actions: {
           toggleDimensionValueSelections,
           toggleDimensionFilterMode,
@@ -63,6 +64,7 @@
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
 
   $: activeTimeZone = $selectedTimezone;
+  $: temporaryFilterKeys = $_temporaryFilterKeys;
 
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
@@ -194,7 +196,7 @@
           {filterData}
           {timeStart}
           {timeEnd}
-          openOnMount={justAdded}
+          openOnMount={temporaryFilterKeys.has(id)}
           timeControlsReady={!!$timeRangeStateStore}
           expressionMap={$_filterMap}
           {removeDimensionFilter}
