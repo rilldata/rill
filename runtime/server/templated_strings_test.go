@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestResolveTemplatedString_MetricsSQL(t *testing.T) {
@@ -49,36 +50,9 @@ func TestResolveTemplatedString_MetricsSQL(t *testing.T) {
 			},
 		},
 	}
-	additionalTimeRange := &runtimev1.Expression{
-		Expression: &runtimev1.Expression_Cond{
-			Cond: &runtimev1.Condition{
-				Op: runtimev1.Operation_OPERATION_AND,
-				Exprs: []*runtimev1.Expression{
-					{
-						Expression: &runtimev1.Expression_Cond{
-							Cond: &runtimev1.Condition{
-								Op: runtimev1.Operation_OPERATION_GTE,
-								Exprs: []*runtimev1.Expression{
-									{Expression: &runtimev1.Expression_Ident{Ident: "order_date"}},
-									{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("2024-01-01")}},
-								},
-							},
-						},
-					},
-					{
-						Expression: &runtimev1.Expression_Cond{
-							Cond: &runtimev1.Condition{
-								Op: runtimev1.Operation_OPERATION_LT,
-								Exprs: []*runtimev1.Expression{
-									{Expression: &runtimev1.Expression_Ident{Ident: "order_date"}},
-									{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("2024-02-01")}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+	additionalTimeRange := &runtimev1.TimeRange{
+		Start: &timestamppb.Timestamp{Seconds: 1704067200}, // 2024-01-01
+		End:   &timestamppb.Timestamp{Seconds: 1706745600}, // 2024-02-01
 	}
 
 	files := map[string]string{
@@ -131,7 +105,7 @@ measures:
 		body                string
 		useFormatTokens     bool
 		additionalWhere     map[string]*runtimev1.Expression
-		additionalTimeRange *runtimev1.Expression
+		additionalTimeRange *runtimev1.TimeRange
 		expected            []string
 		expectEqual         bool
 	}{
@@ -179,7 +153,7 @@ Orders: {{ metrics_sql "SELECT total_orders FROM mv1" }}`,
 			additionalWhere: map[string]*runtimev1.Expression{
 				"mv1": filterMv1,
 			},
-			additionalTimeRange: additionalTimeRange,
+			additionalTimeRange: nil,
 			expected:            []string{"Revenue in US and UK from 2024-01-01 to 2024-02-01: 300"},
 			expectEqual:         true,
 		},

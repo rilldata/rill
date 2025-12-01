@@ -6529,9 +6529,9 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
   /**
    * Additional time range to add to metrics SQL queries
    *
-   * @generated from field: rill.runtime.v1.Expression additional_time_range = 5;
+   * @generated from field: rill.runtime.v1.TimeRange additional_time_range = 5;
    */
-  additionalTimeRange?: Expression;
+  additionalTimeRange?: TimeRange;
 
   constructor(data?: PartialMessage<ResolveTemplatedStringRequest>) {
     super();
@@ -6545,7 +6545,7 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
     { no: 2, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "use_format_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "additional_where_by_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
-    { no: 5, name: "additional_time_range", kind: "message", T: Expression },
+    { no: 5, name: "additional_time_range", kind: "message", T: TimeRange },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveTemplatedStringRequest {

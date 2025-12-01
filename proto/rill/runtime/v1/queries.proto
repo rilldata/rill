@@ -1310,7 +1310,7 @@ message ResolveTemplatedStringRequest {
   // Additional filters to inject into metrics SQL queries by metrics view name
   map<string, Expression> additional_where_by_metrics_view = 4;
   // Additional time range to add to metrics SQL queries
-  Expression additional_time_range = 5;
+  TimeRange additional_time_range = 5;
 }
 
 message ResolveTemplatedStringResponse {

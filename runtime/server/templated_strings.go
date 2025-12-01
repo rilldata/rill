@@ -76,7 +76,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 }
 
 // executeMetricsSQL executes a metrics SQL query and returns a single scalar value
-func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, sql string, additionalWhereByMetricsView map[string]*runtimev1.Expression, additionalTimeRange *runtimev1.Expression) (value any, metricsViewName, fieldName string, err error) {
+func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, sql string, additionalWhereByMetricsView map[string]*runtimev1.Expression, additionalTimeRange *runtimev1.TimeRange) (value any, metricsViewName, fieldName string, err error) {
 	ctrl, err := s.runtime.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, "", "", err
@@ -116,26 +116,12 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 		Claims: claims,
 	}
 
-	var combinedWhere *metricsview.Expression
 	if additionalWhere, ok := additionalWhereByMetricsView[metricsViewName]; ok && additionalWhere != nil {
-		combinedWhere = metricsview.NewExpressionFromProto(additionalWhere)
+		opts.ResolverProperties["additional_where"] = metricsview.NewExpressionFromProto(additionalWhere)
 	}
 
 	if additionalTimeRange != nil {
-		timeExpr := metricsview.NewExpressionFromProto(additionalTimeRange)
-		if combinedWhere != nil {
-			combinedWhere = &metricsview.Expression{
-				Condition: &metricsview.Condition{
-					Operator:    metricsview.OperatorAnd,
-					Expressions: []*metricsview.Expression{combinedWhere, timeExpr},
-				},
-			}
-		} else {
-			combinedWhere = timeExpr
-		}
-	}
-	if combinedWhere != nil {
-		opts.ResolverProperties["additional_where"] = combinedWhere
+		opts.ResolverProperties["additional_time_range"] = metricsview.NewTimeRangeFromProto(additionalTimeRange)
 	}
 
 	resolveRes, err := s.runtime.Resolve(ctx, opts)
