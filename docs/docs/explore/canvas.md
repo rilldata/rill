@@ -62,10 +62,10 @@ Similar to our [Explore dashboards](/explore/dashboard-101), Canvas Dashboards a
 <br />
 
 
-If you want to further drill into a component's data, select the top right button to take you to the equivalent explore dashboard.
+If you want to further drill into a component's data, select the top right button to take you to the equivalent Explore dashboard.
 
 :::tip no button?
 
-If no explore dashboard exists, and/or you don't have [permissions to view it](/build/dashboards/customization#define-dashboard-access), no button will appear and is as designed.
+If no Explore dashboard exists, and/or you don't have [permissions to view it](/build/dashboards/customization#define-dashboard-access), no button will appear and is as designed.
 
 :::
