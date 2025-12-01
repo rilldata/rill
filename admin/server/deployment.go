@@ -309,17 +309,35 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	var slots int
 	switch req.Environment {
 	case "prod":
+		if req.Branch != "" {
+			return nil, status.Error(codes.InvalidArgument, "branch cannot be specified for prod deployments")
+		}
+		if req.Editable {
+			return nil, status.Error(codes.InvalidArgument, "editable cannot be set for prod deployments")
+		}
 		branch = ""
 		slots = proj.ProdSlots
 	case "dev":
-		// Generate a random branch name for dev deployments
-		b := make([]byte, 8)
-		_, err := rand.Read(b)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+		if req.Branch != "" {
+			branch = req.Branch
+			// only one preview deployment per branch allowed
+			depl, err := s.admin.FindDevDeployment(ctx, proj.ID, branch)
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
+			if depl != nil {
+				return nil, status.Error(codes.InvalidArgument, "another deployment for the specified branch already exists")
+			}
+		} else {
+			// Generate a random branch name for dev deployments
+			b := make([]byte, 8)
+			_, err := rand.Read(b)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
+			slots = proj.DevSlots
 		}
-		branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
-		slots = proj.DevSlots
 	default:
 		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod' or 'dev'")
 	}
@@ -356,6 +374,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		OwnerUserID: ownerUserID,
 		Environment: req.Environment,
 		Branch:      branch,
+		Editable:    req.Editable,
 	})
 	if err != nil {
 		return nil, err

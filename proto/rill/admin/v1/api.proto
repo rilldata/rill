@@ -1247,6 +1247,13 @@ message CreateDeploymentRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3 [(validate.rules).string.min_len = 1];
+  // Branch to deploy from. 
+  // Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+  // Optional for `dev` deployments.
+  string branch = 4;
+  // Whether the deployment is editable and the edited changes are persisted back to the git repo.
+  // Can't be set for `prod` deployments.
+  bool editable = 5;
 }
 
 message CreateDeploymentResponse {
@@ -3035,6 +3042,7 @@ message Deployment {
   string owner_user_id = 12;
   string environment = 11;
   string branch = 4;
+  bool editable = 13;
   string runtime_host = 5;
   string runtime_instance_id = 6;
   DeploymentStatus status = 7;

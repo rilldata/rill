@@ -29,6 +29,20 @@ type CreateDeploymentOptions struct {
 	OwnerUserID *string
 	Environment string
 	Branch      string
+	Editable    bool
+}
+
+func (s *Service) FindDevDeployment(ctx context.Context, projectID, branch string) (*database.Deployment, error) {
+	depls, err := s.DB.FindDeploymentsForProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range depls {
+		if d.Branch == branch && d.Environment == "dev" {
+			return d, nil
+		}
+	}
+	return nil, database.ErrNotFound
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -38,6 +52,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		OwnerUserID:       opts.OwnerUserID,
 		Environment:       opts.Environment,
 		Branch:            opts.Branch,
+		Editable:          opts.Editable,
 		RuntimeHost:       "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeInstanceID: "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeAudience:   "",                               // Will be populated after provisioning in startDeploymentInner

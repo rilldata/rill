@@ -91,7 +91,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		LastUpdatedOn: timestamppb.New(proj.UpdatedOn),
 		GitUrl:        gitURL,
 		GitSubpath:    proj.Subpath,
-		GitBranch:     proj.ProdBranch,
+		GitBranch:     depl.Branch,
 		GitEditBranch: editBranch,
 	}, nil
 }

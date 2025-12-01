@@ -502,6 +502,8 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                editable:
+                    type: boolean
                 environment:
                     type: string
                 id:
@@ -4076,6 +4078,14 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                branch:
+                                    description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+                                    type: string
+                                editable:
+                                    description: |-
+                                        Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                                        Can't be set for `prod` deployments.
+                                    type: boolean
                                 environment:
                                     type: string
                             type: object

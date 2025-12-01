@@ -668,9 +668,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()) RETURNING *`,
-		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
+		INSERT INTO deployments (project_id, owner_user_id, environment, branch, editable, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now()) RETURNING *`,
+		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.Editable, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
