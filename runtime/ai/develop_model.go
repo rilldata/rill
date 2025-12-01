@@ -33,7 +33,7 @@ func (t *DevelopModel) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        DevelopModelName,
 		Title:       "Develop model",
-		Description: "Agent that develops a single Rill model.",
+		Description: "Developer agent that creates or edits a single Rill model.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Developing model...",
 			"openai/toolInvocation/invoked":  "Developed model",

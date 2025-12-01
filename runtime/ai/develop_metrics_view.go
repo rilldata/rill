@@ -32,8 +32,8 @@ var _ Tool[*DevelopMetricsViewArgs, *DevelopMetricsViewResult] = (*DevelopMetric
 
 type DevelopMetricsViewArgs struct {
 	Path   string `json:"path" jsonschema:"The path of a .yaml file in which to create or update a Rill metrics view definition."`
-	Model  string `json:"model" jsonschema:"The name of the Rill model which the metrics view should build on."`
-	Prompt string `json:"prompt" jsonschema:"Optional description of changes to make to an existing metrics view. If provided, an agent will be used to edit the file."`
+	Prompt string `json:"prompt" jsonschema:"Optional description of changes to make if editing an existing metrics view."`
+	Model  string `json:"model" jsonschema:"Optional Rill model to derive from if creating a new metrics view."`
 }
 
 type DevelopMetricsViewResult struct {
@@ -44,7 +44,7 @@ func (t *DevelopMetricsView) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        DevelopMetricsViewName,
 		Title:       "Develop Metrics View",
-		Description: "Agent that creates a new Rill metrics view from a model (when no prompt is provided), or edits an existing metrics view (when a prompt is provided).",
+		Description: "Developer agent that creates or edits a single Rill metrics view.",
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Developing metrics view...",
 			"openai/toolInvocation/invoked":  "Developed metrics view",
@@ -198,7 +198,8 @@ func (t *DevelopMetricsView) systemPrompt(ctx context.Context) (string, error) {
 
 <concepts>
 Rill is a "business intelligence as code" platform where all resources are defined using YAML files in a project directory.
-For the purposes of your work, you will only deal with **metrics view** resources, which define the dimensions, measures, and time dimensions for analyzing data from a model or table.
+For the purposes of your work, you will only deal with **metrics view** resources, which are YAML files that define dimensions and measures (SQL expressions and related metadata) for grouping and aggregating data in an underlying model (database table).
+A metrics view in Rill is equivalent to a "cube", "semantic layer", or "metrics layer" in other BI platforms.
 In Rill, when you write a file, the platform discovers and "reconciles" it immediately. For a metrics view, reconcile validates the metrics view definition and makes it available for querying.
 </concepts>
 
@@ -209,25 +210,27 @@ At a high level, you should follow these steps:
 3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
 
 Additional instructions:
-- Metrics views consist of dimensions (for grouping/filtering), measures (aggregations like SUM, AVG, COUNT), and a time dimension (for time-series analysis).
-- All dimensions should reference columns from the underlying model or table using the "column:" field.
-- Measures use SQL expressions with aggregation functions (COUNT, SUM, AVG, MIN, MAX).
-- The "timeseries:" field specifies which column to use as the time dimension.
-- Use clear, descriptive names and display_name values.
-- Common format presets for measures: "humanize", "percentage", "currency_usd".
+- Metrics views consist of a time dimension (for time-series analysis), categorical dimensions (for grouping/filtering), and measures (aggregations like SUM, AVG, COUNT, etc.).
+- All dimensions should reference columns from the underlying model (database table) using the "column:" field.
+- Measures should have SQL expressions that use aggregation functions (like COUNT, SUM, AVG, MIN, MAX).
+- The "timeseries:" field specifies the time dimension, which should be a column in the underlying table with TIMESTAMP or DATE type.
+- Populate the "name:" field with a clear, descriptive, unique identifier in snake_case.
+- Populate the "display_name:" and "description:" fields with human-friendly text, but only if it adds meaningful, additional value from the "name:" field (if left empty, "display_name:" defaults to a humanized version of "name:").
+- Common format presets for measures are "humanize", "percentage", "currency_usd".
 </process>
 
 <example>
 A metrics view definition in Rill is a YAML file. Here is an example Rill metrics view:
 {{ backticks }}
+# /metrics/sales_metrics.yaml
 type: metrics_view
 display_name: Sales Metrics
+
 model: sales_data
 timeseries: order_date
 
 dimensions:
   - name: country
-    display_name: Country
     column: country
   
   - name: product_category
@@ -235,20 +238,19 @@ dimensions:
     column: product_category
 
 measures:
-  - name: total_revenue
+  - name: order_count
+    expression: COUNT(*)
+    format_preset: humanize
+
+  - name: revenue
     display_name: Total Revenue
     expression: SUM(revenue)
     format_preset: currency_usd
   
-  - name: average_order_value
+  - name: avg_order_value
     display_name: Average Order Value
     expression: AVG(order_value)
     format_preset: currency_usd
-  
-  - name: order_count
-    display_name: Order Count
-    expression: COUNT(*)
-    format_preset: humanize
 {{ backticks }}
 </example>
 
@@ -276,21 +278,25 @@ func (t *DevelopMetricsView) userPrompt(ctx context.Context, args *DevelopMetric
 		return "", err
 	}
 	defer release()
-	dialect := olap.Dialect().String()
-	if dialect == "" {
-		dialect = "DuckDB"
+	dialect := olap.Dialect()
+	if dialect == drivers.DialectUnspecified {
+		dialect = drivers.DialectDuckDB
 	}
-	data["dialect"] = dialect
+	data["dialect"] = dialect.String()
 
 	// Generate the user prompt
 	return executeTemplate(`
+{{ if .prompt }}
 Task: {{ .prompt }}
+{{ end }}
 
 Output path: {{ .path }}
 
-Model: {{ .model }}
+{{ if .model }}
+Use model: {{ .model }}
+{{ end }}
 
-SQL dialect: {{ .dialect }}
+SQL dialect for expressions: {{ .dialect }}
 `, data)
 }
 
