@@ -26,6 +26,8 @@
   import { useCanvas } from "../canvas/selector";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import LeaderboardIcon from "../canvas/icons/LeaderboardIcon.svelte";
+  import CheckerFull from "@rilldata/web-common/components/icons/CheckerFull.svelte";
+  import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -43,8 +45,14 @@
   } = fileArtifact);
 
   $: ({
-    canvasEntity: { _rows, setDefaultFilters },
+    canvasEntity: {
+      _rows,
+      setDefaultFilters,
+      filterManager: { _viewingDefaults },
+    },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: viewingDefaults = $_viewingDefaults;
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -102,11 +110,17 @@
           label="Preview"
           type="secondary"
           preload={false}
+          disabled={viewingDefaults}
           compact
           onClick={setDefaultFilters}
         >
-          <LeaderboardIcon size="16px" color="currentColor" />
-          <div class="flex gap-x-1 items-center">Save as default</div>
+          {#if viewingDefaults}
+            <CheckCircleNew size="16px" color="currentColor" />
+            <div class="flex gap-x-1 items-center">Saved as default</div>
+          {:else}
+            <LeaderboardIcon size="16px" color="currentColor" />
+            <div class="flex gap-x-1 items-center">Save as default</div>
+          {/if}
         </Button>
         <PreviewButton
           href="/canvas/{canvasName}"

@@ -95,6 +95,8 @@ export class FilterManager {
   metricsViewNameMeasureMap: Map<string, Map<string, MetricsViewSpecMeasure>> =
     new Map();
 
+  _viewingDefaults: Readable<boolean>;
+
   constructor(
     metricsViews: Record<string, V1MetricsView | undefined>,
     pinnedFilters?: string[],
@@ -124,6 +126,33 @@ export class FilterManager {
           parsedFilters,
           temporaryFilterKeys,
           pinnedFilters,
+        );
+      },
+    );
+
+    this._viewingDefaults = derived(
+      [this._activeUIFilters, this._defaultUIFilters],
+      ([active, defaults]) => {
+        const activeDimensionKeys = Array.from(
+          active.dimensionFilters.keys(),
+        ).sort();
+        const defaultDimensionKeys = Array.from(
+          defaults.dimensionFilters.keys(),
+        ).sort();
+
+        const activeMeasureKeys = Array.from(
+          active.measureFilters.keys(),
+        ).sort();
+        const defaultMeasureKeys = Array.from(
+          defaults.measureFilters.keys(),
+        ).sort();
+
+        return (
+          JSON.stringify(activeDimensionKeys) ===
+            JSON.stringify(defaultDimensionKeys) &&
+          JSON.stringify(activeMeasureKeys) ===
+            JSON.stringify(defaultMeasureKeys) &&
+          !active.hasClearableFilters
         );
       },
     );

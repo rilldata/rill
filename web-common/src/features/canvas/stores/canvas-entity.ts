@@ -69,7 +69,6 @@ export class CanvasEntity {
   timeControls: TimeControls;
 
   // Dimension and measure filter state
-
   filterManager: FilterManager;
 
   // Metrics view selectors
@@ -158,7 +157,6 @@ export class CanvasEntity {
       undefined,
       this.name,
     );
-    // this.filters = new Filters(this.metricsView, searchParamsStore);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
@@ -177,6 +175,9 @@ export class CanvasEntity {
             spec.data.canvas?.defaultPreset?.filterExpr ?? {},
           );
         }
+      } else {
+        // need to find a better way to initialize this in certain contextx - bgh
+        this.filterManager = new FilterManager({}, [], {});
       }
 
       if (!filePath) {
