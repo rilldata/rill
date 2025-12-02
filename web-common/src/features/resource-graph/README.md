@@ -147,7 +147,6 @@ The graph uses localStorage to persist:
 - **Node positions**: Stable layouts across renders
 - **Group assignments**: Which resources belong to which graphs
 - **Group labels**: Display names for graph groups
-- **Resource refs**: Dependency relationships
 
 #### Cache Versioning
 
@@ -186,8 +185,7 @@ window.__RESOURCE_GRAPH_CACHE.getHealthStats();
 //   positions: 45,
 //   assignments: 30,
 //   labels: 5,
-//   refs: 60,
-//   totalEntries: 140,
+//   totalEntries: 80,
 //   estimatedSizeBytes: 102400
 // }
 

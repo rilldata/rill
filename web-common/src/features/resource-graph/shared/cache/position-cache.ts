@@ -26,14 +26,12 @@ export type PersistedCache = {
   positions: Record<string, { x: number; y: number }>;
   assignments: Record<string, string>; // resourceId -> groupId
   labels: Record<string, string>; // groupId -> label
-  refs: Record<string, string[]>; // dependentId -> sourceIds[]
 };
 
 const DEFAULT_CACHE: PersistedCache = {
   positions: {},
   assignments: {},
   labels: {},
-  refs: {},
 };
 
 /**
@@ -57,7 +55,6 @@ export class GraphCacheManager {
   private positions = new Map<string, { x: number; y: number }>();
   private assignments = new Map<string, string>();
   private labels = new Map<string, string>();
-  private refs = new Map<string, string[]>();
 
   // Track if we have pending changes to persist
   private dirty = false;
@@ -117,7 +114,6 @@ export class GraphCacheManager {
       positions: Object.keys(cache.positions).length,
       assignments: Object.keys(cache.assignments).length,
       labels: Object.keys(cache.labels).length,
-      refs: Object.keys(cache.refs).length,
     });
 
     // Update positions
@@ -136,12 +132,6 @@ export class GraphCacheManager {
     this.labels.clear();
     for (const [k, v] of Object.entries(cache.labels)) {
       this.labels.set(k, v);
-    }
-
-    // Update refs
-    this.refs.clear();
-    for (const [k, v] of Object.entries(cache.refs)) {
-      this.refs.set(k, v);
     }
 
     this.dirty = false;
@@ -195,7 +185,6 @@ export class GraphCacheManager {
         positions: Object.fromEntries(this.positions),
         assignments: Object.fromEntries(this.assignments),
         labels: Object.fromEntries(this.labels),
-        refs: Object.fromEntries(this.refs),
       };
 
       // Check size before writing
@@ -258,7 +247,7 @@ export class GraphCacheManager {
 
   /**
    * Prune oldest entries based on LRU strategy.
-   * Removes oldest positions first, then assignments, then refs.
+   * Removes oldest positions first, then assignments.
    * Labels are kept as they're small and important for recovery.
    */
   private pruneOldestEntries(): void {
@@ -273,10 +262,7 @@ export class GraphCacheManager {
     debugLog("Cache", "Pruning oldest cache entries");
 
     const initialSize =
-      this.positions.size +
-      this.assignments.size +
-      this.refs.size +
-      this.labels.size;
+      this.positions.size + this.assignments.size + this.labels.size;
 
     // Prune 25% of positions (oldest positions are least likely to be reused)
     const positionsToRemove = Math.ceil(this.positions.size * 0.25);
@@ -298,20 +284,8 @@ export class GraphCacheManager {
       }
     }
 
-    // Prune 25% of refs if still needed
-    if (positionsToRemove < 10) {
-      const refsToRemove = Math.ceil(this.refs.size * 0.25);
-      const refKeys = Array.from(this.refs.keys());
-      for (let i = 0; i < refsToRemove && i < refKeys.length; i++) {
-        this.refs.delete(refKeys[i]);
-      }
-    }
-
     const finalSize =
-      this.positions.size +
-      this.assignments.size +
-      this.refs.size +
-      this.labels.size;
+      this.positions.size + this.assignments.size + this.labels.size;
 
     debugLog(
       "Cache",
@@ -379,24 +353,6 @@ export class GraphCacheManager {
     this.markDirty();
   }
 
-  // Refs accessors
-  getRefs(dependentId: string): string[] | undefined {
-    return this.refs.get(dependentId);
-  }
-
-  setRefs(dependentId: string, sourceIds: string[]): void {
-    this.refs.set(dependentId, sourceIds);
-    this.markDirty();
-  }
-
-  addRef(dependentId: string, sourceId: string): void {
-    const existing = this.refs.get(dependentId) ?? [];
-    if (!existing.includes(sourceId)) {
-      this.refs.set(dependentId, [...existing, sourceId]);
-      this.markDirty();
-    }
-  }
-
   /**
    * Get cache health statistics for debugging.
    */
@@ -407,7 +363,6 @@ export class GraphCacheManager {
     positions: number;
     assignments: number;
     labels: number;
-    refs: number;
     totalEntries: number;
     estimatedSizeBytes: number;
   } {
@@ -415,7 +370,6 @@ export class GraphCacheManager {
       positions: Object.fromEntries(this.positions),
       assignments: Object.fromEntries(this.assignments),
       labels: Object.fromEntries(this.labels),
-      refs: Object.fromEntries(this.refs),
     };
 
     return {
@@ -425,12 +379,8 @@ export class GraphCacheManager {
       positions: this.positions.size,
       assignments: this.assignments.size,
       labels: this.labels.size,
-      refs: this.refs.size,
       totalEntries:
-        this.positions.size +
-        this.assignments.size +
-        this.labels.size +
-        this.refs.size,
+        this.positions.size + this.assignments.size + this.labels.size,
       estimatedSizeBytes: this.estimateCacheSize(data),
     };
   }
@@ -446,7 +396,6 @@ export class GraphCacheManager {
     this.positions.clear();
     this.assignments.clear();
     this.labels.clear();
-    this.refs.clear();
 
     // Reset quota flag to allow writes again
     this.quotaExceeded = false;
@@ -463,7 +412,6 @@ export class GraphCacheManager {
       positions: Object.fromEntries(this.positions),
       assignments: Object.fromEntries(this.assignments),
       labels: Object.fromEntries(this.labels),
-      refs: Object.fromEntries(this.refs),
     };
   }
 
@@ -476,7 +424,6 @@ export class GraphCacheManager {
     this.positions.clear();
     this.assignments.clear();
     this.labels.clear();
-    this.refs.clear();
 
     for (const [k, v] of Object.entries(data.positions)) {
       this.positions.set(k, v);
@@ -486,9 +433,6 @@ export class GraphCacheManager {
     }
     for (const [k, v] of Object.entries(data.labels)) {
       this.labels.set(k, v);
-    }
-    for (const [k, v] of Object.entries(data.refs)) {
-      this.refs.set(k, v);
     }
 
     this.markDirty();

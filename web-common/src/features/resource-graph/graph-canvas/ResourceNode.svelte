@@ -166,7 +166,7 @@
     isVisible={selected && !hasError && !!artifact?.path}
     position={Position.Top}
     align="center"
-    offset={2}
+    offset={4}
   >
     <button
       class="toolbar-open-btn"
@@ -174,7 +174,8 @@
       title={`Open ${artifact?.path}`}
       on:click|stopPropagation={openFile}
     >
-      <ExternalLink size="10px" />
+      <ExternalLink size="12px" />
+      <span>Open</span>
     </button>
   </NodeToolbar>
 
@@ -309,10 +310,9 @@
   }
 
   .toolbar-open-btn {
-    @apply h-6 w-6 rounded-sm border flex items-center justify-center shadow-sm ring-1 ring-black/5 transition-colors;
-    background-color: var(--surface, #ffffff);
-    color: var(--muted-foreground, #6b7280);
-    border-color: color-mix(in srgb, var(--border, #e5e7eb) 80%, transparent);
+    @apply h-7 px-3 rounded-[2px] border flex items-center justify-center gap-x-1.5 shadow-sm transition-colors;
+    @apply text-xs font-medium;
+    @apply bg-primary-600 text-white border-primary-600;
   }
 
   .toolbar-open-btn:focus {
@@ -320,23 +320,22 @@
   }
 
   .toolbar-open-btn:focus-visible {
-    @apply ring-2 ring-blue-400/60;
+    @apply ring-2 ring-primary-400/60 ring-offset-1;
   }
 
   .toolbar-open-btn:hover {
-    background-color: color-mix(
-      in srgb,
-      var(--surface, #ffffff) 65%,
-      var(--muted, #f3f4f6)
-    );
-    color: var(--foreground, #111827);
-    border-color: color-mix(in srgb, var(--border, #e5e7eb) 40%, transparent);
+    @apply bg-primary-700 border-primary-700;
+  }
+
+  .toolbar-open-btn:active {
+    @apply bg-primary-800 border-primary-800;
   }
 
   .toolbar-open-btn :global(svg) {
     width: 12px;
     height: 12px;
     display: block;
+    flex-shrink: 0;
   }
 
   .toolbar-open-btn :global(svg path) {

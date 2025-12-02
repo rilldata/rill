@@ -249,8 +249,6 @@ function buildDirectedAdjacency(resources: Map<string, V1Resource>) {
     for (const ref of resource.meta?.refs ?? []) {
       const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
-      // Record refs for persistence even if source is not currently present
-      graphCache.addRef(dependentId, sourceId);
       if (!resources.has(sourceId)) continue;
       if (!incoming.has(dependentId)) incoming.set(dependentId, new Set());
       if (!outgoing.has(sourceId)) outgoing.set(sourceId, new Set());
@@ -511,6 +509,7 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
 export function partitionResourcesBySeeds(
   resources: V1Resource[],
   seeds: (string | V1ResourceName)[],
+  filterKind?: ResourceKind,
 ): ResourceGraphGrouping[] {
   const resourceMap = buildVisibleResourceMap(resources);
   const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
@@ -531,6 +530,17 @@ export function partitionResourcesBySeeds(
     assigned,
   );
   updateGroupingCaches(groups);
+
+  // If filtering by a specific kind, remove groups that don't contain any resource of that kind
+  // Use coerceResourceKind to handle "defined-as-source" models correctly
+  if (filterKind) {
+    return groups.filter((group) =>
+      group.resources.some((r) => {
+        const kind = coerceResourceKind(r);
+        return kind === filterKind;
+      }),
+    );
+  }
 
   return groups;
 }
@@ -587,7 +597,6 @@ export function partitionResourcesByMetrics(
     for (const ref of res.meta?.refs ?? []) {
       const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
-      graphCache.addRef(dependentId, sourceId);
       if (!resourceMap.has(sourceId)) continue;
       if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
       if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());

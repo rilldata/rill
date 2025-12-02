@@ -117,20 +117,8 @@
         },
       },
       {
-        id: "metrics",
-        position: { x: pad + step * 1, y },
-        type: "summary-count",
-        selected: isActive("metrics"),
-        data: {
-          label: "Metrics",
-          count: metrics,
-          kind: ResourceKind.MetricsView,
-          active: isActive("metrics"),
-        },
-      },
-      {
         id: "models",
-        position: { x: pad + step * 2, y },
+        position: { x: pad + step * 1, y },
         type: "summary-count",
         selected: isActive("models"),
         data: {
@@ -138,6 +126,18 @@
           count: models,
           kind: ResourceKind.Model,
           active: isActive("models"),
+        },
+      },
+      {
+        id: "metrics",
+        position: { x: pad + step * 2, y },
+        type: "summary-count",
+        selected: isActive("metrics"),
+        data: {
+          label: "Metrics",
+          count: metrics,
+          kind: ResourceKind.MetricsView,
+          active: isActive("metrics"),
         },
       },
       {
@@ -162,9 +162,9 @@
       targetHandle: "in",
     } as const;
     return [
-      { id: "e1", source: "sources", target: "metrics", ...shared },
-      { id: "e2", source: "metrics", target: "models", ...shared },
-      { id: "e3", source: "models", target: "dashboards", ...shared },
+      { id: "e1", source: "sources", target: "models", ...shared },
+      { id: "e2", source: "models", target: "metrics", ...shared },
+      { id: "e3", source: "metrics", target: "dashboards", ...shared },
     ] satisfies Edge[];
   }
 

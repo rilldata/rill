@@ -75,6 +75,20 @@
     coerceResourceKind,
   );
 
+  // Determine if we're filtering by a specific kind (e.g., ?kind=metrics)
+  // This is used to filter out groups that don't contain any resource of the filtered kind
+  $: filterKind = (function (): ResourceKind | undefined {
+    const rawSeeds = seeds ?? [];
+    // Only apply kind filter if all seeds are kind tokens (e.g., ["metrics"] or ["sources"])
+    if (rawSeeds.length === 0) return undefined;
+    for (const raw of rawSeeds) {
+      const kind = isKindToken((raw || "").toLowerCase());
+      if (!kind) return undefined; // Mixed seeds, no single kind filter
+    }
+    // All seeds are kind tokens - return the first one's kind
+    return isKindToken((rawSeeds[0] || "").toLowerCase());
+  })();
+
   // Determine which overview node should be highlighted based on current seeds
   $: overviewActiveToken = (function ():
     | "metrics"
@@ -102,7 +116,11 @@
 
   $: resourceGroups =
     normalizedSeeds && normalizedSeeds.length
-      ? partitionResourcesBySeeds(normalizedResources, normalizedSeeds)
+      ? partitionResourcesBySeeds(
+          normalizedResources,
+          normalizedSeeds,
+          filterKind,
+        )
       : partitionResourcesByMetrics(normalizedResources);
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
@@ -376,7 +394,7 @@
   class="graph-root"
   style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
 >
-  {#if showSummary}
+  {#if showSummary && currentExpandedId === null}
     <slot
       name="summary"
       sources={sourcesCount}
@@ -526,14 +544,11 @@
   }
 
   .grid-item.expanded {
-    @apply col-span-full;
-    height: var(--graph-expanded-height-mobile, 700px);
+    @apply col-span-full h-full;
   }
 
-  @media (min-width: 768px) {
-    .grid-item.expanded {
-      height: var(--graph-expanded-height-desktop, 860px);
-    }
+  .resource-graph-grid.has-expanded {
+    @apply flex-1;
   }
 
   .state {
