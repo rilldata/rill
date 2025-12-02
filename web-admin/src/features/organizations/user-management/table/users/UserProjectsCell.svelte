@@ -9,6 +9,7 @@
 
   export let organization: string;
   export let userId: string;
+  export let projectCount: number;
 
   let isDropdownOpen = false;
   $: hasUserId = !!userId;
@@ -18,7 +19,7 @@
     { userId },
     {
       query: {
-        enabled: !!userId,
+        enabled: !!userId && isDropdownOpen,
       },
     },
   );
@@ -40,7 +41,7 @@
         : 'hover:bg-slate-100'} px-2 py-1"
     >
       <span class="capitalize">
-        {projects.length} Project{projects.length > 1 ? "s" : ""}
+        {projectCount} Project{projectCount > 1 ? "s" : ""}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
