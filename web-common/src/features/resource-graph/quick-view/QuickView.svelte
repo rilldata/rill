@@ -8,16 +8,12 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 
-  const quickViewState = resourceGraphQuickViewState;
-
-  let overlayOpen = false;
-
-  $: currentState = $quickViewState;
+  $: currentState = $resourceGraphQuickViewState;
   $: anchorResource = currentState.anchorResource ?? undefined;
 
   $: ({ instanceId } = $runtime);
 
-  $: shouldFetchResources = overlayOpen && !!instanceId;
+  $: shouldFetchResources = currentState.open && !!instanceId;
 
   $: resourcesQuery = createRuntimeServiceListResources(
     instanceId,
@@ -39,20 +35,15 @@
     ? "Failed to load project resources."
     : null;
 
-  $: if (currentState.open && anchorResource && !overlayOpen) {
-    overlayOpen = true;
-  } else if (!currentState.open && overlayOpen) {
-    overlayOpen = false;
-  }
-
-  $: if (!overlayOpen && currentState.open) {
+  function handleClose() {
     closeResourceGraphQuickView();
   }
 </script>
 
 {#if anchorResource}
   <ResourceGraphOverlay
-    bind:open={overlayOpen}
+    open={currentState.open}
+    onClose={handleClose}
     {anchorResource}
     resources={allResources}
     isLoading={resourcesLoading}

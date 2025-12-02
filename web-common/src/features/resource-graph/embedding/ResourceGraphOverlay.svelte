@@ -8,6 +8,7 @@
   import { tick } from "svelte";
 
   export let open = false;
+  export let onClose: (() => void) | undefined = undefined;
   export let anchorResource: V1Resource | undefined;
   export let resources: V1Resource[] = [];
   export let isLoading = false;
@@ -55,7 +56,12 @@
   $: emptyReason = !anchorSeed ? "unsupported" : null;
 
   function closeOverlay() {
-    open = false;
+    if (onClose) {
+      onClose();
+    } else {
+      // Fallback for bind:open usage
+      open = false;
+    }
   }
 
   function handleDialogClick(event: MouseEvent) {
