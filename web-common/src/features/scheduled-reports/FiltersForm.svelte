@@ -26,7 +26,7 @@
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
-  import { flip } from "svelte/animate";
+
   import { fly } from "svelte/transition";
 
   export let filters: Filters;
@@ -40,7 +40,7 @@
   $: ({
     whereFilter,
     allDimensionFilterItems,
-    isFilterExcludeMode,
+
     dimensionHasFilter,
     allMeasureFilterItems,
     measureHasFilter,
@@ -295,54 +295,48 @@
           No filters selected
         </div>
       {:else}
-        {#each $allDimensionFilterItems as { name, label, mode, selectedValues, inputText, metricsViewNames } (name)}
+        {#each $allDimensionFilterItems as filterData (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
           {@const dimensionName = dimension?.name || dimension?.column}
-          <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName && metricsViewNames?.length}
-              <DimensionFilter
-                {metricsViewNames}
-                {name}
-                {label}
-                {mode}
-                {selectedValues}
-                {inputText}
-                {timeStart}
-                {timeEnd}
-                {side}
-                timeControlsReady
-                excludeMode={$isFilterExcludeMode(name)}
-                whereFilter={$whereFilter}
-                onRemove={() => removeDimensionFilter(name)}
-                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                onSelect={(value) =>
-                  toggleMultipleDimensionValueSelections(name, [value], true)}
-                onMultiSelect={(values) =>
-                  toggleMultipleDimensionValueSelections(name, values, true)}
-                onApplyInList={(values) =>
-                  applyDimensionInListMode(name, values)}
-                onApplyContainsMode={(searchText) =>
-                  applyDimensionContainsMode(name, searchText)}
-              />
-            {/if}
-          </div>
-        {/each}
-        {#each $allMeasureFilterItems as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
-          <div animate:flip={{ duration: 200 }}>
-            <MeasureFilter
-              allDimensions={dimensionsForMeasure || $allDimensions}
-              {name}
-              {label}
-              {dimensionName}
-              {filter}
-              {side}
-              onRemove={() => removeMeasureFilter(dimensionName, name)}
-              onApply={({ dimension, oldDimension, filter }) =>
-                handleMeasureFilterApply(dimension, name, oldDimension, filter)}
+
+          {#if dimensionName}
+            <DimensionFilter
+              expressionMap={new Map([[metricsViewName, $whereFilter]])}
+              {filterData}
+              {readOnly}
+              {timeStart}
+              {timeEnd}
+              timeControlsReady
+              removeDimensionFilter={async (name) =>
+                removeDimensionFilter(name)}
+              toggleDimensionFilterMode={async (name) => {
+                toggleDimensionFilterMode(name);
+              }}
+              toggleDimensionValueSelections={async (name, values) =>
+                toggleMultipleDimensionValueSelections(name, values, true)}
+              applyDimensionInListMode={async (name, values) =>
+                applyDimensionInListMode(name, values)}
+              applyDimensionContainsMode={async (name, searchText) =>
+                applyDimensionContainsMode(name, searchText)}
             />
-          </div>
+          {/if}
+        {/each}
+        {#each $allMeasureFilterItems as filterData (filterData.name)}
+          <MeasureFilter
+            {filterData}
+            allDimensions={$allDimensions}
+            onRemove={() =>
+              removeMeasureFilter(filterData.dimensionName, filterData.name)}
+            onApply={({ dimension, oldDimension, filter }) =>
+              handleMeasureFilterApply(
+                dimension,
+                filterData.name,
+                oldDimension,
+                filter,
+              )}
+          />
         {/each}
       {/if}
 
