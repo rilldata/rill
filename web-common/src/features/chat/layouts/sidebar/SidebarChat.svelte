@@ -15,9 +15,9 @@
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
-  import { type ChatInputConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+  import { type ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
-  export let config: ChatInputConfig;
+  export let config: ChatConfig;
 
   $: ({ instanceId } = $runtime);
 
@@ -75,7 +75,7 @@
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <Messages {conversationManager} layout="sidebar" {agent} />
+    <Messages {conversationManager} layout="sidebar" {config} />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}

@@ -6,10 +6,11 @@
   import { MessageType, ToolName } from "../types";
   import Error from "./Error.svelte";
   import Message from "./Message.svelte";
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
-  export let agent: string | undefined = undefined;
+  export let config: ChatConfig;
 
   let messagesContainer: HTMLDivElement;
 
@@ -82,11 +83,7 @@
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
       <div class="chat-empty-subtitle">
-        {#if agent === ToolName.DEVELOPER_AGENT}
-          Happy to assist you make changes to the project
-        {:else}
-          Happy to help explore your data
-        {/if}
+        {config.emptyChatLabel}
       </div>
     </div>
   {:else}

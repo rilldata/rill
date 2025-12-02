@@ -8,14 +8,14 @@
   import { Editor } from "@tiptap/core";
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-  import type { ChatInputConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
   export let conversationManager: ConversationManager;
   export let beforeSend: (() => Promise<void>) | undefined = undefined;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
-  export let config: ChatInputConfig;
+  export let config: ChatConfig;
 
   let value = "";
 

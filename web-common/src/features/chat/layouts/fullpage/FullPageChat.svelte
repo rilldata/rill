@@ -60,7 +60,11 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <Messages {conversationManager} layout="fullpage" />
+        <Messages
+          {conversationManager}
+          layout="fullpage"
+          config={dashboardChatConfig}
+        />
       </div>
     </div>
 
