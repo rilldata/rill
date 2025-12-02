@@ -32,7 +32,6 @@ AI Chat uses the same [Rill MCP Server](/explore/mcp) technology that powers ext
 2. Click on the **AI** tab in the project navigation
 3. Start typing your question in the chat interface
 
-
 ### Access AI Chat from a Dashboard
 
 You can also access AI Chat directly while exploring a dashboard, making it easy to ask questions about what you're currently viewing:
