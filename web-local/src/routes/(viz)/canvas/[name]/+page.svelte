@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import type { PageData } from "./$types";
   import {
     DashboardBannerID,
@@ -32,12 +31,7 @@
   });
 </script>
 
-<div class="flex h-full overflow-hidden">
-  <div class="flex-1 overflow-hidden">
-    <CanvasDashboardEmbed
-      resource={data.dashboard}
-      canvasName={data.dashboardName}
-    />
-  </div>
-  <ExploreChat />
-</div>
+<CanvasDashboardEmbed
+  resource={data.dashboard}
+  canvasName={data.dashboardName}
+/>

@@ -3,7 +3,6 @@
   import { Button } from "../../components/button";
   import { runtime } from "../../runtime-client/runtime-store";
   import { featureFlags } from "../feature-flags";
-  import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
 
   export let canvasName: string;
 
@@ -12,14 +11,11 @@
   $: canvasQuery = useCanvas(instanceId, canvasName);
   $: canvasFilePath = $canvasQuery.data?.filePath ?? "";
 
-  const { readOnly, dashboardChat } = featureFlags;
+  const { readOnly } = featureFlags;
 </script>
 
-<div class="flex gap-2 flex-shrink-0 ml-auto">
-  {#if $dashboardChat}
-    <ChatToggle />
-  {/if}
-  {#if !$readOnly}
+{#if !$readOnly}
+  <div class="flex gap-2 flex-shrink-0 ml-auto">
     <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
-  {/if}
-</div>
+  </div>
+{/if}

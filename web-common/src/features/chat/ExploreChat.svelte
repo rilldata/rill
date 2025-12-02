@@ -4,9 +4,9 @@
   import { chatOpen } from "./layouts/sidebar/sidebar-store";
   import { dashboardChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
-  const { developerChat } = featureFlags;
+  const { dashboardChat } = featureFlags;
 </script>
 
-{#if $developerChat && $chatOpen}
+{#if $dashboardChat && $chatOpen}
   <SidebarChat config={dashboardChatConfig} />
 {/if}
