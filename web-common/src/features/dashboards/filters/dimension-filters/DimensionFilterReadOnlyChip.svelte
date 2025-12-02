@@ -17,6 +17,7 @@
   export let isInclude: boolean;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
+  export let pinned = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -72,7 +73,13 @@
       : (correctedSearchResults ?? []);
 </script>
 
-<Chip type="dimension" label={effectiveLabel} readOnly exclude={!isInclude}>
+<Chip
+  type="dimension"
+  label={effectiveLabel}
+  readOnly
+  exclude={!isInclude}
+  showPinnedIcon={pinned}
+>
   <DimensionFilterChipBody
     slot="body"
     label={effectiveLabel}

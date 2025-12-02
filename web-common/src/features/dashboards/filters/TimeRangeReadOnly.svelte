@@ -7,7 +7,7 @@
   import { DateTime, Interval } from "luxon";
 
   export let timeRange: V1TimeRange;
-  export let comparisonTimeRange: V1TimeRange | undefined;
+  export let comparisonTimeRange: V1TimeRange | undefined = undefined;
   export let hasBoldTimeRange: boolean = true;
 
   $: selectedLabel = getRangeLabel(

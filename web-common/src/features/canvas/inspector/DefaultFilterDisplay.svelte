@@ -5,6 +5,8 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import MeasureFilterReadOnlyChip from "../../dashboards/filters/measure-filters/MeasureFilterReadOnlyChip.svelte";
+  import TimeRangeReadOnly from "../../dashboards/filters/TimeRangeReadOnly.svelte";
+  import _default from "dompurify";
 
   export let canvasName: string;
 
@@ -14,13 +16,21 @@
     canvasEntity: {
       clearDefaultFilters,
       filterManager: { _defaultUIFilters },
-      timeControls: { interval: _interval },
+      timeControls: {
+        interval: _interval,
+        _defaultTimeRange,
+        _defaultComparisonRange,
+      },
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ dimensionFilters, measureFilters } = $_defaultUIFilters);
 
   $: interval = $_interval;
+
+  $: defaultTimeRange = $_defaultTimeRange;
+
+  $: defaultComparisonRange = $_defaultComparisonRange;
 </script>
 
 <div class="flex-col flex h-full">
@@ -31,12 +41,23 @@
     </p>
 
     <div class="flex flex-col gap-y-2 w-full flex-none">
+      <div class="flex gap-x-2">
+        {#if defaultTimeRange}
+          <TimeRangeReadOnly
+            timeRange={{ expression: defaultTimeRange }}
+            comparisonTimeRange={defaultComparisonRange
+              ? { expression: defaultComparisonRange }
+              : undefined}
+          />
+        {/if}
+      </div>
       {#each dimensionFilters as [id, filterData] (id)}
         {@const metricsViewNames = Array.from(filterData.dimensions.keys())}
         {@const dimension = filterData.dimensions.get(metricsViewNames[0])}
 
         {#if dimension && dimension.name}
           <DimensionFilterReadOnlyChip
+            pinned={filterData.pinned}
             name={dimension.name}
             {metricsViewNames}
             label={dimension.displayName ||
@@ -61,6 +82,7 @@
 
         {#if measure && measure.name}
           <MeasureFilterReadOnlyChip
+            pinned={filterData.pinned}
             dimensionName={filterData.dimensionName}
             label={filterData.label}
             filter={filterData.filter}

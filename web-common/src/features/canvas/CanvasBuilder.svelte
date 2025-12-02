@@ -33,6 +33,7 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import { activeDivider, dropZone } from "./stores/ui-stores";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
+  import { page } from "$app/stores";
 
   const activelyEditing = writable(false);
 
@@ -61,8 +62,14 @@
       unsubscribe,
       _rows,
       firstLoad,
+      onUrlParamsChange,
     },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: ({
+    url: { searchParams },
+  } = $page);
+  $: onUrlParamsChange(searchParams, false).catch(console.error);
 
   $: layoutRows = $_rows;
 

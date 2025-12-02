@@ -6,8 +6,9 @@
   export let dimensionName: string;
   export let label: string | undefined = undefined;
   export let filter: MeasureFilterEntry | undefined = undefined;
+  export let pinned: boolean | undefined = undefined;
 </script>
 
-<Chip type="measure" {label} readOnly>
+<Chip type="measure" {label} readOnly showPinnedIcon={pinned}>
   <MeasureFilterBody slot="body" {dimensionName} {filter} {label} />
 </Chip>

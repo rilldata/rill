@@ -114,6 +114,7 @@ class StoreOfStores<T> {
 export class FilterManager {
   metricsViewFilters = new StoreOfStores<MetricsViewFilter>();
   _pinnedFilterKeys = writable<Set<string>>(new Set());
+  _defaultPinnedFilterKeys = writable<Set<string>>(new Set());
   _temporaryFilterKeys = writable<Set<string>>(new Set());
   _allDimensions = writable<DimensionLookup>(new Map());
   _allMeasures = writable<MeasureLookup>(new Map());
@@ -140,13 +141,17 @@ export class FilterManager {
     this.updateConfig(metricsViews, pinnedFilters, defaultFilters);
 
     this._defaultUIFilters = derived(
-      [this.metricsViewFilters],
-      ([metricsViewFilters], set) => {
+      [this.metricsViewFilters, this._defaultPinnedFilterKeys],
+      ([metricsViewFilters, defaultPinnedFilterKeys], set) => {
         const stores = Array.from(metricsViewFilters.values()).map(
           (f) => f.parsedDefaultFilters,
         );
         derived(stores, (filters) => {
-          return this.convertToUIFilters(filters, new Set(), new Set());
+          return this.convertToUIFilters(
+            filters,
+            new Set(),
+            defaultPinnedFilterKeys,
+          );
         }).subscribe(set);
       },
     );
@@ -306,6 +311,7 @@ export class FilterManager {
         keys.add(filterKey);
       });
       this._pinnedFilterKeys.set(keys);
+      this._defaultPinnedFilterKeys.set(keys);
     }
   }
 
@@ -485,8 +491,6 @@ export class FilterManager {
       temporaryFilterKeys.size > 0;
 
     // Temporary to get sorting to work, will revisit later - bgh
-
-    // Should be organized pinned -> then order of appearance in full filter string -> temporary at end
     const sortedDimensionMap = new Map(
       Array.from(merged.dimensionFilters.entries()).sort((a, b) => {
         return sortMeasuresOrDimensions(

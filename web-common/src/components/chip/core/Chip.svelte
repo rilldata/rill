@@ -7,6 +7,7 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import { PinIcon } from "lucide-svelte";
 
   export let removable = false;
   export let active = false;
@@ -26,6 +27,7 @@
   export let removeTooltipText: string | undefined = undefined;
   export let allowPointerEvents = false;
   export let theme = false;
+  export let showPinnedIcon = false;
   export let onRemove: () => void = () => {};
 
   const tooltipSuppression = getContext<Writable<boolean>>(
@@ -78,6 +80,8 @@
           {removeTooltipText}
         </TooltipContent>
       </Tooltip>
+    {:else if showPinnedIcon}
+      <PinIcon size="16px" />
     {/if}
 
     {#if $$slots.body}

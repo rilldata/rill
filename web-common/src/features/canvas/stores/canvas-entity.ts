@@ -8,6 +8,7 @@ import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canv
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getQueryServiceResolveCanvasQueryOptions,
+  V1ExploreComparisonMode,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
@@ -42,7 +43,6 @@ import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { navigating } from "$app/state";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -152,13 +152,6 @@ export class CanvasEntity {
       }),
     );
 
-    this.timeControls = new TimeControls(
-      this.specStore,
-      searchParamsStore,
-      undefined,
-      this.name,
-    );
-
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
 
@@ -215,12 +208,19 @@ export class CanvasEntity {
       this.specStore,
       this.instanceId,
     );
+
+    this.timeControls = new TimeControls(
+      this.specStore,
+      searchParamsStore,
+      undefined,
+      this.name,
+    );
   }
 
   setDefaultFilters = async () => {
-    // wait for three seconds
+    // wait for one second, will remove - bgh
     await new Promise((resolve) => {
-      setTimeout(resolve, 3000);
+      setTimeout(resolve, 1000);
     });
 
     const yaml = get(this.parsedContent);
@@ -253,6 +253,19 @@ export class CanvasEntity {
       }
     }
 
+    const timeRangeState = get(this.timeControls.timeRangeStateStore);
+
+    const selectedTimeRange = timeRangeState?.selectedTimeRange?.name;
+    const comparisonOn = get(this.timeControls.showTimeComparison);
+
+    if (selectedTimeRange) {
+      yaml.setIn(["defaults", "time_range"], selectedTimeRange);
+    }
+
+    if (comparisonOn) {
+      yaml.setIn(["defaults", "comparison_mode"], "time");
+    }
+
     get(this.filterManager.metricsViewFilters)
       .entries()
       .forEach(([name, filters]) => {
@@ -276,6 +289,27 @@ export class CanvasEntity {
       yaml.deleteIn(["defaults", "filters"]);
     } catch {
       // no-op
+    }
+
+    try {
+      yaml.deleteIn(["defaults", "time_range"]);
+    } catch {
+      // no-op
+    }
+
+    try {
+      yaml.deleteIn(["defaults", "comparison_mode"]);
+    } catch {
+      // no-op
+    }
+
+    const defaultSize = yaml.get("defaults").items.length;
+    if (defaultSize === 0) {
+      try {
+        yaml.delete("defaults");
+      } catch {
+        // no-op
+      }
     }
 
     try {
@@ -344,20 +378,38 @@ export class CanvasEntity {
     const response = await queryClient.fetchQuery(options);
 
     const defaultSearchParams = new URLSearchParams();
+    const defaultPreset = response.canvas?.canvas?.spec?.defaultPreset ?? {};
 
-    Object.entries(
-      response.canvas?.canvas?.spec?.defaultPreset?.filterExpr ?? {},
-    ).forEach(([metricsViewName, expression]) => {
-      const { dimensionsWithInlistFilter, expr } =
-        getFiltersFromText(expression);
-
-      const string = getFilterParam(expr, [], dimensionsWithInlistFilter);
-
+    if (defaultPreset.timeRange) {
       defaultSearchParams.set(
-        `${ExploreStateURLParams.Filters}.${metricsViewName}`,
-        string,
+        ExploreStateURLParams.TimeRange,
+        defaultPreset.timeRange,
       );
-    });
+    }
+
+    if (
+      defaultPreset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+    ) {
+      defaultSearchParams.set(
+        ExploreStateURLParams.ComparisonTimeRange,
+        "rill-PP",
+      );
+    }
+
+    Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
+      ([metricsViewName, expression]) => {
+        const { dimensionsWithInlistFilter, expr } =
+          getFiltersFromText(expression);
+
+        const string = getFilterParam(expr, [], dimensionsWithInlistFilter);
+
+        defaultSearchParams.set(
+          `${ExploreStateURLParams.Filters}.${metricsViewName}`,
+          string,
+        );
+      },
+    );
 
     // If there are no URL params, check for last visited state or home bookmark
     if (searchParams.size === 0) {
