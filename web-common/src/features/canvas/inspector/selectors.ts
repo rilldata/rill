@@ -7,7 +7,10 @@ import {
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  MetricsViewSpecDimensionType,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { derived } from "svelte/store";
 import { parseDocument } from "yaml";
 
@@ -38,7 +41,10 @@ export function useMetricFieldData(
       const displayMap: Record<string, { label: string; type: FieldType }> = {};
 
       const measures = metricsViewSpec?.measures ?? [];
-      const dimensions = metricsViewSpec?.dimensions ?? [];
+      const dimensions = (metricsViewSpec?.dimensions ?? []).filter(
+        (d) =>
+          d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+      );
       const timeDimension = metricsViewSpec?.timeDimension;
 
       if (type.includes("measure")) {

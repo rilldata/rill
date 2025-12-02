@@ -527,9 +527,13 @@ components:
             enum:
                 - DEPLOYMENT_STATUS_UNSPECIFIED
                 - DEPLOYMENT_STATUS_PENDING
-                - DEPLOYMENT_STATUS_OK
-                - DEPLOYMENT_STATUS_ERROR
+                - DEPLOYMENT_STATUS_RUNNING
+                - DEPLOYMENT_STATUS_ERRORED
                 - DEPLOYMENT_STATUS_STOPPED
+                - DEPLOYMENT_STATUS_UPDATING
+                - DEPLOYMENT_STATUS_STOPPING
+                - DEPLOYMENT_STATUS_DELETING
+                - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
             type: object
@@ -1993,11 +1997,20 @@ components:
                 description:
                     title: A human-readable description of the tool
                     type: string
+                displayName:
+                    title: The display name of the tool
+                    type: string
                 inputSchema:
                     title: JSON Schema defining the expected parameters for the tool (as JSON string)
                     type: string
+                meta:
+                    title: Metadata about the tool
+                    type: object
                 name:
                     title: The name of the tool
+                    type: string
+                outputSchema:
+                    title: JSON Schema defining the expected output of the tool (as JSON string)
                     type: string
             title: Tool represents a tool definition for AI usage
             type: object

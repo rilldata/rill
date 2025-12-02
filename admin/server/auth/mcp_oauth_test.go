@@ -25,7 +25,7 @@ func TestOAuthProtectedResourceMetadata(t *testing.T) {
 	}
 
 	// Create test request
-	req := httptest.NewRequest(http.MethodGet, "/.well-known/oauth-protected-resource", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/.well-known/oauth-protected-resource", nil)
 	w := httptest.NewRecorder()
 
 	// Call handler
@@ -117,5 +117,23 @@ func TestOAuthRegister(t *testing.T) {
 		auth.handleOAuthRegister(w, req)
 
 		require.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestSanitizeRedirectURIs(t *testing.T) {
+	t.Run("returns normalized unique list", func(t *testing.T) {
+		uris, err := sanitizeRedirectURIs([]string{" https://example.com/auth/callback ", "https://example.com/auth/callback"})
+		require.NoError(t, err)
+		require.Equal(t, []string{"https://example.com/auth/callback"}, uris)
+	})
+
+	t.Run("rejects fragments", func(t *testing.T) {
+		_, err := sanitizeRedirectURIs([]string{"https://example.com/auth/callback#frag"})
+		require.Error(t, err)
+	})
+
+	t.Run("rejects missing host", func(t *testing.T) {
+		_, err := sanitizeRedirectURIs([]string{"/relative/path"})
+		require.Error(t, err)
 	})
 }

@@ -411,9 +411,13 @@ export type V1DeploymentStatus =
 export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
-  DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
-  DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_RUNNING: "DEPLOYMENT_STATUS_RUNNING",
+  DEPLOYMENT_STATUS_ERRORED: "DEPLOYMENT_STATUS_ERRORED",
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
+  DEPLOYMENT_STATUS_UPDATING: "DEPLOYMENT_STATUS_UPDATING",
+  DEPLOYMENT_STATUS_STOPPING: "DEPLOYMENT_STATUS_STOPPING",
+  DEPLOYMENT_STATUS_DELETING: "DEPLOYMENT_STATUS_DELETING",
+  DEPLOYMENT_STATUS_DELETED: "DEPLOYMENT_STATUS_DELETED",
 } as const;
 
 export interface V1EditAlertResponse {
@@ -1408,10 +1412,15 @@ export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
 
+export type V1ToolMeta = { [key: string]: unknown };
+
 export interface V1Tool {
   name?: string;
+  displayName?: string;
   description?: string;
+  meta?: V1ToolMeta;
   inputSchema?: string;
+  outputSchema?: string;
 }
 
 export type V1ToolCallInput = { [key: string]: unknown };

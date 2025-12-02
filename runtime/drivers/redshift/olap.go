@@ -69,10 +69,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, err
 	}
 
-	noResult := true
-	if out.HasResultSet != nil && *out.HasResultSet {
-		noResult = false
-	}
+	noResult := out.HasResultSet == nil || !*out.HasResultSet
 	rows, err := newRows(ctx, client, *out.Id, noResult)
 	if err != nil {
 		return nil, err
