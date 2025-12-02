@@ -108,5 +108,16 @@ func ResolveFeatureFlags(inst *drivers.Instance, userAttributes map[string]any, 
 		featureFlags[k] = bv
 	}
 
+	// Apply feature flag dependencies:
+	// If chat is disabled, dashboard_chat should also be disabled
+	chatKey := "chat"
+	dashboardChatKey := "dashboard_chat"
+	if camelCase {
+		dashboardChatKey = "dashboardChat"
+	}
+	if !featureFlags[chatKey] {
+		featureFlags[dashboardChatKey] = false
+	}
+
 	return featureFlags, nil
 }
