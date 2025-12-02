@@ -151,12 +151,12 @@ func enforceRepoLimits(ctx context.Context, projectPath string, ch *cmdutil.Help
 
 func parseVariables(vals []string) (map[string]string, error) {
 	res := make(map[string]string)
-	for _, v := range vals {
-		v, err := godotenv.Unmarshal(v)
+	for _, val := range vals {
+		parsed, err := godotenv.Unmarshal(val)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse variable %q: %w", v, err)
+			return nil, fmt.Errorf("failed to parse variable %q: %w", val, err)
 		}
-		for k, v := range v {
+		for k, v := range parsed {
 			res[k] = v
 		}
 	}
