@@ -48,6 +48,7 @@ export function getUserGroupsForUsersInOrg(
     ),
   );
 
+  // TODO: use combine query once it supports derived options as arguments.
   return derived(
     [orgUserGroupsQuery, userGroupsForUserQuery],
     ([orgUserGroupsResp, userGroupsForUserResp]) => {
