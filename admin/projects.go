@@ -132,7 +132,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 // TeardownProject tears down a project and all its deployments.
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 		case <-time.After(2 * time.Second):
 			// Ready to check again.
 		}
-		depls, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+		depls, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 		if err != nil {
 			return err
 		}
@@ -196,6 +196,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
 
+	// TODO: changing prod related fields like slots, branch etc should only impact prod deployments, but for now we update all deployments
 	err = s.UpdateDeploymentsForProject(ctx, proj)
 	if err != nil {
 		return nil, err
@@ -333,7 +334,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 
 // HibernateProject hibernates a project by tearing down its deployment.
 func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
-	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID, "", "")
 	if err != nil {
 		return nil, err
 	}

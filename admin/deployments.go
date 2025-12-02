@@ -32,19 +32,6 @@ type CreateDeploymentOptions struct {
 	Editable    bool
 }
 
-func (s *Service) FindDevDeployment(ctx context.Context, projectID, branch string) (*database.Deployment, error) {
-	depls, err := s.DB.FindDeploymentsForProject(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	for _, d := range depls {
-		if d.Branch == branch && d.Environment == "dev" {
-			return d, nil
-		}
-	}
-	return nil, database.ErrNotFound
-}
-
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
 	// Create the deployment
 	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
@@ -141,7 +128,7 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 // In normal operation, projects only have one deployment. But during (re)deployment and in various error scenarios, there may be multiple deployments.
 // Care must be taken to avoid one broken deployment from blocking updates to other healthy deployments.
 func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 	if err != nil {
 		return err
 	}

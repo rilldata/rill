@@ -634,9 +634,29 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 	return res, nil
 }
 
-func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID string) ([]*database.Deployment, error) {
-	var res []*database.Deployment
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM deployments d WHERE d.project_id=$1", projectID)
+func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*database.Deployment, error) {
+	var (
+		res   []*database.Deployment
+		query strings.Builder
+		args  []any
+	)
+
+	query.WriteString("SELECT * FROM deployments d WHERE d.project_id=$1")
+	args = append(args, projectID)
+
+	argCount := 1
+	if environment != "" {
+		argCount++
+		query.WriteString(fmt.Sprintf(" AND d.environment=$%d", argCount))
+		args = append(args, environment)
+	}
+	if branch != "" {
+		argCount++
+		query.WriteString(fmt.Sprintf(" AND d.branch=$%d", argCount))
+		args = append(args, branch)
+	}
+
+	err := c.getDB(ctx).SelectContext(ctx, &res, query.String(), args...)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}

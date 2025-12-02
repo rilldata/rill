@@ -100,7 +100,7 @@ type DB interface {
 
 	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
-	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
+	FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)

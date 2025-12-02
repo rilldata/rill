@@ -118,7 +118,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, "")
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -130,9 +130,6 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 			continue
 		}
 		if d.Environment == "dev" && !permissions.ReadDev {
-			continue
-		}
-		if req.Environment != "" && req.Environment != d.Environment {
 			continue
 		}
 		if req.UserId != "" && d.OwnerUserID != nil && req.UserId != *d.OwnerUserID {
@@ -321,11 +318,11 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		if req.Branch != "" {
 			branch = req.Branch
 			// only one preview deployment per branch allowed
-			depl, err := s.admin.FindDevDeployment(ctx, proj.ID, branch)
+			depl, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "dev", branch)
 			if err != nil && !errors.Is(err, database.ErrNotFound) {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
-			if depl != nil {
+			if len(depl) > 0 {
 				return nil, status.Error(codes.InvalidArgument, "another deployment for the specified branch already exists")
 			}
 		} else {
@@ -336,8 +333,8 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 			branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
-			slots = proj.DevSlots
 		}
+		slots = proj.DevSlots
 	default:
 		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod' or 'dev'")
 	}
