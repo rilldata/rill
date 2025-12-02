@@ -40,8 +40,9 @@ const bigNumberRangeSpec: RangeFormatSpec[] = [
     supMag: 5,
     maxDigitsRight: 0,
     useTrailingDot: false,
-    baseMagnitude: 0,
-    maxDigitsLeft: 5,
+    // Use thousands (k) formatting for values from 1e3 up to 1e5
+    baseMagnitude: 3,
+    maxDigitsLeft: 3,
     padWithInsignificantZeros: false,
   },
   {
