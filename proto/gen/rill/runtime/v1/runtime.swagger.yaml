@@ -936,6 +936,44 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-canvas:
+    post:
+      summary: GenerateCanvasFile generates a canvas YAML file from a metrics view
+      operationId: RuntimeService_GenerateCanvasFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateCanvasFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              metricsViewName:
+                type: string
+                description: Metrics view name to base the canvas on.
+              path:
+                type: string
+                description: Path to save the canvas file to.
+              useAi:
+                type: boolean
+                description: |-
+                  If true, the AI will be used to generate the canvas file.
+                  Otherwise, it falls back to a simpler heuristic approach.
+            title: Request message for RuntimeService.GenerateCanvasFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -5013,45 +5051,6 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
-  v1GCSGetCredentialsInfoResponse:
-    type: object
-    properties:
-      exist:
-        type: boolean
-      projectId:
-        type: string
-  v1GCSListBucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      buckets:
-        type: array
-        items:
-          type: string
-  v1GCSListObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1GCSObject'
-  v1GCSObject:
-    type: object
-    properties:
-      name:
-        type: string
-      modifiedOn:
-        type: string
-        format: date-time
-      size:
-        type: string
-        format: int64
-      isDir:
-        type: boolean
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
