@@ -26,7 +26,7 @@ const (
 	listResourcesTimeout = 10 * time.Second
 )
 
-// ValidationResult represents the complete validation output optimized for AI agent consumption
+// ValidationResult represents the complete validation output
 type ValidationResult struct {
 	Success     bool              `json:"success"`
 	Summary     ValidationSummary `json:"summary"`
@@ -342,7 +342,6 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat, ou
 	var jsonData []byte
 	var err error
 	if outputFile != "" || outputFormat == "json" {
-		// JSON format - serialize and write to stdout
 		jsonData, err = json.MarshalIndent(result, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal validation result: %w", err)
