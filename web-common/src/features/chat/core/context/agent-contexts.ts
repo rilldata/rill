@@ -46,11 +46,17 @@ export function getActiveExploreContext(): Readable<
   );
 }
 
+/**
+ * Creates a store that contains the active file context sent to the Complete API.
+ * It returns the RuntimeServiceCompleteBody with V1DeveloperAgentContext that is passed to the API.
+ */
 export function getActiveFileContext(): Readable<
   Partial<RuntimeServiceCompleteBody>
 > {
   return derived(page, (pageState) => {
     const filePath = pageState.params?.file;
+    if (!filePath) return <RuntimeServiceCompleteBody>{};
+
     return <RuntimeServiceCompleteBody>{
       developerAgentContext: {
         currentFilePath: filePath,

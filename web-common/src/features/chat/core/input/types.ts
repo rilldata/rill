@@ -11,12 +11,12 @@ export type ChatConfig = {
   additionalContextStore: Readable<Partial<RuntimeServiceCompleteBody>>;
   emptyChatLabel: string;
   placeholder: string;
-  enableMention: boolean;
+  enableMention: boolean; // TODO: should be a list of allowed mentions in the future
 };
 
 export const dashboardChatConfig = <ChatConfig>{
   agent: ToolName.ANALYST_AGENT,
-  additionalContextStore: getActiveExploreContext(),
+  additionalContextStore: getActiveExploreContext(), // TODO: add canvas context as well
   emptyChatLabel: "Happy to help explore your data",
   placeholder: "Ask about your data...",
   enableMention: true,

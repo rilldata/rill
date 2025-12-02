@@ -11,7 +11,6 @@
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
   export let conversationManager: ConversationManager;
-  export let beforeSend: (() => Promise<void>) | undefined = undefined;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
@@ -40,7 +39,6 @@
 
     // Message handling with input focus
     try {
-      if (beforeSend) await beforeSend();
       await currentConversation.sendMessage($additionalContextStore, {
         onStreamStart: () => editor.commands.setContent(""),
       });
