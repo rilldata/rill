@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/cmd/env"
@@ -20,6 +21,7 @@ import (
 )
 
 const defaultOLAPConnector = "duckdb"
+const localURL = "http://localhost:9009"
 
 var errRepoTooLarge = errors.New("project directory exceeds file limit")
 
@@ -31,6 +33,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var logFormat string
 	var envVars []string
 	var environment string
+	var reconcileTimeout time.Duration
 
 	validateCmd := &cobra.Command{
 		Use:   "validate [<path>]",
@@ -46,7 +49,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("no Rill project found at %q (missing rill.yaml)", projectPath)
 			}
 
-			// TODO: do we need this? will this be used only while developing projects locally?
 			if ch.IsAuthenticated() && local.IsProjectInit(projectPath) {
 				err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
 				if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
@@ -81,12 +83,12 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				Verbose:        verbose,
 				Debug:          debug,
 				Reset:          reset,
-				Environment:    "dev",
+				Environment:    environment,
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
 				Variables:      envVarsMap,
-				LocalURL:       "",
-				AllowedOrigins: []string{},
+				LocalURL:       localURL,
+				AllowedOrigins: []string{localURL},
 				ServeUI:        false,
 			})
 			if err != nil {
@@ -94,16 +96,18 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer app.Close()
 
-			return reconcileAndReport(cmd.Context(), ch, app)
+			return reconcileAndReport(cmd.Context(), ch, app, reconcileTimeout)
 		},
 	}
 
 	validateCmd.Flags().SortFlags = false
 	validateCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
+	validateCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	validateCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	validateCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	validateCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	validateCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
+	validateCmd.Flags().DurationVar(&reconcileTimeout, "reconcile-timeout", 60*time.Second, "Timeout for reconciliation (e.g. 60s, 2m)")
 
 	return validateCmd
 }
@@ -188,26 +192,50 @@ func parseProject(ctx context.Context, ch *cmdutil.Helper, projectPath, environm
 	return fmt.Errorf("project parsing failed")
 }
 
-func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App) error {
+func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, reconcileTimeout time.Duration) error {
 	ctrl, err := app.Runtime.Controller(ctx, app.Instance.ID)
 	if err != nil {
 		return err
 	}
 
+	reconcileCtx := ctx
+	if reconcileTimeout > 0 {
+		c, cancel := context.WithTimeout(ctx, reconcileTimeout)
+		reconcileCtx = c
+		defer cancel()
+	}
+
 	// Kick off reconciliation and wait for completion
-	if err := ctrl.Reconcile(ctx, runtime.GlobalProjectParserName); err != nil {
+	if err := ctrl.Reconcile(reconcileCtx, runtime.GlobalProjectParserName); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return reportTimeout(ctx, ch, ctrl, reconcileTimeout)
+		}
 		return fmt.Errorf("failed to start reconciliation: %w", err)
 	}
 
-	if err := ctrl.WaitUntilIdle(ctx, true); err != nil {
+	if err := ctrl.WaitUntilIdle(reconcileCtx, true); err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return reportTimeout(ctx, ch, ctrl, reconcileTimeout)
+		}
 		return fmt.Errorf("failed while waiting for reconciliation to finish: %w", err)
 	}
 
-	resources, err := ctrl.List(ctx, "", "", false)
+	resources, err := ctrl.List(ctx, "", "", true)
 	if err != nil {
 		return fmt.Errorf("failed to list resources: %w", err)
 	}
 
+	reconcileErrors := renderResourceStatus(ch, resources)
+
+	if len(reconcileErrors) > 0 {
+		return fmt.Errorf("reconciliation completed with errors")
+	}
+
+	ch.PrintfSuccess("\nValidation completed without errors.\n")
+	return nil
+}
+
+func renderResourceStatus(ch *cmdutil.Helper, resources []*runtimev1.Resource) []string {
 	var table []*resourceTableRow
 	var reconcileErrors []string
 
@@ -222,14 +250,27 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App)
 		}
 	}
 
-	ch.PrintfSuccess("Reconcile status\n\n")
+	ch.PrintfSuccess("\nReconcile status\n")
 	ch.PrintData(table)
+	ch.Printf("\n")
 
-	if len(reconcileErrors) > 0 {
-		return fmt.Errorf("reconciliation completed with errors")
+	return reconcileErrors
+}
+
+func reportTimeout(ctx context.Context, ch *cmdutil.Helper, ctrl *runtime.Controller, reconcileTimeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	resources, err := ctrl.List(ctx, "", "", true)
+	if err != nil {
+		return fmt.Errorf("reconciliation timed out after %s and listing resources failed: %w", reconcileTimeout, err)
 	}
-	ch.PrintfSuccess("\nValidation completed without errors.\n")
-	return nil
+
+	ch.PrintfError("\nReconciliation timed out after %s. If a model processes full data, consider adding an explicit dev partition or rerun with --reconcile-timeout to allow more time. Check Pending or Running reconcile below\n", reconcileTimeout)
+	// print status of all resources
+	_ = renderResourceStatus(ch, resources)
+
+	return fmt.Errorf("reconciliation timed out after %s", reconcileTimeout)
 }
 
 type resourceTableRow struct {
