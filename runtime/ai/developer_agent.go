@@ -2,7 +2,6 @@ package ai
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -52,8 +51,12 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		return nil, err
 	}
 
-	// Add the developer agent system prompt.
+	// Generate the prompts
 	systemPrompt, err := t.systemPrompt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	userPrompt, err := t.userPrompt(args)
 	if err != nil {
 		return nil, err
 	}
@@ -61,14 +64,14 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByRoot()))...)
-	messages = append(messages, NewTextCompletionMessage(RoleUser, t.userPrompt(args)))
+	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
 
 	// Run an LLM tool call loop
 	var response string
 	err = s.Complete(ctx, "Developer loop", &response, &CompleteOptions{
 		Messages:      messages,
-		Tools:         []string{ListFilesName, ReadFileName, DevelopModelName, DevelopMetricsViewName},
+		Tools:         []string{ListFilesName, SearchFilesName, ReadFileName, DevelopModelName, DevelopMetricsViewName},
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})
@@ -119,10 +122,19 @@ The user might ask you to "Create a dashboard for my Github activity". You would
 
 <process>
 At a high level, you should follow these steps:
-1. Understand the current contents of the project.
-2. Make a plan for how to implement the user's request. 
-3. Only if necessary, add a new model or update an existing model to reflect the user's request
+1. Understand the current contents of the project by reviewing the list_files output.
+2. Make a plan for how to implement the user's request. If the user asks to join, combine, or analyze data from multiple existing models, you should create a new model that references those existing models in SQL.
+3. Only if necessary, add a new model or update an existing model to reflect the user's request. Use "develop_model" with a prompt describing what to create or change.
 4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.
+   - To *create* a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
+   - To *edit* an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
+5. After successfully creating/updating the artifacts, provide a summary with links using the following format:
+{{ backticks }}
+## Summary of Changes
+I've created the following files for you:
+- <resource_type>: [<file_name>](<absolute file path starting with '/'>)
+...
+{{ backticks }}
 
 You should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the "read_file" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.
 
@@ -138,25 +150,28 @@ You should not make many changes at a time. Carefully consider the minimum chang
 `, data)
 }
 
-func (t *DeveloperAgent) userPrompt(args *DeveloperAgentArgs) string {
-	var prompt strings.Builder
-
-	// Add context about initialization if applicable
-	if args.InitProject {
-		prompt.WriteString("The project is currently empty apart from a few boilerplate files (like rill.yaml).\n")
-		prompt.WriteString("The user has asked you to help them set up their initial project based on the following instructions: ")
+func (t *DeveloperAgent) userPrompt(args *DeveloperAgentArgs) (string, error) {
+	// Prepare template data.
+	data := map[string]any{
+		"init_project":      args.InitProject,
+		"current_file_path": args.CurrentFilePath,
+		"prompt":            args.Prompt,
 	}
 
-	// Add context about current file if available
-	if args.CurrentFilePath != "" {
-		prompt.WriteString(fmt.Sprintf("The user is currently viewing/editing the file: %s\n", args.CurrentFilePath))
-		prompt.WriteString("Their request may relate to this file.\n\n")
-	}
+	// Generate the system prompt
+	return executeTemplate(`
+{{ if .current_file_path }}
+The user is currently viewing/editing the file: {{ .current_file_path }}
+Their request may relate to this file.
+{{ end }}
 
-	// Add the main prompt
-	prompt.WriteString(args.Prompt)
+{{ if .init_project }}
+The project is currently empty apart from a few boilerplate files (like rill.yaml).
+You should help them set up their initial project based on their task description.
+{{ end }}
 
-	return prompt.String()
+Task: {{ .prompt }}
+`, data)
 }
 
 // checkDeveloperAgentAccess checks whether the developer agent and related tools should be available in the current session.

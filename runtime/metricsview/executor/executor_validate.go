@@ -162,7 +162,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Validate or infer the smallest time grains for the default time dimension and for any additional time dimensions.
 	// We require the smallest time grain to be at least at second grain.
 	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
-	if e.metricsView.TimeDimension != "" {
+	if e.metricsView.TimeDimension != "" && res.TimeDimensionErr == nil {
 		// Find the smallest possible grain
 		var smallestPossibleGrain runtimev1.TimeGrain
 		var typeCode runtimev1.Type_Code
@@ -173,6 +173,9 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 			// Time dimension not found in the column list, find it in the defined dimension list
 			for _, d := range mv.Dimensions {
 				if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+					if d.DataType == nil {
+						break // data type discovery must have failed
+					}
 					typeCode = d.DataType.Code
 					break
 				}
@@ -679,9 +682,12 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 
 	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
-		if typ, ok := types[d.Name]; ok {
-			d.DataType = typ
-		} // ignore dimensions that don't have a type in the schema
+		typ, ok := types[d.Name]
+		if !ok {
+			// ignore dimensions that don't have a type in the schema
+			continue
+		}
+		d.DataType = typ
 		switch d.DataType.GetCode() {
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
