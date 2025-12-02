@@ -1,15 +1,16 @@
 <script lang="ts">
-  import { cn, flyAndScale } from "@rilldata/web-common/lib/shadcn";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import Cross2 from "svelte-radix/Cross2.svelte";
+  import { fade } from "svelte/transition";
   import * as Dialog from "web-common/src/components/dialog/index.js";
 
   type $$Props = DialogPrimitive.ContentProps & { noClose?: boolean };
 
   let className: $$Props["class"] = undefined;
-  export let transition: $$Props["transition"] = flyAndScale;
+  export let transition: $$Props["transition"] = fade;
   export let transitionConfig: $$Props["transitionConfig"] = {
-    duration: 200,
+    duration: 150,
   };
   export let noClose = false;
   export { className as class };

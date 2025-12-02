@@ -4,7 +4,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-  import MCPConfigDialog from "@rilldata/web-admin/features/ai/MCPConfigDialog.svelte";
+  import MCPConnectDialog from "@rilldata/web-admin/features/ai/mcp/MCPConnectDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import APIIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
   import ProjectChat from "@rilldata/web-common/features/chat/ProjectChat.svelte";
@@ -33,7 +33,7 @@
     </svelte:fragment>
   </ProjectChat>
 
-  <MCPConfigDialog
+  <MCPConnectDialog
     bind:open={mcpDialogOpen}
     {organization}
     {project}
