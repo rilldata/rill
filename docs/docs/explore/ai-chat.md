@@ -42,7 +42,6 @@ You can also access AI Chat directly while exploring a dashboard, making it easy
 <img src='/img/explore/chat/dashboard-chat.png' class='rounded-gif'/>
 <br />
 
-
 When you open AI Chat from a dashboard, the AI is automatically aware of:
 - **Current dashboard context** - The metrics view you're viewing
 - **Applied filters** - Any dimension or measure filters you've set
