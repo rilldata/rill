@@ -1202,11 +1202,12 @@ func TestRBAC(t *testing.T) {
 			Role:  database.OrganizationRoleNameViewer,
 		})
 		require.NoError(t, err)
+		viwerRole := database.ProjectRoleNameViewer
 		_, err = c2.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
 			Org:     org1.Organization.Name,
 			Project: proj1.Project.Name,
 			Email:   u3.Email,
-			Role:    database.ProjectRoleNameViewer,
+			Role:    &viwerRole,
 		})
 		require.NoError(t, err)
 		_, err = c2.SetOrganizationMemberUsergroupRole(ctx, &adminv1.SetOrganizationMemberUsergroupRoleRequest{
@@ -1219,7 +1220,7 @@ func TestRBAC(t *testing.T) {
 			Org:       org1.Organization.Name,
 			Project:   proj1.Project.Name,
 			Usergroup: group1.Usergroup.GroupName,
-			Role:      database.ProjectRoleNameViewer,
+			Role:      &viwerRole,
 		})
 		require.NoError(t, err)
 
@@ -1329,7 +1330,7 @@ func TestRBAC(t *testing.T) {
 			Org:     org1.Organization.Name,
 			Project: proj1.Project.Name,
 			Email:   u3.Email,
-			Role:    database.ProjectRoleNameViewer,
+			Role:    &viwerRole,
 		})
 		require.ErrorContains(t, err, "non-admin")
 		_, err = c2.SetOrganizationMemberUsergroupRole(ctx, &adminv1.SetOrganizationMemberUsergroupRoleRequest{
@@ -1342,7 +1343,7 @@ func TestRBAC(t *testing.T) {
 			Org:       org1.Organization.Name,
 			Project:   proj1.Project.Name,
 			Usergroup: group1.Usergroup.GroupName,
-			Role:      database.ProjectRoleNameViewer,
+			Role:      &viwerRole,
 		})
 		require.ErrorContains(t, err, "non-admin")
 
