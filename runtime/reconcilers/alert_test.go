@@ -336,6 +336,87 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 	require.Contains(t, emails[0].Body, "Denmark")
 }
 
+// Alerts that specify a cron/ticker but do not set ref_update should NOT trigger when refs change — cron schedules are time-driven, not ref-driven.
+func TestAlertCronDoesNotTriggerOnRefUpdate(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+
+	// initial model and metrics
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+		"/alerts/a1.yaml": `
+type: alert
+display_name: Cron Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+refresh:
+  cron: "* * * * *"
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+      - name: country
+    measures:
+      - name: measure_0
+    time_range:
+      iso_duration: P1W
+    having:
+      cond:
+        op: OPERATION_GTE
+        exprs:
+        - ident: measure_0
+        - val: 4
+notify:
+  email:
+    recipients:
+      - nobody@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []any{"count(*)", runtimev1.Type_CODE_INT64}, []any{"country", runtimev1.Type_CODE_STRING})
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	current := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1")
+	require.NotNil(t, current)
+	require.Equal(t, "* * * * *", current.GetAlert().Spec.RefreshSchedule.Cron)
+	require.False(t, current.GetAlert().Spec.RefreshSchedule.RefUpdate)
+
+	pre := current.GetAlert().State.ExecutionCount
+
+	// Update the underlying model so refs change
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+
+	// Re-fetch the alert resource from runtime and confirm ExecutionCount didn't change due to ref update
+	current = testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1")
+	require.NotNil(t, current)
+	require.Equal(t, pre, current.GetAlert().State.ExecutionCount)
+}
+
 func TestAlertDataYAMLSQL(t *testing.T) {
 	rt, id := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, id, map[string]string{
