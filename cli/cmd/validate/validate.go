@@ -349,7 +349,7 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat, ou
 		}
 	}
 	if outputFile != "" {
-		if err = os.WriteFile(outputFile, jsonData, 0644); err != nil {
+		if err = os.WriteFile(outputFile, jsonData, 0o644); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}
 		ch.Printf("Validation results written to output file %s\n", outputFile)
