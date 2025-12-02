@@ -7,7 +7,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -30,7 +29,23 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
+	}
+
+	additionalWhereByMetricsView := map[string]map[string]any{}
+	for mv, expr := range req.AdditionalWhereByMetricsView {
+		additionalWhereByMetricsView[mv], err = metricsview.NewExpressionFromProto(expr).AsMap()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert additional where expression for metrics view %q: %w", mv, err)
+		}
+	}
+
+	var additionalTimeRange map[string]any
+	if req.AdditionalTimeRange != nil {
+		additionalTimeRange, err = metricsview.NewTimeRangeFromProto(req.AdditionalTimeRange).AsMap()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert additional time range: %w", err)
+		}
 	}
 
 	templateData := parser.TemplateData{
@@ -40,27 +55,62 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		Resolve: func(ref parser.ResourceName) (string, error) {
 			return ref.Name, nil
 		},
-	}
+		ExtraFuncs: map[string]any{
+			"metrics_sql": func(sql string) (string, error) {
+				// Run metrics SQL resolver
+				resolveRes, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+					InstanceID: req.InstanceId,
+					Resolver:   "metrics_sql",
+					ResolverProperties: map[string]any{
+						"sql":                              sql,
+						"additional_where_by_metrics_view": additionalWhereByMetricsView,
+						"additional_time_range":            additionalTimeRange,
+					},
+					Args:   nil,
+					Claims: claims,
+				})
+				if err != nil {
+					return "", err
+				}
+				defer resolveRes.Close()
 
-	templateData.ExtraFuncs = map[string]any{
-		"metrics_sql": func(sql string) (string, error) {
-			// Resolve any templates in the SQL string
-			resolvedSQL, err := parser.ResolveTemplate(sql, templateData, false)
-			if err != nil {
-				return "", fmt.Errorf("failed to resolve SQL template: %w", err)
-			}
+				// Get only column in the only row
+				row, err := resolveRes.Next()
+				if err != nil {
+					return "", fmt.Errorf("failed to get result: %w", err)
+				}
+				if len(row) != 1 {
+					return "", fmt.Errorf("metrics_sql in templating only allows one result field, got %d", len(row))
+				}
+				_, err = resolveRes.Next()
+				if err == nil {
+					return "", fmt.Errorf("metrics_sql in templating must return one row, but the query returned multiple")
+				}
+				var field string
+				var val any
+				for k, v := range row {
+					field = k
+					val = v
+				}
 
-			value, metricsViewName, fieldName, err := s.executeMetricsSQL(ctx, req.InstanceId, claims, resolvedSQL, req.AdditionalWhereByMetricsView, req.AdditionalTimeRange)
-			if err != nil {
-				return "", err
-			}
+				// Return value wrapped in a format token if requested
+				if req.UseFormatTokens {
+					// The "metrics" resolver returns the metrics view in the metadata.
+					// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
+					var mv string
+					meta := resolveRes.Meta()
+					if meta != nil {
+						mv, _ = meta["metrics_view"].(string)
+					}
+					if mv != "" {
+						return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val), nil
+					}
+					// Fallthrough to raw value if we can't find the metrics view
+				}
 
-			// Return format token or raw value based on request
-			if req.UseFormatTokens {
-				return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, metricsViewName, fieldName, value), nil
-			}
-
-			return fmt.Sprintf("%v", value), nil
+				// Return stringified raw value
+				return fmt.Sprintf("%v", val), nil
+			},
 		},
 	}
 
@@ -73,91 +123,4 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	return &runtimev1.ResolveTemplatedStringResponse{
 		Body: body,
 	}, nil
-}
-
-// executeMetricsSQL executes a metrics SQL query and returns a single scalar value
-func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, sql string, additionalWhereByMetricsView map[string]*runtimev1.Expression, additionalTimeRange *runtimev1.TimeRange) (value any, metricsViewName, fieldName string, err error) {
-	ctrl, err := s.runtime.Controller(ctx, instanceID)
-	if err != nil {
-		return nil, "", "", err
-	}
-
-	compiler := metricssql.New(&metricssql.CompilerOptions{
-		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
-			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
-			if err != nil {
-				return nil, err
-			}
-			sec, err := s.runtime.ResolveSecurity(ctx, instanceID, claims, mv)
-			if err != nil {
-				return nil, err
-			}
-			if !sec.CanAccess() {
-				return nil, runtime.ErrForbidden
-			}
-			return mv, nil
-		},
-	})
-
-	query, err := compiler.Parse(ctx, sql)
-	if err != nil {
-		return nil, "", "", err
-	}
-
-	metricsViewName = query.MetricsView
-
-	// Resolve using the metrics_sql resolver
-	opts := &runtime.ResolveOptions{
-		InstanceID: instanceID,
-		Resolver:   "metrics_sql",
-		ResolverProperties: map[string]any{
-			"sql": sql,
-		},
-		Claims: claims,
-	}
-
-	if additionalWhere, ok := additionalWhereByMetricsView[metricsViewName]; ok && additionalWhere != nil {
-		opts.ResolverProperties["additional_where"] = metricsview.NewExpressionFromProto(additionalWhere)
-	}
-
-	if additionalTimeRange != nil {
-		opts.ResolverProperties["additional_time_range"] = metricsview.NewTimeRangeFromProto(additionalTimeRange)
-	}
-
-	resolveRes, err := s.runtime.Resolve(ctx, opts)
-	if err != nil {
-		return nil, "", "", err
-	}
-	defer resolveRes.Close()
-
-	row, err := resolveRes.Next()
-	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to get result: %w", err)
-	}
-
-	if len(row) != 1 {
-		return nil, "", "", fmt.Errorf("metrics_sql in templating only allows one result field, got %d", len(row))
-	}
-
-	var val any
-	for _, v := range row {
-		val = v
-		break
-	}
-
-	// Check no more rows
-	_, err = resolveRes.Next()
-	if err == nil {
-		return nil, "", "", fmt.Errorf("metrics_sql in templating must return one row, but the query returned multiple")
-	}
-
-	// Get field name from schema
-	schema := resolveRes.Schema()
-	if len(schema.Fields) != 1 {
-		return nil, "", "", fmt.Errorf("expected one field, got %d", len(schema.Fields))
-	}
-
-	fieldName = schema.Fields[0].Name
-
-	return val, metricsViewName, fieldName, nil
 }
