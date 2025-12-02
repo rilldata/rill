@@ -34,7 +34,7 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import GenerateSampleData from "@rilldata/web-common/features/welcome/GenerateSampleData.svelte";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { Wand } from "lucide-svelte";
 
   let active = false;
@@ -342,4 +342,4 @@
   {metricsViews}
 />
 
-<GenerateSampleData isInit={false} bind:open={generateDataDialog} />
+<GenerateSampleData initializeProject={false} bind:open={generateDataDialog} />

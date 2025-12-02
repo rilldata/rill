@@ -13,7 +13,7 @@ import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { get } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
-import OptionCancelToAIAction from "@rilldata/web-common/features/chat/core/OptionCancelToAIAction.svelte";
+import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { generateSampleData } from "@rilldata/web-common/features/chat/core/actions.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  export let isInit: boolean;
+  export let initializeProject: boolean;
   export let open = false;
 
   $: ({ instanceId } = $runtime);
@@ -29,7 +29,7 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
-      void generateSampleData(isInit, instanceId, values.prompt);
+      void generateSampleData(initializeProject, instanceId, values.prompt);
       open = false;
     },
     invalidateAll: false,
@@ -46,7 +46,7 @@
 
 <Dialog.Root bind:open>
   <Dialog.Trigger asChild let:builder>
-    {#if isInit}
+    {#if initializeProject}
       <Button type="ghost" builders={[builder]} large>
         or generate sample data using AI
       </Button>
@@ -66,11 +66,11 @@
         class="prompt-input"
         bind:value={$form.prompt}
         class:empty={$form.prompt.length === 0}
-        placeholder="e.g. sales transaction of an e-commerce store"
+        placeholder="e.g. Sales transaction of an e-commerce store"
         on:keydown={handleKeydown}
       />
       {#if $errors.prompt}
-        <div class="error">{$errors.prompt}</div>
+        <div class="error">{$errors.prompt?.[0]}</div>
       {/if}
 
       <Button type="primary" large form={FORM_ID} onClick={submit}>

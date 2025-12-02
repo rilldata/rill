@@ -4,7 +4,7 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
-  import GenerateSampleData from "@rilldata/web-common/features/welcome/GenerateSampleData.svelte";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
 
   export let data: LayoutData;
 </script>
@@ -22,7 +22,7 @@
       <div class="column" in:fly={{ duration: 1600, delay: 1200, y: 4 }}>
         <ProjectCards />
       </div>
-      <GenerateSampleData isInit />
+      <GenerateSampleData initializeProject />
     </div>
   </div>
 {/if}
