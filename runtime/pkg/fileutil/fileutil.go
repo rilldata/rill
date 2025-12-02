@@ -7,7 +7,11 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // FullExt returns all of path's extensions. For example, for "foo.csv.zip"
@@ -173,4 +177,36 @@ func OpenTempFileInDir(dir, filePath string) (*os.File, error) {
 	}
 
 	return os.CreateTemp(dir, fmt.Sprintf("%s*%s", Stem(filePath), FullExt(filePath)))
+}
+
+var numSuffixRegexp = regexp.MustCompile(`\d+$`)
+
+func GetPath(path string, entries []drivers.DirEntry) string {
+	paths := map[string]bool{}
+	for _, entry := range entries {
+		paths[entry.Path] = true
+	}
+
+	res := path
+
+	for paths[res] {
+		name := Stem(res)
+		ext := FullExt(res)
+		dir := filepath.Dir(res)
+		match := numSuffixRegexp.Find([]byte(name))
+
+		if match == nil {
+			res = filepath.Join(dir, fmt.Sprintf("%s_1%s", name, ext))
+		} else {
+			matchNum, err := strconv.Atoi(string(match))
+			if err != nil { // safeguard
+				res = filepath.Join(dir, fmt.Sprintf("%s_1%s", name, ext))
+			} else {
+				newName := numSuffixRegexp.ReplaceAllString(name, fmt.Sprintf("%d", matchNum+1))
+				res = filepath.Join(dir, fmt.Sprintf("%s%s", newName, ext))
+			}
+		}
+	}
+
+	return res
 }

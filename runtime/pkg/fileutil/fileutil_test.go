@@ -4,6 +4,7 @@ import (
 	"os/user"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -69,6 +70,58 @@ func TestExpandHome(t *testing.T) {
 			home, err := ExpandHome(tt.Path)
 			require.NoError(t, err)
 			require.Equal(t, tt.ExpectedPath, home)
+		})
+	}
+}
+
+func TestGetPath(t *testing.T) {
+	variations := []struct {
+		title        string
+		paths        []string
+		path         string
+		expectedPath string
+	}{
+		{
+			"no file",
+			[]string{},
+			"/path/to/file.yaml",
+			"/path/to/file.yaml",
+		},
+		{
+			"single file",
+			[]string{"/path/to/file.yaml"},
+			"/path/to/file.yaml",
+			"/path/to/file_1.yaml",
+		},
+		{
+			"multiple files without gap",
+			[]string{"/path/to/file.yaml", "/path/to/file_1.yaml", "/path/to/file_2.yaml"},
+			"/path/to/file.yaml",
+			"/path/to/file_3.yaml",
+		},
+		{
+			"multiple files with a gap",
+			[]string{"/path/to/file.yaml", "/path/to/file_1.yaml", "/path/to/file_3.yaml"},
+			"/path/to/file.yaml",
+			"/path/to/file_2.yaml",
+		},
+		{
+			"multiple files starting with a suffix",
+			[]string{"/path/to/file.yaml", "/path/to/file_1.yaml", "/path/to/file_2.yaml"},
+			"/path/to/file_1.yaml",
+			"/path/to/file_3.yaml",
+		},
+	}
+
+	for _, tt := range variations {
+		t.Run(tt.title, func(t *testing.T) {
+			dirs := make([]drivers.DirEntry, len(tt.paths))
+			for i, path := range tt.paths {
+				dirs[i] = drivers.DirEntry{Path: path}
+			}
+
+			res := GetPath(tt.path, dirs)
+			require.Equal(t, tt.expectedPath, res)
 		})
 	}
 }
