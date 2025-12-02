@@ -344,6 +344,11 @@
     const currentValues = new Set(selectedValues);
     const proxyValues = new Set(selectedValuesProxy);
 
+    if (!currentValues.size && !proxyValues.size) {
+      // No changes
+      return;
+    }
+
     // Apply all changes
     await toggleDimensionValueSelections(
       name,

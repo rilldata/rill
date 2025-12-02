@@ -115,10 +115,10 @@
         >
           {#if viewingDefaults}
             <CheckCircleNew size="16px" color="currentColor" />
-            <div class="flex gap-x-1 items-center">Saved as default</div>
+            <div class="flex gap-x-1 items-center">Saved as default view</div>
           {:else}
             <LeaderboardIcon size="16px" color="currentColor" />
-            <div class="flex gap-x-1 items-center">Save as default</div>
+            <div class="flex gap-x-1 items-center">Save as default view</div>
           {/if}
         </Button>
         <PreviewButton

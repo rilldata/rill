@@ -42,6 +42,7 @@ import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import { navigating } from "$app/state";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -216,7 +217,12 @@ export class CanvasEntity {
     );
   }
 
-  setDefaultFilters = () => {
+  setDefaultFilters = async () => {
+    // wait for three seconds
+    await new Promise((resolve) => {
+      setTimeout(resolve, 3000);
+    });
+
     const yaml = get(this.parsedContent);
     const filterMap = new YAMLMap();
 

@@ -23,7 +23,6 @@
   const ROW_HEIGHT = "26px";
 
   let showDefaultItem = false;
-  let justAdded = false;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -234,10 +233,7 @@
           filteredSimpleMeasures={$_allMeasures}
           dimensionHasFilter={(name) => dimensionFilters.has(name)}
           measureHasFilter={(name) => measureFilters.has(name)}
-          setTemporaryFilterName={(n) => {
-            justAdded = true;
-            addTemporaryFilter(n);
-          }}
+          setTemporaryFilterName={addTemporaryFilter}
         />
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->

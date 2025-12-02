@@ -163,7 +163,6 @@ export class FilterManager {
         );
 
         derived(stores, (filters) => {
-          console.log({ pinnedFilters });
           return this.convertToUIFilters(
             filters,
             temporaryFilterKeys,
@@ -287,7 +286,7 @@ export class FilterManager {
       pinnedFilters.forEach((filterName) => {
         const foundDimensionsOrMeasures = new Map();
 
-        this.metricsViewFilters.forEach((filters, name) => {
+        this.metricsViewFilters.forEach((_, name) => {
           const foundDimension = this.metricsViewNameDimensionMap
             .get(name)
             ?.get(filterName);
@@ -330,9 +329,14 @@ export class FilterManager {
     };
 
     const allMeasures = get(this._allMeasures);
+    const allDimensions = get(this._allDimensions);
+
+    const fullFilterString = parsedFilters.map((p) => p.string).join(" AND ");
 
     allMeasures.forEach((measures, key) => {
       const filters: MeasureFilterItem[] = [];
+
+      const pinned = pinnedFilters.has(key);
 
       const measureMap = allMeasures.get(key);
       const metricsViewNames = measureMap ? Array.from(measureMap.keys()) : [];
@@ -346,14 +350,12 @@ export class FilterManager {
           dimensions: undefined,
           name: key.split("::")[1],
           label: measureSpecs[0].displayName ?? "",
-          pinned: false,
+          pinned: pinned,
           measures: measureMap,
           metricsViewNames: metricsViewNames,
         });
         return;
       }
-
-      const pinned = pinnedFilters.has(key);
 
       measures.forEach((measure, metricsViewName) => {
         const parsed = parsedMap.get(metricsViewName);
@@ -400,13 +402,14 @@ export class FilterManager {
       // }
     });
 
-    const allDimensions = get(this._allDimensions);
-
     // can improve efficiency at a later date - bgh
+    // iterate through all the unique dimension keys
     allDimensions.forEach((dimensions, key) => {
       const filters: DimensionFilterItem[] = [];
 
       const firstDimension = Array.from(dimensions.values())[0];
+
+      const pinned = pinnedFilters.has(key);
 
       if (temporaryFilterKeys.has(key)) {
         filters.push({
@@ -417,7 +420,7 @@ export class FilterManager {
           dimensions: dimensions,
           isInclude: true,
           inputText: undefined,
-          pinned: false,
+          pinned: pinned,
         });
 
         merged.dimensionFilters.set(key, {
@@ -427,8 +430,7 @@ export class FilterManager {
         return;
       }
 
-      const pinned = pinnedFilters.has(key);
-
+      // iterate through the merged dimensions under this unique key
       dimensions.forEach((dimension, metricsViewName) => {
         const parsed = parsedMap.get(metricsViewName);
         if (!parsed) return;
@@ -481,6 +483,36 @@ export class FilterManager {
       merged.hasClearableFilters ||
       pinnedFilters.size > 0 ||
       temporaryFilterKeys.size > 0;
+
+    // Temporary to get sorting to work, will revisit later - bgh
+
+    // Should be organized pinned -> then order of appearance in full filter string -> temporary at end
+    const sortedDimensionMap = new Map(
+      Array.from(merged.dimensionFilters.entries()).sort((a, b) => {
+        return sortMeasuresOrDimensions(
+          a,
+          b,
+          pinnedFilters,
+          temporaryFilterKeys,
+          fullFilterString,
+        );
+      }),
+    );
+
+    const sortedMeasureMap = new Map(
+      Array.from(merged.measureFilters.entries()).sort((a, b) => {
+        return sortMeasuresOrDimensions(
+          a,
+          b,
+          pinnedFilters,
+          temporaryFilterKeys,
+          fullFilterString,
+        );
+      }),
+    );
+
+    merged.measureFilters = sortedMeasureMap;
+    merged.dimensionFilters = sortedDimensionMap;
 
     return merged;
   };
@@ -679,6 +711,7 @@ export class FilterManager {
   // Unclear on what this actually should do - bgh
   // Go to defaults or truly clear all filters?
   clearAllFilters = async () => {
+    this._temporaryFilterKeys.set(new Set());
     await goto(`?clear=true`);
   };
 
@@ -715,4 +748,37 @@ export class FilterManager {
       await goto(`?${string}`);
     }
   };
+}
+
+function sortMeasuresOrDimensions(
+  a: [string, MeasureFilterItem | DimensionFilterItem],
+  b: [string, MeasureFilterItem | DimensionFilterItem],
+  pinnedFilters: Set<string>,
+  temporaryFilterKeys: Set<string>,
+  fullFilterString: string,
+) {
+  const aKey = a[0];
+  const bKey = b[0];
+
+  const aPinned = pinnedFilters.has(aKey) ? 1 : 0;
+  const bPinned = pinnedFilters.has(bKey) ? 1 : 0;
+
+  if (aPinned !== bPinned) {
+    return bPinned - aPinned;
+  }
+
+  const aTemporary = temporaryFilterKeys.has(aKey) ? 1 : 0;
+  const bTemporary = temporaryFilterKeys.has(bKey) ? 1 : 0;
+
+  if (aTemporary !== bTemporary) {
+    return aTemporary - bTemporary;
+  }
+
+  const aName = aKey.split("::")[1];
+  const bName = bKey.split("::")[1];
+
+  const aIndex = fullFilterString.indexOf(aName);
+  const bIndex = fullFilterString.indexOf(bName);
+
+  return aIndex - bIndex;
 }
