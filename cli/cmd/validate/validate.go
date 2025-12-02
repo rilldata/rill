@@ -20,10 +20,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultOLAPConnector = "duckdb"
-const localURL = "http://localhost:9009"
-
-var errRepoTooLarge = errors.New("project directory exceeds file limit")
+const (
+	defaultOLAPConnector = "duckdb"
+	listResourcesTimeout = 10 * time.Second
+)
 
 // ValidateCmd validates and reconciles a project without starting the UI.
 func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -49,7 +49,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("no Rill project found at %q (missing rill.yaml)", projectPath)
 			}
 
-			if ch.IsAuthenticated() && local.IsProjectInit(projectPath) {
+			if ch.IsAuthenticated() {
 				err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
 				if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 					ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
@@ -57,9 +57,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if err := enforceRepoLimits(cmd.Context(), projectPath, ch); err != nil {
-				if errors.Is(err, errRepoTooLarge) {
-					return nil
-				}
 				return err
 			}
 
@@ -87,8 +84,8 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
 				Variables:      envVarsMap,
-				LocalURL:       localURL,
-				AllowedOrigins: []string{localURL},
+				LocalURL:       "",
+				AllowedOrigins: []string{""},
 				ServeUI:        false,
 			})
 			if err != nil {
@@ -142,7 +139,6 @@ func enforceRepoLimits(ctx context.Context, projectPath string, ch *cmdutil.Help
 	if err != nil {
 		if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
 			ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
-			return errRepoTooLarge
 		}
 		return fmt.Errorf("failed to list project files: %w", err)
 	}
@@ -198,12 +194,9 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App,
 		return err
 	}
 
-	reconcileCtx := ctx
-	if reconcileTimeout > 0 {
-		c, cancel := context.WithTimeout(ctx, reconcileTimeout)
-		reconcileCtx = c
-		defer cancel()
-	}
+	// Create a context with timeout for reconciliation
+	reconcileCtx, cancel := context.WithTimeout(ctx, reconcileTimeout)
+	defer cancel()
 
 	// Kick off reconciliation and wait for completion
 	if err := ctrl.Reconcile(reconcileCtx, runtime.GlobalProjectParserName); err != nil {
@@ -228,7 +221,7 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App,
 	reconcileErrors := renderResourceStatus(ch, resources)
 
 	if len(reconcileErrors) > 0 {
-		return fmt.Errorf("reconciliation completed with errors")
+		return fmt.Errorf("reconciliation completed with %d error(s)", len(reconcileErrors))
 	}
 
 	ch.PrintfSuccess("\nValidation completed without errors.\n")
@@ -258,10 +251,10 @@ func renderResourceStatus(ch *cmdutil.Helper, resources []*runtimev1.Resource) [
 }
 
 func reportTimeout(ctx context.Context, ch *cmdutil.Helper, ctrl *runtime.Controller, reconcileTimeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	listCtx, cancel := context.WithTimeout(ctx, listResourcesTimeout)
 	defer cancel()
 
-	resources, err := ctrl.List(ctx, "", "", true)
+	resources, err := ctrl.List(listCtx, "", "", true)
 	if err != nil {
 		return fmt.Errorf("reconciliation timed out after %s and listing resources failed: %w", reconcileTimeout, err)
 	}
