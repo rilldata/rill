@@ -378,7 +378,7 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat, ou
 		if result.Timeout {
 			return fmt.Errorf("reconciliation timed out. If a model processes full data, consider adding an explicit dev partition or rerun with --reconcile-timeout to allow more time")
 		}
-		return fmt.Errorf("validation failed: %d error(s) %d parse error(s) %d reconcile error(s)\n", result.Summary.ParseErrors+result.Summary.ReconcileErrors, result.Summary.ParseErrors, result.Summary.ReconcileErrors)
+		return fmt.Errorf("validation failed: %d error(s) (%d parse, %d reconcile)", result.Summary.ParseErrors+result.Summary.ReconcileErrors, result.Summary.ParseErrors, result.Summary.ReconcileErrors)
 	}
 
 	ch.PrintfSuccess("Validation completed successfully\n")
