@@ -6,7 +6,6 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import MeasureFilterReadOnlyChip from "../../dashboards/filters/measure-filters/MeasureFilterReadOnlyChip.svelte";
   import TimeRangeReadOnly from "../../dashboards/filters/TimeRangeReadOnly.svelte";
-  import _default from "dompurify";
 
   export let canvasName: string;
 

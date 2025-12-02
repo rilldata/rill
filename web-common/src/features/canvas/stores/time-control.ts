@@ -3,7 +3,6 @@ import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canv
 import {
   calculateComparisonTimeRangePartial,
   calculateTimeRangePartial,
-  getComparisonTimeRange,
   type ComparisonTimeRangeState,
   type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -545,18 +544,6 @@ export function parseSearchParams(urlParams: URLSearchParams) {
     grain,
   };
 }
-
-const fallbackInitialRanges = {
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "PT24H",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "PT24H",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "PT24H",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "PT24H",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "P7D",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "P4W",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "P3M",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "P3Q",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "P5Y",
-};
 
 function deriveMinTimeGrain(
   componentName: string | undefined,
