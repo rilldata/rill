@@ -3,29 +3,45 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { generateSampleData } from "@rilldata/web-common/features/chat/core/actions.ts";
-  import { createForm } from "svelte-forms-lib";
-  import * as yup from "yup";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
 
   export let isInit: boolean;
   export let open = false;
 
   $: ({ instanceId } = $runtime);
 
-  const { form, errors, handleSubmit } = createForm({
-    initialValues: {
-      prompt: "",
-    },
-    validationSchema: yup.object({
-      prompt: yup
-        .string()
+  const FORM_ID = "generate-sample-data-form";
+
+  const schema = yup(
+    object({
+      prompt: string()
         .required("Please describe your data")
         .min(10, "Please provide more detail (at least 10 characters)"),
     }),
-    onSubmit: (values) => {
+  );
+  const initialValues = { prompt: "" };
+  const superFormInstance = superForm(defaults(initialValues, schema), {
+    SPA: true,
+    validators: schema,
+    dataType: "json",
+    async onUpdate({ form }) {
+      if (!form.valid) return;
+      const values = form.data;
       void generateSampleData(isInit, instanceId, values.prompt);
       open = false;
     },
+    invalidateAll: false,
   });
+  $: ({ form, errors, enhance, submit } = superFormInstance);
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
+  }
 </script>
 
 <Dialog.Root bind:open>
@@ -45,18 +61,21 @@
         <div>What is the business context or domain of your data?</div>
       </Dialog.Description>
     </Dialog.Header>
-    <form on:submit|preventDefault={handleSubmit}>
+    <form id={FORM_ID} on:submit|preventDefault={submit} use:enhance>
       <textarea
         class="prompt-input"
         bind:value={$form.prompt}
         class:empty={$form.prompt.length === 0}
         placeholder="e.g. sales transaction of an e-commerce store"
+        on:keydown={handleKeydown}
       />
       {#if $errors.prompt}
         <div class="error">{$errors.prompt}</div>
       {/if}
 
-      <Button type="primary" large onClick={handleSubmit}>Generate</Button>
+      <Button type="primary" large form={FORM_ID} onClick={submit}>
+        Generate
+      </Button>
     </form>
   </Dialog.Content>
 </Dialog.Root>
@@ -74,6 +93,6 @@
   }
 
   .error {
-    @apply text-xs text-red-600 font-normal;
+    @apply text-xs text-red-600 font-normal pb-2;
   }
 </style>
