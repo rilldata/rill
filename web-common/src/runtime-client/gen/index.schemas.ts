@@ -2120,6 +2120,10 @@ export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
+export interface V1ResolveTemplatedStringResponse {
+  body?: string;
+}
+
 export interface V1ResolvedTimeRange {
   /** The start of the resolved time range. */
   start?: string;
@@ -2975,6 +2979,17 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export type QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView =
+  { [key: string]: V1Expression };
+
+export type QueryServiceResolveTemplatedStringBody = {
+  body?: string;
+  /** If true, output format tokens instead of raw values. */
+  useFormatTokens?: boolean;
+  additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
+  additionalTimeRange?: V1TimeRange;
+};
 
 export type QueryServiceColumnRollupIntervalBody = {
   connector?: string;
