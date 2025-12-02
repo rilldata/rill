@@ -51,7 +51,7 @@ var defaultFeatureFlags = map[string]string{
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
-	"dashboard_chat": "false",
+	"dashboard_chat": "{{ not .user.embed }}",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
