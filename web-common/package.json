@@ -81,6 +81,7 @@
     "d3-shape": "^3.1.0",
     "d3-time-format": "^4.1.0",
     "deepmerge": "^4.3.1",
+    "diff2html": "^3.4.52",
     "dompurify": "^3.1.0",
     "fflate": "^0.8.2",
     "globals": "^16.0.0",
