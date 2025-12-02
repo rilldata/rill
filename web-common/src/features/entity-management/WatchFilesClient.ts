@@ -60,7 +60,7 @@ export class WatchFilesClient {
 
             await invalidate("init");
 
-            eventBus.emit("project-reset", null);
+            eventBus.emit("rill-yaml-updated", null);
           }
           this.seenFiles.add(res.path);
           break;

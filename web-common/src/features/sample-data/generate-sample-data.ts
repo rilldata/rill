@@ -31,8 +31,11 @@ export async function generateSampleData(
         title: `Hang tight! We're initialising an empty project.`,
       });
 
+      // UnpackEmpty create a new rill.yaml file. In backend it triggers a reset and cancels any pending requests.
+      // The way we get around this is by invalidating all queries in WatchFilesClient on a rill.yaml write.
+      // On a rill.yaml write, WatchFilesClient also fires `rill-yaml-updated` which acts as a signal here to make sure any new requests are not canceled.
       const projectResetPromise = new Promise<void>((resolve, reject) => {
-        const unsub = eventBus.once("project-reset", () => resolve());
+        const unsub = eventBus.once("rill-yaml-updated", () => resolve());
         setTimeout(() => {
           reject(new Error("Project init timed out"));
           unsub();

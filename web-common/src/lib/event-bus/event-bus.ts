@@ -73,7 +73,7 @@ export interface Events {
   "shift-command-click": null;
   "page-content-resized": PageContentResized;
   "start-chat": string;
-  "project-reset": null;
+  "rill-yaml-updated": null;
 }
 
 type T = keyof Events;
