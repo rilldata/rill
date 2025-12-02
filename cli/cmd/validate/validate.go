@@ -84,8 +84,8 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				ProjectPath:    projectPath,
 				LogFormat:      parsedLogFormat,
 				Variables:      envVarsMap,
-				LocalURL:       "",
-				AllowedOrigins: []string{""},
+				LocalURL:       "",           // No UI, so no local URL
+				AllowedOrigins: []string{""}, // No UI, so no allowed origins
 				ServeUI:        false,
 			})
 			if err != nil {
@@ -275,8 +275,8 @@ type resourceTableRow struct {
 
 func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 	truncErr := r.Meta.ReconcileError
-	if len(truncErr) > 80 {
-		truncErr = truncErr[:80] + "..."
+	if len(truncErr) > 120 {
+		truncErr = truncErr[:120] + "..."
 	}
 
 	return &resourceTableRow{
