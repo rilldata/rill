@@ -88,6 +88,7 @@
       bind:open
       {name}
       {filter}
+      {label}
       {dimensionName}
       {allDimensions}
       {onApply}

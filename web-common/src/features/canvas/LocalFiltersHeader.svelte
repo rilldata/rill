@@ -35,8 +35,13 @@
 
   $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
 
-  $: ({ whereFilter, dimensionThresholdFilters, dimensionsWithInlistFilter } =
-    localFilters);
+  $: ({ parsed } = localFilters);
+
+  $: ({
+    dimensionThresholdFilters,
+    dimensionFilter,
+    dimensionsWithInlistFilter,
+  } = $parsed);
 
   $: displayTimeRange = {
     ...$timeAndFilterStore.timeRange,
@@ -53,13 +58,14 @@
     class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
   >
     <Filter size="16px" className="text-gray-400" />
+
     <FilterChipsReadOnly
       metricsViewNames={[$specStore.metrics_view]}
       dimensions={$dimensions}
       measures={$measures}
-      dimensionThresholdFilters={$dimensionThresholdFilters}
-      dimensionsWithInlistFilter={$dimensionsWithInlistFilter}
-      filters={$whereFilter}
+      {dimensionThresholdFilters}
+      {dimensionsWithInlistFilter}
+      filters={dimensionFilter}
       displayComparisonTimeRange={$showTimeComparison
         ? displayComparisonTimeRange
         : undefined}

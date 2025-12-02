@@ -71,6 +71,7 @@
         removeDimensionFilter,
         toggleDimensionFilterMode,
       },
+
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters, setTemporaryFilterName },
     },

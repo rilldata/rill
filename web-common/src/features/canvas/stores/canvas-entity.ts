@@ -38,7 +38,7 @@ import {
 import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
-import { TimeControls } from "./time-control";
+import { getComparisonTypeFromRangeString, TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
@@ -681,7 +681,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   ) {
     defaultSearchParams.set(
       ExploreStateURLParams.ComparisonTimeRange,
-      "rill-PP",
+      getComparisonTypeFromRangeString(defaultPreset.timeRange),
     );
   }
 

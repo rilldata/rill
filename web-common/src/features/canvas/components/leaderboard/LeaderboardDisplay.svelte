@@ -49,7 +49,10 @@
         getDimensionsForMetricView,
         getMeasuresForMetricView,
       },
-      filters: { isFilterExcludeMode, toggleDimensionValueSelection },
+      filterManager: {
+        metricsViewFilters,
+        actions: { toggleDimensionValueSelections },
+      },
     },
   } = store);
 
@@ -136,6 +139,10 @@
         ?.validPercentOfTotal ?? false
     );
   }
+
+  $: mvFilters = metricsViewFilters.get(metricsViewName)!;
+
+  $: ({ parsed } = mvFilters);
 </script>
 
 {#if schema.isValid}
@@ -180,7 +187,8 @@
               {dimensionColumnWidth}
               sortedAscending={sortDirection === SortDirection.ASCENDING}
               {sortType}
-              filterExcludeMode={$isFilterExcludeMode(dimension.name)}
+              filterExcludeMode={$parsed?.dimensionFilters.get(dimension.name)
+                ?.isInclude === false}
               {timeRange}
               comparisonTimeRange={showTimeComparison
                 ? comparisonTimeRange
@@ -199,7 +207,20 @@
               isBeingCompared={false}
               formatters={measureFormatters}
               {toggleSort}
-              {toggleDimensionValueSelection}
+              toggleDimensionValueSelection={async (
+                name,
+                value,
+                keepPillVisible,
+                isExclusiveFilter,
+              ) => {
+                await toggleDimensionValueSelections(
+                  name,
+                  [value],
+                  [metricsViewName],
+                  keepPillVisible,
+                  isExclusiveFilter,
+                );
+              }}
               measureLabel={(measureName) =>
                 visibleMeasures.find((m) => m.name === measureName)
                   ?.displayName || measureName}

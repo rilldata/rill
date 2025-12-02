@@ -51,7 +51,9 @@ export function initFilterBase() {
     dimensionThresholdFilters: <DimensionThresholdFilter[]>[],
     measureFilters: new Map<string, MeasureFilterItem>(),
     dimensionFilters: new Map<string, DimensionFilterItem>(),
-    complex: false,
+    complexFilters: [] as V1Expression[],
+    hasFilters: false,
+    hasClearableFilters: false,
   };
 }
 
@@ -120,7 +122,6 @@ export class FilterManager {
   _dimensionFilterKeys: Readable<string[]>;
   _defaultUIFilters: Readable<UIFilters>;
   _defaultExpression: Readable<V1Expression>;
-  // allMetricsViewNamesPrefix = writable<string>("");
   _activeUIFilters: Readable<UIFilters>;
   _activeExpression: Readable<V1Expression>;
   metricsViewNameDimensionMap: Map<
@@ -130,6 +131,12 @@ export class FilterManager {
   metricsViewNameMeasureMap: Map<string, Map<string, MetricsViewSpecMeasure>> =
     new Map();
   _filterMap: Readable<Map<string, V1Expression>>;
+  _scopedDimensions = writable<Map<string, DimensionLookup>>(new Map());
+  _scopedMeasures = writable<Map<string, MeasureLookup>>(new Map());
+
+  createLocalFilterStore = (metricsViewName: string) => {
+    return new MetricsViewFilter(metricsViewName, this);
+  };
 
   constructor(
     metricsViews: Record<string, V1MetricsView | undefined>,
@@ -201,15 +208,20 @@ export class FilterManager {
   ) {
     const dimensionIdMap: Map<string, string[]> = new Map();
     const measureIdMap: Map<string, string[]> = new Map();
+    const dimensionLookups: Map<string, DimensionLookup> = new Map();
+    const measureLookups: Map<string, MeasureLookup> = new Map();
 
     Object.entries(metricsViews).forEach(([name, mv]) => {
+      const dimensionMap: DimensionLookup = new Map();
+      const measureMap: MeasureLookup = new Map();
       if (mv) {
         this.metricsViewNameDimensionMap.set(name, new Map());
         this.metricsViewNameMeasureMap.set(name, new Map());
 
         mv.state?.validSpec?.dimensions?.forEach((dim) => {
           const dimName = dim.name;
-          if (!dimName) return;
+          if (!dimName || dim.type === "DIMENSION_TYPE_TIME") return;
+          dimensionMap.set(dimName, new Map([[name, dim]]));
 
           const array = dimensionIdMap.get(dimName) || [];
           array.push(name);
@@ -221,22 +233,25 @@ export class FilterManager {
           const measureName = measure.name;
           if (!measureName) return;
 
+          measureMap.set(measureName, new Map([[name, measure]]));
+
           const array = measureIdMap.get(measureName) || [];
           array.push(name);
           measureIdMap.set(measureName, array);
           this.metricsViewNameMeasureMap.get(name)?.set(measureName, measure);
         });
 
-        const existingFilterStore = this.metricsViewFilters.get(name);
+        dimensionLookups.set(name, dimensionMap);
+        measureLookups.set(name, measureMap);
 
-        if (existingFilterStore) {
-          existingFilterStore.update(mv, defaultFilters?.[name]);
-        } else {
-          this.metricsViewFilters.set(
-            name,
-            new MetricsViewFilter(mv, name, defaultFilters?.[name], this),
-          );
+        let existingFilterStore = this.metricsViewFilters.get(name);
+
+        if (!existingFilterStore) {
+          existingFilterStore = new MetricsViewFilter(name, this);
+          this.metricsViewFilters.set(name, existingFilterStore);
         }
+
+        existingFilterStore.onDefaultFilterStringChange(defaultFilters?.[name]);
       }
     });
 
@@ -255,6 +270,9 @@ export class FilterManager {
     this._allMeasures.set(mergedMeasures);
 
     this._allDimensions.set(mergedDimensions);
+
+    this._scopedDimensions.set(dimensionLookups);
+    this._scopedMeasures.set(measureLookups);
 
     if (pinnedFilters) {
       const keys = new Set<string>();
@@ -362,21 +380,11 @@ export class FilterManager {
       });
 
       if (filters.length === 0) return;
-      // if (
-      //   filters.every(
-      //     (f) =>
-      //       f.measure === filters[0].measure &&
-      //       f.operation === filters[0].operation &&
-      //       f.type === filters[0].type,
-      //   )
-      // ) {
+
       merged.measureFilters.set(key, {
         ...filters[0],
         measures: measures,
       });
-      // } else {
-      //   // mixed filters - need to resolve
-      // }
     });
 
     // can improve efficiency at a later date - bgh
@@ -633,7 +641,7 @@ export class FilterManager {
       measureName: string,
       metricsViewNames: string[],
     ) => {
-      this.checkTemporaryFilter(dimensionName, metricsViewNames);
+      this.checkTemporaryFilter(measureName, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
 
@@ -687,7 +695,20 @@ export class FilterManager {
   // Go to defaults or truly clear all filters?
   clearAllFilters = async () => {
     this._temporaryFilterKeys.set(new Set());
-    await goto(`?clear=true`);
+    const existingParams = new URLSearchParams(window.location.search);
+    const filterParamsToDelete = Array.from(existingParams.keys()).filter(
+      (key) => key.startsWith(ExploreStateURLParams.Filters),
+    );
+    filterParamsToDelete.forEach((key) => {
+      existingParams.delete(key);
+    });
+    const string = existingParams.toString();
+    if (string) {
+      await goto(`?${string}`);
+      return;
+    } else {
+      await goto(`?clear=true`);
+    }
   };
 
   applyFiltersToUrl = async (

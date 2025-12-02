@@ -22,6 +22,7 @@
 
   export let dimensionName: string;
   export let name: string;
+  export let label: string;
   export let open: boolean;
   export let filter: MeasureFilterEntry | undefined = undefined;
   export let onApply: (params: {
@@ -134,7 +135,7 @@
     <div
       class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
     >
-      <b>{filter?.measure}</b>
+      <b>{label}</b>
 
       <BitsTooltip.Root portal="body">
         <BitsTooltip.Trigger asChild let:builder>

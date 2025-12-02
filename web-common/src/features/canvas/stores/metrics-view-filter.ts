@@ -18,7 +18,6 @@ import {
 import type {
   MetricsViewSpecDimension,
   V1Expression,
-  V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import {
   type MetricsViewSpecMeasure,
@@ -42,19 +41,20 @@ import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName
 export class MetricsViewFilter {
   parsed = writable(initFilterBase());
   parsedDefaultFilters = writable<ParsedFilters>(initFilterBase());
+  temporaryFilterKeys = writable(new Set<string>());
 
   constructor(
-    metricsView: V1MetricsView,
     private metricsViewName: string,
-    defaultExpression: string | undefined,
     private manager: FilterManager,
-  ) {
-    this.update(metricsView, defaultExpression);
-  }
+  ) {}
 
-  update(metricsView: V1MetricsView, defaultExpression?: string) {
-    this.parsedDefaultFilters.set(this.parseFilterString(defaultExpression));
-  }
+  setTemporaryFilterName = (key: string) => {
+    const keys = get(this.temporaryFilterKeys);
+    keys.add(key);
+    this.temporaryFilterKeys.set(keys);
+
+    this.parsed.set(this.parseFilterString(get(this.parsed).string));
+  };
 
   onFilterStringChange(filterString: string) {
     const { string } = get(this.parsed);
@@ -62,6 +62,19 @@ export class MetricsViewFilter {
 
     this.parsed.set(this.parseFilterString(filterString));
   }
+
+  onDefaultFilterStringChange(filterString: string | undefined) {
+    const { string } = get(this.parsedDefaultFilters);
+    if (string === filterString) return;
+
+    this.parsedDefaultFilters.set(this.parseFilterString(filterString));
+  }
+
+  clearAllFilters = () => {
+    this.parsed.set(this.parseFilterString(""));
+    this.temporaryFilterKeys.set(new Set());
+    return "";
+  };
 
   parseFilterString(filterString: string = ""): ParsedFilters {
     const { expr, dimensionsWithInlistFilter } =
@@ -82,7 +95,9 @@ export class MetricsViewFilter {
         dimensionThresholdFilters,
         dimensionFilters: new Map(),
         measureFilters: new Map(),
-        complex: true,
+        complexFilters: [],
+        hasClearableFilters: false,
+        hasFilters: false,
       };
     }
 
@@ -100,6 +115,7 @@ export class MetricsViewFilter {
       metricsViewName: this.metricsViewName,
       dimensionsWithInlistFilter,
       dimensionThresholdFilters,
+      temporaryFilterKeys: get(this.temporaryFilterKeys),
     });
 
     return {
@@ -110,7 +126,7 @@ export class MetricsViewFilter {
       dimensionsWithInlistFilter,
       dimensionThresholdFilters,
       ...processed,
-      complex: false,
+      complexFilters: [],
     };
   }
 
@@ -196,7 +212,7 @@ export class MetricsViewFilter {
     exclude: boolean = false,
   ) => {
     const {
-      where: wf,
+      dimensionFilter: wf,
       dimensionsWithInlistFilter,
       dimensionThresholdFilters,
     } = get(this.parsed);
@@ -333,6 +349,7 @@ function processExpression({
   metricsViewName,
   dimensionsWithInlistFilter,
   dimensionThresholdFilters,
+  temporaryFilterKeys,
 }: {
   expr: V1Expression;
   measureMap: Map<string, MetricsViewSpecMeasure>;
@@ -340,6 +357,7 @@ function processExpression({
   metricsViewName: string;
   dimensionsWithInlistFilter: string[];
   dimensionThresholdFilters: DimensionThresholdFilter[];
+  temporaryFilterKeys: Set<string>;
 }): UIFilters {
   const isComplex = isExpressionUnsupported(expr);
   const dimensionFilters = getDimensionFilterItemsMap(
@@ -352,6 +370,41 @@ function processExpression({
     measureMap,
     dimensionThresholdFilters,
   );
+  temporaryFilterKeys.forEach((key) => {
+    if (dimensionFilters.has(key)) {
+      temporaryFilterKeys.delete(key);
+      return;
+    }
+    const dimension = dimensionMap.get(key);
+    if (dimension) {
+      dimensionFilters.set(key, {
+        name: key,
+        label: getDimensionDisplayName(dimension),
+        dimensions: new Map([[metricsViewName, dimension]]),
+        selectedValues: [],
+        mode: DimensionFilterMode.Select,
+        isInclude: true,
+        pinned: false,
+      });
+    }
+
+    const measure = measureMap.get(key);
+    if (measureFilters.has(key)) {
+      temporaryFilterKeys.delete(key);
+      return;
+    }
+    if (measure) {
+      measureFilters.set(key, {
+        dimensionName: "",
+        dimensions: undefined,
+        name: key,
+        label: measure.displayName ?? "",
+        pinned: false,
+        measures: new Map([[metricsViewName, measure]]),
+        metricsViewNames: [metricsViewName],
+      });
+    }
+  });
   return {
     complexFilters: isComplex ? [expr] : [],
     measureFilters: measureFilters,

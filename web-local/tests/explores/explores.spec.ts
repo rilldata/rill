@@ -232,6 +232,7 @@ time_ranges:
 
     // Change filter to excluded
     await page.getByText("Publisher Facebook").click();
+    await page.waitForTimeout(500); // wait for the filter bar to update
     await page.getByLabel("Include exclude toggle").click();
     await page.getByText("Exclude Publisher Facebook").click();
 

@@ -18,6 +18,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
+  TimeComparisonOption,
   TimeRangePreset,
   type DashboardTimeControls,
   type TimeRange,
@@ -45,6 +46,11 @@ import {
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { SearchParamsStore } from "./canvas-entity";
+import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
+import {
+  RillLegacyDaxInterval,
+  RillPeriodToGrainInterval,
+} from "../../dashboards/url-state/time-ranges/RillTime";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -263,9 +269,7 @@ export class TimeControls {
 
     const defaultRange = defaultPreset?.timeRange;
 
-    // if (defaultRange) {
     this._defaultTimeRange.set(defaultRange);
-    // }
 
     if (
       defaultPreset?.comparisonMode ===
@@ -583,3 +587,43 @@ function deriveMinTimeGrain(
 
   return minTimeGrain;
 }
+
+export function getComparisonTypeFromRangeString(
+  range: string | undefined,
+): TimeComparisonOption {
+  if (!range) {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+  try {
+    const { interval, rangeGrain } = parseRillTime(range);
+
+    if (
+      interval instanceof RillLegacyDaxInterval ||
+      interval instanceof RillPeriodToGrainInterval
+    ) {
+      return rangeGrain && rangeGrain in timeGrainToComparisonOptionMap
+        ? timeGrainToComparisonOptionMap[rangeGrain]
+        : TimeComparisonOption.CONTIGUOUS;
+    } else {
+      return TimeComparisonOption.CONTIGUOUS;
+    }
+  } catch {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+}
+
+const timeGrainToComparisonOptionMap: Record<
+  V1TimeGrain,
+  TimeComparisonOption
+> = {
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_DAY]: TimeComparisonOption.DAY,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: TimeComparisonOption.WEEK,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: TimeComparisonOption.MONTH,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: TimeComparisonOption.QUARTER,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: TimeComparisonOption.YEAR,
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
+};

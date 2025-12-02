@@ -71,7 +71,9 @@
 
   $: excludeMode = isInclude === false;
 
-  let open = openOnMount && !selectedValues?.length && !inputText;
+  let open =
+    openOnMount && !filterData.selectedValues?.length && !filterData.inputText;
+
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
