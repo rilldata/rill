@@ -19,20 +19,17 @@
   <div class="p-0.5 border rounded-bl-sm rounded-tl-sm bg-gray-50 command-text">
     {command}
   </div>
-  <div
-    role="button"
-    tabindex="0"
-    class="p-1 border rounded-br-sm rounded-tr-sm bg-gray-50"
-    class:cursor-pointer={copied}
+  <button
+    type="button"
+    class="p-1 border rounded-br-sm rounded-tr-sm bg-gray-50 cursor-pointer"
     on:click={copyCommand}
-    on:keydown={copyCommand}
   >
     {#if copied}
       <Check size="14px" />
     {:else}
       <CopyIcon color="gray-400" size="14px" />
     {/if}
-  </div>
+  </button>
 </div>
 
 <style>
