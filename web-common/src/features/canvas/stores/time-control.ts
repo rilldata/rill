@@ -72,7 +72,7 @@ export class TimeControls {
     writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
   _canPan: Readable<{ left: boolean; right: boolean }>;
-  _defaultTimeRange = writable<string>("");
+  _defaultTimeRange = writable<string | undefined>(undefined);
   _defaultComparisonRange = writable<string | undefined>(undefined);
 
   constructor(
@@ -264,16 +264,17 @@ export class TimeControls {
 
     const defaultRange = defaultPreset?.timeRange;
 
-    if (defaultRange) {
-      this._defaultTimeRange.set(defaultRange);
-    }
+    // if (defaultRange) {
+    this._defaultTimeRange.set(defaultRange);
+    // }
 
     if (
-      defaultRange &&
       defaultPreset?.comparisonMode ===
-        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
     ) {
       this._defaultComparisonRange.set("rill-PP");
+    } else {
+      this._defaultComparisonRange.set(undefined);
     }
 
     // const allTimeRange = get(this.allTimeRange);

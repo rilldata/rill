@@ -19,7 +19,6 @@ import {
   writable,
 } from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-
 import { goto } from "$app/navigation";
 import { MetricsViewFilter } from "./metrics-view-filter";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
@@ -130,7 +129,6 @@ export class FilterManager {
   > = new Map();
   metricsViewNameMeasureMap: Map<string, Map<string, MetricsViewSpecMeasure>> =
     new Map();
-  _viewingDefaults: Readable<boolean>;
   _filterMap: Readable<Map<string, V1Expression>>;
 
   constructor(
@@ -192,33 +190,6 @@ export class FilterManager {
           });
           return map;
         }).subscribe(set);
-      },
-    );
-
-    this._viewingDefaults = derived(
-      [this._activeUIFilters, this._defaultUIFilters],
-      ([active, defaults]) => {
-        const activeDimensionKeys = Array.from(
-          active.dimensionFilters.keys(),
-        ).sort();
-        const defaultDimensionKeys = Array.from(
-          defaults.dimensionFilters.keys(),
-        ).sort();
-
-        const activeMeasureKeys = Array.from(
-          active.measureFilters.keys(),
-        ).sort();
-        const defaultMeasureKeys = Array.from(
-          defaults.measureFilters.keys(),
-        ).sort();
-
-        return (
-          JSON.stringify(activeDimensionKeys) ===
-            JSON.stringify(defaultDimensionKeys) &&
-          JSON.stringify(activeMeasureKeys) ===
-            JSON.stringify(defaultMeasureKeys) &&
-          !active.hasClearableFilters
-        );
       },
     );
   }

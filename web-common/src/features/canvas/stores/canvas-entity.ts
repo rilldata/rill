@@ -9,6 +9,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getQueryServiceResolveCanvasQueryOptions,
   V1ExploreComparisonMode,
+  type V1CanvasPreset,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
@@ -87,6 +88,23 @@ export class CanvasEntity {
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
+  _defaultUrlParams = writable<URLSearchParams>(new URLSearchParams());
+  _viewingDefaults = derived(
+    [this.searchParams, this._defaultUrlParams],
+    ([$searchParams, $defaultUrlParams]) => {
+      for (const [key, value] of $defaultUrlParams.entries()) {
+        if ($searchParams.get(key) !== value) {
+          return false;
+        }
+      }
+      for (const [key, value] of $searchParams.entries()) {
+        if ($defaultUrlParams.get(key) !== value) {
+          return false;
+        }
+      }
+      return true;
+    },
+  );
 
   constructor(
     public name: string,
@@ -201,6 +219,11 @@ export class CanvasEntity {
       if (spec.data) {
         this.processRows(spec.data);
       }
+
+      const defaultPreset = spec.data?.canvas?.defaultPreset ?? {};
+      const defaultSearchParams = getDefaults(defaultPreset);
+
+      this._defaultUrlParams.set(defaultSearchParams);
     });
 
     this.theme = createResolvedThemeStore(
@@ -264,6 +287,12 @@ export class CanvasEntity {
 
     if (comparisonOn) {
       yaml.setIn(["defaults", "comparison_mode"], "time");
+    } else {
+      try {
+        yaml.deleteIn(["defaults", "comparison_mode"]);
+      } catch {
+        // no-op
+      }
     }
 
     get(this.filterManager.metricsViewFilters)
@@ -287,17 +316,7 @@ export class CanvasEntity {
 
     try {
       yaml.deleteIn(["defaults", "filters"]);
-    } catch {
-      // no-op
-    }
-
-    try {
       yaml.deleteIn(["defaults", "time_range"]);
-    } catch {
-      // no-op
-    }
-
-    try {
       yaml.deleteIn(["defaults", "comparison_mode"]);
     } catch {
       // no-op
@@ -377,38 +396,8 @@ export class CanvasEntity {
     );
     const response = await queryClient.fetchQuery(options);
 
-    const defaultSearchParams = new URLSearchParams();
-    const defaultPreset = response.canvas?.canvas?.spec?.defaultPreset ?? {};
-
-    if (defaultPreset.timeRange) {
-      defaultSearchParams.set(
-        ExploreStateURLParams.TimeRange,
-        defaultPreset.timeRange,
-      );
-    }
-
-    if (
-      defaultPreset.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    ) {
-      defaultSearchParams.set(
-        ExploreStateURLParams.ComparisonTimeRange,
-        "rill-PP",
-      );
-    }
-
-    Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
-      ([metricsViewName, expression]) => {
-        const { dimensionsWithInlistFilter, expr } =
-          getFiltersFromText(expression);
-
-        const string = getFilterParam(expr, [], dimensionsWithInlistFilter);
-
-        defaultSearchParams.set(
-          `${ExploreStateURLParams.Filters}.${metricsViewName}`,
-          string,
-        );
-      },
+    const defaultSearchParams = getDefaults(
+      response.canvas?.canvas?.spec?.defaultPreset ?? {},
     );
 
     // If there are no URL params, check for last visited state or home bookmark
@@ -674,4 +663,43 @@ function areSameType(
   }
 
   return isTableComponentType(existingType) && isTableComponentType(newType);
+}
+
+function getDefaults(defaultPreset: V1CanvasPreset) {
+  const defaultSearchParams = new URLSearchParams();
+
+  if (defaultPreset.timeRange) {
+    defaultSearchParams.set(
+      ExploreStateURLParams.TimeRange,
+      defaultPreset.timeRange,
+    );
+  }
+
+  if (
+    defaultPreset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    defaultSearchParams.set(
+      ExploreStateURLParams.ComparisonTimeRange,
+      "rill-PP",
+    );
+  }
+
+  Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
+    ([metricsViewName, expression]) => {
+      const { dimensionsWithInlistFilter, expr } =
+        getFiltersFromText(expression);
+
+      const string = getFilterParam(expr, [], dimensionsWithInlistFilter);
+
+      if (string) {
+        defaultSearchParams.set(
+          `${ExploreStateURLParams.Filters}.${metricsViewName}`,
+          string,
+        );
+      }
+    },
+  );
+
+  return defaultSearchParams;
 }
