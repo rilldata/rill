@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -41,11 +42,13 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}
 
 	var additionalTimeRange map[string]any
+	var timeZone string
 	if req.AdditionalTimeRange != nil {
 		additionalTimeRange, err = metricsview.NewTimeRangeFromProto(req.AdditionalTimeRange).AsMap()
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert additional time range: %w", err)
 		}
+		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
 	templateData := parser.TemplateData{
@@ -63,6 +66,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					Resolver:   "metrics_sql",
 					ResolverProperties: map[string]any{
 						"sql":                              sql,
+						"time_zone":                        timeZone,
 						"additional_where_by_metrics_view": additionalWhereByMetricsView,
 						"additional_time_range":            additionalTimeRange,
 					},
@@ -98,8 +102,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					// The "metrics" resolver returns the metrics view in the metadata.
 					// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
 					var mv string
-					meta := resolveRes.Meta()
-					if meta != nil {
+					if meta := resolveRes.Meta(); meta != nil {
 						mv, _ = meta["metrics_view"].(string)
 					}
 					if mv != "" {
@@ -117,6 +120,9 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	// Resolve the template
 	body, err := parser.ResolveTemplate(req.Body, templateData, false)
 	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
 		return nil, status.Errorf(codes.InvalidArgument, "failed to resolve template: %s", err.Error())
 	}
 

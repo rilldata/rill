@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -76,63 +77,63 @@ measures:
 		expected            []string
 		expectEqual         bool
 	}{
-		// 		{
-		// 			name:            "WithFormatTokens",
-		// 			body:            `Total: {{ metrics_sql "SELECT total_revenue FROM mv1" }}`,
-		// 			useFormatTokens: true,
-		// 			additionalWhere: nil,
-		// 			expected:        []string{`__RILL__FORMAT__("mv1", "total_revenue", 700)`},
-		// 			expectEqual:     false,
-		// 		},
-		// 		{
-		// 			name: "MultipleQueries",
-		// 			body: `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}
-		// Orders: {{ metrics_sql "SELECT total_orders FROM mv1" }}`,
-		// 			useFormatTokens: false,
-		// 			additionalWhere: nil,
-		// 			expected:        []string{"Revenue: 700", "Orders: 50"},
-		// 			expectEqual:     false,
-		// 		},
-		// 		{
-		// 			name:            "MultipleMetricsViewsWithDifferentFilters",
-		// 			body:            `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}, Sales: {{ metrics_sql "SELECT total_sales FROM mv2" }}`,
-		// 			useFormatTokens: false,
-		// 			additionalWhere: map[string]*runtimev1.Expression{
-		// 				"mv1": &runtimev1.Expression{
-		// 					Expression: &runtimev1.Expression_Cond{
-		// 						Cond: &runtimev1.Condition{
-		// 							Op: runtimev1.Operation_OPERATION_IN,
-		// 							Exprs: []*runtimev1.Expression{
-		// 								{Expression: &runtimev1.Expression_Ident{Ident: "country"}},
-		// 								{
-		// 									Expression: &runtimev1.Expression_Val{
-		// 										Val: structpb.NewListValue(&structpb.ListValue{
-		// 											Values: []*structpb.Value{
-		// 												structpb.NewStringValue("US"),
-		// 												structpb.NewStringValue("UK"),
-		// 											},
-		// 										}),
-		// 									},
-		// 								},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 				"mv2": &runtimev1.Expression{
-		// 					Expression: &runtimev1.Expression_Cond{
-		// 						Cond: &runtimev1.Condition{
-		// 							Op: runtimev1.Operation_OPERATION_EQ,
-		// 							Exprs: []*runtimev1.Expression{
-		// 								{Expression: &runtimev1.Expression_Ident{Ident: "category"}},
-		// 								{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("Electronics")}},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 			expected:    []string{"Revenue: 300, Sales: 500"},
-		// 			expectEqual: true,
-		// 		},
+		{
+			name:            "WithFormatTokens",
+			body:            `Total: {{ metrics_sql "SELECT total_revenue FROM mv1" }}`,
+			useFormatTokens: true,
+			additionalWhere: nil,
+			expected:        []string{`__RILL__FORMAT__("mv1", "total_revenue", 700)`},
+			expectEqual:     false,
+		},
+		{
+			name: "MultipleQueries",
+			body: `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}
+		Orders: {{ metrics_sql "SELECT total_orders FROM mv1" }}`,
+			useFormatTokens: false,
+			additionalWhere: nil,
+			expected:        []string{"Revenue: 700", "Orders: 50"},
+			expectEqual:     false,
+		},
+		{
+			name:            "MultipleMetricsViewsWithDifferentFilters",
+			body:            `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}, Sales: {{ metrics_sql "SELECT total_sales FROM mv2" }}`,
+			useFormatTokens: false,
+			additionalWhere: map[string]*runtimev1.Expression{
+				"mv1": &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_IN,
+							Exprs: []*runtimev1.Expression{
+								{Expression: &runtimev1.Expression_Ident{Ident: "country"}},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewListValue(&structpb.ListValue{
+											Values: []*structpb.Value{
+												structpb.NewStringValue("US"),
+												structpb.NewStringValue("UK"),
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+				"mv2": &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_EQ,
+							Exprs: []*runtimev1.Expression{
+								{Expression: &runtimev1.Expression_Ident{Ident: "category"}},
+								{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("Electronics")}},
+							},
+						},
+					},
+				},
+			},
+			expected:    []string{"Revenue: 300, Sales: 500"},
+			expectEqual: true,
+		},
 		{
 			name:            "WithAdditionalTimeRange",
 			body:            `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}`,
@@ -145,44 +146,44 @@ measures:
 			expected:    []string{"Revenue: 300"},
 			expectEqual: true,
 		},
-		// {
-		// 	name:            "WithRefs",
-		// 	body:            `Revenue in US and UK from 2024-01-01 to 2024-02-01: {{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }}`,
-		// 	useFormatTokens: false,
-		// 	additionalWhere: map[string]*runtimev1.Expression{
-		// 		"mv1": &runtimev1.Expression{
-		// 			Expression: &runtimev1.Expression_Cond{
-		// 				Cond: &runtimev1.Condition{
-		// 					Op: runtimev1.Operation_OPERATION_IN,
-		// 					Exprs: []*runtimev1.Expression{
-		// 						{Expression: &runtimev1.Expression_Ident{Ident: "country"}},
-		// 						{
-		// 							Expression: &runtimev1.Expression_Val{
-		// 								Val: structpb.NewListValue(&structpb.ListValue{
-		// 									Values: []*structpb.Value{
-		// 										structpb.NewStringValue("US"),
-		// 										structpb.NewStringValue("UK"),
-		// 									},
-		// 								}),
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	additionalTimeRange: nil,
-		// 	expected:            []string{"Revenue in US and UK from 2024-01-01 to 2024-02-01: 300"},
-		// 	expectEqual:         true,
-		// },
-		// {
-		// 	name:            "WithMultipleRefs",
-		// 	body:            `{{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }} and {{ metrics_sql "SELECT total_sales FROM {{ ref \"mv2\" }}" }}`,
-		// 	useFormatTokens: false,
-		// 	additionalWhere: nil,
-		// 	expected:        []string{"700 and 900"},
-		// 	expectEqual:     true,
-		// },
+		{
+			name:            "WithRefs",
+			body:            `Revenue in US and UK from 2024-01-01 to 2024-02-01: {{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }}`,
+			useFormatTokens: false,
+			additionalWhere: map[string]*runtimev1.Expression{
+				"mv1": &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_IN,
+							Exprs: []*runtimev1.Expression{
+								{Expression: &runtimev1.Expression_Ident{Ident: "country"}},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewListValue(&structpb.ListValue{
+											Values: []*structpb.Value{
+												structpb.NewStringValue("US"),
+												structpb.NewStringValue("UK"),
+											},
+										}),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			additionalTimeRange: nil,
+			expected:            []string{"Revenue in US and UK from 2024-01-01 to 2024-02-01: 300"},
+			expectEqual:         true,
+		},
+		{
+			name:            "WithMultipleRefs",
+			body:            `{{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }} and {{ metrics_sql "SELECT total_sales FROM {{ ref \"mv2\" }}" }}`,
+			useFormatTokens: false,
+			additionalWhere: nil,
+			expected:        []string{"700 and 900"},
+			expectEqual:     true,
+		},
 	}
 
 	for _, tc := range tt {
