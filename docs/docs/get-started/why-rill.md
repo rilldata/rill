@@ -4,7 +4,7 @@ sidebar_label: Why Rill?
 sidebar_position: 10
 ---
 
-Data teams often struggle with a fragmented stack: data lakes are cheap but slow, while data warehouses are fast but expensive and rigid. Engineering teams spend too much time managing ETL pipelines and answering ad-hoc requests, while business users are stuck with slow, static dashboards that don't allow for true exploration.
+Data teams often struggle with a fragmented stack: while data lakes and warehouses are cost-effective for large volumes, they often lack the sub-second performance required for interactive, operational analytics. Engineering teams spend too much time managing ETL pipelines and answering ad-hoc requests, while business users are stuck with slow, static dashboards that don't allow for true exploration.
 
 Rill bridges this gap by bringing fast, interactive analytics directly to your data lake or warehouse, with a developer-friendly workflow.
 
