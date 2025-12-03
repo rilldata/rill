@@ -3,6 +3,7 @@ import { NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/uti
 import {
   runtimeServiceUnpackEmpty,
   type V1Message,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   MessageContentType,
@@ -65,17 +66,23 @@ export async function generateSampleData(
     const conversation = new Conversation(instanceId, NEW_CONVERSATION_ID, {
       agent: ToolName.DEVELOPER_AGENT,
     });
-    const agentPrompt = `Generate a NEW model for the following user prompt: ${userPrompt}`;
+    const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
     conversation.draftMessage.set(agentPrompt);
 
     let created = false;
     let lastReadFile: string | null = null;
     const messages = new Map<string, V1Message>();
 
-    const parseFile = (msg: V1Message) => {
+    const parseFile = (call: V1Message, result: V1Message) => {
       try {
-        const content = JSON.parse(msg.contentData!);
-        return content.path as string;
+        const resultContent = JSON.parse(result.contentData!);
+        const hasErroredOut =
+          !!resultContent.parse_error ||
+          resultContent.resources?.some((r) => !!r.reconcile_error);
+        if (hasErroredOut) return null;
+
+        const callContent = JSON.parse(call.contentData!);
+        return callContent.path as string;
       } catch {
         // json parse errors shouldn't happen. ignore if it ever does.
       }
@@ -99,7 +106,7 @@ export async function generateSampleData(
 
           // Keep a copy of the file that was read.
           // LLM can some time read a file and decide not to generate data.
-          lastReadFile = parseFile(callMsg);
+          lastReadFile = parseFile(callMsg, msg);
           break;
         }
 
@@ -107,7 +114,7 @@ export async function generateSampleData(
           const callMsg = messages.get(msg.parentId!);
           if (!callMsg) break;
 
-          const path = parseFile(callMsg);
+          const path = parseFile(callMsg, msg);
           if (!path) break;
 
           sourceImportedPath.set(path);
