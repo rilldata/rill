@@ -65,7 +65,7 @@ export async function generateSampleData(
     const conversation = new Conversation(instanceId, NEW_CONVERSATION_ID, {
       agent: ToolName.DEVELOPER_AGENT,
     });
-    const agentPrompt = `Generate a new model for the following user prompt: ${userPrompt}`;
+    const agentPrompt = `Generate a NEW model for the following user prompt: ${userPrompt}`;
     conversation.draftMessage.set(agentPrompt);
 
     let created = false;

@@ -23,7 +23,6 @@ var _ Tool[*DevelopModelArgs, *DevelopModelResult] = (*DevelopModel)(nil)
 type DevelopModelArgs struct {
 	Path   string `json:"path" jsonschema:"The path of a .yaml file in which to create or update a Rill model definition."`
 	Prompt string `json:"prompt" jsonschema:"A description of what the model should do, i.e. what kind of data it should ingest and how it transform and output it."`
-	Create bool   `json:"create,omitempty" jsonschema:"If true, the model will be created if it does not exist. Otherwise, an error will be returned if the model already exists."`
 }
 
 type DevelopModelResult struct {
@@ -56,14 +55,6 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 	}
 
 	session := GetSession(ctx)
-
-	if args.Create {
-		entries, err := t.Runtime.ListFiles(ctx, session.InstanceID(), args.Path+"*")
-		if err != nil {
-			return nil, err
-		}
-		args.Path = fileutil.GetPath(args.Path, entries)
-	}
 
 	// Pre-invoke file listing to get context about existing models
 	_, err := session.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
