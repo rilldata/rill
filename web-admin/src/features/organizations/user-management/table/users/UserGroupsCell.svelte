@@ -31,7 +31,7 @@
         : 'hover:bg-slate-100'} px-2 py-1"
     >
       <span class="capitalize">
-        {groupCount} Group{groupCount > 1 ? "s" : ""}
+        {groupCount} Group{groupCount !== 1 ? "s" : ""}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
