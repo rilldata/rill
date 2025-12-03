@@ -294,7 +294,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.specStore.set(newSpec);
   }
 
-  updateProperty = (key: AllKeys<T>, value: T[AllKeys<T>]) => {
+  updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
     const currentSpec = get(this.specStore);
 
     const newSpec = { ...currentSpec, [key]: value };
@@ -322,5 +322,5 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
-  };
+  }
 }

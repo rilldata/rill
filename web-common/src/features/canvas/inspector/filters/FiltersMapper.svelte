@@ -13,7 +13,7 @@
     type,
     localFilters,
     localTimeControls,
-    updateProperty,
+
     parent: { name: canvasName },
   } = component);
 
@@ -52,7 +52,7 @@
           {canvasName}
           {metricsView}
           updateLocalFilterString={(newString) => {
-            updateProperty("dimension_filters", newString);
+            component.updateProperty("dimension_filters", newString);
           }}
           {excludedDimensions}
           id={key}

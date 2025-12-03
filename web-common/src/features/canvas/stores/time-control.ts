@@ -27,6 +27,8 @@ import {
   createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
   V1TimeGrain,
+  type V1MetricsView,
+  type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
 import {
   runtime,
@@ -51,6 +53,7 @@ import {
   RillLegacyDaxInterval,
   RillPeriodToGrainInterval,
 } from "../../dashboards/url-state/time-ranges/RillTime";
+import { minTimeGrainToDefaultTimeRange } from "@rilldata/web-common/lib/time/new-grains";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -97,7 +100,7 @@ export class TimeControls {
 
       const metricsViewName = getComponentMetricsViewFromSpec(
         componentName,
-        spec?.data,
+        spec?.data?.components,
       );
       if (metricsViewName && metricsViews[metricsViewName]) {
         metricsViews = {
@@ -147,13 +150,9 @@ export class TimeControls {
           minimalDays: 4,
         };
 
-        const { defaultPreset, timeRanges } = spec.data?.canvas || {};
+        const { defaultPreset } = spec.data?.canvas || {};
 
-        const finalRange: string =
-          timeRange ||
-          defaultPreset?.timeRange ||
-          (timeRanges?.[0] as string | undefined) ||
-          "PT24H";
+        const finalRange: string = timeRange || get(this._defaultTimeRange)!;
 
         const result = await deriveInterval(
           finalRange,
@@ -261,13 +260,20 @@ export class TimeControls {
 
   processSpec = (spec: CanvasResponse) => {
     const defaultPreset = spec?.canvas?.defaultPreset;
-    // const timeRanges = spec?.canvas?.timeRanges;
+    const timeRanges = spec?.canvas?.timeRanges || [];
 
-    const minTimeGrain = deriveMinTimeGrain(this.componentName, spec);
+    const minTimeGrain = deriveMinTimeGrain(
+      this.componentName,
+      spec.metricsViews,
+      spec.components,
+    );
+
+    const defaultRange =
+      defaultPreset?.timeRange ??
+      timeRanges[0]?.range ??
+      minTimeGrainToDefaultTimeRange[minTimeGrain];
 
     this.minTimeGrain.set(minTimeGrain);
-
-    const defaultRange = defaultPreset?.timeRange;
 
     this._defaultTimeRange.set(defaultRange);
 
@@ -279,38 +285,6 @@ export class TimeControls {
     } else {
       this._defaultComparisonRange.set(undefined);
     }
-
-    // const allTimeRange = get(this.allTimeRange);
-    // const selectedTimezone = get(this.selectedTimezone);
-
-    // const initialRange = isoDurationToFullTimeRange(
-    //   defaultPreset?.timeRange,
-    //   allTimeRange.start,
-    //   allTimeRange.end,
-    //   selectedTimezone,
-    // );
-
-    // const didSet = this.set.range(
-    //   initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
-    //   true,
-    //   true,
-    // );
-
-    // const newComparisonRange = getComparisonTimeRange(
-    //   timeRanges,
-    //   get(this.allTimeRange),
-    //   { name: defaultRange } as DashboardTimeControls,
-    //   undefined,
-    // );
-
-    // if (
-    //   newComparisonRange?.name &&
-    //   // didSet &&
-    //   defaultPreset?.comparisonMode ===
-    //     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    // ) {
-    //   this.set.comparison(newComparisonRange.name, true, true);
-    // }
   };
 
   combinedTimeRangeSummaryStore = (
@@ -322,7 +296,7 @@ export class TimeControls {
 
       const metricsViewName = getComponentMetricsViewFromSpec(
         this.componentName,
-        spec?.data,
+        spec?.data?.components,
       );
 
       const metricsReferred = metricsViewName
@@ -549,16 +523,15 @@ export function parseSearchParams(urlParams: URLSearchParams) {
   };
 }
 
-function deriveMinTimeGrain(
+export function deriveMinTimeGrain(
   componentName: string | undefined,
-  spec: CanvasResponse | undefined,
+  metricsViews: Record<string, V1MetricsView | undefined>,
+  components?: V1ResolveCanvasResponseResolvedComponents,
 ): V1TimeGrain {
-  let metricsViews = spec?.metricsViews || {};
-
   if (componentName) {
     const metricsViewName = getComponentMetricsViewFromSpec(
       componentName,
-      spec,
+      components,
     );
 
     if (metricsViewName && metricsViews[metricsViewName]) {

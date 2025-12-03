@@ -40,7 +40,6 @@
   $: ({
     whereFilter,
     allDimensionFilterItems,
-
     dimensionHasFilter,
     allMeasureFilterItems,
     measureHasFilter,

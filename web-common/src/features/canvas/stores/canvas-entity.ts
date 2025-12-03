@@ -9,9 +9,12 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getQueryServiceResolveCanvasQueryOptions,
   V1ExploreComparisonMode,
+  V1TimeGrain,
   type V1CanvasPreset,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
+  type V1ExploreTimeRange,
+  type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -38,12 +41,17 @@ import {
 import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
-import { getComparisonTypeFromRangeString, TimeControls } from "./time-control";
+import {
+  deriveMinTimeGrain,
+  getComparisonTypeFromRangeString,
+  TimeControls,
+} from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import { minTimeGrainToDefaultTimeRange } from "@rilldata/web-common/lib/time/new-grains";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -94,6 +102,13 @@ export class CanvasEntity {
     ([$searchParams, $defaultUrlParams]) => {
       for (const [key, value] of $defaultUrlParams.entries()) {
         if ($searchParams.get(key) !== value) {
+          // Ignore time range if not set
+          if (
+            $searchParams.get(key) === null &&
+            key === ExploreStateURLParams.TimeRange
+          ) {
+            return true;
+          }
           return false;
         }
       }
@@ -221,7 +236,15 @@ export class CanvasEntity {
       }
 
       const defaultPreset = spec.data?.canvas?.defaultPreset ?? {};
-      const defaultSearchParams = getDefaults(defaultPreset);
+      const defaultSearchParams = getDefaults(
+        defaultPreset,
+        spec.data?.canvas?.timeRanges ?? [],
+        deriveMinTimeGrain(
+          undefined,
+          spec.data?.metricsViews ?? {},
+          spec.data?.components,
+        ),
+      );
 
       this._defaultUrlParams.set(defaultSearchParams);
     });
@@ -389,17 +412,6 @@ export class CanvasEntity {
     projectId?: string;
     builderContext?: true;
   }) => {
-    const options = getQueryServiceResolveCanvasQueryOptions(
-      "default",
-      canvasName,
-      {},
-    );
-    const response = await queryClient.fetchQuery(options);
-
-    const defaultSearchParams = getDefaults(
-      response.canvas?.canvas?.spec?.defaultPreset ?? {},
-    );
-
     // If there are no URL params, check for last visited state or home bookmark
     if (searchParams.size === 0) {
       const snapshotSearchParams = lastVisitedState.get(canvasName);
@@ -441,14 +453,40 @@ export class CanvasEntity {
         if (homeBookmarkUrlSearch) {
           throw redirect(307, homeBookmarkUrlSearch);
         }
-      } else if (defaultSearchParams.toString()) {
-        if (builderContext) {
-          await goto(`?${defaultSearchParams.toString()}`, {
-            replaceState: true,
-          });
-          return true;
-        } else {
-          throw redirect(307, `?${defaultSearchParams.toString()}`);
+      } else {
+        const options = getQueryServiceResolveCanvasQueryOptions(
+          "default",
+          canvasName,
+          {},
+        );
+        const response = await queryClient.fetchQuery(options);
+
+        console.log(response.referencedMetricsViews);
+
+        const mv: Record<string, V1MetricsView | undefined> = {};
+
+        Object.entries(response.referencedMetricsViews ?? {}).forEach(
+          ([mvName, mvSpec]) => {
+            mv[mvName] = mvSpec.metricsView;
+          },
+        );
+
+        const defaultSearchParams = getDefaults(
+          response.canvas?.canvas?.spec?.defaultPreset ?? {},
+          response.canvas?.canvas?.spec?.timeRanges ?? [],
+          deriveMinTimeGrain(undefined, mv, response.resolvedComponents),
+        );
+        const defaultParamString = defaultSearchParams.toString();
+
+        if (defaultParamString) {
+          if (builderContext) {
+            await goto(`?${defaultSearchParams.toString()}`, {
+              replaceState: true,
+            });
+            return true;
+          } else {
+            throw redirect(307, `?${defaultSearchParams.toString()}`);
+          }
         }
       }
     } else if (searchParams.get("default")) {
@@ -665,15 +703,19 @@ function areSameType(
   return isTableComponentType(existingType) && isTableComponentType(newType);
 }
 
-function getDefaults(defaultPreset: V1CanvasPreset) {
+function getDefaults(
+  defaultPreset: V1CanvasPreset,
+  timeRanges: V1ExploreTimeRange[],
+  smallestTimeGrain: V1TimeGrain,
+) {
   const defaultSearchParams = new URLSearchParams();
 
-  if (defaultPreset.timeRange) {
-    defaultSearchParams.set(
-      ExploreStateURLParams.TimeRange,
-      defaultPreset.timeRange,
-    );
-  }
+  const resolvedRange =
+    defaultPreset.timeRange ??
+    timeRanges[0]?.range ??
+    minTimeGrainToDefaultTimeRange[smallestTimeGrain];
+
+  defaultSearchParams.set(ExploreStateURLParams.TimeRange, resolvedRange);
 
   if (
     defaultPreset.comparisonMode ===
