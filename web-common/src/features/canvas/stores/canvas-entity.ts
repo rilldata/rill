@@ -90,33 +90,7 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
   _defaultUrlParams = writable<URLSearchParams>(new URLSearchParams());
-  _viewingDefaults = derived(
-    [this.searchParams, this._defaultUrlParams],
-    ([$searchParams, $defaultUrlParams]) => {
-      console.log($defaultUrlParams.toString(), $searchParams.toString());
-      if ($defaultUrlParams.size === 0) {
-        return false;
-      }
-      for (const [key, value] of $defaultUrlParams.entries()) {
-        if ($searchParams.get(key) !== value) {
-          // Ignore time range if not set
-          if (
-            $searchParams.get(key) === null &&
-            key === ExploreStateURLParams.TimeRange
-          ) {
-            return true;
-          }
-          return false;
-        }
-      }
-      for (const [key, value] of $searchParams.entries()) {
-        if ($defaultUrlParams.get(key) !== value) {
-          return false;
-        }
-      }
-      return true;
-    },
-  );
+  _viewingDefaults: Readable<boolean>;
 
   constructor(
     public name: string,
@@ -249,6 +223,49 @@ export class CanvasEntity {
       searchParamsStore,
       undefined,
       this.name,
+    );
+
+    this._viewingDefaults = derived(
+      [
+        this.searchParams,
+        this._defaultUrlParams,
+        this.filterManager._pinnedFilterKeys,
+        this.filterManager._defaultPinnedFilterKeys,
+      ],
+      ([
+        $searchParams,
+        $defaultUrlParams,
+        pinnedFilters,
+        defaultPinnedFilterKeys,
+      ]) => {
+        console.log({ pinnedFilters, defaultPinnedFilterKeys });
+        if (
+          defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
+        ) {
+          return false;
+        }
+        if ($defaultUrlParams.size === 0) {
+          return false;
+        }
+        for (const [key, value] of $defaultUrlParams.entries()) {
+          if ($searchParams.get(key) !== value) {
+            // Ignore time range if not set
+            if (
+              $searchParams.get(key) === null &&
+              key === ExploreStateURLParams.TimeRange
+            ) {
+              return true;
+            }
+            return false;
+          }
+        }
+        for (const [key, value] of $searchParams.entries()) {
+          if ($defaultUrlParams.get(key) !== value) {
+            return false;
+          }
+        }
+        return true;
+      },
     );
   }
 

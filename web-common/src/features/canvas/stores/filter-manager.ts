@@ -299,8 +299,9 @@ export class FilterManager {
 
         keys.add(filterKey);
       });
-      this._pinnedFilterKeys.set(keys);
-      this._defaultPinnedFilterKeys.set(keys);
+
+      this._pinnedFilterKeys.set(new Set(keys));
+      this._defaultPinnedFilterKeys.set(new Set(keys));
     }
   }
 
