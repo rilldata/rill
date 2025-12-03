@@ -447,10 +447,10 @@ export class FilterManager {
     const sortedDimensionMap = new Map(
       Array.from(merged.dimensionFilters.entries()).sort((a, b) => {
         return sortMeasuresOrDimensions(
-          a,
-          b,
-          pinnedFilters,
-          temporaryFilterKeys,
+          a[0],
+          b[0],
+          Array.from(pinnedFilters),
+          Array.from(temporaryFilterKeys),
           fullFilterString,
         );
       }),
@@ -459,10 +459,10 @@ export class FilterManager {
     const sortedMeasureMap = new Map(
       Array.from(merged.measureFilters.entries()).sort((a, b) => {
         return sortMeasuresOrDimensions(
-          a,
-          b,
-          pinnedFilters,
-          temporaryFilterKeys,
+          a[0],
+          b[0],
+          Array.from(pinnedFilters),
+          Array.from(temporaryFilterKeys),
           fullFilterString,
         );
       }),
@@ -726,32 +726,42 @@ export class FilterManager {
   };
 }
 
+/**
+ * Sorts filter items with the following priority:
+ * 1. Pinned items, following the order of the yaml
+ * 2. Regular filter items, following their appearance in the full filter string
+ * 3. Temporary items
+ */
 function sortMeasuresOrDimensions(
-  a: [string, MeasureFilterItem | DimensionFilterItem],
-  b: [string, MeasureFilterItem | DimensionFilterItem],
-  pinnedFilters: Set<string>,
-  temporaryFilterKeys: Set<string>,
+  aKey: string,
+  bKey: string,
+  pinnedFilters: string[],
+  temporaryFilterKeys: string[],
   fullFilterString: string,
-) {
-  const aKey = a[0];
-  const bKey = b[0];
+): number {
+  const isAPinned = pinnedFilters.includes(aKey);
+  const isBPinned = pinnedFilters.includes(bKey);
+  const isATemporary = temporaryFilterKeys.includes(aKey);
+  const isBTemporary = temporaryFilterKeys.includes(bKey);
 
-  const aPinned = pinnedFilters.has(aKey) ? 1 : 0;
-  const bPinned = pinnedFilters.has(bKey) ? 1 : 0;
-
-  if (aPinned !== bPinned) {
-    return bPinned - aPinned;
+  if (isAPinned && isBPinned) {
+    return pinnedFilters.indexOf(aKey) - pinnedFilters.indexOf(bKey);
+  }
+  if (isAPinned !== isBPinned) {
+    return isAPinned ? -1 : 1;
   }
 
-  const aTemporary = temporaryFilterKeys.has(aKey) ? 1 : 0;
-  const bTemporary = temporaryFilterKeys.has(bKey) ? 1 : 0;
-
-  if (aTemporary !== bTemporary) {
-    return aTemporary - bTemporary;
+  if (isATemporary && isBTemporary) {
+    return (
+      temporaryFilterKeys.indexOf(aKey) - temporaryFilterKeys.indexOf(bKey)
+    );
+  }
+  if (isATemporary !== isBTemporary) {
+    return isATemporary ? 1 : -1;
   }
 
-  const aName = aKey.split("::")[1];
-  const bName = bKey.split("::")[1];
+  const aName = aKey.split("::")[1] || aKey;
+  const bName = bKey.split("::")[1] || bKey;
 
   const aIndex = fullFilterString.indexOf(aName);
   const bIndex = fullFilterString.indexOf(bName);

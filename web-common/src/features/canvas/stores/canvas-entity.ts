@@ -22,7 +22,7 @@ import {
   type Readable,
   type Unsubscriber,
 } from "svelte/store";
-import { parseDocument, YAMLMap } from "yaml";
+import { parseDocument, YAMLMap, isMap, Pair } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -333,6 +333,10 @@ export class CanvasEntity {
       });
 
     yaml.setIn(["defaults", "filters"], filterMap);
+
+    if (yaml.contents && isMap(yaml.contents)) {
+      yaml.contents.items.sort(customKeySort);
+    }
 
     const newContent = yaml.toString();
 
@@ -746,3 +750,25 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
 
   return defaultSearchParams;
 }
+
+const customKeySort = (
+  a: Pair<unknown, unknown>,
+  b: Pair<unknown, unknown>,
+) => {
+  const priorityKeys = ["type", "display_name", "defaults", "filters"];
+  const keyA = a.key.toString();
+  const keyB = b.key.toString();
+  const indexA = priorityKeys.indexOf(keyA);
+  const indexB = priorityKeys.indexOf(keyB);
+
+  if (indexA > -1 && indexB > -1) {
+    return indexA - indexB;
+  }
+  if (indexA > -1) {
+    return -1;
+  }
+  if (indexB > -1) {
+    return 1;
+  }
+  return 0;
+};
