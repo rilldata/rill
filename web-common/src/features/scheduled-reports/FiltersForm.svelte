@@ -295,32 +295,24 @@
         </div>
       {:else}
         {#each $allDimensionFilterItems as filterData (name)}
-          {@const dimension = $allDimensions.find(
-            (d) => d.name === name || d.column === name,
-          )}
-          {@const dimensionName = dimension?.name || dimension?.column}
-
-          {#if dimensionName}
-            <DimensionFilter
-              expressionMap={new Map([[metricsViewName, $whereFilter]])}
-              {filterData}
-              {readOnly}
-              {timeStart}
-              {timeEnd}
-              timeControlsReady
-              removeDimensionFilter={async (name) =>
-                removeDimensionFilter(name)}
-              toggleDimensionFilterMode={async (name) => {
-                toggleDimensionFilterMode(name);
-              }}
-              toggleDimensionValueSelections={async (name, values) =>
-                toggleMultipleDimensionValueSelections(name, values, true)}
-              applyDimensionInListMode={async (name, values) =>
-                applyDimensionInListMode(name, values)}
-              applyDimensionContainsMode={async (name, searchText) =>
-                applyDimensionContainsMode(name, searchText)}
-            />
-          {/if}
+          <DimensionFilter
+            expressionMap={new Map([[metricsViewName, $whereFilter]])}
+            {filterData}
+            {readOnly}
+            {timeStart}
+            {timeEnd}
+            timeControlsReady
+            removeDimensionFilter={async (name) => removeDimensionFilter(name)}
+            toggleDimensionFilterMode={async (name) => {
+              toggleDimensionFilterMode(name);
+            }}
+            toggleDimensionValueSelections={async (name, values) =>
+              toggleMultipleDimensionValueSelections(name, values, true)}
+            applyDimensionInListMode={async (name, values) =>
+              applyDimensionInListMode(name, values)}
+            applyDimensionContainsMode={async (name, searchText) =>
+              applyDimensionContainsMode(name, searchText)}
+          />
         {/each}
         {#each $allMeasureFilterItems as filterData (filterData.name)}
           <MeasureFilter

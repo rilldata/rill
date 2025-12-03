@@ -79,6 +79,7 @@
   readOnly
   exclude={!isInclude}
   showPinnedIcon={pinned}
+  gray={pinned && values.length === 0}
 >
   <DimensionFilterChipBody
     slot="body"

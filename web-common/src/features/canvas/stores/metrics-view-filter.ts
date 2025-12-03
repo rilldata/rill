@@ -23,7 +23,7 @@ import {
   type MetricsViewSpecMeasure,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
-import { get, writable } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 import type { DimensionFilterItem } from "../../dashboards/state-managers/selectors/dimension-filters";
 import { DimensionFilterMode } from "../../dashboards/filters/dimension-filters/constants";
 import type { MeasureFilterItem } from "../../dashboards/state-managers/selectors/measure-filters";
@@ -39,14 +39,17 @@ import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName
 
 // wip - bgh
 export class MetricsViewFilter {
-  parsed = writable(initFilterBase());
-  parsedDefaultFilters = writable<ParsedFilters>(initFilterBase());
+  parsed: Writable<ParsedFilters>;
+  parsedDefaultFilters: Writable<ParsedFilters>;
   temporaryFilterKeys = writable(new Set<string>());
 
   constructor(
     private metricsViewName: string,
     private manager: FilterManager,
-  ) {}
+  ) {
+    this.parsed = writable(initFilterBase(this.metricsViewName));
+    this.parsedDefaultFilters = writable(initFilterBase(this.metricsViewName));
+  }
 
   setTemporaryFilterName = (key: string) => {
     const keys = get(this.temporaryFilterKeys);

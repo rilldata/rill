@@ -41,12 +41,12 @@ export type MeasureLookup = Lookup<MetricsViewSpecMeasure>;
 
 export type ParsedFilters = ReturnType<typeof initFilterBase>;
 
-export function initFilterBase() {
+export function initFilterBase(metricsViewName: string) {
   return {
     where: createAndExpression([]),
     dimensionFilter: createAndExpression([]),
     string: "",
-    metricsViewName: "",
+    metricsViewName,
     dimensionsWithInlistFilter: <string[]>[],
     dimensionThresholdFilters: <DimensionThresholdFilter[]>[],
     measureFilters: new Map<string, MeasureFilterItem>(),
@@ -332,25 +332,12 @@ export class FilterManager {
       const filters: MeasureFilterItem[] = [];
 
       const pinned = pinnedFilters.has(key);
+      const temporary = temporaryFilterKeys.has(key);
 
       const measureMap = allMeasures.get(key);
       const metricsViewNames = measureMap ? Array.from(measureMap.keys()) : [];
 
       const measureSpecs = Array.from(measureMap?.values() || []);
-
-      // Needs work - bgh
-      if (temporaryFilterKeys.has(key)) {
-        merged.measureFilters.set(key, {
-          dimensionName: "",
-          dimensions: undefined,
-          name: key.split("::")[1],
-          label: measureSpecs[0].displayName ?? "",
-          pinned: pinned,
-          measures: measureMap,
-          metricsViewNames: metricsViewNames,
-        });
-        return;
-      }
 
       measures.forEach((measure, metricsViewName) => {
         const parsed = parsedMap.get(metricsViewName);
@@ -358,13 +345,13 @@ export class FilterManager {
 
         const dimFilter = parsed.measureFilters.get(measure.name as string);
         if (!dimFilter) {
-          if (pinned) {
+          if (pinned || temporary) {
             filters.push({
               dimensionName: "",
               dimensions: undefined,
               name: key.split("::")[1],
               label: measureSpecs[0].displayName ?? "",
-              pinned: true,
+              pinned: pinned,
               measures: measureMap,
               metricsViewNames: metricsViewNames,
             });
@@ -395,35 +382,19 @@ export class FilterManager {
       const firstDimension = Array.from(dimensions.values())[0];
 
       const pinned = pinnedFilters.has(key);
-
-      if (temporaryFilterKeys.has(key)) {
-        filters.push({
-          name: firstDimension.name || "",
-          label: getDimensionDisplayName(firstDimension),
-          mode: DimensionFilterMode.Select,
-          selectedValues: [],
-          dimensions: dimensions,
-          isInclude: true,
-          inputText: undefined,
-          pinned: pinned,
-        });
-
-        merged.dimensionFilters.set(key, {
-          ...filters[0],
-          dimensions: dimensions,
-        });
-        return;
-      }
+      const temporary = temporaryFilterKeys.has(key);
 
       // iterate through the merged dimensions under this unique key
       dimensions.forEach((dimension, metricsViewName) => {
         const parsed = parsedMap.get(metricsViewName);
+
         if (!parsed) return;
 
         const dimFilter = parsed.dimensionFilters.get(dimension.name as string);
+
         if (!dimFilter) {
-          if (pinned) {
-            filters.push({
+          if (pinned || temporary) {
+            const tempData = {
               name: firstDimension.name || "",
               label: getDimensionDisplayName(firstDimension),
               mode: DimensionFilterMode.Select,
@@ -431,8 +402,10 @@ export class FilterManager {
               dimensions: dimensions,
               isInclude: true,
               inputText: undefined,
-              pinned: true,
-            });
+              pinned: pinned,
+            };
+
+            filters.push(tempData);
           }
         } else {
           if (pinned) {
@@ -660,11 +633,7 @@ export class FilterManager {
 
       await this.applyFiltersToUrl(newFilters, true);
     },
-    toggleFilterPin: (
-      name: string,
-
-      metricsViewNames: string[],
-    ) => {
+    toggleFilterPin: (name: string, metricsViewNames: string[]) => {
       this._pinnedFilterKeys.update((pinned) => {
         const key = metricsViewNames.sort().join("//") + "::" + name;
         const deleted = pinned.delete(key);
@@ -672,6 +641,16 @@ export class FilterManager {
         if (!deleted) {
           pinned.add(key);
         }
+
+        this._temporaryFilterKeys.update((tempFilters) => {
+          if (deleted) {
+            tempFilters.add(key);
+          } else {
+            tempFilters.delete(key);
+          }
+
+          return tempFilters;
+        });
         return pinned;
       });
     },

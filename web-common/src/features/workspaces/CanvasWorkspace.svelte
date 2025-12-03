@@ -69,6 +69,10 @@
 
   $: canvasName = getNameFromFile(filePath);
 
+  $: rows = $_rows;
+
+  $: canvasIsEmpty = rows.length === 0;
+
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     allErrors,
     $remoteContent ?? "",
@@ -105,10 +109,10 @@
     >
       <div class="flex gap-x-2" slot="cta">
         <Button
-          label="Preview"
+          label="Save as default"
           type={!viewingDefaults ? "secondary" : "ghost"}
           preload={false}
-          disabled={viewingDefaults}
+          disabled={canvasIsEmpty || viewingDefaults}
           onClick={async () => {
             justClickedSaveAsDefault = true;
             await setDefaultFilters();
@@ -177,7 +181,7 @@
     </WorkspaceEditorContainer>
 
     <svelte:fragment slot="inspector">
-      {#key $_rows}
+      {#key rows}
         <VisualCanvasEditing
           {canvasName}
           {fileArtifact}

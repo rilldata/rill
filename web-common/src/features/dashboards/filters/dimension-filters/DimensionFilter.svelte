@@ -312,13 +312,13 @@
     }
   }
 
-  async function onApply() {
+  async function onApply(close = true) {
     if (disableApplyButton) return;
     switch (curMode) {
       case DimensionFilterMode.Select:
         // Apply proxy changes for Select mode
         await applySelectModeChanges();
-        open = false;
+        if (close) open = false;
         break;
       case DimensionFilterMode.InList:
         if (searchedBulkValues.length === 0) return;
@@ -329,14 +329,14 @@
         );
         if (curExcludeMode !== excludeMode)
           await toggleDimensionFilterMode(name, metricsViewNames);
-        open = false;
+        if (close) open = false;
         break;
       case DimensionFilterMode.Contains:
         if (curSearchText.length === 0) return;
         await applyDimensionContainsMode(name, curSearchText, metricsViewNames);
         if (curExcludeMode !== excludeMode)
           await toggleDimensionFilterMode(name, metricsViewNames);
-        open = false;
+        if (close) open = false;
         break;
     }
   }
@@ -465,7 +465,8 @@
           <BitsTooltip.Root portal="body">
             <BitsTooltip.Trigger asChild let:builder>
               <button
-                on:click={() => {
+                on:click={async () => {
+                  await onApply(false);
                   toggleFilterPin(name, metricsViewNames);
                 }}
                 {...getAttrs([builder])}

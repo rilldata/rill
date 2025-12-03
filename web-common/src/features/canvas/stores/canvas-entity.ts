@@ -9,11 +9,9 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getQueryServiceResolveCanvasQueryOptions,
   V1ExploreComparisonMode,
-  V1TimeGrain,
   type V1CanvasPreset,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
-  type V1ExploreTimeRange,
   type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
@@ -41,17 +39,12 @@ import {
 import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
-import {
-  deriveMinTimeGrain,
-  getComparisonTypeFromRangeString,
-  TimeControls,
-} from "./time-control";
+import { getComparisonTypeFromRangeString, TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { minTimeGrainToDefaultTimeRange } from "@rilldata/web-common/lib/time/new-grains";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -100,6 +93,10 @@ export class CanvasEntity {
   _viewingDefaults = derived(
     [this.searchParams, this._defaultUrlParams],
     ([$searchParams, $defaultUrlParams]) => {
+      console.log($defaultUrlParams.toString(), $searchParams.toString());
+      if ($defaultUrlParams.size === 0) {
+        return false;
+      }
       for (const [key, value] of $defaultUrlParams.entries()) {
         if ($searchParams.get(key) !== value) {
           // Ignore time range if not set
@@ -236,15 +233,7 @@ export class CanvasEntity {
       }
 
       const defaultPreset = spec.data?.canvas?.defaultPreset ?? {};
-      const defaultSearchParams = getDefaults(
-        defaultPreset,
-        spec.data?.canvas?.timeRanges ?? [],
-        deriveMinTimeGrain(
-          undefined,
-          spec.data?.metricsViews ?? {},
-          spec.data?.components,
-        ),
-      );
+      const defaultSearchParams = getDefaults(defaultPreset);
 
       this._defaultUrlParams.set(defaultSearchParams);
     });
@@ -473,8 +462,6 @@ export class CanvasEntity {
 
         const defaultSearchParams = getDefaults(
           response.canvas?.canvas?.spec?.defaultPreset ?? {},
-          response.canvas?.canvas?.spec?.timeRanges ?? [],
-          deriveMinTimeGrain(undefined, mv, response.resolvedComponents),
         );
         const defaultParamString = defaultSearchParams.toString();
 
@@ -703,19 +690,14 @@ function areSameType(
   return isTableComponentType(existingType) && isTableComponentType(newType);
 }
 
-function getDefaults(
-  defaultPreset: V1CanvasPreset,
-  timeRanges: V1ExploreTimeRange[],
-  smallestTimeGrain: V1TimeGrain,
-) {
+function getDefaults(defaultPreset: V1CanvasPreset) {
   const defaultSearchParams = new URLSearchParams();
 
-  const resolvedRange =
-    defaultPreset.timeRange ??
-    timeRanges[0]?.range ??
-    minTimeGrainToDefaultTimeRange[smallestTimeGrain];
+  const resolvedRange = defaultPreset.timeRange;
 
-  defaultSearchParams.set(ExploreStateURLParams.TimeRange, resolvedRange);
+  if (resolvedRange) {
+    defaultSearchParams.set(ExploreStateURLParams.TimeRange, resolvedRange);
+  }
 
   if (
     defaultPreset.comparisonMode ===
