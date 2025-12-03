@@ -60,12 +60,12 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse {
-		// Returning early with empty results because this query tends to hang on ClickHouse.
+	if olap.Dialect() == drivers.DialectClickHouse || olap.Dialect() == drivers.DialectStarRocks {
+		// Returning early with empty results because this query tends to hang on ClickHouse/StarRocks.
 		return nil
 	}
 
@@ -77,7 +77,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return nil
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
 	outlierPseudoBucketCount := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 

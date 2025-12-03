@@ -78,13 +78,15 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
 	var qryString string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		qryString = "SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s"
 	case drivers.DialectClickHouse:
 		qryString = "SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s)) AS iqr, uniq(%s) AS count, (max(%s) - min(%s)) AS range FROM %s"
+	case drivers.DialectStarRocks:
+		qryString = "SELECT (percentile_approx(%s, 0.75)-percentile_approx(%s, 0.25)) AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s)) AS `range` FROM %s"
 	default:
 		return 0, fmt.Errorf("unsupported dialect %v", olap.Dialect())
 	}
@@ -145,12 +147,12 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect %q", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse {
-		// Returning early with empty results because this query tends to hang on ClickHouse.
+	if olap.Dialect() == drivers.DialectClickHouse || olap.Dialect() == drivers.DialectStarRocks {
+		// Returning early with empty results because this query tends to hang on ClickHouse/StarRocks.
 		return nil
 	}
 
@@ -162,7 +164,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return nil
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
 	bucketSize, err := q.calculateBucketSize(ctx, olap, priority)
 	if err != nil {
 		return err
@@ -268,12 +270,12 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse {
-		// Returning early with empty results because this query tends to hang on ClickHouse.
+	if olap.Dialect() == drivers.DialectClickHouse || olap.Dialect() == drivers.DialectStarRocks {
+		// Returning early with empty results because this query tends to hang on ClickHouse/StarRocks.
 		return nil
 	}
 
@@ -296,7 +298,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		bucketCount++
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 	histogramSQL := fmt.Sprintf(
 		`
@@ -398,7 +400,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
 func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, database, databaseSchema, tableName string, priority int) (*float64, *float64, *float64, error) {
-	sanitizedColumnName := safeName(columnName)
+	sanitizedColumnName := safeName(olap.Dialect(), columnName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
 	minMaxSQL := fmt.Sprintf(

@@ -82,7 +82,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			%s
 		),
 		time_grains as (
-		SELECT 
+		SELECT
 			approx_count_distinct(extract('years' from cd)) as year,
 			approx_count_distinct(extract('months' from cd)) as month,
 			approx_count_distinct(extract('dayofyear' from cd)) as dayofyear,
@@ -96,7 +96,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			approx_count_distinct(extract('millisecond' from cd) - extract('seconds' from cd) * 1000) as ms
 		FROM cleaned_column
 		)
-		SELECT 
+		SELECT
 		  COALESCE(
 			  case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
 			  CASE WHEN second > 1 THEN 'SECOND' else NULL END,
@@ -112,7 +112,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		  ) as estimatedSmallestTimeGrain
 		FROM time_grains
 		`,
-			safeName(q.ColumnName),
+			safeName(olap.Dialect(), q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
@@ -128,7 +128,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			%s
 		),
 		time_grains as (
-		SELECT 
+		SELECT
 			uniq(toYear(cd)) as year,
 			uniq(toMonth(cd)) as month,
 			uniq(toDayOfYear(cd)) as dayofyear,
@@ -142,7 +142,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			uniq(toUnixTimestamp64Milli(cd::DATETIME64) - toUnixTimestamp64Milli(toStartOfSecond(cd::DATETIME64))) as ms
 		FROM cleaned_column
 		)
-		SELECT 
+		SELECT
 		  COALESCE(
 			  case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
 			  CASE WHEN second > 1 THEN 'SECOND' else NULL END,
@@ -158,7 +158,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		  ) as estimatedSmallestTimeGrain
 		FROM time_grains
 		`,
-			safeName(q.ColumnName),
+			safeName(olap.Dialect(), q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)

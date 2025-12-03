@@ -65,7 +65,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	// TODO: Try and merge this with metrics_time_range. Both use same queries but metrics_time_range uses a specific timestamp column from metrics_view
 	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse:
+	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectStarRocks:
 		return q.resolveDuckDBAndClickhouse(ctx, olap, priority)
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, priority)
@@ -77,8 +77,8 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 func (q *ColumnTimeRange) resolveDuckDBAndClickhouse(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
-		safeName(q.ColumnName),
-		drivers.DialectDuckDB.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		safeName(olap.Dialect(), q.ColumnName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{
@@ -125,8 +125,8 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
-			safeName(q.ColumnName),
-			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			safeName(olap.Dialect(), q.ColumnName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Query(ctx, &drivers.Statement{
@@ -158,8 +158,8 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
-			safeName(q.ColumnName),
-			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			safeName(olap.Dialect(), q.ColumnName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Query(ctx, &drivers.Statement{
