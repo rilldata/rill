@@ -1521,6 +1521,152 @@ func TestRBAC(t *testing.T) {
 		require.Equal(t, newAttrs, updatedResp.Member.Attributes.AsMap())
 	})
 
+	t.Run("Project member role updates preserve resource restrictions when omitted", func(t *testing.T) {
+		_, admin := fix.NewUser(t)
+		user, _ := fix.NewUser(t)
+
+		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		project, err := admin.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        org.Organization.Name,
+			Project:    "proj-scope",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+
+		restrict := true
+		_, err = admin.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:               org.Organization.Name,
+			Project:           project.Project.Name,
+			Email:             user.Email,
+			Role:              database.ProjectRoleNameEditor,
+			RestrictResources: &restrict,
+			Resources:         []*adminv1.ResourceName{{Type: "rill.runtime.v1.Explore", Name: "explore"}},
+		})
+		require.NoError(t, err)
+
+		member, err := admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
+		require.NoError(t, err)
+		require.True(t, member.Member.RestrictResources)
+		require.NotEmpty(t, member.Member.Resources)
+		require.Equal(t, "rill.runtime.v1.Explore", member.Member.Resources[0].Type)
+		require.Equal(t, "explore", member.Member.Resources[0].Name)
+
+		role := database.ProjectRoleNameViewer
+		_, err = admin.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+			Role:    &role,
+		})
+		require.NoError(t, err)
+
+		member, err = admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, database.ProjectRoleNameViewer, member.Member.RoleName)
+		require.True(t, member.Member.RestrictResources)
+		require.NotEmpty(t, member.Member.Resources)
+		require.Equal(t, "rill.runtime.v1.Explore", member.Member.Resources[0].Type)
+		require.Equal(t, "explore", member.Member.Resources[0].Name)
+	})
+
+	t.Run("Project usergroup role updates preserve resource restrictions when omitted", func(t *testing.T) {
+		_, admin := fix.NewUser(t)
+		user, _ := fix.NewUser(t)
+
+		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		project, err := admin.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        org.Organization.Name,
+			Project:    "proj-group-scope",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+		group, err := admin.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Org:  org.Organization.Name,
+			Name: "group-scope",
+		})
+		require.NoError(t, err)
+
+		_, err = admin.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   org.Organization.Name,
+			Email: user.Email,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = admin.AddUsergroupMemberUser(ctx, &adminv1.AddUsergroupMemberUserRequest{
+			Org:       org.Organization.Name,
+			Usergroup: group.Usergroup.GroupName,
+			Email:     user.Email,
+		})
+		require.NoError(t, err)
+
+		restrict := true
+		_, err = admin.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Org:               org.Organization.Name,
+			Project:           project.Project.Name,
+			Usergroup:         group.Usergroup.GroupName,
+			Role:              database.ProjectRoleNameEditor,
+			RestrictResources: &restrict,
+		})
+		require.NoError(t, err)
+
+		groups, err := admin.ListUsergroupsForProjectAndUser(ctx, &adminv1.ListUsergroupsForProjectAndUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, groups.Usergroups)
+		found := false
+		for _, g := range groups.Usergroups {
+			if g.GroupName == group.Usergroup.GroupName {
+				require.True(t, g.RestrictResources)
+				require.Equal(t, database.ProjectRoleNameEditor, g.RoleName)
+				found = true
+				break
+			}
+		}
+		require.True(t, found)
+
+		role := database.ProjectRoleNameViewer
+		_, err = admin.SetProjectMemberUsergroupRole(ctx, &adminv1.SetProjectMemberUsergroupRoleRequest{
+			Org:       org.Organization.Name,
+			Project:   project.Project.Name,
+			Usergroup: group.Usergroup.GroupName,
+			Role:      &role,
+		})
+		require.NoError(t, err)
+
+		groups, err = admin.ListUsergroupsForProjectAndUser(ctx, &adminv1.ListUsergroupsForProjectAndUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
+		require.NoError(t, err)
+		require.NotEmpty(t, groups.Usergroups)
+		found = false
+		for _, g := range groups.Usergroups {
+			if g.GroupName == group.Usergroup.GroupName {
+				require.True(t, g.RestrictResources)
+				require.Equal(t, database.ProjectRoleNameViewer, g.RoleName)
+				found = true
+				break
+			}
+		}
+		require.True(t, found)
+	})
+
 }
 
 func randomName() string {
