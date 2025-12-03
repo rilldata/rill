@@ -13,6 +13,7 @@ import {
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
+  type V1ResolveCanvasResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -95,17 +96,9 @@ export class CanvasEntity {
   constructor(
     public name: string,
     private instanceId: string,
+    spec: V1ResolveCanvasResponse,
   ) {
-    this.specStore = useCanvas(
-      this.instanceId,
-      name,
-      {
-        retry: 3,
-        retryDelay: (attemptIndex) =>
-          Math.min(1000 + 1000 * attemptIndex, 5000),
-      },
-      queryClient,
-    );
+    this.specStore = useCanvas(instanceId, name, {}, queryClient);
 
     const searchParamsStore: SearchParamsStore = (() => {
       return {
@@ -156,21 +149,27 @@ export class CanvasEntity {
       }),
     );
 
-    this.unsubscriber = this.specStore.subscribe((spec) => {
-      const filePath = spec.data?.filePath;
+    this.unsubscriber = this.specStore.subscribe(({ data }) => {
+      console.log({ spec: data });
+      const filePath = data?.filePath;
+      const canvas = data?.canvas;
+      const metricsViews = data?.metricsViews;
+      const defaultPreset = canvas?.defaultPreset ?? {};
+      const filterExpressions = defaultPreset.filterExpr ?? {};
+      const pinnedFilters = canvas?.pinnedFilters ?? [];
 
-      if (spec.data?.metricsViews) {
+      if (metricsViews) {
         if (this.filterManager) {
           this.filterManager.updateConfig(
-            spec.data?.metricsViews,
-            spec.data.canvas?.pinnedFilters ?? [],
-            spec.data.canvas?.defaultPreset?.filterExpr ?? {},
+            metricsViews,
+            pinnedFilters,
+            filterExpressions,
           );
         } else {
           this.filterManager = new FilterManager(
-            spec.data?.metricsViews,
-            spec.data.canvas?.pinnedFilters ?? [],
-            spec.data.canvas?.defaultPreset?.filterExpr ?? {},
+            metricsViews,
+            canvas?.pinnedFilters ?? [],
+            filterExpressions,
           );
         }
       } else {
@@ -202,11 +201,10 @@ export class CanvasEntity {
         }
       }
 
-      if (spec.data) {
-        this.processRows(spec.data);
+      if (data) {
+        this.processRows(data);
       }
 
-      const defaultPreset = spec.data?.canvas?.defaultPreset ?? {};
       const defaultSearchParams = getDefaults(defaultPreset);
 
       this._defaultUrlParams.set(defaultSearchParams);
@@ -378,6 +376,7 @@ export class CanvasEntity {
     urlParams: URLSearchParams,
     builderContext?: boolean,
   ) => {
+    console.log("URL Params changed:", urlParams.toString());
     if (builderContext) {
       const redirected = await CanvasEntity.handleCanvasRedirect({
         canvasName: this.name,
@@ -391,7 +390,7 @@ export class CanvasEntity {
 
     const legacyFilter = urlParams.get(ExploreStateURLParams.Filters);
 
-    get(this.filterManager.metricsViewFilters).forEach((filters, mvName) => {
+    this.filterManager.metricsViewFilters.forEach((filters, mvName) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
       const filterString = urlParams.get(paramKey) ?? legacyFilter ?? "";
 
@@ -422,6 +421,7 @@ export class CanvasEntity {
     builderContext?: true;
   }) => {
     const { instanceId } = get(runtime);
+    console.log("Handling canvas redirect for:", canvasName);
 
     // This query always needs to run to ensure the cache is filled
     let defaultParamsString: string | undefined = undefined;
@@ -431,6 +431,7 @@ export class CanvasEntity {
         canvasName,
         {},
       );
+
       const response = await queryClient.fetchQuery(queryOptions);
 
       const defaultSearchParams = getDefaults(
@@ -756,10 +757,10 @@ const customKeySort = (
   b: Pair<unknown, unknown>,
 ) => {
   const priorityKeys = ["type", "display_name", "defaults", "filters"];
-  const keyA = a.key.toString();
-  const keyB = b.key.toString();
-  const indexA = priorityKeys.indexOf(keyA);
-  const indexB = priorityKeys.indexOf(keyB);
+  const keyA = a.key?.toString();
+  const keyB = b.key?.toString();
+  const indexA = priorityKeys.indexOf(keyA ?? "");
+  const indexB = priorityKeys.indexOf(keyB ?? "");
 
   if (indexA > -1 && indexB > -1) {
     return indexA - indexB;
