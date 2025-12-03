@@ -20,8 +20,9 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode, deploy } = featureFlags;
+  const { darkMode, deploy, developerChat } = featureFlags;
 
   export let mode: string;
 
@@ -121,6 +122,8 @@
       {:else if route.id?.includes("canvas")}
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
+    {:else if $developerChat}
+      <ChatToggle />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

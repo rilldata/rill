@@ -55,7 +55,9 @@ test.describe("Breadcrumbs", () => {
         .click();
 
       await page.getByRole("button", { name: "Create resource menu" }).click();
-      await page.getByRole("menuitem", { name: "Create dashboard" }).click();
+      await page
+        .getByRole("menuitem", { name: "Create Explore dashboard" })
+        .click();
 
       await page.waitForURL(
         "**/files/dashboards/AdBids_metrics_explore_1.yaml",

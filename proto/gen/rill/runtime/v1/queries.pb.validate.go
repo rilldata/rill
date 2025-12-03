@@ -11275,6 +11275,295 @@ var _ interface {
 	ErrorName() string
 } = ResolveComponentResponseValidationError{}
 
+// Validate checks the field values on ResolveTemplatedStringRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveTemplatedStringRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveTemplatedStringRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ResolveTemplatedStringRequestMultiError, or nil if none found.
+func (m *ResolveTemplatedStringRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveTemplatedStringRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Body
+
+	// no validation rules for UseFormatTokens
+
+	{
+		sorted_keys := make([]string, len(m.GetAdditionalWhereByMetricsView()))
+		i := 0
+		for key := range m.GetAdditionalWhereByMetricsView() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetAdditionalWhereByMetricsView()[key]
+			_ = val
+
+			// no validation rules for AdditionalWhereByMetricsView[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, ResolveTemplatedStringRequestValidationError{
+							field:  fmt.Sprintf("AdditionalWhereByMetricsView[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, ResolveTemplatedStringRequestValidationError{
+							field:  fmt.Sprintf("AdditionalWhereByMetricsView[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return ResolveTemplatedStringRequestValidationError{
+						field:  fmt.Sprintf("AdditionalWhereByMetricsView[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetAdditionalTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveTemplatedStringRequestValidationError{
+					field:  "AdditionalTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveTemplatedStringRequestValidationError{
+					field:  "AdditionalTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAdditionalTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveTemplatedStringRequestValidationError{
+				field:  "AdditionalTimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveTemplatedStringRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveTemplatedStringRequestMultiError is an error wrapping multiple
+// validation errors returned by ResolveTemplatedStringRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ResolveTemplatedStringRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveTemplatedStringRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveTemplatedStringRequestMultiError) AllErrors() []error { return m }
+
+// ResolveTemplatedStringRequestValidationError is the validation error
+// returned by ResolveTemplatedStringRequest.Validate if the designated
+// constraints aren't met.
+type ResolveTemplatedStringRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveTemplatedStringRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveTemplatedStringRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveTemplatedStringRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveTemplatedStringRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveTemplatedStringRequestValidationError) ErrorName() string {
+	return "ResolveTemplatedStringRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveTemplatedStringRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveTemplatedStringRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveTemplatedStringRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveTemplatedStringRequestValidationError{}
+
+// Validate checks the field values on ResolveTemplatedStringResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveTemplatedStringResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveTemplatedStringResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ResolveTemplatedStringResponseMultiError, or nil if none found.
+func (m *ResolveTemplatedStringResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveTemplatedStringResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Body
+
+	if len(errors) > 0 {
+		return ResolveTemplatedStringResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveTemplatedStringResponseMultiError is an error wrapping multiple
+// validation errors returned by ResolveTemplatedStringResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ResolveTemplatedStringResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveTemplatedStringResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveTemplatedStringResponseMultiError) AllErrors() []error { return m }
+
+// ResolveTemplatedStringResponseValidationError is the validation error
+// returned by ResolveTemplatedStringResponse.Validate if the designated
+// constraints aren't met.
+type ResolveTemplatedStringResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveTemplatedStringResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveTemplatedStringResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveTemplatedStringResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveTemplatedStringResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveTemplatedStringResponseValidationError) ErrorName() string {
+	return "ResolveTemplatedStringResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveTemplatedStringResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveTemplatedStringResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveTemplatedStringResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveTemplatedStringResponseValidationError{}
+
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

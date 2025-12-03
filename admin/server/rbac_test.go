@@ -309,7 +309,7 @@ func TestRBAC(t *testing.T) {
 			UserName:        u1.DisplayName,
 			RoleName:        database.OrganizationRoleNameAdmin,
 			ProjectsCount:   2,
-			UsergroupsCount: 2, // The autogroups
+			UsergroupsCount: 0, // Does not include the autogroups
 		})
 		require.Contains(t, r6.Members, &adminv1.OrganizationMemberUser{
 			UserId:          u2.ID,
@@ -317,7 +317,7 @@ func TestRBAC(t *testing.T) {
 			UserName:        u2.DisplayName,
 			RoleName:        database.OrganizationRoleNameViewer,
 			ProjectsCount:   2, // Through the autogroup:member being added by default
-			UsergroupsCount: 3, // The autogroups and the one added
+			UsergroupsCount: 1, // Only the one added
 		})
 	})
 

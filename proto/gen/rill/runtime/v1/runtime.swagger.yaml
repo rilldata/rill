@@ -410,6 +410,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to run the completion against.
           in: path
           required: true
           type: string
@@ -421,27 +422,25 @@ paths:
             properties:
               conversationId:
                 type: string
-                title: If not provided, creates a new conversation
+                description: Conversation ID to continue. If empty, a new conversation is created.
               prompt:
                 type: string
-              explore:
+                description: The prompt to complete.
+              agent:
                 type: string
-              dimensions:
-                type: array
-                items:
-                  type: string
-              measures:
-                type: array
-                items:
-                  type: string
-              where:
-                $ref: '#/definitions/v1Expression'
-              timeStart:
-                type: string
-                format: date-time
-              timeEnd:
-                type: string
-                format: date-time
+                description: |-
+                  Optional agent to use for the completion.
+                  If not set, it will infer an agent based on the prompt and conversation history.
+              analystAgentContext:
+                $ref: '#/definitions/v1AnalystAgentContext'
+                description: |-
+                  Optional context for prompts handled by the analyst_agent.
+                  The field is ignored if another agent is selected.
+              developerAgentContext:
+                $ref: '#/definitions/v1DeveloperAgentContext'
+                description: |-
+                  Optional context for prompts handled by the developer_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -466,6 +465,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to run the completion against.
           in: path
           required: true
           type: string
@@ -477,27 +477,25 @@ paths:
             properties:
               conversationId:
                 type: string
-                title: If not provided, creates a new conversation
+                description: Conversation ID to continue. If empty, a new conversation is created.
               prompt:
                 type: string
-              explore:
+                description: The prompt to complete.
+              agent:
                 type: string
-              dimensions:
-                type: array
-                items:
-                  type: string
-              measures:
-                type: array
-                items:
-                  type: string
-              where:
-                $ref: '#/definitions/v1Expression'
-              timeStart:
-                type: string
-                format: date-time
-              timeEnd:
-                type: string
-                format: date-time
+                description: |-
+                  Optional agent to use for the completion.
+                  If not set, it will infer an agent based on the prompt and conversation history.
+              analystAgentContext:
+                $ref: '#/definitions/v1AnalystAgentContext'
+                description: |-
+                  Optional context for prompts handled by the analyst_agent.
+                  The field is ignored if another agent is selected.
+              developerAgentContext:
+                $ref: '#/definitions/v1DeveloperAgentContext'
+                description: |-
+                  Optional context for prompts handled by the developer_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -545,6 +543,28 @@ paths:
           required: true
           type: string
         - name: conversationId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/tools:
+    get:
+      summary: |-
+        ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+        Note that it covers all registered tools, but the current user may not have access to all of them.
+      operationId: RuntimeService_ListTools
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListToolsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
           in: path
           required: true
           type: string
@@ -812,6 +832,44 @@ paths:
                   Will cause the operation to fail if the file already exists.
                   It should only be set when create = true.
             title: Request message for RuntimeService.PutFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/generate-canvas:
+    post:
+      summary: GenerateCanvasFile generates a canvas YAML file from a metrics view
+      operationId: RuntimeService_GenerateCanvasFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateCanvasFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              metricsViewName:
+                type: string
+                description: Metrics view name to base the canvas on.
+              path:
+                type: string
+                description: Path to save the canvas file to.
+              useAi:
+                type: boolean
+                description: |-
+                  If true, the AI will be used to generate the canvas file.
+                  Otherwise, it falls back to a simpler heuristic approach.
+            title: Request message for RuntimeService.GenerateCanvasFile
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
@@ -2286,6 +2344,46 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/resolve-templated-string:
+    post:
+      summary: ResolveTemplatedString resolves a templated strings.
+      operationId: QueryService_ResolveTemplatedString
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveTemplatedStringResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              body:
+                type: string
+                title: Any string with Go templating
+              useFormatTokens:
+                type: boolean
+                description: If true, output format tokens instead of raw values.
+              additionalWhereByMetricsView:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
+                title: Additional filters to inject into metrics SQL queries by metrics view name
+              additionalTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Additional time range to add to metrics SQL queries
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
       summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -3565,6 +3663,34 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1AnalystAgentContext:
+    type: object
+    properties:
+      explore:
+        type: string
+        description: Optional explore dashboard.
+      dimensions:
+        type: array
+        items:
+          type: string
+        description: Optional dimensions.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Optional measures.
+      where:
+        $ref: '#/definitions/v1Expression'
+        description: Optional filters.
+      timeStart:
+        type: string
+        format: date-time
+        description: Optional start of a time range.
+      timeEnd:
+        type: string
+        format: date-time
+        description: Optional end of a time range.
+    description: Context for prompts handled by the analyst_agent.
   v1AnalyzeConnectorsResponse:
     type: object
     properties:
@@ -4385,6 +4511,20 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1DeveloperAgentContext:
+    type: object
+    properties:
+      initProject:
+        type: boolean
+        description: |-
+          Set to true if the prompt is provided as part of project initialization.
+          This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
+      currentFilePath:
+        type: string
+        description: |-
+          Optional path to the file that the user is currently viewing/editing.
+          This helps the agent understand which file the user is referring to in their request.
+    description: Context for prompts handled by the developer_agent.
   v1DirEntry:
     type: object
     properties:
@@ -4697,6 +4837,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1GenerateCanvasFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
+        type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+    title: Response message for RuntimeService.GenerateCanvasFile
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
@@ -5016,6 +5163,15 @@ definitions:
           $ref: '#/definitions/v1TableInfo'
       nextPageToken:
         type: string
+  v1ListToolsResponse:
+    type: object
+    properties:
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+    title: Response message for RuntimeService.ListTools
   v1Log:
     type: object
     properties:
@@ -6564,6 +6720,11 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+  v1ResolveTemplatedStringResponse:
+    type: object
+    properties:
+      body:
+        type: string
   v1ResolvedTimeRange:
     type: object
     properties:
@@ -7097,6 +7258,28 @@ definitions:
       records:
         type: object
         title: Not optional, not null
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
     properties:

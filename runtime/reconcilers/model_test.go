@@ -28,6 +28,10 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	// Create a manual full trigger
+	testruntime.RefreshModelAndWait(t, rt, instanceID, &runtimev1.RefreshModelTrigger{Model: "patch_model", Full: true})
+
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 
 	// Check there's one row
@@ -37,7 +41,7 @@ sql: SELECT '{{.partition.now}}::TIMESTAMP' AS now
 		Result:     []map[string]any{{"count": 1}},
 	})
 
-	// Create a manual trigger
+	// Create a manual incremental trigger
 	testruntime.RefreshAndWait(t, rt, instanceID, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "patch_model"})
 
 	// Check there's now two rows

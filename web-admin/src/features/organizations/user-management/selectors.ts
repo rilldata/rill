@@ -6,7 +6,7 @@ import {
   getAdminServiceListUsergroupsForOrganizationAndUserQueryOptions,
 } from "@rilldata/web-admin/client";
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-import { createQueries } from "@tanstack/svelte-query";
+import { createQuery } from "@tanstack/svelte-query";
 import { type Readable, derived } from "svelte/store";
 
 const PAGE_SIZE = 50;
@@ -20,20 +20,20 @@ export type UserGroupForUsersInOrg = {
 export function getUserGroupsForUsersInOrg(
   organization: string,
   userId: string,
+  enabledStore: Readable<boolean>,
 ): Readable<{
   isPending: boolean;
   error: unknown;
   data: UserGroupForUsersInOrg[];
 }> {
-  return createQueries({
-    queries: [
-      getAdminServiceListOrganizationMemberUsergroupsQueryOptions(
-        organization,
-        {
-          pageSize: PAGE_SIZE,
-          includeCounts: true,
-        },
-      ),
+  const orgUserGroupsQuery = createQuery(
+    getAdminServiceListOrganizationMemberUsergroupsQueryOptions(organization, {
+      pageSize: PAGE_SIZE,
+      includeCounts: true,
+    }),
+  );
+  const userGroupsForUserQuery = createQuery(
+    derived(enabledStore, (enabled) =>
       getAdminServiceListUsergroupsForOrganizationAndUserQueryOptions(
         organization,
         {
@@ -41,20 +41,25 @@ export function getUserGroupsForUsersInOrg(
         },
         {
           query: {
-            enabled: !!userId,
+            enabled: !!userId && enabled,
           },
         },
       ),
-    ],
-    combine: ([allOrgGroupsResp, groupsForUserResp]) => {
+    ),
+  );
+
+  // TODO: use combine query once it supports derived options as arguments.
+  return derived(
+    [orgUserGroupsQuery, userGroupsForUserQuery],
+    ([orgUserGroupsResp, userGroupsForUserResp]) => {
       const isPending =
-        allOrgGroupsResp.isPending || groupsForUserResp.isPending;
-      const error = allOrgGroupsResp.error ?? groupsForUserResp.error;
+        orgUserGroupsResp.isPending || userGroupsForUserResp.isPending;
+      const error = orgUserGroupsResp.error ?? userGroupsForUserResp.error;
 
       const nonManagedGroups =
-        groupsForUserResp.data?.usergroups?.filter((g) => !g.managed) ?? [];
+        userGroupsForUserResp.data?.usergroups?.filter((g) => !g.managed) ?? [];
       const groups = nonManagedGroups.map((g) => {
-        const orgGroup = allOrgGroupsResp.data?.members?.find(
+        const orgGroup = orgUserGroupsResp.data?.members?.find(
           (m) => m.groupId === g.groupId,
         );
         return {
@@ -64,13 +69,9 @@ export function getUserGroupsForUsersInOrg(
         };
       });
 
-      return {
-        isPending,
-        error,
-        data: groups,
-      };
+      return { isPending, error, data: groups };
     },
-  });
+  );
 }
 
 const INFINITE_PAGE_SIZE = 50;
