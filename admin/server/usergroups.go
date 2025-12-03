@@ -453,7 +453,7 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 	}
 
 	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
-	restrictResources := valOrDefault(req.RestrictResources, false)
+	restrictResources := valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
 	resources := resourceNamesFromProto(req.Resources)
 
 	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, restrictResources, resources)

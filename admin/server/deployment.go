@@ -190,7 +190,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			if err != nil {
 				return nil, err
 			}
-			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			restrictResources, resources, err = s.GetResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -561,7 +561,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 			if err != nil {
 				return nil, err
 			}
-			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			restrictResources, resources, err = s.GetResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -676,7 +676,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			if err != nil {
 				return nil, err
 			}
-			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			restrictResources, resources, err = s.GetResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -806,30 +806,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}, nil
 }
 
-// getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
-// The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
-// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
-	attr, userID, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
-	if err != nil {
-		return nil, false, nil, err
-	}
-
-	if userID == "" {
-		return attr, false, nil, nil
-	}
-
-	// Determine resource restrictions from project member and usergroups
-	restrictResources, resources, err := s.getResourceRestrictionsForUser(ctx, projID, userID)
-	if err != nil {
-		return nil, false, nil, err
-	}
-
-	return attr, restrictResources, resources, nil
-}
-
-// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
-func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
+// GetResourceRestrictionsForUser returns resource restrictions for a given user and project.
+func (s *Server) GetResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
 	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return false, nil, err
@@ -838,6 +816,14 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 	if err != nil {
 		return false, nil, err
 	}
+	// filter out managed usergroups as they do not have resource restrictions
+	var filteredMug []*database.MemberUsergroup
+	for _, g := range mug {
+		if !g.Managed {
+			filteredMug = append(filteredMug, g)
+		}
+	}
+	mug = filteredMug
 	restrictResources := mu != nil || len(mug) > 0
 	var resources []database.ResourceName
 	if mu != nil {
@@ -861,6 +847,28 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 	}
 
 	return restrictResources, mergedResources, nil
+}
+
+// getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
+// The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
+// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
+func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
+	attr, userID, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
+	if err != nil {
+		return nil, false, nil, err
+	}
+
+	if userID == "" {
+		return attr, false, nil, nil
+	}
+
+	// Determine resource restrictions from project member and usergroups
+	restrictResources, resources, err := s.GetResourceRestrictionsForUser(ctx, projID, userID)
+	if err != nil {
+		return nil, false, nil, err
+	}
+
+	return attr, restrictResources, resources, nil
 }
 
 // getAttributesForUser returns a map of attributes for a given user and project and the userID.
