@@ -16,6 +16,7 @@ import Postgres from "../../../components/icons/connectors/Postgres.svelte";
 import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
 import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
 import SQLite from "../../../components/icons/connectors/SQLite.svelte";
+import ClickHouseCloud from "../../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 
 export const ICONS = {
   gcs: GoogleCloudStorage,
@@ -34,6 +35,7 @@ export const ICONS = {
   local_file: LocalFile,
   https: Https,
   clickhouse: ClickHouse,
+  clickhousecloud: ClickHouseCloud,
   druid: ApacheDruid,
   pinot: ApachePinot,
 };

@@ -288,7 +288,7 @@ func (r *ReportReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.
 		curr = rep.State.NextRunOn.AsTime()
 	}
 
-	if next == curr {
+	if next.Equal(curr) {
 		return nil
 	}
 

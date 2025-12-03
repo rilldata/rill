@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/rilldata/rill/admin/pkg/oauth"
 	"go.uber.org/zap"
 )
 
-// handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata
-// as per RFC 8414 and MCP OAuth specification.
-// This endpoint helps MCP clients discover the authorization server for this protected resource.
+// handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata as per RFC 9728 and MCP OAuth specification.
+// This endpoint helps MCP clients discover the authorization server for this protected resource. https://www.rfc-editor.org/rfc/rfc9728.html
 func (a *Authenticator) handleOAuthProtectedResourceMetadata(w http.ResponseWriter, r *http.Request) {
 	metadata := oauth.ProtectedResourceMetadata{
-		Resource:             a.admin.URLs.External(),
+		Resource:             a.admin.URLs.OAuthExternalResourceURL(r),
 		AuthorizationServers: []string{a.admin.URLs.External()},
 		BearerMethodsSupported: []string{
 			"header", // Authorization: Bearer <token>
@@ -105,6 +105,16 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	redirectURIs, err := sanitizeRedirectURIs(req.RedirectURIs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(redirectURIs) == 0 {
+		http.Error(w, "at least one valid redirect_uri is required", http.StatusBadRequest)
+		return
+	}
+
 	scope := sanitizeScope(req.Scope)
 	grantTypes := sanitizeGrantTypes(req.GrantTypes)
 	if len(grantTypes) == 0 {
@@ -113,7 +123,7 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Create a new auth client in the database
-	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName, scope, grantTypes)
+	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName, scope, grantTypes, redirectURIs)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to create auth client: %w", err))
 		return
@@ -126,7 +136,7 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		Scope:                   client.Scope,
 		GrantTypes:              client.GrantTypes,
 		ClientIDIssuedAt:        client.CreatedOn.Unix(),
-		RedirectURIs:            req.RedirectURIs,
+		RedirectURIs:            redirectURIs,
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
 		ResponseTypes:           req.ResponseTypes,
 		ClientURI:               req.ClientURI,
@@ -157,4 +167,39 @@ func sanitizeGrantTypes(grants []string) []string {
 		}
 	}
 	return sanitized
+}
+
+// sanitizeRedirectURIs validates redirect URIs and normalizes them.
+// Requires absolute HTTP(S) URLs without fragments.
+func sanitizeRedirectURIs(uris []string) ([]string, error) {
+	seen := make(map[string]struct{})
+	var sanitized []string
+	for _, raw := range uris {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			continue
+		}
+
+		parsed, err := url.Parse(trimmed)
+		if err != nil {
+			return nil, fmt.Errorf("invalid redirect_uri %q: %w", raw, err)
+		}
+		if parsed.Scheme != "https" && parsed.Scheme != "http" {
+			return nil, fmt.Errorf("redirect_uri %q must use http or https", raw)
+		}
+		if parsed.Host == "" {
+			return nil, fmt.Errorf("redirect_uri %q must include a host", raw)
+		}
+		if parsed.Fragment != "" {
+			return nil, fmt.Errorf("redirect_uri %q must not include a fragment", raw)
+		}
+
+		normalized := parsed.String()
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		sanitized = append(sanitized, normalized)
+	}
+	return sanitized, nil
 }

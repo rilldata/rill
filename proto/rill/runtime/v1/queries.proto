@@ -188,6 +188,14 @@ service QueryService {
     };
   }
 
+  // ResolveTemplatedString resolves a templated strings.
+  rpc ResolveTemplatedString(ResolveTemplatedStringRequest) returns (ResolveTemplatedStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
+      body: "*"
+    };
+  }
+
   // Profiling APIs
 
   // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -944,6 +952,22 @@ message ResolveComponentRequest {
 message ResolveComponentResponse {
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
+}
+
+message ResolveTemplatedStringRequest {
+  string instance_id = 1;
+  // Any string with Go templating
+  string body = 2;
+  // If true, output format tokens instead of raw values.
+  bool use_format_tokens = 3;
+  // Additional filters to inject into metrics SQL queries by metrics view name
+  map<string, Expression> additional_where_by_metrics_view = 4;
+  // Additional time range to add to metrics SQL queries
+  TimeRange additional_time_range = 5;
+}
+
+message ResolveTemplatedStringResponse {
+  string body = 1;
 }
 
 // **********

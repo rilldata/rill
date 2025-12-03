@@ -3,7 +3,6 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -13,8 +12,9 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
-	"go.uber.org/zap"
 )
+
+const CreateChartName = "create_chart"
 
 type CreateChart struct {
 	Runtime *runtime.Runtime
@@ -38,40 +38,35 @@ func (t *CreateChart) Spec() *mcp.Tool {
 	}
 
 	return &mcp.Tool{
-		Name:        "create_chart",
+		Name:        CreateChartName,
 		Title:       "Create chart",
 		Description: createChartDescription,
-		InputSchema: inputSchema,
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Creating chart…",
-			"openai/toolInvocation/invoked":  "Finished creating chart",
+			"openai/toolInvocation/invoking": "Creating chart...",
+			"openai/toolInvocation/invoked":  "Created chart",
 		},
+		InputSchema: inputSchema,
 	}
 }
 
-func (t *CreateChart) CheckAccess(ctx context.Context) bool {
-	s := GetSession(ctx)
-
+func (t *CreateChart) CheckAccess(ctx context.Context) (bool, error) {
 	// Must be able to query metrics
+	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.ReadMetrics) {
-		return false
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it doesn't work with external MCP clients
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
 
 	// Must have the chat_charts feature flag
 	ff, err := t.Runtime.FeatureFlags(ctx, s.InstanceID(), s.Claims())
 	if err != nil {
-		if !errors.Is(err, ctx.Err()) {
-			// TODO: Propagate error?
-			s.logger.Error("failed to get feature flags", zap.Error(err))
-		}
-		return false
+		return false, err
 	}
-	return ff["chat_charts"]
+	return ff["chat_charts"], nil
 }
 
 func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*CreateChartResult, error) {

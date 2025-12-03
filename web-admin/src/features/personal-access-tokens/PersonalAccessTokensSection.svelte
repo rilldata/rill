@@ -33,9 +33,9 @@
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <h3 class="text-sm font-bold uppercase tracking-wide text-gray-900">
-    Create a Personal Access Token
-  </h3>
+  <h4 class="text-sm font-medium text-gray-900">
+    Create a personal access token
+  </h4>
   <p class="text-sm text-gray-600">
     Because this project is <span class="font-medium">private</span>, you need a
     <span class="font-medium">personal access token</span> to use in your MCP configuration.

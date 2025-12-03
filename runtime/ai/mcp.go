@@ -76,7 +76,14 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// Add only the tools that the user has access to
 	ctx = WithSession(ctx, s)
 	for _, t := range s.runner.Tools {
-		if !t.CheckAccess(ctx) {
+		ok, err := t.CheckAccess(ctx)
+		if err != nil {
+			if !errors.Is(err, ctx.Err()) {
+				s.logger.Error("failed to check tool access", zap.Error(err))
+			}
+			continue
+		}
+		if !ok {
 			continue
 		}
 		t.RegisterWithMCPServer(srv)

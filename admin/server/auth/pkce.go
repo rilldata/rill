@@ -10,15 +10,43 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/oauth"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"go.uber.org/zap"
 )
 
 func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
+	normalizedRedirect, err := normalizeRedirectURI(redirectURI)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
+			return
+		}
+		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
+		return
+	}
+
+	if clientID != database.AuthClientIDRillWebLocal && len(authClient.RedirectURIs) == 0 {
+		http.Error(w, "client has no registered redirect URIs", http.StatusBadRequest)
+		return
+	}
+
+	if !isRedirectURIAllowed(authClient, normalizedRedirect) {
+		http.Error(w, "invalid redirect URI", http.StatusBadRequest)
+		return
+	}
+
 	// Generate a unique authorization code
 	code, err := generateRandomString(16) // 16 bytes, resulting in a 32-character hex string
 	if err != nil {
@@ -31,14 +59,21 @@ func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clien
 	expiration := time.Now().Add(1 * time.Minute)
 
 	// Store the authorization code in the database
-	_, err = a.admin.DB.InsertAuthorizationCode(r.Context(), code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, expiration)
+	_, err = a.admin.DB.InsertAuthorizationCode(r.Context(), code, userID, clientID, normalizedRedirect, codeChallenge, codeChallengeMethod, expiration)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to store authorization code, %w", err))
 		return
 	}
 
 	// Build the redirection URI with the authorization code as per OAuth2 spec, state is URL-encoded
-	redirectWithCode := fmt.Sprintf("%s?code=%s&state=%s", redirectURI, code, r.URL.Query().Get("state"))
+	redirectWithCode, err := urlutil.WithQuery(normalizedRedirect, map[string]string{
+		"code":  code,
+		"state": r.URL.Query().Get("state"),
+	})
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to build redirect URI, %w", err))
+		return
+	}
 
 	// Redirect the user agent to the redirect URI with the authorization code
 	http.Redirect(w, r, redirectWithCode, http.StatusFound)
@@ -370,6 +405,40 @@ func hasGrantType(grants []string, grant string) bool {
 		}
 	}
 	return false
+}
+
+func normalizeRedirectURI(uri string) (string, error) {
+	sanitized, err := sanitizeRedirectURIs([]string{uri})
+	if err != nil {
+		return "", err
+	}
+	if len(sanitized) == 0 {
+		return "", fmt.Errorf("redirect_uri is required")
+	}
+	return sanitized[0], nil
+}
+
+func isRedirectURIAllowed(client *database.AuthClient, normalizedRedirect string) bool {
+	if client == nil {
+		return false
+	}
+
+	// For localhost rill dev, allow any localhost redirect with /auth/callback path
+	if client.ID == database.AuthClientIDRillWebLocal {
+		parsed, err := url.Parse(normalizedRedirect)
+		if err != nil {
+			return false
+		}
+		if parsed.Hostname() != "localhost" {
+			return false
+		}
+		if parsed.Path != "/auth/callback" {
+			return false
+		}
+		return true
+	}
+
+	return slices.Contains(client.RedirectURIs, normalizedRedirect)
 }
 
 // Generates a random string for use as the authorization code
