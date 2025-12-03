@@ -282,7 +282,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 }
 
 // RedeployProject de-provisions and re-provisions a project's deployment.
-func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
+func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment, environment string) (*database.Project, error) {
 	// Delete old prod deployment if exists
 	if prevDepl != nil {
 		err := s.TeardownDeployment(ctx, prevDepl)
@@ -292,19 +292,29 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	}
 
 	// Provision new deployment
+	var branch string
+	var editable bool
+	if prevDepl != nil {
+		branch = prevDepl.Branch
+		editable = prevDepl.Editable
+	} else if environment == "prod" {
+		branch = proj.ProdBranch
+	} else {
+		// this can't happen normally
+		return nil, fmt.Errorf("cannot redeploy non-prod deployment without previous deployment info")
+	}
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
-		Environment: prevDepl.Environment,
-		Branch:      prevDepl.Branch,
-		Editable:    false,
+		Environment: environment,
+		Branch:      branch,
+		Editable:    editable,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if proj.ProdDeploymentID != nil && prevDepl != nil && *proj.ProdDeploymentID != prevDepl.ID {
-		// not the default prod deployment so no need to update anything
+	if environment != "prod" || branch != proj.ProdBranch {
 		return proj, nil
 	}
 
