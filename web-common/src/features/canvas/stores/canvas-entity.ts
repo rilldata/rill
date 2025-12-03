@@ -238,7 +238,6 @@ export class CanvasEntity {
         pinnedFilters,
         defaultPinnedFilterKeys,
       ]) => {
-        console.log({ pinnedFilters, defaultPinnedFilterKeys });
         if (
           defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
         ) {
