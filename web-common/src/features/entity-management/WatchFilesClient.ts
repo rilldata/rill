@@ -12,6 +12,7 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 
 const REFETCH_LIST_FILES_THROTTLE_MS = 100;
 
@@ -58,6 +59,8 @@ export class WatchFilesClient {
             });
 
             await invalidate("init");
+
+            eventBus.emit("rill-yaml-updated", null);
           }
           this.seenFiles.add(res.path);
           break;
