@@ -12,7 +12,6 @@ import {
   type V1CanvasPreset,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
-  type V1MetricsView,
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
@@ -45,6 +44,7 @@ import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -157,6 +157,8 @@ export class CanvasEntity {
     );
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
+      // if (!spec.data) return;
+      console.log({ spec: spec.data });
       const filePath = spec.data?.filePath;
 
       if (spec.data?.metricsViews) {
@@ -174,6 +176,7 @@ export class CanvasEntity {
           );
         }
       } else {
+        console.log("problem");
         // need to find a better way to initialize this in certain contextx - bgh
         this.filterManager = new FilterManager({}, [], {});
       }
@@ -374,6 +377,7 @@ export class CanvasEntity {
     urlParams: URLSearchParams,
     builderContext?: boolean,
   ) => {
+    console.log("url params change", { builderContext });
     if (builderContext) {
       const redirected = await CanvasEntity.handleCanvasRedirect({
         canvasName: this.name,
@@ -382,12 +386,21 @@ export class CanvasEntity {
         builderContext: true,
       });
 
+      console.log({ redirected });
+
       if (redirected) return;
     }
 
     const legacyFilter = urlParams.get(ExploreStateURLParams.Filters);
 
-    this.filterManager.metricsViewFilters.forEach((filters, mvName) => {
+    console.log(get(this.filterManager.metricsViewFilters));
+
+    // await new Promise((resolve) => {
+    //   setTimeout(() => resolve(true), 1000);
+    // });
+
+    get(this.filterManager.metricsViewFilters).forEach((filters, mvName) => {
+      console.log("WAHT", { filters, mvName });
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
       const filterString = urlParams.get(paramKey) ?? legacyFilter ?? "";
 
@@ -417,10 +430,31 @@ export class CanvasEntity {
     projectId?: string;
     builderContext?: true;
   }) => {
+    const { instanceId } = get(runtime);
+
+    // This query always needs to run to ensure the cache is filled
+    let defaultParamsString: string | undefined = undefined;
+    try {
+      const queryOptions = getQueryServiceResolveCanvasQueryOptions(
+        instanceId,
+        canvasName,
+        {},
+      );
+      const response = await queryClient.fetchQuery(queryOptions);
+
+      const defaultSearchParams = getDefaults(
+        response.canvas?.canvas?.spec?.defaultPreset ?? {},
+      );
+      defaultParamsString = defaultSearchParams.toString();
+    } catch (e) {
+      console.log("Error fetching canvas: ", e);
+    }
+
     // If there are no URL params, check for last visited state or home bookmark
     if (searchParams.size === 0) {
       const snapshotSearchParams = lastVisitedState.get(canvasName);
 
+      // First priority
       if (snapshotSearchParams) {
         if (builderContext) {
           await goto(`?${snapshotSearchParams}`, { replaceState: true });
@@ -430,7 +464,9 @@ export class CanvasEntity {
         }
       }
 
-      if (projectId && !builderContext) {
+      const deployed = projectId && !builderContext;
+
+      if (deployed) {
         let homeBookmarkUrlSearch: string | undefined = undefined;
         try {
           // Only gets imported in admin context
@@ -455,41 +491,21 @@ export class CanvasEntity {
           console.error("Error fetching bookmarks for canvas redirect:", e);
         }
 
+        // Second priority
         if (homeBookmarkUrlSearch) {
           throw redirect(307, homeBookmarkUrlSearch);
         }
-      } else {
-        const options = getQueryServiceResolveCanvasQueryOptions(
-          "default",
-          canvasName,
-          {},
-        );
-        const response = await queryClient.fetchQuery(options);
+      }
 
-        console.log(response.referencedMetricsViews);
-
-        const mv: Record<string, V1MetricsView | undefined> = {};
-
-        Object.entries(response.referencedMetricsViews ?? {}).forEach(
-          ([mvName, mvSpec]) => {
-            mv[mvName] = mvSpec.metricsView;
-          },
-        );
-
-        const defaultSearchParams = getDefaults(
-          response.canvas?.canvas?.spec?.defaultPreset ?? {},
-        );
-        const defaultParamString = defaultSearchParams.toString();
-
-        if (defaultParamString) {
-          if (builderContext) {
-            await goto(`?${defaultSearchParams.toString()}`, {
-              replaceState: true,
-            });
-            return true;
-          } else {
-            throw redirect(307, `?${defaultSearchParams.toString()}`);
-          }
+      // Third priority
+      if (defaultParamsString) {
+        if (builderContext) {
+          await goto(`?${defaultParamsString}`, {
+            replaceState: true,
+          });
+          return true;
+        } else {
+          throw redirect(307, `?${defaultParamsString}`);
         }
       }
     } else if (searchParams.get("default")) {
@@ -707,6 +723,7 @@ function areSameType(
 }
 
 function getDefaults(defaultPreset: V1CanvasPreset) {
+  console.log({ defaultPreset });
   const defaultSearchParams = new URLSearchParams();
 
   const resolvedRange = defaultPreset.timeRange;
