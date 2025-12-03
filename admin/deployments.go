@@ -92,7 +92,18 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 	return nil
 }
 
-func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment) error {
+func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *database.UpdateDeploymentOptions) error {
+	// Update the deployment if deployment parameters have changed
+	updateDeployment := opts.Branch != depl.Branch || opts.RuntimeHost != depl.RuntimeHost ||
+		opts.RuntimeInstanceID != depl.RuntimeInstanceID ||
+		opts.RuntimeAudience != depl.RuntimeAudience
+	if updateDeployment {
+		_, err := s.DB.UpdateDeployment(ctx, depl.ID, opts)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Update the desired deployment status to running
 	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
 	if err != nil {
@@ -139,7 +150,20 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	for _, d := range ds {
 		d := d
 		grp.Go(func() error {
-			err := s.UpdateDeployment(ctx, d)
+			// If this is the default prod deployment and the prod branch has changed, update the deployment branch too.
+			opts := &database.UpdateDeploymentOptions{
+				Branch:            d.Branch,
+				RuntimeHost:       d.RuntimeHost,
+				RuntimeInstanceID: d.RuntimeInstanceID,
+				RuntimeAudience:   d.RuntimeAudience,
+				Status:            d.Status,
+				StatusMessage:     d.StatusMessage,
+			}
+			if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID && p.ProdBranch != d.Branch {
+				opts.Branch = p.ProdBranch
+			}
+
+			err := s.UpdateDeployment(ctx, d, opts)
 			if err != nil {
 				if ctx.Err() != nil {
 					return ctx.Err()

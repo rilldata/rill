@@ -197,6 +197,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
 
 	// TODO: changing prod related fields like slots, branch etc should only impact prod deployments, but for now we update all deployments
+	// NOTE: there is no way to change dev-slots right now
 	err = s.UpdateDeploymentsForProject(ctx, proj)
 	if err != nil {
 		return nil, err
