@@ -1,7 +1,7 @@
 ---
 title: "Your First Rill Project"
 description: "Get started with Rill by understanding what happens when you create a project"
-sidebar_label: "Rill Project"
+sidebar_label: "Your First Project"
 sidebar_position: 1
 ---
 
