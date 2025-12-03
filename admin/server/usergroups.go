@@ -734,9 +734,6 @@ func (s *Server) ListUsergroupsForProjectAndUser(ctx context.Context, req *admin
 
 	usergroups, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, proj.ID, user.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return &adminv1.ListUsergroupsForProjectAndUserResponse{}, nil
-		}
 		return nil, err
 	}
 

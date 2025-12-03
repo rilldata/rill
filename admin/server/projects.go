@@ -307,7 +307,6 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, err
 		}
 		attr = a
-		// ignore resource level security rules if the user has a full project role
 		userRules := securityRulesFromResources(restrictResources, resources)
 		rules = append(rules, userRules...)
 	} else if claims.OwnerType() == auth.OwnerTypeService {
@@ -470,9 +469,6 @@ func securityRulesFromResources(restricted bool, resources []database.ResourceNa
 				},
 			},
 		})
-	}
-	if len(rules) == 0 {
-		return nil
 	}
 	return rules
 }

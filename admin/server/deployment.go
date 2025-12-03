@@ -231,9 +231,6 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 	// get resource level security rules if applicable
 	rules := securityRulesFromResources(restrictResources, resources)
-	if err != nil {
-		return nil, err
-	}
 
 	instancePermissions := []runtime.Permission{
 		runtime.ReadObjects,
@@ -596,9 +593,6 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 	// get resource level security rules if applicable
 	rules := securityRulesFromResources(restrictResources, resources)
-	if err != nil {
-		return nil, err
-	}
 
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
@@ -740,9 +734,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	} else {
 		// get resource level security rules if navigation is enabled
 		rules = append(rules, securityRulesFromResources(restrictResources, resources)...)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Determine TTL for the access token

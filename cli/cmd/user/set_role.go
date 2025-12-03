@@ -7,8 +7,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -47,28 +45,12 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
-				// get current resources and restriction flag
-				member, err := client.GetProjectMemberUser(cmd.Context(), &adminv1.GetProjectMemberUserRequest{
+				// don't set restrict_resources and resources to keep current restrictions
+				_, err = client.SetProjectMemberUserRole(cmd.Context(), &adminv1.SetProjectMemberUserRoleRequest{
 					Org:     ch.Org,
 					Project: projectName,
 					Email:   email,
-				})
-				if err != nil && status.Code(err) != codes.NotFound {
-					return err
-				}
-				var currentResources []*adminv1.ResourceName
-				var currentRestrict bool
-				if member != nil {
-					currentResources = member.Member.Resources
-					currentRestrict = member.Member.RestrictResources
-				}
-				_, err = client.SetProjectMemberUserRole(cmd.Context(), &adminv1.SetProjectMemberUserRoleRequest{
-					Org:               ch.Org,
-					Project:           projectName,
-					Email:             email,
-					Role:              &role,
-					Resources:         currentResources,
-					RestrictResources: &currentRestrict,
+					Role:    &role,
 				})
 				if err != nil {
 					return err

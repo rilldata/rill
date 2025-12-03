@@ -19,11 +19,6 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "set-resources",
 		Short: "Set a user's project resources and restriction flag (overwrites existing list)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if projectName == "" && ch.Interactive {
-				if err := cmdutil.StringPromptIfEmpty(&projectName, "Enter project name"); err != nil {
-					return err
-				}
-			}
 			if projectName == "" {
 				return fmt.Errorf("--project is required")
 			}
@@ -42,18 +37,9 @@ func SetResourceCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if len(resources) == 0 && !restrict {
-				// confirm with user
-				if ch.Interactive {
-					confirm, err := cmdutil.ConfirmPrompt("No resources specified and --restrict-resources is false. This will clear all resource restrictions for the user. Are you sure?", "", false)
-					if err != nil {
-						return err
-					}
-					if !confirm {
-						ch.PrintfWarn("Operation cancelled.\n")
-						return nil
-					}
-				}
+			if len(resources) == 0 && !cmd.Flags().Changed("restrict-resources") {
+				// error out if no resources and restrict not explicitly set
+				return fmt.Errorf("either resources must be provided or --restrict-resources must be set to true or false to enforce or clear restrictions")
 			}
 
 			if len(resources) > 0 {
