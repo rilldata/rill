@@ -3,7 +3,6 @@ import { NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/uti
 import {
   runtimeServiceUnpackEmpty,
   type V1Message,
-  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   MessageContentType,
