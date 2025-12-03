@@ -9,7 +9,6 @@ import type {
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
   V1MetricsViewSpec,
   V1ResolveCanvasResponseResolvedComponents,
