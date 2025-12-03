@@ -12,7 +12,6 @@
     useSourceFromYaml,
   } from "@rilldata/web-common/features/sources/selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -23,7 +22,7 @@
   import type { V1Source } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
+  import { WandIcon, GitBranch } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -32,6 +31,7 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   export let filePath: string;
 
@@ -56,6 +56,18 @@
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
+
+  $: sourceResource = $sourceQuery.data;
+
+  function viewGraph() {
+    if (!sourceResource) {
+      console.warn(
+        "[SourceMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(sourceResource);
+  }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
@@ -181,6 +193,11 @@
   </svelte:fragment>
 </NavigationMenuItem>
 
+<NavigationMenuItem on:click={viewGraph}>
+  <GitBranch slot="icon" size="14px" />
+  View dependency graph
+</NavigationMenuItem>
+
 <NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />
   Refresh source
@@ -192,5 +209,3 @@
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
-
-<NavigationMenuSeparator />
