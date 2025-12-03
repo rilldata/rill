@@ -115,7 +115,11 @@ export class Conversation {
     try {
       options?.onStreamStart?.();
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt, context);
+      const streamPromise = this.startStreaming(
+        prompt,
+        context,
+        options?.onMessage,
+      );
 
       // Wait for streaming to complete
       await streamPromise;
@@ -178,6 +182,7 @@ export class Conversation {
   private async startStreaming(
     prompt: string,
     context: RuntimeServiceCompleteBody | undefined,
+    onMessage: ((message: V1Message) => void) | undefined,
   ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
@@ -202,6 +207,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
+          if (response.message) onMessage?.(response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");

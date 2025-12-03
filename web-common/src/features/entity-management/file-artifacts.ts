@@ -97,6 +97,10 @@ export class FileArtifacts {
     return artifact;
   };
 
+  hasFileArtifact(filePath: string) {
+    return this.artifacts.has(filePath);
+  }
+
   findFileArtifact(resKind: ResourceKind, resName: string) {
     for (const [, artifact] of this.artifacts.entries()) {
       if (!artifact) continue;
