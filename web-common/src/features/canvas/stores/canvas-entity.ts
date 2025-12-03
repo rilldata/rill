@@ -374,7 +374,6 @@ export class CanvasEntity {
     urlParams: URLSearchParams,
     builderContext?: boolean,
   ) => {
-    console.log("url params change", { builderContext });
     if (builderContext) {
       const redirected = await CanvasEntity.handleCanvasRedirect({
         canvasName: this.name,
@@ -388,14 +387,7 @@ export class CanvasEntity {
 
     const legacyFilter = urlParams.get(ExploreStateURLParams.Filters);
 
-    console.log(get(this.filterManager.metricsViewFilters));
-
-    // await new Promise((resolve) => {
-    //   setTimeout(() => resolve(true), 1000);
-    // });
-
     get(this.filterManager.metricsViewFilters).forEach((filters, mvName) => {
-      console.log("WAHT", { filters, mvName });
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
       const filterString = urlParams.get(paramKey) ?? legacyFilter ?? "";
 
