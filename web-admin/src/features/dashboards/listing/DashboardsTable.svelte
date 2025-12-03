@@ -116,6 +116,8 @@
     lastRefreshed: false,
     description: false,
   };
+
+  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading}
@@ -131,6 +133,7 @@
       data={displayData}
       {columns}
       {columnVisibility}
+      {initialSorting}
       toolbar={!isPreview}
     >
       <ResourceListEmptyState
