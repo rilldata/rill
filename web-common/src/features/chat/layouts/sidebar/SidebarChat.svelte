@@ -16,11 +16,16 @@
     sidebarWidth,
   } from "./sidebar-store";
 
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+
+  export let config: ChatConfig;
+
   $: ({ instanceId } = $runtime);
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
+    agent: config.agent,
   });
 
   let chatInputComponent: ChatInput;
@@ -71,11 +76,12 @@
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <Messages {conversationManager} layout="sidebar" />
+    <Messages {conversationManager} layout="sidebar" {config} />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}
       onSend={onMessageSend}
+      {config}
     />
   </div>
 </div>

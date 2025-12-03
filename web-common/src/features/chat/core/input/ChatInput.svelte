@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getActiveExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
@@ -10,13 +9,18 @@
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
+  export let config: ChatConfig;
 
-  const placeholder = "Ask about your data...";
   let value = "";
+
+  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
@@ -29,8 +33,6 @@
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
 
-  const context = getActiveExploreContext();
-
   let element: HTMLDivElement;
   let editor: Editor;
 
@@ -39,14 +41,9 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage(
-        {
-          analystAgentContext: $context,
-        },
-        {
-          onStreamStart: () => editor.commands.setContent(""),
-        },
-      );
+      await currentConversation.sendMessage($additionalContextStore, {
+        onStreamStart: () => editor.commands.setContent(""),
+      });
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -77,11 +74,12 @@
   onMount(() => {
     editor = new Editor({
       element,
-      extensions: getEditorPlugins(
+      extensions: getEditorPlugins({
+        enableMention,
         placeholder,
         conversationManager,
-        () => void sendMessage(),
-      ),
+        onSubmit: () => void sendMessage(),
+      }),
       content: "",
       onTransaction: () => {
         // force re-render so `editor.isActive` works as expected
@@ -119,9 +117,11 @@
     style:height
   />
   <div class="chat-input-footer">
-    <button class="text-base ml-1" type="button" on:click={startMention}>
-      @
-    </button>
+    {#if enableMention}
+      <button class="text-base ml-1" type="button" on:click={startMention}>
+        @
+      </button>
+    {/if}
     <div class="grow"></div>
     <div>
       {#if canCancel}

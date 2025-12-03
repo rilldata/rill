@@ -61,6 +61,7 @@ class FeatureFlags {
   darkMode = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
+  developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
   generateCanvas = new FeatureFlag("user", false);
 
