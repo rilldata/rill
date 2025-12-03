@@ -75,6 +75,35 @@ export function prettyResourceKind(kind: string) {
   return kind.replace(/^rill\.runtime\.v1\./, "");
 }
 
+/**
+ * Coerce resource kind to match UI representation.
+ * Models that are defined-as-source are displayed as Sources in the sidebar and graph.
+ * This ensures consistent representation across the application.
+ *
+ * @param res - The resource to check
+ * @returns The coerced ResourceKind, or undefined if the resource has no kind
+ *
+ * @example
+ * // A model that is defined-as-source
+ * coerceResourceKind(modelResource) // Returns ResourceKind.Source
+ *
+ * // A normal model
+ * coerceResourceKind(normalModel) // Returns ResourceKind.Model
+ */
+export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
+  const raw = res.meta?.name?.kind as ResourceKind | undefined;
+  if (raw === ResourceKind.Model) {
+    // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
+    const name = res.meta?.name?.name;
+    const resultTable = res.model?.state?.resultTable;
+    const definedAsSource = res.model?.spec?.definedAsSource;
+    if (name && resultTable === name && definedAsSource === true) {
+      return ResourceKind.Source;
+    }
+  }
+  return raw;
+}
+
 export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
