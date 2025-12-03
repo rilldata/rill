@@ -52,10 +52,14 @@ var defaultFeatureFlags = map[string]string{
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
 	"dashboard_chat": "false",
+	// Controls visibility of local rill developer chat functionality
+	"developer_chat": "false",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
+	// Controls visibility of the "Create Canvas" dashboard buttons
+	"generate_canvas": "false",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
 }

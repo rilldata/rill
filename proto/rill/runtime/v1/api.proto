@@ -140,6 +140,14 @@ service RuntimeService {
     };
   }
 
+  // GenerateCanvasFile generates a canvas YAML file from a metrics view
+  rpc GenerateCanvasFile(GenerateCanvasFileRequest) returns (GenerateCanvasFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/generate-canvas",
+      body: "*"
+    };
+  }
+
   // GenerateResolver generates resolver and resolver properties from a table or a metrics view
   rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
     option (google.api.http) = {
@@ -599,6 +607,24 @@ message GenerateMetricsViewFileRequest {
 
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
+  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+  bool ai_succeeded = 1;
+}
+
+// Request message for RuntimeService.GenerateCanvasFile
+message GenerateCanvasFileRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Metrics view name to base the canvas on.
+  string metrics_view_name = 2;
+  // Path to save the canvas file to.
+  string path = 3;
+  // If true, the AI will be used to generate the canvas file.
+  // Otherwise, it falls back to a simpler heuristic approach.
+  bool use_ai = 4;
+}
+
+// Response message for RuntimeService.GenerateCanvasFile
+message GenerateCanvasFileResponse {
   // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
 }

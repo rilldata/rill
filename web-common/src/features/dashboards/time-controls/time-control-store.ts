@@ -272,9 +272,11 @@ export function createStableTimeControlStoreFromName(
 ) {
   const validSpecQuery = createQuery(
     getExploreValidSpecQueryOptions(exploreNameStore),
+    queryClient,
   );
   const metricsViewTimeRangeQuery = createQuery(
     getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+    queryClient,
   );
   const exploreStore = useStableExploreState(exploreNameStore);
 
