@@ -222,56 +222,9 @@ WHERE status = '{{ .env.string_var }}'
 
 ## AI Configuration
 
-### `ai_instructions`
+You can provide context and instructions for AI tools (like [AI Chat](/explore/ai-chat) and [MCP](/explore/mcp)) using the `ai_instructions` field. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs.
 
-Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs.
-
-**What to include:**
-- Guidance on which metrics views are most important or should be prioritized for your project
-- Any custom business logic, definitions, or terminology unique to your data or organization
-- Preferences for aggregations, filters, or dimensions that are especially relevant to your use case
-- Specific business context that helps the AI understand your domain
-
-**Example:**
-
-Here's an example of how you might configure `ai_instructions` in your `rill.yaml` to provide project context, metrics routing, and business definitions:
-
-```yaml
-ai_instructions: |
-  # Project Context
-  This project tracks e-commerce metrics for our multi-brand retail business.
-  
-  # Metrics View Routing
-  - For questions about overall sales, revenue, or order volume → use `company_sales_metrics`
-  - For questions about customer behavior, retention, or cohorts → use `customer_analytics`
-  - For questions about product performance or inventory → use `product_metrics`
-  - For questions about marketing campaigns or attribution → use `marketing_performance`
-  - For questions about fulfillment, shipping, or logistics → use `operations_metrics`
-  
-  # Business Rules & Definitions
-  - "Revenue" always refers to net revenue (after returns and discounts)
-  - "Conversion rate" is calculated as orders/sessions, not users
-  - Our fiscal year starts in February, not January
-  - "Active customer" means a purchase within the last 90 days
-  - Weekend traffic patterns are anomalous due to our B2B focus
-  
-  # Company Acronyms
-  - GMV = Gross Merchandise Value
-  - AOV = Average Order Value
-  - ROAS = Return on Ad Spend
-  - SKU = Stock Keeping Unit
-  - NDR = Net Dollar Retention
-  - CLTV = Customer Lifetime Value
-  
-  # Known Data Quirks
-  - Mobile web data before March 2024 is incomplete due to tracking migration
-  - European region data excludes VAT (use `revenue_with_vat` dimension if needed)
-  - Refunds are processed with a 2-3 day delay, so recent data may shift
-```
-
-:::note 
-For metric-level specific instructions, `ai_instructions` can also be applied in the [metrics view configuration](/build/metrics-view/customization#ai-configuration). 
-:::
+For detailed instructions and examples on how to configure AI instructions at both the project and metrics view levels, please refer to our [AI Configuration guide](/build/ai-configuration).
 
 ## Testing Security
 

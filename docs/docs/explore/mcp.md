@@ -47,7 +47,7 @@ You can also add `ai_instructions` to your project file and metrics views, which
 
 :::tip Configure AI instructions
 Set project-wide AI instructions to provide context unique to your project and improve MCP responses.
-[Learn more about AI configuration →](/build/project-configuration#ai-configuration)
+[Learn more about AI configuration →](/build/ai-configuration)
 :::
 
 Users can then ask questions like:
@@ -236,7 +236,7 @@ There are two places to add `ai_instructions`:
 1. `rill.yaml` for project-wide context, such as instructions on how to use Rill MCP Server
 2. Every `metrics.yaml`, with examples of Explore URLs for that metrics view
 
-For detailed examples and best practices on writing effective AI instructions, see the [Project Configuration guide](/build/project-configuration#ai-configuration).
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
 
 You can look at one of our [example projects](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) to see how these are used. Experiment with the instructions and see what works best for your requirements.
 
