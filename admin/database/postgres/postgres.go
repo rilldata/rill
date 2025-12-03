@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -3965,22 +3966,30 @@ func isValidAttributeKey(key string) bool {
 }
 
 func marshalResourceNames(resources []database.ResourceName) ([]byte, error) {
-	resources = dedupeResourceNames(resources)
+	resources = dedupeAndSortResourceNames(resources)
 	return json.Marshal(resources)
 }
 
-func dedupeResourceNames(resources []database.ResourceName) []database.ResourceName {
-	seen := make(map[database.ResourceName]struct{}, len(resources))
+// dedupeAndSortResourceNames deduplicates and sorts a slice of ResourceName
+func dedupeAndSortResourceNames(resources []database.ResourceName) []database.ResourceName {
+	seen := make(map[database.ResourceName]struct{})
 	var deduped []database.ResourceName
 	for _, r := range resources {
 		if r.Type == "" || r.Name == "" {
 			continue
 		}
-		if _, ok := seen[r]; ok {
-			continue
+		if _, ok := seen[r]; !ok {
+			seen[r] = struct{}{}
+			deduped = append(deduped, r)
 		}
-		seen[r] = struct{}{}
-		deduped = append(deduped, r)
 	}
+
+	sort.Slice(deduped, func(i, j int) bool {
+		if deduped[i].Type == deduped[j].Type {
+			return deduped[i].Name < deduped[j].Name
+		}
+		return deduped[i].Type < deduped[j].Type
+	})
+
 	return deduped
 }
