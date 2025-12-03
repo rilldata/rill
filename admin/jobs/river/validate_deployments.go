@@ -109,11 +109,11 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 	}
 
 	for _, depl := range depls {
-		// If it appears to be an orphaned deployment, we tear it down.
+		// If it appears to be an orphaned prod deployment, we tear it down.
 		// This might for example happen if a redeploy failed after switching to the new deployment.
-		// We consider a deployment orphaned if it is not the prod deployment and has not been updated in 3 hours.
+		// We consider a deployment orphaned if it is not the prod deployment, is not stopped and has not been updated in 3 hours.
 		// The 3 hour delay is to ensure we don't tear down a deployment that is in the process of being created and is to become the new prod deployment.
-		if depl.ID != prodDeplID && depl.UpdatedOn.Add(3*time.Hour).Before(time.Now()) {
+		if depl.Environment == "prod" && depl.ID != prodDeplID && depl.Status != database.DeploymentStatusStopped && depl.UpdatedOn.Add(3*time.Hour).Before(time.Now()) {
 			w.admin.Logger.Info("validate deployments: removing deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
 			err = w.admin.TeardownDeployment(ctx, depl)
 			if err != nil {
