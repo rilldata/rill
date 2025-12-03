@@ -157,8 +157,6 @@ export class CanvasEntity {
     );
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
-      // if (!spec.data) return;
-      console.log({ spec: spec.data });
       const filePath = spec.data?.filePath;
 
       if (spec.data?.metricsViews) {
@@ -176,7 +174,6 @@ export class CanvasEntity {
           );
         }
       } else {
-        console.log("problem");
         // need to find a better way to initialize this in certain contextx - bgh
         this.filterManager = new FilterManager({}, [], {});
       }
@@ -385,8 +382,6 @@ export class CanvasEntity {
         pathname: window.location.pathname,
         builderContext: true,
       });
-
-      console.log({ redirected });
 
       if (redirected) return;
     }
@@ -723,7 +718,6 @@ function areSameType(
 }
 
 function getDefaults(defaultPreset: V1CanvasPreset) {
-  console.log({ defaultPreset });
   const defaultSearchParams = new URLSearchParams();
 
   const resolvedRange = defaultPreset.timeRange;

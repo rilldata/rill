@@ -60,7 +60,6 @@ export class MetricsViewFilter {
   };
 
   onFilterStringChange(filterString: string) {
-    console.log({ filterString }, this.metricsViewName);
     const { string } = get(this.parsed);
     if (string === filterString) return;
 

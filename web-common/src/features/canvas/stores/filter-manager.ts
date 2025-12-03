@@ -393,7 +393,6 @@ export class FilterManager {
 
         const dimFilter = parsed.dimensionFilters.get(dimension.name as string);
 
-        console.log({ what: parsed.dimensionFilters });
         if (!dimFilter) {
           if (pinned || temporary) {
             const tempData = {
