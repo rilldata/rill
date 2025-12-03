@@ -136,7 +136,6 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 }
 
 // UpdateDeploymentsForProject updates the deployments of a project.
-// In normal operation, projects only have one deployment. But during (re)deployment and in various error scenarios, there may be multiple deployments.
 // Care must be taken to avoid one broken deployment from blocking updates to other healthy deployments.
 func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project) error {
 	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")

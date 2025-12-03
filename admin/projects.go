@@ -281,7 +281,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 	return nil
 }
 
-// RedeployProject de-provisions and re-provisions a project's prod deployment.
+// RedeployProject de-provisions and re-provisions a project's deployment.
 func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
 	// Delete old prod deployment if exists
 	if prevDepl != nil {
@@ -295,12 +295,17 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
-		Environment: "prod",
-		Branch:      proj.ProdBranch,
+		Environment: prevDepl.Environment,
+		Branch:      prevDepl.Branch,
 		Editable:    false,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if proj.ProdDeploymentID != nil && prevDepl != nil && *proj.ProdDeploymentID != prevDepl.ID {
+		// not the default prod deployment so no need to update anything
+		return proj, nil
 	}
 
 	// Update prod deployment on project
