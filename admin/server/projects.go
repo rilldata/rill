@@ -1374,45 +1374,61 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, err
-	}
-
-	// figure out the invite or member info
-	var invite *database.ProjectInvite
-	var member *database.ProjectMemberUser
-	if user == nil {
-		// find pending invite to get the current role
-		invite, err = s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		member, err = s.admin.DB.FindProjectMemberUser(ctx, proj.ID, user.ID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if invite == nil && member == nil {
-		return nil, status.Error(codes.NotFound, "user is neither a project member nor has a pending invite")
-	}
-
-	// determine the new role or keep the existing one
-	var role *database.ProjectRole
-	if req.Role == nil {
-		// keep existing role
-		if member != nil {
-			role, err = s.admin.DB.FindProjectRole(ctx, member.RoleName)
-			if err != nil {
-				return nil, err
-			}
-		} else {
+		var role *database.ProjectRole
+		if req.Role == nil {
+			// keep existing role
 			role, err = s.admin.DB.FindProjectRoleByID(ctx, invite.ProjectRoleID)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			role, err = s.admin.DB.FindProjectRole(ctx, *req.Role)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
+			if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+				return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
+			}
 		}
+
+		var restrictResources bool
+		var resources []database.ResourceName
+		keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
+		if keepExistingRestrictions {
+			restrictResources = invite.RestrictResources
+			resources = invite.Resources
+		} else {
+			restrictResources = valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
+			resources = resourceNamesFromProto(req.Resources)
+		}
+		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID, restrictResources, resources)
+		if err != nil {
+			return nil, err
+		}
+		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
+	}
+
+	currentRole, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
+	}
+
+	var role *database.ProjectRole
+	if req.Role == nil {
+		// keep existing role
+		role = currentRole
 	} else {
 		role, err = s.admin.DB.FindProjectRole(ctx, *req.Role)
 		if err != nil {
@@ -1427,33 +1443,15 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	var restrictResources bool
 	var resources []database.ResourceName
 	if keepExistingRestrictions {
-		if member != nil {
-			restrictResources = member.RestrictResources
-			resources = member.Resources
-		} else {
-			restrictResources = invite.RestrictResources
-			resources = invite.Resources
-		}
-	} else {
-		restrictResources = valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
-		resources = resourceNamesFromProto(req.Resources)
-	}
-
-	// update the invite or member info
-	if invite != nil {
-		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID, restrictResources, resources)
+		member, err := s.admin.DB.FindProjectMemberUser(ctx, proj.ID, user.ID)
 		if err != nil {
 			return nil, err
 		}
-		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
-	}
-
-	currentRole, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
-	if err != nil {
-		return nil, err
-	}
-	if currentRole.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
-		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin")
+		restrictResources = member.RestrictResources
+		resources = member.Resources
+	} else {
+		restrictResources = valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
+		resources = resourceNamesFromProto(req.Resources)
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, restrictResources, resources)
