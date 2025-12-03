@@ -6,7 +6,8 @@
     getConversationManager,
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
-  import { dashboardChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+
+  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
 
   export let noMargin = false;
   export let height: string | undefined = undefined;

@@ -3,10 +3,9 @@
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { MessageType, ToolName } from "../types";
+  import { type ChatConfig, MessageType, ToolName } from "../types";
   import Error from "./Error.svelte";
   import Message from "./Message.svelte";
-  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";

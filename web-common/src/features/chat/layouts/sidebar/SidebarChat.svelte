@@ -15,7 +15,8 @@
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
-  import { type ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let config: ChatConfig;
 

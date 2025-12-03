@@ -9,7 +9,8 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
-  import { dashboardChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+
+  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
 

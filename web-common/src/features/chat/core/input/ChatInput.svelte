@@ -8,7 +8,8 @@
   import { Editor } from "@tiptap/core";
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/input/types.ts";
+
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -18,7 +19,8 @@
 
   let value = "";
 
-  $: ({ placeholder, additionalContextStore, enableMention } = config);
+  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;

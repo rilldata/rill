@@ -3,6 +3,8 @@
  *
  * Shared type constants that correspond to backend enums in runtime/ai/ai.go
  */
+import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
+import type { Readable } from "svelte/store";
 
 // =============================================================================
 // MESSAGE TYPE CONSTANTS
@@ -38,7 +40,6 @@ export const ToolName = {
   CREATE_CHART: "create_chart",
   QUERY_METRICS_VIEW: "query_metrics_view",
   LIST_FILES: "list_files",
-  READ_FILES: "read_file",
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
   DEVELOP_MODEL: "develop_model",
@@ -58,6 +59,16 @@ const HIDDEN_AGENT_TOOLS: readonly string[] = [
   ToolName.ANALYST_AGENT,
   ToolName.DEVELOPER_AGENT,
 ];
+
+export type ChatConfig = {
+  agent: string;
+  additionalContextStoreGetter: () => Readable<
+    Partial<RuntimeServiceCompleteBody>
+  >;
+  emptyChatLabel: string;
+  placeholder: string;
+  enableMention: boolean; // TODO: should be a list of allowed mentions in the future
+};
 
 /**
  * Check if a tool call should be hidden from the UI

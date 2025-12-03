@@ -1,19 +1,30 @@
-import { page } from "$app/stores";
-import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
-import { useStableExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import {
+  type ChatConfig,
+  ToolName,
+} from "@rilldata/web-common/features/chat/core/types.ts";
 import type {
   RuntimeServiceCompleteBody,
   V1AnalystAgentContext,
 } from "@rilldata/web-common/runtime-client";
+import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+import { useStableExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { derived, type Readable } from "svelte/store";
+
+export const dashboardChatConfig = <ChatConfig>{
+  agent: ToolName.ANALYST_AGENT,
+  additionalContextStoreGetter: () => getActiveExploreContext(), // TODO: add canvas context as well
+  emptyChatLabel: "Happy to help explore your data",
+  placeholder: "Ask about your data...",
+  enableMention: true,
+};
 
 /**
  * Creates a store that contains the active explore context sent to the Complete API.
  * It returns RuntimeServiceCompleteBody with V1AnalystAgentContext that is passed to the API.
  */
-export function getActiveExploreContext(): Readable<
+function getActiveExploreContext(): Readable<
   Partial<RuntimeServiceCompleteBody>
 > {
   const exploreNameStore = getExploreNameStore();
@@ -39,28 +50,9 @@ export function getActiveExploreContext(): Readable<
         analystAgentContext.where = exploreState?.whereFilter;
       }
 
-      return <RuntimeServiceCompleteBody>{
+      return {
         analystAgentContext,
-      };
+      } satisfies Partial<RuntimeServiceCompleteBody>;
     },
   );
-}
-
-/**
- * Creates a store that contains the active file context sent to the Complete API.
- * It returns the RuntimeServiceCompleteBody with V1DeveloperAgentContext that is passed to the API.
- */
-export function getActiveFileContext(): Readable<
-  Partial<RuntimeServiceCompleteBody>
-> {
-  return derived(page, (pageState) => {
-    const filePath = pageState.params?.file;
-    if (!filePath) return <RuntimeServiceCompleteBody>{};
-
-    return <RuntimeServiceCompleteBody>{
-      developerAgentContext: {
-        currentFilePath: filePath,
-      },
-    };
-  });
 }
