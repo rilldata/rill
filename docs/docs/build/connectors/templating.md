@@ -1,7 +1,7 @@
 ---
-title: Dev/Prod Connector Environments
-description: Dev/Prod Setup
-sidebar_label: Dev/Prod Connectors
+title: Development/Production Connector Environments
+description: Development and Production Setup
+sidebar_label: Development/Production Connectors
 sidebar_position: 19
 ---
 
@@ -11,7 +11,7 @@ Templating serves several important purposes in your data workflow:
 - **Environment Separation**: Keep development and production data sources completely separate
 - **Testing Safety**: Test your models and transformations without affecting production data
 
-:::note Rill Developer is a dev environment
+:::note Rill Developer defaults to 'dev'
 
 Unless explicitly defined, Rill Developer will use a `dev` environment. If you want to emulate production locally, you can do so via `rill start --environment prod`.
 
@@ -51,9 +51,9 @@ In this example:
 - **Development**: Uses a managed ClickHouse instance that Rill starts locally
 - **Production**: Connects to your existing ClickHouse cluster using environment variables for secure configuration
 
-:::warning Managing dev and prod credentials
+:::warning Managing development and production credentials
 
-Some connectors will reference two unique databases and require two unique credentials for dev and prod. In this case, you can either define a unique environmental variable for both and reference them separately in the connector.
+Some connectors will reference two unique databases and require two unique credentials for development and production. In this case, you can either define a unique environmental variable for both and reference them separately in the connector.
 
 IE:
 ```
