@@ -50,6 +50,7 @@ type TemplateData struct {
 	Variables   map[string]string
 	State       map[string]any
 	ExtraProps  map[string]any
+	ExtraFuncs  map[string]any
 	Self        TemplateResource
 	Resolve     func(ref ResourceName) (string, error)
 	Lookup      func(name ResourceName) (TemplateResource, error)
@@ -209,6 +210,11 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 	// Add no-ops
 	funcMap["configure"] = func(parts ...string) error { return nil }
 	funcMap["dependency"] = func(parts ...string) error { return nil }
+
+	// Add extra funcs
+	for k, v := range data.ExtraFuncs {
+		funcMap[k] = v
+	}
 
 	// Add func to resolve a "ref"
 	funcMap["ref"] = func(parts ...string) (string, error) {

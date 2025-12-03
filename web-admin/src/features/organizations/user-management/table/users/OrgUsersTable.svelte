@@ -88,6 +88,7 @@
       flexRender(UserGroupsCell, {
         userId: row.original.userId,
         organization,
+        groupCount: row.original.usergroupsCount ?? 0,
         onEditUserGroup,
       }),
     meta: {
@@ -102,6 +103,7 @@
       flexRender(UserProjectsCell, {
         organization,
         userId: row.original.userId,
+        projectCount: row.original.projectsCount ?? 0,
       }),
     meta: {
       widthPercent: 40,

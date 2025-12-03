@@ -8,6 +8,7 @@ import { fileIsMainEntity } from "@rilldata/web-common/features/entity-managemen
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   runtimeServiceDeleteFile,
+  runtimeServiceGetFile,
   runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
@@ -93,6 +94,29 @@ export async function waitForResourceReconciliation(
       throw error;
     }
   }
+}
+
+/**
+ * Polls for file creation until the file exists or the operation is cancelled.
+ * Returns true if file was found, false if cancelled.
+ */
+export async function pollForFileCreation(
+  instanceId: string,
+  filePath: string,
+  abortSignal: AbortSignal,
+  pollIntervalMs: number = 1000,
+): Promise<boolean> {
+  while (!abortSignal.aborted) {
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+
+    try {
+      await runtimeServiceGetFile(instanceId, { path: filePath });
+      return true; // success, file exists
+    } catch {
+      // 404 error, file is not ready yet, continue polling
+    }
+  }
+  return false; // cancelled
 }
 
 export async function renameFileArtifact(
