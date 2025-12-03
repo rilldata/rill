@@ -21,13 +21,9 @@ type ValidateDeploymentsWorker struct {
 	admin *admin.Service
 }
 
-func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[ValidateDeploymentsArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.validateDeployments)
-}
-
 const validateDeploymentsForProjectTimeout = 5 * time.Minute
 
-func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) error {
+func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[ValidateDeploymentsArgs]) error {
 	var wg sync.WaitGroup
 	ch := make(chan *database.Project)
 
