@@ -69,26 +69,20 @@ export async function generateSampleData(
     conversation.draftMessage.set(agentPrompt);
 
     let created = false;
-    const fileCreated = (msg: V1Message) => {
-      let path = "";
+    let lastReadFile: string | null = null;
+    const messages = new Map<string, V1Message>();
+
+    const parseFile = (msg: V1Message) => {
       try {
         const content = JSON.parse(msg.contentData!);
-        path = content.path as string;
+        return content.path as string;
       } catch {
         // json parse errors shouldn't happen. ignore if it ever does.
       }
-      if (!path) return null;
-
-      created = true;
-      overlay.set(null);
-      void goto(`/files${path}`);
-      return path;
+      return null;
     };
 
-    const messages = new Map<string, V1Message>();
     const handleMessage = (msg: V1Message) => {
-      if (created) return; // We already have the file path, no need to process further messages.
-
       messages.set(msg.id!, msg);
       if (
         msg.type !== MessageType.RESULT ||
@@ -103,10 +97,9 @@ export async function generateSampleData(
           const callMsg = messages.get(msg.parentId!);
           if (!callMsg) break;
 
-          const path = fileCreated(callMsg);
-          eventBus.emit("notification", {
-            message: `Data already present at ${path}`,
-          });
+          // Keep a copy of the file that was read.
+          // LLM can some time read a file and decide not to generate data.
+          lastReadFile = parseFile(callMsg);
           break;
         }
 
@@ -114,8 +107,13 @@ export async function generateSampleData(
           const callMsg = messages.get(msg.parentId!);
           if (!callMsg) break;
 
-          const path = fileCreated(callMsg);
+          const path = parseFile(callMsg);
+          if (!path) break;
+
           sourceImportedPath.set(path);
+          created = true;
+          overlay.set(null);
+          void goto(`/files${path}`);
           break;
         }
       }
@@ -132,9 +130,15 @@ export async function generateSampleData(
     overlay.set(null);
     if (cancelled) return;
     if (!created) {
-      eventBus.emit("notification", {
-        message: "Failed to generate sample data",
-      });
+      if (lastReadFile) {
+        eventBus.emit("notification", {
+          message: `Data already present at ${lastReadFile}`,
+        });
+      } else {
+        eventBus.emit("notification", {
+          message: "Failed to generate sample data",
+        });
+      }
       return;
     }
   } catch {

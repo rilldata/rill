@@ -287,7 +287,7 @@
           class="flex gap-x-2"
           on:click={() => (generateDataDialog = true)}
         >
-          <Wand size="14px" /> Generate data using AI
+          <Wand size="14px" /> Generate data using AI (beta)
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item

@@ -48,7 +48,7 @@
   <Dialog.Trigger asChild let:builder>
     {#if initializeProject}
       <Button type="ghost" builders={[builder]} large>
-        or generate sample data using AI
+        or generate sample data using AI (beta)
       </Button>
     {:else}
       <div class="hidden"></div>
