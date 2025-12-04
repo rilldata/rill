@@ -39,7 +39,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Slack**](#slack) - Slack data
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developer/build/connectors/credentials/) for complete setup instructions.
 :::
 
 

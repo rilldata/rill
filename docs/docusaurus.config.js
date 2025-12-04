@@ -128,10 +128,18 @@ const config = {
         items: [
           {
             to: "/",
-            label: "Docs",
+            label: "Developer Docs",
             position: "left",
             className: "navbar-docs-link",
-            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
+            activeBaseRegex: "^(?!/(reference|api|contact|notes|user-guide)).*", // Keep Docs active for all doc pages
+
+          },
+          {
+            to: "/user-guide",
+            label: "User Guide",
+            position: "left",
+            className: "navbar-user-guide-link",
+            activeBaseRegex: "^/user-guide.*", // Keep Docs active for all doc pages
           },
           {
             to: "/reference/project-files",
@@ -820,6 +828,59 @@ const config = {
           {
             from: '/connect/data-source/openai',
             to: '/build/connectors/data-source/openai',
+          },
+          // User Guide Redirects
+          {
+            from: '/explore',
+            to: '/user-guide/explore'
+          },
+          {
+            from: '/explore/dashboard-101',
+            to: '/user-guide/explore/dashboard-101'
+          },
+          {
+            from: '/explore/filters',
+            to: '/user-guide/explore/filters'
+          },
+          {
+            from: '/explore/time-series',
+            to: '/user-guide/explore/time-series'
+          },
+          {
+            from: '/explore/dashboard-101/tdd',
+            to: '/user-guide/explore/dashboard-101/tdd'
+          },
+          {
+            from: '/explore/dashboard-101/pivot',
+            to: '/user-guide/explore/dashboard-101/pivot'
+          },
+          {
+            from: '/explore/ai-chat',
+            to: '/user-guide/explore/ai-chat'
+          },
+          {
+            from: '/explore/mcp',
+            to: '/user-guide/explore/mcp'
+          },
+          {
+            from: '/explore/bookmarks',
+            to: '/user-guide/explore/bookmarks'
+          },
+          {
+            from: '/explore/alerts',
+            to: '/user-guide/explore/alerts'
+          },
+          {
+            from: '/explore/exports',
+            to: '/user-guide/explore/exports'
+          },
+          {
+            from: '/manage/user-management',
+            to: '/user-guide/manage/user-management'
+          },
+          {
+            from: '/manage/project-management',
+            to: '/user-guide/manage/project-management'
           },
           // {
           //   from: '/old-page',

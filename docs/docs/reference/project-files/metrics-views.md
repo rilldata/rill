@@ -18,7 +18,7 @@ _[string]_ - Refers to the resource type and must be `metrics_view` _(required)_
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information 
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/developer/build/connectors/olap) for more information 
 
 ### `display_name`
 
@@ -30,7 +30,7 @@ _[string]_ - Refers to the description for the metrics view
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/user-guide/explore/mcp). Used to guide natural language question answering and routing. 
 
 ### `model`
 
@@ -102,7 +102,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developer/build/metrics-view/measures/windows) documentation. 
 
     - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
@@ -140,7 +140,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information. 
+  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developer/build/metrics-view/measures/referencing) for more information. 
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -216,7 +216,7 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/developer/build/metrics-view/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
