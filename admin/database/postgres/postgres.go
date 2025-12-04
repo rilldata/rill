@@ -1886,7 +1886,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 				SELECT COUNT(*)
 				FROM usergroups_users uus
 				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
-				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id AND NOT ugu.managed
 			) as usergroups_count
 		`)
 	}

@@ -9,6 +9,7 @@
 
   export let organization: string;
   export let userId: string;
+  export let projectCount: number;
 
   let isDropdownOpen = false;
   $: hasUserId = !!userId;
@@ -18,7 +19,7 @@
     { userId },
     {
       query: {
-        enabled: !!userId,
+        enabled: !!userId && isDropdownOpen,
       },
     },
   );
@@ -26,13 +27,15 @@
   let projects: V1Project[];
   $: projects = data?.projects ?? [];
 
+  $: hasProjects = projectCount > 0;
+
   function getProjectShareUrl(projectName: string) {
     // Link the user to the project dashboard list and open the share popover immediately.
     return `/${organization}/${projectName}/-/dashboards?share=true`;
   }
 </script>
 
-{#if hasUserId}
+{#if hasUserId && hasProjects}
   <Dropdown.Root bind:open={isDropdownOpen}>
     <Dropdown.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
@@ -40,7 +43,7 @@
         : 'hover:bg-slate-100'} px-2 py-1"
     >
       <span class="capitalize">
-        {projects.length} Project{projects.length > 1 ? "s" : ""}
+        {projectCount} Project{projectCount !== 1 ? "s" : ""}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />
