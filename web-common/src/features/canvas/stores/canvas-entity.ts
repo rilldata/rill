@@ -105,114 +105,6 @@ export class CanvasEntity {
   _banner = writable<string | undefined>(undefined);
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
 
-  checkAndSetMaxWidth = ({ maxWidth }: V1CanvasSpec) => {
-    const currentValue = get(this._maxWidth);
-
-    if (maxWidth && maxWidth !== currentValue) {
-      this._maxWidth.set(maxWidth);
-    }
-  };
-
-  checkAndSetHasBanner = ({ banner }: V1CanvasSpec) => {
-    const currentValue = get(this._banner);
-    if (banner !== currentValue) {
-      this._banner.set(banner);
-    }
-  };
-
-  checkAndSetDefaultParams = (defaultPreset: V1CanvasPreset) => {
-    const defaultSearchParams = getDefaults(defaultPreset);
-    const currentDefaultParams = get(this._defaultUrlParams);
-    if (defaultSearchParams.toString() !== currentDefaultParams.toString()) {
-      this._defaultUrlParams.set(defaultSearchParams);
-    }
-  };
-
-  checkAndSetFilterEnabled = ({ filtersEnabled }: V1CanvasSpec) => {
-    if (filtersEnabled === undefined) {
-      filtersEnabled = true;
-    }
-
-    const currentValue = get(this._filtersEnabled);
-    if (filtersEnabled !== currentValue) {
-      this._filtersEnabled.set(filtersEnabled);
-    }
-  };
-
-  checkAndSetEmbeddedTheme = ({ embeddedTheme }: V1CanvasSpec) => {
-    const currentValue = get(this._embeddedTheme);
-    if (embeddedTheme !== currentValue) {
-      this._embeddedTheme.set(embeddedTheme);
-    }
-  };
-
-  checkAndSetFileArtifact = (filePath: string | undefined) => {
-    if (!filePath) return;
-    if (!this.fileArtifact) {
-      const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-
-      if (!fileArtifact) {
-        return;
-      }
-
-      this.fileArtifact = fileArtifact;
-
-      if (!this.parsedContent) {
-        this.parsedContent = derived(
-          fileArtifact.editorContent,
-          (editorContent) => {
-            const parsed = parseDocument(editorContent ?? "");
-            return parsed;
-          },
-        );
-      }
-    }
-  };
-
-  processSpec = ({
-    canvas,
-    components,
-    filePath,
-    metricsViews,
-  }: CanvasResponse) => {
-    const validSpec = canvas;
-    if (!validSpec) return;
-
-    if (metricsViews) this._metricsViews.set(metricsViews);
-
-    this.checkAndSetFilterEnabled(validSpec);
-    this.checkAndSetFileArtifact(filePath);
-    this.checkAndSetDefaultParams(validSpec.defaultPreset ?? {});
-    this.checkAndSetEmbeddedTheme(validSpec);
-    this.checkAndSetHasBanner(validSpec);
-    this.checkAndSetMaxWidth(validSpec);
-
-    const defaultPreset = validSpec?.defaultPreset ?? {};
-    const filterExpressions = defaultPreset.filterExpr ?? {};
-    const pinnedFilters = validSpec?.pinnedFilters ?? [];
-
-    if (metricsViews) {
-      if (this.filterManager) {
-        this.filterManager.updateConfig(
-          metricsViews,
-          pinnedFilters,
-          filterExpressions,
-        );
-      } else {
-        this.filterManager = new FilterManager(
-          metricsViews,
-          pinnedFilters,
-          filterExpressions,
-        );
-      }
-    } else {
-      // need to find a better way to initialize this in certain contextx - bgh
-      this.filterManager = new FilterManager({}, [], {});
-    }
-
-    this.processRows({ canvas, components, metricsViews, filePath });
-  };
-
   constructor(
     public name: string,
     private instanceId: string,
@@ -328,6 +220,114 @@ export class CanvasEntity {
       },
     );
   }
+
+  checkAndSetMaxWidth = ({ maxWidth }: V1CanvasSpec) => {
+    const currentValue = get(this._maxWidth);
+
+    if (maxWidth && maxWidth !== currentValue) {
+      this._maxWidth.set(maxWidth);
+    }
+  };
+
+  checkAndSetHasBanner = ({ banner }: V1CanvasSpec) => {
+    const currentValue = get(this._banner);
+    if (banner !== currentValue) {
+      this._banner.set(banner);
+    }
+  };
+
+  checkAndSetDefaultParams = (defaultPreset: V1CanvasPreset) => {
+    const defaultSearchParams = getDefaults(defaultPreset);
+    const currentDefaultParams = get(this._defaultUrlParams);
+    if (defaultSearchParams.toString() !== currentDefaultParams.toString()) {
+      this._defaultUrlParams.set(defaultSearchParams);
+    }
+  };
+
+  checkAndSetFilterEnabled = ({ filtersEnabled }: V1CanvasSpec) => {
+    if (filtersEnabled === undefined) {
+      filtersEnabled = true;
+    }
+
+    const currentValue = get(this._filtersEnabled);
+    if (filtersEnabled !== currentValue) {
+      this._filtersEnabled.set(filtersEnabled);
+    }
+  };
+
+  checkAndSetEmbeddedTheme = ({ embeddedTheme }: V1CanvasSpec) => {
+    const currentValue = get(this._embeddedTheme);
+    if (embeddedTheme !== currentValue) {
+      this._embeddedTheme.set(embeddedTheme);
+    }
+  };
+
+  checkAndSetFileArtifact = (filePath: string | undefined) => {
+    if (!filePath) return;
+    if (!this.fileArtifact) {
+      const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
+      if (!fileArtifact) {
+        return;
+      }
+
+      this.fileArtifact = fileArtifact;
+
+      if (!this.parsedContent) {
+        this.parsedContent = derived(
+          fileArtifact.editorContent,
+          (editorContent) => {
+            const parsed = parseDocument(editorContent ?? "");
+            return parsed;
+          },
+        );
+      }
+    }
+  };
+
+  processSpec = ({
+    canvas,
+    components,
+    filePath,
+    metricsViews,
+  }: CanvasResponse) => {
+    const validSpec = canvas;
+    if (!validSpec) return;
+
+    if (metricsViews) this._metricsViews.set(metricsViews);
+
+    this.checkAndSetFilterEnabled(validSpec);
+    this.checkAndSetFileArtifact(filePath);
+    this.checkAndSetDefaultParams(validSpec.defaultPreset ?? {});
+    this.checkAndSetEmbeddedTheme(validSpec);
+    this.checkAndSetHasBanner(validSpec);
+    this.checkAndSetMaxWidth(validSpec);
+
+    const defaultPreset = validSpec?.defaultPreset ?? {};
+    const filterExpressions = defaultPreset.filterExpr ?? {};
+    const pinnedFilters = validSpec?.pinnedFilters ?? [];
+
+    if (metricsViews) {
+      if (this.filterManager) {
+        this.filterManager.updateConfig(
+          metricsViews,
+          pinnedFilters,
+          filterExpressions,
+        );
+      } else {
+        this.filterManager = new FilterManager(
+          metricsViews,
+          pinnedFilters,
+          filterExpressions,
+        );
+      }
+    } else {
+      // need to find a better way to initialize this in certain contextx - bgh
+      this.filterManager = new FilterManager({}, [], {});
+    }
+
+    this.processRows({ canvas, components, metricsViews, filePath });
+  };
 
   setDefaultFilters = async () => {
     // wait for one second, will remove - bgh
