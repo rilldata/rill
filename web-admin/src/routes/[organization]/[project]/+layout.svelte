@@ -10,6 +10,7 @@
     refetchInterval: (query) => {
       switch (query.state.data?.prodDeployment?.status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
         case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
           return PollTimeWhenProjectDeploymentError;
@@ -120,6 +121,12 @@
     $mockedUserDeploymentCredentialsQuery);
 
   $: ({ data: projectData, error: projectError } = $projectQuery);
+  // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
+  $: projectReady =
+    projectData?.prodDeployment?.status ===
+      V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+    projectData?.prodDeployment?.status ===
+      V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
   $: error = projectError as HTTPError;
 
@@ -172,7 +179,7 @@
         ? projectData.prodDeployment.statusMessage
         : "There was an error deploying your project. Please contact support."}
     />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+  {:else if projectReady}
     <RuntimeProvider
       instanceId={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.instanceId
