@@ -5,6 +5,10 @@ sidebar_label: "Multiple Measure Leaderboard"
 sidebar_position: 03
 ---
 
+
+
+By default, the Explore dashboard displays a single measure for each dimension in the leaderboard. However, there are many cases where comparing multiple measures side-by-side can provide deeper insights.
+
 <div style={{ 
   position: "relative", 
   width: "100%", 
@@ -31,10 +35,7 @@ sidebar_position: 03
 
 Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
 
-
-## Overview
-
-By default, the Explore dashboard displays a single measure for each dimension in the leaderboard. However, there are many cases where comparing multiple measures side-by-side can provide deeper insights.
+## Benefits of Multiple Measure Dashboards
 
 With the **Multiple Measure Leaderboard** feature, you can easily select and compare several measures for any dimension. Simply open the dropdown in the dimension leaderboard, enable `multi-select`, and choose any combination of visible measures to display them together.
 

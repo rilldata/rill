@@ -68,8 +68,8 @@ const config = {
         config: path.join(__dirname, 'redocly.yaml'),
         specs: [
           {
-            id: 'public',
-            spec: 'api/openapi.yaml',
+            id: 'admin',
+            spec: '../proto/gen/rill/admin/v1/public.openapi.yaml',
             route: '/api/admin/',
           },
         ],
@@ -440,11 +440,23 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
+<<<<<<< HEAD
             to: '/developers/get-started/concepts/cloud-vs-developer'
           },
           {
             from: '/home/concepts/developerVsCloud',
             to: '/developers/get-started/concepts/cloud-vs-developer'
+=======
+            to: '/deploy/cloud-vs-developer'
+          },
+          {
+            from: '/home/concepts/developerVsCloud',
+            to: '/deploy/cloud-vs-developer'
+          },
+          {
+            from: '/get-started/concepts/cloud-vs-developer',
+            to: '/deploy/cloud-vs-developer'
+>>>>>>> main
           },
           {
             from: '/concepts/OLAP',
@@ -456,6 +468,7 @@ const config = {
           },
           {
             from: '/concepts/architecture',
+<<<<<<< HEAD
             to: '/developers/get-started/concepts/architecture'
           },
           {
@@ -469,6 +482,29 @@ const config = {
           {
             from: '/home/concepts/operational',
             to: '/developers/get-started/concepts/operational'
+=======
+            to: '/get-started/why-rill#architecture'
+          },
+          {
+            from: '/home/concepts/architecture',
+            to: '/get-started/why-rill#architecture'
+          },
+          {
+            from: '/get-started/concepts/architecture',
+            to: '/get-started/why-rill#architecture'
+          },
+          {
+            from: '/concepts/operational',
+            to: '/get-started/why-rill#operational-vs-traditional-bi'
+          },
+          {
+            from: '/home/concepts/operational',
+            to: '/get-started/why-rill#operational-vs-traditional-bi'
+          },
+          {
+            from: '/get-started/concepts/operational',
+            to: '/get-started/why-rill#operational-vs-traditional-bi'
+>>>>>>> main
           },
           {
             from: '/concepts/metrics-layer',
@@ -476,11 +512,23 @@ const config = {
           },
           {
             from: '/concepts/bi-as-code',
+<<<<<<< HEAD
             to: '/developers/get-started/concepts/bi-as-code'
           },
           {
             from: '/home/concepts/bi-as-code',
             to: '/developers/get-started/concepts/bi-as-code'
+=======
+            to: '/get-started/why-rill#bi-as-code'
+          },
+          {
+            from: '/home/concepts/bi-as-code',
+            to: '/get-started/why-rill#bi-as-code'
+          },
+          {
+            from: '/get-started/concepts/bi-as-code',
+            to: '/get-started/why-rill#bi-as-code'
+>>>>>>> main
           },
           {
             from: '/build/advanced-models/',

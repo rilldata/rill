@@ -3,7 +3,6 @@ package ai
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -12,8 +11,10 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"go.uber.org/zap"
+	"github.com/rilldata/rill/runtime/pkg/pathutil"
 )
+
+const CreateChartName = "create_chart"
 
 type CreateChart struct {
 	Runtime *runtime.Runtime
@@ -37,40 +38,35 @@ func (t *CreateChart) Spec() *mcp.Tool {
 	}
 
 	return &mcp.Tool{
-		Name:        "create_chart",
+		Name:        CreateChartName,
 		Title:       "Create chart",
 		Description: createChartDescription,
-		InputSchema: inputSchema,
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Creating chart…",
-			"openai/toolInvocation/invoked":  "Finished creating chart",
+			"openai/toolInvocation/invoking": "Creating chart...",
+			"openai/toolInvocation/invoked":  "Created chart",
 		},
+		InputSchema: inputSchema,
 	}
 }
 
-func (t *CreateChart) CheckAccess(ctx context.Context) bool {
-	s := GetSession(ctx)
-
+func (t *CreateChart) CheckAccess(ctx context.Context) (bool, error) {
 	// Must be able to query metrics
+	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.ReadMetrics) {
-		return false
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it doesn't work with external MCP clients
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
 
 	// Must have the chat_charts feature flag
 	ff, err := t.Runtime.FeatureFlags(ctx, s.InstanceID(), s.Claims())
 	if err != nil {
-		if !errors.Is(err, ctx.Err()) {
-			// TODO: Propagate error?
-			s.logger.Error("failed to get feature flags", zap.Error(err))
-		}
-		return false
+		return false, err
 	}
-	return ff["chat_charts"]
+	return ff["chat_charts"], nil
 }
 
 func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*CreateChartResult, error) {
@@ -149,8 +145,14 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 	if !access {
 		return nil, fmt.Errorf("resource not found")
 	}
-	if r.GetMetricsView().State.ValidSpec == nil {
+	mvState := r.GetMetricsView().State
+	if mvState.ValidSpec == nil {
 		return nil, fmt.Errorf("metrics view %q is invalid", metricsView)
+	}
+
+	// Validate that all field references in the chart spec exist in the metrics view
+	if err := validateChartFields(chartType, spec, mvState.ValidSpec); err != nil {
+		return nil, fmt.Errorf("field validation failed: %w", err)
 	}
 
 	// Return the chart specification in a structured format
@@ -159,6 +161,163 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 		Spec:      spec,
 		Message:   fmt.Sprintf("Chart created successfully: %s", chartType),
 	}, nil
+}
+
+// validateChartFields validates that all field references in the chart spec exist in the metrics view
+func validateChartFields(chartType string, spec map[string]any, mvSpec *runtimev1.MetricsViewSpec) error {
+	// Build a map of available fields (dimensions and measures)
+	availableFields := make(map[string]bool)
+
+	// Add time dimension if present
+	if mvSpec.TimeDimension != "" {
+		availableFields[mvSpec.TimeDimension] = true
+	}
+
+	// Add dimensions
+	for _, dim := range mvSpec.Dimensions {
+		if dim.Name != "" {
+			availableFields[dim.Name] = true
+		}
+	}
+
+	// Add measures
+	for _, measure := range mvSpec.Measures {
+		if measure.Name != "" {
+			availableFields[measure.Name] = true
+		}
+	}
+
+	// Validate fields based on chart type
+	switch chartType {
+	case "heatmap":
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			if err := validateField(availableFields, colorField); err != nil {
+				return fmt.Errorf("invalid color field: %w", err)
+			}
+		}
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if yField, ok := pathutil.GetPath(spec, "y.field"); ok {
+			if err := validateField(availableFields, yField); err != nil {
+				return fmt.Errorf("invalid y field: %w", err)
+			}
+		}
+
+	case "funnel_chart":
+		if stageField, ok := pathutil.GetPath(spec, "stage.field"); ok {
+			if err := validateField(availableFields, stageField); err != nil {
+				return fmt.Errorf("invalid stage field: %w", err)
+			}
+		}
+		if measureField, ok := pathutil.GetPath(spec, "measure.field"); ok {
+			if err := validateField(availableFields, measureField); err != nil {
+				return fmt.Errorf("invalid measure field: %w", err)
+			}
+		}
+		// Validate fields array if present
+		if fields, ok := pathutil.GetPath(spec, "measure.fields"); ok {
+			if err := validateFieldsArray(availableFields, fields); err != nil {
+				return fmt.Errorf("invalid measure fields: %w", err)
+			}
+		}
+
+	case "donut_chart", "pie_chart":
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			if err := validateField(availableFields, colorField); err != nil {
+				return fmt.Errorf("invalid color field: %w", err)
+			}
+		}
+		if measureField, ok := pathutil.GetPath(spec, "measure.field"); ok {
+			if err := validateField(availableFields, measureField); err != nil {
+				return fmt.Errorf("invalid measure field: %w", err)
+			}
+		}
+
+	case "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			// Skip validation for special field "rill_measures"
+			if fieldStr, ok := colorField.(string); !ok || fieldStr != "rill_measures" {
+				if err := validateField(availableFields, colorField); err != nil {
+					return fmt.Errorf("invalid color field: %w", err)
+				}
+			}
+		}
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if yField, ok := pathutil.GetPath(spec, "y.field"); ok {
+			if err := validateField(availableFields, yField); err != nil {
+				return fmt.Errorf("invalid y field: %w", err)
+			}
+		}
+		// Validate y.fields array if present
+		if fields, ok := pathutil.GetPath(spec, "y.fields"); ok {
+			if err := validateFieldsArray(availableFields, fields); err != nil {
+				return fmt.Errorf("invalid y fields: %w", err)
+			}
+		}
+
+	case "combo_chart":
+		// For combo_chart, color.type must be "value"
+		if colorType, ok := pathutil.GetPath(spec, "color.type"); ok {
+			if typeStr, ok := colorType.(string); !ok || typeStr != "value" {
+				return fmt.Errorf("combo_chart color type must be 'value', got %q", colorType)
+			}
+		}
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if y1Field, ok := pathutil.GetPath(spec, "y1.field"); ok {
+			if err := validateField(availableFields, y1Field); err != nil {
+				return fmt.Errorf("invalid y1 field: %w", err)
+			}
+		}
+		if y2Field, ok := pathutil.GetPath(spec, "y2.field"); ok {
+			if err := validateField(availableFields, y2Field); err != nil {
+				return fmt.Errorf("invalid y2 field: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateField checks if a single field exists in the available fields
+func validateField(availableFields map[string]bool, field any) error {
+	fieldStr, ok := field.(string)
+	if !ok {
+		return fmt.Errorf("field is not a string")
+	}
+	if fieldStr == "" {
+		return nil
+	}
+
+	if !availableFields[fieldStr] {
+		return fmt.Errorf("field %q not found in metrics view", fieldStr)
+	}
+	return nil
+}
+
+// validateFieldsArray validates an array of field names
+func validateFieldsArray(availableFields map[string]bool, fields any) error {
+	fieldsArray, ok := fields.([]any)
+	if !ok {
+		return fmt.Errorf("fields is not an array")
+	}
+
+	for i, field := range fieldsArray {
+		if err := validateField(availableFields, field); err != nil {
+			return fmt.Errorf("field at index %d: %w", i, err)
+		}
+	}
+	return nil
 }
 
 const createChartDescription = `# Chart Visualization Tool
@@ -223,7 +382,13 @@ Example with country filter:
 ### 1. Bar Chart (` + "`bar_chart`" + `)
 **Use for:** Comparing values across different categories
 
-Example Specification: Plotting a bar chart of the top 20 advertisers by total bids
+Example Specification: Plotting a bar chart of the top 20 advertisers by total bids.
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "bar_chart",
@@ -251,6 +416,13 @@ Example Specification: Plotting a bar chart of the top 20 advertisers by total b
 ` + "```" + `
 
 Example with filters: Bar chart showing top advertisers in specific countries
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+country: dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "bar_chart",
@@ -289,6 +461,13 @@ Example with filters: Bar chart showing top advertisers in specific countries
 **Use for:** Showing trends over time
 
 Example Specification: Line chart with monthly aggregation
+
+Field details:
+bids_metrics: metrics_view
+device_os: dimension
+__time: timestamp dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "line_chart",
@@ -320,6 +499,13 @@ Example Specification: Line chart with monthly aggregation
 ` + "```" + `
 
 Example with filters and time grain: Daily trends for specific device types
+
+Field details:
+bids_metrics: metrics_view
+device_os: dimension
+__time: timestamp dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "line_chart",
@@ -360,6 +546,13 @@ Example with filters and time grain: Daily trends for specific device types
 **Use for:** Showing magnitude of change over time with filled areas
 
 Example Specification
+
+Field details:
+auction_metrics: metrics_view
+app_or_site: dimension
+__time: timestamp dimension
+requests: measure
+
 ` + "```json" + `
 {
   "chart_type": "area_chart",
@@ -391,8 +584,15 @@ Example Specification
 ### 4. Stacked Bar Chart (` + "`stacked_bar`" + `)
 **Use for:** Showing multiple data series stacked on top of each other.
 
-
 Example Specification
+
+Field details:
+bids_metrics: metrics_view
+rill_measures: special field
+__time: timestamp dimension
+clicks, video_starts, video_completes, ctr, ecpm, impressions: measures
+
+
 ` + "```json" + `
 {
   "chart_type": "stacked_bar",
@@ -437,6 +637,13 @@ Note that when charting out multiple fields using "fields" key, you must also ad
 **Use for:** Showing proportions instead of absolute values (100% stacked)
 
 Example Specification
+
+Field details:
+rill_commits_metrics: metrics_view
+username: dimension
+date: timestamp dimension
+number_of_commits: measure
+
 ` + "```json" + `
 {
   "chart_type": "stacked_bar_normalized",
@@ -469,6 +676,12 @@ Example Specification
 **Use for:** Displaying data as segments of a circle with a hollow center
 
 Example Specification
+
+Field details:
+rill_commits_metrics: metrics_view
+username: dimension
+number_of_commits: measure
+
 ` + "```json" + `
 {
   "chart_type": "donut_chart",
@@ -497,6 +710,12 @@ Example Specification
 **Use for:** Showing flow through a process with decreasing values at each stage or measure
 
 Example Specification with 1 dimension and 1 measure breakdown
+
+Field details:
+Funnel_Dataset_metrics: metrics_view
+stage: dimension
+total_users_measure: measure
+
 ` + "```json" + `
 {
   "chart_type": "funnel_chart",
@@ -523,6 +742,11 @@ Example Specification with 1 dimension and 1 measure breakdown
 ` + "```" + `
 
 Example Specification with multiple measures breakdown
+
+Field details:
+bids: metrics_view
+impressions, video_starts, video_completes: measures
+
 ` + "```json" + `
 {
   "chart_type": "funnel_chart",
@@ -552,6 +776,13 @@ Example Specification with multiple measures breakdown
 **Use for:** Visualizing data density using color intensity across two dimensions
 
 Example Specification
+
+Field details:
+bids_metrics: metrics_view
+day: dimension
+hour: dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "heatmap",
@@ -593,6 +824,15 @@ Example Specification
 **Use for:** Combining different chart types (like bars and lines) in a single visualization
 
 Example Specification
+
+Field details:
+auction_metrics: metrics_view
+__time: timestamp dimension
+date: timestamp dimension
+1d_qps: measure
+requests: measure
+rill_measures: special field
+
 ` + "```json" + `
 {
   "chart_type": "combo_chart",
@@ -603,7 +843,7 @@ Example Specification
       "end": "2024-12-31T23:59:59Z"
     },
     "color": {
-      "field": "measures",
+      "field": "rill_measures",
       "legendOrientation": "top",
       "type": "value"
     },
@@ -651,7 +891,6 @@ Example Specification
 - **showTotal**: Displays the measure total without any breakdown. Only used for donut chart to display totals in center
 
 ### Special Fields
-- **__time**: Built-in time dimension field
 - **rill_measures**: Special field for multiple measures in stacked charts and area charts. The field name is only used in color field object. DO NOT USE it for other keys except for "color" key in the field object.
 
 ## Color Configuration
@@ -725,7 +964,8 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **'time_grain'**: Controls temporal aggregation granularity
   - Default: "TIME_GRAIN_DAY"
   - Use to adjust time-based grouping (e.g., hour, day, week, month)
-- **'__time' field**: When referencing the time dimension, always set type to "temporal"
+  - ALWAYS add a time_grain if a temporal dimension is mentioned in the chart spec
+- **timestamp dimension field**: When referencing the time dimension, always set type to "temporal"
 
 ### Data Filtering
 - **'where'**: Apply filters to chart data

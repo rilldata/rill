@@ -80,6 +80,15 @@
     paramsForm.update(() => combinedValues, { taint: false });
   }
 
+  // Update form when (re)entering step 1: restore defaults for connector properties
+  $: if (isMultiStepConnector && stepState.step === "connector") {
+    paramsForm.update(
+      () =>
+        getInitialFormValuesFromProperties(connector.configProperties ?? []),
+      { taint: false },
+    );
+  }
+
   // Form 1: Individual parameters
   const paramsFormId = formManager.paramsFormId;
   const properties = formManager.properties;
@@ -274,6 +283,9 @@
     setDsnError: (message: string | null, details?: string) => {
       dsnError = message;
       dsnErrorDetails = details;
+    },
+    setShowSaveAnyway: (value: boolean) => {
+      showSaveAnyway = value;
     },
   });
 

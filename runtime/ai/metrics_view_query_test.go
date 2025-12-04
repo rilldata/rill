@@ -37,7 +37,7 @@ explore:
 
 	// Query the metrics view and check it returns a valid OpenURL
 	var res *ai.QueryMetricsViewResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, "query_metrics_view", &res, ai.QueryMetricsViewArgs{
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
 		"metrics_view": "test_metrics",
 		"dimensions":   []map[string]any{{"name": "country"}},
 		"measures":     []map[string]any{{"name": "total_revenue"}},

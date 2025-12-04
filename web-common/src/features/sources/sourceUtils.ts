@@ -212,6 +212,19 @@ export function prepareSourceFormData(
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
 
+  // Strip connector configuration keys from the source form values to prevent
+  // leaking connector-level fields (e.g., credentials) into the model file.
+  if (connector.configProperties) {
+    const connectorPropertyKeys = new Set(
+      connector.configProperties.map((p) => p.key).filter(Boolean),
+    );
+    for (const key of Object.keys(processedValues)) {
+      if (connectorPropertyKeys.has(key)) {
+        delete processedValues[key];
+      }
+    }
+  }
+
   // Handle placeholder values for required source properties
   if (connector.sourceProperties) {
     for (const prop of connector.sourceProperties) {

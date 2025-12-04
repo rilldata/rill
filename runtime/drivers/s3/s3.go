@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -92,8 +93,6 @@ var spec = drivers.Spec{
 	},
 	ImplementsObjectStore: true,
 }
-
-const defaultPageSize = 20
 
 func init() {
 	drivers.Register("s3", driver{})
@@ -355,6 +354,13 @@ func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string)
 	}
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if confProp.Endpoint != "" {
+			// Apply workaround if using Google Cloud Storage (GCS) endpoint
+			// This fixes signature issues with AWS SDK v2 when using GCS
+			// See: https://github.com/aws/aws-sdk-go-v2/issues/1816#issuecomment-1927281540
+			if strings.Contains(confProp.Endpoint, "storage.googleapis.com") {
+				// GCS alters the Accept-Encoding header which breaks the request signature
+				ignoreSigningHeaders(o, []string{"Accept-Encoding"})
+			}
 			o.BaseEndpoint = aws.String(confProp.Endpoint)
 			o.UsePathStyle = true
 		}

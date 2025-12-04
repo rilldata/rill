@@ -2,14 +2,20 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	// Register database drivers
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -32,8 +38,8 @@ var (
 		"instances": "SELECT * EXCLUDE (variables, project_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
 		// Table `instance_health`
 		"instance_health": "SELECT * FROM instance_health",
-		// Table `catalogv2`, excluding the `data` column which is a serialized protobuf blob that downstream logic can't easily decode anyway.
-		"catalog": "SELECT * EXCLUDE (data) FROM catalogv2",
+		// Table `catalogv2` (NOTE: the `data` column has already been converted to JSON in rewriteSnapshotForAnalytics below).
+		"catalog": "SELECT * FROM catalogv2",
 		// Table `model_partitions`
 		"model_partitions": "SELECT * FROM model_partitions",
 		// Table `ai_sessions`
@@ -160,6 +166,13 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		return fmt.Errorf("failed to upload SQLite file: %w", err)
 	}
 
+	// Rewrite the snapshot in preparation for Parquet exports.
+	// NOTE: We do this after uploading the snapshot.db to the bucket to ensure the backup file has the original data.
+	err = c.rewriteSnapshotForAnalytics(ctx, snapshotPath)
+	if err != nil {
+		return fmt.Errorf("failed to rewrite snapshot for analytics: %w", err)
+	}
+
 	// Open an in-memory DuckDB handle with 1 CPU and 256MB memory limit.
 	// We'll use this to create Parquet files for the tables in the SQLite database.
 	duckdb, err := sqlx.Open("duckdb", "?threads=1&memory_limit=256MB")
@@ -204,6 +217,50 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		}()
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// rewriteSnapshotForAnalytics rewrites the snapshot database to prepare it for analytics exports to Parquet.
+// This is done after the snapshot.db file has been backed up, so it does not affect the backup file itself.
+// Specifically, we do this to convert catalog resources from protobuf to JSON format to make them easy to query in downstream analytics.
+func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPath string) error {
+	// Open the snapshot database.
+	snapshotDB, err := sqlx.Open("sqlite", snapshotPath)
+	if err != nil {
+		return fmt.Errorf("failed to open snapshot database: %w", err)
+	}
+	defer snapshotDB.Close()
+
+	// Convert the `data` field in each row in the `catalogv2` table from protobuf to JSON.
+	for offset := range 50_000 { // Failsafe to avoid infinite loops; we don't anticipate this many resources.
+		// Read one resource.
+		var r drivers.Resource
+		err := snapshotDB.QueryRowContext(ctx, "SELECT kind, name, data FROM catalogv2 ORDER BY kind, name LIMIT 1 OFFSET ?", offset).Scan(&r.Kind, &r.Name, &r.Data)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				break
+			}
+			return fmt.Errorf("failed to query catalog resource: %w", err)
+		}
+
+		// Convert data from protobuf message rill.runtime.v1.Resource to JSON.
+		pb := &runtimev1.Resource{}
+		err = proto.Unmarshal(r.Data, pb)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal catalog resource protobuf: %w", err)
+		}
+		dataJSON, err := protojson.Marshal(pb)
+		if err != nil {
+			return fmt.Errorf("failed to marshal catalog resource to JSON: %w", err)
+		}
+
+		// Write the update back to the snapshot database.
+		_, err = snapshotDB.ExecContext(ctx, "UPDATE catalogv2 SET data = ? WHERE kind = ? AND name = ?", dataJSON, r.Kind, r.Name)
+		if err != nil {
+			return fmt.Errorf("failed to update catalog resource with JSON data: %w", err)
 		}
 	}
 

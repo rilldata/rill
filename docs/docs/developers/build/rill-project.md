@@ -1,7 +1,11 @@
 ---
 title: "Your First Rill Project"
 description: "Get started with Rill by understanding what happens when you create a project"
+<<<<<<< HEAD:docs/docs/developers/build/rill-project.md
 sidebar_label: "Rill Project"
+=======
+sidebar_label: "Your First Project"
+>>>>>>> main:docs/docs/build/getting-started.md
 sidebar_position: 1
 ---
 

@@ -5,7 +5,11 @@ sidebar_position: 50
 ---
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+<<<<<<< HEAD:docs/docs/users/manage/project-management/variables-and-credentials.md
 The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/developers/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud). 
+=======
+The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/deploy/deploy-credentials). 
+>>>>>>> main:docs/docs/manage/project-management/variables-and-credentials.md
 
 ## Modifying Variables and Credentials via the Settings Page
 Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmantal variables defined, please run `rill env configure` from your local CLI and Rill will automatically detect the sources that are used in your project and request the credentials. Once completed, the variables should be visible and editable from Rill Cloud. If you'd like to manually add the credentals, please see [our naming convention](#credentials-naming-schema) to get started. 
