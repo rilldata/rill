@@ -207,3 +207,120 @@ measures:
 		})
 	}
 }
+
+func TestResolveTemplatedString_MetricsSQL_MultiField_MultiRow(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"bids.sql": `
+SELECT 'Google' AS advertiser_name, 1000 AS overall_spend, DATE '2024-01-01' AS bid_date
+UNION ALL
+SELECT 'Microsoft' AS advertiser_name, 2000 AS overall_spend, DATE '2024-01-02' AS bid_date
+UNION ALL
+SELECT 'Yahoo' AS advertiser_name, 1500 AS overall_spend, DATE '2024-01-03' AS bid_date
+UNION ALL
+SELECT 'Amazon' AS advertiser_name, 3000 AS overall_spend, DATE '2024-01-04' AS bid_date
+UNION ALL
+SELECT 'Apple' AS advertiser_name, 2500 AS overall_spend, DATE '2024-01-05' AS bid_date
+`,
+			"bids_metrics.yaml": `
+type: metrics_view
+version: 1
+model: bids
+timeseries: bid_date
+dimensions:
+- column: advertiser_name
+measures:
+- name: total_bids
+  expression: COUNT(*)
+- name: overall_spend
+  expression: SUM(overall_spend)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	server, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	tt := []struct {
+		name     string
+		body     string
+		expected []string
+	}{
+		{
+			name: "SingleRowSingleField_BackwardCompatible",
+			body: `Total: {{ metrics_sql "select total_bids from bids_metrics" }}`,
+			expected: []string{
+				"Total: 5",
+			},
+		},
+		{
+			name: "SingleRowMultipleFields",
+			body: `{{ $data := metrics_sql "select total_bids, overall_spend from bids_metrics" }}Bids: {{ $data.total_bids }}, Spend: {{ $data.overall_spend }}`,
+			expected: []string{
+				"Bids: 5",
+				"Spend: 10000",
+			},
+		},
+		{
+			name: "MultipleRowsMultipleFields_WithRange",
+			body: `{{ $data := metrics_sql "select overall_spend, advertiser_name from bids_metrics order by advertiser_name limit 3" }}
+{{ range $data }}- {{ .advertiser_name }}: {{ .overall_spend }}
+{{ end }}`,
+			expected: []string{
+				"- Amazon: 3000",
+				"- Apple: 2500",
+				"- Google: 1000",
+			},
+		},
+		{
+			name: "MultipleRowsSingleField_WithRange",
+			body: `{{ $data := metrics_sql "select advertiser_name from bids_metrics order by advertiser_name limit 3" }}
+{{ range $data }}- {{ .advertiser_name }}
+{{ end }}`,
+			expected: []string{
+				"- Amazon",
+				"- Apple",
+				"- Google",
+			},
+		},
+		{
+			name: "ComplexTemplate_WithConditional",
+			body: `{{ $data := metrics_sql "select advertiser_name, overall_spend from bids_metrics order by overall_spend desc limit 3" }}
+Top Spenders:
+{{ range $data }}{{ if gt .overall_spend 2000.0 }}- **{{ .advertiser_name }}**: ${{ .overall_spend }}
+{{ end }}{{ end }}`,
+			expected: []string{
+				"Top Spenders:",
+				"- **Amazon**: $3000",
+				"- **Apple**: $2500",
+			},
+		},
+		{
+			name: "NestedRef_MultipleRows",
+			body: `{{ $data := metrics_sql "select advertiser_name, overall_spend from {{ ref \"bids_metrics\" }} order by advertiser_name limit 2" }}
+{{ range $data }}- {{ .advertiser_name }}: {{ .overall_spend }}
+{{ end }}`,
+			expected: []string{
+				"- Amazon: 3000",
+				"- Apple: 2500",
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
+				InstanceId:      instanceID,
+				Body:            tc.body,
+				UseFormatTokens: false,
+			})
+			require.NoError(t, err)
+
+			for _, exp := range tc.expected {
+				require.Contains(t, res.Body, exp, "Expected output to contain: %s\nFull output:\n%s", exp, res.Body)
+			}
+		})
+	}
+}
