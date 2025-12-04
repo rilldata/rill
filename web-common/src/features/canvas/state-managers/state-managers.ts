@@ -7,7 +7,9 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import type { CanvasResponse } from "../selector";
 import {
   getQueryServiceResolveCanvasQueryOptions,
+  type V1CanvasSpec,
   type V1MetricsView,
+  type V1ResolveCanvasResponse,
 } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 
@@ -84,6 +86,11 @@ export function setCanvasStore(
   return store;
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const MAX_SPEC_RETRIES = 10;
+const RETRY_DELAY_MS = 1000;
+
 export async function handleCanvasStoreInitialization(
   canvasName: string,
   instanceId?: string,
@@ -94,47 +101,72 @@ export async function handleCanvasStoreInitialization(
 
   try {
     store = getCanvasStore(canvasName, instanceId);
+    return {
+      store,
+      canvasName,
+    };
   } catch {
-    try {
-      const queryOptions = getQueryServiceResolveCanvasQueryOptions(
-        instanceId,
-        canvasName,
-        {},
-      );
-
-      const data = await queryClient.fetchQuery({
-        ...queryOptions,
-        retry: 3,
-        retryDelay: (attemptIndex) =>
-          Math.min(1000 + 1000 * attemptIndex, 5000),
-      });
-
-      const metricsViews: Record<string, V1MetricsView | undefined> = {};
-      const refMetricsViews = data?.referencedMetricsViews;
-      if (refMetricsViews) {
-        Object.keys(refMetricsViews).forEach((key) => {
-          metricsViews[key] = refMetricsViews?.[key]?.metricsView;
-        });
-      }
-
-      const processed = {
-        canvas: data.canvas?.canvas?.state?.validSpec,
-        components: data.resolvedComponents,
-        metricsViews,
-        filePath: data.canvas?.meta?.filePaths?.[0],
-      };
-
-      store = setCanvasStore(canvasName, instanceId, processed);
-    } catch {
-      throw error(
-        404,
-        `Canvas '${canvasName}' not found in instance '${instanceId}'`,
-      );
-    }
+    //
   }
 
-  return {
-    store,
-    canvasName,
-  };
+  try {
+    const queryOptions = getQueryServiceResolveCanvasQueryOptions(
+      instanceId,
+      canvasName,
+      {},
+    );
+
+    const fetchOptions = {
+      ...queryOptions,
+      retry: 10,
+    };
+
+    let data: V1ResolveCanvasResponse | null = null;
+    let validSpec: V1CanvasSpec | undefined = undefined;
+
+    for (let attempt = 1; attempt <= MAX_SPEC_RETRIES; attempt++) {
+      data = await queryClient.fetchQuery(fetchOptions);
+
+      validSpec = data?.canvas?.canvas?.state?.validSpec;
+
+      if (validSpec) {
+        break;
+      }
+
+      if (attempt < MAX_SPEC_RETRIES) {
+        await delay(RETRY_DELAY_MS);
+      } else {
+        throw new Error(
+          `Canvas spec not ready after ${MAX_SPEC_RETRIES} attempts.`,
+        );
+      }
+    }
+
+    const metricsViews: Record<string, V1MetricsView | undefined> = {};
+    const refMetricsViews = data?.referencedMetricsViews;
+    if (refMetricsViews) {
+      Object.keys(refMetricsViews).forEach((key) => {
+        metricsViews[key] = refMetricsViews?.[key]?.metricsView;
+      });
+    }
+
+    const processed = {
+      canvas: data?.canvas?.canvas?.state?.validSpec,
+      components: data?.resolvedComponents,
+      metricsViews,
+      filePath: data?.canvas?.meta?.filePaths?.[0],
+    };
+
+    store = setCanvasStore(canvasName, instanceId, processed);
+
+    return {
+      store,
+      canvasName,
+    };
+  } catch (e) {
+    throw error(
+      404,
+      `Canvas '${canvasName}' not found or spec not ready in instance '${instanceId}'`,
+    );
+  }
 }

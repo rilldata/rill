@@ -22,9 +22,9 @@
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
-  import { useCanvas } from "../canvas/selector";
-  import CanvasProvider from "../canvas/components/CanvasProvider.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
+  import { handleCanvasStoreInitialization } from "../canvas/state-managers/state-managers";
+  import { page } from "$app/stores";
 
   export let fileArtifact: FileArtifact;
 
@@ -43,6 +43,10 @@
     hasUnsavedChanges,
     saveState: { saving },
   } = fileArtifact);
+
+  $: ({ url } = $page);
+
+  $: initPromise = handleCanvasStoreInitialization(canvasName, instanceId);
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -66,10 +70,6 @@
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
-  $: canvasResolverQuery = useCanvas(instanceId, canvasName);
-  $: canvasResolverQueryResult = $canvasResolverQuery;
-  $: canvasData = canvasResolverQueryResult.data;
-
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       $runtime.instanceId,
@@ -82,70 +82,75 @@
 </script>
 
 {#key canvasName}
-  <CanvasProvider {canvasName}>
-    <WorkspaceContainer>
-      <WorkspaceHeader
-        slot="header"
-        {filePath}
-        resource={data}
-        hasUnsavedChanges={$hasUnsavedChanges}
-        titleInput={fileName}
-        codeToggle
-        onTitleChange={onChangeCallback}
-        resourceKind={ResourceKind.Canvas}
-      >
-        <div class="flex gap-x-2" slot="cta">
+  <WorkspaceContainer>
+    <WorkspaceHeader
+      slot="header"
+      {filePath}
+      resource={data}
+      hasUnsavedChanges={$hasUnsavedChanges}
+      titleInput={fileName}
+      codeToggle
+      onTitleChange={onChangeCallback}
+      resourceKind={ResourceKind.Canvas}
+    >
+      <div class="flex gap-x-2" slot="cta">
+        {#await initPromise then}
           <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
-          <PreviewButton
-            href="/canvas/{canvasName}"
-            disabled={allErrors.length > 0 || resourceIsReconciling}
-            reconciling={resourceIsReconciling}
-          />
-        </div>
-      </WorkspaceHeader>
+        {/await}
 
-      <WorkspaceEditorContainer
-        slot="body"
-        error={mainError}
-        showError={!!$remoteContent && selectedView === "code"}
-      >
-        {#if selectedView === "code"}
-          <CanvasEditor
-            bind:autoSave={$autoSave}
+        <PreviewButton
+          href="/canvas/{canvasName}"
+          disabled={allErrors.length > 0 || resourceIsReconciling}
+          reconciling={resourceIsReconciling}
+        />
+      </div>
+    </WorkspaceHeader>
+
+    <WorkspaceEditorContainer
+      slot="body"
+      error={mainError}
+      showError={!!$remoteContent && selectedView === "code"}
+    >
+      {#if selectedView === "code"}
+        <CanvasEditor
+          bind:autoSave={$autoSave}
+          {canvasName}
+          {fileArtifact}
+          {lineBasedRuntimeErrors}
+        />
+      {:else if selectedView === "viz"}
+        {#await initPromise}
+          <DelayedSpinner isLoading={true} size="48px" />
+        {:then resolvedStore}
+          {@const store = resolvedStore.store}
+          {@const _ = store.canvasEntity
+            .onUrlChange({ url, loadFunction: false })
+            .catch(console.error)}
+          <CanvasBuilder
+            {_}
             {canvasName}
+            openSidebar={workspace.inspector.open}
             {fileArtifact}
-            {lineBasedRuntimeErrors}
           />
-        {:else if selectedView === "viz"}
-          {#if mainError}
-            <ErrorPage
-              body={mainError.message}
-              fatal
-              detail={allErrors.map((error) => error.message).join("\n")}
-              header="Unable to load canvas preview"
-              statusCode={404}
-            />
-          {:else if canvasResolverQueryResult.isLoading}
-            <DelayedSpinner isLoading={true} size="48px" />
-          {:else if canvasData}
-            <CanvasBuilder
-              {canvasName}
-              openSidebar={workspace.inspector.open}
-              {fileArtifact}
-            />
-          {/if}
-        {/if}
-      </WorkspaceEditorContainer>
-
-      <svelte:fragment slot="inspector">
-        <!-- {#key rows} -->
+        {:catch}
+          <ErrorPage
+            body={mainError?.message || "An unknown error occurred."}
+            fatal
+            detail={allErrors.map((error) => error.message).join("\n")}
+            header="Unable to load canvas preview"
+            statusCode={404}
+          />
+        {/await}
+      {/if}
+    </WorkspaceEditorContainer>
+    <svelte:fragment slot="inspector">
+      {#await initPromise then}
         <VisualCanvasEditing
           {canvasName}
           {fileArtifact}
           autoSave={selectedView === "viz" || $autoSave}
         />
-        <!-- {/key} -->
-      </svelte:fragment>
-    </WorkspaceContainer>
-  </CanvasProvider>
+      {/await}
+    </svelte:fragment>
+  </WorkspaceContainer>
 {/key}

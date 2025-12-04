@@ -14,7 +14,11 @@
   $: ({ dimensionFilters, measureFilters } = uiFilters);
 </script>
 
-<div class:flex-col={col} class="flex gap-y-2 gap-x-2 w-full flex-none">
+<div
+  class:flex-col={col}
+  class="flex gap-y-2 gap-x-2 w-full flex-none"
+  aria-label="Readonly Filter Chips"
+>
   <div class="flex gap-x-2">
     {#if timeRangeString}
       <TimeRangeReadOnly

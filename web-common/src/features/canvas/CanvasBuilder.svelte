@@ -39,6 +39,8 @@
   export let fileArtifact: FileArtifact;
   export let canvasName: string;
   export let openSidebar: () => void;
+  // eslint-disable-next-line
+  export let _: Promise<void>;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
