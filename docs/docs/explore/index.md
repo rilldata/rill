@@ -7,7 +7,7 @@ slug: /explore
 ---
 
 
-Rill Cloud is a fully-managed platform for deploying, sharing, and collaborating on your Rill dashboards. While [Rill Developer](/get-started/install) is perfect for local development and exploration, Rill Cloud enables you to share your work with your team and stakeholders, manage access controls, and set up automated reports and alerts. For a more detailed comparison, see [Rill Cloud vs Rill Developer](/get-started/concepts/cloud-vs-developer).
+Rill Cloud is a fully-managed platform for deploying, sharing, and collaborating on your Rill dashboards. While [Rill Developer](/get-started/install) is perfect for local development and exploration, Rill Cloud enables you to share your work with your team and stakeholders, manage access controls, and set up automated reports and alerts. For a more detailed comparison, see [Rill Cloud vs Rill Developer](/deploy/cloud-vs-developer).
 
 After logging into [Rill Cloud](https://ui.rilldata.com), you'll see all projects within your [organization](/manage/organization-management#organization) that are available and have been granted permissions to your user profile. Within each project, you can access the corresponding dashboards, manage alerts and reports, chat with your data using AI, and configure project settings.
 
