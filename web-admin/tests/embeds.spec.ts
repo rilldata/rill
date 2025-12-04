@@ -166,7 +166,7 @@ test.describe("Embeds", () => {
       const frame = embedPage.frameLocator("iframe");
 
       await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
-        /Advertising Spend Overall\s+\$3,900\s+\+\$1,858 \+91%\s+vs previous day/m,
+        /Advertising Spend Overall\s+\$3,900\s+\+\$1,858 \+91%\s+vs previous period/m,
       );
     });
 
@@ -184,7 +184,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            "tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
+            "tr=PT24H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
           ),
         ),
       ).toBeTruthy();
@@ -214,7 +214,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();

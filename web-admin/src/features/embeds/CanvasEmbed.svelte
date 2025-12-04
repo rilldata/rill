@@ -28,14 +28,12 @@
       body: `The Explore dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
     });
   }
-
-  $: resource = $canvasQuery.data;
 </script>
 
 {#if isSuccess}
   {#if isCanvasErrored}
     <br /> Canvas Error <br />
   {:else if data}
-    <CanvasDashboardEmbed {resource} {navigationEnabled} {canvasName} />
+    <CanvasDashboardEmbed {navigationEnabled} {canvasName} />
   {/if}
 {/if}

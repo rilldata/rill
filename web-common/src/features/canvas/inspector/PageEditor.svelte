@@ -40,7 +40,7 @@
   export let canvasName: string;
 
   $: ({
-    canvasEntity: { spec },
+    canvasEntity: { _filtersEnabled, _embeddedTheme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ instanceId } = $runtime);
@@ -91,13 +91,14 @@
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
-  $: showFilterBar = $spec?.filtersEnabled ?? true;
+  $: showFilterBar = $_filtersEnabled;
+  $: embeddedTheme = $_embeddedTheme;
   $: theme = !rawTheme
     ? undefined
     : typeof rawTheme === "string"
       ? rawTheme
       : rawTheme instanceof YAMLMap
-        ? $spec?.embeddedTheme
+        ? embeddedTheme
         : undefined;
 
   async function toggleFilterBar() {

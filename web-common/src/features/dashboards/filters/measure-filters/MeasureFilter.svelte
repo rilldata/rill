@@ -13,35 +13,27 @@
   import type { MeasureFilterItem } from "../../state-managers/selectors/measure-filters";
 
   export let filterData: MeasureFilterItem;
-
+  export let openOnMount = false;
+  export let allDimensions: MetricsViewSpecDimension[];
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let toggleFilterPin:
+    | FilterManager["actions"]["toggleFilterPin"]
+    | undefined = undefined;
   export let onRemove: () => void;
   export let onApply: (params: {
     dimension: string;
     oldDimension: string;
     filter: MeasureFilterEntry;
   }) => void;
-  export let allDimensions: MetricsViewSpecDimension[];
-  export let side: "top" | "right" | "bottom" | "left" = "bottom";
-  export let toggleFilterPin:
-    | FilterManager["actions"]["toggleFilterPin"]
-    | undefined = undefined;
 
   $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
 
-  let open = !filterData.filter;
+  let open = openOnMount && !filterData.filter;
 </script>
 
-<Popover.Root
-  bind:open
-  onOpenChange={(open) => {
-    if (!open && !filter) {
-      onRemove();
-    }
-  }}
-  preventScroll
->
+<Popover.Root bind:open preventScroll>
   <Popover.Trigger asChild let:builder>
     <Tooltip
       activeDelay={60}
@@ -55,7 +47,7 @@
         active={open}
         builders={[builder]}
         {label}
-        gray={pinned && !filter}
+        gray={!filter}
         theme
         {onRemove}
         removable={!pinned}

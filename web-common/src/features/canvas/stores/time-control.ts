@@ -27,6 +27,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
   V1TimeGrain,
+  type V1ExploreTimeRange,
   type V1MetricsView,
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
@@ -59,6 +60,10 @@ type AllTimeRange = TimeRange & { isFetching: boolean };
 
 let lastAllTimeRange: AllTimeRange | undefined;
 
+function maybeWritable<T>(value?: T): Writable<T | undefined> {
+  return writable(value);
+}
+
 // This class is used for global and widget time controls on Canvas
 // To avoid methods running in widgets, use isWidgetInstance flag
 export class TimeControls {
@@ -80,8 +85,11 @@ export class TimeControls {
     writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
   _canPan: Readable<{ left: boolean; right: boolean }>;
-  _defaultTimeRange = writable<string | undefined>(undefined);
-  _defaultComparisonRange = writable<string | undefined>(undefined);
+  _defaultTimeRange = maybeWritable<string>();
+  _defaultComparisonRange = maybeWritable<string>();
+  _timeRangeOptions = writable<V1ExploreTimeRange[]>([]);
+  _availableTimeZones = writable<string[]>([]);
+  _allowCustomRange = writable<boolean>(true);
 
   constructor(
     private specStore: CanvasSpecResponseStore,
@@ -260,22 +268,11 @@ export class TimeControls {
 
   processSpec = (spec: CanvasResponse) => {
     const defaultPreset = spec?.canvas?.defaultPreset;
-    const timeRanges = spec?.canvas?.timeRanges || [];
 
-    const minTimeGrain = deriveMinTimeGrain(
-      this.componentName,
-      spec.metricsViews,
-      spec.components,
-    );
-
-    const defaultRange =
-      defaultPreset?.timeRange ??
-      timeRanges[0]?.range ??
-      minTimeGrainToDefaultTimeRange[minTimeGrain];
-
-    this.minTimeGrain.set(minTimeGrain);
-
-    this._defaultTimeRange.set(defaultRange);
+    const minTimeGrain = this.checkAndSetMinTimeGrain(spec);
+    const ranges = this.checkAndSetTimeRangeOptions(spec);
+    this.checkAndSetDefaultTimeRange(spec, minTimeGrain, ranges);
+    this.checkAndSetAvailableTimeZones(spec);
 
     if (
       defaultPreset?.comparisonMode ===
@@ -286,6 +283,63 @@ export class TimeControls {
       this._defaultComparisonRange.set(undefined);
     }
   };
+
+  checkAndSetAllowCustomRange = (response: CanvasResponse) => {
+    const allowCustomRange = response.canvas?.allowCustomTimeRange ?? true;
+
+    this._allowCustomRange.set(allowCustomRange);
+
+    return allowCustomRange;
+  };
+
+  checkAndSetAvailableTimeZones(response: CanvasResponse) {
+    const timeZones = response.canvas?.timeZones ?? [];
+
+    this._availableTimeZones.set(timeZones);
+
+    return timeZones;
+  }
+
+  checkAndSetDefaultTimeRange(
+    response: CanvasResponse,
+    minTimeGrain: V1TimeGrain,
+    timeRanges: V1ExploreTimeRange[],
+  ) {
+    const defaultTimeRange = response.canvas?.defaultPreset?.timeRange;
+
+    const finalRange =
+      defaultTimeRange ??
+      timeRanges[0]?.range ??
+      minTimeGrainToDefaultTimeRange[minTimeGrain];
+
+    const currentValue = get(this._defaultTimeRange);
+    if (currentValue !== finalRange && finalRange) {
+      this._defaultTimeRange.set(finalRange);
+    }
+  }
+
+  checkAndSetTimeRangeOptions(response: CanvasResponse) {
+    const timeRangeOptions = response.canvas?.timeRanges ?? [];
+
+    this._timeRangeOptions.set(timeRangeOptions);
+
+    return timeRangeOptions;
+  }
+
+  checkAndSetMinTimeGrain(response: CanvasResponse) {
+    const currentValue = get(this.minTimeGrain);
+    const minTimeGrain = deriveMinTimeGrain(
+      this.componentName,
+      response.metricsViews,
+      response.components,
+    );
+
+    if (currentValue !== minTimeGrain) {
+      this.minTimeGrain.set(minTimeGrain);
+    }
+
+    return minTimeGrain;
+  }
 
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,

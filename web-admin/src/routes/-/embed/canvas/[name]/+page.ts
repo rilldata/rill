@@ -1,13 +1,11 @@
-import { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
+import type { PageLoad } from "./$types.js";
 
-export const load = async ({ url, params }) => {
-  const canvasName = params.name;
+export const load: PageLoad = async ({ url, parent }) => {
+  const parentData = await parent();
 
-  await CanvasEntity.handleCanvasRedirect({
-    canvasName,
-    searchParams: url.searchParams,
-    pathname: url.pathname,
-  });
+  const { store, canvasName } = await parent();
 
-  return { canvasName };
+  await store.canvasEntity.onUrlChange({ url, loadFunction: true });
+
+  return { canvasName, parentData };
 };

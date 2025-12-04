@@ -46,7 +46,7 @@
         },
         clearAllFilters,
       },
-      spec,
+
       metricsView: { allDimensions },
       timeControls: {
         _canPan,
@@ -56,6 +56,10 @@
         selectedTimezone,
         minTimeGrain,
         set,
+        _defaultTimeRange,
+        _timeRangeOptions,
+        _availableTimeZones,
+        _allowCustomRange,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -70,9 +74,10 @@
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $spec?.defaultPreset?.timeRange;
-  $: availableTimeZones = $spec?.timeZones ?? [];
-  $: timeRanges = $spec?.timeRanges ?? [];
+  $: defaultTimeRange = $_defaultTimeRange;
+  $: availableTimeZones = $_availableTimeZones;
+  $: timeRanges = $_timeRangeOptions;
+  $: allowCustomTimeRange = $_allowCustomRange;
 
   $: ({
     dimensionFilters,
@@ -137,7 +142,7 @@
           canPanLeft={canPan.left}
           canPanRight={canPan.right}
           watermark={undefined}
-          allowCustomTimeRange={$spec?.allowCustomTimeRange}
+          {allowCustomTimeRange}
           {showDefaultItem}
           applyRange={(timeRange) => {
             const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
@@ -215,14 +220,16 @@
         <MeasureFilter
           {filterData}
           allDimensions={filterData.dimensions || $allDimensions}
-          onRemove={() =>
-            removeMeasureFilter(
+          openOnMount={temporaryFilterKeys.has(id)}
+          onRemove={async () => {
+            await removeMeasureFilter(
               filterData.dimensionName,
               filterData.name,
               metricsViewNames,
-            )}
-          onApply={({ dimension, filter }) =>
-            setMeasureFilter(dimension, filter, metricsViewNames)}
+            );
+          }}
+          onApply={({ dimension, filter, oldDimension }) =>
+            setMeasureFilter(dimension, filter, oldDimension, metricsViewNames)}
           toggleFilterPin={builder ? toggleFilterPin : undefined}
         />
       {/each}

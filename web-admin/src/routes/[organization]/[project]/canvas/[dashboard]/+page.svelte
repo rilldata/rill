@@ -116,5 +116,5 @@
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
 {:else}
-  <CanvasDashboardEmbed resource={canvasResource} {canvasName} />
+  <CanvasDashboardEmbed {canvasName} />
 {/if}

@@ -22,7 +22,7 @@
 
 <Chip type="time" readOnly>
   <svelte:fragment slot="body">
-    <div class="text-xs text-slate-800 flex gap-x-1.5">
+    <div class="text-slate-800 flex gap-x-1.5">
       <div class="font-bold">
         {#if showRange}
           Custom
@@ -46,7 +46,7 @@
 {#if comparisonTimeRange}
   <Chip type="time" readOnly>
     <svelte:fragment slot="body">
-      <div class="text-xs text-slate-800 px-2">
+      <div class="text-slate-800 px-2">
         vs
         <span class:font-bold={hasBoldTimeRange}>
           {getComparisonLabel(comparisonTimeRange)}

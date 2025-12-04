@@ -5,7 +5,6 @@
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     resourceIsLoading,
     ResourceKind,
@@ -24,16 +23,13 @@
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import { useCanvas } from "../canvas/selector";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import LeaderboardIcon from "../canvas/icons/LeaderboardIcon.svelte";
-  import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import CanvasProvider from "../canvas/components/CanvasProvider.svelte";
+  import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
-  let justClickedSaveAsDefault = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -47,12 +43,6 @@
     hasUnsavedChanges,
     saveState: { saving },
   } = fileArtifact);
-
-  $: ({
-    canvasEntity: { _rows, setDefaultFilters, _viewingDefaults },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: viewingDefaults = $_viewingDefaults;
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -68,10 +58,6 @@
   $: selectedView = $selectedViewStore ?? "code";
 
   $: canvasName = getNameFromFile(filePath);
-
-  $: rows = $_rows;
-
-  $: canvasIsEmpty = rows.length === 0;
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     allErrors,
@@ -96,98 +82,70 @@
 </script>
 
 {#key canvasName}
-  <WorkspaceContainer>
-    <WorkspaceHeader
-      slot="header"
-      {filePath}
-      resource={data}
-      hasUnsavedChanges={$hasUnsavedChanges}
-      titleInput={fileName}
-      codeToggle
-      onTitleChange={onChangeCallback}
-      resourceKind={ResourceKind.Canvas}
-    >
-      <div class="flex gap-x-2" slot="cta">
-        <Button
-          label="Save as default"
-          type={!viewingDefaults ? "secondary" : "ghost"}
-          preload={false}
-          disabled={canvasIsEmpty || viewingDefaults}
-          onClick={async () => {
-            justClickedSaveAsDefault = true;
-            await setDefaultFilters();
-            setTimeout(() => {
-              justClickedSaveAsDefault = false;
-            }, 2500);
-          }}
-        >
-          {#if $saving && justClickedSaveAsDefault}
-            <LoadingSpinner size="15px" />
-            <div class="flex gap-x-1 items-center">Saving default filters</div>
-          {:else if viewingDefaults}
-            {#if justClickedSaveAsDefault}
-              <CheckCircleNew size="15px" className="fill-green-600" />
-              <div class="flex gap-x-1 items-center text-green-600">
-                Saved default filters
-              </div>
-            {:else}
-              <LeaderboardIcon size="16px" color="currentColor" />
-              <div class="flex gap-x-1 items-center">Viewing default state</div>
-            {/if}
-          {:else}
-            <LeaderboardIcon size="16px" color="currentColor" />
-            <div class="flex gap-x-1 items-center">Save as default</div>
-          {/if}
-        </Button>
-        <PreviewButton
-          href="/canvas/{canvasName}"
-          disabled={allErrors.length > 0 || resourceIsReconciling}
-          reconciling={resourceIsReconciling}
-        />
-      </div>
-    </WorkspaceHeader>
-
-    <WorkspaceEditorContainer
-      slot="body"
-      error={mainError}
-      showError={!!$remoteContent && selectedView === "code"}
-    >
-      {#if selectedView === "code"}
-        <CanvasEditor
-          bind:autoSave={$autoSave}
-          {canvasName}
-          {fileArtifact}
-          {lineBasedRuntimeErrors}
-        />
-      {:else if selectedView === "viz"}
-        {#if mainError}
-          <ErrorPage
-            body={mainError.message}
-            fatal
-            detail={allErrors.map((error) => error.message).join("\n")}
-            header="Unable to load canvas preview"
-            statusCode={404}
+  <CanvasProvider {canvasName}>
+    <WorkspaceContainer>
+      <WorkspaceHeader
+        slot="header"
+        {filePath}
+        resource={data}
+        hasUnsavedChanges={$hasUnsavedChanges}
+        titleInput={fileName}
+        codeToggle
+        onTitleChange={onChangeCallback}
+        resourceKind={ResourceKind.Canvas}
+      >
+        <div class="flex gap-x-2" slot="cta">
+          <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
+          <PreviewButton
+            href="/canvas/{canvasName}"
+            disabled={allErrors.length > 0 || resourceIsReconciling}
+            reconciling={resourceIsReconciling}
           />
-        {:else if canvasResolverQueryResult.isLoading}
-          <DelayedSpinner isLoading={true} size="48px" />
-        {:else if canvasData}
-          <CanvasBuilder
+        </div>
+      </WorkspaceHeader>
+
+      <WorkspaceEditorContainer
+        slot="body"
+        error={mainError}
+        showError={!!$remoteContent && selectedView === "code"}
+      >
+        {#if selectedView === "code"}
+          <CanvasEditor
+            bind:autoSave={$autoSave}
             {canvasName}
-            openSidebar={workspace.inspector.open}
             {fileArtifact}
+            {lineBasedRuntimeErrors}
           />
+        {:else if selectedView === "viz"}
+          {#if mainError}
+            <ErrorPage
+              body={mainError.message}
+              fatal
+              detail={allErrors.map((error) => error.message).join("\n")}
+              header="Unable to load canvas preview"
+              statusCode={404}
+            />
+          {:else if canvasResolverQueryResult.isLoading}
+            <DelayedSpinner isLoading={true} size="48px" />
+          {:else if canvasData}
+            <CanvasBuilder
+              {canvasName}
+              openSidebar={workspace.inspector.open}
+              {fileArtifact}
+            />
+          {/if}
         {/if}
-      {/if}
-    </WorkspaceEditorContainer>
+      </WorkspaceEditorContainer>
 
-    <svelte:fragment slot="inspector">
-      {#key rows}
+      <svelte:fragment slot="inspector">
+        <!-- {#key rows} -->
         <VisualCanvasEditing
           {canvasName}
           {fileArtifact}
           autoSave={selectedView === "viz" || $autoSave}
         />
-      {/key}
-    </svelte:fragment>
-  </WorkspaceContainer>
+        <!-- {/key} -->
+      </svelte:fragment>
+    </WorkspaceContainer>
+  </CanvasProvider>
 {/key}

@@ -14,11 +14,8 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { string, object, mixed } from "yup";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import PinOff from "@rilldata/web-common/components/icons/PinOff.svelte";
-  import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import { builderActions, getAttrs } from "bits-ui";
-  import * as BitsTooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
+  import PinButton from "../PinButton.svelte";
 
   export let dimensionName: string;
   export let name: string;
@@ -130,6 +127,7 @@
   {side}
   class="p-2 px-3 w-[250px]"
   strategy="fixed"
+  id="measure-filter-popover"
 >
   {#if toggleFilterPin}
     <div
@@ -137,32 +135,7 @@
     >
       <b>{label}</b>
 
-      <BitsTooltip.Root portal="body">
-        <BitsTooltip.Trigger asChild let:builder>
-          <button
-            on:click={() => {
-              toggleFilterPin(name, []);
-            }}
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-            aria-label={pinned ? "Unpin filter" : "Pin filter"}
-          >
-            {#if pinned}
-              <PinOff size="15px" />
-            {:else}
-              <Pin size="15px" />
-            {/if}
-          </button>
-        </BitsTooltip.Trigger>
-        <BitsTooltip.Content
-          side="right"
-          class="z-[100000] max-w-56 bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1"
-          sideOffset={8}
-        >
-          Click to pin or unpin : Keep this filter visible at the top so it
-          can’t be removed by other users.
-        </BitsTooltip.Content>
-      </BitsTooltip.Root>
+      <PinButton {pinned} onTogglePin={() => toggleFilterPin(name, [])} />
     </div>
   {/if}
   <form

@@ -7,10 +7,22 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let data: PageData;
 
-  $: hasBanner = !!data.dashboard.canvas?.state?.validSpec?.banner;
+  $: ({ instanceId } = $runtime);
+
+  $: ({ canvasName } = data);
+
+  $: ({
+    canvasEntity: { _banner },
+  } = getCanvasStore(canvasName, instanceId));
+
+  $: banner = $_banner;
+
+  $: hasBanner = !!banner;
 
   $: if (hasBanner) {
     eventBus.emit("add-banner", {
@@ -18,7 +30,7 @@
       priority: DashboardBannerPriority,
       message: {
         type: "default",
-        message: data.dashboard.canvas?.state?.validSpec?.banner ?? "",
+        message: banner ?? "",
         iconType: "alert",
       },
     });
@@ -31,7 +43,4 @@
   });
 </script>
 
-<CanvasDashboardEmbed
-  resource={data.dashboard}
-  canvasName={data.dashboardName}
-/>
+<CanvasDashboardEmbed {canvasName} />

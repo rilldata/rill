@@ -29,10 +29,7 @@
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
   import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
-  import PinOff from "@rilldata/web-common/components/icons/PinOff.svelte";
-  import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import { builderActions, getAttrs } from "bits-ui";
-  import * as BitsTooltip from "@rilldata/web-common/components/tooltip-v2";
+  import PinButton from "../PinButton.svelte";
 
   type Actions = FilterManager["actions"];
 
@@ -408,7 +405,7 @@
       <Chip
         builders={[builder]}
         type="dimension"
-        gray={pinned && selectedValues.length === 0 && !inputText}
+        gray={selectedValues.length === 0 && !inputText}
         active={open}
         exclude={curExcludeMode}
         label={`${name} filter`}
@@ -462,33 +459,13 @@
         >
           <b>{label}</b>
 
-          <BitsTooltip.Root portal="body">
-            <BitsTooltip.Trigger asChild let:builder>
-              <button
-                on:click={async () => {
-                  await onApply(false);
-                  toggleFilterPin(name, metricsViewNames);
-                }}
-                {...getAttrs([builder])}
-                use:builderActions={{ builders: [builder] }}
-                aria-label={pinned ? "Unpin filter" : "Pin filter"}
-              >
-                {#if pinned}
-                  <PinOff size="15px" />
-                {:else}
-                  <Pin size="15px" />
-                {/if}
-              </button>
-            </BitsTooltip.Trigger>
-            <BitsTooltip.Content
-              side="right"
-              class="z-[100000] max-w-56 bg-gray-700 dark:bg-gray-900 shadow-md text-surface rounded p-2 pt-1 pb-1"
-              sideOffset={8}
-            >
-              Click to pin or unpin : Keep this filter visible at the top so it
-              can’t be removed by other users.
-            </BitsTooltip.Content>
-          </BitsTooltip.Root>
+          <PinButton
+            pinned={!!pinned}
+            onTogglePin={async () => {
+              await onApply(false);
+              toggleFilterPin(name, metricsViewNames);
+            }}
+          />
         </div>
       {/if}
       <div class="flex flex-row">

@@ -39,7 +39,7 @@
       automatically apply each time you open this dashboard in Rill Cloud.
     </p>
 
-    <div class="flex flex-col gap-y-2 w-full flex-none">
+    <div class="flex flex-col gap-y-2 gap-x-2 w-full flex-none">
       <div class="flex gap-x-2">
         {#if defaultTimeRange}
           <TimeRangeReadOnly
@@ -50,6 +50,7 @@
           />
         {/if}
       </div>
+
       {#each dimensionFilters as [id, filterData] (id)}
         {@const metricsViewNames = Array.from(filterData.dimensions.keys())}
         {@const dimension = filterData.dimensions.get(metricsViewNames[0])}

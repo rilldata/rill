@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
@@ -20,16 +19,10 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    url: { searchParams },
-  } = $page);
-
-  $: ({
-    canvasEntity: { onUrlParamsChange, theme },
+    canvasEntity: { theme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ width: clientWidth } = contentRect);
-
-  $: onUrlParamsChange(searchParams, !embedded).catch(console.error);
 </script>
 
 <ThemeProvider theme={$theme}>

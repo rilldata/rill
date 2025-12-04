@@ -81,7 +81,9 @@
         </TooltipContent>
       </Tooltip>
     {:else if showPinnedIcon}
-      <PinIcon size="16px" />
+      <div class="flex-none">
+        <PinIcon size="16px" />
+      </div>
     {/if}
 
     {#if $$slots.body}
@@ -89,7 +91,7 @@
         on:click
         on:mousedown
         aria-label={`Open ${label}`}
-        class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
+        class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
         type="button"
       >
         <slot name="body" />
@@ -129,7 +131,7 @@
   .dimension:hover,
   .dimension:active,
   .dimension.active {
-    @apply bg-primary-100;
+    @apply bg-primary-200;
   }
 
   .dimension.theme {

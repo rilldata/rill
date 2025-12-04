@@ -146,39 +146,43 @@ export class FilterManager {
     this.updateConfig(metricsViews, pinnedFilters, defaultFilters);
 
     this._defaultUIFilters = derived(
-      [this.metricsViewFilters, this._defaultPinnedFilterKeys],
-      ([metricsViewFilters, defaultPinnedFilterKeys], set) => {
+      [this.metricsViewFilters],
+      ([metricsViewFilters], set) => {
         const stores = Array.from(metricsViewFilters.values()).map(
           (f) => f.parsedDefaultFilters,
         );
-        derived(stores, (filters) => {
-          return this.convertToUIFilters(
-            filters,
-            new Set(),
-            defaultPinnedFilterKeys,
-          );
-        }).subscribe(set);
+        derived(
+          [this._defaultPinnedFilterKeys, ...stores],
+          ([defaultPinnedFilterKeys, ...filters]) => {
+            const okay = this.convertToUIFilters(
+              filters,
+              new Set(),
+              defaultPinnedFilterKeys,
+            );
+
+            return structuredClone(okay);
+          },
+        ).subscribe(set);
       },
     );
 
     this._activeUIFilters = derived(
-      [
-        this._pinnedFilterKeys,
-        this._temporaryFilterKeys,
-        this.metricsViewFilters,
-      ],
-      ([pinnedFilters, temporaryFilterKeys, metricsViewFilters], set) => {
+      [this.metricsViewFilters],
+      ([metricsViewFilters], set) => {
         const stores = Array.from(metricsViewFilters.values()).map(
           (f) => f.parsed,
         );
 
-        derived(stores, (filters) => {
-          return this.convertToUIFilters(
-            filters,
-            temporaryFilterKeys,
-            pinnedFilters,
-          );
-        }).subscribe(set);
+        derived(
+          [this._pinnedFilterKeys, this._temporaryFilterKeys, ...stores],
+          ([pinnedFilters, temporaryFilterKeys, ...filters]) => {
+            return this.convertToUIFilters(
+              filters,
+              temporaryFilterKeys,
+              pinnedFilters,
+            );
+          },
+        ).subscribe(set);
       },
     );
 
@@ -592,6 +596,7 @@ export class FilterManager {
     setMeasureFilter: async (
       dimensionName: string,
       filter: MeasureFilterEntry,
+      oldDimension: string,
       metricsViewNames: string[],
     ) => {
       this.checkTemporaryFilter(filter.measure, metricsViewNames);
@@ -603,7 +608,11 @@ export class FilterManager {
 
         if (!filterClass) return;
 
-        const string = filterClass.setMeasureFilter(dimensionName, filter);
+        const string = filterClass.setMeasureFilter(
+          dimensionName,
+          filter,
+          oldDimension,
+        );
 
         newFilters.set(name, string || null);
       });

@@ -288,20 +288,29 @@ export class MetricsViewFilter {
     );
   };
 
-  setMeasureFilter = (dimensionName: string, filter: MeasureFilterEntry) => {
+  setMeasureFilter = (
+    dimensionName: string,
+    filter: MeasureFilterEntry,
+    oldDimension: string,
+  ) => {
     const {
       dimensionThresholdFilters: dtfs,
       dimensionsWithInlistFilter,
       dimensionFilter,
     } = get(this.parsed);
 
-    const dimIdx = dtfs.findIndex((dtf) => dtf.name === dimensionName);
+    const dimIdx = dtfs.findIndex(
+      (dtf) => dtf.name === (oldDimension || dimensionName),
+    );
     let dimThresholdFilter = dtfs[dimIdx];
 
     if (!dimThresholdFilter) {
       dimThresholdFilter = { name: dimensionName, filters: [] };
       dtfs.push(dimThresholdFilter);
     } else {
+      if (oldDimension && oldDimension !== dimensionName) {
+        dimThresholdFilter.name = dimensionName;
+      }
       const filters = dimThresholdFilter.filters;
       const exprIdx = filters.findIndex((f) => f.measure === filter.measure);
       if (exprIdx !== -1) {
@@ -434,8 +443,6 @@ export function getCanvasMeasureFiltersMap(
       name: measureName,
       label: measure.displayName || measure.expression || filter.measure,
       filter: filter,
-
-      // dimensions,
     };
 
     map.set(measureName, entry);
