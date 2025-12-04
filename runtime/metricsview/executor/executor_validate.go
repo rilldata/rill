@@ -659,12 +659,12 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 	}
 	types := make(map[string]*runtimev1.Type, len(schema.Fields))
 	for _, f := range schema.Fields {
-		types[f.Name] = f.Type
+		types[strings.ToLower(f.Name)] = f.Type
 	}
 
 	// Check that the measures are not strings
 	for i, m := range e.metricsView.Measures {
-		typ, ok := types[m.Name]
+		typ, ok := types[strings.ToLower(m.Name)]
 		if !ok {
 			// Don't error: schemas are not always reliable
 			continue
@@ -684,7 +684,7 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 	for _, d := range e.metricsView.Dimensions {
 		// Find the dimension's data type, and infer the dimension type
 		var code runtimev1.Type_Code
-		typ, ok := types[d.Name]
+		typ, ok := types[strings.ToLower(d.Name)]
 		if ok {
 			code = typ.Code
 			d.DataType = typ
@@ -703,7 +703,7 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 		case runtimev1.Type_CODE_UNSPECIFIED, runtimev1.Type_CODE_DATE:
 			// Unspecified types (e.g. if type detection failed) or DATE types only default to the TIME dimension type if they are the default time dimension.
 			// Otherwise they default to CATEGORICAL.
-			if d.Name == e.metricsView.TimeDimension {
+			if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
 				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
 			} else {
 				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
