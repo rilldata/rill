@@ -23,13 +23,17 @@
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
-  import { handleCanvasStoreInitialization } from "../canvas/state-managers/state-managers";
+  import {
+    handleCanvasStoreInitialization,
+    type CanvasStore,
+  } from "../canvas/state-managers/state-managers";
   import { page } from "$app/stores";
 
   export let fileArtifact: FileArtifact;
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
+  let resolvedStore: { store: CanvasStore; canvasName: string } | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -47,6 +51,17 @@
   $: ({ url } = $page);
 
   $: initPromise = handleCanvasStoreInitialization(canvasName, instanceId);
+
+  $: initPromise
+    .then((storeInstance) => {
+      resolvedStore = storeInstance;
+    })
+    .catch(console.error);
+
+  // Listen to URL changes
+  $: resolvedStore?.store.canvasEntity
+    .onUrlChange({ url, loadFunction: false })
+    .catch(console.error);
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -121,13 +136,8 @@
       {:else if selectedView === "viz"}
         {#await initPromise}
           <DelayedSpinner isLoading={true} size="48px" />
-        {:then resolvedStore}
-          {@const store = resolvedStore.store}
-          {@const _ = store.canvasEntity
-            .onUrlChange({ url, loadFunction: false })
-            .catch(console.error)}
+        {:then}
           <CanvasBuilder
-            {_}
             {canvasName}
             openSidebar={workspace.inspector.open}
             {fileArtifact}
