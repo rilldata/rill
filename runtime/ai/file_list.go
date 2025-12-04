@@ -8,6 +8,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const ListFilesName = "list_files"
+
 type ListFiles struct {
 	Runtime *runtime.Runtime
 }
@@ -22,9 +24,13 @@ type ListFilesResult struct {
 
 func (t *ListFiles) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "list_files",
+		Name:        ListFilesName,
 		Title:       "List project files",
 		Description: "Lists all the files in the Rill project, as well as the resources they declare and the current status of those resources",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "List files...",
+			"openai/toolInvocation/invoked":  "Listed files",
+		},
 	}
 }
 

@@ -74,7 +74,7 @@ func (r *metricsAnnotationsResolver) Close() error {
 }
 
 func (r *metricsAnnotationsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	// get the underlying executor's cache key
+	// Get the underlying executor's cache key
 	key, ok, err := cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.query.Priority)
 	if err != nil {
 		return nil, false, err
@@ -83,15 +83,12 @@ func (r *metricsAnnotationsResolver) CacheKey(ctx context.Context) ([]byte, bool
 		return nil, false, nil
 	}
 
-	queryMap, err := r.query.AsMap()
+	// Combine the executor's cache key with the query
+	data, err := json.Marshal(r.query)
 	if err != nil {
 		return nil, false, err
 	}
-
-	queryMap["mv_cache_key"] = key
-
-	b, err := json.Marshal(queryMap)
-	return b, true, err
+	return append(key, data...), true, nil
 }
 
 func (r *metricsAnnotationsResolver) Refs() []*runtimev1.ResourceName {

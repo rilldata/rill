@@ -59,6 +59,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &DevelopModel{Runtime: rt})
 	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
+	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
 
@@ -200,14 +201,72 @@ type CompiledTool struct {
 	RegisterWithMCPServer func(srv *mcp.Server)
 }
 
+// AsProto converts the CompiledTool to a protocol buffer representation.
+func (t *CompiledTool) AsProto() (*aiv1.Tool, error) {
+	var meta *structpb.Struct
+	if t.Spec.Meta != nil {
+		var err error
+		meta, err = structpb.NewStruct(t.Spec.Meta)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert meta for tool %q: %w", t.Name, err)
+		}
+	}
+
+	var inputSchema string
+	if t.Spec.InputSchema != nil {
+		inputSchemaBytes, err := json.Marshal(t.Spec.InputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal input schema for tool %q: %w", t.Name, err)
+		}
+		inputSchema = string(inputSchemaBytes)
+
+		// OpenAI currently does not accept object schemas without explicit properties.
+		// So for now, we skip such schemas.
+		if s, ok := t.Spec.InputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
+			inputSchema = ""
+		}
+	}
+
+	var outputSchema string
+	if t.Spec.OutputSchema != nil {
+		outputSchemaBytes, err := json.Marshal(t.Spec.OutputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal output schema for tool %q: %w", t.Name, err)
+		}
+		outputSchema = string(outputSchemaBytes)
+
+		// For consistency with input schema, skip object schemas without explicit properties.
+		if s, ok := t.Spec.OutputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
+			outputSchema = ""
+		}
+	}
+
+	return &aiv1.Tool{
+		Name:         t.Spec.Name,
+		DisplayName:  t.Spec.Title,
+		Description:  t.Spec.Description,
+		Meta:         meta,
+		InputSchema:  inputSchema,
+		OutputSchema: outputSchema,
+	}, nil
+}
+
 // RegisterTool registers a new tool with the Runner.
 func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 	spec := t.Spec()
 	if spec.InputSchema == nil {
-		spec.InputSchema, _ = schemaFor[In](false)
+		var err error
+		spec.InputSchema, err = schemaFor[In](false)
+		if err != nil {
+			panic(fmt.Sprintf("failed to infer input schema for tool %q: %v", spec.Name, err))
+		}
 	}
 	if spec.OutputSchema == nil {
-		spec.OutputSchema, _ = schemaFor[Out](true)
+		var err error
+		spec.OutputSchema, err = schemaFor[Out](true)
+		if err != nil {
+			panic(fmt.Sprintf("failed to infer output schema for tool %q: %v", spec.Name, err))
+		}
 	}
 
 	s.Tools[spec.Name] = &CompiledTool{
@@ -964,25 +1023,11 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			continue
 		}
-		var inputSchema string
-		if tool.Spec.InputSchema != nil {
-			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)
-			if err != nil {
-				return fmt.Errorf("failed to marshal input schema for tool %q: %w", toolName, err)
-			}
-			inputSchema = string(inputSchemaBytes)
-
-			// OpenAI currently does not accept object schemas without explicit properties.
-			// So for now, we skip such schemas.
-			if s, ok := tool.Spec.InputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
-				inputSchema = ""
-			}
+		toolPB, err := tool.AsProto()
+		if err != nil {
+			return fmt.Errorf("failed to convert tool to proto: %w", err)
 		}
-		tools = append(tools, &aiv1.Tool{
-			Name:        tool.Spec.Name,
-			Description: tool.Spec.Description,
-			InputSchema: inputSchema,
-		})
+		tools = append(tools, toolPB)
 	}
 
 	// Prepare output schema.
@@ -1003,7 +1048,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			var err error
 			outputSchema, err = jsonschema.ForType(outType.Elem(), &jsonschema.ForOptions{})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to infer schema for output type: %w", err)
 			}
 		}
 	}

@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 )
 
+const CreateChartName = "create_chart"
+
 type CreateChart struct {
 	Runtime *runtime.Runtime
 }
@@ -36,14 +38,14 @@ func (t *CreateChart) Spec() *mcp.Tool {
 	}
 
 	return &mcp.Tool{
-		Name:        "create_chart",
+		Name:        CreateChartName,
 		Title:       "Create chart",
 		Description: createChartDescription,
-		InputSchema: inputSchema,
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Creating chart…",
-			"openai/toolInvocation/invoked":  "Finished creating chart",
+			"openai/toolInvocation/invoking": "Creating chart...",
+			"openai/toolInvocation/invoked":  "Created chart",
 		},
+		InputSchema: inputSchema,
 	}
 }
 

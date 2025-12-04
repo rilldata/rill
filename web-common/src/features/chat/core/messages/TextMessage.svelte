@@ -1,7 +1,4 @@
-<!--
-  Renders conversational text exchanges between user and AI assistant.
-  Handles router_agent messages (user prompts and assistant responses).
--->
+<!-- Renders assistant responses from router_agent. -->
 <script lang="ts">
   import { page } from "$app/stores";
   import {
@@ -16,7 +13,6 @@
   export let message: V1Message;
 
   // Message content and styling
-  $: role = message.role || "assistant";
   $: content = extractMessageText(message);
 
   // Citation URL rewriting for explore dashboards
@@ -34,38 +30,20 @@
     : undefined;
 </script>
 
-<div class="chat-message chat-message--{role}">
+<div class="chat-message">
   <div class="chat-message-content">
-    {#if role === "assistant"}
-      <Markdown {content} converter={convertCitationUrls} />
-    {:else}
-      {content}
-    {/if}
+    <Markdown {content} converter={convertCitationUrls} />
   </div>
 </div>
 
 <style lang="postcss">
   .chat-message {
-    @apply max-w-[90%];
-  }
-
-  .chat-message--user {
-    @apply self-end;
-  }
-
-  .chat-message--assistant {
-    @apply self-start;
+    @apply max-w-[90%] self-start;
   }
 
   .chat-message-content {
-    @apply px-2 py-1.5 rounded-2xl text-sm leading-relaxed break-words;
-  }
-
-  .chat-message--user .chat-message-content {
-    @apply bg-primary-400 text-white rounded-br-lg;
-  }
-
-  .chat-message--assistant .chat-message-content {
+    @apply px-4 py-2 rounded-2xl;
+    @apply text-sm leading-relaxed break-words;
     @apply text-gray-700;
   }
 </style>

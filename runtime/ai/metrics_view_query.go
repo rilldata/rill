@@ -15,6 +15,8 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
+const QueryMetricsViewName = "query_metrics_view"
+
 type QueryMetricsView struct {
 	Runtime *runtime.Runtime
 }
@@ -150,14 +152,14 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 	}
 
 	return &mcp.Tool{
-		Name:        "query_metrics_view",
+		Name:        QueryMetricsViewName,
 		Title:       "Query Metrics View",
 		Description: description,
-		InputSchema: inputSchema,
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Querying metrics…",
-			"openai/toolInvocation/invoked":  "Completed metrics query",
+			"openai/toolInvocation/invoking": "Querying metrics...",
+			"openai/toolInvocation/invoked":  "Queried metrics",
 		},
+		InputSchema: inputSchema,
 	}
 }
 

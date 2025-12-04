@@ -8,8 +8,11 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
+
+const DevelopModelName = "develop_model"
 
 type DevelopModel struct {
 	Runtime *runtime.Runtime
@@ -28,9 +31,13 @@ type DevelopModelResult struct {
 
 func (t *DevelopModel) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "develop_model",
+		Name:        DevelopModelName,
 		Title:       "Develop model",
-		Description: "Agent that develops a single Rill model.",
+		Description: "Developer agent that creates or edits a single Rill model.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Developing model...",
+			"openai/toolInvocation/invoked":  "Developed model",
+		},
 	}
 }
 
@@ -47,9 +54,16 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 		args.Path = "/" + args.Path
 	}
 
-	// Pre-invoke file read
 	session := GetSession(ctx)
-	_, _ = session.CallTool(ctx, RoleAssistant, "read_file", nil, &ReadFileArgs{
+
+	// Pre-invoke file listing to get context about existing models
+	_, err := session.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Pre-invoke file read for the target file
+	_, _ = session.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
 		Path: args.Path,
 	})
 	if ctx.Err() != nil { // Ignore tool error since the file may not exist
@@ -75,7 +89,7 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 			NewTextCompletionMessage(RoleSystem, systemPrompt),
 			NewTextCompletionMessage(RoleUser, userPrompt),
 		},
-		Tools:         []string{"read_file", "write_file"},
+		Tools:         []string{SearchFilesName, ReadFileName, WriteFileName},
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})
@@ -100,7 +114,7 @@ func (t *DevelopModel) systemPrompt(ctx context.Context) (string, error) {
 
 <concepts>
 Rill is a "business intelligence as code" platform where all resources are defined using YAML files containing SQL snippets in a project directory.
-For the purposes of your work, you will only deal with **model** resources, which are SQL statements and related metadata that produce a single table in the project's database.
+For the purposes of your work, you will only deal with **model** resources, which are SQL queries and related metadata that produce a single table in the project's database.
 In Rill, when you write a file, the platform discovers and "reconciles" it immediately. For a model, reconcile updates the database to contain the defined table.
 </concepts>
 
@@ -111,13 +125,16 @@ At a high level, you should follow these steps:
 3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
 
 Additional instructions:
-- The user will often ask you to create or update models that require external data, such as from a SaaS application or their data warehouse. In these cases, you should generate a SQL query that emits mock data that resembles the expected structure and contents of the external data. You may generate up to 100 rows of mock data.
-- You should not attempt to reference other models in the project, unless the model already exists and already references them.
-- The SQL expression should be a plain SELECT query without a semicolon at the end.
+- The SQL expression should be a a valid plain SELECT in the specified dialect without a semicolon at the end.
+- If the user asks you to join, combine, or reference existing models in the project, you MUST use the existing models by referencing them in SQL (e.g., "SELECT * FROM model_name"). Check the list_files output to see what models exist.
+- Only generate synthetic data when the user asks for data from *external* sources (like SaaS applications or data warehouses) that don't exist in the project yet.
+  In these cases, you should generate a SQL query that emits realistic-looking synthetic column names and values instead of mock values, include a time column, and realistic data distributions.
+  Generate substantial datasets covering 6-12 months of historical data with approx 10,000 rows to enable meaningful analysis and dashboard visualization.
+  Space out timestamps realistically across the time period rather than clustering them.
 </process>
 
 <example>
-A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will be creates as a table in the project's database using "CREATE TABLE name AS SELECT ...". Here is an example Rill model:
+A model definition in Rill is a YAML file containing a SQL query. The SQL query will create as a table in the project's database using "CREATE TABLE name AS <SQL query>". Here is an example Rill model:
 {{ backticks }}
 type: model
 materialize: true
@@ -152,7 +169,11 @@ func (t *DevelopModel) userPrompt(ctx context.Context, args *DevelopModelArgs) (
 		return "", err
 	}
 	defer release()
-	data["dialect"] = olap.Dialect().String()
+	dialect := olap.Dialect()
+	if dialect == drivers.DialectUnspecified {
+		dialect = drivers.DialectDuckDB
+	}
+	data["dialect"] = dialect.String()
 
 	// Generate the user prompt
 	return executeTemplate(`
