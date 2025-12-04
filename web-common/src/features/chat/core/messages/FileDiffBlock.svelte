@@ -146,30 +146,31 @@
 
   .diff-view {
     @apply overflow-x-auto;
+
+    /*
+     * GitHub-style diff theming
+     * Note: diff2html CSS variables are defined at :root level and don't inherit
+     * from parent elements, so we must use direct style overrides for scoped theming.
+     */
   }
 
-  /* GitHub-style diff styling */
-  :global(.tool-container .d2h-wrapper) {
-    font-size: 12px;
-    line-height: 20px;
-  }
-
-  :global(.tool-container .d2h-file-header) {
+  /* Structural overrides */
+  .diff-view :global(.d2h-file-header) {
     display: none;
   }
 
-  :global(.tool-container .d2h-file-wrapper) {
+  .diff-view :global(.d2h-file-wrapper) {
     border: none;
     border-radius: 0;
     margin: 0;
   }
 
-  :global(.tool-container .d2h-file-diff) {
-    overflow-x: auto;
-    overflow-y: hidden;
+  .diff-view :global(.d2h-wrapper) {
+    font-size: 12px;
+    line-height: 20px;
   }
 
-  :global(.tool-container .d2h-diff-table) {
+  .diff-view :global(.d2h-diff-table) {
     width: max-content;
     min-width: 100%;
     border-collapse: collapse;
@@ -179,24 +180,23 @@
     font-size: 12px;
   }
 
-  :global(.tool-container .d2h-diff-tbody tr) {
+  .diff-view :global(.d2h-diff-tbody tr) {
     border: none;
     line-height: 20px;
   }
 
-  :global(.tool-container .d2h-code-line) {
+  .diff-view :global(.d2h-code-line) {
     padding: 0;
     border: none;
   }
 
   /* Hide the first (old) line number column - show only new line numbers */
-  :global(.tool-container td.d2h-code-linenumber:first-child) {
+  .diff-view :global(td.d2h-code-linenumber:first-child) {
     display: none;
   }
 
-  /* Line numbers - GitHub style */
-  :global(.tool-container .d2h-code-linenumber) {
-    position: static !important;
+  .diff-view :global(.d2h-code-linenumber) {
+    position: static;
     color: rgba(31, 35, 40, 0.5);
     text-align: right;
     padding: 0 10px;
@@ -209,9 +209,8 @@
     border-right: 1px solid #d1d9e0;
   }
 
-  /* Prefix (+/-) column - GitHub style */
-  :global(.tool-container .d2h-code-line-prefix) {
-    position: static !important;
+  .diff-view :global(.d2h-code-line-prefix) {
+    position: static;
     padding: 0 8px;
     user-select: none;
     width: 20px;
@@ -221,9 +220,8 @@
     color: rgba(31, 35, 40, 0.5);
   }
 
-  /* Code content */
-  :global(.tool-container .d2h-code-line-ctn) {
-    position: static !important;
+  .diff-view :global(.d2h-code-line-ctn) {
+    position: static;
     padding: 0 8px 0 0;
     white-space: pre;
     word-wrap: normal;
@@ -232,82 +230,71 @@
   }
 
   /* Addition lines - GitHub green */
-  :global(.tool-container .d2h-ins) {
-    background-color: #d1f8d9 !important;
+  .diff-view :global(.d2h-ins) {
+    background-color: #d1f8d9;
   }
 
-  :global(.tool-container .d2h-ins .d2h-code-linenumber) {
-    background-color: #b4f1be !important;
-    color: rgba(31, 35, 40, 0.5);
+  .diff-view :global(.d2h-ins .d2h-code-linenumber) {
+    background-color: #b4f1be;
   }
 
-  :global(.tool-container .d2h-ins .d2h-code-line-prefix) {
-    color: #1a7f37 !important;
-    background-color: #d1f8d9 !important;
+  .diff-view :global(.d2h-ins .d2h-code-line-prefix) {
+    color: #1a7f37;
+    background-color: #d1f8d9;
   }
 
-  :global(.tool-container .d2h-ins .d2h-code-line-ctn) {
-    background-color: #d1f8d9 !important;
+  .diff-view :global(.d2h-ins .d2h-code-line-ctn) {
+    background-color: #d1f8d9;
   }
 
-  /* Word-level addition highlight */
-  :global(.tool-container .d2h-ins .d2h-change) {
-    background-color: #7ee787 !important;
+  .diff-view :global(.d2h-ins ins) {
+    background-color: #7ee787;
   }
 
   /* Deletion lines - GitHub red */
-  :global(.tool-container .d2h-del) {
-    background-color: #ffd7d5 !important;
+  .diff-view :global(.d2h-del) {
+    background-color: #ffd7d5;
   }
 
-  :global(.tool-container .d2h-del .d2h-code-linenumber) {
-    background-color: #ffc0be !important;
-    color: rgba(31, 35, 40, 0.5);
+  .diff-view :global(.d2h-del .d2h-code-linenumber) {
+    background-color: #ffc0be;
   }
 
-  :global(.tool-container .d2h-del .d2h-code-line-prefix) {
-    color: #cf222e !important;
-    background-color: #ffd7d5 !important;
+  .diff-view :global(.d2h-del .d2h-code-line-prefix) {
+    color: #cf222e;
+    background-color: #ffd7d5;
   }
 
-  :global(.tool-container .d2h-del .d2h-code-line-ctn) {
-    background-color: #ffd7d5 !important;
+  .diff-view :global(.d2h-del .d2h-code-line-ctn) {
+    background-color: #ffd7d5;
   }
 
-  /* Word-level deletion highlight */
-  :global(.tool-container .d2h-del .d2h-change) {
-    background-color: #ff8182 !important;
+  .diff-view :global(.d2h-del del) {
+    background-color: #ff8182;
   }
 
   /* Context/unchanged lines */
-  :global(.tool-container .d2h-cntx) {
-    background-color: #ffffff !important;
+  .diff-view :global(.d2h-cntx) {
+    background-color: #ffffff;
   }
 
-  :global(.tool-container .d2h-cntx .d2h-code-linenumber) {
-    background-color: #f6f8fa !important;
+  .diff-view :global(.d2h-cntx .d2h-code-linenumber) {
+    background-color: #f6f8fa;
   }
 
-  :global(.tool-container .d2h-cntx .d2h-code-line-prefix),
-  :global(.tool-container .d2h-cntx .d2h-code-line-ctn) {
-    background-color: #ffffff !important;
+  .diff-view :global(.d2h-cntx .d2h-code-line-prefix),
+  .diff-view :global(.d2h-cntx .d2h-code-line-ctn) {
+    background-color: #ffffff;
   }
 
   /* Hunk header (@@) - GitHub style */
-  :global(.tool-container .d2h-info) {
-    background-color: #ddf4ff !important;
-    color: rgba(31, 35, 40, 0.7) !important;
+  .diff-view :global(.d2h-info) {
+    background-color: #ddf4ff;
+    color: rgba(31, 35, 40, 0.7);
     padding: 6px 10px;
     font-family:
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     font-size: 12px;
     line-height: 20px;
-  }
-
-  /* Remove any sticky behavior */
-  :global(.tool-container .d2h-code-linenumber),
-  :global(.tool-container .d2h-code-side-linenumber) {
-    position: static !important;
-    left: auto !important;
   }
 </style>
