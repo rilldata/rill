@@ -7,7 +7,6 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getQueryServiceResolveCanvasQueryOptions,
   V1ExploreComparisonMode,
   type V1CanvasPreset,
   type V1CanvasSpec,
@@ -46,14 +45,7 @@ import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
-import {
-  getCanvasStore,
-  setCanvasStore,
-  type CanvasStore,
-} from "../state-managers/state-managers";
-import { error } from "@sveltejs/kit";
 
 export const lastVisitedState = new Map<string, string>();
 
