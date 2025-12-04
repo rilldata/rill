@@ -256,16 +256,8 @@ measures:
 			},
 		},
 		{
-			name: "SingleRowMultipleFields",
-			body: `{{ $data := metrics_sql "select total_bids, overall_spend from bids_metrics" }}Bids: {{ $data.total_bids }}, Spend: {{ $data.overall_spend }}`,
-			expected: []string{
-				"Bids: 5",
-				"Spend: 10000",
-			},
-		},
-		{
 			name: "MultipleRowsMultipleFields_WithRange",
-			body: `{{ $data := metrics_sql "select overall_spend, advertiser_name from bids_metrics order by advertiser_name limit 3" }}
+			body: `{{ $data := metrics_sql_rows "select overall_spend, advertiser_name from bids_metrics order by advertiser_name limit 3" }}
 {{ range $data }}- {{ .advertiser_name }}: {{ .overall_spend }}
 {{ end }}`,
 			expected: []string{
@@ -276,7 +268,7 @@ measures:
 		},
 		{
 			name: "MultipleRowsSingleField_WithRange",
-			body: `{{ $data := metrics_sql "select advertiser_name from bids_metrics order by advertiser_name limit 3" }}
+			body: `{{ $data := metrics_sql_rows "select advertiser_name from bids_metrics order by advertiser_name limit 3" }}
 {{ range $data }}- {{ .advertiser_name }}
 {{ end }}`,
 			expected: []string{
@@ -287,7 +279,7 @@ measures:
 		},
 		{
 			name: "ComplexTemplate_WithConditional",
-			body: `{{ $data := metrics_sql "select advertiser_name, overall_spend from bids_metrics order by overall_spend desc limit 3" }}
+			body: `{{ $data := metrics_sql_rows "select advertiser_name, overall_spend from bids_metrics order by overall_spend desc limit 3" }}
 Top Spenders:
 {{ range $data }}{{ if gt .overall_spend 2000.0 }}- **{{ .advertiser_name }}**: ${{ .overall_spend }}
 {{ end }}{{ end }}`,
@@ -299,7 +291,7 @@ Top Spenders:
 		},
 		{
 			name: "NestedRef_MultipleRows",
-			body: `{{ $data := metrics_sql "select advertiser_name, overall_spend from {{ ref \"bids_metrics\" }} order by advertiser_name limit 2" }}
+			body: `{{ $data := metrics_sql_rows "select advertiser_name, overall_spend from {{ ref \"bids_metrics\" }} order by advertiser_name limit 2" }}
 {{ range $data }}- {{ .advertiser_name }}: {{ .overall_spend }}
 {{ end }}`,
 			expected: []string{

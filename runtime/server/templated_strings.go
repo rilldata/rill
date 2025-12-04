@@ -114,6 +114,43 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 				// Return stringified raw value
 				return fmt.Sprintf("%v", val), nil
 			},
+			"metrics_sql_rows": func(sql string) (any, error) {
+				resolveRes, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+					InstanceID: req.InstanceId,
+					Resolver:   "metrics_sql",
+					ResolverProperties: map[string]any{
+						"sql":                              sql,
+						"time_zone":                        timeZone,
+						"additional_where_by_metrics_view": additionalWhereByMetricsView,
+						"additional_time_range":            additionalTimeRange,
+					},
+					Args:   nil,
+					Claims: claims,
+				})
+				if err != nil {
+					return nil, err
+				}
+				defer resolveRes.Close()
+
+				var rows []map[string]any
+				for {
+					row, err := resolveRes.Next()
+					if err != nil {
+						if err.Error() == "EOF" || err.Error() == "sql: no rows in result set" {
+							break
+						}
+						return nil, fmt.Errorf("failed to get result: %w", err)
+					}
+					rows = append(rows, row)
+				}
+
+				// Handle empty result
+				if len(rows) == 0 {
+					return nil, fmt.Errorf("metrics_sql_rows query returned no results")
+				}
+
+				return rows, nil
+			},
 		},
 	}
 
