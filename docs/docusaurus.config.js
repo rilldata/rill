@@ -141,6 +141,8 @@ const config = {
             position: "left",
             className: "navbar-docs-link",
             label: "User Guide",
+            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
+
           },
 
           {
