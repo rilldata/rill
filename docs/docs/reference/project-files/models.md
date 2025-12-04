@@ -420,6 +420,12 @@ _[string]_ - Size of a batch (e.g., '100MB')
 
 _[string]_ - ID of the BigQuery project. 
 
+## Additional properties when `connector` is `clickhouse` or [named connector](./connectors#clickhouse) of clickhouse
+
+### `create_named_collections_from_connectors`
+
+_[string, array]_ - List of connector names for which named collections should be created before executing the SQL. 
+
 ## Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
 
 ### `path`

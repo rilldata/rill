@@ -232,6 +232,11 @@ definitions:
             mode:
               type: string
               description: "`read` - Controls the operation mode for the ClickHouse connection. Defaults to 'read' for safe operation with external databases. Set to 'readwrite' to enable model creation and table mutations. Note: When 'managed: true', this is automatically set to 'readwrite'."
+            create_named_collections_from_connectors:
+              type:
+                - string
+                - array
+              description: List of connector names for which named collections should be created before executing the SQL.
             dsn:
               type: string
               description: DSN(Data Source Name) for the ClickHouse connection
@@ -1450,6 +1455,15 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/bigquery'
           - if:
+              title: Additional properties when `connector` is `clickhouse` or [named connector](./connectors#clickhouse) of clickhouse
+              properties:
+                connector:
+                  const: clickhouse
+              required:
+                - connector
+            then:
+              $ref: '#/definitions/models/definitions/clickhouse'
+          - if:
               title: Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
               properties:
                 connector:
@@ -1557,6 +1571,14 @@ definitions:
           project_id:
             type: string
             description: ID of the BigQuery project.
+      clickhouse:
+        type: object
+        properties:
+          create_named_collections_from_connectors:
+            type:
+              - string
+              - array
+            description: List of connector names for which named collections should be created before executing the SQL.            
       duckdb:
         type: object
         properties:
