@@ -158,7 +158,6 @@ export class CanvasEntity {
       this.name,
     );
 
-    console.log("initial spec", this.spec);
     this.processSpec(this.spec);
 
     this.metricsView = new MetricsViewSelectors(
@@ -285,7 +284,6 @@ export class CanvasEntity {
     filePath,
     metricsViews,
   }: CanvasResponse) => {
-    console.log("processing canvas spec", canvas);
     const validSpec = canvas;
     if (!validSpec) return;
 
@@ -310,7 +308,6 @@ export class CanvasEntity {
           filterExpressions,
         );
       } else {
-        console.log("initializing filter manager");
         this.filterManager = new FilterManager(
           metricsViews,
           pinnedFilters,
@@ -318,7 +315,6 @@ export class CanvasEntity {
         );
       }
     } else {
-      console.log("this shouldn't happen");
       // need to find a better way to initialize this in certain contextx - bgh
       this.filterManager = new FilterManager({}, [], {});
     }
