@@ -1,7 +1,4 @@
-import {
-  MetricsViewSpecDimensionType,
-  type V1MetricsViewSpec,
-} from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export const isMeasureValid = (
   metricsViewSpec: V1MetricsViewSpec,
@@ -17,12 +14,7 @@ export const isDimensionValid = (
   dimensionName: string,
 ): boolean => {
   return (
-    metricsViewSpec?.dimensions
-      ?.filter(
-        (d) =>
-          d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
-      )
-      .some((d) => d.name === dimensionName) || false
+    metricsViewSpec?.dimensions?.some((d) => d.name === dimensionName) || false
   );
 };
 

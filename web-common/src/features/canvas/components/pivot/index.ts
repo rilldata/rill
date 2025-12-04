@@ -10,10 +10,9 @@ import type {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
-  MetricsViewSpecDimensionType,
-  type V1MetricsViewSpec,
-  type V1Resource,
+import type {
+  V1MetricsViewSpec,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { Readable } from "svelte/motion";
 import { derived, get, writable, type Writable } from "svelte/store";
@@ -177,10 +176,6 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     const dimensions =
       metricsViewSpec?.dimensions
-        ?.filter(
-          (d) =>
-            d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
-        )
         ?.slice(0, 3)
         .map((d) => d.name || (d.column as string)) ?? [];
 
@@ -213,12 +208,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     const allMeasures =
       metricsViewSpec?.measures?.map((m) => m.name as string) || [];
     const allDimensions =
-      metricsViewSpec?.dimensions
-        ?.filter(
-          (d) =>
-            d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
-        )
-        ?.map((d) => d.name || (d.column as string)) || [];
+      metricsViewSpec?.dimensions?.map((d) => d.name || (d.column as string)) ||
+      [];
 
     let newSpec: PivotSpec | TableSpec;
 
