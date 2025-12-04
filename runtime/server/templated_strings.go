@@ -149,6 +149,25 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					return nil, fmt.Errorf("metrics_sql_rows query returned no results")
 				}
 
+				// Get metrics view from metadata for format tokens
+				var mv string
+				if meta := resolveRes.Meta(); meta != nil {
+					mv, _ = meta["metrics_view"].(string)
+				}
+
+				// Apply format tokens if requested
+				if req.UseFormatTokens && mv != "" {
+					formattedRows := make([]map[string]any, len(rows))
+					for i, row := range rows {
+						formattedRow := make(map[string]any)
+						for field, val := range row {
+							formattedRow[field] = fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val)
+						}
+						formattedRows[i] = formattedRow
+					}
+					return formattedRows, nil
+				}
+
 				return rows, nil
 			},
 		},

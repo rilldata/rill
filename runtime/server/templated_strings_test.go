@@ -244,9 +244,10 @@ measures:
 	require.NoError(t, err)
 
 	tt := []struct {
-		name     string
-		body     string
-		expected []string
+		name            string
+		body            string
+		useFormatTokens bool
+		expected        []string
 	}{
 		{
 			name: "SingleRowSingleField_BackwardCompatible",
@@ -299,6 +300,17 @@ Top Spenders:
 				"- Apple: 2500",
 			},
 		},
+		{
+			name: "MultipleRows_WithFormatTokens",
+			body: `{{ $data := metrics_sql_rows "select advertiser_name, overall_spend from bids_metrics order by advertiser_name limit 2" }}
+{{ range $data }}- {{ .advertiser_name }}: {{ .overall_spend }}
+{{ end }}`,
+			useFormatTokens: true,
+			expected: []string{
+				`__RILL__FORMAT__("bids_metrics", "advertiser_name"`,
+				`__RILL__FORMAT__("bids_metrics", "overall_spend"`,
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -306,7 +318,7 @@ Top Spenders:
 			res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 				InstanceId:      instanceID,
 				Body:            tc.body,
-				UseFormatTokens: false,
+				UseFormatTokens: tc.useFormatTokens,
 			})
 			require.NoError(t, err)
 
