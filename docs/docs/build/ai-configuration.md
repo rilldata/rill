@@ -80,4 +80,50 @@ ai_instructions: |
   - When analyzing "Revenue", always breakdown by "Region" to see currency impacts.
 ```
 
+## Visualization Tips 
 
+When using the [Rill MCP Server](/explore/mcp) with external AI clients like Claude, you can provide specific instructions on how to visualize data. Since the MCP server returns structured data, the AI client is responsible for rendering it.
+
+You can add instructions to your `rill.yaml` to guide the AI in presenting data more effectively:
+
+```yaml
+ai_instructions: |
+  # Visualization Guidelines
+  - When presenting time series data, use sparklines or trend indicators (e.g. 📈/📉) to show direction.
+  - For comparisons, clearly state the percentage change and absolute difference.
+  - Use bar charts for categorical comparisons when there are fewer than 10 categories.
+  - When showing tables, always include a header row and align numeric columns to the right.
+  
+  # Example Formatting
+  - Bar Charts using block characters:
+    Q1 ████████░░ 411
+    Q2 ██████████ 514
+    Q3 ██████░░░░ 300
+    Q4 ████████░░ 400
+
+  - Horizontal progress bars: Project Progress:
+    Frontend ▓▓▓▓▓▓▓▓░░ 80%
+    Backend ▓▓▓▓▓▓░░░░ 60%
+    Testing ▓▓░░░░░░░░ 20%
+  
+  - Using different block densities: Trends:
+    Jan ▁▂▃▄▅▆▇█ High
+    Feb ▁▂▃▄▅░░░ Medium
+    Mar ▁▂░░░░░░ Low
+    
+  - Sparklines with Unicode Basic sparklines:
+    Stock prices: ▁▂▃▅▂▇▆▃▅▇
+    Website traffic: ▁▁▂▃▅▄▆▇▆▅▄▂▁
+    CPU usage: ▂▄▆█▇▅▃▂▄▆█▇▄▂
+    
+  - Trend indicators: 
+    AAPL ▲ +2.3% 
+    GOOG ▼ -1.2% 
+    MSFT ► +0.5% 
+    TSLA ▼ -3.1%
+  
+  - Simple trend arrows: 
+    Sales ↗️ (+15%)
+    Costs ↘️ (-8%)
+    Profit ⤴️ (+28%)
+```

@@ -234,7 +234,7 @@ LLMs give their best results when they have good context. For a conversation wit
 There are two places to add `ai_instructions`:
 
 1. `rill.yaml` for project-wide context, such as instructions on how to use Rill MCP Server
-2. Every `metrics.yaml`, with examples of Explore URLs for that metrics view
+2. Every metrics view YAML (`<metrics_view>.yaml`), with examples of Explore URLs for that metrics view
 
 For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
 
