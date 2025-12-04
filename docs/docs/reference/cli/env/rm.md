@@ -4,10 +4,10 @@ title: rill env rm
 ---
 ## rill env rm
 
-Remove variable
+Remove an env variable
 
 ```
-rill env rm [<project-name>] [<key>] [flags]
+rill env rm [<project>] <key> [flags]
 ```
 
 ### Flags
