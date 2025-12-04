@@ -5,13 +5,10 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/gcs"
-	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -465,165 +462,6 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 	return c.createDistributedTable(ctx, name, outputProps)
 }
 
-func (c *Connection) createOrReplaceNamedCollections(ctx context.Context, connectors []string, autoDetected bool, env *drivers.ModelEnv) error {
-	if len(connectors) == 0 {
-		return nil
-	}
-
-	// load stored connector → hash
-	connectorHashes, err := c.fetchConnectorHashes(ctx)
-	if err != nil {
-		return fmt.Errorf("failed reading stored connector hashes: %w", err)
-	}
-
-	onCluster := ""
-	if c.config.Cluster != "" {
-		onCluster = "ON CLUSTER " + safeSQLName(c.config.Cluster)
-	}
-
-	for _, connector := range connectors {
-		desired, err := namedCollectionMap(ctx, connector, env)
-		if err != nil {
-			if autoDetected {
-				continue
-			}
-			return err
-		}
-		if len(desired) == 0 {
-			continue
-		}
-
-		name := safeSQLName(connector)
-
-		var kv []string
-		for k, v := range desired {
-			kv = append(kv, fmt.Sprintf("%s = %s", k, safeSQLString(v)))
-		}
-		sort.Strings(kv)
-		sqlCreate := fmt.Sprintf("CREATE NAMED COLLECTION %s %s AS %s", name, onCluster, strings.Join(kv, ", "))
-
-		// If prevHash and current hash is same not need to recreate the named collection
-		hash := fmt.Sprintf("%x", md5.Sum([]byte(sqlCreate)))
-		prevHash, hasPrev := connectorHashes[connector]
-		if hasPrev && prevHash == hash {
-			continue
-		}
-
-		// Acquire semaphore
-		err = c.metaSem.Acquire(ctx, 1)
-		if err != nil {
-			return err
-		}
-
-		drop := fmt.Sprintf("DROP NAMED COLLECTION IF EXISTS %s %s", name, onCluster)
-		if err := c.Exec(ctx, &drivers.Statement{Query: drop, Priority: 100}); err != nil {
-			c.metaSem.Release(1)
-			return fmt.Errorf("failed to DROP named collection %q: %w", connector, err)
-		}
-
-		if err := c.Exec(ctx, &drivers.Statement{Query: sqlCreate, Priority: 100}); err != nil {
-			c.metaSem.Release(1)
-			return fmt.Errorf("failed to CREATE named collection %q: %w", connector, err)
-		}
-
-		// ---- Update hash named collection ----
-		hashName := safeSQLName("rill_hash_for_" + connector)
-		dropHash := fmt.Sprintf("DROP NAMED COLLECTION IF EXISTS %s %s", hashName, onCluster)
-		if err := c.Exec(ctx, &drivers.Statement{Query: dropHash, Priority: 100}); err != nil {
-			c.metaSem.Release(1)
-			return fmt.Errorf("failed to DROP hash named collection for %q: %w", connector, err)
-		}
-
-		sqlCreateHash := fmt.Sprintf("CREATE NAMED COLLECTION %s %s AS %s = 'true'", hashName, onCluster, hash)
-		if err := c.Exec(ctx, &drivers.Statement{Query: sqlCreateHash, Priority: 100}); err != nil {
-			c.metaSem.Release(1)
-			return fmt.Errorf("failed to CREATE hash named collection for %q: %w", connector, err)
-		}
-		c.metaSem.Release(1)
-	}
-	return nil
-}
-
-func (c *Connection) fetchConnectorHashes(ctx context.Context) (map[string]string, error) {
-	rows, err := c.Query(ctx, &drivers.Statement{
-		Query:    "SELECT name, collection FROM system.named_collections WHERE name LIKE 'rill_hash_for_%'",
-		Priority: 100,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("select named collections: %w", err)
-	}
-	defer rows.Close()
-
-	out := map[string]string{}
-	for rows.Next() {
-		var name string
-		var coll map[string]string
-		if err := rows.Scan(&name, &coll); err != nil {
-			return nil, err
-		}
-
-		// Extract connector
-		prefix := "rill_hash_for_"
-		if !strings.HasPrefix(name, prefix) {
-			continue
-		}
-		connector := name[len(prefix):]
-
-		// Extract the one hash key
-		for k := range coll {
-			out[connector] = k
-			break
-		}
-	}
-	return out, nil
-}
-
-func namedCollectionMap(ctx context.Context, connector string, env *drivers.ModelEnv) (map[string]string, error) {
-	handle, release, err := env.AcquireConnector(ctx, connector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to acquire connector %q: %w", connector, err)
-	}
-	release()
-	desired := map[string]string{}
-
-	switch handle.Driver() {
-	case "s3":
-		conn, ok := handle.(*s3.Connection)
-		if !ok {
-			release()
-			return nil, fmt.Errorf("internal error: expected s3 handle for %q", connector)
-		}
-		cfg := conn.ParsedConfig()
-
-		if cfg.AccessKeyID == "" {
-			return nil, nil // means "skip"
-		}
-		desired["access_key_id"] = cfg.AccessKeyID
-		desired["secret_access_key"] = cfg.SecretAccessKey
-		if cfg.SessionToken != "" {
-			desired["session_token"] = cfg.SessionToken
-		}
-
-	case "gcs":
-		prop := handle.Config()
-		cfg, err := gcs.NewConfigProperties(prop)
-		if err != nil {
-			return nil, fmt.Errorf("failed gcs config for %q: %w", connector, err)
-		}
-
-		if cfg.KeyID == "" {
-			return nil, nil // skip
-		}
-		desired["access_key_id"] = cfg.KeyID
-		desired["secret_access_key"] = cfg.Secret
-
-	default:
-
-		return nil, fmt.Errorf("named collections not supported for connector type %q", handle.Driver())
-	}
-	return desired, nil
-}
-
 // createDistributedTable creates a distributed table by name assuming that a table with `name`_local already exists
 func (c *Connection) createDistributedTable(ctx context.Context, name string, outputProps *ModelOutputProperties) error {
 	if c.config.Cluster == "" {
@@ -705,6 +543,29 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(%s) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, srcTbl),
 		Priority: 100,
 	})
+}
+
+// createNamedCollections drops and re create the named collection since there is no Create or Replace.
+func (c *Connection) createNamedCollections(ctx context.Context, name string, creds map[string]string) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+	safeName := safeSQLName(name)
+	drop := fmt.Sprintf("DROP NAMED COLLECTION IF EXISTS %s %s", safeName, onClusterClause)
+	if err := c.Exec(ctx, &drivers.Statement{Query: drop, Priority: 100}); err != nil {
+		return fmt.Errorf("failed to DROP named collection %q: %w", name, err)
+	}
+
+	var props []string
+	for k, v := range creds {
+		props = append(props, fmt.Sprintf("%s = %s", k, safeSQLString(v)))
+	}
+	sqlCreate := fmt.Sprintf("CREATE NAMED COLLECTION %s %s AS %s", safeName, onClusterClause, strings.Join(props, ", "))
+	if err := c.Exec(ctx, &drivers.Statement{Query: sqlCreate, Priority: 100}); err != nil {
+		return fmt.Errorf("failed to CREATE named collection %q: %w", name, err)
+	}
+	return nil
 }
 
 func (c *Connection) columnClause(ctx context.Context, table string) (string, error) {
