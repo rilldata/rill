@@ -18,27 +18,40 @@ import {
   normalizeInlineContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
-export function getEditorPlugins(
-  placeholder: string,
-  conversationManager: ConversationManager,
-  onSubmit: () => void,
-) {
+export function getEditorPlugins({
+  enableMention,
+  placeholder,
+  conversationManager,
+  onSubmit,
+}: {
+  enableMention: boolean;
+  placeholder: string;
+  conversationManager: ConversationManager;
+  onSubmit: () => void;
+}) {
   const sharedEditorStore = new SharedEditorStore();
 
-  return [
+  const plugins = [
     Document,
     Paragraph,
     Text,
     Placeholder.configure({
       placeholder,
     }),
-    configureInlineContextTipTapExtension(
-      conversationManager,
-      sharedEditorStore,
-    ),
     EditorSubmitExtension.configure({ onSubmit, sharedEditorStore }),
     UndoRedo,
   ];
+
+  if (enableMention) {
+    plugins.push(
+      configureInlineContextTipTapExtension(
+        conversationManager,
+        sharedEditorStore,
+      ),
+    );
+  }
+
+  return plugins;
 }
 
 /**

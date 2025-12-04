@@ -52,6 +52,8 @@ var defaultFeatureFlags = map[string]string{
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
 	"dashboard_chat": "{{ not .user.embed }}",
+	// Controls visibility of local rill developer chat functionality
+	"developer_chat": "false",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.

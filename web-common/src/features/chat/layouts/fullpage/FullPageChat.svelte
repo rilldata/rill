@@ -10,6 +10,8 @@
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
 
+  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
+
   $: ({ instanceId } = $runtime);
 
   $: conversationManager = getConversationManager(instanceId, {
@@ -59,7 +61,11 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <Messages {conversationManager} layout="fullpage" />
+        <Messages
+          {conversationManager}
+          layout="fullpage"
+          config={dashboardChatConfig}
+        />
       </div>
     </div>
 
@@ -69,6 +75,7 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
+          config={dashboardChatConfig}
         />
       </div>
     </div>
