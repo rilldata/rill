@@ -10,7 +10,6 @@ import (
 )
 
 func TestMetricsViewTimeTypes(t *testing.T) {
-	// Create an instance with StageChanges==true
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"m1.sql": `SELECT '2024-01-01'::DATE AS date, '2024-01-01T00:00:00Z'::TIMESTAMP AS time, 'foo' AS str, 1 AS num`,
