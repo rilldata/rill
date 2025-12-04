@@ -2,23 +2,30 @@
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
-  import DOMPurify from "dompurify";
-  import { convertPromptWithInlineContextToHTML } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
-  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
+  import { convertPromptWithInlineContextToComponents } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 
   export let message: V1Message;
 
   // Message content
   $: content = extractMessageText(message);
-
-  const contextMetadataStore = getInlineChatContextMetadata();
+  $: linesOfTextOrComponents =
+    convertPromptWithInlineContextToComponents(content);
 </script>
 
 <div class="chat-message">
   <div class="chat-message-content">
-    {@html DOMPurify.sanitize(
-      convertPromptWithInlineContextToHTML(content, $contextMetadataStore),
-    )}
+    {#each linesOfTextOrComponents as textOrComponents, i (i)}
+      {#each textOrComponents as { isSvelteComponent, text, component, props }, i (i)}
+        {#if isSvelteComponent}
+          <svelte:component this={component} {...props} />
+        {:else}
+          <span>{text}</span>
+        {/if}
+      {/each}
+      {#if i < linesOfTextOrComponents.length - 1}
+        <br />
+      {/if}
+    {/each}
   </div>
 </div>
 

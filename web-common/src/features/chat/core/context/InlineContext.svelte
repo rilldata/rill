@@ -11,7 +11,7 @@
   import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
   import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
 
-  export let conversationManager: ConversationManager;
+  export let conversationManager: ConversationManager; // TODO: use svelte context to get this?
   export let selectedChatContext: InlineContext;
   export let onSelect: (ctx: InlineContext) => void;
   export let onDropdownToggle: (open: boolean) => void;
@@ -41,10 +41,11 @@
       )
     : "";
 
-  $: supportsEditing =
+  $: isEditableContextType =
     selectedChatContext.type === InlineContextType.MetricsView ||
     selectedChatContext.type === InlineContextType.Measure ||
     selectedChatContext.type === InlineContextType.Dimension;
+  $: supportsEditing = isEditableContextType;
 
   function toggleDropdown() {
     const rect = chatElement.getBoundingClientRect();
@@ -64,7 +65,7 @@
   }
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
+    if (open && event.key === "Escape") {
       open = false;
       onDropdownToggle(false);
       focusEditor();
