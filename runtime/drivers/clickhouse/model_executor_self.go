@@ -210,18 +210,18 @@ func (e *selfToSelfExecutor) fetchConnectorHashes(ctx context.Context) (map[stri
 // connectorsForNamedCollections returns the list of connectors to be used for NamedCollection creation.
 // Priority:
 // 1. If the model configuration specifies connector names, use those.
-// 2. if duckdb connector configuration specifies connector names, use those
+// 2. if clickhouse connector configuration specifies connector names, use those
 // 3. If neither is configured, automatically detect all connectors of type s3 and gcs.
 // The boolean return value is true if the list of connectors was automatically detected.
-func connectorsForNameCollection(modelNamedCollections, duckdbNamedCollections []string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+func connectorsForNameCollection(modelNamedCollections, clickhouseNamedCollections []string, allConnectors []*runtimev1.Connector) ([]string, bool) {
 	var configuredConnectorsForNamedCollections []string
 	if len(modelNamedCollections) > 0 {
 		configuredConnectorsForNamedCollections = append(configuredConnectorsForNamedCollections, modelNamedCollections...)
-	} else if len(duckdbNamedCollections) > 0 {
-		configuredConnectorsForNamedCollections = append(configuredConnectorsForNamedCollections, duckdbNamedCollections...)
+	} else if len(clickhouseNamedCollections) > 0 {
+		configuredConnectorsForNamedCollections = append(configuredConnectorsForNamedCollections, clickhouseNamedCollections...)
 	}
 
-	// If no connectors are configured, automatically detect all connectors of type s3, azure, gcs, or https from the project.
+	// If no connectors are configured, automatically detect all connectors of type s3, gcs from the project.
 	// If a single configured value contains a comma-separated list of connector names, split it into individual entries.
 	// Otherwise, return the explicitly configured list of connectors.
 	if len(configuredConnectorsForNamedCollections) == 0 {
