@@ -156,7 +156,7 @@ export class FilterManager {
           ([defaultPinnedFilterKeys, ...filters]) => {
             const okay = this.convertToUIFilters(
               filters,
-              new Set(),
+              new Map(),
               defaultPinnedFilterKeys,
             );
 
@@ -336,14 +336,14 @@ export class FilterManager {
 
     return this.convertToUIFilters(
       parsedFilters,
-      new Set(),
+      new Map(),
       get(this._pinnedFilterKeys),
     );
   };
 
   convertToUIFilters = (
     parsedFilters: ParsedFilters[],
-    temporaryFilterKeys: Set<string>,
+    temporaryFilterKeys: Map<string, boolean>,
     pinnedFilters: Set<string>,
   ): UIFilters => {
     const parsedMap = new Map<string, ParsedFilters>();
@@ -486,7 +486,7 @@ export class FilterManager {
           a[0],
           b[0],
           Array.from(pinnedFilters),
-          Array.from(temporaryFilterKeys),
+          Array.from(temporaryFilterKeys.keys()),
           fullFilterString,
         );
       }),
@@ -498,7 +498,7 @@ export class FilterManager {
           a[0],
           b[0],
           Array.from(pinnedFilters),
-          Array.from(temporaryFilterKeys),
+          Array.from(temporaryFilterKeys.keys()),
           fullFilterString,
         );
       }),
@@ -695,7 +695,7 @@ export class FilterManager {
 
         this._temporaryFilterKeys.update((tempFilters) => {
           if (deleted) {
-            tempFilters.add(key);
+            tempFilters.set(key, false);
           } else {
             tempFilters.delete(key);
           }
@@ -724,7 +724,7 @@ export class FilterManager {
   // Unclear on what this actually should do - bgh
   // Go to defaults or truly clear all filters?
   clearAllFilters = async () => {
-    this._temporaryFilterKeys.set(new Set());
+    this._temporaryFilterKeys.set(new Map());
     const existingParams = new URLSearchParams(window.location.search);
     const filterParamsToDelete = Array.from(existingParams.keys()).filter(
       (key) => key.startsWith(ExploreStateURLParams.Filters),

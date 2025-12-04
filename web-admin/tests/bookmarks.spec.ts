@@ -373,7 +373,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$448.22\s*-\$75.80 -15%\s*vs previous period/,
+          /Advertising Spend Overall\s*\$448.22\s*-\$75.80\s*-15%\s*vs previous period/,
         );
 
         // Create a personal bookmark
@@ -412,7 +412,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$1,632\s* -$95.73 -6%\s*vs previous period/,
+          /Advertising Spend Overall\s*\$1,632\s*-$95.73\s*-6%\s*vs previous period/,
         );
 
         // Open the bookmarks dropdown

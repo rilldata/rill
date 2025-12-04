@@ -96,6 +96,7 @@ export class CanvasEntity {
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
   _banner = writable<string | undefined>(undefined);
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
+  titleStore = writable<string>("");
 
   constructor(
     public name: string,
@@ -295,6 +296,8 @@ export class CanvasEntity {
     this.checkAndSetEmbeddedTheme(validSpec);
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
+
+    this.titleStore.set(validSpec.displayName ?? "");
 
     const defaultPreset = validSpec?.defaultPreset ?? {};
     const filterExpressions = defaultPreset.filterExpr ?? {};

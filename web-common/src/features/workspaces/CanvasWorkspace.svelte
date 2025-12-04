@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -21,19 +20,13 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
-  import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
-  import {
-    handleCanvasStoreInitialization,
-    type CanvasStore,
-  } from "../canvas/state-managers/state-managers";
-  import { page } from "$app/stores";
+  import CanvasProvider from "../canvas/CanvasProvider.svelte";
 
   export let fileArtifact: FileArtifact;
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
-  let resolvedStore: { store: CanvasStore; canvasName: string } | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -48,20 +41,7 @@
     saveState: { saving },
   } = fileArtifact);
 
-  $: ({ url } = $page);
-
-  $: initPromise = handleCanvasStoreInitialization(canvasName, instanceId);
-
-  $: initPromise
-    .then((storeInstance) => {
-      resolvedStore = storeInstance;
-    })
-    .catch(console.error);
-
-  // Listen to URL changes
-  $: resolvedStore?.store.canvasEntity
-    .onUrlChange({ url, loadFunction: false })
-    .catch(console.error);
+  let ready = false;
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -109,9 +89,9 @@
       resourceKind={ResourceKind.Canvas}
     >
       <div class="flex gap-x-2" slot="cta">
-        {#await initPromise then}
+        {#if ready}
           <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
-        {/await}
+        {/if}
 
         <PreviewButton
           href="/canvas/{canvasName}"
@@ -126,41 +106,31 @@
       error={mainError}
       showError={!!$remoteContent && selectedView === "code"}
     >
-      {#if selectedView === "code"}
-        <CanvasEditor
-          bind:autoSave={$autoSave}
-          {canvasName}
-          {fileArtifact}
-          {lineBasedRuntimeErrors}
-        />
-      {:else if selectedView === "viz"}
-        {#await initPromise}
-          <DelayedSpinner isLoading={true} size="48px" />
-        {:then}
+      <CanvasProvider {canvasName} {instanceId} bind:ready>
+        {#if selectedView === "code"}
+          <CanvasEditor
+            bind:autoSave={$autoSave}
+            {canvasName}
+            {fileArtifact}
+            {lineBasedRuntimeErrors}
+          />
+        {:else if selectedView === "viz"}
           <CanvasBuilder
             {canvasName}
             openSidebar={workspace.inspector.open}
             {fileArtifact}
           />
-        {:catch}
-          <ErrorPage
-            body={mainError?.message || "An unknown error occurred."}
-            fatal
-            detail={allErrors.map((error) => error.message).join("\n")}
-            header="Unable to load canvas preview"
-            statusCode={404}
-          />
-        {/await}
-      {/if}
+        {/if}
+      </CanvasProvider>
     </WorkspaceEditorContainer>
     <svelte:fragment slot="inspector">
-      {#await initPromise then}
+      {#if ready}
         <VisualCanvasEditing
           {canvasName}
           {fileArtifact}
           autoSave={selectedView === "viz" || $autoSave}
         />
-      {/await}
+      {/if}
     </svelte:fragment>
   </WorkspaceContainer>
 {/key}
