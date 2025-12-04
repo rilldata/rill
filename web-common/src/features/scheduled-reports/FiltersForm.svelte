@@ -294,7 +294,7 @@
           No filters selected
         </div>
       {:else}
-        {#each $allDimensionFilterItems as filterData (name)}
+        {#each $allDimensionFilterItems as filterData (filterData.name)}
           <DimensionFilter
             expressionMap={new Map([[metricsViewName, $whereFilter]])}
             {filterData}

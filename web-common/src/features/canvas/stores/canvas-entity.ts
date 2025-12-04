@@ -447,15 +447,7 @@ export class CanvasEntity {
 
     if (redirected) return;
 
-    const legacyFilter = searchParams.get(ExploreStateURLParams.Filters);
-
-    this.filterManager.metricsViewFilters.forEach((filters, mvName) => {
-      const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
-      const filterString = searchParams.get(paramKey) ?? legacyFilter ?? "";
-
-      filters.onFilterStringChange(filterString);
-    });
-
+    this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
     this.themeName.set(searchParams.get("theme") ?? undefined);
     this.saveSnapshot(searchParams.toString());

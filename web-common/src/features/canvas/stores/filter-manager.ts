@@ -205,6 +205,17 @@ export class FilterManager {
     );
   }
 
+  onUrlChange = (searchParams: URLSearchParams) => {
+    const legacyFilter = searchParams.get(ExploreStateURLParams.Filters);
+
+    this.metricsViewFilters.forEach((filters, mvName) => {
+      const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
+      const filterString = searchParams.get(paramKey) ?? legacyFilter ?? "";
+
+      filters.onFilterStringChange(filterString);
+    });
+  };
+
   updateConfig(
     metricsViews: Record<string, V1MetricsView | undefined>,
     pinnedFilters?: string[],
@@ -308,6 +319,27 @@ export class FilterManager {
       this._defaultPinnedFilterKeys.set(new Set(keys));
     }
   }
+
+  getUIFiltersFromString = (filterString: string): UIFilters => {
+    const searchParams = new URLSearchParams(filterString);
+
+    const parsedFilters: ParsedFilters[] = [];
+    const legacyFilter = searchParams.get(ExploreStateURLParams.Filters);
+
+    this.metricsViewFilters.forEach((filters, mvName) => {
+      const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
+      const filterString = searchParams.get(paramKey) ?? legacyFilter ?? "";
+
+      const parsed = filters.parseFilterString(filterString);
+      parsedFilters.push(parsed);
+    });
+
+    return this.convertToUIFilters(
+      parsedFilters,
+      new Set(),
+      get(this._pinnedFilterKeys),
+    );
+  };
 
   convertToUIFilters = (
     parsedFilters: ParsedFilters[],
