@@ -17,7 +17,7 @@ description: |
 
   :::tip
 
-  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/deploy/deploy-dashboard/github-101).
+  For more information about using Git or cloning projects locally, please see our page on [GitHub Basics](/developer/deploy/deploy-dashboard/github-101).
 
   :::
 oneOf:
@@ -75,7 +75,7 @@ definitions:
       - [**Slack**](#slack) - Slack data
 
       :::warning Security Recommendation
-      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/developer/build/connectors/credentials/) for complete setup instructions.
       :::
     allOf:
       - title: Properties
@@ -1136,10 +1136,10 @@ definitions:
     type: object
     description: |
 
-      This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
+      This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/developer/build/models/) documentation.
       :::tip
 
-      Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+      Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/developer/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
       **When to use Model YAML:**
       - **Partitions** - Optimize performance with data partitioning strategies
@@ -1468,7 +1468,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](/build/connectors/data-source/local-file) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/developer/build/connectors/data-source/local-file) of local_file
               properties:
                 connector:
                   const: local_file
@@ -1790,7 +1790,7 @@ definitions:
             description: Refers to the resource type and must be `metrics_view`
           connector:
             type: string
-            description: Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information
+            description: Refers to the connector type for the metrics view, see [OLAP engines](/developer/build/connectors/olap) for more information
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1799,7 +1799,7 @@ definitions:
             description: Refers to the description for the metrics view
           ai_instructions:
             type: string
-            description: Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing.
+            description: Extra instructions for [AI agents](/user-guide/explore/mcp). Used to guide natural language question answering and routing.
           model:
             type: string
             description: Refers to the model powering the dashboard (either model or table is required)
@@ -1886,7 +1886,7 @@ definitions:
                   type: string
                   description: a combination of operators and functions for aggregations
                 window:
-                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation.
+                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developer/build/metrics-view/measures/windows) documentation.
                   anyOf:
                     - type: string
                       enum:
@@ -1913,7 +1913,7 @@ definitions:
                   description: for per dimensions
                 requires:
                   $ref: '#/definitions/field_selectors_properties'
-                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information.
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developer/build/metrics-view/measures/referencing) for more information.
                 valid_percent_of_total:
                   type: boolean
                   description: a boolean indicating whether percent-of-total values should be rendered for this measure
@@ -3276,7 +3276,7 @@ definitions:
         description: 'If true, allows the schedule to run in development mode.'
   security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/build/metrics-view/security) for resources
+    description: Defines [security rules and access control policies](/developer/build/metrics-view/security) for resources
     properties:
       access:
         oneOf:
@@ -3372,7 +3372,7 @@ definitions:
             - type
   dashboard_security_policy_properties:
     type: object
-    description: Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering)
+    description: Defines [security rules and access control policies](/developer/build/metrics-view/security) for dashboards (without row filtering)
     properties:
       access:
         oneOf:
