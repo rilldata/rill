@@ -1,7 +1,5 @@
 <script lang="ts">
-  import {
-    handleCanvasStoreInitialization, // Your async factory
-  } from "../state-managers/state-managers";
+  import { handleCanvasStoreInitialization } from "../state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { page } from "$app/stores";
   import Spinner from "../../entity-management/Spinner.svelte";
