@@ -373,7 +373,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$448.22\s*\+\$417.48 \+1k%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$448.22\s*-\$75.80 -15%\s*vs previous period/,
         );
 
         // Create a personal bookmark
@@ -412,7 +412,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$1,632\s*\+\$770.59 \+89%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$1,632\s* -$95.73 -6%\s*vs previous period/,
         );
 
         // Open the bookmarks dropdown
@@ -438,13 +438,13 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$448.22\s*\+\$417.48 \+1k%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$448.22\s*-\$75.80 -15%\s*vs previous period/,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -497,7 +497,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
 
         // "Go to home" resets to default when there is no home bookmark
@@ -512,7 +512,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$3,900\s*\+\$1,858 \+91%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$3,900\s*\+\$1,858 \+91%\s*vs previous period/,
         );
 
         // Go back to previous state
@@ -520,7 +520,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
 
         // Open the bookmarks dropdown
@@ -554,7 +554,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
         // make sure the url has the correct params
         assertUrlParams(
@@ -599,7 +599,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
         // make sure the url has the correct params
         assertUrlParams(
