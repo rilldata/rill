@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
+	"go.uber.org/zap"
 )
 
 type selfToSelfExecutor struct {
@@ -58,7 +59,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		connectors, autoDetected := connectorsForNameCollection(inputProps.CreateNamedCollectionsFromConnectors, e.c.config.CreateNamedCollectionsFromConnectors, opts.Env.Connectors)
 		err = e.createNamedCollectionsForConnectors(ctx, connectors, autoDetected, opts.Env)
 		if err != nil {
-			return nil, err
+			if strings.Contains(err.Error(), "Not enough privileges") {
+				e.c.logger.Warn("insufficient privileges for named collection, skipping", zap.Error(err))
+			} else {
+				return nil, err
+			}
 		}
 	}
 
