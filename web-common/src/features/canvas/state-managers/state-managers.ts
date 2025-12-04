@@ -163,7 +163,7 @@ export async function handleCanvasStoreInitialization(
       store,
       canvasName,
     };
-  } catch (e) {
+  } catch {
     throw error(
       404,
       `Canvas '${canvasName}' not found or spec not ready in instance '${instanceId}'`,
