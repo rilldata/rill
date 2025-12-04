@@ -334,27 +334,26 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
 	if err != nil {
 		return err
-	} else {
-		for _, pr := range prs {
-			p, ok := s.ProvisionerSet[pr.Provisioner]
-			if !ok {
-				s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
-			} else {
-				err = p.Deprovision(ctx, &provisioner.Resource{
-					ID:     pr.ID,
-					Type:   provisioner.ResourceType(pr.Type),
-					State:  pr.State,
-					Config: pr.Config,
-				})
-				if err != nil {
-					return err
-				}
-			}
-
-			err = s.DB.DeleteProvisionerResource(ctx, pr.ID)
+	}
+	for _, pr := range prs {
+		p, ok := s.ProvisionerSet[pr.Provisioner]
+		if !ok {
+			s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
+		} else {
+			err = p.Deprovision(ctx, &provisioner.Resource{
+				ID:     pr.ID,
+				Type:   provisioner.ResourceType(pr.Type),
+				State:  pr.State,
+				Config: pr.Config,
+			})
 			if err != nil {
 				return err
 			}
+		}
+
+		err = s.DB.DeleteProvisionerResource(ctx, pr.ID)
+		if err != nil {
+			return err
 		}
 	}
 
