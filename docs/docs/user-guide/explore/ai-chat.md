@@ -112,7 +112,7 @@ You can add `ai_instructions` in two places:
 1. **`rill.yaml`** - Project-wide instructions that apply to all queries across your entire project
 2. **`<metrics_view>.yaml`** - Metrics view-specific instructions for individual dashboards
 
-For detailed examples and best practices on writing effective AI instructions, see the [Rill MCP documentation](/user-guide/explore/mcp#adding-ai-instructions-to-your-model).
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
 
 ## Use in Your Favorite AI Client
 

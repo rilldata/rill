@@ -222,39 +222,9 @@ WHERE status = '{{ .env.string_var }}'
 
 ## AI Configuration
 
-### `ai_instructions`
+You can provide context and instructions for AI tools (like [AI Chat](/explore/ai-chat) and [MCP](/explore/mcp)) using the `ai_instructions` field. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs.
 
-Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/user-guide/explore/mcp#adding-ai-instructions-to-your-model).
-
-**What to include:**
-- Guidance on which metrics views are most important or should be prioritized for your project
-- Any custom business logic, definitions, or terminology unique to your data or organization
-- Preferences for aggregations, filters, or dimensions that are especially relevant to your use case
-- Specific business context that helps the AI understand your domain
-
-**Examples:**
-
-*E-commerce project:*
-```yaml
-ai_instructions: |
-  Focus on the `ad_performance` and `revenue_overview` metrics views, as these are most critical for our business users.
-  When possible, highlight trends by region and product category.
-  Use our internal terminology: "campaign" refers to a single ad initiative, and "placement" refers to a specific ad slot.
-  Always include conversion rates when discussing revenue metrics.
-```
-
-*SaaS analytics project:*
-```yaml
-ai_instructions: |
-  Prioritize user engagement metrics over raw user counts.
-  Our key business metrics are monthly recurring revenue (MRR) and customer lifetime value (CLV).
-  Segment analysis by customer tier (Enterprise, Pro, Basic) is essential.
-  Churn analysis should focus on the 30-day and 90-day windows.
-```
-
-:::note 
-For metric-level specific instructions, `ai_instructions` can also be applied there. 
-:::
+For detailed instructions and examples on how to configure AI instructions at both the project and metrics view levels, please refer to our [AI Configuration guide](/build/ai-configuration).
 
 ## Testing Security
 
