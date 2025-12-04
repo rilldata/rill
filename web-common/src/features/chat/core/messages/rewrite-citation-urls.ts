@@ -7,6 +7,7 @@ import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtim
 import { createQuery } from "@tanstack/svelte-query";
 import { marked } from "marked";
 import { derived, type Readable } from "svelte/store";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
 const CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
 
@@ -41,7 +42,11 @@ export function getCitationUrlRewriter(
           // Mapping failed for some reason, remove the link since it is probably invalid.
           if (!isValid) return "";
 
-          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}">${tokens.text}</a>`;
+          if (EmbedStore.isEmbedded()) {
+            return `<button class="inline-block link-button" data-url-params="${urlParams.toString()}">${tokens.text}</button>`;
+          } else {
+            return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}">${tokens.text}</a>`;
+          }
         },
       },
     });
