@@ -1,13 +1,8 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetConversationQueryKey,
-  getRuntimeServiceListConversationsQueryKey,
   getRuntimeServiceListConversationsQueryOptions,
   type RpcStatus,
-  type V1Conversation,
-  type V1GetConversationResponse,
   type V1ListConversationsResponse,
-  type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
@@ -17,7 +12,7 @@ import {
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
-import { extractMessageText, NEW_CONVERSATION_ID } from "./utils";
+import { invalidateConversationsList, NEW_CONVERSATION_ID } from "./utils";
 
 export type ConversationStateType = "url" | "browserStorage";
 
@@ -213,8 +208,8 @@ export class ConversationManager {
    */
   private handleConversationCreated(conversationId: string): void {
     this.rotateNewConversation(conversationId);
-    this.updateConversationListCache(conversationId);
     this.conversationSelector.selectConversation(conversationId);
+    void invalidateConversationsList(this.instanceId);
   }
 
   /**
@@ -237,106 +232,6 @@ export class ConversationManager {
         },
       },
     );
-  }
-
-  // ----- Cache Management -----
-
-  /**
-   * Update the conversation list cache by adding the new conversation
-   */
-  private updateConversationListCache(conversationId: string): void {
-    const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
-      this.instanceId,
-      {
-        userAgentPattern: "rill%",
-      },
-    );
-
-    // Check if we have existing cached data
-    const existingData =
-      queryClient.getQueryData<V1ListConversationsResponse>(
-        listConversationsKey,
-      );
-
-    // If no cached data exists, invalidate to fetch fresh data instead of creating an empty list
-    if (!existingData) {
-      queryClient.invalidateQueries({ queryKey: listConversationsKey });
-      return;
-    }
-
-    queryClient.setQueryData<V1ListConversationsResponse>(
-      listConversationsKey,
-      (old) => {
-        const conversations = old?.conversations ?? [];
-
-        // Check if conversation already exists in the list
-        const existingIndex = conversations.findIndex(
-          (c) => c.id === conversationId,
-        );
-        if (existingIndex >= 0) {
-          // Conversation already exists, no need to add it again
-          return old;
-        }
-
-        // Fetch conversation data from the GetConversation query cache
-        const conversationCacheKey = getRuntimeServiceGetConversationQueryKey(
-          this.instanceId,
-          conversationId,
-        );
-        const cachedGetConversationResponse =
-          queryClient.getQueryData<V1GetConversationResponse>(
-            conversationCacheKey,
-          );
-        const conversation = cachedGetConversationResponse?.conversation;
-
-        // Create conversation object for the list
-        const newConversation: V1Conversation = {
-          id: conversationId,
-          title: this.generateConversationTitle(
-            cachedGetConversationResponse?.messages,
-          ),
-          createdOn: conversation?.createdOn || new Date().toISOString(),
-          updatedOn: conversation?.updatedOn || new Date().toISOString(),
-        };
-
-        // Add the new conversation to the front of the list
-        conversations.unshift(newConversation);
-        return { ...old, conversations };
-      },
-    );
-  }
-
-  /**
-   * Generate a conversation title from messages
-   *
-   * Note: This replicates the server-side title generation logic client-side
-   * to avoid making an additional network request for something we can compute
-   * trivially from the conversation data we already have in cache.
-   */
-  private generateConversationTitle(messages?: V1Message[]): string {
-    // If we have messages, generate title from first user message
-    if (messages) {
-      for (const message of messages) {
-        if (message.role === "user") {
-          let title = extractMessageText(message);
-
-          if (!title) continue;
-
-          // Truncate to 50 characters and add ellipsis if needed
-          if (title.length > 50) {
-            title = title.substring(0, 50) + "...";
-          }
-
-          // Replace newlines with spaces and collapse multiple spaces
-          title = title.replace(/[\r\n]/g, " ").replace(/\s+/g, " ");
-
-          return title;
-        }
-      }
-    }
-
-    // Fallback title
-    return "New conversation";
   }
 }
 
