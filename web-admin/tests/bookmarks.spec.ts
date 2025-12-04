@@ -412,7 +412,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$1,632\s*-$95.73\s*-6%\s*vs previous period/,
+          /Advertising Spend Overall\s+\$1,632\s+-\$95.73\s+-6%\s+vs previous period/,
         );
 
         // Open the bookmarks dropdown
@@ -438,7 +438,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f.bids_metrics=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
@@ -507,7 +507,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Last 24 hours")).toBeVisible();
         await expect(adminPage.getByText("No filters selected")).toBeVisible();
         // make sure the url has the correct params
-        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PD`);
+        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PP`);
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
