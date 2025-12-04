@@ -122,7 +122,7 @@
 
   $: ({ data: projectData, error: projectError } = $projectQuery);
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
-  $: projectReady =
+  $: isProjectAvailable =
     projectData?.prodDeployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
     projectData?.prodDeployment?.status ===
@@ -179,7 +179,7 @@
         ? projectData.prodDeployment.statusMessage
         : "There was an error deploying your project. Please contact support."}
     />
-  {:else if projectReady}
+  {:else if isProjectAvailable}
     <RuntimeProvider
       instanceId={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.instanceId
