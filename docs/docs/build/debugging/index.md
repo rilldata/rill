@@ -13,7 +13,7 @@ When building Rill projects, you'll encounter various debugging scenarios—from
 - **[Troubleshooting Common Errors](#troubleshooting-common-errors)** - Resolve common error patterns
 - **[Advanced Debugging Techniques](#advanced-debugging-techniques)** - Use debug flags, trace viewer, and cloud logs
 
-For troubleshooting dashboard access and security policy issues, see the [Dashboard Access guide](/guides/dashboard-access).
+
 
 ## Understanding Project Logs
 
