@@ -1,6 +1,6 @@
 ---
-title: Canvas Dashboard
-sidebar_label: "Canvas Dashboard"
+title: Canvas Dashboards
+sidebar_label: "Canvas Dashboards"
 sidebar_position: 20
 ---
 

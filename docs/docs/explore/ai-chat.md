@@ -1,5 +1,5 @@
 ---
-title: "Embedded AI Chat"
+title: "Contextual AI Chat"
 description: Chat with your data using natural language in Rill Cloud
 sidebar_label: "AI Chat"
 sidebar_position: 01
