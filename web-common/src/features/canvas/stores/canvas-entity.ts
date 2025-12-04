@@ -112,6 +112,7 @@ export class CanvasEntity {
   ) {
     this.specStore = useCanvas(instanceId, name, {}, queryClient);
 
+    // This will be deprecated soon - bgh
     const searchParamsStore: SearchParamsStore = (() => {
       return {
         subscribe: this.searchParams.subscribe,
