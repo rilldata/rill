@@ -102,7 +102,12 @@ export async function handleCanvasStoreInitialization(
         {},
       );
 
-      const data = await queryClient.fetchQuery(queryOptions);
+      const data = await queryClient.fetchQuery({
+        ...queryOptions,
+        retry: 3,
+        retryDelay: (attemptIndex) =>
+          Math.min(1000 + 1000 * attemptIndex, 5000),
+      });
 
       const metricsViews: Record<string, V1MetricsView | undefined> = {};
       const refMetricsViews = data?.referencedMetricsViews;

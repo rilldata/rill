@@ -17,7 +17,9 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { spec },
+    canvasEntity: {
+      timeControls: { _defaultTimeRange, _timeRangeOptions },
+    },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
@@ -40,8 +42,8 @@
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $spec?.defaultPreset?.timeRange;
-  $: timeRanges = $spec?.timeRanges ?? [];
+  $: defaultTimeRange = $_defaultTimeRange;
+  $: timeRanges = $_timeRangeOptions;
 
   $: activeTimeZone = $selectedTimezone;
   $: minTimeGrain = $_minTimeGrain;
