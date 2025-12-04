@@ -70,7 +70,6 @@
 
   let open =
     openOnMount && !filterData.selectedValues?.length && !filterData.inputText;
-
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
   let curMode = mode;
   let curSearchText = "";
@@ -396,7 +395,7 @@
 >
   <DropdownMenu.Trigger asChild let:builder>
     <Tooltip
-      activeDelay={60}
+      activeDelay={500}
       alignment="start"
       distance={8}
       location="bottom"

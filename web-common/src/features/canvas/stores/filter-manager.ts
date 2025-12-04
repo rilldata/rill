@@ -116,7 +116,7 @@ export class FilterManager {
   metricsViewFilters = new StoreOfStores<MetricsViewFilter>();
   _pinnedFilterKeys = writable<Set<string>>(new Set());
   _defaultPinnedFilterKeys = writable<Set<string>>(new Set());
-  _temporaryFilterKeys = writable<Set<string>>(new Set());
+  _temporaryFilterKeys = writable<Map<string, boolean>>(new Map());
   _allDimensions = writable<DimensionLookup>(new Map());
   _allMeasures = writable<MeasureLookup>(new Map());
   _dimensionFilterKeys: Readable<string[]>;
@@ -550,9 +550,18 @@ export class FilterManager {
     },
     addTemporaryFilter: (measureOrDimensionKey: string) => {
       this._temporaryFilterKeys.update((tempFilters) => {
-        tempFilters.add(measureOrDimensionKey);
+        tempFilters.set(measureOrDimensionKey, true);
         return tempFilters;
       });
+
+      // Boolean controls whether the filter pill should open the dropdown automatically
+      // This removes the flag after 200ms
+      setTimeout(() => {
+        this._temporaryFilterKeys.update((tempFilters) => {
+          tempFilters.set(measureOrDimensionKey, false);
+          return tempFilters;
+        });
+      }, 200);
     },
     toggleDimensionFilterMode: async (
       dimensionName: string,

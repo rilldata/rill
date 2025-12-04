@@ -200,7 +200,7 @@
           {filterData}
           {timeStart}
           {timeEnd}
-          openOnMount={temporaryFilterKeys.has(id)}
+          openOnMount={temporaryFilterKeys.get(id)}
           timeControlsReady={!!$timeRangeStateStore}
           expressionMap={$_filterMap}
           {removeDimensionFilter}
