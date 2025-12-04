@@ -30,7 +30,7 @@ _[string]_ - Refers to the description for the metrics view
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for [AI agents](/user-guide/explore/mcp). Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/user-guide/ai/mcp). Used to guide natural language question answering and routing. 
 
 ### `model`
 

@@ -33,30 +33,30 @@ Each project in Rill Cloud comes with a comprehensive set of features for explor
 ### AI-Powered Chat
 Ask questions about your data in natural language using AI. Rill offers two ways to interact with your data conversationally:
 
-- **[AI Chat](/user-guide/explore/ai-chat)** - Built directly into Rill Cloud, ask questions about your metrics and get instant insights without writing queries.
-- **[Rill MCP Server](/user-guide/explore/mcp)** - Connect your Rill projects to AI assistants like Claude Desktop using the Model Context Protocol for governed, accurate analytics.
+- **[AI Chat](/user-guide/ai/ai-chat)** - Built directly into Rill Cloud, ask questions about your metrics and get instant insights without writing queries.
+- **[Rill MCP Server](/user-guide/ai/mcp)** - Connect your Rill projects to AI assistants like Claude Desktop using the Model Context Protocol for governed, accurate analytics.
 
 ### Dashboards
 Explore your data through interactive dashboards that make it easy to slice, dice, and drill down into your metrics:
 
-- **[Dashboard Quickstart](/user-guide/explore/dashboard-101)** - Learn the basics of navigating and using Rill dashboards with measures, dimensions, and time series.
-- **[Filters & Comparisons](/user-guide/explore/filters)** - Apply powerful filters and time comparisons to focus your analysis.
-- **[Pivot Tables](/user-guide/explore/dashboard-101/pivot)** - Create cross-tabulations and data summaries directly in your dashboard.
-- **[Time Dimension Details](/user-guide/explore/dashboard-101/tdd)** - Drill down into specific time periods for granular analysis.
-- **[Bookmarks](/user-guide/explore/bookmarks)** - Save specific dashboard states (filters, metrics, dimensions) and share them with others.
-- **[Public URLs](/user-guide/explore/public-url)** - Share dashboards externally with customers and partners without requiring them to have Rill accounts.
+- **[Dashboard Quickstart](/user-guide/dashboards/dashboard-101)** - Learn the basics of navigating and using Rill dashboards with measures, dimensions, and time series.
+- **[Filters & Comparisons](/user-guide/dashboards/filters)** - Apply powerful filters and time comparisons to focus your analysis.
+- **[Pivot Tables](/user-guide/dashboards/dashboard-101/pivot)** - Create cross-tabulations and data summaries directly in your dashboard.
+- **[Time Dimension Details](/user-guide/dashboards/dashboard-101/tdd)** - Drill down into specific time periods for granular analysis.
+- **[Bookmarks](/user-guide/dashboards/bookmarks)** - Save specific dashboard states (filters, metrics, dimensions) and share them with others.
+- **[Public URLs](/user-guide/dashboards/public-url)** - Share dashboards externally with customers and partners without requiring them to have Rill accounts.
 
 ### Reports
 Set up automated data exports and scheduled email reports to keep your team informed:
 
-- **[Exports & Scheduled Reports](/user-guide/explore/exports)** - Export data in CSV, Excel, or Parquet formats, or schedule recurring reports to be delivered to your inbox.
+- **[Exports & Scheduled Reports](/user-guide/reports/exports)** - Export data in CSV, Excel, or Parquet formats, or schedule recurring reports to be delivered to your inbox.
 
 Reports are managed from your project home page under the **Reports** tab. You can view, edit, and delete scheduled reports, and see execution history for all deliveries.
 
 ### Alerts
 Stay on top of important changes in your data with automated alerting:
 
-- **[Alerts](/user-guide/explore/alerts.md)** - Create alerts on any measure with custom criteria and thresholds. Get notified via email or Slack when conditions are met.
+- **[Alerts](/user-guide/alerts)** - Create alerts on any measure with custom criteria and thresholds. Get notified via email or Slack when conditions are met.
 - **[Slack Integration](/developer/build/connectors/data-source/slack)** - Connect your Slack workspace to receive alert notifications in channels or direct messages.
 
 Alerts are accessible from any dashboard via the bell icon in the upper-right corner, and can be managed from the **Alerts** tab on your project home page.

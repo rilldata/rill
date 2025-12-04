@@ -40,5 +40,5 @@ Rill is built for this "fast" mode. It empowers product managers, operations tea
 *   **Performance**: Rill achieves performance that end users love by serving dashboards from in-memory data models, often reducing the data footprint by 10–100x compared to raw events.
 *   **Developer Experience**: Define your entire analytics stack—from data models to dashboards—using code. This brings the benefits of version control, collaboration, and automation that software development teams rely on.
 *   **Cost Effective**: Build analytics directly on your storage. Rill lowers costs because data can be transformed in place without duplication in a heavy enterprise warehouse.
-*   **AI-Powered**: Rill integrates with AI tools to let you query your metrics views using natural language, ensuring responses are accurate and governed by your predefined measures and dimensions. See [AI Chat](/user-guide/explore/ai-chat) for more.
+*   **AI-Powered**: Rill integrates with AI tools to let you query your metrics views using natural language, ensuring responses are accurate and governed by your predefined measures and dimensions. See [AI Chat](/user-guide/ai/ai-chat) for more.
 

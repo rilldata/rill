@@ -17,7 +17,7 @@ Before you begin, make sure you have:
 - An MCP Client (Claude Desktop, ChatGPT Desktop, etc.)
 - **Access to a [Rill Project](https://ui.rilldata.com/)** 
 
-For detailed steps, please refer to our documentation on [MCP Servers](/user-guide/explore/mcp)
+For detailed steps, please refer to our documentation on [MCP Servers](/user-guide/ai/mcp)
 
 ## Step 1: Access your Rill Project's AI tab.
 

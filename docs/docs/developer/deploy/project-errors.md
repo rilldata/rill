@@ -59,7 +59,7 @@ To resolve metrics view and dashboard errors:
 
 You can configure alerts to automatically notify you when project errors occur. Once set up, you'll receive notifications (via email or Slack) whenever any resource in your project enters an error state.
 
-Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/user-guide/explore/alerts)!
+Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/user-guide/alerts)!
 
 ### Configure an email alert
 

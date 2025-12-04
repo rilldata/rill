@@ -306,7 +306,7 @@ const config = {
           },
           {
             from: '/share/scheduled-reports',
-            to: '/user-guide/explore/exports'
+            to: '/user-guide/reports/exports'
           },
           // OLAP Engine redirects
           {
@@ -529,11 +529,11 @@ const config = {
           },
           {
             from: '/explore/filters/filters',
-            to: '/user-guide/explore/filters'
+            to: '/user-guide/dashboards/filters'
           },
           {
             from: '/explore/filters/time-series',
-            to: '/user-guide/explore/time-series'
+            to: '/user-guide/dashboards/time-series'
           },
           {
             from: '/build/metrics-view/advanced-expressions/case-statements',

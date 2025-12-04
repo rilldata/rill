@@ -14,9 +14,9 @@ Rill offers two distinct dashboard experiences, each optimized for different use
 
 **[Explore dashboards](/developer/build/dashboards/explore)** are designed for interactive data exploration and analysis. They provide a powerful "slice and dice" experience focused on a single metrics view. Some key features of our Explore dashboards include:
 
-- [Pivot Tables](/user-guide/explore/dashboard-101/pivot)
-- [Time Dimension Detail](/user-guide/explore/dashboard-101/tdd)
-- [Leaderboards](/user-guide/explore/dashboard-101/multi-metrics)
+- [Pivot Tables](/user-guide/dashboards/dashboard-101/pivot)
+- [Time Dimension Detail](/user-guide/dashboards/dashboard-101/tdd)
+- [Leaderboards](/user-guide/dashboards/dashboard-101/multi-metrics)
 
 <img src = '/img/build/dashboard/explore.png' class='rounded-gif' /> <br/>
 
@@ -55,12 +55,12 @@ Both dashboard types share common capabilities that make them powerful for data 
 
 ## Learn More About Using Dashboards
 
-For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/user-guide/explore/dashboard-101), which covers:
+For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/user-guide/dashboards/dashboard-101), which covers:
 
-- [Dashboard navigation and interface](/user-guide/explore/dashboard-101)
-- [Filtering and comparisons](/user-guide/explore/filters)
-- [Pivot tables](/user-guide/explore/dashboard-101/pivot)
-- [Time dimension details](/user-guide/explore/dashboard-101/tdd)
-- [Bookmarks and sharing](/user-guide/explore/bookmarks)
-- [Alerts and notifications](/user-guide/explore/alerts)
+- [Dashboard navigation and interface](/user-guide/dashboards/dashboard-101)
+- [Filtering and comparisons](/user-guide/dashboards/filters)
+- [Pivot tables](/user-guide/dashboards/dashboard-101/pivot)
+- [Time dimension details](/user-guide/dashboards/dashboard-101/tdd)
+- [Bookmarks and sharing](/user-guide/dashboards/bookmarks)
+- [Alerts and notifications](/user-guide/alerts)
 

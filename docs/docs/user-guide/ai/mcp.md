@@ -33,7 +33,7 @@ sidebar_position: 05
 The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It is currently designed primarily for data analysts, not data engineers, and focuses on consuming Rill metrics views—not creating them.
 
 :::tip Looking for AI Chat in Rill Cloud?
-If you want to chat with your data directly in your browser without any setup, check out [AI Chat](/user-guide/explore/ai-chat), which uses the same MCP technology but is built right into Rill Cloud.
+If you want to chat with your data directly in your browser without any setup, check out [AI Chat](/user-guide/ai/ai-chat), which uses the same MCP technology but is built right into Rill Cloud.
 :::
 
 ## Why use MCP with Rill?
@@ -41,13 +41,13 @@ Instead of blindly exposing your entire data warehouse to external platforms in 
 
 Rill offers two ways to use MCP:
 - **Rill MCP Server** (this guide) - Connect external AI assistants like Claude Desktop to your Rill projects
-- **[AI Chat](/user-guide/explore/ai-chat)** - Built-in chat interface in Rill Cloud with zero setup required
+- **[AI Chat](/user-guide/ai/ai-chat)** - Built-in chat interface in Rill Cloud with zero setup required
 
 You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results.
 
 :::tip Configure AI instructions
 Set project-wide AI instructions to provide context unique to your project and improve MCP responses.
-[Learn more about AI configuration →](/build/ai-configuration)
+[Learn more about AI configuration →](/developer/build/ai-configuration)
 :::
 
 Users can then ask questions like:
@@ -65,7 +65,7 @@ This ensures **trustworthy, governed analytics** while empowering users to **sel
 
 To use the Rill MCP server, you'll need:
 
-- An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](#edit-claude-desktop-configuration))
+- An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](/user-guide/ai/mcp#edit-claude-desktop-configuration))
 - A **running Rill project** (locally or hosted on Rill Cloud)
 
 ## Connect using OAuth (Recommended)
@@ -236,7 +236,7 @@ There are two places to add `ai_instructions`:
 1. `rill.yaml` for project-wide context, such as instructions on how to use Rill MCP Server
 2. Every metrics view YAML (`<metrics_view>.yaml`), with examples of Explore URLs for that metrics view
 
-For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/developer/build/ai-configuration).
 
 You can look at one of our [example projects](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) to see how these are used. Experiment with the instructions and see what works best for your requirements.
 
@@ -264,9 +264,9 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 
 
 ## Conclusion
-While [Explore dashboards](./dashboard-101) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
+While [Explore dashboards](/user-guide/dashboards/dashboard-101) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
 
-**Want AI chat directly in Rill Cloud?** Check out [AI Chat](/user-guide/explore/ai-chat) for a browser-based experience that uses the same MCP technology with zero setup required.
+**Want AI chat directly in Rill Cloud?** Check out [AI Chat](/user-guide/ai/ai-chat) for a browser-based experience that uses the same MCP technology with zero setup required.
 
 
 ## Need help?

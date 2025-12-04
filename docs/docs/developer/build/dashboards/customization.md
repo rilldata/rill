@@ -59,7 +59,7 @@ defaults:
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/user-guide/explore/time-series#time-comparisons) and [dimension comparison.](/user-guide/explore/filters#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
+It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/user-guide/dashboards/time-series#time-comparisons) and [dimension comparison.](/user-guide/dashboards/filters#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
 
 ```yaml
 defaults:
