@@ -6,30 +6,23 @@
   export let options: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
-  export let onSelect: undefined | ((id: string) => void) = undefined;
 
   $: selected = options.get(current.toLowerCase());
 
-  let groupedData = new Map();
+  const groupedData = new Map();
 
   // Group data by colon separator
-  for (let [key, value] of options) {
+  for (let [key, option] of options) {
     const [group, sub] = key.split(":");
     if (sub) {
       if (!groupedData.has(group)) {
         groupedData.set(group, []);
       }
-      groupedData.get(group).push({ key, label: value.label });
+      groupedData.get(group).push(option);
     } else {
-      groupedData.set(group, { key, label: value.label }); // Standalone items
+      groupedData.set(group, option); // Standalone items
     }
   }
-
-  const handleSelect = (key: string) => {
-    if (onSelect) {
-      onSelect(key);
-    }
-  };
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
@@ -63,7 +56,8 @@
                   {#each subItems as subItem}
                     <DropdownMenu.Item
                       class="cursor-pointer"
-                      on:click={() => handleSelect(subItem.key)}
+                      href={subItem.href}
+                      preloadData={false}
                     >
                       <span class="text-xs text-gray-800 flex-grow">
                         {subItem.label}
@@ -76,7 +70,8 @@
               <!-- Standalone item -->
               <DropdownMenu.Item
                 class="cursor-pointer"
-                on:click={() => handleSelect(subItems.key)}
+                href={subItems.href}
+                preloadData={false}
               >
                 <span class="text-xs text-gray-800 flex-grow">
                   {subItems.label}

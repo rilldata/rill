@@ -17,7 +17,7 @@
 
 <style lang="postcss">
   .element {
-    @apply bg-slate-100 text-slate-500 rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center;
+    @apply bg-slate-100 text-slate-500 rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
     font-family: "Source Code Variable", monospace;
     @apply font-medium w-fit;
   }

@@ -77,3 +77,10 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// We want to keep the table so we can keep serving the dashboards hence making the source reconciler a no-op.
 	return runtime.ReconcileResult{}
 }
+
+func (r *SourceReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetSource() == nil {
+		return nil, fmt.Errorf("not a source resource")
+	}
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}

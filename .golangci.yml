@@ -1,19 +1,8 @@
+version: "2"
 run:
-  timeout: 10m
   tests: false
-
-issues:
-  exclude-rules:
-    # Disable some linters for test files
-    - path: _test\.go
-      linters:
-        - gosec
-  exclude-dirs:
-    - proto/gen
-    - node_modules
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - bidichk
     - bodyclose
@@ -23,144 +12,172 @@ linters:
     - errname
     - errorlint
     - exhaustruct
-    - gci
     - gocritic
-    - gofmt
-    - gofumpt
     - goheader
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - nakedret
     - revive
+    - rowserrcheck
     - staticcheck
-    - stylecheck
-    - usetesting
     - testpackage
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - whitespace
-    - rowserrcheck
-
-linters-settings:
-  depguard:
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: github.com/pkg/errors
+              desc: Should be replaced by standard lib errors package
+    exhaustruct:
+      include:
+        - github.com/rilldata/rill/admin/database\..*Options
+        - github.com/rilldata/rill/admin\..*DeploymentOptions
+        - github.com/rilldata/rill/admin\.provisionRuntimeOptions
+        - github.com/rilldata/rill/admin/provisioner\.Resource
+        - github.com/rilldata/rill/admin/provisioner\.ResourceOptions
+    gocritic:
+      disabled-checks:
+        - hugeParam
+        - ifElseChain
+        - unnamedResult
+        - importShadow
+        - deprecatedComment
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - experimental
+        - opinionated
+    gosec:
+      excludes:
+        - G107
+        - G108
+        - G112
+        - G115
+        - G203
+        - G204
+        - G306
+        - G401
+        - G501
+    govet:
+      enable:
+        - asmdecl
+        - assign
+        - atomic
+        - atomicalign
+        - bools
+        - buildtag
+        - cgocall
+        - composites
+        - copylocks
+        - deepequalerrors
+        - errorsas
+        - findcall
+        - framepointer
+        - httpresponse
+        - ifaceassert
+        - loopclosure
+        - lostcancel
+        - nilfunc
+        - nilness
+        - printf
+        - reflectvaluecompare
+        - shift
+        - sigchanyzer
+        - sortslice
+        - stdmethods
+        - stringintconv
+        - structtag
+        - testinggoroutine
+        - tests
+        - unmarshal
+        - unreachable
+        - unsafeptr
+        - unusedresult
+        - unusedwrite
+      disable-all: true
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: errorf
+        - name: if-return
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: var-declaration
+        - name: var-naming
+    staticcheck:
+      checks:
+        - all
+        - -QF1001
+        - -QF1003
+        - -QF1006
+        - -QF1008
+        - -ST1000
+        - -ST1003
+        - -ST1005
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      main:
-        deny:
-          - pkg: "github.com/pkg/errors"
-            desc: Should be replaced by standard lib errors package
-  exhaustruct:
-    include:
-      # Require explicit handling of all fields in the database options structs (to prevent nullification due to missing handling)
-      - github.com/rilldata/rill/admin/database\..*Options
-      # Require explicit handling of all fields related to deployments
-      - github.com/rilldata/rill/admin\..*DeploymentOptions
-      - github.com/rilldata/rill/admin\.provisionRuntimeOptions
-      - github.com/rilldata/rill/admin/provisioner\.Resource
-      - github.com/rilldata/rill/admin/provisioner\.ResourceOptions
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
-      - opinionated
-    disabled-checks:
-      - hugeParam
-      - ifElseChain
-      - unnamedResult
-  gci:
-    sections:
-      - standard
-      - default
-      - blank
-      - dot
-    custom-order: true
-  govet:
-    disable-all: true
-    enable:
-      - asmdecl
-      - assign
-      - atomic
-      - atomicalign
-      - bools
-      - buildtag
-      - cgocall
-      - composites
-      - copylocks
-      - deepequalerrors
-      - errorsas
-      - findcall
-      - framepointer
-      - httpresponse
-      - ifaceassert
-      - loopclosure
-      - lostcancel
-      - nilfunc
-      - nilness
-      - printf
-      - reflectvaluecompare
-      - shift
-      - sigchanyzer
-      - sortslice
-      - stdmethods
-      - stringintconv
-      - structtag
-      - testinggoroutine
-      - tests
-      - unmarshal
-      - unreachable
-      - unsafeptr
-      - unusedresult
-      - unusedwrite
-  gosec:
-    excludes:
-      - G107
-      - G108
-      - G112
-      - G115
-      - G203
-      - G204
-      - G306
-      - G401
-      - G501
-  revive:
-    rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: empty-block
-      - name: error-naming
-      - name: error-return
-      - name: errorf
-      - name: if-return
-      - name: increment-decrement
-      - name: indent-error-flow
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: redefines-builtin-id
-      - name: superfluous-else
-      - name: time-naming
-      - name: unexported-return
-      - name: unreachable-code
-      - name: var-declaration
-      - name: var-naming
-  stylecheck:
-    checks:
-      - "all"
-      - "-ST1000"
-      - "-ST1003"
-      - "-ST1005"
-      - "-ST1016"
-      - "-ST1020"
-      - "-ST1021"
-      - "-ST1022"
+      - linters:
+          - gosec
+        path: _test\.go
+    paths:
+      - proto/gen
+      - node_modules
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - blank
+        - dot
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths:
+      - proto/gen
+      - node_modules
+      - third_party$
+      - builtin$
+      - examples$

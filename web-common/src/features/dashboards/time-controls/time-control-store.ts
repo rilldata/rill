@@ -1,11 +1,21 @@
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import {
+  getMetricsViewTimeRangeFromExploreQueryOptions,
+  useMetricsViewTimeRange,
+} from "@rilldata/web-common/features/dashboards/selectors";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import {
+  useExploreState,
+  useStableExploreState,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import {
+  getExploreValidSpecQueryOptions,
+  useExploreValidSpec,
+} from "@rilldata/web-common/features/explores/selectors";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -18,6 +28,10 @@ import {
   getAllowedTimeGrains,
   getDefaultTimeGrain,
 } from "@rilldata/web-common/lib/time/grains";
+import {
+  GrainAliasToV1TimeGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
 import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
@@ -33,16 +47,19 @@ import {
 import {
   type V1ExploreSpec,
   type V1ExploreTimeRange,
+  type V1Expression,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { createQuery, type QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { parseRillTime } from "../url-state/time-ranges/parser";
+import type { RillTime } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -63,6 +80,17 @@ export type ComparisonTimeRangeState = {
   comparisonTimeEnd?: string;
   comparisonAdjustedEnd?: string;
 };
+
+export interface TimeAndFilterStore {
+  timeRange: V1TimeRange;
+  comparisonTimeRange: V1TimeRange | undefined;
+  where: V1Expression | undefined;
+  timeGrain: V1TimeGrain | undefined;
+  showTimeComparison: boolean;
+  timeRangeState: TimeRangeState | undefined;
+  comparisonTimeRangeState: ComparisonTimeRangeState | undefined;
+  hasTimeSeries: boolean | undefined;
+}
 
 export type TimeControlState = {
   isFetching: boolean;
@@ -239,6 +267,41 @@ export function createTimeControlStoreFromName(
   );
 }
 
+export function createStableTimeControlStoreFromName(
+  exploreNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecQueryOptions(exploreNameStore),
+    queryClient,
+  );
+  const metricsViewTimeRangeQuery = createQuery(
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+    queryClient,
+  );
+  const exploreStore = useStableExploreState(exploreNameStore);
+
+  return derived(
+    [validSpecQuery, metricsViewTimeRangeQuery, exploreStore],
+    ([validSpecResp, timeRangeSummaryResp, dashboardStore]) => {
+      // Without an access to isPending, the query is never fired.
+      // TODO: find a better way to handle this.
+      if (timeRangeSummaryResp.isPending)
+        return timeControlStateSelector([
+          validSpecResp.data?.metricsViewSpec,
+          validSpecResp.data?.exploreSpec,
+          timeRangeSummaryResp,
+          dashboardStore,
+        ]);
+      return timeControlStateSelector([
+        validSpecResp.data?.metricsViewSpec,
+        validSpecResp.data?.exploreSpec,
+        timeRangeSummaryResp,
+        dashboardStore,
+      ]);
+    },
+  );
+}
+
 /**
  * Memoized version of the store. Currently, memoized by metrics view name.
  */
@@ -265,8 +328,25 @@ export function calculateTimeRangePartial(
     selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeGrain,
   );
   if (!selectedTimeRange) return undefined;
+
+  let parsed: RillTime | undefined;
+
+  if (currentSelectedTimeRange.name === TimeRangePreset.CUSTOM) {
+    parsed = undefined;
+  } else if (currentSelectedTimeRange?.name) {
+    try {
+      parsed = parseRillTime(currentSelectedTimeRange.name);
+    } catch {
+      //no-op
+    }
+  }
+
+  const rillTimeGrain: V1TimeGrain | undefined = parsed?.asOfLabel?.snap
+    ? GrainAliasToV1TimeGrain[parsed?.asOfLabel.snap]
+    : parsed?.interval.getGrain();
 
   // Temporary for the new rill-time UX to work.
   // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
@@ -275,7 +355,8 @@ export function calculateTimeRangePartial(
     !skipGrainValidation ||
     !currentSelectedTimeRange.interval ||
     currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      ? getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
+      ? rillTimeGrain ||
+        getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
       : currentSelectedTimeRange.interval;
 
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
@@ -382,6 +463,7 @@ export function getTimeRange(
   selectedTimezone: string | undefined,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
+  minTimeGrain: V1TimeGrain | undefined,
 ) {
   if (!selectedTimeRange) return undefined;
 
@@ -396,12 +478,17 @@ export function getTimeRange(
     };
   } else if (selectedTimeRange?.name) {
     if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+      const minTimeUnit =
+        V1TimeGrainToDateTimeUnit[
+          minTimeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+        ];
       /** rebuild off of relative time range */
       timeRange = convertTimeRangePreset(
         selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
         allTimeRange.end,
         selectedTimezone,
+        minTimeUnit,
       );
     } else if (selectedTimeRange.start) {
       timeRange = {
@@ -518,10 +605,12 @@ export function selectedTimeRangeSelector([
   exploreSpec,
   timeRangeResponse,
   explorer,
+  minTimeGrain,
 ]: [
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   ExploreState,
+  V1TimeGrain | undefined,
 ]) {
   if (
     !exploreSpec ||
@@ -549,5 +638,6 @@ export function selectedTimeRangeSelector([
     explorer.selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeGrain,
   );
 }

@@ -1,11 +1,13 @@
 package runtime
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -18,12 +20,57 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// ErrForbidden is returned when an action is not allowed.
 var ErrForbidden = errors.New("action not allowed")
 
+// Permission represents runtime access permissions.
+type Permission int
+
+const (
+	// System-level permissions
+	ManageInstances Permission = 0x01
+
+	// Instance-level permissions
+	ReadInstance  Permission = 0x11
+	EditInstance  Permission = 0x12
+	EditTrigger   Permission = 0x20
+	ReadRepo      Permission = 0x13
+	EditRepo      Permission = 0x14
+	ReadObjects   Permission = 0x15
+	ReadOLAP      Permission = 0x16
+	ReadMetrics   Permission = 0x17
+	ReadProfiling Permission = 0x18
+	ReadAPI       Permission = 0x19
+	ReadResolvers Permission = 0x1A
+	UseAI         Permission = 0x1B
+)
+
+// AllPermissions is a list of all valid Permission values.
+var AllPermissions = []Permission{
+	ManageInstances,
+	ReadInstance,
+	EditInstance,
+	EditTrigger,
+	ReadRepo,
+	EditRepo,
+	ReadObjects,
+	ReadOLAP,
+	ReadMetrics,
+	ReadProfiling,
+	ReadAPI,
+	ReadResolvers,
+	UseAI,
+}
+
 // SecurityClaims represents contextual information for the enforcement of security rules.
+// Note that it does not consider instance IDs, which must be handled/checked by the code that creates the SecurityClaims.
 type SecurityClaims struct {
+	// UserID is the ID of the end user (or service account).
+	UserID string
 	// UserAttributes about the current user (or service account). Usually exposed through templating as {{ .user }}.
 	UserAttributes map[string]any
+	// Permissions is a list of assigned permissions.
+	Permissions []Permission
 	// AdditionalRules are optional security rules to apply *in addition* to the built-in rules and the rules defined on the requested resource.
 	// These are currently leveraged by the admin service to enforce restrictions for magic auth tokens.
 	AdditionalRules []*runtimev1.SecurityRule
@@ -40,21 +87,21 @@ func (c *SecurityClaims) Admin() bool {
 	return admin
 }
 
-// UserID is a convenience function for extracting an "id" string from the user attributes.
-// Note that the ID may not correspond to an actual user, but could also be a service ID or similar.
-func (c *SecurityClaims) UserID() string {
-	if c.UserAttributes == nil {
-		return ""
+// Can returns true if the claims have the specified permission.
+func (c *SecurityClaims) Can(p Permission) bool {
+	if c.SkipChecks {
+		return true
 	}
-	id, _ := c.UserAttributes["id"].(string)
-	return id
+	return slices.Contains(c.Permissions, p)
 }
 
 // MarshalJSON serializes the SecurityClaims to JSON.
 // It serializes the AdditionalRules using protojson.
 func (c *SecurityClaims) MarshalJSON() ([]byte, error) {
 	tmp := securityClaimsJSON{
+		UserID:          c.UserID,
 		UserAttributes:  c.UserAttributes,
+		Permissions:     c.Permissions,
 		AdditionalRules: make([]json.RawMessage, len(c.AdditionalRules)),
 		SkipChecks:      c.SkipChecks,
 	}
@@ -78,7 +125,9 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	c.UserID = tmp.UserID
 	c.UserAttributes = tmp.UserAttributes
+	c.Permissions = tmp.Permissions
 	c.AdditionalRules = make([]*runtimev1.SecurityRule, len(tmp.AdditionalRules))
 	for i, data := range tmp.AdditionalRules {
 		rule := &runtimev1.SecurityRule{}
@@ -95,7 +144,9 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 // securityClaimsJSON is a JSON-serializable representation of SecurityClaims.
 // SecurityClaims can't be directly serialized to JSON because the SecurityRule proto is not directly JSON serializable.
 type securityClaimsJSON struct {
+	UserID          string            `json:"uid"`
 	UserAttributes  map[string]any    `json:"attrs"`
+	Permissions     []Permission      `json:"perms"`
 	AdditionalRules []json.RawMessage `json:"rules"`
 	SkipChecks      bool              `json:"skip"`
 }
@@ -179,26 +230,32 @@ type securityEngine struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
 	logger *zap.Logger
+	rt     *Runtime
 }
 
 // newSecurityEngine creates a new security engine with a given cache size.
-func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
+func newSecurityEngine(cacheSize int, logger *zap.Logger, rt *Runtime) *securityEngine {
 	cache, err := simplelru.NewLRU(cacheSize, nil)
 	if err != nil {
 		panic(err)
 	}
-	return &securityEngine{cache: cache, logger: logger}
+	return &securityEngine{cache: cache, logger: logger, rt: rt}
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
-func (p *securityEngine) resolveSecurity(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
+func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
 	// If security checks are skipped, return open access
 	if claims.SkipChecks {
 		return ResolvedSecurityOpen, nil
 	}
 
+	expandedRules, err := p.expandTransitiveAccessRules(ctx, instanceID, claims)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand security rules: %w", err)
+	}
+
 	// Combine rules with any contained in the resource itself
-	rules := p.resolveRules(claims, r)
+	rules := p.resolveRules(claims, expandedRules, r)
 
 	// Exit early if all rules are nil
 	var validRule bool
@@ -284,8 +341,7 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, vars ma
 
 // resolveRules combines the provided rules with built-in rules and rules declared in the resource itself.
 // NOTE: The default behavior is to deny access unless there is a rule that grants it (and no other rule explicitly denies it).
-func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resource) []*runtimev1.SecurityRule {
-	rules := claims.AdditionalRules
+func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1.SecurityRule, r *runtimev1.Resource) []*runtimev1.SecurityRule {
 	switch r.Meta.Name.Kind {
 	// Admins and creators/recipients can access an alert.
 	case ResourceKindAlert:
@@ -468,29 +524,35 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.
-func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleAccess, td parser.TemplateData) error {
+func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleAccess, td parser.TemplateData) error {
 	// If already explicitly denied, do nothing (explicit denies take precedence over explicit allows)
 	if res.access != nil && !*res.access {
 		return nil
 	}
 
-	if rule.Condition != "" {
-		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
-		if err != nil {
-			return err
-		}
-		apply, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-
-		if !apply {
-			return nil
-		}
+	apply, err := evaluateConditions(r, rule.ConditionExpression, rule.ConditionKinds, rule.ConditionResources, td)
+	if err != nil {
+		return err
 	}
 
-	res.access = &rule.Allow
+	if apply == nil {
+		// no conditions are provided
+		res.access = &rule.Allow
+		return nil
+	}
 
+	// Determine final access value
+	allow := rule.Allow
+	if rule.Exclusive {
+		// Exclusive rules: apply the opposite when conditions don't match
+		if !*apply {
+			allow = !allow
+		}
+	} else if !*apply { // Non-exclusive rules: do nothing when conditions don't match
+		return nil
+	}
+
+	res.access = &allow
 	return nil
 }
 
@@ -529,36 +591,47 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 		res.fieldAccess = make(map[string]bool)
 	}
 
-	// Determine if the rule should be applied
-	if rule.Condition != "" {
-		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
-		if err != nil {
-			return err
-		}
-		apply, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-
-		if !apply {
-			return nil
-		}
+	apply, err := evaluateConditions(r, rule.ConditionExpression, rule.ConditionKinds, rule.ConditionResources, td)
+	if err != nil {
+		return err
+	}
+	if apply != nil && !*apply {
+		// Conditions are present but not satisfied.
+		return nil
 	}
 
-	// Set if the field should be allowed or denied
-	if rule.AllFields {
-		for _, f := range availableFields {
-			v, ok := res.fieldAccess[f]
-			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f] = rule.Allow
-			}
+	// Helper to apply an allow/deny while respecting "deny takes precedence".
+	set := func(f string, allow bool) {
+		if v, ok := res.fieldAccess[f]; ok && !v {
+			// Already denied by an earlier rule; keep it denied.
+			return
 		}
-	} else {
+		res.fieldAccess[f] = allow
+	}
+
+	switch {
+	case rule.AllFields:
+		for _, f := range availableFields {
+			set(f, rule.Allow)
+		}
+	case rule.Exclusive:
+		seen := make(map[string]struct{}, len(rule.Fields))
+		// set specified fields to the rule's allow value
 		for _, f := range rule.Fields {
-			v, ok := res.fieldAccess[f]
-			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f] = rule.Allow
+			set(f, rule.Allow)
+			seen[f] = struct{}{}
+		}
+		// now set all other available fields to the opposite value, if they were denied earlier, keep them denied
+		for _, f := range availableFields {
+			if _, ok := seen[f]; ok {
+				continue
 			}
+			// field not mentioned in the rule, set to opposite of rule.Allow
+			set(f, !rule.Allow)
+		}
+	default:
+		for _, f := range rule.Fields {
+			set(f, rule.Allow)
 		}
 	}
 
@@ -566,21 +639,15 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 }
 
 // applySecurityRuleRowFilter applies a row filter rule to the resolved security.
-func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td parser.TemplateData) error {
+func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td parser.TemplateData) error {
 	// Determine if the rule should be applied
-	if rule.Condition != "" {
-		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
-		if err != nil {
-			return err
-		}
-		apply, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-
-		if !apply {
-			return nil
-		}
+	apply, err := evaluateConditions(r, rule.ConditionExpression, rule.ConditionKinds, rule.ConditionResources, td)
+	if err != nil {
+		return err
+	}
+	if apply != nil && !*apply {
+		// there are conditions but not applicable
+		return nil
 	}
 
 	// Handle raw SQL row filters
@@ -607,6 +674,77 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *ru
 	}
 
 	return nil
+}
+
+// expandTransitiveAccessRules expands any transitive access rules in the provided list of rules.
+// This involves looking up the referenced resource, determining its dependencies, and adding the necessary access rules for those dependencies.
+// For example, a transitive access rule on a report will add access rules for the underlying metrics view, explore, and any fields or rows that are accessible in the report.
+func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	for _, rule := range claims.AdditionalRules {
+		if rule.GetTransitiveAccess() == nil {
+			rules = append(rules, rule)
+			continue
+		}
+		// If the rule is a transitive access rule, we need to resolve it
+		resName := rule.GetTransitiveAccess().GetResource()
+		if resName == nil {
+			return nil, fmt.Errorf("transitive access rule has no resource")
+		}
+		ctr, err := p.rt.Controller(ctx, instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get controller: %w", err)
+		}
+		res, err := ctr.Get(ctx, resName, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get resource %q of kind %q: %w", resName.Name, resName.Kind, err)
+		}
+		resolvedRules, err := ctr.reconciler(res.Meta.Name.Kind).ResolveTransitiveAccess(ctx, claims, res)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve transitive access rule: %w", err)
+		}
+		rules = append(rules, resolvedRules...)
+	}
+	// gather all conditions kinds and resources mentioned in the rules so that we can add a single security rule access policy for them at the end.
+	// making sure only a single rule with the exclusive flag is added, otherwise we may get false rejections depending on which rule with the exclusive flag is evaluated first
+	var mergedRules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+	var conditionExpression string
+	// merge all access rules with an exclusive flag set in single rule
+	for _, rule := range rules {
+		if access := rule.GetAccess(); access != nil && access.Exclusive {
+			if access.ConditionExpression != "" {
+				if conditionExpression != "" {
+					conditionExpression = fmt.Sprintf("(%s) OR (%s)", conditionExpression, access.ConditionExpression)
+				} else {
+					conditionExpression = access.ConditionExpression
+				}
+			}
+			conditionKinds = append(conditionKinds, access.ConditionKinds...)
+			conditionResources = append(conditionResources, access.ConditionResources...)
+		} else {
+			mergedRules = append(mergedRules, rule)
+		}
+	}
+	rules = mergedRules
+
+	// add a security rule access policy for the resources mentioned in the conditions with exclusive flag set so that access is denied to everything else.
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionExpression: conditionExpression,
+					ConditionKinds:      conditionKinds,
+					ConditionResources:  conditionResources,
+					Allow:               true,
+					Exclusive:           true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.
@@ -637,4 +775,46 @@ func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+func evaluateConditions(r *runtimev1.Resource, expression string, kinds []string, resources []*runtimev1.ResourceName, td parser.TemplateData) (*bool, error) {
+	// Evaluate resource-based conditions
+	var resourceMatches *bool
+	if len(kinds) > 0 || len(resources) > 0 {
+		matches := slices.Contains(kinds, r.Meta.Name.Kind) ||
+			slices.ContainsFunc(resources, func(res *runtimev1.ResourceName) bool {
+				return res.Kind == r.Meta.Name.Kind && res.Name == r.Meta.Name.Name
+			})
+		resourceMatches = &matches
+	}
+
+	// Evaluate expression-based conditions
+	var expressionMatches *bool
+	if expression != "" {
+		expr, err := parser.ResolveTemplate(expression, td, false)
+		if err != nil {
+			return nil, err
+		}
+		matches, err := parser.EvaluateBoolExpression(expr)
+		if err != nil {
+			return nil, err
+		}
+		expressionMatches = &matches
+	}
+
+	if resourceMatches == nil && expressionMatches == nil {
+		// No conditions to evaluate
+		return nil, nil
+	}
+
+	// Combine conditions (both must be true if both are present)
+	conditionsMatch := true
+	if resourceMatches != nil {
+		conditionsMatch = *resourceMatches
+	}
+	if expressionMatches != nil {
+		conditionsMatch = conditionsMatch && *expressionMatches
+	}
+
+	return &conditionsMatch, nil
 }

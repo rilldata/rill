@@ -1,7 +1,7 @@
 ---
 title: "Cost Monitoring Analytics Demo"
 sidebar_label: "Cost Monitoring Analytics Demo"
-sidebar_position: 6
+sidebar_position: 20
 hide_table_of_contents: false
 tags:
   - Tutorial
@@ -59,7 +59,7 @@ rill-cost-monitoring/
 
 ## Step 3: Data Sources
 
-The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/connect) to point to your own data export.
+The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/build/connectors) to point to your own data export.
 
 ```yaml
 # Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
@@ -76,7 +76,7 @@ uri: "https://storage.googleapis.com/rilldata-public/metrics_margin_monitoring.p
 - **Time series data** – Daily granular data for trend analysis
 
 **What this source does:**
-- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/connect/credentials))
+- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/build/connectors/credentials))
 - Ingests the data into Rill's OLAP Engine (DuckDB)
 - Provides the foundation for margin analysis and business intelligence
 

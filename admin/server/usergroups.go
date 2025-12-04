@@ -17,11 +17,11 @@ import (
 
 func (s *Server) ListUsergroupsForOrganizationAndUser(ctx context.Context, req *adminv1.ListUsergroupsForOrganizationAndUserRequest) (*adminv1.ListUsergroupsForOrganizationAndUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.user_id", req.UserId),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -59,11 +59,11 @@ func (s *Server) ListUsergroupsForOrganizationAndUser(ctx context.Context, req *
 
 func (s *Server) CreateUsergroup(ctx context.Context, req *adminv1.CreateUsergroupRequest) (*adminv1.CreateUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.name", req.Name),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -89,11 +89,11 @@ func (s *Server) CreateUsergroup(ctx context.Context, req *adminv1.CreateUsergro
 
 func (s *Server) GetUsergroup(ctx context.Context, req *adminv1.GetUsergroupRequest) (*adminv1.GetUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +110,12 @@ func (s *Server) GetUsergroup(ctx context.Context, req *adminv1.GetUsergroupRequ
 
 func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergroupRequest) (*adminv1.RenameUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.name", req.Name),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -139,12 +139,12 @@ func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergro
 
 func (s *Server) EditUsergroup(ctx context.Context, req *adminv1.EditUsergroupRequest) (*adminv1.EditUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.description", req.Description),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -168,10 +168,10 @@ func (s *Server) EditUsergroup(ctx context.Context, req *adminv1.EditUsergroupRe
 
 func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *adminv1.ListOrganizationMemberUsergroupsRequest) (*adminv1.ListOrganizationMemberUsergroupsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -219,11 +219,11 @@ func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *admi
 
 func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.ListProjectMemberUsergroupsRequest) (*adminv1.ListProjectMemberUsergroupsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -271,11 +271,11 @@ func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.L
 
 func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergroupRequest) (*adminv1.DeleteUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -299,12 +299,12 @@ func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergro
 
 func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv1.AddOrganizationMemberUsergroupRequest) (*adminv1.AddOrganizationMemberUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -336,12 +336,12 @@ func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv
 
 func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *adminv1.SetOrganizationMemberUsergroupRoleRequest) (*adminv1.SetOrganizationMemberUsergroupRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -381,11 +381,11 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 
 func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adminv1.RemoveOrganizationMemberUsergroupRequest) (*adminv1.RemoveOrganizationMemberUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -417,13 +417,13 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 
 func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.AddProjectMemberUsergroupRequest) (*adminv1.AddProjectMemberUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +441,7 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -456,13 +456,13 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 
 func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1.SetProjectMemberUsergroupRoleRequest) (*adminv1.SetProjectMemberUsergroupRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -480,7 +480,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -503,12 +503,12 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 
 func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.RemoveProjectMemberUsergroupRequest) (*adminv1.RemoveProjectMemberUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +518,7 @@ func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "not allowed to revoke project user group role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -541,11 +541,11 @@ func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.
 
 func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUsergroupMemberUserRequest) (*adminv1.AddUsergroupMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -613,11 +613,11 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 
 func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.ListUsergroupMemberUsersRequest) (*adminv1.ListUsergroupMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}
@@ -656,11 +656,11 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 
 func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupMemberUserRequest) (*adminv1.RemoveUsergroupMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
 	}

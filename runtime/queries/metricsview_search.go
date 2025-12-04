@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -62,7 +63,7 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	exec, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
+	exec, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
 	if err != nil {
 		return err
 	}

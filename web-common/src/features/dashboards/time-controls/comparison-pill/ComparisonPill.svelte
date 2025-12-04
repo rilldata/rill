@@ -15,10 +15,12 @@
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { SortType } from "../../proto-state/derived-types";
   import * as Elements from "../super-pill/components";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let showTimeComparison: boolean;
+  export let minTimeGrain: V1TimeGrain | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
@@ -112,6 +114,7 @@
       maxDate={DateTime.fromJSDate(allTimeRange.end)}
       minDate={DateTime.fromJSDate(allTimeRange.start)}
       timeComparisonOptionsState={$timeComparisonOptionsState}
+      {minTimeGrain}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
       currentInterval={interval}

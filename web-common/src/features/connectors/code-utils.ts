@@ -22,11 +22,14 @@ import {
   runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "../../runtime-client";
-import { makeSufficientlyQualifiedTableName } from "./connectors-utils";
+import {
+  getDriverNameForConnector,
+  makeSufficientlyQualifiedTableName,
+} from "./connectors-utils";
 
 const YAML_MODEL_TEMPLATE = `type: model
-connector: {{ connector }}
-materialize: true
+materialize: true\n
+connector: {{ connector }}\n
 sql: {{ sql }}{{ dev_section }}
 `;
 
@@ -36,6 +39,7 @@ export function compileConnectorYAML(
   options?: {
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
+    connectorInstanceName?: string;
   },
 ) {
   // Add instructions to the top of the file
@@ -44,7 +48,7 @@ export function compileConnectorYAML(
   
 type: connector
 
-driver: ${connector.name}`;
+driver: ${getDriverNameForConnector(connector.name as string)}`;
 
   // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
   let properties =
@@ -99,6 +103,7 @@ driver: ${connector.name}`;
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
+          options?.connectorInstanceName,
         )} }}"`;
       }
 
@@ -120,6 +125,7 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
+  connectorInstanceName?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -163,6 +169,7 @@ export async function updateDotEnvWithSecrets(
     const connectorSecretKey = makeDotEnvConnectorKey(
       connector.name as string,
       key,
+      connectorInstanceName,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -217,9 +224,15 @@ export function deleteEnvVariable(
   return newBlob;
 }
 
-export function makeDotEnvConnectorKey(connectorName: string, key: string) {
-  // Note: The connector name, not driver, is used. This enables configuring multiple connectors that use the same driver.
-  return `connector.${connectorName}.${key}`;
+export function makeDotEnvConnectorKey(
+  driverName: string,
+  key: string,
+  connectorInstanceName?: string,
+) {
+  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
+  // This enables configuring multiple connectors that use the same driver with unique env keys.
+  const nameToUse = connectorInstanceName || driverName;
+  return `connector.${nameToUse}.${key}`;
 }
 
 export async function updateRillYAMLWithOlapConnector(
@@ -305,7 +318,7 @@ export async function createYamlModelFromTable(
   // NOTE: Redshift does not support LIMIT clauses in its UNLOAD data exports.
   const shouldIncludeDevSection = driverName !== "redshift";
   const devSection = shouldIncludeDevSection
-    ? `\ndev:\n  sql: ${selectStatement} limit 10000`
+    ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
   const yamlContent = YAML_MODEL_TEMPLATE.replace("{{ connector }}", connector)
@@ -387,7 +400,7 @@ export async function createSqlModelFromTable(
 
   // Create model
   const topComments =
-    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/reference/project-files/models";
+    "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/build/models";
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
     sufficientlyQualifiedTableName,

@@ -132,10 +132,21 @@ func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMe
 
 	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
+		memberAttrs := ""
+		if m.Attributes != nil && len(m.Attributes.Fields) > 0 {
+			attrMap := m.Attributes.AsMap()
+			var attrs []string
+			for key, value := range attrMap {
+				attrs = append(attrs, fmt.Sprintf("%s=%v", key, value))
+			}
+			memberAttrs = strings.Join(attrs, ", ")
+		}
+
 		allMembers = append(allMembers, &memberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+			Email:      m.UserEmail,
+			Name:       m.UserName,
+			RoleName:   m.RoleName,
+			Attributes: memberAttrs,
 		})
 	}
 
@@ -148,9 +159,9 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 		return
 	}
 
-	allMembers := make([]*memberUserWithRole, 0, len(members))
+	allMembers := make([]*projectMemberUserWithRole, 0, len(members))
 	for _, m := range members {
-		allMembers = append(allMembers, &memberUserWithRole{
+		allMembers = append(allMembers, &projectMemberUserWithRole{
 			Email:    m.UserEmail,
 			Name:     m.UserName,
 			RoleName: m.RoleName,
@@ -231,6 +242,13 @@ type memberUser struct {
 }
 
 type memberUserWithRole struct {
+	Email      string `header:"email" json:"email"`
+	Name       string `header:"name" json:"display_name"`
+	RoleName   string `header:"role" json:"role_name"`
+	Attributes string `header:"attributes" json:"attributes"`
+}
+
+type projectMemberUserWithRole struct {
 	Email    string `header:"email" json:"email"`
 	Name     string `header:"name" json:"display_name"`
 	RoleName string `header:"role" json:"role_name"`
@@ -651,7 +669,7 @@ func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingIssue{
-		Organization: e.Organization,
+		Organization: e.Org,
 		Type:         e.Type.String(),
 		Level:        e.Level.String(),
 		Metadata:     string(meta), // TODO pretty print
@@ -684,7 +702,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			rows[i] = make([]string, len(headers))
 			for j, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+					rows[i][j] = p.FormatValue(val.AsInterface())
 				} else {
 					rows[i][j] = "null"
 				}
@@ -707,7 +725,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			record := make([]string, len(headers))
 			for i, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					record[i] = fmt.Sprintf("%v", val.AsInterface())
+					record[i] = p.FormatValue(val.AsInterface())
 				} else {
 					record[i] = ""
 				}

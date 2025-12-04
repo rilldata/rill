@@ -13,6 +13,7 @@ export async function resolveTimeRanges(
   exploreSpec: V1ExploreSpec,
   timeRanges: (DashboardTimeControls | undefined)[],
   timeZone: string | undefined,
+  executionTime: string | undefined = undefined,
 ) {
   const rillTimes: string[] = [];
   const rillTimeToTimeRange = new Map<number, number>();
@@ -22,6 +23,7 @@ export async function resolveTimeRanges(
 
   timeRanges.forEach((tr, i) => {
     timeRangesToReturn[i] = tr;
+
     if (
       !tr?.name ||
       // already resolved
@@ -41,21 +43,15 @@ export async function resolveTimeRanges(
   const metricsViewName = exploreSpec.metricsView!;
 
   try {
-    const timeRangesResp = await queryClient.fetchQuery({
-      queryKey: getQueryServiceMetricsViewTimeRangesQueryKey(
-        instanceId,
-        metricsViewName,
-        { expressions: rillTimes, timeZone },
-      ),
-      queryFn: () =>
-        queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
-          expressions: rillTimes,
-          timeZone,
-        }),
-      staleTime: Infinity,
+    const timeRangesResp = await fetchTimeRanges({
+      instanceId,
+      metricsViewName,
+      rillTimes,
+      timeZone,
+      executionTime,
     });
 
-    timeRangesResp.timeRanges?.forEach((tr, index) => {
+    timeRangesResp.resolvedTimeRanges?.forEach((tr, index) => {
       const mappedIndex = rillTimeToTimeRange.get(index);
       if (mappedIndex === undefined || !timeRangesToReturn[mappedIndex]) return;
       timeRangesToReturn[mappedIndex].start = new Date(tr.start!);
@@ -70,4 +66,52 @@ export async function resolveTimeRanges(
     );
     return timeRangesToReturn;
   }
+}
+
+export async function fetchTimeRanges({
+  instanceId,
+  metricsViewName,
+  rillTimes,
+  timeZone,
+  executionTime,
+  cacheBust = false,
+}: {
+  instanceId: string;
+  metricsViewName: string;
+  rillTimes: string[];
+  timeZone: string | undefined;
+  executionTime?: string;
+  cacheBust?: boolean;
+}) {
+  const requestBody = {
+    expressions: rillTimes,
+    timeZone,
+    executionTime,
+    priority: 100,
+  };
+
+  const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
+    instanceId,
+    metricsViewName,
+    requestBody,
+  );
+
+  if (cacheBust) {
+    await queryClient.invalidateQueries({
+      queryKey: queryKey,
+    });
+  }
+
+  const response = await queryClient.fetchQuery({
+    queryKey: queryKey,
+    queryFn: () =>
+      queryServiceMetricsViewTimeRanges(
+        instanceId,
+        metricsViewName,
+        requestBody,
+      ),
+    staleTime: Infinity,
+  });
+
+  return response;
 }

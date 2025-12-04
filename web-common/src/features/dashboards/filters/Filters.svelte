@@ -5,10 +5,12 @@
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
     TimeComparisonOption,
@@ -19,6 +21,7 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
+  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -30,7 +33,6 @@
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
-    ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
@@ -38,7 +40,6 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -101,11 +102,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: timeRangeQuery = createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-  );
+  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
 
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 
@@ -226,15 +223,7 @@
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
-    if (alias === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
+    // This should be returned by the API, but it is not yet implemented
     const includesTimeZoneOffset = alias.includes("tz");
 
     if (includesTimeZoneOffset) {
@@ -243,12 +232,14 @@
       if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
     }
 
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
     const { interval, grain } = await deriveInterval(
       alias,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate(allTimeRange.start),
-        DateTime.fromJSDate(allTimeRange.end),
-      ),
+
       metricsViewName,
       activeTimeZone,
     );
@@ -358,7 +349,18 @@
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-      <Calendar size="16px" />
+      <Tooltip.Root openDelay={0}>
+        <Tooltip.Trigger class="cursor-default">
+          <Calendar size="16px" />
+        </Tooltip.Trigger>
+        <Tooltip.Content side="bottom" sideOffset={10}>
+          <Metadata
+            timeZone={activeTimeZone}
+            timeStart={allTimeRange?.start}
+            timeEnd={allTimeRange?.end}
+          />
+        </Tooltip.Content>
+      </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
           {allTimeRange}
@@ -379,7 +381,6 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
-          showPan
           {showDefaultItem}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
@@ -389,6 +390,7 @@
           {onPan}
         />
         <ComparisonPill
+          {minTimeGrain}
           {allTimeRange}
           {selectedTimeRange}
           showTimeComparison={!!showTimeComparison}
@@ -401,6 +403,7 @@
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
               as of <Timestamp
+                id="filter-bar-as-of"
                 italic
                 suppress
                 showDate={false}

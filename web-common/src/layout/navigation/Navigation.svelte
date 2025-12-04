@@ -144,13 +144,13 @@
                 className="text-gray-400 transition-transform {!showConnectors &&
                   '-rotate-90'}"
               />
-              <h3>Connectors</h3>
+              <h3>Data Explorer</h3>
             </button>
 
             <div
               class="connector-wrapper"
               role="region"
-              aria-label="Connector explorer"
+              aria-label="Data explorer"
               bind:this={connectorWrapper}
               style:height="{showConnectors ? connectorSectionHeight : 0}px"
             >

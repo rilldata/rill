@@ -1,6 +1,7 @@
 <script lang="ts">
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
   import { MainLineColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
@@ -10,10 +11,9 @@
   import { extent, max, min } from "d3-array";
   import { scaleLinear, scaleTime } from "d3-scale";
   import { DateTime, Interval } from "luxon";
+  import { onDestroy } from "svelte";
   import Line from "./Line.svelte";
   import Point from "./Point.svelte";
-  import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import { onDestroy } from "svelte";
 
   const SNAP_RANGE = 0.05;
   const THROTTLE_MS = 16;
@@ -23,6 +23,7 @@
   export let timeGrain: V1TimeGrain;
   export let selectedTimeZone: string;
   export let yAccessor: string;
+  export let hideTimeRange: boolean | undefined = false;
   export let formatterFunction: ReturnType<typeof createMeasureValueFormatter>;
   export let hoveredPoints: MappedPoint[] = [];
 
@@ -246,7 +247,7 @@
     </svg>
 
     <div
-      class="w-full h-fit flex justify-between text-gray-500 mt-0.5 relative"
+      class="w-full h-fit min-h-[14px] flex justify-between text-gray-500 mt-0.5 relative"
     >
       {#if hoveredPoints.length > 0}
         {@const jsDate = hoveredPoints[0].date}
@@ -258,13 +259,13 @@
             style:transform="translateX(-{percentage}%)"
             style:left="{percentage}%"
           >
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
           </span>
         {/if}
       {:else if mappedData.length}
         {@const firstPoint = mappedData?.[0]?.[0]}
         {@const lastPoint = mappedData?.[0]?.[mappedData?.[0]?.length - 1]}
-        {#if firstPoint && lastPoint}
+        {#if firstPoint && lastPoint && !hideTimeRange}
           <span>
             {DateTime.fromJSDate(firstPoint.date)
               .setZone(selectedTimeZone)

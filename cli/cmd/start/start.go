@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/envdetect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -102,6 +104,32 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectPath = "."
 			}
 
+			// Check for WSL Windows partition usage (based on the project path)
+			if envdetect.IsWSLWindowsPartition(projectPath) {
+				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
+				confirm, err := cmdutil.ConfirmPrompt(
+					"Do you want to continue anyway?",
+					"", false, // Default to "No"
+				)
+				if err != nil {
+					return err
+				}
+				if !confirm {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
+			}
+
+			// Always attempt to pull env for any valid Rill project (after projectPath is set)
+			if ch.IsAuthenticated() {
+				if local.IsProjectInit(projectPath) {
+					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
+					if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+					}
+				}
+			}
+
 			// Check that projectPath doesn't have an excessive number of files.
 			// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
 			if _, err := os.Stat(projectPath); err == nil {
@@ -154,6 +182,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			allowedOrigins = append(allowedOrigins, localURL)
 
+			ch.Interactive = false // Disable interactive mode for the app server
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Ch:             ch,
 				Verbose:        verbose,
@@ -165,6 +194,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Variables:      envVarsMap,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
+				ServeUI:        !noUI,
 			})
 			if err != nil {
 				return err

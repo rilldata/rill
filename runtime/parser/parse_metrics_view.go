@@ -48,6 +48,7 @@ type MetricsViewYAML struct {
 		LookupKeyColumn         string `yaml:"lookup_key_column"`
 		LookupValueColumn       string `yaml:"lookup_value_column"`
 		LookupDefaultExpression string `yaml:"lookup_default_expression"`
+		SmallestTimeGrain       string `yaml:"smallest_time_grain"`
 	}
 	Measures []*struct {
 		Name                string
@@ -281,6 +282,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if err != nil {
 		return fmt.Errorf(`invalid "smallest_time_grain": %w`, err)
 	}
+	if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && smallestTimeGrain < runtimev1.TimeGrain_TIME_GRAIN_SECOND {
+		return errors.New(`"smallest_time_grain" must be at least "second"`)
+	}
 
 	if tmp.DefaultTimeRange != "" {
 		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
@@ -298,7 +302,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.Parent != "" {
 		if len(tmp.Dimensions) > 0 || len(tmp.Measures) > 0 {
-			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use dimension_selector and measure_selector to select from parent %q", tmp.Parent)
+			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use parent_dimensions and parent_measures to select from parent %q", tmp.Parent)
 		}
 		if tmp.Database != "" || tmp.DatabaseSchema != "" || tmp.Table != "" || tmp.Model != "" {
 			return fmt.Errorf("cannot set data source in a derived metrics view (parent %q)", tmp.Parent)
@@ -321,8 +325,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
-	timeSeen := false
+	timeDimSeenInDimList := false
 
+	dimensions := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(tmp.Dimensions))
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
 			continue
@@ -347,10 +352,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			dim.DisplayName = dim.Label
 		}
 
+		// When display name is not provided, we derive a human-friendly one from the dimension name
 		if dim.DisplayName == "" {
 			dim.DisplayName = ToDisplayName(dim.Name)
 		}
 
+		// The "column" and "expression" properties are mutually exclusive
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
@@ -365,21 +372,46 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 		}
 
+		// Validate the dimension name is unique
 		lower := strings.ToLower(dim.Name)
 		if _, ok := names[lower]; ok {
 			// allow time dimension to be defined in the dimensions list once
 			if strings.EqualFold(lower, tmp.TimeDimension) {
-				if timeSeen {
+				if timeDimSeenInDimList {
 					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
 				} else if dim.Name != tmp.TimeDimension {
 					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
 				}
-				timeSeen = true
+				timeDimSeenInDimList = true
 			} else {
 				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 			}
 		}
 		names[lower] = nameIsDimension
+
+		smallestTimeGrain, err := parseTimeGrain(dim.SmallestTimeGrain)
+		if err != nil {
+			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: %w`, dim.Name, err)
+		}
+		if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && smallestTimeGrain < runtimev1.TimeGrain_TIME_GRAIN_SECOND {
+			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: must be at least "second"`, dim.Name)
+		}
+
+		// Dimension is valid, add to the list
+		dimensions = append(dimensions, &runtimev1.MetricsViewSpec_Dimension{
+			Name:                    dim.Name,
+			DisplayName:             dim.DisplayName,
+			Description:             dim.Description,
+			Column:                  dim.Column,
+			Expression:              dim.Expression,
+			Unnest:                  dim.Unnest,
+			Uri:                     dim.URI,
+			LookupTable:             dim.LookupTable,
+			LookupKeyColumn:         dim.LookupKeyColumn,
+			LookupValueColumn:       dim.LookupValueColumn,
+			LookupDefaultExpression: dim.LookupDefaultExpression,
+			SmallestTimeGrain:       smallestTimeGrain,
+		})
 	}
 
 	for _, dimension := range tmp.DefaultDimensions {
@@ -718,24 +750,18 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
-	for _, dim := range tmp.Dimensions {
-		if dim == nil || dim.Ignore {
-			continue
-		}
+	spec.Dimensions = dimensions
+	spec.Measures = measures
 
-		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
-			Name:                    dim.Name,
-			DisplayName:             dim.DisplayName,
-			Description:             dim.Description,
-			Column:                  dim.Column,
-			Expression:              dim.Expression,
-			Unnest:                  dim.Unnest,
-			Uri:                     dim.URI,
-			LookupTable:             dim.LookupTable,
-			LookupKeyColumn:         dim.LookupKeyColumn,
-			LookupValueColumn:       dim.LookupValueColumn,
-			LookupDefaultExpression: dim.LookupDefaultExpression,
-		})
+	// if time dimension is not defined in the dimensions list but is defined in the `timeseries` key, we prepend it to the dimensions list here
+	if !timeDimSeenInDimList && tmp.TimeDimension != "" {
+		spec.Dimensions = append([]*runtimev1.MetricsViewSpec_Dimension{
+			{
+				Name:        tmp.TimeDimension,
+				Column:      tmp.TimeDimension,
+				DisplayName: ToDisplayName(tmp.TimeDimension),
+			},
+		}, spec.Dimensions...)
 	}
 
 	for _, annotation := range tmp.Annotations {
@@ -759,8 +785,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			MeasuresSelector: annotationMeasuresSelector,
 		})
 	}
-
-	spec.Measures = measures
 
 	// Parse the dimensions and measures selectors
 	if tmp.Parent != "" {

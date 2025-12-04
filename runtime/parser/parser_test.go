@@ -63,12 +63,12 @@ mock_users:
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
-		want    map[string]bool
+		want    map[string]string
 		wantErr bool
 	}{
 		{
 			yaml: ` `,
-			want: nil,
+			want: map[string]string{},
 		},
 		{
 			yaml:    `features: 10`,
@@ -76,11 +76,11 @@ func TestRillYAMLFeatures(t *testing.T) {
 		},
 		{
 			yaml: `features: []`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `features: {}`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `
@@ -88,7 +88,7 @@ features:
   foo: true
   bar: false
 `,
-			want: map[string]bool{"foo": true, "bar": false},
+			want: map[string]string{"foo": "true", "bar": "false"},
 		},
 		{
 			yaml: `
@@ -96,7 +96,30 @@ features:
 - foo
 - bar
 `,
-			want: map[string]bool{"foo": true, "bar": true},
+			want: map[string]string{"foo": "true", "bar": "true"},
+		},
+		{
+			yaml: `
+features:
+  templated_embed: '{{ .user.embed }}'
+  templated_user: '{{ eq (.user.domain) "rilldata.com" }}'
+`,
+			want: map[string]string{"templated_embed": "{{ .user.embed }}", "templated_user": "{{ eq (.user.domain) \"rilldata.com\" }}"},
+		},
+		{
+			yaml: `
+features:
+  invalid: '{{'
+`,
+			wantErr: true,
+		},
+		{
+			yaml: `
+features:
+  snake_case: true
+  camelCase: false
+`,
+			want: map[string]string{"snake_case": "true", "camel_case": "false"},
 		},
 	}
 
@@ -369,11 +392,8 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "postgres"},
 			Paths: []string{"/connectors/postgres.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Driver: "postgres",
-				Properties: map[string]string{
-					"database": "postgres",
-					"schema":   "default",
-				},
+				Driver:     "postgres",
+				Properties: must(structpb.NewStruct(map[string]any{"database": "postgres", "schema": "default"})),
 			},
 		},
 		// s3
@@ -381,10 +401,8 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "s3"},
 			Paths: []string{"/connectors/s3.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Driver: "s3",
-				Properties: map[string]string{
-					"region": "us-east-1",
-				},
+				Driver:     "s3",
+				Properties: must(structpb.NewStruct(map[string]any{"region": "us-east-1"})),
 			},
 		},
 	}
@@ -1001,8 +1019,8 @@ security:
 				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 				},
 			},
@@ -1024,8 +1042,8 @@ security:
 				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
@@ -1220,31 +1238,31 @@ security:
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "",
-						Allow:     false,
+						ConditionExpression: "",
+						Allow:               false,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "'{{ .user.domain }}' = 'example.com'",
-						Allow:     true,
-						AllFields: true,
+						ConditionExpression: "'{{ .user.domain }}' = 'example.com'",
+						Allow:               true,
+						AllFields:           true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "true",
-						Allow:     true,
-						Fields:    []string{"a"},
+						ConditionExpression: "true",
+						Allow:               true,
+						Fields:              []string{"a"},
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "'{{ .user.domain }}' = 'bad.com'",
-						Allow:     false,
-						AllFields: true,
+						ConditionExpression: "'{{ .user.domain }}' = 'bad.com'",
+						Allow:               false,
+						AllFields:           true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "true",
-						Allow:     false,
-						Fields:    []string{"b"},
+						ConditionExpression: "true",
+						Allow:               false,
+						Fields:              []string{"b"},
 					}}},
 				},
 			},
@@ -1941,6 +1959,7 @@ measures:
 				DisplayName:   "D1",
 				TimeDimension: "t",
 				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{Name: "t", DisplayName: ToDisplayName("t"), Column: "t"},
 					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_Measure{
@@ -2100,7 +2119,7 @@ time_zone: America/Los_Angeles
 		Paths: []string{"/connectors/clickhouse.yaml"},
 		ConnectorSpec: &runtimev1.ConnectorSpec{
 			Driver:        "clickhouse",
-			Properties:    map[string]string{"time_zone": "America/Los_Angeles"},
+			Properties:    must(structpb.NewStruct(map[string]any{"time_zone": "America/Los_Angeles"})),
 			Provision:     true,
 			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
 		},
@@ -2219,8 +2238,8 @@ security:
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "partner_id IN (SELECT partner_id FROM {{ ref \"mappings\" }} WHERE domain = '{{ .user.domain }}')",
@@ -2477,6 +2496,158 @@ func normalizeJSON(t *testing.T, s string) string {
 	b, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(b)
+}
+
+func TestThemeValidation(t *testing.T) {
+	tests := []struct {
+		name         string
+		yaml         string
+		expectError  bool
+		errorMsg     string
+		expectedSpec *runtimev1.ThemeSpec
+	}{
+		{
+			name: "valid legacy colors",
+			yaml: `
+type: theme
+colors:
+  primary: "#ff0000"
+  secondary: "#00ff00"
+`,
+			expectError: false,
+		},
+		{
+			name: "valid CSS",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: green
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "red",
+					Secondary: "green",
+				},
+			},
+		},
+		{
+			name: "mixing legacy and CSS should fail",
+			yaml: `
+type: theme
+colors:
+  primary: "#ff0000"
+light:
+  primary: red
+  secondary: green
+`,
+			expectError: true,
+			errorMsg:    "cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously",
+		},
+		{
+			name: "invalid CSS syntax - unknown property",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: green
+  unrecognised: blue
+`,
+			expectError: true,
+			errorMsg:    `invalid CSS variable: "unrecognised"`,
+		},
+		{
+			name: "invalid CSS syntax - invalid value",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: gren
+`,
+			expectError: true,
+			errorMsg:    "Invalid color format, gren",
+		},
+		{
+			name: "expansive valid css",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: green
+  background: blue
+  foreground: yellow
+  card-foreground: yellow
+dark:
+  primary: gray
+  secondary: black
+  background: black
+  foreground: white
+  card-foreground: white
+`,
+			expectError: false,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeColors{
+					Primary:   "red",
+					Secondary: "green",
+					Variables: map[string]string{
+						"background":      "blue",
+						"foreground":      "yellow",
+						"card-foreground": "yellow",
+					},
+				},
+				Dark: &runtimev1.ThemeColors{
+					Primary:   "gray",
+					Secondary: "black",
+					Variables: map[string]string{
+						"background":      "black",
+						"foreground":      "white",
+						"card-foreground": "white",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				"rill.yaml":        "", // Minimal rill.yaml to avoid "not found" error
+				"themes/test.yaml": tt.yaml,
+			})
+
+			p, err := Parse(ctx, repo, "", "", "duckdb")
+			require.NoError(t, err)
+
+			if tt.expectError {
+				// Filter out the theme validation error from other errors
+				var themeErrors []*runtimev1.ParseError
+				for _, err := range p.Errors {
+					if err.FilePath == "/themes/test.yaml" {
+						themeErrors = append(themeErrors, err)
+					}
+				}
+				require.Len(t, themeErrors, 1)
+				require.Contains(t, themeErrors[0].Message, tt.errorMsg)
+			} else {
+				// Filter out the theme validation error from other errors
+				var themeErrors []*runtimev1.ParseError
+				for _, err := range p.Errors {
+					if err.FilePath == "/themes/test.yaml" {
+						themeErrors = append(themeErrors, err)
+					}
+				}
+				require.Len(t, themeErrors, 0)
+			}
+
+			if tt.expectedSpec != nil {
+				res, ok := p.Resources[ResourceName{Kind: ResourceKindTheme, Name: "test"}]
+				require.True(t, ok)
+				require.Equal(t, tt.expectedSpec, res.ThemeSpec)
+			}
+		})
+	}
 }
 
 func must[T any](v T, err error) T {

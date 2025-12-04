@@ -35,7 +35,7 @@ With the split of metrics view, dashboard configurations experienced an overhaul
 
 ### version 0.49 -> version 0.5X
 
-Due to the [separation of dashboards to metrics layer and dashboards](/home/concepts/metrics-layer), you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
+Due to the [separation of dashboards to metrics layer and dashboards](/build/metrics-view), you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
 
 **[Sample Legacy Dashboard Contents](https://docs.rilldata.com/reference/project-files/explore-dashboards):**
 
@@ -95,7 +95,7 @@ first_month_of_year: #defines first month of year
 
 dimensions: #your dimensions, can be copied from dashboard.yaml
     - name:
-      label:
+      display_name:
       column/expression:
       property:
       description:
@@ -104,9 +104,9 @@ dimensions: #your dimensions, can be copied from dashboard.yaml
 
 measures: #your measures, can be copied from dashboard.yaml
     - name:
-      label:
+      display_name:
       type:
-      expressions:
+      expression:
       window:
       per:
       requires:

@@ -9,22 +9,26 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
 const (
-	cookieName             = "auth"
-	cookieFieldState       = "state"
-	cookieFieldRedirect    = "redirect"
-	cookieFieldAccessToken = "access_token"
+	cookieName                  = "auth"
+	cookieFieldState            = "state"
+	cookieFieldRedirect         = "redirect"
+	cookieFieldCustomDomainFlow = "custom_domain_flow"
+	cookieFieldAccessToken      = "access_token"
 )
 
 // RegisterEndpoints adds HTTP endpoints for auth.
@@ -33,13 +37,41 @@ const (
 //
 // Since we support optional custom domains for orgs, we need to jump through some hoops to ensure the auth redirects work correctly,
 // and that the auth token cookie is set on the correct domain. Below follows an overview of the redirect flows for login and logout.
-
-// Login flow:
-//  1. Frontend calls <canonical domain>/auth/login?redirect=<frontend return URL>
-//  2. It redirects to <auth provider> for login
-//  3. The auth provider redirects to <canonical domain>/auth/callback
-//  4. It redirects to <custom domain>/auth/with-token
-//  5. It redirects to <frontend return URL>
+// Login flow without custom domain configured:
+//
+//	1 . UI requests <canonical-domain>/auth/login?redirect=<redirect>
+//	   - Set a cookie with state=YYY
+//	   - If a redirect URL is provided, store it in the cookie
+//
+//	2. Redirect to Auth0 /login?state=YYY
+//	   - User completes login
+//
+//	3. Redirect to <canonical-domain>/auth/callback?state=YYY&<oauth-params>
+//	   - Verify cookie state matches YYY
+//	   - Save the long-lived token in a cookie
+//	   - Redirect to the saved redirect URL (or the frontend root if none was provided)
+//
+// Login flow when a custom domain is configured:
+//
+//  1. UI requests <custom-domain>/auth/login?redirect=<redirect>
+//     - Set a cookie with state=XXX
+//     - If a redirect URL is provided, store it in the cookie
+//
+//  2. Redirect to <canonical-domain>/auth/login?redirect=https://<custom-domain>/auth/custom-domain-callback?state=XXX&custom_domain_flow=true
+//     - Set a cookie with state=YYY and custom_domain_flow=true
+//
+//  3. Redirect to Auth0 /login?state=YYY
+//     - User completes login
+//
+//  4. Redirect to <canonical-domain>/auth/callback?state=YYY&<oauth-params>
+//     - Verify cookie state matches YYY
+//     - Issue a noune token
+//
+//  5. Redirect to <custom-domain>/auth/custom-domain-callback?state=XXX&noune_token=<short-lived-token>
+//     - Verify cookie state matches XXX
+//     - Exchange short-lived token for a long-lived token
+//     - Save the long-lived token in a cookie
+//     - Redirect to the saved redirect URL (or the frontend root if none was provided)
 //
 // Logout flow:
 //  1. Frontend calls <custom domain>/auth/logout?redirect=<frontend return URL>
@@ -53,7 +85,7 @@ const (
 // If the current org doesn't have a custom domain, the custom domain can be substituted for the canonical domain (without path suffix).
 //
 // There are more details in the type doc for `admin.URLs` and in the individual handler docstrings below.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter, issuer *auth.Issuer) {
 	// checkLimit needs access to limiter
 	checkLimit := func(route string) middleware.CheckFunc {
 		return func(req *http.Request) error {
@@ -76,15 +108,25 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/signup", middleware.Check(checkLimit("/auth/signup"), http.HandlerFunc(a.authSignup)))
 	observability.MuxHandle(inner, "/auth/login", middleware.Check(checkLimit("/auth/login"), http.HandlerFunc(a.authLogin)))
 	observability.MuxHandle(inner, "/auth/callback", middleware.Check(checkLimit("/auth/callback"), http.HandlerFunc(a.authLoginCallback)))
-	observability.MuxHandle(inner, "/auth/with-token", middleware.Check(checkLimit("/auth/with-token"), http.HandlerFunc(a.authWithToken)))
+	observability.MuxHandle(inner, "/auth/custom-domain-callback", middleware.Check(checkLimit("/auth/custom-domain-callback"), http.HandlerFunc(a.authLoginCustomDomainCallback)))
 	observability.MuxHandle(inner, "/auth/logout", middleware.Check(checkLimit("/auth/logout"), http.HandlerFunc(a.authLogout)))
 	observability.MuxHandle(inner, "/auth/logout/provider", middleware.Check(checkLimit("/auth/logout/provider"), http.HandlerFunc(a.authLogoutProvider)))
 	observability.MuxHandle(inner, "/auth/logout/callback", middleware.Check(checkLimit("/auth/logout/callback"), http.HandlerFunc(a.authLogoutCallback)))
+	observability.MuxHandle(inner, "/auth/assume-open", a.HTTPMiddlewareLenient(middleware.Check(checkLimit("/auth/assume-open"), http.HandlerFunc(a.authAssumeOpen)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/device_authorization", middleware.Check(checkLimit("/auth/oauth/device_authorization"), http.HandlerFunc(a.handleDeviceCodeRequest)))
 	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation))))   // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/authorize", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/authorize"), http.HandlerFunc(a.handleAuthorizeRequest)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
+	observability.MuxHandle(inner, "/auth/oauth/register", middleware.Check(checkLimit("/auth/oauth/register"), http.HandlerFunc(a.handleOAuthRegister)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
+	// Register well known endpoints
+	wellKnownMux := http.NewServeMux()
+	// Serve public JWKS for runtime JWT verification
+	wellKnownMux.Handle("/.well-known/jwks.json", issuer.WellKnownHandler())
+	// OAuth discovery endpoints for MCP support
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-protected-resource", middleware.Check(checkLimit("/.well-known/oauth-protected-resource"), http.HandlerFunc(a.handleOAuthProtectedResourceMetadata)))
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-authorization-server", middleware.Check(checkLimit("/.well-known/oauth-authorization-server"), http.HandlerFunc(a.handleOAuthAuthorizationServerMetadata)))
+	mux.Handle("/.well-known/", observability.Middleware("admin", a.logger, wellKnownMux))
 }
 
 // authSignup redirects the users to the auth provider's signup page.
@@ -99,24 +141,20 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	a.authStart(w, r, false)
 }
 
-// authStart starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
-// After auth, the user is redirected back to authLoginCallback.
+// authStart begins an OAuth/OIDC flow when called on the canonical domain, redirecting the user
+// to the authentication provider. After authentication, the user is redirected back to authLoginCallback.
 //
-// At the end of authLoginCallback, the user will be redirected to the root of the frontend URL (configured in admin.New).
-// The redirect destination can be overridden by passing a "redirect" query parameter to authStart.
+// At the end of authLoginCallback, the user is redirected to the root of the frontend URL
+// (configured in admin.New). This destination can be overridden by providing a "redirect"
+// query parameter to authStart.
 //
 // If an org has a custom domain configured (see the type doc on admin.URLs for details),
-// the frontend must still use the primary domain when redirecting to authStart (e.g. "admin.rilldata.com/auth/login").
-// This is because the auth service will always redirect back to a fixed callback URL on the primary domain,
-// and we need the cookies set in this handler to be available there.
-//
-// For orgs with a custom domain configured, to eventually redirect the user back to the custom domain,
-// the frontend should set the "redirect" query parameter to a full URL containing the custom domain URL.
+// authStart stores the state and redirect URL in a cookie, then redirects the user to
+// authStart on the canonical domain.
 func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup bool) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
+	if _, err := rand.Read(b); err != nil {
 		http.Error(w, fmt.Sprintf("failed to generate state: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -134,13 +172,28 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 		sess.Values[cookieFieldRedirect] = redirect
 	}
 
+	// If this is part of the custom domain login flow, save that info in the cookie since we need that info when handling the auth callback.
+	customDomainFlow := r.URL.Query().Get("custom_domain_flow")
+	if b, err := strconv.ParseBool(customDomainFlow); err == nil && b {
+		sess.Values[cookieFieldCustomDomainFlow] = true
+	}
+
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
 		http.Error(w, fmt.Sprintf("failed to save session: %s", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Redirect to auth provider
+	// Redirect to <canonical-domain>/auth/login (custom domain flow)
+	host := originalHost(r)
+	if a.admin.URLs.IsCustomDomain(host) {
+		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
+		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
+		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Redirect to auth provider (canonical domain flow)
 	redirectURL := a.oauth2.AuthCodeURL(state)
 	if signup {
 		// Set custom parameters for signup using AuthCodeOption
@@ -151,17 +204,22 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
-// authLoginCallback is called after the user has successfully authenticated with the auth provider.
-// See authStart for details about how the flow is initiated.
+// authLoginCallback is invoked after the user has successfully authenticated with the auth provider.
+// See authStart for details on how the flow is initiated.
 //
-// authLoginCallback validates the OAuth info, fetches user profile info, and creates/updates the user in our DB.
-// It then issues a new user auth token and saves it in a cookie.
-// Finally, it redirects the user to the location specified in the initial call to authLogin.
+// authLoginCallback validates the OAuth response, retrieves the user’s profile information, and
+// creates or updates the user in the database.
 //
-// authLoginCallback doesn't set the auth cookie directly because the final redirect destination may be an org with a custom domain.
-// So we need to ensure that the auth token is set in a cookie on the custom domain instead of the primary domain.
-// So after creating a new token, it redirects to authWithToken on the same domain as the final redirect destination (if any, else it stays on the same domain).
-// authWithToken will then set the actual auth cookie and do the final redirect back to the UI.
+// If a custom domain is configured, authLoginCallback issues a short-lived token and redirects
+// the user to authLoginCustomDomainCallback with that token. Otherwise, it issues a new user
+// auth token, saves it in a cookie, and redirects the user to the location specified in the
+// initial authLogin request.
+//
+// authLoginCallback does not set the auth cookie directly in the custom domain case, since the
+// cookie must be set on the custom domain rather than the canonical domain. Instead, it creates
+// a nonce token and redirects the user to authLoginCustomDomainCallback on the custom domain.
+// That handler sets the actual auth cookie and performs the final redirect back to the UI
+// (either to the saved redirect location or to the frontend root).
 func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess := a.cookies.Get(r, cookieName)
@@ -243,7 +301,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	// Get redirect destination
 	redirect, ok := sess.Values[cookieFieldRedirect].(string)
 	if !ok || redirect == "" {
-		redirect = "/"
+		redirect = a.admin.URLs.Frontend()
 	}
 	delete(sess.Values, cookieFieldRedirect)
 
@@ -261,12 +319,48 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// If it's part of a custom domain login flow, redirect back to the custom domain with a short-lived access token for the user.
+	customDomainFlow, ok := sess.Values[cookieFieldCustomDomainFlow].(bool)
+	delete(sess.Values, cookieFieldCustomDomainFlow)
+	if ok && customDomainFlow {
+		// save the cookies
+		if err := sess.Save(r, w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Issue a short-lived nonce token (2-minute TTL) for browser auth callback
+		ttl := 2 * time.Minute
+		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl, false)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
+			return
+		}
+		redirectWithNonceToken := urlutil.MustWithQuery(redirect, map[string]string{"nonce_token": authNonceToken.Token().String()})
+		http.Redirect(w, r, redirectWithNonceToken, http.StatusTemporaryRedirect)
+		return
+	}
+
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
 	}
+	newAuthToken := authToken.Token().String()
+
+	// If there's already a token in the cookie, and it's not the same one, revoke it (since we're now setting a new one).
+	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
+	if ok && oldAuthToken != "" && oldAuthToken != newAuthToken {
+		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
+		if err != nil {
+			a.logger.Info("failed to revoke old user auth token during new auth", zap.Error(err), observability.ZapCtx(r.Context()))
+			// The old token was probably manually revoked. We can still continue.
+		}
+	}
+
+	// Set auth token in cookie
+	sess.Values[cookieFieldAccessToken] = newAuthToken
 
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
@@ -274,32 +368,55 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Redirect to authWithToken to set the token in a cookie.
-	// We don't set the cookie directly here because the auth flow may have started from an org with a custom domain (see authStart),
-	// in which case the token needs to be set in a cookie on the custom domain instead of the primary domain (where authLoginCallback is called).
-	tokenStr := authToken.Token().String()
-	withTokenURL := a.admin.URLs.WithCustomDomainFromRedirectURL(redirect).AuthWithToken(tokenStr, redirect)
-	http.Redirect(w, r, withTokenURL, http.StatusTemporaryRedirect)
+	// Redirect to UI
+	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
-// authWithToken extracts an auth token from the query params and sets it in the auth cookie.
-// It then redirects the user to the frontend. The redirect destination can be overridden by passing a "redirect" query parameter.
-func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
-	// Get new auth token
-	newToken := r.URL.Query().Get("token")
-	if newToken == "" {
+// authLoginCustomDomainCallback first verifies the state for CSRF protection, then extracts
+// a nonce token from the query parameters and validates it. If valid, it issues a new
+// long-lived token, stores it in a cookie, and redirects the user to the frontend.
+//
+// The redirect destination can be overridden by providing a "redirect" query parameter.
+func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *http.Request) {
+	// Get auth cookie
+	sess := a.cookies.Get(r, cookieName)
+
+	// Check that random state matches (for CSRF protection)
+	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
+		http.Error(w, "invalid state parameter", http.StatusBadRequest)
+		return
+	}
+	delete(sess.Values, cookieFieldState)
+
+	// Get redirect destination
+	redirect, ok := sess.Values[cookieFieldRedirect].(string)
+	if !ok || redirect == "" {
+		redirect = a.admin.URLs.Frontend()
+	}
+	delete(sess.Values, cookieFieldRedirect)
+
+	nonceToken := r.URL.Query().Get("nonce_token")
+	if nonceToken == "" {
 		http.Error(w, "token not provided", http.StatusBadRequest)
 		return
 	}
-
-	// Get redirect destination after setting the token in the cookie
-	redirect := r.URL.Query().Get("redirect")
-	if redirect == "" {
-		redirect = a.admin.URLs.Frontend()
+	validated, err := a.admin.ValidateAuthToken(r.Context(), nonceToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
 	}
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
+		return
+	}
+	newToken := newAuthToken.Token().String()
 
-	// Get auth cookie
-	sess := a.cookies.Get(r, cookieName)
+	err = a.admin.RevokeAuthToken(r.Context(), nonceToken)
+	if err != nil {
+		a.logger.Info("failed to revoke nonce token during auth", zap.Error(err), observability.ZapCtx(r.Context()))
+		// The nonce token was probably manually revoked. We can still continue.
+	}
 
 	// If there's already a token in the cookie, and it's not the same one, revoke it (since we're now setting a new one).
 	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
@@ -322,6 +439,108 @@ func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to UI
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+// authAssumeOpen allows a superuser to assume the identity of another user for support purposes.
+// It checks if the current user is a superuser, then updates the auth cookie to contain a token that represents the target user.
+func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims := GetClaims(ctx)
+
+	// If the user is not authenticated, redirect to login.
+	// NOTE: Since we use the HTTPMiddlewareLenient middleware, this also handles users with expired tokens (e.g. if you're assuming different users in a row).
+	if claims.OwnerType() == OwnerTypeAnon {
+		http.Redirect(w, r, a.admin.URLs.AuthLogin(r.URL.String(), false), http.StatusTemporaryRedirect)
+		return
+	}
+
+	// If the caller is not a user, error out.
+	if claims.OwnerType() != OwnerTypeUser {
+		http.Error(w, "not authenticated as a user", http.StatusBadRequest)
+		return
+	}
+
+	// Grab the DB model for the current token. We need to do some deeper checks.
+	tokenMdl, ok := claims.AuthTokenModel().(*database.UserAuthToken)
+	if !ok {
+		http.Error(w, "invalid user auth token model", http.StatusBadRequest)
+		return
+	}
+
+	// If you switch between assumed users without un-assuming first, this call may be made with a representative token.
+	// Let's handle that gracefully by logging you back in as yourself first.
+	if tokenMdl.RepresentingUserID != nil {
+		http.Redirect(w, r, a.admin.URLs.AuthLogin(r.URL.String(), false), http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Only superuser can do assume open
+	if !claims.Superuser(ctx) {
+		http.Error(w, "not authorized: only superusers can assume another user", http.StatusUnauthorized)
+		return
+	}
+
+	// Validate the user to represent
+	representEmail := r.URL.Query().Get("representing_user")
+	if representEmail == "" {
+		http.Error(w, "representing user not provided", http.StatusBadRequest)
+		return
+	}
+	u, err := a.admin.DB.FindUserByEmail(ctx, representEmail)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("user with email %q not found", representEmail), http.StatusBadRequest)
+		return
+	}
+	if u.ID == tokenMdl.UserID {
+		http.Error(w, "representing user cannot represent yourself", http.StatusBadRequest)
+		return
+	}
+	representingUserID := &u.ID
+
+	// Parse the TTL for the representative token (if any)
+	ttlMinutesStr := r.URL.Query().Get("ttl_minutes")
+	var ttl *time.Duration
+	if ttlMinutesStr != "" {
+		mins, err := strconv.Atoi(ttlMinutesStr)
+		if err != nil || mins <= 0 {
+			http.Error(w, "invalid ttl_minutes parameter", http.StatusBadRequest)
+			return
+		}
+		d := time.Duration(mins) * time.Minute
+		ttl = &d
+	}
+
+	// Issue a new token for the representing user.
+	// We use tokenMdl.UserID here instead of claims.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), tokenMdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl, false)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
+		return
+	}
+	newToken := newAuthToken.Token().String()
+
+	// If there's already a token in the cookie, and it's not the same one, revoke it (since we're now setting a new one).
+	sess := a.cookies.Get(r, cookieName)
+	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
+	if ok && oldAuthToken != "" && oldAuthToken != newToken {
+		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
+		if err != nil {
+			a.logger.Info("failed to revoke old user auth token during new auth", zap.Error(err), observability.ZapCtx(r.Context()))
+			// The old token was probably manually revoked. We can still continue.
+		}
+	}
+
+	// Set auth token in cookie
+	sess.Values[cookieFieldAccessToken] = newToken
+
+	// Save cookie
+	if err := sess.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect to UI
+	http.Redirect(w, r, a.admin.URLs.Frontend(), http.StatusTemporaryRedirect)
 }
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.
@@ -478,14 +697,21 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grantType := values.Get("grant_type")
-	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType) {
-		http.Error(w, "invalid grant_type", http.StatusBadRequest)
-		return
-	}
-
 	if grantType == deviceCodeGrantType {
 		a.getAccessTokenForDeviceCode(w, r, values)
-	} else {
+	} else if grantType == authorizationCodeGrantType {
 		a.getAccessTokenForAuthorizationCode(w, r, values)
+	} else if grantType == refreshTokenGrantType {
+		a.getAccessTokenForRefreshToken(w, r, values)
+	} else {
+		http.Error(w, fmt.Sprintf("unexpected grant_type: %q", grantType), http.StatusBadRequest)
+		return
 	}
+}
+
+func originalHost(r *http.Request) string {
+	if xfHost := r.Header.Get("Rill-Custom-Domain"); xfHost != "" {
+		return xfHost
+	}
+	return r.Host
 }

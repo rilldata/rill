@@ -8,13 +8,14 @@
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
+  import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import MultiFieldInput from "./fields/MultiFieldInput.svelte";
+  import SingleFieldInput from "./fields/SingleFieldInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
-  import MultiFieldInput from "./MultiFieldInput.svelte";
-  import SingleFieldInput from "./SingleFieldInput.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
   import type { AllKeys, ComponentInputParam } from "./types";
@@ -56,7 +57,10 @@
 <div>
   {#each entries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
-      <div class="component-param">
+      <div
+        class="component-param"
+        class:grouped={config.meta?.layout === "grouped"}
+      >
         <!-- TEXT, NUMBER, RILL_TIME -->
         {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
           <Input
@@ -110,15 +114,19 @@
 
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
-          <div class="flex items-center justify-between py-2">
+          <div class="flex items-center justify-between py-1">
             <InputLabel
               small
               label={config.label ?? key}
               id={key}
-              faint={!localParamValues[key]}
+              faint={config.meta?.invertBoolean
+                ? localParamValues[key]
+                : !localParamValues[key]}
             />
             <Switch
-              checked={$specStore[key]}
+              checked={config.meta?.invertBoolean
+                ? !$specStore[key]
+                : $specStore[key]}
               on:click={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}
@@ -157,6 +165,18 @@
             size="sm"
             sameWidth
             fontSize={12}
+            onChange={(newValue) => {
+              component.updateProperty(key, newValue);
+            }}
+          />
+
+          <!-- SWITCHER TABS -->
+        {:else if config.type === "switcher_tab"}
+          <CanvasFieldSwitcher
+            {key}
+            label={config.label ?? key}
+            options={config.meta?.options ?? []}
+            value={localParamValues[key] ?? config.meta?.default}
             onChange={(newValue) => {
               component.updateProperty(key, newValue);
             }}
@@ -234,5 +254,9 @@
   .component-param {
     @apply py-3 px-5;
     @apply border-t;
+  }
+  .component-param.grouped {
+    @apply py-0;
+    @apply border-none;
   }
 </style>

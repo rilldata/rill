@@ -9,14 +9,32 @@ import (
 
 func TestManagedModePrecedence(t *testing.T) {
 	tests := []struct {
-		name          string
-		config        map[string]any
-		expectManaged bool
-		expectCleared bool
-		expectError   bool
+		name             string
+		config           map[string]any
+		expectManaged    bool
+		expectCleared    bool
+		expectDSNCleared bool
+		expectError      bool
 	}{
 		{
-			name: "managed true clears conflicting properties",
+			name: "managed true clears conflicting properties but preserves DSN",
+			config: map[string]any{
+				"managed":  true,
+				"username": "user",
+				"password": "pass",
+				"host":     "host",
+				"port":     9440,
+				"database": "db",
+				"ssl":      true,
+				"dsn":      "clickhouse://user:pass@host:9440/db",
+			},
+			expectManaged:    true,
+			expectCleared:    true,
+			expectDSNCleared: false, // provisioner DSN should be preserved
+			expectError:      false,
+		},
+		{
+			name: "managed true with no DSN clears all connection properties",
 			config: map[string]any{
 				"managed":  true,
 				"username": "conflicting_user",
@@ -25,11 +43,11 @@ func TestManagedModePrecedence(t *testing.T) {
 				"port":     9000,
 				"database": "conflicting_db",
 				"ssl":      true,
-				"dsn":      "clickhouse://user:pass@host:9000/db",
 			},
-			expectManaged: true,
-			expectCleared: true,
-			expectError:   false,
+			expectManaged:    true,
+			expectCleared:    true,
+			expectDSNCleared: true,
+			expectError:      false,
 		},
 		{
 			name: "managed false allows all properties",
@@ -42,9 +60,10 @@ func TestManagedModePrecedence(t *testing.T) {
 				"database": "test_db",
 				"ssl":      true,
 			},
-			expectManaged: false,
-			expectCleared: false,
-			expectError:   false,
+			expectManaged:    false,
+			expectCleared:    false,
+			expectDSNCleared: false,
+			expectError:      false,
 		},
 		{
 			name: "managed true with no conflicting properties",
@@ -53,9 +72,10 @@ func TestManagedModePrecedence(t *testing.T) {
 				"log_queries":    true,
 				"max_open_conns": 10,
 			},
-			expectManaged: true,
-			expectCleared: false, // No properties to clear
-			expectError:   false,
+			expectManaged:    true,
+			expectCleared:    false,
+			expectDSNCleared: false,
+			expectError:      false,
 		},
 	}
 
@@ -91,7 +111,12 @@ func TestManagedModePrecedence(t *testing.T) {
 				require.Zero(t, conf.Port, "port should be cleared in managed mode")
 				require.Empty(t, conf.Database, "database should be cleared in managed mode")
 				require.False(t, conf.SSL, "ssl should be cleared in managed mode")
-				require.Empty(t, conf.DSN, "dsn should be cleared in managed mode")
+			}
+
+			if tt.expectDSNCleared {
+				require.Empty(t, conf.DSN, "dsn should be cleared when not provided by provisioner")
+			} else if _, hasDSN := tt.config["dsn"]; hasDSN {
+				require.NotEmpty(t, conf.DSN, "dsn should be preserved when provided")
 			}
 		})
 	}

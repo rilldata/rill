@@ -1,11 +1,10 @@
 ---
 title: Structure your project
-sidebar_label: Structure Project
+sidebar_label: Organize your Code Files
 sidebar_position: 00
 ---
 
 After creating your initial set of sources, models, and dashboards, you may have noticed the following _native_ folders that exist in your Rill project directory:
-- [Sources](/reference/project-files/sources)
 - [Models](/reference/project-files/models)
 - [Metrics Views](/reference/project-files/metrics-views)
 - [Dashboards](/reference/project-files/explore-dashboards)
@@ -23,7 +22,7 @@ Within Rill Developer, from the left-hand side (file explorer), you should be ab
 
 For backward compatibility purposes, any resource that belongs in the `sources`, `models`, and `dashboards` native folders is assumed to be a source, model, or dashboard respectively (including nested folders that belong within a native folder). 
 
-However, if you'd like to create a resource outside one of these native folders, make sure to include the `type` property in the resource definition, or Rill will not be able to properly resolve the resource type! For more details, see our [reference documentation](/reference/project-files/rill-yaml.md).
+However, if you'd like to create a resource outside one of these native folders, make sure to include the `type` property in the resource definition, or Rill will not be able to properly resolve the resource type! For more details, see our [reference documentation](/reference/project-files/rill-yaml).
 
 :::
 

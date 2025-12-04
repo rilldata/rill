@@ -50,6 +50,7 @@ export interface MetricsViewSearchResponseSearchResult {
 
 export interface MetricsViewSpecDimension {
   name?: string;
+  type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
   column?: string;
@@ -60,6 +61,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
 
@@ -68,6 +70,16 @@ export interface MetricsViewSpecDimensionSelector {
   timeGrain?: V1TimeGrain;
   desc?: boolean;
 }
+
+export type MetricsViewSpecDimensionType =
+  (typeof MetricsViewSpecDimensionType)[keyof typeof MetricsViewSpecDimensionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecDimensionType = {
+  DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
+  DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
+  DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+} as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
@@ -284,6 +296,23 @@ export interface V1AlertState {
   executionCount?: number;
 }
 
+/**
+ * Context for prompts handled by the analyst_agent.
+ */
+export interface V1AnalystAgentContext {
+  /** Optional explore dashboard. */
+  explore?: string;
+  /** Optional dimensions. */
+  dimensions?: string[];
+  /** Optional measures. */
+  measures?: string[];
+  where?: V1Expression;
+  /** Optional start of a time range. */
+  timeStart?: string;
+  /** Optional end of a time range. */
+  timeEnd?: string;
+}
+
 export interface V1AnalyzeConnectorsResponse {
   connectors?: V1AnalyzedConnector[];
 }
@@ -292,11 +321,11 @@ export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
 }
 
-export type V1AnalyzedConnectorConfig = { [key: string]: string };
+export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
 
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
@@ -328,23 +357,6 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
-export type V1AppContextContextMetadata = { [key: string]: unknown };
-
-export interface V1AppContext {
-  contextType?: V1AppContextType;
-  contextMetadata?: V1AppContextContextMetadata;
-}
-
-export type V1AppContextType =
-  (typeof V1AppContextType)[keyof typeof V1AppContextType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1AppContextType = {
-  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
-  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
-} as const;
-
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
@@ -363,16 +375,6 @@ export const V1AssertionStatus = {
   ASSERTION_STATUS_FAIL: "ASSERTION_STATUS_FAIL",
   ASSERTION_STATUS_ERROR: "ASSERTION_STATUS_ERROR",
 } as const;
-
-export interface V1BigQueryListDatasetsResponse {
-  nextPageToken?: string;
-  names?: string[];
-}
-
-export interface V1BigQueryListTablesResponse {
-  nextPageToken?: string;
-  names?: string[];
-}
 
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
@@ -630,6 +632,11 @@ export interface V1CompleteResponse {
   messages?: V1Message[];
 }
 
+export interface V1CompleteStreamingResponse {
+  conversationId?: string;
+  message?: V1Message;
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -665,7 +672,7 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: string };
+export type V1ConnectorConfig = { [key: string]: unknown };
 
 export type V1ConnectorProvisionArgs = { [key: string]: unknown };
 
@@ -702,7 +709,7 @@ export interface V1ConnectorDriver {
   implementsWarehouse?: boolean;
 }
 
-export type V1ConnectorSpecProperties = { [key: string]: string };
+export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
 
@@ -733,8 +740,10 @@ export interface V1Conversation {
   id?: string;
   ownerId?: string;
   title?: string;
+  userAgent?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** NOTE: Deprecated. */
   messages?: V1Message[];
 }
 
@@ -760,6 +769,7 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
+  frontendUrl?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -781,6 +791,18 @@ export interface V1DeleteFileResponse {
 
 export interface V1DeleteInstanceResponse {
   [key: string]: unknown;
+}
+
+/**
+ * Context for prompts handled by the developer_agent.
+ */
+export interface V1DeveloperAgentContext {
+  /** Set to true if the prompt is provided as part of project initialization.
+This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty). */
+  initProject?: boolean;
+  /** Optional path to the file that the user is currently viewing/editing.
+This helps the agent understand which file the user is referring to in their request. */
+  currentFilePath?: string;
 }
 
 export interface V1DirEntry {
@@ -988,26 +1010,9 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
-export interface V1GCSGetCredentialsInfoResponse {
-  exist?: boolean;
-  projectId?: string;
-}
-
-export interface V1GCSListBucketsResponse {
-  nextPageToken?: string;
-  buckets?: string[];
-}
-
-export interface V1GCSListObjectsResponse {
-  nextPageToken?: string;
-  objects?: V1GCSObject[];
-}
-
-export interface V1GCSObject {
-  name?: string;
-  modifiedOn?: string;
-  size?: string;
-  isDir?: boolean;
+export interface V1GenerateCanvasFileResponse {
+  /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
+  aiSucceeded?: boolean;
 }
 
 export interface V1GenerateMetricsViewFileResponse {
@@ -1035,6 +1040,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
+  messages?: V1Message[];
 }
 
 export interface V1GetExploreResponse {
@@ -1111,6 +1117,7 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   environment?: string;
+  projectDisplayName?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1124,6 +1131,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  frontendUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1161,6 +1169,11 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export interface V1ListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
 export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
 }
@@ -1171,6 +1184,7 @@ export interface V1ListConversationsResponse {
 
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -1191,12 +1205,22 @@ export interface V1ListNotifierConnectorsResponse {
   connectors?: V1Connector[];
 }
 
+export interface V1ListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1Object[];
+}
+
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
 }
 
 export interface V1ListTablesResponse {
   tables?: V1TableInfo[];
+  nextPageToken?: string;
+}
+
+export interface V1ListToolsResponse {
+  tools?: V1Tool[];
 }
 
 export interface V1Log {
@@ -1225,10 +1249,16 @@ export interface V1MapType {
 
 export interface V1Message {
   id?: string;
-  role?: string;
-  content?: V1ContentBlock[];
+  parentId?: string;
   createdOn?: string;
   updatedOn?: string;
+  index?: number;
+  role?: string;
+  type?: string;
+  tool?: string;
+  contentType?: string;
+  contentData?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1MetricsView {
@@ -1562,6 +1592,11 @@ export interface V1MetricsViewTimeRangeResponse {
 }
 
 export interface V1MetricsViewTimeRangesResponse {
+  fullTimeRange?: V1TimeRangeSummary;
+  /** The resolved time ranges for the requested rilltime expressions. */
+  resolvedTimeRanges?: V1ResolvedTimeRange[];
+  /** The same values as resolved_time_ranges for backwards compatibility.
+Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
 }
 
@@ -1708,10 +1743,18 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  retryAttempts?: number;
+  retryDelaySeconds?: number;
+  retryExponentialBackoff?: boolean;
+  retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
+  /** trigger indicates a normal refresh (incremental or full depending on the model type). */
   trigger?: boolean;
+  /** trigger_full indicates a full refresh regardless of the model type. */
   triggerFull?: boolean;
+  /** trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models. */
+  triggerPartitions?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
 }
@@ -1813,6 +1856,14 @@ export interface V1OLAPGetTableResponse {
 
 export interface V1OLAPListTablesResponse {
   tables?: V1OlapTableInfo[];
+  nextPageToken?: string;
+}
+
+export interface V1Object {
+  name?: string;
+  modifiedOn?: string;
+  size?: string;
+  isDir?: boolean;
 }
 
 export interface V1OlapTableInfo {
@@ -2069,6 +2120,24 @@ export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
+export interface V1ResolveTemplatedStringResponse {
+  body?: string;
+}
+
+export interface V1ResolvedTimeRange {
+  /** The start of the resolved time range. */
+  start?: string;
+  /** The end of the resolved time range. */
+  end?: string;
+  grain?: V1TimeGrain;
+  /** The time dimension that was used to resolve the time range. */
+  timeDimension?: string;
+  /** The time zone that was used to resolve the time range. */
+  timeZone?: string;
+  /** The original expression used to resolve the time range. */
+  expression?: string;
+}
+
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -2121,32 +2190,6 @@ export interface V1ResourceName {
   name?: string;
 }
 
-export interface V1S3GetBucketMetadataResponse {
-  region?: string;
-}
-
-export interface V1S3GetCredentialsInfoResponse {
-  exist?: boolean;
-  provider?: string;
-}
-
-export interface V1S3ListBucketsResponse {
-  nextPageToken?: string;
-  buckets?: string[];
-}
-
-export interface V1S3ListObjectsResponse {
-  nextPageToken?: string;
-  objects?: V1S3Object[];
-}
-
-export interface V1S3Object {
-  name?: string;
-  modifiedOn?: string;
-  size?: string;
-  isDir?: boolean;
-}
-
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2159,24 +2202,55 @@ export interface V1SecurityRule {
   access?: V1SecurityRuleAccess;
   fieldAccess?: V1SecurityRuleFieldAccess;
   rowFilter?: V1SecurityRuleRowFilter;
+  transitiveAccess?: V1SecurityRuleTransitiveAccess;
 }
 
 export interface V1SecurityRuleAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
+  /** Whether to allow or deny access to the resources covered by the conditions. */
   allow?: boolean;
+  /** If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
 }
 
 export interface V1SecurityRuleFieldAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   allow?: boolean;
+  /** If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
   fields?: string[];
   allFields?: boolean;
 }
 
 export interface V1SecurityRuleRowFilter {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   sql?: string;
   expression?: V1Expression;
+}
+
+export interface V1SecurityRuleTransitiveAccess {
+  resource?: V1ResourceName;
 }
 
 export interface V1Source {
@@ -2276,11 +2350,21 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
+export type V1ThemeColorsVariables = { [key: string]: string };
+
+export interface V1ThemeColors {
+  primary?: string;
+  secondary?: string;
+  variables?: V1ThemeColorsVariables;
+}
+
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
+  light?: V1ThemeColors;
+  dark?: V1ThemeColors;
 }
 
 export interface V1ThemeState {
@@ -2342,6 +2426,17 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export type V1ToolMeta = { [key: string]: unknown };
+
+export interface V1Tool {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  meta?: V1ToolMeta;
+  inputSchema?: string;
+  outputSchema?: string;
+}
+
 export type V1ToolCallInput = { [key: string]: unknown };
 
 export interface V1ToolCall {
@@ -2384,24 +2479,11 @@ export interface V1WatchResourcesResponse {
   resource?: V1Resource;
 }
 
-export type ConnectorServiceBigQueryListDatasetsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceBigQueryListTablesParams = {
-  instanceId?: string;
-  connector?: string;
-  dataset?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceOLAPGetTableParams = {
@@ -2425,29 +2507,8 @@ export type ConnectorServiceListTablesParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
-};
-
-export type ConnectorServiceGCSListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
   pageSize?: number;
   pageToken?: string;
-  prefix?: string;
-  startOffset?: string;
-  endOffset?: string;
-  delimiter?: string;
-};
-
-export type ConnectorServiceGCSListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceGCSGetCredentialsInfoParams = {
-  instanceId?: string;
-  connector?: string;
 };
 
 export type RuntimeServiceListInstancesParams = {
@@ -2480,20 +2541,55 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
+  /** Conversation ID to continue. If empty, a new conversation is created. */
   conversationId?: string;
-  messages?: V1Message[];
-  toolNames?: string[];
-  appContext?: V1AppContext;
+  /** The prompt to complete. */
+  prompt?: string;
+  /** Optional agent to use for the completion.
+If not set, it will infer an agent based on the prompt and conversation history. */
+  agent?: string;
+  analystAgentContext?: V1AnalystAgentContext;
+  developerAgentContext?: V1DeveloperAgentContext;
 };
 
-export type RuntimeServiceGetConversationParams = {
+export type RuntimeServiceCompleteStreamingBody = {
+  /** Conversation ID to continue. If empty, a new conversation is created. */
+  conversationId?: string;
+  /** The prompt to complete. */
+  prompt?: string;
+  /** Optional agent to use for the completion.
+If not set, it will infer an agent based on the prompt and conversation history. */
+  agent?: string;
+  analystAgentContext?: V1AnalystAgentContext;
+  developerAgentContext?: V1DeveloperAgentContext;
+};
+
+export type RuntimeServiceCompleteStreaming200 = {
+  result?: V1CompleteStreamingResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceListConversationsParams = {
   /**
-   * Whether to include system messages in the response (defaults to false for UI use)
+   * Optional search pattern for filtering by user agent.
    */
-  includeSystemMessages?: boolean;
+  userAgentPattern?: string;
+};
+
+export type ConnectorServiceListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceListObjectsParams = {
+  path?: string;
+  delimiter?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type RuntimeServiceListFilesParams = {
@@ -2520,6 +2616,16 @@ export type RuntimeServicePutFileBody = {
   /** Will cause the operation to fail if the file already exists.
 It should only be set when create = true. */
   createOnly?: boolean;
+};
+
+export type RuntimeServiceGenerateCanvasFileBody = {
+  /** Metrics view name to base the canvas on. */
+  metricsViewName?: string;
+  /** Path to save the canvas file to. */
+  path?: string;
+  /** If true, the AI will be used to generate the canvas file.
+Otherwise, it falls back to a simpler heuristic approach. */
+  useAi?: boolean;
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
@@ -2552,6 +2658,7 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceUnpackEmptyBody = {
   displayName?: string;
+  olap?: string;
   force?: boolean;
 };
 
@@ -2692,6 +2799,8 @@ export type QueryServiceExportBody = {
   /** Optional UI URL that the export originates from.
 Only used if include_header is true. */
   originUrl?: string;
+  /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -2784,10 +2893,16 @@ export type QueryServiceMetricsViewTimeRangeBody = {
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
+  /** Optional time range expressions to resolve (uses the rilltime expression syntax). */
   expressions?: string[];
+  /** Optional query priority. */
   priority?: number;
+  /** Optional time zone that overrides the time zones used when resolving the time range expressions. */
   timeZone?: string;
+  /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
   timeDimension?: string;
+  /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -2864,6 +2979,17 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export type QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView =
+  { [key: string]: V1Expression };
+
+export type QueryServiceResolveTemplatedStringBody = {
+  body?: string;
+  /** If true, output format tokens instead of raw values. */
+  useFormatTokens?: boolean;
+  additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
+  additionalTimeRange?: V1TimeRange;
+};
 
 export type QueryServiceColumnRollupIntervalBody = {
   connector?: string;
@@ -3045,31 +3171,6 @@ Has the same syntax and behavior as ILIKE in SQL.
 If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
  */
   searchPattern?: string;
-};
-
-export type ConnectorServiceS3GetBucketMetadataParams = {
-  instanceId?: string;
-  connector?: string;
-};
-
-export type ConnectorServiceS3ListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
   pageSize?: number;
   pageToken?: string;
-  prefix?: string;
-  startAfter?: string;
-  delimiter?: string;
-};
-
-export type ConnectorServiceS3ListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceS3GetCredentialsInfoParams = {
-  instanceId?: string;
-  connector?: string;
 };

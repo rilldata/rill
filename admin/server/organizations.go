@@ -52,9 +52,9 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +145,9 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 }
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -166,7 +166,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
 	}
@@ -180,7 +180,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		observability.AddRequestAttributes(ctx, attribute.String("args.display_name", *req.DisplayName))
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -287,12 +287,12 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.ListOrganizationMemberUsersRequest) (*adminv1.ListOrganizationMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.role", req.Role),
 		attribute.Bool("include_counts", req.IncludeCounts),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -318,12 +318,12 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize)
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID)
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}
@@ -347,10 +347,10 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 
 func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListOrganizationInvitesRequest) (*adminv1.ListOrganizationInvitesResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -396,11 +396,11 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 
 func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.AddOrganizationMemberUserRequest) (*adminv1.AddOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.role", req.Role),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -433,8 +433,10 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		invitedByUserID = user.ID
-		invitedByName = user.DisplayName
+		if user != nil {
+			invitedByUserID = user.ID
+			invitedByName = user.DisplayName
+		}
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -486,7 +488,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	// Insert the user in the org and its managed usergroups transactionally.
-	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -513,10 +515,10 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.RemoveOrganizationMemberUserRequest) (*adminv1.RemoveOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -582,11 +584,11 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 
 func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1.SetOrganizationMemberUserRoleRequest) (*adminv1.SetOrganizationMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.role", req.Role),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -642,9 +644,77 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 }
 
+func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.GetOrganizationMemberUserRequest) (*adminv1.GetOrganizationMemberUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org member")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Find the organization member
+	member, err := s.admin.DB.FindOrganizationMemberUser(ctx, org.ID, user.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.GetOrganizationMemberUserResponse{
+		Member: orgMemberUserToPB(member),
+	}, nil
+}
+
+func (s *Server) UpdateOrganizationMemberUserAttributes(ctx context.Context, req *adminv1.UpdateOrganizationMemberUserAttributesRequest) (*adminv1.UpdateOrganizationMemberUserAttributesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org member attributes")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Convert protobuf Struct to map[string]any
+	var attributes map[string]any
+	if req.Attributes != nil {
+		attributes = req.Attributes.AsMap()
+	}
+
+	// Update the attributes
+	_, err = s.admin.DB.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateOrganizationMemberUserAttributesResponse{}, nil
+}
+
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 	)
 
 	// Check the request is made by an authenticated user
@@ -653,7 +723,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -690,7 +760,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.CreateWhitelistedDomainRequest) (*adminv1.CreateWhitelistedDomainResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.domain", req.Domain),
 		attribute.String("args.role", req.Role),
 	)
@@ -700,7 +770,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -767,7 +837,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	}
 
 	for _, user := range newUsers {
-		err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+		err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 		if err != nil {
 			return nil, err
 		}
@@ -783,13 +853,13 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 
 func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.RemoveWhitelistedDomainRequest) (*adminv1.RemoveWhitelistedDomainResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 		attribute.String("args.domain", req.Domain),
 	)
 
 	claims := auth.GetClaims(ctx)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -813,12 +883,12 @@ func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.Remov
 
 func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWhitelistedDomainsRequest) (*adminv1.ListWhitelistedDomainsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
+		attribute.String("args.org", req.Org),
 	)
 
 	claims := auth.GetClaims(ctx)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
@@ -843,7 +913,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 }
 
 func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.SudoUpdateOrganizationQuotasRequest) (*adminv1.SudoUpdateOrganizationQuotasResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Org))
 	if req.Projects != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.projects", int(*req.Projects)))
 	}
@@ -865,13 +935,13 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, err
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                                req.Organization,
+		Name:                                req.Org,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,

@@ -81,6 +81,8 @@ export const load = async ({ params, url, route, depends }) => {
       user,
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
+      token,
+      organization,
     };
   }
 
@@ -122,6 +124,8 @@ export const load = async ({ params, url, route, depends }) => {
       organizationThumbnailUrl,
       planDisplayName,
       projectPermissions: <V1ProjectPermissions>{},
+      token,
+      organization,
     };
   }
 
@@ -148,8 +152,10 @@ export const load = async ({ params, url, route, depends }) => {
       organizationThumbnailUrl,
       planDisplayName,
       projectPermissions,
+      token,
       project: proj,
       runtime: runtimeData,
+      organization,
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {

@@ -28,12 +28,19 @@ var (
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
 )
 
+type GithubToken struct {
+	AccessToken  string
+	Expiry       time.Time
+	RefreshToken string
+}
+
 // Github exposes the features we require from the Github API.
 type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64, repoID *int64) *github.Client
 	// InstallationToken returns a token for the installation ID limited to the repoID.
 	InstallationToken(ctx context.Context, installationID, repoID int64) (token string, expiresAt time.Time, err error)
+	InstallationTokenForOrg(ctx context.Context, org string) (token string, expiresAt time.Time, err error)
 
 	CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error)
 	ManagedOrgInstallationID() (int64, error)
@@ -132,19 +139,16 @@ func (g *githubClient) InstallationClient(installationID int64, repoID *int64) *
 
 func (g *githubClient) InstallationToken(ctx context.Context, installationID, repoID int64) (string, time.Time, error) {
 	client := g.InstallationClient(installationID, &repoID)
-	tr, ok := client.Client().Transport.(*ghinstallation.Transport)
-	if !ok {
-		return "", time.Time{}, fmt.Errorf("transport is not of type *ghinstallation.Transport")
-	}
-	t, err := tr.Token(ctx)
+	return g.token(ctx, client)
+}
+
+func (g *githubClient) InstallationTokenForOrg(ctx context.Context, org string) (string, time.Time, error) {
+	installation, _, err := g.appClient.Apps.FindOrganizationInstallation(ctx, org)
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	_, expiry, err := tr.Expiry()
-	if err != nil {
-		return "", time.Time{}, err
-	}
-	return t, expiry, nil
+	client := g.InstallationClient(*installation.ID, nil)
+	return g.token(ctx, client)
 }
 
 func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*github.Repository, error) {
@@ -187,6 +191,22 @@ func (g *githubClient) CreateManagedRepo(ctx context.Context, name string) (*git
 
 func (g *githubClient) ManagedOrgInstallationID() (int64, error) {
 	return g.managedOrgInstallationID, g.managedOrgFetchError
+}
+
+func (g *githubClient) token(ctx context.Context, client *github.Client) (string, time.Time, error) {
+	tr, ok := client.Client().Transport.(*ghinstallation.Transport)
+	if !ok {
+		return "", time.Time{}, fmt.Errorf("transport is not of type *ghinstallation.Transport")
+	}
+	t, err := tr.Token(ctx)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	_, expiry, err := tr.Expiry()
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return t, expiry, nil
 }
 
 func (s *Service) CreateManagedGitRepo(ctx context.Context, org *database.Organization, name, ownerID string) (*github.Repository, error) {

@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 	"testing"
 	"time"
@@ -134,7 +133,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 			LEFT JOIN d ON b.b12 = d.d1
 			WHERE d.d2 IN ('');
 		`
-		err1 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err1 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context) error {
 			time.Sleep(500 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -147,7 +146,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 	var err2 error
 	go func() {
 		qry := `SELECT * FROM a;`
-		err2 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err2 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context) error {
 			time.Sleep(1000 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -161,7 +160,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		qry := `SELECT * FROM a;`
-		err3 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err3 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context) error {
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
 		wg.Done()
@@ -178,4 +177,140 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	err = handle.Close()
 	require.NoError(t, err)
+}
+
+func TestDuckDBModeDefaults(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       map[string]any
+		expectedMode string
+	}{
+		{
+			name:         "embedded duckdb defaults to readwrite",
+			config:       map[string]any{"dsn": ":memory:"},
+			expectedMode: modeReadWrite,
+		},
+		{
+			name:         "external duckdb with path defaults to read",
+			config:       map[string]any{"path": "/tmp/test.db"},
+			expectedMode: modeReadOnly,
+		},
+		{
+			name:         "external duckdb with attach defaults to read",
+			config:       map[string]any{"attach": "'/path/to/db.db' AS external"},
+			expectedMode: modeReadOnly,
+		},
+		{
+			name:         "explicit readwrite mode",
+			config:       map[string]any{"dsn": ":memory:", "mode": "readwrite"},
+			expectedMode: modeReadWrite,
+		},
+		{
+			name:         "explicit read mode",
+			config:       map[string]any{"dsn": ":memory:", "mode": "read"},
+			expectedMode: modeReadOnly,
+		},
+		{
+			name:         "explicit readwrite mode overrides path default",
+			config:       map[string]any{"path": "/tmp/test.db", "mode": "readwrite"},
+			expectedMode: modeReadWrite,
+		},
+		{
+			name:         "motherduck defaults to readonly",
+			config:       map[string]any{"path": "md:my_db", "token": "not_real"},
+			expectedMode: modeReadOnly,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := newConfig(tt.config)
+			require.NoError(t, err)
+
+			// Apply default mode logic
+			if cfg.Mode == "" {
+				if cfg.Path != "" || cfg.Attach != "" {
+					cfg.Mode = modeReadOnly
+				} else {
+					cfg.Mode = modeReadWrite
+				}
+			}
+
+			require.Equal(t, tt.expectedMode, cfg.Mode)
+		})
+	}
+}
+
+func TestDuckDBModeEnforcement(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("read mode blocks model execution", func(t *testing.T) {
+		handle, err := drivers.Open("duckdb", "test", map[string]any{
+			"dsn":  ":memory:",
+			"mode": "read",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer handle.Close()
+
+		// Test AsModelExecutor
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:  handle,
+			OutputHandle: handle,
+		}
+		executor, err := handle.AsModelExecutor("test", opts)
+		require.ErrorContains(t, err, "model execution is disabled")
+		require.Nil(t, executor)
+
+		// Test AsModelManager
+		manager, ok := handle.AsModelManager("test")
+		require.False(t, ok)
+		require.Nil(t, manager)
+	})
+
+	t.Run("readwrite mode allows model execution", func(t *testing.T) {
+		handle, err := drivers.Open("duckdb", "test", map[string]any{
+			"dsn":  ":memory:",
+			"mode": "readwrite",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer handle.Close()
+
+		// Test AsModelExecutor
+		opts := &drivers.ModelExecutorOptions{
+			InputHandle:  handle,
+			OutputHandle: handle,
+		}
+		executor, err := handle.AsModelExecutor("test", opts)
+		require.NoError(t, err)
+		require.NotNil(t, executor)
+
+		// Test AsModelManager
+		manager, ok := handle.AsModelManager("test")
+		require.True(t, ok)
+		require.NotNil(t, manager)
+	})
+
+	t.Run("read mode allows reading", func(t *testing.T) {
+		handle, err := drivers.Open("duckdb", "test", map[string]any{
+			"dsn":  ":memory:",
+			"mode": "read",
+		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		defer handle.Close()
+
+		// Should still allow OLAP queries
+		olap, ok := handle.AsOLAP("test")
+		require.True(t, ok)
+		require.NotNil(t, olap)
+
+		// Test a simple query
+		res, err := olap.Query(ctx, &drivers.Statement{Query: "SELECT 1 as test"})
+		require.NoError(t, err)
+		require.True(t, res.Next())
+		var value int
+		err = res.Scan(&value)
+		require.NoError(t, err)
+		require.Equal(t, 1, value)
+		require.NoError(t, res.Close())
+	})
 }

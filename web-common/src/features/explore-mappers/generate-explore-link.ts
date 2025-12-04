@@ -11,11 +11,17 @@ export async function generateExploreLink(
   exploreName: string,
   organization?: string | undefined,
   project?: string | undefined,
+  isEmbed?: boolean,
 ): Promise<string> {
   try {
     // Build base URL
     let url: URL;
-    if (organization && project) {
+    if (isEmbed) {
+      url = new URL(
+        `/-/embed/explore/${encodeURIComponent(exploreName)}`,
+        window.location.origin,
+      );
+    } else if (organization && project) {
       url = new URL(
         `/${organization}/${project}/explore/${encodeURIComponent(exploreName)}`,
         window.location.origin,
@@ -33,7 +39,10 @@ export async function generateExploreLink(
       exploreState,
     );
 
-    url.search = searchParams.toString();
+    searchParams.forEach((value, key) => {
+      url.searchParams.set(key, value);
+    });
+
     return url.toString();
   } catch (error) {
     throw createLinkError(

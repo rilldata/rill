@@ -57,8 +57,8 @@
     onSelectedChange(newSelectedItems);
   }
 
-  function removeSelectedItem(index: number) {
-    const newSelectedItems = selectedItems.filter((_, i) => i !== index);
+  function removeSelectedItem(id: string) {
+    const newSelectedItems = selectedItems.filter((i) => i !== id);
     onSelectedChange(newSelectedItems);
   }
 
@@ -136,12 +136,7 @@
               : `No ${type === "measure" ? "measures" : "dimensions"} shown`}
           </div>
 
-          <div
-            slot="item"
-            let:item
-            let:index
-            class="w-full flex gap-x-1 items-center"
-          >
+          <div slot="item" let:item class="w-full flex gap-x-1 items-center">
             {@const itemData = allItemsMap.get(item.id)}
             {#if itemData?.description || selectedItems.length === 1}
               <Tooltip.Root openDelay={200} portal="body">
@@ -156,7 +151,7 @@
                   </span>
                   <button
                     class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                    on:click|stopPropagation={() => removeSelectedItem(index)}
+                    on:click|stopPropagation={() => removeSelectedItem(item.id)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
                     }}
@@ -194,7 +189,7 @@
               </span>
               <button
                 class="ml-auto hover:bg-slate-200 p-1 rounded-sm active:bg-slate-300"
-                on:click|stopPropagation={() => removeSelectedItem(index)}
+                on:click|stopPropagation={() => removeSelectedItem(item.id)}
                 on:mousedown|stopPropagation={() => {
                   // NO-OP
                 }}

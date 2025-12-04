@@ -2,7 +2,6 @@ package reconcilers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -161,6 +160,121 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	return runtime.ReconcileResult{Err: executeErr}
 }
 
+func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionRes []*runtimev1.ResourceName
+
+	report := res.GetReport()
+	if report == nil {
+		return nil, fmt.Errorf("resource is not a report")
+	}
+
+	spec := report.GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("report spec is nil")
+	}
+	conditionRes = append(conditionRes, res.Meta.Name)
+	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+
+	if spec.QueryName != "" {
+		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+		}
+		resolver, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.C.Runtime,
+			InstanceID: r.C.InstanceID,
+			Properties: map[string]any{
+				"query_name":      spec.QueryName,
+				"query_args_json": spec.QueryArgsJson,
+			},
+			Claims:    claims,
+			ForExport: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, inferred...)
+
+		mvName := ""
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			// need access to the referenced resources
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+			if ref.Kind == runtime.ResourceKindMetricsView {
+				mvName = ref.Name
+			}
+		}
+
+		// figure out explore or canvas for the report
+		var explore, canvas string
+		if e, ok := spec.Annotations["explore"]; ok {
+			explore = e
+		}
+		if c, ok := spec.Annotations["canvas"]; ok {
+			canvas = c
+		}
+
+		if explore == "" { // backwards compatibility, try to find explore
+			if path, ok := spec.Annotations["web_open_path"]; ok {
+				// parse path, extract explore name, it will be like /explore/{explore}
+				if strings.HasPrefix(path, "/explore/") {
+					explore = path[9:]
+					if explore[len(explore)-1] == '/' {
+						explore = explore[:len(explore)-1]
+					}
+				}
+			}
+			// still not found, use mv name as explore name
+			if explore == "" {
+				explore = mvName
+			}
+		}
+
+		// add explore and canvas to access and field access rule's condition resources
+		if explore != "" {
+			exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+			conditionRes = append(conditionRes, exp)
+			for _, r := range rules {
+				if rfa := r.GetFieldAccess(); rfa != nil {
+					rfa.ConditionResources = append(rfa.ConditionResources, exp)
+				}
+			}
+		}
+		if canvas != "" {
+			c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+			conditionRes = append(conditionRes, c)
+			for _, r := range rules {
+				if rfa := r.GetFieldAccess(); rfa != nil {
+					rfa.ConditionResources = append(rfa.ConditionResources, c)
+				}
+			}
+		}
+	}
+
+	if len(conditionKinds) > 0 || len(conditionRes) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionRes,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
+}
+
 // updateNextRunOn evaluates the report's schedule relative to the current time, and updates the NextRunOn state accordingly.
 // If the schedule is nil, it will set NextRunOn to nil.
 func (r *ReportReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report) error {
@@ -174,7 +288,7 @@ func (r *ReportReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.
 		curr = rep.State.NextRunOn.AsTime()
 	}
 
-	if next == curr {
+	if next.Equal(curr) {
 		return nil
 	}
 
@@ -395,49 +509,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	var ownerID, explore, canvas, webOpenMode string
+	var ownerID, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
-	}
-	if e, ok := rep.Spec.Annotations["explore"]; ok {
-		explore = e
-	}
-	if c, ok := rep.Spec.Annotations["canvas"]; ok {
-		canvas = c
 	}
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
 		if webOpenMode == "" { // backwards compatibility
-			webOpenMode = "recipient"
-		}
-	}
-
-	if webOpenMode != "none" && explore == "" { // backwards compatibility, try to find explore
-		if path, ok := rep.Spec.Annotations["web_open_path"]; ok {
-			// parse path, extract explore name, it will be like /explore/{explore}
-			if strings.HasPrefix(path, "/explore/") {
-				explore = path[9:]
-				if explore[len(explore)-1] == '/' {
-					explore = explore[:len(explore)-1]
-				}
-			}
-		}
-		// still not found, try to extract mv from query args
-		if explore == "" && rep.Spec.QueryArgsJson != "" {
-			m := make(map[string]interface{})
-			err := json.Unmarshal([]byte(rep.Spec.QueryArgsJson), &m)
-			if err == nil {
-				if v, ok := m["metricsView"]; ok {
-					explore = v.(string)
-				} else if v, ok = m["metrics_view_name"]; ok {
-					explore = v.(string)
-				} else if v, ok = m["metrics_view"]; ok {
-					explore = v.(string)
-				}
-			}
-		}
-		if explore == "" { // still not found
-			webOpenMode = "none"
+			webOpenMode = "creator"
 		}
 	}
 
@@ -450,13 +529,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			anonRecipients = true
 		}
 	}
-	// extract dimensions, measures and where filter from query args
-	whereFilterJSON, fields, err := queries.SecurityFromQuery(rep.Spec.QueryName, rep.Spec.QueryArgsJson)
-	if err != nil {
-		return false, fmt.Errorf("failed to extract security from query args: %w", err)
-	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, whereFilterJSON, fields, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}

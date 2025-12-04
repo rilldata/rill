@@ -11,12 +11,12 @@
     type V1MetricsViewAggregationResponse,
     type V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import type { QueryObserverResult } from "@tanstack/svelte-query";
+  import { AlertTriangleIcon } from "lucide-svelte";
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
-  import type { QueryObserverResult } from "@tanstack/svelte-query";
-  import { AlertTriangleIcon } from "lucide-svelte";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   type Query<T> = QueryObserverResult<T, HTTPError>;
   type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
@@ -31,6 +31,7 @@
   export let timeZone: string | undefined;
   export let interval: Interval;
   export let sparkline: KPISpec["sparkline"];
+  export let hideTimeRange: boolean | undefined;
   export let comparisonOptions: KPISpec["comparison"];
   export let showTimeComparison: boolean;
   export let hasTimeSeries: boolean | undefined;
@@ -91,6 +92,7 @@
   <div
     class="data-wrapper overflow-hidden"
     style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+    aria-label="{measure?.name ?? ''} KPI data"
   >
     <h2 class="measure-name" title={measure?.displayName || measure?.name}>
       {#if measure?.displayName}
@@ -175,9 +177,9 @@
       {/if}
     {/if}
 
-    {#if !showSparkline && timeGrain && interval.isValid}
+    {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
       <span class="text-gray-500">
-        <RangeDisplay {interval} />
+        <RangeDisplay {interval} {timeGrain} />
       </span>
     {/if}
   </div>
@@ -198,6 +200,7 @@
         <Chart
           bind:hoveredPoints
           {primaryData}
+          {hideTimeRange}
           secondaryData={showComparison ? comparisonData : []}
           {timeGrain}
           selectedTimeZone={timeZone}

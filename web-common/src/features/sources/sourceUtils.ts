@@ -8,9 +8,9 @@ import {
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
-// Helper text that we put at the top of every Source YAML file
-const SOURCE_MODEL_FILE_TOP = `# Source YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+// Helper text that we put at the top of every Model YAML file
+const SOURCE_MODEL_FILE_TOP = `# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
 type: model
 materialize: true`;
@@ -74,26 +74,27 @@ export function compileSourceYAML(
     .join("\n");
 
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\ndriver: ${connector.name}\n` +
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
     compiledKeyValues
   );
 }
 
 export function compileLocalFileSourceYAML(path: string) {
-  return `${SOURCE_MODEL_FILE_TOP}\n\ndriver: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
+  return `${SOURCE_MODEL_FILE_TOP}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
-function buildDuckDbQuery(path: string): string {
-  const extension = extractFileExtension(path);
+function buildDuckDbQuery(path: string | undefined): string {
+  const safePath = typeof path === "string" ? path : "";
+  const extension = extractFileExtension(safePath);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
-    return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
+    return `select * from read_csv('${safePath}', auto_detect=true, ignore_errors=1, header=true)`;
   } else if (extensionContainsParts(extension, [".parquet"])) {
-    return `select * from read_parquet('${path}')`;
+    return `select * from read_parquet('${safePath}')`;
   } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
-    return `select * from read_json('${path}', auto_detect=true, format='auto')`;
+    return `select * from read_json('${safePath}', auto_detect=true, format='auto')`;
   }
 
-  return `select * from '${path}'`;
+  return `select * from '${safePath}'`;
 }
 
 /**
@@ -198,6 +199,50 @@ export function maybeRewriteToDuckDb(
   }
 
   return [connectorCopy, formValues];
+}
+
+/**
+ * Process form data for sources, including DuckDB rewrite logic and placeholder handling.
+ * This serves as a single source of truth for both preview and submission.
+ */
+export function prepareSourceFormData(
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+): [V1ConnectorDriver, Record<string, unknown>] {
+  // Create a copy of form values to avoid mutating the original
+  const processedValues = { ...formValues };
+
+  // Strip connector configuration keys from the source form values to prevent
+  // leaking connector-level fields (e.g., credentials) into the model file.
+  if (connector.configProperties) {
+    const connectorPropertyKeys = new Set(
+      connector.configProperties.map((p) => p.key).filter(Boolean),
+    );
+    for (const key of Object.keys(processedValues)) {
+      if (connectorPropertyKeys.has(key)) {
+        delete processedValues[key];
+      }
+    }
+  }
+
+  // Handle placeholder values for required source properties
+  if (connector.sourceProperties) {
+    for (const prop of connector.sourceProperties) {
+      if (prop.key && prop.required && !(prop.key in processedValues)) {
+        if (prop.placeholder) {
+          processedValues[prop.key] = prop.placeholder;
+        }
+      }
+    }
+  }
+
+  // Apply DuckDB rewrite logic
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+    connector,
+    processedValues,
+  );
+
+  return [rewrittenConnector, rewrittenFormValues];
 }
 
 export function getFileExtension(source: V1Source): string {

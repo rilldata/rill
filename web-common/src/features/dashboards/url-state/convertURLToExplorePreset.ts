@@ -19,7 +19,6 @@ import {
   FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
   FromURLParamTimeGrainMap,
-  FromURLParamTimeRangePresetMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
@@ -29,7 +28,6 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { validateISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -60,8 +58,10 @@ export function convertURLToExplorePreset(
     (m) => m.name!,
   );
   const dimensions = getMapFromArray(
-    metricsView.dimensions?.filter((d) =>
-      explore.dimensions?.includes(d.name!),
+    metricsView.dimensions?.filter(
+      (d) =>
+        explore.dimensions?.includes(d.name!) &&
+        d.type !== "DIMENSION_TYPE_TIME",
     ) ?? [],
     (d) => d.name!,
   );
@@ -292,19 +292,12 @@ export function fromTimeRangesParams(
 
   if (searchParams.has(ExploreStateURLParams.TimeRange)) {
     const tr = searchParams.get(ExploreStateURLParams.TimeRange) as string;
-    if (
-      tr in FromURLParamTimeRangePresetMap ||
-      validateISODuration(tr) ||
-      CustomTimeRangeRegex.test(tr)
-    ) {
-      preset.timeRange = tr;
+
+    const rillTimeError = validateRillTime(tr);
+    if (rillTimeError) {
+      errors.push(getSingleFieldError("time range", tr));
     } else {
-      const rillTimeError = validateRillTime(tr);
-      if (rillTimeError) {
-        errors.push(getSingleFieldError("time range", tr));
-      } else {
-        preset.timeRange = tr;
-      }
+      preset.timeRange = tr;
     }
   }
 

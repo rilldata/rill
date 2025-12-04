@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
@@ -475,6 +476,88 @@ func TestViews(t *testing.T) {
 		require.NoError(t, err)
 	}
 	verifyTable(t, testDB, "SELECT id, country FROM view10", []testData{{ID: 2, Country: "USA"}})
+
+	require.NoError(t, testDB.Close())
+}
+
+func TestCloseDB(t *testing.T) {
+	localDir := t.TempDir()
+	db, err := NewDB(t.Context(), &DBOptions{
+		LocalPath:      localDir,
+		ReadWriteRatio: 0.5,
+		Remote:         nil,
+		Logger:         zap.NewNop(),
+	})
+	require.NoError(t, err)
+
+	// create view
+	_, err = db.CreateTableAsSelect(t.Context(), "view1", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// create another view
+	_, err = db.CreateTableAsSelect(t.Context(), "view2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// drop view1
+	err = db.DropTable(t.Context(), "view1")
+	require.NoError(t, err)
+
+	// wait for async delete versions to complete
+	time.Sleep(2 * time.Second)
+	// close DB
+	require.NoError(t, db.Close())
+
+	// reopen DB
+	db, err = NewDB(t.Context(), &DBOptions{
+		LocalPath:      localDir,
+		ReadWriteRatio: 0.5,
+		Remote:         nil,
+		Logger:         zap.NewNop(),
+	})
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, db.Close())
+	}()
+
+	conn, release, err := db.AcquireReadConnection(t.Context())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, release())
+	}()
+
+	var id int
+	var country string
+	err = conn.QueryRowxContext(t.Context(), "SELECT id, country FROM view1").Scan(id, country)
+	require.Error(t, err, "view1 should not exist")
+
+	// view2 should still exist
+	err = conn.QueryRowxContext(t.Context(), "SELECT id, country FROM view2").Scan(&id, &country)
+	require.NoError(t, err)
+	require.Equal(t, 2, id)
+	require.Equal(t, "USA", country)
+}
+
+func TestDiskCleanupOnFailures(t *testing.T) {
+	testDB, localDir, _ := prepareDB(t)
+	ctx := context.Background()
+
+	// create a table that fails
+	_, err := testDB.CreateTableAsSelect(ctx, "test_table_fail", "SELECT 1 AS id, 'India AS country", &CreateTableOptions{})
+	require.Error(t, err)
+
+	// verify directory is cleaned up
+	entries, err := os.ReadDir(filepath.Join(localDir, "test_table_fail"))
+	require.NoError(t, err)
+	require.Len(t, entries, 0)
+
+	// create a view that fails
+	_, err = testDB.CreateTableAsSelect(ctx, "test_view_fail", "SELECT 1 AS id, 'India AS country", &CreateTableOptions{View: true})
+	require.Error(t, err)
+
+	// verify directory is cleaned up
+	entries, err = os.ReadDir(filepath.Join(localDir, "test_view_fail"))
+	require.NoError(t, err)
+	require.Len(t, entries, 0)
 
 	require.NoError(t, testDB.Close())
 }

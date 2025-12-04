@@ -24,10 +24,10 @@
     DEFAULT_TIME_RANGES,
     DEFAULT_TIMEZONES,
   } from "@rilldata/web-common/lib/time/config";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
-  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -38,7 +38,7 @@
 
   $: ({
     canvasEntity: {
-      spec: { canvasSpec },
+      spec,
       filters: { setFilters },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -91,13 +91,13 @@
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
-  $: showFilterBar = $canvasSpec?.filtersEnabled ?? true;
+  $: showFilterBar = $spec?.filtersEnabled ?? true;
   $: theme = !rawTheme
     ? undefined
     : typeof rawTheme === "string"
       ? rawTheme
       : rawTheme instanceof YAMLMap
-        ? $canvasSpec?.embeddedTheme
+        ? $spec?.embeddedTheme
         : undefined;
 
   async function toggleFilterBar() {
@@ -113,7 +113,11 @@
   }
 </script>
 
-<SidebarWrapper type="secondary" disableHorizontalPadding title="Canvas">
+<SidebarWrapper
+  type="secondary"
+  disableHorizontalPadding
+  title="Canvas configurations"
+>
   <div class="page-param">
     <Input
       hint="Shown in global header and when deployed to Rill Cloud"
@@ -225,10 +229,13 @@
           await updateProperties({ theme: value });
         }
       }}
-      onColorChange={async (primary, secondary) => {
+      onColorChange={async (primary, secondary, isDarkMode) => {
+        // TODO: Update to support dark mode - currently always sets light mode
+        // Use new theme structure: theme.light or theme.dark
+        const modeKey = isDarkMode ? "dark" : "light";
         await updateProperties({
           theme: {
-            colors: {
+            [modeKey]: {
               primary,
               secondary,
             },

@@ -4,17 +4,27 @@ import axios from "axios";
 import fs from "fs";
 import path from "path";
 
-export async function generateEmbed(
-  organization: string,
-  project: string,
-  resourceName: string,
-  serviceToken: string,
-): Promise<void> {
+export async function generateEmbed({
+  organization,
+  project,
+  resourceName,
+  resourceType,
+  serviceToken,
+  initialState,
+}: {
+  organization: string;
+  project: string;
+  resourceName: string;
+  resourceType: string;
+  serviceToken: string;
+  initialState: string | null;
+}): Promise<void> {
   try {
     const response: AxiosResponse<{ iframeSrc: string }> = await axios.post(
-      `http://localhost:8080/v1/organizations/${organization}/projects/${project}/iframe`,
+      `http://localhost:8080/v1/orgs/${organization}/projects/${project}/iframe`,
       {
         resource: resourceName,
+        type: resourceType,
         navigation: true,
       },
       {
@@ -25,9 +35,12 @@ export async function generateEmbed(
       },
     );
 
-    const iframeSrc = response.data.iframeSrc;
+    let iframeSrc = response.data.iframeSrc;
     if (!iframeSrc) {
       throw new Error("Invalid response: iframeSrc not found");
+    }
+    if (initialState) {
+      iframeSrc += `${initialState}`;
     }
 
     const htmlContent = `<!DOCTYPE html>

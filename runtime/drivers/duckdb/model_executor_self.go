@@ -6,14 +6,21 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/azure"
+	"github.com/rilldata/rill/runtime/drivers/gcs"
+	"github.com/rilldata/rill/runtime/drivers/https"
+	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
@@ -29,6 +36,8 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 	}
 	return 1, true
 }
+
+var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &ModelInputProperties{}
@@ -61,54 +70,171 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := !materialize
 	tableName := outputProps.Table
 
-	// Backward compatibility for the old duckdb SQL:
-	// It was possible to set a duckdb SQL which ingests data from an object store without setting the object store credentials.
-	// We did rewriting for path to rewrite object store paths to paths of locally downloaded files.
-	// The handling can now be done with duckdb's native connectors by setting a SQL that creates secret to access the object store.
-	// However duckdb does not support GCS's native credentials(google_application_credentials) so we still maintain the hack for the same.
-	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
-	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
-		if secretSQL != "" {
-			if inputProps.PreExec == "" {
-				inputProps.PreExec = secretSQL
-			} else {
-				inputProps.PreExec += ";" + secretSQL
+	// Secret already exists if:
+	// 1. selfToSelfExecutor called from an explicit connector executor (e.g. model_executor_objectstore_self) that has already set InternalCreateSecretSQL,
+	// 2. The user has defined create secret in pre_exec.
+	secretAlreadyExists := inputProps.InternalCreateSecretSQL != "" || createSecretRegex.MatchString(inputProps.PreExec)
+
+	var parsedPath string
+	var parsedConnectorType string
+	var parsedAST *duckdbsql.AST
+	// Perform sql parsing only in the following cases:
+	// 1. secret not exists already
+	// 2. The input connector is DuckDB (other connectors which need secrets have already set it).
+	if !secretAlreadyExists && opts.InputConnector == "duckdb" {
+		// We donot want to parser sql but there are still some use case where we need to parse the path from SQL
+		// 1. if we have gcs connector with native cred, DuckDB doesn't support native GCS credentials(google_credentials_json)
+		// 2. if we have s3 connector without region,  DuckDB doesn't support automatic region detection
+		// 3. if we have local path
+		var ok bool
+		if parsedConnectorType, parsedPath, parsedAST, ok = parseRefFromSQL(inputProps.SQL); ok {
+			if parsedConnectorType == "local_file" {
+				rewrittenSQL, err := rewriteLocalPaths(parsedAST, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
+				if err != nil {
+					return nil, fmt.Errorf("invalid local path: %w", err)
+				}
+				inputProps.SQL = rewrittenSQL
 			}
-		} else if scheme == "gcs" {
-			// rewrite duckdb sql with locally downloaded files
-			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
-			if err != nil {
-				return nil, err
-			}
-			defer release()
-			path := ast.GetTableRefs()[0].Paths[0]
-			deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, path, ast)
-			if err != nil {
-				return nil, err
-			}
-			defer deleteFiles()
-		} else {
-			rewrittenSQL, err := rewriteLocalPaths(ast, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
-			if err != nil {
-				return nil, fmt.Errorf("invalid local path: %w", err)
-			}
-			inputProps.SQL = rewrittenSQL
 		}
 	}
 
-	// Add PreExec statements that create temporary secrets for object store connectors.
-	for _, connector := range e.c.config.secretConnectors() {
-		secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+	connectorSecretsAvailable := make(map[string]bool)
+	if !secretAlreadyExists {
+		connectorsForSecrets, autoDetected := connectorsForSecrets(inputProps.CreateSecretsFromConnectors, e.c.config.CreateSecretsFromConnectors, opts.Env.Connectors)
+		var createSecretSQLs, dropSecretSQLs []string
+		for _, connector := range connectorsForSecrets {
+			// we donnot need to pass the parsedPath we are using because of s3 region detection
+			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, parsedPath, nil)
+			if err != nil {
+				// Skip creating secrets when:
+				// - autoDetected: user didn't explicitly configure the secret container
+				// - errGCSUsesNativeCreds: DuckDB doesn't support native GCS credentials
+				if autoDetected || errors.Is(err, errGCSUsesNativeCreds) {
+					continue
+				}
+
+				return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+			}
+			connectorSecretsAvailable[connectorType] = true
+			createSecretSQLs = append(createSecretSQLs, createSecretSQL)
+			dropSecretSQLs = append(dropSecretSQLs, dropSecretSQL)
+		}
+		inputProps.InternalCreateSecretSQL = strings.Join(createSecretSQLs, "; ")
+		inputProps.InternalDropSecretSQL = strings.Join(dropSecretSQLs, "; ")
+	}
+
+	if parsedConnectorType == "gcs" && !connectorSecretsAvailable["gcs"] {
+		// rewrite duckdb sql with locally downloaded files
+		handle, release, err := opts.Env.AcquireConnector(ctx, parsedConnectorType)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+			return nil, err
 		}
-		if inputProps.PreExec == "" {
-			inputProps.PreExec = secretSQL
-		} else {
-			inputProps.PreExec += ";" + secretSQL
+		defer release()
+		deleteFiles, err := rewriteDuckDBSQL(ctx, inputProps, handle, parsedPath, parsedAST)
+		if err != nil {
+			return nil, err
+		}
+		defer deleteFiles()
+	}
+
+	// If host access is allowed, ensure DuckDB has fallback secrets for missing cloud providers.
+	// This allows DuckDB to access s3, gcs, azure creds from env if  when no explicit connectors exist.
+	if !secretAlreadyExists && opts.Env.AllowHostAccess {
+		var fallbackSecrets []string
+		var fallbackDrops []string
+
+		// Helper to add a fallback secret for a connector type
+		addFallbackSecret := func(connector string) {
+			secretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
+			validation := ", VALIDATION 'none'"
+			// azure does not support this property
+			if connector == "azure" {
+				validation = ""
+			}
+			fallbackSecrets = append(fallbackSecrets, fmt.Sprintf(`
+			CREATE OR REPLACE TEMPORARY SECRET  %s (
+			TYPE %s,
+			PROVIDER credential_chain%s
+			)`, secretName, connector, validation))
+			fallbackDrops = append(fallbackDrops, fmt.Sprintf(`DROP SECRET IF EXISTS %s`, secretName))
+		}
+
+		// Add missing secrets individually
+		if !connectorSecretsAvailable["s3"] {
+			addFallbackSecret("s3")
+		}
+		if !connectorSecretsAvailable["gcs"] {
+			addFallbackSecret("gcs")
+		}
+		if !connectorSecretsAvailable["azure"] {
+			addFallbackSecret("azure")
+		}
+		if len(fallbackSecrets) > 0 {
+			if inputProps.InternalCreateSecretSQL != "" {
+				inputProps.InternalCreateSecretSQL += "; "
+			}
+			inputProps.InternalCreateSecretSQL += strings.Join(fallbackSecrets, "; ")
+
+			if inputProps.InternalDropSecretSQL != "" {
+				inputProps.InternalDropSecretSQL += "; "
+			}
+			inputProps.InternalDropSecretSQL += strings.Join(fallbackDrops, "; ")
 		}
 	}
 
+	// Save the original PreExec so we can restore it later if the query fails
+	originalPreExec := inputProps.PreExec
+	if inputProps.InternalCreateSecretSQL != "" {
+		if inputProps.PreExec != "" {
+			inputProps.PreExec += "\n;" // adding \n if there is comment in pre_exec
+		}
+		inputProps.PreExec += inputProps.InternalCreateSecretSQL
+	}
+	duration, err := e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
+	if err != nil {
+		// On failure, try cleaning up secrets and retry without secrets for anonymous bucket access
+		if inputProps.InternalDropSecretSQL != "" && (strings.Contains(err.Error(), "HTTP 403") || strings.Contains(err.Error(), "IO Error") || strings.Contains(err.Error(), "region being set incorrectly")) {
+			// Restore original PreExec, append drop secret, and retry.
+			inputProps.PreExec = originalPreExec
+			if inputProps.PreExec != "" {
+				inputProps.PreExec += "\n;" // adding \n if there is comment in pre_exec
+			}
+			inputProps.PreExec += inputProps.InternalDropSecretSQL
+			var anonymErr error
+			duration, anonymErr = e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
+			if anonymErr != nil {
+				// throwing the original error
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	// Build result props
+	resultProps := &ModelResultProperties{
+		Table:         tableName,
+		View:          asView,
+		UsedModelName: usedModelName,
+	}
+	resultPropsMap := map[string]interface{}{}
+	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode result properties: %w", err)
+	}
+
+	// Done
+	return &drivers.ModelResult{
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: duration,
+	}, nil
+}
+
+func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts *drivers.ModelExecuteOptions, inputProps *ModelInputProperties,
+	outputProps *ModelOutputProperties, tableName string, asView bool,
+) (time.Duration, error) {
 	var duration time.Duration
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
@@ -125,17 +251,17 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			//
 			// not handling incremental use cases since ingesting from an external database is mostly for small,experimental use cases
 			if opts.Incremental {
-				return nil, fmt.Errorf("`incremental` models are not supported when ingesting data from external db files")
+				return 0, fmt.Errorf("`incremental` models are not supported when ingesting data from external db files")
 			}
 			var err error
 			inputProps.Database, err = fileutil.ResolveLocalPath(inputProps.Database, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
 			if err != nil {
-				return nil, err
+				return 0, err
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
 				_ = e.c.dropTable(ctx, stagingTableName)
-				return nil, fmt.Errorf("failed to create model: %w", err)
+				return 0, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
 		} else {
@@ -150,7 +276,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
 				_ = e.c.dropTable(ctx, stagingTableName)
-				return nil, fmt.Errorf("failed to create model: %w", err)
+				return 0, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.duration
 		}
@@ -159,7 +285,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if stagingTableName != tableName {
 			err := e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
-				return nil, fmt.Errorf("failed to rename staged model: %w", err)
+				return 0, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
@@ -177,30 +303,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
+			return 0, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
 		duration = res.duration
 	}
-
-	// Build result props
-	resultProps := &ModelResultProperties{
-		Table:         tableName,
-		View:          asView,
-		UsedModelName: usedModelName,
-	}
-	resultPropsMap := map[string]interface{}{}
-	err := mapstructure.WeakDecode(resultProps, &resultPropsMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode result properties: %w", err)
-	}
-
-	// Done
-	return &drivers.ModelResult{
-		Connector:    opts.OutputConnector,
-		Properties:   resultPropsMap,
-		Table:        tableName,
-		ExecDuration: duration,
-	}, nil
+	return duration, nil
 }
 
 func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, inputProps *ModelInputProperties, tbl string) (*rduckdb.TableWriteMetrics, error) {
@@ -256,13 +363,9 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 	})
 }
 
-func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, string, *duckdbsql.AST, bool) {
-	// We take an assumption that if there is a pre_exec query, the user has already set the secret SQL.
-	if props.PreExec != "" || opts.InputConnector != "duckdb" {
-		return "", "", nil, false
-	}
+func parseRefFromSQL(sql string) (string, string, *duckdbsql.AST, bool) {
 	// Parse AST
-	ast, err := duckdbsql.Parse(props.SQL)
+	ast, err := duckdbsql.Parse(sql)
 	if err != nil {
 		// If we can't parse the SQL just let duckdb run on it and give a sql parse error.
 		return "", "", nil, false
@@ -278,28 +381,22 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 	if len(ref.Paths) == 0 {
 		return "", "", nil, false
 	}
-	uri, err := url.Parse(ref.Paths[0])
+	path := ref.Paths[0]
+	uri, err := url.Parse(path)
 	if err != nil {
 		return "", "", nil, false
 	}
 
-	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
+	switch uri.Scheme {
+	case "s3", "azure", "gcs", "gs", "http", "https":
 		if uri.Scheme == "gs" {
 			uri.Scheme = "gcs"
 		}
-		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-		secretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
-		if err != nil {
-			if errors.Is(err, errGCSUsesNativeCreds) {
-				return uri.Scheme, "", ast, true
-			}
-			return "", "", nil, false
-		}
-		return uri.Scheme, secretSQL, ast, true
+		return uri.Scheme, path, ast, true
 	}
 	if uri.Scheme == "" && uri.Host == "" {
 		// local file reference
-		return "local_file", "", ast, true
+		return "local_file", path, ast, true
 	}
 	return "", "", nil, false
 }
@@ -394,4 +491,203 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 	}
 
 	return ast.Format()
+}
+
+// connectorsForSecrets returns the list of connectors to be used for secret creation.
+// Priority:
+// 1. If the model configuration specifies connector names, use those.
+// 2. if duckdb connector configuration specifies connector names, use those
+// 3. If neither is configured, automatically detect all connectors of type s3, azure, gcs, or https.
+// The boolean return value is true if the list of connectors was automatically detected.
+func connectorsForSecrets(modelSecrets, duckdbSecrets []string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+	var configuredConnectorsForSecrets []string
+	if len(modelSecrets) > 0 {
+		configuredConnectorsForSecrets = append(configuredConnectorsForSecrets, modelSecrets...)
+	} else if len(duckdbSecrets) > 0 {
+		configuredConnectorsForSecrets = append(configuredConnectorsForSecrets, duckdbSecrets...)
+	}
+
+	// If no connectors are configured, automatically detect all connectors of type s3, azure, gcs, or https from the project.
+	// If a single configured value contains a comma-separated list of connector names, split it into individual entries.
+	// Otherwise, return the explicitly configured list of connectors.
+	if len(configuredConnectorsForSecrets) == 0 {
+		var res []string
+		for _, c := range allConnectors {
+			if c.Type == "s3" || c.Type == "azure" || c.Type == "gcs" || c.Type == "https" {
+				res = append(res, c.Name)
+			}
+		}
+		return res, true
+	} else if len(configuredConnectorsForSecrets) == 1 && strings.Contains(configuredConnectorsForSecrets[0], ",") {
+		res := strings.Split(configuredConnectorsForSecrets[0], ",")
+		for i, s := range res {
+			res[i] = strings.TrimSpace(s)
+		}
+		return res, false
+	}
+	return configuredConnectorsForSecrets, false
+}
+
+func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any) (string, string, string, error) {
+	handle, release, err := opts.Env.AcquireConnector(ctx, connector)
+	if err != nil {
+		return "", "", "", err
+	}
+	defer release()
+
+	safeSecretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
+	dropSecretSQL := fmt.Sprintf("DROP SECRET IF EXISTS %s", safeSecretName)
+	connectorType := handle.Driver()
+
+	switch connectorType {
+	case "s3":
+		conn, ok := handle.(*s3.Connection)
+		if !ok {
+			return "", "", "", fmt.Errorf("internal error: expected s3 connector handle")
+		}
+		s3Config := conn.ParsedConfig()
+		err := mapstructure.WeakDecode(optionalAdditionalConfig, s3Config)
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to parse s3 config properties: %w", err)
+		}
+		var sb strings.Builder
+		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString(safeSecretName)
+		sb.WriteString(" (TYPE S3")
+
+		if s3Config.AccessKeyID != "" {
+			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
+		} else if s3Config.AllowHostAccess {
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
+		}
+
+		if s3Config.SessionToken != "" {
+			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
+		}
+		if s3Config.Endpoint != "" {
+			uri, err := url.Parse(s3Config.Endpoint)
+			if err == nil && uri.Scheme != "" { // let duckdb raise an error if the endpoint is invalid
+				// for duckdb the endpoint should not have a scheme
+				s3Config.Endpoint = strings.TrimPrefix(s3Config.Endpoint, uri.Scheme+"://")
+				if uri.Scheme == "http" {
+					sb.WriteString(", USE_SSL false")
+				}
+			}
+			sb.WriteString(", ENDPOINT ")
+			sb.WriteString(safeSQLString(s3Config.Endpoint))
+			sb.WriteString(", URL_STYLE path")
+		}
+		if s3Config.Region != "" {
+			sb.WriteString(", REGION ")
+			sb.WriteString(safeSQLString(s3Config.Region))
+		} else if optionalBucketURL != "" {
+			// DuckDB does not automatically resolve the region as of 1.2.0 so we try to detect and set the region.
+			uri, err := globutil.ParseBucketURL(optionalBucketURL)
+			if err != nil {
+				return "", "", "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
+			}
+			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
+			if err != nil {
+				return "", "", "", err
+			}
+			sb.WriteString(", REGION ")
+			sb.WriteString(safeSQLString(reg))
+		}
+		writeScope(&sb, s3Config.PathPrefixes)
+		sb.WriteRune(')')
+		return sb.String(), dropSecretSQL, connectorType, nil
+	case "gcs":
+		// GCS works via S3 compatibility mode.
+		// This means we that gcsConfig.KeyID and gcsConfig.Secret should be set instead of gcsConfig.SecretJSON.
+		gcsConnectorProp := handle.Config()
+		gcsConfig, err := gcs.NewConfigProperties(gcsConnectorProp)
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to load gcs base config: %w", err)
+		}
+		if err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig); err != nil {
+			return "", "", "", fmt.Errorf("failed to parse gcs config properties: %w", err)
+		}
+		// If no credentials are provided we assume that the user wants to use the native credentials
+		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "") {
+			return "", "", "", errGCSUsesNativeCreds
+		}
+		var sb strings.Builder
+		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString(safeSecretName)
+		sb.WriteString(" (TYPE GCS")
+		if gcsConfig.KeyID != "" {
+			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
+		} else if gcsConfig.AllowHostAccess {
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
+		}
+		writeScope(&sb, gcsConfig.PathPrefixes)
+		sb.WriteRune(')')
+		return sb.String(), dropSecretSQL, connectorType, nil
+	case "azure":
+		conn, ok := handle.(*azure.Connection)
+		if !ok {
+			return "", "", "", fmt.Errorf("internal error: expected azure connector handle")
+		}
+		azureConfig := conn.ParsedConfig()
+		err := mapstructure.WeakDecode(optionalAdditionalConfig, azureConfig)
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to parse azure config properties: %w", err)
+		}
+		var sb strings.Builder
+		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString(safeSecretName)
+		sb.WriteString(" (TYPE AZURE")
+		// if connection string is set then use that and fall back to env credentials only if host access is allowed and connection string is not set
+		connectionString := azureConfig.GetConnectionString()
+		if connectionString != "" {
+			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
+		} else if azureConfig.AllowHostAccess {
+			// duckdb will use default defaultazurecredential https://github.com/Azure/azure-sdk-for-cpp/blob/azure-identity_1.6.0/sdk/identity/azure-identity/README.md#defaultazurecredential
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+		}
+		if azureConfig.GetAccount() != "" {
+			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
+		}
+		writeScope(&sb, azureConfig.PathPrefixes)
+		sb.WriteRune(')')
+		return sb.String(), dropSecretSQL, connectorType, nil
+	case "https":
+		httpConfig, err := https.NewConfigProperties(handle.Config())
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to load http connector properties: %w", err)
+		}
+		if err := mapstructure.WeakDecode(optionalAdditionalConfig, httpConfig); err != nil {
+			return "", "", "", fmt.Errorf("failed to parse http model properties: %w", err)
+		}
+		var sb strings.Builder
+		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString(safeSecretName)
+		sb.WriteString(" (TYPE HTTP")
+		if len(httpConfig.Headers) > 0 {
+			var headerStrings []string
+			for key, value := range httpConfig.Headers {
+				headerStrings = append(headerStrings, fmt.Sprintf("%s : %s", safeSQLString(key), safeSQLString(value)))
+			}
+			fmt.Fprintf(&sb, ", EXTRA_HTTP_HEADERS MAP { %s } ", strings.Join(headerStrings, ", "))
+		}
+		writeScope(&sb, httpConfig.PathPrefixes)
+		sb.WriteRune(')')
+		return sb.String(), dropSecretSQL, connectorType, nil
+	default:
+		return "", "", "", fmt.Errorf("internal error: secret generation is not supported for connector %q", handle.Driver())
+	}
+}
+
+func writeScope(sb *strings.Builder, prefixes []string) {
+	if len(prefixes) == 0 {
+		return
+	}
+	sb.WriteString(", SCOPE [")
+	for i, p := range prefixes {
+		sb.WriteString(safeSQLString(p))
+		if i < len(prefixes)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteString("]")
 }

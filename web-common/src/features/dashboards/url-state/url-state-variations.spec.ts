@@ -458,7 +458,7 @@ describe("Human readable URL state variations", () => {
 
   describe("Should update url state and restore default state on empty params", () => {
     for (const { title, mutations, preset, expectedSearch } of TestCases) {
-      it(title, () => {
+      it(title, async () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
@@ -484,7 +484,7 @@ describe("Human readable URL state variations", () => {
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
-        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
@@ -524,7 +524,7 @@ describe("Human readable URL state variations", () => {
       legacyNotSupported,
     } of TestCases) {
       if (legacyNotSupported) continue;
-      it(title, () => {
+      it(title, async () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
@@ -544,7 +544,7 @@ describe("Human readable URL state variations", () => {
         );
 
         const initState = getCleanMetricsExploreForAssertion();
-        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
         const curState = getCleanMetricsExploreForAssertion() as ExploreState;
 
         const url = new URL("http://localhost");
@@ -582,7 +582,7 @@ describe("Human readable URL state variations", () => {
     }
   });
 
-  it("Large state gets compressed", () => {
+  it("Large state gets compressed", async () => {
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
       getInitExploreStateForTest(
@@ -602,7 +602,7 @@ describe("Human readable URL state variations", () => {
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
 
-    applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+    await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
       AD_BIDS_APPLY_LARGE_FILTERS,
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
       AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,

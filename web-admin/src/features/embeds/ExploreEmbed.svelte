@@ -1,14 +1,10 @@
-<script context="module">
-  export let EmbedStorageNamespacePrefix = "__rill_embed";
-</script>
-
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../../components/errors/error-store";
+  import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
 
   export let instanceId: string;
   export let exploreName: string;
@@ -47,9 +43,7 @@
           storageNamespacePrefix={EmbedStorageNamespacePrefix}
           disableMostRecentDashboardState
         >
-          <DashboardThemeProvider>
-            <Dashboard {exploreName} {metricsViewName} isEmbedded />
-          </DashboardThemeProvider>
+          <Dashboard {exploreName} {metricsViewName} isEmbedded />
         </DashboardStateManager>
       </StateManagersProvider>
     {/key}

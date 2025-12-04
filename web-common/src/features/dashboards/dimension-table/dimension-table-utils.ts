@@ -239,7 +239,7 @@ export function estimateColumnSizes(
 export function prepareVirtualizedDimTableColumns(
   exploreState: ExploreState,
   allMeasures: MetricsViewSpecMeasure[],
-  measureTotals: { [key: string]: number },
+  maxValues: { [key: string]: number },
   dimension: MetricsViewSpecDimension,
   timeComparison: boolean,
   validPercentOfTotal: boolean,
@@ -345,7 +345,7 @@ export function prepareVirtualizedDimTableColumns(
           type: "INT",
           label: measure?.displayName || measure?.expression,
           description: measure?.description,
-          total: measureTotals[measure?.name ?? ""] || 0,
+          max: maxValues[measure?.name ?? ""] || 0,
           enableResize: false,
           format: measure?.formatPreset,
           highlight,

@@ -61,8 +61,40 @@ func (b exprSQLBuilder) writeValue(val any) error {
 	return err
 }
 
-func (b exprSQLBuilder) writeSubquery(_ *Subquery) error {
-	_, err := b.WriteString("<subquery>")
+func (b exprSQLBuilder) writeSubquery(s *Subquery) error {
+	_, err := b.WriteString("(SELECT ")
+	if err != nil {
+		return err
+	}
+	_, err = b.WriteString(s.Dimension.Name)
+	if err != nil {
+		return err
+	}
+	_, err = b.WriteString(" FROM metrics_view") // We don't know the actual metrics view name
+	if err != nil {
+		return err
+	}
+	if s.Where != nil {
+		_, err := b.WriteString(" WHERE ")
+		if err != nil {
+			return err
+		}
+		err = b.writeExpression(s.Where)
+		if err != nil {
+			return err
+		}
+	}
+	if s.Having != nil {
+		_, err := b.WriteString(" HAVING ")
+		if err != nil {
+			return err
+		}
+		err = b.writeExpression(s.Having)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = b.WriteString(")")
 	return err
 }
 

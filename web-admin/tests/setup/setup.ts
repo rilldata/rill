@@ -20,6 +20,7 @@ import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_ORG_NAME,
+  RILL_PROJECT_DISPLAY_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
@@ -202,14 +203,26 @@ setup.describe("global setup", () => {
     // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
-    await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
-
-    // Expect to land on the chat page
-    await adminPage.waitForURL("**/-/chat");
     await expect(
-      adminPage.getByText("How can I help you today?"),
-    ).toBeVisible();
+      adminPage.getByRole("link", { name: RILL_ORG_NAME }),
+    ).toBeVisible(); // Organization breadcrumb
+    await expect(
+      adminPage.getByRole("link", { name: RILL_PROJECT_NAME }),
+    ).toBeVisible(); // Project breadcrumb
+
+    // Expect to land on the project home page
+    await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
+    // Temporary fix to wait for the project to be ready.
+    // TODO: add a refetch to the project API
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          return adminPage.getByLabel("Project title").textContent();
+        },
+        { intervals: Array(4).fill(30_000), timeout: 120_000 },
+      )
+      .toContain(`Welcome to ${RILL_PROJECT_DISPLAY_NAME}`);
 
     // Navigate to the dashboards page to validate the deployment
     await adminPage.getByRole("link", { name: "Dashboards" }).click();
@@ -222,19 +235,10 @@ setup.describe("global setup", () => {
     // ).toBeVisible(); // Billing banner
     // await expect(adminPage.getByText("Free trial")).toBeVisible(); // Billing status
 
-    // There is a scenario where page loads before runtime can identify what files are present.
-    // This leads to a case where we never refresh the resources list.
-    // TODO: find a solution to refetch in the app itself
-    await expect
-      .poll(
-        async () => {
-          await adminPage.reload();
-          const title = adminPage.getByLabel("Container title");
-          return title.textContent();
-        },
-        { intervals: Array(5).fill(1_000), timeout: 5_000 },
-      )
-      .toEqual("Project dashboards");
+    // Wait for the project to be ready
+    await expect(adminPage.getByLabel("Container title")).toHaveText(
+      "Project dashboards",
+    );
 
     // Check that the dashboards are listed
     await expect(
@@ -245,34 +249,16 @@ setup.describe("global setup", () => {
     ).toBeVisible();
 
     // Wait for the first dashboard to be ready
-    await expect
-      .poll(
-        async () => {
-          await adminPage.reload();
-          const listing = adminPage.getByRole("link", {
-            name: "Programmatic Ads Auction auction_explore",
-          });
-          return listing.textContent();
-        },
-        {
-          // Increased timeout for the 1st dashboard to make sure sources are reconciled.
-          intervals: [10_000, 10_000, 20_000, 20_000, 30_000, 30_000],
-          timeout: 120_000,
-        },
-      )
-      .toContain("Last refreshed");
+    await expect(
+      adminPage.getByRole("link", {
+        name: "Programmatic Ads Auction auction_explore",
+      }),
+    ).toContainText("Last refreshed", { timeout: 15_000 });
 
-    await expect
-      .poll(
-        async () => {
-          await adminPage.reload();
-          const listing = adminPage.getByRole("link", {
-            name: "Programmatic Ads Bids bids_explore",
-          });
-          return listing.textContent();
-        },
-        { intervals: Array(6).fill(5_000), timeout: 30_000 },
-      )
-      .toContain("Last refreshed");
+    await expect(
+      adminPage.getByRole("link", {
+        name: "Programmatic Ads Bids bids_explore",
+      }),
+    ).toContainText("Last refreshed", { timeout: 15_000 });
   });
 });

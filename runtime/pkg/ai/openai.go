@@ -33,7 +33,7 @@ func (o *Options) getModel() string {
 	if o.Model != "" {
 		return o.Model
 	}
-	return openai.GPT4o // Default model if not specified
+	return openai.GPT4Dot1 // Default model if not specified
 }
 
 func (o *Options) getTemperature() float32 {
@@ -72,15 +72,16 @@ func NewOpenAI(apiKey string, opts *Options) (Client, error) {
 	return &openAI{
 		client: c,
 		apiKey: apiKey,
+		opts:   opts,
 	}, nil
 }
 
 // Complete sends a chat completion request to OpenAI and returns the response.
 // It handles conversion between Rill's message format and OpenAI's message format.
-func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+func (c *openAI) Complete(ctx context.Context, opts *CompleteOptions) (*CompleteResult, error) {
 	// Convert Rill messages to OpenAI's message format
 	var reqMsgs []openai.ChatCompletionMessage
-	for _, msg := range msgs {
+	for _, msg := range opts.Messages {
 		openaiMsgs, err := convertRillMessageToOpenAIMessages(msg) // each Rill message may become multiple OpenAI messages
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert message: %w", err)
@@ -90,9 +91,9 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 
 	// Convert Rill tools to OpenAI's tool format
 	var openaiTools []openai.Tool
-	if len(tools) > 0 {
-		openaiTools = make([]openai.Tool, len(tools))
-		for i, tool := range tools {
+	if len(opts.Tools) > 0 {
+		openaiTools = make([]openai.Tool, len(opts.Tools))
+		for i, tool := range opts.Tools {
 			openaiTool, err := convertRillToolToOpenAITool(tool)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert tool: %w", err)
@@ -101,11 +102,24 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 		}
 	}
 
+	// Determine response format based on output schema
+	var responseFormat *openai.ChatCompletionResponseFormat
+	if opts.OutputSchema != nil {
+		responseFormat = &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   "llm_completion_result",
+				Schema: opts.OutputSchema,
+			},
+		}
+	}
+
 	// Prepare request parameters
 	params := openai.ChatCompletionRequest{
-		Model:       c.opts.getModel(),
-		Messages:    reqMsgs,
-		Temperature: c.opts.getTemperature(),
+		Model:          c.opts.getModel(),
+		Messages:       reqMsgs,
+		Temperature:    c.opts.getTemperature(),
+		ResponseFormat: responseFormat,
 	}
 	if len(openaiTools) > 0 {
 		params.Tools = openaiTools
@@ -124,7 +138,11 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 	}
 
 	// Convert OpenAI's response to Rill's message format
-	return convertOpenAIMessageToRillMessage(res.Choices[0].Message)
+	return &CompleteResult{
+		Message:      convertOpenAIMessageToRillMessage(res.Choices[0].Message),
+		InputTokens:  res.Usage.PromptTokens,
+		OutputTokens: res.Usage.CompletionTokens,
+	}, nil
 }
 
 // convertRillMessageToOpenAIMessages converts a single Rill CompletionMessage to one or more OpenAI ChatCompletionMessages.
@@ -187,7 +205,7 @@ func convertRillMessageToOpenAIMessages(msg *aiv1.CompletionMessage) ([]openai.C
 }
 
 // convertOpenAIMessageToRillMessage converts OpenAI ChatCompletionMessage to Rill CompletionMessage format.
-func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*aiv1.CompletionMessage, error) {
+func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) *aiv1.CompletionMessage {
 	// Handle standard text responses (simple case)
 	if len(message.ToolCalls) == 0 {
 		contentBlocks := []*aiv1.ContentBlock{
@@ -198,7 +216,7 @@ func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*a
 		return &aiv1.CompletionMessage{
 			Role:    openai.ChatMessageRoleAssistant,
 			Content: contentBlocks,
-		}, nil
+		}
 	}
 
 	// Handle responses with tool calls (complex case)
@@ -230,7 +248,7 @@ func convertOpenAIMessageToRillMessage(message openai.ChatCompletionMessage) (*a
 	return &aiv1.CompletionMessage{
 		Role:    openai.ChatMessageRoleAssistant,
 		Content: contentBlocks,
-	}, nil
+	}
 }
 
 // convertRillToolToOpenAITool converts a single Rill Tool to OpenAI Tool format.

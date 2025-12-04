@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -26,11 +27,11 @@ import (
 )
 
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).SecurityClaims())
+	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx, req.InstanceId))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
@@ -53,7 +54,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
 	}
 
-	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, res)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx, req.InstanceId), res)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -92,6 +93,31 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		}
 	}
 
+	// Reports delivered in "creator mode" are accessed using claims that contain AdditionalRules that grant transitive access to the report.
+	// The transitive rule resolves into a RowFilter rule for the underlying metrics view that contains the filters in the query above.
+	// This means that the filters will be applied twice, which can impact the accuracy of subquery filters.
+	// On the frontend, this is handled by not adding the report's filters to the dashboard when it's opened.
+	// On the backend however, since we know the download token is scoped to a specific query, it is easier to just create a download token that doesn't have the transitive access rule.
+	// This ensures the report's filters don't get applied twice in the query.
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	downloadClaims := &runtime.SecurityClaims{
+		UserID:          claims.UserID,
+		UserAttributes:  claims.UserAttributes,
+		Permissions:     claims.Permissions,
+		AdditionalRules: nil, // Will be populated below
+		SkipChecks:      claims.SkipChecks,
+	}
+	for _, r := range claims.AdditionalRules {
+		ta := r.GetTransitiveAccess()
+		if ta == nil {
+			continue
+		}
+		if ta.Resource.Kind == runtime.ResourceKindReport && strings.EqualFold(ta.Resource.Name, req.Report) {
+			continue
+		}
+		downloadClaims.AdditionalRules = append(downloadClaims.AdditionalRules, r)
+	}
+
 	// Note - We are passing caller's user attributes to generateDownloadToken which may not always be the creator's attributes in case of external user's magic token. This is different from the alerts use case.
 	tkn, err := s.generateDownloadToken(&runtimev1.ExportRequest{
 		InstanceId:      req.InstanceId,
@@ -101,7 +127,8 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		IncludeHeader:   rep.Spec.ExportIncludeHeader,
 		OriginDashboard: originDashboard,
 		OriginUrl:       originURL,
-	}, &runtime.SecurityClaims{UserAttributes: auth.GetClaims(ctx).SecurityClaims().UserAttributes})
+		ExecutionTime:   valOrNullTime(t),
+	}, downloadClaims)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
@@ -119,6 +146,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse download token: %s", err.Error()), http.StatusBadRequest)
 		return
+	}
+
+	var execTime *time.Time
+	if request.ExecutionTime != nil && request.ExecutionTime.IsValid() {
+		t := request.ExecutionTime.AsTime()
+		execTime = &t
 	}
 
 	var q runtime.Query
@@ -157,6 +190,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
 			Rows:                r.Rows,
+			ExecutionTime:       execTime,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
@@ -241,10 +275,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Where:               r.Where,
 			Having:              r.Having,
 			SecurityClaims:      claims,
+			ExecutionTime:       execTime,
 		}
 	case *runtimev1.Query_TableRowsRequest:
 		r := v.TableRowsRequest
-		if !auth.GetClaims(req.Context()).CanInstance(r.InstanceId, auth.ReadOLAP) {
+		if !auth.GetClaims(req.Context(), r.InstanceId).Can(runtime.ReadOLAP) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
 		}

@@ -1,3 +1,4 @@
+import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 
@@ -97,6 +98,7 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_QUARTER]: "quarter",
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
+export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
 
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
   const v1TimeGrain = GrainAliasToV1TimeGrain[alias];
@@ -167,17 +169,18 @@ export const GrainToOrder: Record<DateTimeUnit, Order> = {
   year: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
 };
 
-export function isGrainWithinMinimum(
-  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit,
-  minimum: V1TimeGrain | TimeGrainAlias | DateTimeUnit,
+export function isGrainAllowed(
+  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
+  minTimeGrain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
 ) {
+  if (!grain) return false;
+  if (!minTimeGrain) return true;
   const grainOrder = getGrainOrder(grain);
-  const minimumOrder = getGrainOrder(minimum);
+  const minimumOrder = getGrainOrder(minTimeGrain);
 
-  if (grainOrder === undefined || minimumOrder === undefined) {
-    return false;
-  }
-  return grainOrder <= minimumOrder;
+  if (grainOrder === -1) return false;
+
+  return grainOrder >= minimumOrder;
 }
 
 export function getGrainOrder(

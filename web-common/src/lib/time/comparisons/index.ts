@@ -1,8 +1,11 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
-import { Duration, Interval } from "luxon";
+import {
+  V1TimeGrain,
+  type V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
+import { DateTime, Duration, Interval } from "luxon";
 import { getTimeWidth, transformDate } from "../transforms";
 import {
   type RelativeTimeTransformation,
@@ -246,24 +249,30 @@ export function getTimeComparisonParametersForComponent(
 
 export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
   if (
-    !comparisonTimeRange.isoOffset ||
+    (!comparisonTimeRange.isoOffset && !comparisonTimeRange.expression) ||
     comparisonTimeRange.isoOffset === TimeRangePreset.CUSTOM
   ) {
     return prettyFormatTimeRange(
-      new Date(comparisonTimeRange.start ?? ""),
-      new Date(comparisonTimeRange.end ?? ""),
-      TimeRangePreset.CUSTOM,
-      "UTC", // TODO
+      Interval.fromDateTimes(
+        DateTime.fromISO(comparisonTimeRange.start ?? "").setZone("UTC"),
+        DateTime.fromISO(comparisonTimeRange.end ?? "").setZone("UTC"),
+      ),
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
     );
   }
   switch (true) {
     case comparisonTimeRange.isoOffset === TimeRangePreset.ALL_TIME:
       return "All time";
-    case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset:
+    case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset ||
+      comparisonTimeRange.expression?.toLowerCase()?.endsWith("offset pp"):
       return "Previous period";
-    case comparisonTimeRange.isoOffset in TIME_COMPARISON:
+    case comparisonTimeRange.isoOffset &&
+      comparisonTimeRange.isoOffset in TIME_COMPARISON:
       return TIME_COMPARISON[comparisonTimeRange.isoOffset].label;
+    case comparisonTimeRange.expression &&
+      comparisonTimeRange.expression in TIME_COMPARISON:
+      return TIME_COMPARISON[comparisonTimeRange.expression].label;
     default:
-      return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset)}`;
+      return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "")}`;
   }
 }

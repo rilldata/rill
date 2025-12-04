@@ -35,6 +35,8 @@ export interface KPIGridSpec
   measures: string[];
   // Defaults to "bottom"
   sparkline?: "none" | "bottom" | "right";
+  // Defaults to false if undefined;
+  hide_time_range?: boolean;
   // Defaults to "delta" and "percent_change"
   comparison?: ComponentComparisonOptions[];
 }
@@ -79,6 +81,12 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
           label: "Measures",
         },
         sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
+        hide_time_range: {
+          type: "boolean",
+          optional: true,
+          label: "Time range display",
+          meta: { invertBoolean: true },
+        },
         comparison: { type: "comparison_options", label: "Comparison values" },
         ...commonOptions,
       },

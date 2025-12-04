@@ -44,8 +44,8 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				// Project info and deployment info not available --local mode
 				proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-					OrganizationName: ch.Org,
-					Name:             name,
+					Org:     ch.Org,
+					Project: name,
 				})
 				if err != nil {
 					return err
@@ -82,7 +82,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
-				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
 					fmt.Printf("  Status: %s\n", depl.Status.String())
 					fmt.Printf("  Status Message: %s\n", depl.StatusMessage)
 
@@ -98,7 +98,10 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := rt.ListResources(cmd.Context(), &runtimev1.ListResourcesRequest{InstanceId: instanceID})
+			res, err := rt.ListResources(cmd.Context(), &runtimev1.ListResourcesRequest{
+				InstanceId:         instanceID,
+				SkipSecurityChecks: true,
+			})
 			if err != nil {
 				return fmt.Errorf("failed to list resources: %w", err)
 			}

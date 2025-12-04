@@ -23,7 +23,7 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-				Organization:         args[0],
+				Org:                  args[0],
 				Project:              args[1],
 				SuperuserForceAccess: true,
 			})

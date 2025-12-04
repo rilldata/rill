@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -67,7 +67,7 @@ type DB interface {
 	// Meta APIs
 
 	// Schema returns the schema of the database.
-	Schema(ctx context.Context, ilike, name string) ([]*Table, error)
+	Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error)
 }
 
 type DBOptions struct {
@@ -384,25 +384,21 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		Version:        newVersion,
 		CreatedVersion: newVersion,
 	}
+	err = d.initLocalTable(name, newVersion)
+	if err != nil {
+		return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
+	}
+	defer func() {
+		if createErr != nil {
+			_ = d.deleteLocalTableFiles(name, newVersion)
+		}
+	}()
 	var dsn string
 	if opts.View {
 		dsn = ""
 		newMeta.SQL = query
-		err = d.initLocalTable(name, "")
-		if err != nil {
-			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
-		}
 	} else {
-		err = d.initLocalTable(name, newVersion)
-		if err != nil {
-			return nil, fmt.Errorf("create: unable to create dir %q: %w", name, err)
-		}
 		dsn = d.localDBPath(name, newVersion)
-		defer func() {
-			if createErr != nil {
-				_ = d.deleteLocalTableFiles(name, newVersion)
-			}
-		}()
 	}
 
 	t := time.Now()
@@ -756,6 +752,9 @@ func (d *db) localDBMonitor() {
 func (d *db) Size() int64 {
 	var paths []string
 	_ = d.iterateLocalTables(false, func(name string, meta *tableMeta) error {
+		if meta.Type == "VIEW" {
+			return nil
+		}
 		// this is to avoid counting temp tables during source ingestion
 		// in certain cases we only want to compute the size of the serving db files
 		if !strings.HasPrefix(name, "__rill_tmp_") {

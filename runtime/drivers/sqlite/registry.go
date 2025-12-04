@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -36,6 +37,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		SELECT
 			id,
 			environment,
+			project_display_name,
 			olap_connector,
 			project_olap_connector,
 			repo_connector,
@@ -52,7 +54,8 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			feature_flags,
 			annotations,
 			public_paths,
-			ai_instructions
+			ai_instructions,
+			frontend_url
 		FROM instances %s ORDER BY id
 	`, whereClause)
 
@@ -70,6 +73,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		err := rows.Scan(
 			&i.ID,
 			&i.Environment,
+			&i.ProjectDisplayName,
 			&i.OLAPConnector,
 			&i.ProjectOLAPConnector,
 			&i.RepoConnector,
@@ -87,6 +91,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&annotations,
 			&publicPaths,
 			&i.AIInstructions,
+			&i.FrontendURL,
 		)
 		if err != nil {
 			return nil, err
@@ -112,9 +117,23 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
-		i.FeatureFlags, err = mapFromJSON[bool](featureFlags)
+		// We used to store feature flags as map[string]bool
+		// So we need to first try to parse it as such
+		featureFlagBools, err := mapFromJSON[bool](featureFlags)
 		if err != nil {
-			return nil, err
+			// If the parse failed, parse as map[string]string
+			i.FeatureFlags, err = mapFromJSON[string](featureFlags)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// If the parse succeeded, convert to map[string]string by converting to "true"/"false"
+			i.FeatureFlags = map[string]string{}
+			for f, v := range featureFlagBools {
+				// Old map[string]bool stored feature flags as camelCase. So convert it to snake_case here.
+				sf := strcase.ToSnake(f)
+				i.FeatureFlags[sf] = fmt.Sprintf("%v", v)
+			}
 		}
 
 		i.Annotations, err = mapFromJSON[string](annotations)
@@ -188,6 +207,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		INSERT INTO instances(
 			id,
 			environment,
+			project_display_name,
 			olap_connector,
 			project_olap_connector,
 			repo_connector,
@@ -204,12 +224,14 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			feature_flags,
 			annotations,
 			public_paths,
-			ai_instructions
+			ai_instructions,
+			frontend_url
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 		`,
 		inst.ID,
 		inst.Environment,
+		inst.ProjectDisplayName,
 		inst.OLAPConnector,
 		inst.ProjectOLAPConnector,
 		inst.RepoConnector,
@@ -227,6 +249,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		annotations,
 		publicPaths,
 		inst.AIInstructions,
+		inst.FrontendURL,
 	)
 	if err != nil {
 		return err
@@ -285,26 +308,29 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		`
 		UPDATE instances SET
 			environment = $2,
-			olap_connector = $3,
-			project_olap_connector = $4,
-			repo_connector = $5,
-			admin_connector = $6,
-			ai_connector = $7,
-			project_ai_connector = $8,
-			catalog_connector = $9,
-			updated_on = $10,
-			connectors = $11,
-			project_connectors = $12,
-			variables = $13,
-			project_variables = $14,
-			feature_flags = $15,
-			annotations = $16,
-			public_paths = $17,
-			ai_instructions = $18
+			project_display_name = $3,
+			olap_connector = $4,
+			project_olap_connector = $5,
+			repo_connector = $6,
+			admin_connector = $7,
+			ai_connector = $8,
+			project_ai_connector = $9,
+			catalog_connector = $10,
+			updated_on = $11,
+			connectors = $12,
+			project_connectors = $13,
+			variables = $14,
+			project_variables = $15,
+			feature_flags = $16,
+			annotations = $17,
+			public_paths = $18,
+			ai_instructions = $19,
+			frontend_url = $20
 		WHERE id = $1
 		`,
 		inst.ID,
 		inst.Environment,
+		inst.ProjectDisplayName,
 		inst.OLAPConnector,
 		inst.ProjectOLAPConnector,
 		inst.RepoConnector,
@@ -321,6 +347,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		annotations,
 		publicPaths,
 		inst.AIInstructions,
+		inst.FrontendURL,
 	)
 	if err != nil {
 		return err

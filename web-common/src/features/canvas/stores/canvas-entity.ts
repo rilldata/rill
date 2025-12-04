@@ -5,33 +5,25 @@ import {
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-} from "@rilldata/web-common/features/themes/color-config";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetResourceQueryKey,
-  runtimeServiceGetResource,
+  type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
-  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
 import {
   derived,
   get,
   writable,
   type Readable,
   type Unsubscriber,
-  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
-import { updateThemeVariables } from "../../themes/actions";
+import { MetricsViewSelectors } from "../../metrics-views/metrics-view-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -42,20 +34,28 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
+import { Theme } from "../../themes/theme";
+import { createResolvedThemeStore } from "../../themes/selectors";
+import { redirect } from "@sveltejs/kit";
+
+export const lastVisitedState = new Map<string, string>();
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
 // Set returns a boolean indicating whether the value was set
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (key: string, value?: string, checkIfSet?: boolean) => boolean;
+  set: (
+    key: string,
+    value?: string,
+    checkIfSet?: boolean,
+    replaceState?: boolean,
+  ) => boolean;
   clearAll: () => void;
 };
 
 export class CanvasEntity {
-  name: string;
   components = new Map<string, BaseCanvasComponent>();
 
   _rows: Grid = new Grid(this);
@@ -66,26 +66,28 @@ export class CanvasEntity {
   // Dimension and measure filter state
   filters: Filters;
 
-  /**
-   * Spec store containing selectors derived from ResolveCanvas query
-   */
-  spec: CanvasResolvedSpec;
+  // Metrics view selectors
+  metricsView: MetricsViewSelectors;
+
+  // Canvas resource infered from YAML spec
+  spec: Readable<V1CanvasSpec | undefined>;
   selectedComponent = writable<string | null>(null);
   fileArtifact: FileArtifact | undefined;
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
-  firstLoad = true;
-  theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
+  firstLoad = writable(true);
+  themeName = writable<string | undefined>(undefined);
+  theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
-  lastVisitedState: Writable<string | null> = writable(null);
+  private searchParams = writable<URLSearchParams>(new URLSearchParams());
 
   constructor(
-    name: string,
+    public name: string,
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
-      instanceId,
+      this.instanceId,
       name,
       {
         retry: 3,
@@ -95,13 +97,15 @@ export class CanvasEntity {
       queryClient,
     );
 
-    this.name = name;
-
     const searchParamsStore: SearchParamsStore = (() => {
       return {
-        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
-          .subscribe,
-        set: (key: string, value: string | undefined, checkIfSet = false) => {
+        subscribe: this.searchParams.subscribe,
+        set: (
+          key: string,
+          value: string | undefined,
+          checkIfSet = false,
+          replaceState = false,
+        ) => {
           const url = get(page).url;
 
           if (checkIfSet && url.searchParams.has(key)) return false;
@@ -111,7 +115,8 @@ export class CanvasEntity {
           } else {
             url.searchParams.set(key, value);
           }
-          goto(url.toString(), { replaceState: true }).catch(console.error);
+
+          goto(url.toString(), { replaceState }).catch(console.error);
           return true;
         },
         clearAll: () => {
@@ -125,28 +130,27 @@ export class CanvasEntity {
       };
     })();
 
-    this.spec = new CanvasResolvedSpec(this.specStore);
+    this.spec = derived(this.specStore, ($specStore) => {
+      return $specStore.data?.canvas;
+    });
+
+    this.metricsView = new MetricsViewSelectors(
+      this.instanceId,
+      derived(this.specStore, ($specStore) => {
+        return $specStore.data?.metricsViews || {};
+      }),
+    );
+
     this.timeControls = new TimeControls(
       this.specStore,
       searchParamsStore,
       undefined,
       this.name,
     );
-    this.filters = new Filters(this.spec, searchParamsStore);
-
-    searchParamsStore.subscribe((searchParams) => {
-      const themeFromUrl = searchParams.get("theme");
-      if (themeFromUrl) {
-        this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
-      }
-    });
+    this.filters = new Filters(this.metricsView, searchParamsStore);
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
-      const theme = spec.data?.canvas?.theme;
-      const embeddedTheme = spec.data?.canvas?.embeddedTheme;
-
-      this.processAndSetTheme(theme, embeddedTheme).catch(console.error);
 
       if (!filePath) {
         return;
@@ -176,25 +180,108 @@ export class CanvasEntity {
         this.processRows(spec.data);
       }
     });
+
+    this.theme = createResolvedThemeStore(
+      this.themeName,
+      this.specStore,
+      this.instanceId,
+    );
   }
+
+  onUrlParamsChange = async (
+    urlParams: URLSearchParams,
+    builderContext?: boolean,
+  ) => {
+    if (builderContext) {
+      const redirected = await CanvasEntity.handleCanvasRedirect({
+        canvasName: this.name,
+        searchParams: urlParams,
+        pathname: window.location.pathname,
+        builderContext: true,
+      });
+
+      if (redirected) return;
+    }
+
+    this.searchParams.set(urlParams);
+    this.themeName.set(urlParams.get("theme") ?? undefined);
+    this.saveSnapshot(urlParams.toString());
+  };
 
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
   };
 
-  saveSnapshot = (filterState: string) => {
-    this.lastVisitedState.set(filterState);
+  static handleCanvasRedirect = async ({
+    canvasName,
+    searchParams,
+    pathname,
+    projectId,
+    builderContext,
+  }: {
+    canvasName: string;
+    searchParams: URLSearchParams;
+    pathname: string;
+    projectId?: string;
+    builderContext?: true;
+  }) => {
+    // If there are no URL params, check for last visited state or home bookmark
+    if (searchParams.size === 0) {
+      const snapshotSearchParams = lastVisitedState.get(canvasName);
+
+      if (snapshotSearchParams) {
+        if (builderContext) {
+          await goto(`?${snapshotSearchParams}`, { replaceState: true });
+          return true;
+        } else {
+          throw redirect(307, `?${snapshotSearchParams}`);
+        }
+      }
+
+      if (projectId && !builderContext) {
+        let homeBookmarkUrlSearch: string | undefined = undefined;
+        try {
+          // Only gets imported in admin context
+          const { getAdminServiceListBookmarksQueryOptions } = await import(
+            "@rilldata/web-admin/client"
+          );
+
+          const queryOptions = getAdminServiceListBookmarksQueryOptions({
+            projectId,
+            resourceKind: ResourceKind.Canvas,
+            resourceName: canvasName,
+          });
+
+          const response = await queryClient.fetchQuery(queryOptions);
+
+          const homeBookmark = response.bookmarks?.find(
+            (bookmark) => bookmark.default,
+          );
+
+          homeBookmarkUrlSearch = homeBookmark?.urlSearch;
+        } catch (e) {
+          console.error("Error fetching bookmarks for canvas redirect:", e);
+        }
+
+        if (homeBookmarkUrlSearch) {
+          throw redirect(307, homeBookmarkUrlSearch);
+        }
+      }
+    } else if (searchParams.get("default")) {
+      // If the default parameter exists, we clear last visited state and redirect to clean URL
+      lastVisitedState.set(canvasName, "");
+      if (builderContext) {
+        await goto(pathname, { replaceState: true });
+        return true;
+      } else {
+        throw redirect(307, pathname);
+      }
+    }
   };
 
-  restoreSnapshot = async () => {
-    const lastVisitedState = get(this.lastVisitedState);
-
-    if (lastVisitedState) {
-      await goto(`?${lastVisitedState}`, {
-        replaceState: true,
-      });
-    }
+  saveSnapshot = (filterState: string) => {
+    lastVisitedState.set(this.name, filterState);
   };
 
   duplicateItem = (id: string) => {
@@ -214,7 +301,7 @@ export class CanvasEntity {
     }
 
     const metricsViewSpec = get(
-      this.spec.getMetricsViewFromName(metricsViewName),
+      this.metricsView.getMetricsViewFromName(metricsViewName),
     ).metricsView;
 
     if (!metricsViewSpec) {
@@ -237,11 +324,14 @@ export class CanvasEntity {
   processRows = (canvasData: Partial<CanvasResponse>) => {
     const newComponents = canvasData.components;
     const existingKeys = new Set(this.components.keys());
-    const rows = canvasData.canvas?.rows ?? [];
+    const rows = canvasData.canvas?.rows;
+
+    if (!rows) return;
 
     const set = new Set<string>();
 
     let createdNewComponent = false;
+    const isFirstLoad = get(this.firstLoad);
 
     rows.forEach((row, rowIndex) => {
       const items = row.items ?? [];
@@ -286,46 +376,10 @@ export class CanvasEntity {
 
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
-    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+    if ((!didUpdateRowCount && createdNewComponent) || isFirstLoad) {
       this._rows.refresh();
+      this.firstLoad.set(false);
     }
-    this.firstLoad = false;
-  };
-
-  processAndSetTheme = async (
-    themeName: string | undefined,
-    embeddedTheme: V1ThemeSpec | undefined,
-  ) => {
-    let themeSpec: V1ThemeSpec | undefined;
-
-    if (themeName) {
-      const response = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetResourceQueryKey(this.instanceId, {
-          "name.kind": ResourceKind.Theme,
-          "name.name": themeName,
-        }),
-        queryFn: () =>
-          runtimeServiceGetResource(this.instanceId, {
-            "name.kind": ResourceKind.Theme,
-            "name.name": themeName,
-          }),
-      });
-
-      themeSpec = response.resource?.theme?.spec;
-    } else if (embeddedTheme) {
-      themeSpec = embeddedTheme;
-    }
-
-    this.theme.set({
-      primary: themeSpec?.primaryColorRaw
-        ? chroma(themeSpec.primaryColorRaw)
-        : chroma(`hsl(${defaultPrimaryColors[500]})`),
-      secondary: themeSpec?.secondaryColorRaw
-        ? chroma(themeSpec.secondaryColorRaw)
-        : chroma(`hsl(${defaultSecondaryColors[500]})`),
-    });
-
-    updateThemeVariables(themeSpec);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

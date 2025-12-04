@@ -5,8 +5,7 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/grpc"
 )
 
@@ -51,18 +50,22 @@ func TimeoutUnaryServerInterceptor(fn func(method string) time.Duration) grpc.Un
 	}
 }
 
-func TimeoutMCPToolHandlerMiddleware(fn func(tool string) time.Duration) server.ToolHandlerMiddleware {
-	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
-		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			duration := fn(req.Params.Name)
+func TimeoutMCPMiddleware(fn func(method, tool string) time.Duration) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			var tool string
+			if ctr, ok := req.(*mcp.CallToolRequest); ok {
+				tool = ctr.Params.Name
+			}
+			duration := fn(method, tool)
 			if duration == 0 {
-				return next(ctx, req)
+				return next(ctx, method, req)
 			}
 
 			ctx, cancel := context.WithTimeout(ctx, duration)
 			defer cancel()
 
-			return next(ctx, req)
+			return next(ctx, method, req)
 		}
 	}
 }

@@ -46,6 +46,7 @@ import type {
   QueryServiceQueryBody,
   QueryServiceResolveCanvasBody,
   QueryServiceResolveComponentBody,
+  QueryServiceResolveTemplatedStringBody,
   QueryServiceTableCardinalityParams,
   QueryServiceTableColumnsParams,
   QueryServiceTableRowsParams,
@@ -76,6 +77,7 @@ import type {
   V1QueryResponse,
   V1ResolveCanvasResponse,
   V1ResolveComponentResponse,
+  V1ResolveTemplatedStringResponse,
   V1TableCardinalityResponse,
   V1TableColumnsResponse,
   V1TableRowsResponse,
@@ -1534,7 +1536,8 @@ export function createQueryServiceMetricsViewSearch<
 }
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 export const queryServiceMetricsViewTimeRange = (
   instanceId: string,
@@ -1617,7 +1620,8 @@ export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
 export type QueryServiceMetricsViewTimeRangeQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 
 export function createQueryServiceMetricsViewTimeRange<
@@ -1657,6 +1661,9 @@ export function createQueryServiceMetricsViewTimeRange<
   return query;
 }
 
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 export const queryServiceMetricsViewTimeRanges = (
   instanceId: string,
   metricsViewName: string,
@@ -1736,6 +1743,10 @@ export type QueryServiceMetricsViewTimeRangesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
 >;
 export type QueryServiceMetricsViewTimeRangesQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 
 export function createQueryServiceMetricsViewTimeRanges<
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
@@ -2386,6 +2397,95 @@ export function createQueryServiceColumnNumericHistogram<
   return query;
 }
 
+/**
+ * @summary ResolveTemplatedString resolves a templated strings.
+ */
+export const queryServiceResolveTemplatedString = (
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveTemplatedStringResponse>({
+    url: `/v1/instances/${instanceId}/queries/resolve-templated-string`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveTemplatedStringBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveTemplatedStringMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+    TError,
+    { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError,
+  { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
+  TContext
+> => {
+  const mutationKey = ["queryServiceResolveTemplatedString"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+    { instanceId: string; data: QueryServiceResolveTemplatedStringBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return queryServiceResolveTemplatedString(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceResolveTemplatedStringMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
+>;
+export type QueryServiceResolveTemplatedStringMutationBody =
+  QueryServiceResolveTemplatedStringBody;
+export type QueryServiceResolveTemplatedStringMutationError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary ResolveTemplatedString resolves a templated strings.
+ */
+export const createQueryServiceResolveTemplatedString = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+      TError,
+      { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError,
+  { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
+  TContext
+> => {
+  const mutationOptions =
+    getQueryServiceResolveTemplatedStringMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
  */

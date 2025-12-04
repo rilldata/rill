@@ -141,12 +141,12 @@ export class DashboardStateSync {
       // Resolve start/end by making a network call.
       [
         initExploreState.selectedTimeRange,
-        initExploreState.selectedComparisonTimeRange,
+        // initExploreState.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
         exploreSpec,
         [
           initExploreState.selectedTimeRange,
-          initExploreState.selectedComparisonTimeRange,
+          // initExploreState.selectedComparisonTimeRange,
         ],
         initExploreState.selectedTimezone,
       );
@@ -229,12 +229,12 @@ export class DashboardStateSync {
       // Resolve start/end by making a network call.
       [
         partialExplore.selectedTimeRange,
-        partialExplore.selectedComparisonTimeRange,
+        // partialExplore.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
         exploreSpec,
         [
           partialExplore.selectedTimeRange,
-          partialExplore.selectedComparisonTimeRange,
+          // partialExplore.selectedComparisonTimeRange,
         ],
         partialExplore.selectedTimezone,
       );
@@ -290,7 +290,7 @@ export class DashboardStateSync {
    *
    * This will check if the url needs to be changed and will navigate to the new url.
    */
-  private gotoNewState(exploreState: ExploreState) {
+  private async gotoNewState(exploreState: ExploreState) {
     // Updating state either in handleExploreInit or handleURLChange will synchronously update the state triggering this function.
     // Since those methods handle redirect themselves we need to skip this logic.
     // Those methods need to replace the current URL while this does a direct navigation.
@@ -324,14 +324,15 @@ export class DashboardStateSync {
       );
     }
 
-    this.updating = false;
     // If the state didnt result in a new url then skip goto.
     // This avoids adding redundant urls to the history.
     if (newUrl.search === pageState.url.search) {
+      this.updating = false;
       return;
     }
 
     // dashboard changed so we should update the url
-    return goto(newUrl);
+    await goto(newUrl);
+    this.updating = false;
   }
 }

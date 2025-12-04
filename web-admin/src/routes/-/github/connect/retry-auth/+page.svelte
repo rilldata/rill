@@ -12,6 +12,7 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
+  const redirect = urlParams.get("redirect");
   const githubUsername = urlParams.get("githubUsername");
 </script>
 
@@ -30,7 +31,10 @@
     <CtaMessage>
       Click the button below to re-authorize/authorize another account.
     </CtaMessage>
-    <CtaButton variant="primary" onClick={() => redirectToGithubLogin(remote)}>
+    <CtaButton
+      variant="primary"
+      onClick={() => redirectToGithubLogin(remote, redirect, "auth")}
+    >
       Connect to GitHub
     </CtaButton>
   </CtaContentContainer>

@@ -2,45 +2,245 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
-func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
+var errUnsupportedType = errors.New("encountered unsupported duckdb type")
+
+func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	if pageToken != "" {
+		return []*drivers.DatabaseSchemaInfo{}, "", nil
+	}
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+	var q string
+	if c.config.Path != "" || c.config.Attach != "" {
+		// for generic duckdb implementation, we use the current schema from the connection.
+		q = "SELECT current_database() as database, current_schema() as schema"
+	} else {
+		//  for rduckdb implementation,the database schema changes with every ingestion
+		// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
+		q = "SELECT current_database() as database, 'main' as schema"
+	}
+	var database, schema string
+	err = conn.QueryRowxContext(ctx, q).Scan(&database, &schema)
+	if err != nil {
+		return nil, "", c.checkErr(err)
+	}
+
+	res := []*drivers.DatabaseSchemaInfo{{
+		Database:       database,
+		DatabaseSchema: schema,
+	}}
+	return res, "", nil
 }
 
-func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	var args []any
+	var q string
+	if c.config.Path != "" || c.config.Attach != "" {
+		// for generic duckdb implementation, we use the current schema from the connection.
+		q = `
+        SELECT
+            t.table_name AS table_name,
+            t.table_type = 'VIEW' AS view
+        FROM information_schema.tables t
+        WHERE t.table_catalog = ? AND t.table_schema = ?
+        `
+		args = append(args, database, databaseSchema)
+	} else {
+		// for rduckdb implementation, we use the current database and schema from the connection.
+		// due to external table storage the information_schema always returns table type as view
+		// so we look at attached tables to determine if it is a view or table
+		q = `
+		WITH attached AS (
+			SELECT
+				DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
+			FROM duckdb_databases()
+			WHERE regexp_matches(database_name, '^.+__\d+__db$')
+		)
+		SELECT
+			t.table_name,
+			CASE WHEN a.attached_table IS NOT NULL THEN FALSE
+				ELSE (t.table_type = 'VIEW')
+			END AS view
+		FROM information_schema.tables t
+		LEFT JOIN attached a
+			ON t.table_name = a.attached_table
+		WHERE
+			t.table_catalog = current_database()
+			AND t.table_schema = current_schema()
+		`
+	}
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += " AND t.table_name > ?"
+		args = append(args, startAfter)
+	}
+	q += `
+        ORDER BY t.table_name
+        LIMIT ?
+    `
+	args = append(args, limit+1)
+
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", c.checkErr(err)
+	}
+	defer rows.Close()
+
+	var res []*drivers.TableInfo
+	var name string
+	var view bool
+	for rows.Next() {
+		if err := rows.Scan(&name, &view); err != nil {
+			return nil, "", err
+		}
+		res = append(res, &drivers.TableInfo{Name: name, View: view})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
+	}
+	return res, next, nil
 }
 
-func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.OlapTable, error) {
-	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
-	db, release, err := c.acquireDB()
+func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, ilike, "")
+	var args []any
+	var q string
+	if c.config.Path != "" || c.config.Attach != "" {
+		// for generic duckdb implementation, we use the current schema from the connection.
+		q = `
+        SELECT
+            t.table_type = 'VIEW' AS view,
+            c.column_name,
+            c.data_type
+        FROM information_schema.tables t
+        LEFT JOIN information_schema.columns c
+            ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+        WHERE t.table_catalog = ? AND t.table_schema = ? AND t.table_name = ?
+        ORDER BY c.ordinal_position
+    	`
+		args = []any{database, databaseSchema, table}
+	} else {
+		// for rduckdb implementation, we use the current database and schema from the connection.
+		// due to external table storage the information_schema always returns table type as view
+		// so we look at attached tables to determine if it is a view or table
+		q = `
+		WITH attached AS (
+			SELECT
+				DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
+			FROM duckdb_databases()
+			WHERE regexp_matches(database_name, '^.+__\d+__db$')
+		)
+		SELECT
+			CASE
+				WHEN a.attached_table IS NOT NULL THEN FALSE
+				ELSE t.table_type = 'VIEW'
+			END AS view,
+			c.column_name,
+			c.data_type
+		FROM information_schema.tables t
+		LEFT JOIN information_schema.columns c
+			ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+		LEFT JOIN attached a
+			ON t.table_name = a.attached_table
+		WHERE t.table_catalog = current_database() AND t.table_schema = current_schema() AND t.table_name = ?
+		ORDER BY c.ordinal_position;
+		`
+		args = []any{table}
+	}
+	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, c.checkErr(err)
+	}
+	defer rows.Close()
+
+	schemaMap := make(map[string]string)
+	var view bool
+	var colName, dataType string
+	for rows.Next() {
+		if err := rows.Scan(&view, &colName, &dataType); err != nil {
+			return nil, err
+		}
+		// For views that depend on secrets, we have an inaccessible schema since
+		// the secret is only set at write time.
+		if strings.HasPrefix(colName, "error(") && dataType == "\"NULL\"" {
+			return nil, fmt.Errorf("failed to get schema (try setting `materialize: true` — this usually happens for non-materialized views): %s", colName)
+		}
+		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
+			if errors.Is(err, errUnsupportedType) {
+				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
+			} else {
+				return nil, err
+			}
+		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
+		} else {
+			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &drivers.TableMetadata{
+		Schema: schemaMap,
+		View:   view,
+	}, nil
+}
+
+func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, nextToken, err := db.Schema(ctx, ilike, "", pageSize, pageToken)
+	if err != nil {
+		return nil, "", c.checkErr(err)
 	}
 
 	tables, err := scanTables(rows)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return tables, nil
+	return tables, nextToken, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
@@ -51,7 +251,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, "", name)
+	rows, _, err := db.Schema(ctx, "", name, 0, "")
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
@@ -96,6 +296,11 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 		for idx, colName := range row.ColumnNames {
 			databaseType := row.ColumnTypes[idx].(string)
 			nullable := row.ColumnNullable[idx].(bool)
+			// For views that depend on secrets, we have an inaccessible schema since
+			// the secret is only set at write time.
+			if strings.HasPrefix(colName.(string), "error(") && databaseType == "\"NULL\"" {
+				continue
+			}
 			colType, err := databaseTypeToPB(databaseType, nullable)
 			if err != nil {
 				return nil, err
@@ -118,7 +323,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	match := true
 	switch dbt {
 	case "INVALID":
-		return nil, fmt.Errorf("encountered invalid duckdb type")
+		return nil, fmt.Errorf("%w: %s", errUnsupportedType, dbt)
 	case "BOOLEAN":
 		t.Code = runtimev1.Type_CODE_BOOL
 	case "TINYINT":
@@ -186,7 +391,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// Handle complex types
 
 	// Handle arrays. They can have the format "type[]" or "type[N]"
-	openBracket := strings.Index(dbt, "[")
+	openBracket := strings.LastIndex(dbt, "[")
 	if openBracket != -1 && strings.HasSuffix(dbt, "]") {
 		at, err := databaseTypeToPB(dbt[:openBracket], true)
 		if err != nil {
@@ -201,7 +406,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// All other complex types have details in parentheses after the type name.
 	base, args, ok := splitBaseAndArgs(dbt)
 	if !ok {
-		return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
+		return nil, fmt.Errorf("%w: %s", errUnsupportedType, dbt)
 	}
 
 	switch base {
@@ -218,7 +423,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			// Each field has format `name TYPE` or `"name" TYPE`
 			fieldName, fieldTypeStr, ok := splitStructFieldStr(fieldStr)
 			if !ok {
-				return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
+				return nil, fmt.Errorf("%w: %s", errUnsupportedType, dbt)
 			}
 
 			// Convert to type
@@ -237,7 +442,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "MAP":
 		fieldStrs := splitCommasUnlessQuotedOrNestedInParens(args)
 		if len(fieldStrs) != 2 {
-			return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
+			return nil, fmt.Errorf("%w: %s", errUnsupportedType, dbt)
 		}
 
 		keyType, err := databaseTypeToPB(fieldStrs[0], true)
@@ -258,7 +463,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "ENUM":
 		t.Code = runtimev1.Type_CODE_STRING // representing enums as strings for now
 	default:
-		return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
+		return nil, fmt.Errorf("%w: %s", errUnsupportedType, dbt)
 	}
 
 	// Done

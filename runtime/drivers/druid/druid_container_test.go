@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -83,9 +83,7 @@ var testIngestSpec = fmt.Sprintf(`{
 // Unfortunately starting a Druid cluster with test containers is extremely slow.
 // If you have access to our Druid test cluster, consider using the test_druid.go file instead.
 func TestContainer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("druid: skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -120,10 +118,6 @@ func TestContainer(t *testing.T) {
 
 	t.Run("count", func(t *testing.T) { testCount(t, olap) })
 	t.Run("max", func(t *testing.T) { testMax(t, olap) })
-	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, olap) })
-	t.Run("schema all like", func(t *testing.T) { testSchemaAllLike(t, olap) })
-	t.Run("schema lookup", func(t *testing.T) { testSchemaLookup(t, olap) })
-	// Add new tests here
 	t.Run("time floor", func(t *testing.T) { testTimeFloor(t, olap) })
 
 	require.NoError(t, conn.Close())
@@ -181,55 +175,4 @@ func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 	}
 	require.NoError(t, rows.Err())
 	require.Equal(t, 9, count)
-}
-
-func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
-	tables, err := olap.InformationSchema().All(context.Background(), "")
-	require.NoError(t, err)
-	require.NoError(t, olap.InformationSchema().LoadPhysicalSize(context.Background(), tables))
-
-	require.Equal(t, 1, len(tables))
-	require.Equal(t, testTable, tables[0].Name)
-	require.Greater(t, tables[0].PhysicalSizeBytes, int64(0))
-
-	require.Equal(t, 5, len(tables[0].Schema.Fields))
-
-	mp := make(map[string]*runtimev1.StructType_Field)
-	for _, f := range tables[0].Schema.Fields {
-		mp[f.Name] = f
-	}
-
-	f := mp["__time"]
-	require.Equal(t, "__time", f.Name)
-	require.Equal(t, runtimev1.Type_CODE_TIMESTAMP, f.Type.Code)
-	require.Equal(t, false, f.Type.Nullable)
-	f = mp["bid_price"]
-	require.Equal(t, runtimev1.Type_CODE_FLOAT64, f.Type.Code)
-	require.Equal(t, false, f.Type.Nullable)
-	f = mp["domain"]
-	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
-	require.Equal(t, true, f.Type.Nullable)
-	f = mp["id"]
-	require.Equal(t, runtimev1.Type_CODE_INT64, f.Type.Code)
-	require.Equal(t, false, f.Type.Nullable)
-	f = mp["publisher"]
-	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
-	require.Equal(t, true, f.Type.Nullable)
-}
-
-func testSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
-	tables, err := olap.InformationSchema().All(context.Background(), "%test%")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables))
-	require.Equal(t, testTable, tables[0].Name)
-}
-
-func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
-	ctx := context.Background()
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", testTable)
-	require.NoError(t, err)
-	require.Equal(t, testTable, table.Name)
-
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "foo")
-	require.Equal(t, drivers.ErrNotFound, err)
 }

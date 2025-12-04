@@ -38,4 +38,5 @@ Manage projects
 * [rill project rename](rename.md)	 - Rename project
 * [rill project show](show.md)	 - Show project details
 * [rill project status](status.md)	 - Project deployment status
+* [rill project tables](tables.md)	 - Get information about tables in a project
 

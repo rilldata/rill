@@ -9,13 +9,13 @@ tags:
 ---
 
 :::note prerequisites
-You will need to [install Rill](https://docs.rilldata.com/home/install).
+You will need to [install Rill](https://docs.rilldata.com/get-started/install).
 
 ```bash
 curl https://rill.sh | sh
 ```
 
-You need access to either a [locally running ClickHouse Server](https://clickhouse.com/docs/en/install) or [ClickHouse Cloud](https://docs.rilldata.com/connect/olap/clickhouse#connecting-to-clickhouse-cloud). We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/connect/olap/clickhouse).
+You need access to either a [locally running ClickHouse Server](https://clickhouse.com/docs/en/install) or [ClickHouse Cloud](https://docs.rilldata.com/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). We recommend using ClickHouse Cloud as this will make deploying to Rill Cloud easier. Please review the documentation, [here](https://docs.rilldata.com/build/connectors/olap/clickhouse).
 :::
 ## Start Rill Developer
 

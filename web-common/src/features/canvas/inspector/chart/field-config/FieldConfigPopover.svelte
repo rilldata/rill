@@ -5,11 +5,11 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
     ChartLegend,
     FieldConfig,
-  } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  } from "@rilldata/web-common/features/components/charts/types";
   import SortConfig from "./SortConfig.svelte";
 
   export let fieldConfig: FieldConfig;
@@ -40,6 +40,7 @@
   $: showOrigin = chartFieldInput?.originSelector ?? false;
   $: sortConfig = chartFieldInput?.sortSelector ?? { enable: false };
   $: showLimit = chartFieldInput?.limitSelector ?? false;
+  $: showTotal = chartFieldInput?.totalSelector ?? false;
   $: showNull = chartFieldInput?.nullSelector ?? false;
   $: showLabelAngle = chartFieldInput?.labelAngleSelector ?? false;
   $: showLegend = chartFieldInput?.defaultLegendOrientation ?? false;
@@ -125,6 +126,18 @@
               checked={fieldConfig?.zeroBasedOrigin}
               on:click={() => {
                 onChange("zeroBasedOrigin", !fieldConfig?.zeroBasedOrigin);
+              }}
+            />
+          </div>
+        {/if}
+        {#if showTotal}
+          <div class="py-1.5 flex items-center justify-between">
+            <span class="text-xs">Show totals value</span>
+            <Switch
+              small
+              checked={fieldConfig?.showTotal}
+              on:click={() => {
+                onChange("showTotal", !fieldConfig?.showTotal);
               }}
             />
           </div>

@@ -53,6 +53,14 @@
 
   function onSelectItem(e: MouseEvent) {
     if (e.shiftKey) return;
+
+    // Check if user has selected text
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      // User has selected text, don't trigger row selection
+      return;
+    }
+
     dispatch("select-item", { index: row.index, meta: e.ctrlKey || e.metaKey });
   }
 
@@ -147,15 +155,12 @@
       justify="left"
       showBackground={false}
       value={barValue}
-      compact={true}
+      compact
     >
       <button
         aria-label={label}
-        class="
-          {isTextColumn ? 'text-left' : 'text-right'}
-          {isDimensionTable ? '' : 'px-4'}
-          w-full truncate
-          "
+        class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
+        class:px-4={!isDimensionTable}
         on:click={modified({
           shift: shiftClick,
         })}

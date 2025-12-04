@@ -39,5 +39,7 @@ export function posthogIdentify(userID: string, userProperties?: Properties) {
 }
 
 export function addPosthogSessionIdToUrl(url: string) {
-  return url + "?ph_session_id=" + posthog.get_session_id();
+  const u = new URL(url);
+  u.searchParams.set("ph_session_id", posthog.get_session_id());
+  return u.toString();
 }

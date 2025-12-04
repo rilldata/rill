@@ -118,7 +118,7 @@
       if (initialValues.key !== $form.key) {
         // Unset the old key
         await $updateProjectVariables.mutateAsync({
-          organization,
+          org: organization,
           project,
           data: {
             environment: initialValues.environment,
@@ -128,7 +128,7 @@
 
         // Update with the new key
         await $updateProjectVariables.mutateAsync({
-          organization,
+          org: organization,
           project,
           data: {
             environment: getCurrentEnvironment(isDevelopment, isProduction),
@@ -145,7 +145,7 @@
           getCurrentEnvironment(isDevelopment, isProduction)
         ) {
           await $updateProjectVariables.mutateAsync({
-            organization,
+            org: organization,
             project,
             data: {
               environment: initialValues.environment,
@@ -155,7 +155,7 @@
         }
 
         await $updateProjectVariables.mutateAsync({
-          organization,
+          org: organization,
           project,
           data: {
             environment: getCurrentEnvironment(isDevelopment, isProduction),
@@ -283,7 +283,7 @@
     </DialogHeader>
     <DialogDescription>
       For help, see <a
-        href="https://docs.rilldata.com/tutorials/administration/project/credentials-env-variable-management"
+        href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
         target="_blank">documentation</a
       >
     </DialogDescription>

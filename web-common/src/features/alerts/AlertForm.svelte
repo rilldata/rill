@@ -179,7 +179,7 @@
     );
 
     await $mutation.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: alertName,
       data: {

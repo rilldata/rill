@@ -3,7 +3,6 @@
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { Tag } from "@rilldata/web-common/components/tag";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
@@ -35,9 +34,12 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
+  import { Wand } from "lucide-svelte";
 
   let active = false;
   let showExploreDialog = false;
+  let generateDataDialog = false;
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
@@ -270,7 +272,6 @@
           {/if}
         </div>
       </div>
-      <Tag height={16} color="blue">BETA</Tag>
     </DropdownMenu.Item>
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
@@ -281,6 +282,12 @@
         </DropdownMenu.Item>
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
           <File size="16px" /> Blank file
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => (generateDataDialog = true)}
+        >
+          <Wand size="14px" /> Generate data using AI (beta)
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
@@ -334,3 +341,5 @@
   bind:open={showExploreDialog}
   {metricsViews}
 />
+
+<GenerateSampleData initializeProject={false} bind:open={generateDataDialog} />

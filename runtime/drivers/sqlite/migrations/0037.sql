@@ -1,0 +1,1 @@
+ALTER TABLE instances ADD COLUMN project_display_name TEXT NOT NULL DEFAULT '';

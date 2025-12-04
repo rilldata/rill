@@ -1,6 +1,8 @@
 package metricsview
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestExpressionToSQL(t *testing.T) {
 	tests := []struct {
@@ -26,8 +28,18 @@ func TestExpressionToSQL(t *testing.T) {
 		},
 		{
 			name: "subquery expression",
-			e:    &Expression{Subquery: &Subquery{}},
-			want: "<subquery>",
+			e: &Expression{Subquery: &Subquery{
+				Dimension: Dimension{Name: "dim"},
+				Measures:  []Measure{{Name: "count"}},
+				Having: &Expression{Condition: &Condition{
+					Operator: OperatorEq,
+					Expressions: []*Expression{
+						{Name: "count"},
+						{Value: 10},
+					},
+				}},
+			}},
+			want: "(SELECT dim FROM metrics_view HAVING count = 10)",
 		},
 		{
 			name: "condition expression",

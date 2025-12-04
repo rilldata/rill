@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    type AdminServiceUnsubscribeReportBody,
+    type AdminServiceUnsubscribeAlertBodyBody,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { createAdminServiceUnsubscribeReportUsingToken } from "@rilldata/web-admin/features/scheduled-reports/unsubscribe-report-using-token";
@@ -28,7 +28,7 @@
       ?.data?.message ?? $reportUnsubscriber.error?.message;
 
   async function unsubscribe() {
-    const data: AdminServiceUnsubscribeReportBody = {};
+    const data: AdminServiceUnsubscribeAlertBodyBody = {};
     if (email) data.email = email;
     if (slackUser) data.slackUser = slackUser;
 

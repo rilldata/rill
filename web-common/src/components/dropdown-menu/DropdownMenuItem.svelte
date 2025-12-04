@@ -7,6 +7,7 @@
   type $$Props = DropdownMenuPrimitive.ItemProps & {
     inset?: boolean;
     type?: ItemType;
+    preloadData?: boolean;
   };
   // type $$Events = DropdownMenuPrimitive.ItemEvents;
 
@@ -14,6 +15,7 @@
   export { className as class };
 
   export let href: $$Props["href"] = undefined;
+  export let preloadData: $$Props["preloadData"] = true;
   export let inset: $$Props["inset"] = undefined;
   export let type: $$Props["type"] = "default";
 </script>
@@ -29,6 +31,7 @@
   )}
   {...$$restProps}
   {href}
+  data-sveltekit-preload-data={preloadData ? "hover" : "off"}
   on:click
   on:keydown
   on:focusin

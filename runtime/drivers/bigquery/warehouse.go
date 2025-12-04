@@ -262,7 +262,7 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
-			rec := rdr.Record()
+			rec := rdr.RecordBatch()
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 				writer.NewBufferedRowGroup()
 			}

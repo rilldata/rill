@@ -39,11 +39,13 @@
 
   $: buttonText = invited || allowDomain ? "Continue" : "Skip for now";
 
+  $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+
   async function onContinue() {
     if (allowDomain) {
       try {
         await $addToAllowlist.mutateAsync({
-          organization,
+          org: organization,
           project,
           data: {
             domain: $userDomain.data,
@@ -61,10 +63,15 @@
         });
       }
     }
-    return goto(`/${organization}/${project}/-/status`);
+    return goto(getDeployLandingPage());
   }
 
-  $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
+  function getDeployLandingPage() {
+    const u = new URL($page.url);
+    u.pathname = `/${organization}/${project}/-/dashboards`;
+    u.searchParams.set("deploying", "true");
+    return u.toString();
+  }
 </script>
 
 <div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">

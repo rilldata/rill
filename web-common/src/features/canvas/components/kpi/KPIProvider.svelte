@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
     createQueryServiceMetricsViewAggregation,
@@ -10,17 +10,18 @@
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
-  import { validateKPISchema } from "./selector";
   import { KPI } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";
+  import { validateKPISchema } from "./selector";
 
   export let spec: KPISpec;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
+  export let visible: boolean;
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
-    spec: { getMeasureForMetricView },
+    metricsView: { getMeasureForMetricView },
   } = ctx.canvasEntity);
 
   $: ({ instanceId } = $runtime);
@@ -30,6 +31,7 @@
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
+    hide_time_range: hideTimeRange,
   } = spec);
 
   $: ({
@@ -74,7 +76,7 @@
     },
     {
       query: {
-        enabled: isValid && !!start && !!end,
+        enabled: isValid && !!start && !!end && visible,
       },
     },
   );
@@ -91,7 +93,12 @@
     {
       query: {
         enabled:
-          comparisonTimeRange && showComparison && isValid && !!start && !!end,
+          comparisonTimeRange &&
+          showComparison &&
+          isValid &&
+          !!start &&
+          !!end &&
+          visible,
       },
     },
   );
@@ -110,7 +117,7 @@
     },
     {
       query: {
-        enabled: !!start && !!end && isValid && showSparkline,
+        enabled: !!start && !!end && isValid && showSparkline && visible,
       },
     },
   );
@@ -130,7 +137,11 @@
     {
       query: {
         enabled:
-          comparisonTimeRange && isValid && showSparkline && showComparison,
+          comparisonTimeRange &&
+          isValid &&
+          showSparkline &&
+          showComparison &&
+          visible,
       },
     },
   );
@@ -150,6 +161,7 @@
   {comparisonLabel}
   {interval}
   sparkline={spec.sparkline}
+  {hideTimeRange}
   comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}
   comparisonTotalResult={$comparisonTotalQuery}

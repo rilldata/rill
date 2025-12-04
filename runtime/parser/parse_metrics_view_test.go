@@ -111,3 +111,88 @@ measures:
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
+
+func TestMetricsViewDimensionSmallestTimeGrain(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1 AS id, '2025-01-01T00:00:00Z'::TIMESTAMP AS ts1, '2025-01-01'::DATE AS ts2`,
+		// metrics view
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts1
+smallest_time_grain: hour
+dimensions:
+- column: id
+- column: ts2
+  smallest_time_grain: day
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	resources := []*Resource{
+		// model m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		// metrics view
+		{
+			Name: ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			// Note: Expecting a ref to m2 since it's used as a lookup table and exists as a model in the same project.
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			Paths: []string{"/metrics_views/mv1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:         "duckdb",
+				Model:             "m1",
+				DisplayName:       "Mv1",
+				TimeDimension:     "ts1",
+				SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{
+						Name:        "ts1",
+						DisplayName: "Ts1",
+						Column:      "ts1",
+					},
+					{
+						Name:        "id",
+						DisplayName: "Id",
+						Column:      "id",
+					},
+					{
+						Name:              "ts2",
+						DisplayName:       "Ts2",
+						Column:            "ts2",
+						SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+					},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_Measure{
+					{
+						Name:        "count",
+						DisplayName: "Count",
+						Expression:  "COUNT(*)",
+						Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}

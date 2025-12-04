@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -30,6 +31,8 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 		attribute.String("args.project_id", req.ProjectId),
 		attribute.String("args.alert", req.Alert),
 		attribute.Bool("args.query_for", req.GetQueryFor() != nil),
+		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
+		attribute.String("args.owner_id", req.OwnerId),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -73,20 +76,62 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 		}
 	}
 
+	// Handle email recipients - create magic tokens for all recipients
+	recipientURLs := make(map[string]*adminv1.GetAlertMetaResponse_URLs)
+
+	var recipients []string
+	recipients = append(recipients, req.EmailRecipients...)
+	if req.AnonRecipients {
+		// add empty email for slack and other notifiers token
+		recipients = append(recipients, "")
+	}
+
+	if len(recipients) > 0 {
+		// Get owner email for comparison
+		var ownerEmail string
+		if req.OwnerId != "" {
+			owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
+			if err == nil {
+				ownerEmail = owner.Email
+			}
+		}
+
+		// Create magic tokens for all recipients
+		emailTokens, err := s.createMagicTokensAlert(ctx, proj.ID, req.Alert, req.OwnerId, recipients, attr)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
+		}
+
+		for email, token := range emailTokens {
+			// For the owner and anonymous recipients (e.g. slack), provide OpenUrl with token and plain EditUrl
+			if email == "" || email == ownerEmail {
+				recipientURLs[email] = &adminv1.GetAlertMetaResponse_URLs{
+					OpenUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, token),
+					EditUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert),
+				}
+				continue
+			}
+			// For email recipients, provide open and unsubscribe links with token
+			recipientURLs[email] = &adminv1.GetAlertMetaResponse_URLs{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, token),
+				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertUnsubscribe(org.Name, proj.Name, req.Alert, token),
+			}
+		}
+	}
+
 	return &adminv1.GetAlertMetaResponse{
-		OpenUrl:            s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert),
-		EditUrl:            s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert),
+		RecipientUrls:      recipientURLs,
 		QueryForAttributes: attrPB,
 	}, nil
 }
 
 func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertRequest) (*adminv1.CreateAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +190,12 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 
 func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (*adminv1.EditAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -213,12 +258,12 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 
 func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeAlertRequest) (*adminv1.UnsubscribeAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -248,12 +293,44 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	if claims.OwnerType() != auth.OwnerTypeUser {
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeMagicAuthToken {
 		return nil, status.Error(codes.PermissionDenied, "only users can unsubscribe from alerts")
 	}
-	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+
+	var userEmail string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, err
+		}
+		userEmail = user.Email
+	}
+
+	var slackEmail string
+	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
+		alertTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+		}
+
+		if alertTkn.ResourceKind != runtime.ResourceKindAlert || alertTkn.ResourceName != req.Name {
+			return nil, status.Error(codes.InvalidArgument, "token is not valid for this alert")
+		}
+
+		if alertTkn.RecipientEmail == "" {
+			if req.Email != "" {
+				return nil, status.Error(codes.InvalidArgument, "anon token cannot be used for unsubscribing email recipients")
+			}
+			if req.SlackUser == "" {
+				return nil, status.Error(codes.InvalidArgument, "no slack user provided for unsubscribing")
+			}
+			slackEmail = req.SlackUser
+		} else {
+			userEmail = alertTkn.RecipientEmail
+			if req.Email != "" && !strings.EqualFold(userEmail, req.Email) {
+				return nil, status.Error(codes.InvalidArgument, "email does not match token")
+			}
+		}
 	}
 
 	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
@@ -271,7 +348,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 	found := false
 	// Exclude email recipient
 	for idx, recipient := range alert.Notify.Email.Recipients {
-		if strings.EqualFold(user.Email, recipient) {
+		if strings.EqualFold(userEmail, recipient) {
 			alert.Notify.Email.Recipients = slices.Delete(alert.Notify.Email.Recipients, idx, idx+1)
 			found = true
 			break
@@ -280,7 +357,7 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 
 	// Exclude slack user
 	for idx, email := range alert.Notify.Slack.Users {
-		if strings.EqualFold(user.Email, email) {
+		if strings.EqualFold(slackEmail, email) {
 			alert.Notify.Slack.Users = slices.Delete(alert.Notify.Slack.Users, idx, idx+1)
 			found = true
 			break
@@ -326,12 +403,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 
 func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertRequest) (*adminv1.DeleteAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +461,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 
 func (s *Server) GenerateAlertYAML(ctx context.Context, req *adminv1.GenerateAlertYAMLRequest) (*adminv1.GenerateAlertYAMLResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
@@ -400,12 +477,12 @@ func (s *Server) GenerateAlertYAML(ctx context.Context, req *adminv1.GenerateAle
 
 func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequest) (*adminv1.GetAlertYAMLResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -612,4 +689,72 @@ func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 
 func virtualFilePathForManagedAlert(name string) string {
 	return path.Join("alerts", name+".yaml")
+}
+
+func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertName, ownerID string, emails []string, userAttributes map[string]any) (map[string]string, error) {
+	var createdByUserID *string
+	if ownerID != "" {
+		createdByUserID = &ownerID
+	}
+	ttl := 3 * 30 * 24 * time.Hour // approx 3 months
+	mgcOpts := &admin.IssueMagicAuthTokenOptions{
+		ProjectID:       projectID,
+		CreatedByUserID: createdByUserID,
+		Resources: []database.ResourceName{{
+			Type: runtime.ResourceKindAlert,
+			Name: alertName,
+		}},
+		Internal: true,
+		TTL:      &ttl,
+	}
+
+	// Use the passed user attributes if available
+	if userAttributes != nil {
+		mgcOpts.Attributes = userAttributes
+	}
+
+	// issue magic tokens for new external emails
+	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	emailTokens := make(map[string]string)
+	for _, email := range emails {
+		// If no user attributes were passed, create basic attributes for the email
+		if userAttributes == nil {
+			mgcOpts.Attributes = map[string]interface{}{
+				"name":   "",
+				"email":  email,
+				"domain": email[strings.LastIndex(email, "@")+1:],
+				"groups": []string{},
+				"admin":  false,
+			}
+		}
+
+		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
+		}
+
+		emailTokens[email] = tkn.Token().String()
+
+		_, err = s.admin.DB.InsertNotificationToken(cctx, &database.InsertNotificationTokenOptions{
+			ResourceKind:     runtime.ResourceKindAlert,
+			ResourceName:     alertName,
+			RecipientEmail:   email,
+			MagicAuthTokenID: tkn.Token().ID.String(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert alert token for email %s: %w", email, err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return emailTokens, nil
 }

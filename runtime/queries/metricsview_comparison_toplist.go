@@ -7,11 +7,13 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 
 	// Load IANA time zone data
@@ -36,6 +38,7 @@ type MetricsViewComparison struct {
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact"`
 	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
+	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
 
 	Result       *runtimev1.MetricsViewComparisonResponse `json:"-"`
 	measuresMeta map[string]metricsViewMeasureMeta        `json:"-"`
@@ -96,13 +99,13 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
 
-	res, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, q.ExecutionTime)
 	if err != nil {
 		return err
 	}
@@ -187,7 +190,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
 	if err != nil {
 		return err
 	}
@@ -205,7 +208,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
 
-	path, err := e.Export(ctx, qry, nil, format, nil)
+	path, err := e.Export(ctx, qry, q.ExecutionTime, format, nil)
 	if err != nil {
 		return err
 	}

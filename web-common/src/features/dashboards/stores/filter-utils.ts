@@ -275,8 +275,11 @@ function filterSubQuery(
   };
 }
 
-export function copyFilterExpression(expr: V1Expression) {
-  return filterExpressions(expr, () => true) ?? createAndExpression([]);
+export function copyFilterExpression(
+  expr: V1Expression,
+  defaultExpr: V1Expression | undefined = createAndExpression([]),
+) {
+  return filterExpressions(expr, () => true) ?? defaultExpr;
 }
 
 export function filterIdentifiers(
@@ -380,6 +383,12 @@ export function isAndOrExpression(expression: V1Expression | undefined) {
   );
 }
 
+export function isExpressionEmpty(expression: V1Expression | undefined) {
+  if (!expression) return true;
+  if (!isAndOrExpression(expression)) return false;
+  return expression?.cond?.exprs?.length === 0;
+}
+
 export function removeWrapperAndOrExpression(
   expression: V1Expression | undefined,
 ) {
@@ -467,4 +476,50 @@ export function buildValidMetricsViewFilter(
 export function wrapNonJoinerExpression(expr: V1Expression): V1Expression {
   if (isAndOrExpression(expr)) return expr;
   return createAndExpression([expr]);
+}
+
+export function maybeConvertEqualityToInExpressions(expr: V1Expression) {
+  if (
+    !expr.cond?.op ||
+    !expr.cond.exprs ||
+    (expr.cond.op !== V1Operation.OPERATION_EQ &&
+      expr.cond.op !== V1Operation.OPERATION_NEQ)
+  ) {
+    return expr;
+  }
+
+  const ident = expr.cond.exprs[0]?.ident;
+  if (!ident) return expr;
+
+  const valExprs = expr.cond.exprs.slice(1);
+  if (valExprs.some((ve) => !("val" in ve))) return expr;
+
+  const vals = valExprs.map((e) => e.val);
+
+  return createInExpression(
+    ident,
+    vals,
+    expr.cond.op === V1Operation.OPERATION_NEQ,
+  );
+}
+
+/**
+ * Flattens the value part of in/nin expression. Eg,
+ * [ {ident}, {val: [a,b]} ] ==> [ {ident}, {val: a}, {val: b} ]
+ * This is needed to correct possibly correct filter sent by LLM.
+ */
+export function flattenInExpressionValues(expr: V1Expression) {
+  const notInExpr =
+    !expr.cond?.op ||
+    (expr.cond.op !== V1Operation.OPERATION_IN &&
+      expr.cond.op !== V1Operation.OPERATION_NIN);
+  if (notInExpr) return expr;
+  const ident = expr.cond!.exprs?.[0]?.ident;
+  const vals = expr.cond!.exprs?.slice(1).flatMap((e) => e.val);
+  if (!ident || !vals) return expr;
+  return createInExpression(
+    ident,
+    vals,
+    expr.cond!.op === V1Operation.OPERATION_NIN,
+  );
 }

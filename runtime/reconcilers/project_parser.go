@@ -256,6 +256,13 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	return runtime.ReconcileResult{Err: err, Retrigger: time.Now()}
 }
 
+func (r *ProjectParserReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetProjectParser() == nil {
+		return nil, fmt.Errorf("not a project parser resource")
+	}
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
 func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *parserpkg.Parser, diff *parserpkg.Diff, changedPaths []string) error {
 	// Update parse errors
@@ -649,6 +656,7 @@ func newResourceIfModified(def *parserpkg.Resource, existing *runtimev1.Resource
 		if existing != nil { // Copy over the ephemeral trigger properties from the existing resource.
 			def.ModelSpec.Trigger = existing.GetModel().Spec.Trigger
 			def.ModelSpec.TriggerFull = existing.GetModel().Spec.TriggerFull
+			def.ModelSpec.TriggerPartitions = existing.GetModel().Spec.TriggerPartitions
 		}
 		if existing == nil || !proto.Equal(existing.GetModel().Spec, def.ModelSpec) {
 			return &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.Model{Spec: def.ModelSpec}}}

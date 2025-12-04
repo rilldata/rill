@@ -116,7 +116,7 @@ time_ranges:
     // Change the metric trend granularity
 
     const timeGrainSelector = page.getByRole("button", {
-      name: "Select a time grain",
+      name: "Select reference time and grain",
     });
     await timeGrainSelector.click();
     await page.getByRole("menuitem", { name: "day" }).click();
@@ -352,7 +352,7 @@ time_ranges:
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
-    await expect(timeGrainSelector).toHaveText("by Week");
+    await expect(timeGrainSelector).toHaveText("as of latest week end");
 
     // Edit Explore
     await page.getByRole("button", { name: "Edit" }).click();

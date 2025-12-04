@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -77,7 +78,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority)
+	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, priority)
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	}
 	qry.Rows = true
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority)
+	e, err := executor.New(ctx, rt, instanceID, q.MetricsView, q.Streaming, q.ResolvedMVSecurity, opts.Priority)
 	if err != nil {
 		return err
 	}

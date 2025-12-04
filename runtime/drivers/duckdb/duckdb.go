@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -48,32 +48,33 @@ var spec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
-	},
-	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
-	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "path",
+			Key:         "attach",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Path",
-			Description: "Path to DuckDB database",
-			Placeholder: "/path/to/duckdb.db",
+			Required:    false,
+			DisplayName: "Attach",
+			Description: "Attach to an existing DuckDB database. This is an alternative to `path` that supports attach options.",
+			Placeholder: "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles')",
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "SQL",
-			Description: "Query to extract data from DuckDB.",
+			Description: "Query to run on DuckDB.",
 			Placeholder: "select * from table;",
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
 		},
 	},
 	ImplementsOLAP: true,
@@ -82,26 +83,45 @@ var spec = drivers.Spec{
 var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "MotherDuck SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path to Motherduck database. Must be prefixed with `md:`",
+			Placeholder: "md:my_db",
 		},
 		{
-			Key:  "db",
-			Type: drivers.StringPropertyType,
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Required:    true,
+			DisplayName: "Token",
+			Description: "MotherDuck token",
+			Placeholder: "your_motherduck_token",
+		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
+		{
+			Key:         "schema_name",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Schema name",
+			Placeholder: "main",
+			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "MotherDuck Connection String",
-			Placeholder: "md:motherduck.db",
-		},
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -110,24 +130,8 @@ var motherduckSpec = drivers.Spec{
 			Description: "Query to extract data from MotherDuck.",
 			Placeholder: "select * from table;",
 		},
-		{
-			Key:         "token",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Access token",
-			Description: "MotherDuck access token",
-			Placeholder: "your.access_token.here",
-			Secret:      true,
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
@@ -155,6 +159,19 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		olapSemSize = 1
 	}
 
+	// Open remote bucket for backups if configured
+	var remote *blob.Bucket
+	if cfg.EnableBackups {
+		b, ok, err := st.OpenBucket(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			remote = b
+		}
+	}
+
+	// Create the handle
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
 		instanceID:     instanceID,
@@ -162,6 +179,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		logger:         logger,
 		activity:       ac,
 		storage:        st,
+		remote:         remote,
 		metaSem:        semaphore.NewWeighted(1),
 		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
 		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
@@ -171,13 +189,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
-	}
-	remote, ok, err := st.OpenBucket(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	if ok {
-		c.remote = remote
 	}
 
 	// register a callback to add a gauge on number of connections in use per db
@@ -319,7 +330,7 @@ func (c *connection) Ping(ctx context.Context) error {
 	return errors.Join(err, c.hangingConnErr)
 }
 
-// Driver implements drivers.Connection.
+// Driver implements drivers.Handle.
 func (c *connection) Driver() string {
 	return c.driverName
 }
@@ -329,7 +340,7 @@ func (c *connection) Config() map[string]any {
 	return maps.Clone(c.driverConfig)
 }
 
-// Close implements drivers.Connection.
+// Close implements drivers.Handle.
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
@@ -342,17 +353,17 @@ func (c *connection) Close() error {
 	return nil
 }
 
-// AsRegistry Registry implements drivers.Connection.
+// AsRegistry Registry implements drivers.Handle.
 func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// AsCatalogStore Catalog implements drivers.Connection.
+// AsCatalogStore Catalog implements drivers.Handle.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// AsRepoStore Repo implements drivers.Connection.
+// AsRepoStore Repo implements drivers.Handle.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
@@ -367,61 +378,68 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// AsOLAP OLAP implements drivers.Connection.
+// AsOLAP OLAP implements drivers.Handle.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// AsInformationSchema implements drivers.Connection.
+// AsInformationSchema implements drivers.Handle.
 func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if opts.OutputHandle == c && c.config.Mode != modeReadWrite {
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
+	}
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c}, true
+		return &selfToSelfExecutor{c}, nil
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &warehouseToSelfExecutor{c, w}, true
+			return &warehouseToSelfExecutor{c, w}, nil
 		}
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
-			return &localFileToSelfExecutor{c, f}, true
+			return &localFileToSelfExecutor{c, f}, nil
 		}
 		switch opts.InputHandle.Driver() {
 		case "mysql", "postgres":
-			return &sqlStoreToSelfExecutor{c}, true
+			return &sqlStoreToSelfExecutor{c}, nil
 		case "https":
-			return &httpsToSelfExecutor{c}, true
+			return &httpsToSelfExecutor{c}, nil
 		case "motherduck":
-			return &mdToSelfExecutor{c}, true
+			return &mdToSelfExecutor{c}, nil
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
-			return &objectStoreToSelfExecutor{c}, true
+			return &objectStoreToSelfExecutor{c}, nil
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
-				return nil, false
+				return nil, drivers.ErrNotImplemented
 			}
 			if supportsExportFormat(outputProps.Format, outputProps.Headers) {
-				return &selfToFileExecutor{c}, true
+				return &selfToFileExecutor{c}, nil
 			}
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	return c, true
 }
 
@@ -434,7 +452,7 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
@@ -464,6 +482,18 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		dbInitQueries   []string
 		connInitQueries []string
 	)
+
+	if c.driverName == "motherduck" || c.config.isMotherduck() {
+		dbInitQueries = append(dbInitQueries,
+			"INSTALL 'motherduck'",
+			"LOAD 'motherduck'",
+		)
+		if c.config.Token != "" {
+			dbInitQueries = append(dbInitQueries,
+				fmt.Sprintf("SET motherduck_token = '%s'", c.config.Token),
+			)
+		}
+	}
 
 	// Add custom InitSQL queries before any other (e.g. to override the extensions repository)
 	// BootQueries is deprecated. Use InitSQL instead. Retained for backward compatibility.
@@ -518,6 +548,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			Attach:             c.config.Attach,
 			DBName:             c.config.DatabaseName,
 			SchemaName:         c.config.SchemaName,
+			ReadOnlyMode:       c.config.Mode == modeReadOnly,
 			LocalDataDir:       dataDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,

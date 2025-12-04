@@ -6,8 +6,8 @@ import {
 
 // Import the template for testing
 const YAML_MODEL_TEMPLATE = `type: model
-connector: {{ connector }}
-materialize: true
+materialize: true\n
+connector: {{ connector }}\n
 sql: {{ sql }}{{ dev_section }}
 `;
 

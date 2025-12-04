@@ -14,7 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 )
 
 type MetricsViewAggregation struct {
@@ -38,6 +39,7 @@ type MetricsViewAggregation struct {
 	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
+	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -86,13 +88,13 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
 	defer e.Close()
 
-	res, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, q.ExecutionTime)
 	if err != nil {
 		return err
 	}
@@ -128,7 +130,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
 	if err != nil {
 		return err
 	}
@@ -163,7 +165,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	path, err := e.Export(ctx, qry, nil, format, headers)
+	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers)
 	if err != nil {
 		return err
 	}
@@ -526,7 +528,7 @@ func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
 	if expr != nil && sql != "" {
-		sqlExpr, err := metricssqlparser.ParseSQLFilter(sql)
+		sqlExpr, err := metricssql.ParseFilter(sql)
 		if err != nil {
 			return nil, err
 		}
@@ -544,7 +546,7 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricsview.NewExpressionFromProto(expr), nil
 	}
 	if sql != "" {
-		return metricssqlparser.ParseSQLFilter(sql)
+		return metricssql.ParseFilter(sql)
 	}
 	return nil, nil
 }

@@ -10,6 +10,7 @@ import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashbo
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
@@ -206,7 +207,8 @@ export class TimeControls {
       interval: timeGrain,
     });
 
-    this.selectedComparisonTimeRange.set(comparisonTimeRange);
+    if (comparisonTimeRange !== undefined)
+      this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
 
   public setSelectedComparisonRange = (
@@ -217,6 +219,12 @@ export class TimeControls {
 
   public displayTimeComparison = (showTimeComparison: boolean) => {
     this.showTimeComparison.set(showTimeComparison);
+    // TODO: find a better fix
+    if (!get(this.selectedComparisonTimeRange)?.name) {
+      this.selectedComparisonTimeRange.set({
+        name: TimeComparisonOption.CONTIGUOUS,
+      } as any);
+    }
   };
 
   public toState(): TimeControlState {

@@ -23,7 +23,7 @@
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
   {:else if assembledAndCanExpand}
-    <div class="caret opacity-0 group-hover/cell:opacity-100" class:expanded>
+    <div class="caret opacity-100" class:expanded>
       <ChevronRight size="16px" color="#9CA3AF" />
     </div>
   {:else if row.depth >= 1}

@@ -1,7 +1,8 @@
 import type { Annotation } from "@rilldata/web-common/components/data-graphic/marks/annotations.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
+import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
   getStartOfPeriod,
@@ -10,13 +11,14 @@ import {
   type DashboardTimeControls,
   Period,
   TimeOffsetType,
-  TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import {
   getQueryServiceMetricsViewAnnotationsQueryOptions,
   type V1MetricsViewAnnotationsResponseAnnotation,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
+import { DateTime, Interval } from "luxon";
 import { derived, type Readable } from "svelte/store";
 
 export function getAnnotationsForMeasure({
@@ -24,13 +26,11 @@ export function getAnnotationsForMeasure({
   exploreName,
   measureName,
   selectedTimeRange,
-  selectedTimezone,
 }: {
   instanceId: string;
   exploreName: string;
   measureName: string;
   selectedTimeRange: DashboardTimeControls | undefined;
-  selectedTimezone: string;
 }): Readable<Annotation[]> {
   const exploreValidSpec = useExploreValidSpec(instanceId, exploreName);
   const selectedPeriod = TIME_GRAIN[selectedTimeRange?.interval ?? ""]
@@ -74,7 +74,8 @@ export function getAnnotationsForMeasure({
         convertV1AnnotationsResponseItemToAnnotation(
           a,
           selectedPeriod,
-          selectedTimezone,
+          selectedTimeRange?.interval ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+          getLocalIANA(), // Use system timezone for annotations similar to chart labels
         ),
       ) ?? [];
     annotations.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
@@ -85,30 +86,27 @@ export function getAnnotationsForMeasure({
 function convertV1AnnotationsResponseItemToAnnotation(
   annotation: V1MetricsViewAnnotationsResponseAnnotation,
   period: Period | undefined,
-  selectedTimezone: string,
+  selectedTimeGrain: V1TimeGrain,
+  timezone: string,
 ) {
   let startTime = new Date(annotation.time as string);
   let endTime = annotation.timeEnd ? new Date(annotation.timeEnd) : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
   if (period && annotation.duration) {
-    startTime = getStartOfPeriod(startTime, period, selectedTimezone);
+    startTime = getStartOfPeriod(startTime, period, timezone);
     if (endTime) {
-      endTime = getOffset(
-        endTime,
-        period,
-        TimeOffsetType.ADD,
-        selectedTimezone,
-      );
-      endTime = getStartOfPeriod(endTime, period, selectedTimezone);
+      endTime = getOffset(endTime, period, TimeOffsetType.ADD, timezone);
+      endTime = getStartOfPeriod(endTime, period, timezone);
     }
   }
 
   const formattedTimeOrRange = prettyFormatTimeRange(
-    startTime,
-    endTime ?? startTime,
-    TimeRangePreset.CUSTOM,
-    selectedTimezone,
+    Interval.fromDateTimes(
+      DateTime.fromJSDate(startTime).setZone(timezone),
+      DateTime.fromJSDate(endTime ?? startTime).setZone(timezone),
+    ),
+    selectedTimeGrain,
   );
 
   return <Annotation>{

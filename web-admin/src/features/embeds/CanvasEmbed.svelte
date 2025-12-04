@@ -8,6 +8,7 @@
 
   export let instanceId: string;
   export let canvasName: string;
+  export let navigationEnabled: boolean = true;
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
@@ -35,6 +36,6 @@
   {#if isCanvasErrored}
     <br /> Canvas Error <br />
   {:else if data}
-    <CanvasDashboardEmbed {resource} />
+    <CanvasDashboardEmbed {resource} {navigationEnabled} {canvasName} />
   {/if}
 {/if}

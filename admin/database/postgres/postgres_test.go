@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,6 +44,8 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
+	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
+	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
 		cases := []struct {
@@ -173,14 +176,14 @@ func testOrgsWithPagination(t *testing.T, db database.DB) {
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
 	require.Equal(t, "alpha", org.Name)
-	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 	require.NoError(t, err)
 
 	// add org and give user permission
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "beta"})
 	require.NoError(t, err)
 	require.Equal(t, "beta", org.Name)
-	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 	require.NoError(t, err)
 
 	// add org only
@@ -426,10 +429,10 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
-	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test1@rilldata.com"})
+	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test1@rilldata.com", DisplayName: "John Admin"})
 	require.NoError(t, err)
 
-	viewerUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2@rilldata.com"})
+	viewerUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2@rilldata.com", DisplayName: "Jane Viewer"})
 	require.NoError(t, err)
 
 	admin, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
@@ -440,23 +443,58 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
-	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, false)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, nil, false)
 	require.NoError(t, err)
-	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, viewerUser.ID, viewer.ID, false)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, viewerUser.ID, viewer.ID, nil, false)
 	require.NoError(t, err)
 	require.NoError(t, db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{Email: "test3@rilldata.com", InviterID: adminUser.ID, OrgID: org.ID, RoleID: viewer.ID}))
 
 	// fetch members without name filter
-	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch members with name filter
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, users[0].Email, 1)
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, users[0].Email, 1, "")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
+
+	// test search pattern functionality
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test1%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test1@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test2%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test2@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 2)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%nonexistent%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 0)
+
+	// test display name search functionality
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "John%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test1@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%Jane%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test2@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%Admin")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch invites without name filter
 	invites, err := db.FindOrganizationInvites(ctx, org.ID, "", 1)
@@ -650,6 +688,153 @@ func testManagedGitRepos(t *testing.T, db database.DB) {
 	require.NoError(t, db.DeleteManagedGitRepos(context.Background(), []string{m1.ID, m2.ID, m3.ID}))
 }
 
+func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	// Create test data
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test@rilldata.com"})
+	require.NoError(t, err)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	// Add user to organization
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
+	require.NoError(t, err)
+
+	t.Run("GetOrganizationMemberUserAttributes - no attributes", func(t *testing.T) {
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
+		require.NoError(t, err)
+		require.Len(t, member, 1)
+		require.Equal(t, user.Email, member[0].Email)
+	})
+
+	attributes := map[string]any{"attr1": "value1", "attr2": "value2"}
+
+	t.Run("UpdateOrganizationMemberUserAttributes - add attributes to existing user", func(t *testing.T) {
+		_, err = db.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+		require.NoError(t, err)
+	})
+
+	t.Run("GetOrganizationMemberUserAttributes - with attributes", func(t *testing.T) {
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
+		require.NoError(t, err)
+		require.Len(t, member, 1)
+		require.Equal(t, user.Email, member[0].Email)
+		require.Equal(t, attributes, member[0].Attributes)
+	})
+
+	t.Run("UpdateOrganizationMemberUserAttributes - update attributes of existing user", func(t *testing.T) {
+		attributes["attr1"] = "new-value1"
+		_, err = db.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+		require.NoError(t, err)
+	})
+
+	t.Run("GetOrganizationMemberUserAttributes - with updated attributes", func(t *testing.T) {
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
+		require.NoError(t, err)
+		require.Len(t, member, 1)
+		require.Equal(t, user.Email, member[0].Email)
+		require.Equal(t, attributes, member[0].Attributes)
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
+func testAttributeValidation(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test-validation@rilldata.com"})
+	require.NoError(t, err)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-validation-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	// First add user to organization with valid attributes
+	validAttrs := map[string]interface{}{"valid_key": "value"}
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, validAttrs, false)
+	require.NoError(t, err)
+
+	t.Run("InsertOrganizationMemberUser validation", func(t *testing.T) {
+		user2, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2-validation@rilldata.com"})
+		require.NoError(t, err)
+
+		testCases := []struct {
+			name        string
+			attributes  map[string]interface{}
+			expectError bool
+			errorMsg    string
+		}{
+			{
+				name: "valid attributes",
+				attributes: map[string]interface{}{
+					"valid_key_123": "value",
+					"another_key":   "another value",
+				},
+				expectError: false,
+			},
+			{
+				name: "invalid key with hyphen",
+				attributes: map[string]interface{}{
+					"invalid-key": "value",
+				},
+				expectError: true,
+				errorMsg:    "invalid attribute key 'invalid-key': must contain only alphanumeric characters and underscores",
+			},
+			{
+				name: "value too long",
+				attributes: map[string]interface{}{
+					"key": strings.Repeat("a", 257),
+				},
+				expectError: true,
+				errorMsg:    "attribute value for key 'key' too long: maximum 256 characters, got 257",
+			},
+			{
+				name: "too many attributes",
+				attributes: func() map[string]interface{} {
+					attrs := make(map[string]interface{})
+					for i := 0; i < 51; i++ {
+						attrs[fmt.Sprintf("key_%d", i)] = "value"
+					}
+					return attrs
+				}(),
+				expectError: true,
+				errorMsg:    "too many attributes: maximum 50 allowed, got 51",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := db.InsertOrganizationMemberUser(ctx, org.ID, user2.ID, role.ID, tc.attributes, false)
+				if tc.expectError {
+					require.Error(t, err)
+					if tc.errorMsg != "" {
+						require.Contains(t, err.Error(), tc.errorMsg)
+					}
+				} else {
+					require.NoError(t, err)
+					require.NoError(t, db.DeleteOrganizationMemberUser(ctx, org.ID, user2.ID))
+				}
+			})
+		}
+
+		// Clean up
+		require.NoError(t, db.DeleteUser(ctx, user2.ID))
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
 func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	ctx := context.Background()
 
@@ -663,13 +848,145 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	// add org and give user permission
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
 	require.NoError(t, err)
-	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, false)
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, adminUser.ID, admin.ID, nil, false)
 	require.NoError(t, err)
 
 	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", Public: true})
 	require.NoError(t, err)
 
 	return org.ID, proj.ID, adminUser.ID
+}
+
+func TestValidateAttributesUnit(t *testing.T) {
+	c := &connection{}
+
+	tests := []struct {
+		name        string
+		attributes  map[string]any
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid attributes",
+			attributes: map[string]any{
+				"valid_key_123": "value",
+				"another_key":   "another value",
+				"key123":        "value123",
+				"Key_With_Caps": "value",
+			},
+			expectError: false,
+		},
+		{
+			name:        "empty attributes",
+			attributes:  map[string]any{},
+			expectError: false,
+		},
+		{
+			name:        "nil attributes",
+			attributes:  nil,
+			expectError: false,
+		},
+		{
+			name: "invalid key with hyphen",
+			attributes: map[string]any{
+				"invalid-key": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'invalid-key': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "invalid key with space",
+			attributes: map[string]any{
+				"invalid key": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'invalid key': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "invalid key with special characters",
+			attributes: map[string]any{
+				"key@example": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'key@example': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "empty key",
+			attributes: map[string]any{
+				"": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key '': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "value too long",
+			attributes: map[string]any{
+				"key": strings.Repeat("a", 257),
+			},
+			expectError: true,
+			errorMsg:    "attribute value for key 'key' too long: maximum 256 characters, got 257",
+		},
+		{
+			name: "value exactly 256 characters",
+			attributes: map[string]any{
+				"key": strings.Repeat("a", 256),
+			},
+			expectError: false,
+		},
+		{
+			name: "non-string value",
+			attributes: map[string]any{
+				"key": 123,
+			},
+			expectError: false,
+		},
+		{
+			name: "too many attributes",
+			attributes: func() map[string]any {
+				attrs := make(map[string]any)
+				for i := 0; i < 51; i++ {
+					attrs[fmt.Sprintf("key_%d", i)] = "value"
+				}
+				return attrs
+			}(),
+			expectError: true,
+			errorMsg:    "too many attributes: maximum 50 allowed, got 51",
+		},
+		{
+			name: "exactly 50 attributes",
+			attributes: func() map[string]any {
+				attrs := make(map[string]any)
+				for i := 0; i < 50; i++ {
+					attrs[fmt.Sprintf("key_%d", i)] = "value"
+				}
+				return attrs
+			}(),
+			expectError: false,
+		},
+		{
+			name: "mixed valid and invalid keys",
+			attributes: map[string]any{
+				"valid_key":   "value",
+				"invalid-key": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'invalid-key': must contain only alphanumeric characters and underscores",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := c.validateAttributes(tt.attributes)
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorMsg != "" {
+					require.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func randomName() string {

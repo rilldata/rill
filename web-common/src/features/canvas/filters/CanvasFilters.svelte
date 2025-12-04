@@ -12,11 +12,11 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -48,8 +48,10 @@
         allMeasureFilterItems,
         measureHasFilter,
       },
-      spec: { canvasSpec, allDimensions, allSimpleMeasures },
+      spec,
+      metricsView: { allDimensions, allSimpleMeasures },
       timeControls: {
+        _canPan,
         allTimeRange,
         timeRangeStateStore,
         comparisonRangeStateStore,
@@ -69,9 +71,9 @@
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: availableTimeZones = $canvasSpec?.timeZones ?? [];
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: defaultTimeRange = $spec?.defaultPreset?.timeRange;
+  $: availableTimeZones = $spec?.timeZones ?? [];
+  $: timeRanges = $spec?.timeRanges ?? [];
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -83,6 +85,8 @@
   $: allDimensionFilters = $allDimensionFilterItems;
 
   $: allMeasureFilters = $allMeasureFilterItems;
+
+  $: canPan = $_canPan;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
@@ -142,11 +146,10 @@
       {timeEnd}
       {activeTimeGrain}
       {activeTimeZone}
+      canPanLeft={canPan.left}
+      canPanRight={canPan.right}
       watermark={undefined}
-      allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
-      canPanLeft
-      canPanRight
-      showPan
+      allowCustomTimeRange={$spec?.allowCustomTimeRange}
       {showDefaultItem}
       applyRange={(timeRange) => {
         const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
@@ -161,6 +164,8 @@
       allTimeRange={$allTimeRange}
       {selectedTimeRange}
       {selectedComparisonTimeRange}
+      {activeTimeZone}
+      minTimeGrain={$minTimeGrain}
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
         false}
       onDisplayTimeComparison={set.comparison}
@@ -172,7 +177,6 @@
           set.comparison(range.name);
         }
       }}
-      {activeTimeZone}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">

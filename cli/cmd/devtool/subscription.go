@@ -68,14 +68,14 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			orgResp, err := adminClient.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-				Name: ch.Org,
+				Org: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
 			subResp, err := adminClient.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
-				Organization: ch.Org,
+				Org: ch.Org,
 			})
 			if err != nil {
 				return err
@@ -85,7 +85,7 @@ func AdvanceSubscriptionTimeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := adminClient.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{
-				Organization: ch.Org,
+				Org: ch.Org,
 			})
 			if err != nil {
 				return err

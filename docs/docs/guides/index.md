@@ -1,6 +1,6 @@
 ---
 title: ""
-collapsed: false
+collapsed: true
 tags:
   - Tutorial
   - Getting Started
@@ -26,10 +26,6 @@ Follow along, refer to the in-line linked documentation, and explore our product
 - [**OpenRTB Analytics:**](/guides/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
 - [**Set Up MCP**](/guides/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
 
-<!-- - [**Rill + MotherDuck:**](/guides/rill-motherduck) For our friends from **MotherDuck**, we have created a dedicated course using MotherDuck! -->
-<!-- - **Explore the Various Guides:** Explore the various guides on how to use Rill to the maximum capability and get the most out of our platform! -->
-<!-- - [**GA4 Analytics:**](/guides/) text
-- [**Logging Analytics:**](/guides/) text -->
 
 Each section is crafted to ensure a smooth and comprehensive learning experience. Happy learning!
 

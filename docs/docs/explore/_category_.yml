@@ -1,4 +1,4 @@
 position: 40
 label: Explore
-collapsible: true
-collapsed: true
+collapsible: false
+collapsed: false

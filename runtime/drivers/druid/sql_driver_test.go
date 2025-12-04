@@ -37,9 +37,7 @@ func Ignore_TestDriver_types(t *testing.T) {
 		`,
 	})
 	require.NoError(t, err)
-	schema, err := rowsToSchema(res.Rows)
-	require.NoError(t, err)
-	require.True(t, len(schema.Fields) > 0)
+	require.True(t, len(res.Schema.Fields) > 0)
 
 	data, err := rowsToData(res)
 
@@ -68,9 +66,7 @@ func Ignore_TestDriver_array_type(t *testing.T) {
 		`,
 	})
 	require.NoError(t, err)
-	schema, err := rowsToSchema(res.Rows)
-	require.NoError(t, err)
-	require.True(t, len(schema.Fields) > 0)
+	require.True(t, len(res.Schema.Fields) > 0)
 
 	data, err := rowsToData(res)
 
@@ -94,9 +90,7 @@ func Ignore_TestDriver_json_type(t *testing.T) {
 		`,
 	})
 	require.NoError(t, err)
-	schema, err := rowsToSchema(res.Rows)
-	require.NoError(t, err)
-	require.True(t, len(schema.Fields) > 0)
+	require.True(t, len(res.Schema.Fields) > 0)
 
 	data, err := rowsToData(res)
 
@@ -125,9 +119,7 @@ func Ignore_TestDriver_multiple_rows(t *testing.T) {
 		`,
 	})
 	require.NoError(t, err)
-	schema, err := rowsToSchema(res.Rows)
-	require.NoError(t, err)
-	require.True(t, len(schema.Fields) > 0)
+	require.True(t, len(res.Schema.Fields) > 0)
 
 	data, err := rowsToData(res)
 

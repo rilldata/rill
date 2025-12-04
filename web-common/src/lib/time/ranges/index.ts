@@ -9,7 +9,6 @@ import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimensio
 import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   addZoneOffset,
-  getDateMonthYearForTimezone,
   removeLocalTimezoneOffset,
 } from "@rilldata/web-common/lib/time/timezone";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -35,6 +34,7 @@ import {
   type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
+import { DateTime, type DateTimeUnit } from "luxon";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -140,12 +140,17 @@ export function convertTimeRangePreset(
   start: Date,
   end: Date,
   zone: string | undefined,
+  minTimeGrain?: DateTimeUnit,
 ): TimeRange {
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
       name: timeRangePreset,
       start,
-      end: new Date(end.getTime() + 1),
+      end: DateTime.fromJSDate(end)
+        .setZone(zone || "UTC")
+        .plus({ [minTimeGrain || "millisecond"]: 1 })
+        .startOf(minTimeGrain || "millisecond")
+        .toJSDate(),
     };
   }
   const timeRange = DEFAULT_TIME_RANGES[timeRangePreset];
@@ -162,165 +167,6 @@ export function convertTimeRangePreset(
     end: timeRangeDates.endDate,
   };
 }
-
-/**
- * Formats a start and end for usage in the application.
- * NOTE: this is primarily used for the time range picker. We might want to
- * colocate the code w/ the component.
- */
-export const prettyFormatTimeRange = (
-  start: Date | undefined,
-  end: Date | undefined,
-  timePreset: string | undefined,
-  timeZone: string,
-): string => {
-  const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
-
-  if (!start) {
-    return end ? `- ${end}` : "";
-  }
-  if (!end) {
-    return `${start} -`;
-  }
-
-  const {
-    day: startDate,
-    month: startMonth,
-    year: startYear,
-  } = getDateMonthYearForTimezone(start, timeZone);
-
-  let {
-    day: endDate,
-    month: endMonth,
-    year: endYear,
-  } = getDateMonthYearForTimezone(end, timeZone);
-
-  if (
-    startDate === endDate &&
-    startMonth === endMonth &&
-    startYear === endYear
-  ) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "short",
-      timeZone,
-    })} ${startDate}, ${startYear} (${start
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone,
-      })
-      .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone,
-      })
-      .replace(/\s/g, "")})`;
-  }
-
-  const timeRangeDurationMs = getTimeWidth(start, end);
-  if (
-    timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
-  ) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "short",
-      timeZone,
-    })} ${startDate}-${endDate}, ${startYear} (${start
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone,
-      })
-      .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone,
-      })
-      .replace(/\s/g, "")})`;
-  }
-
-  let inclusiveEndDate;
-
-  let timeString = "";
-
-  const startTime = start.toLocaleTimeString(undefined, { timeZone });
-  const endTime = end.toLocaleTimeString(undefined, { timeZone });
-
-  if (isAllTime) {
-    inclusiveEndDate = new Date(end);
-  } else if (startTime === "12:00:00 am" && endTime === "12:00:00 am") {
-    // beyond this point, we're dealing with time ranges that are full day periods
-    // since time range is exclusive at the end, we need to subtract a day
-    inclusiveEndDate = new Date(
-      end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration),
-    );
-
-    const inclusiveEndDateWithTimeZone = getDateMonthYearForTimezone(
-      inclusiveEndDate,
-      timeZone,
-    );
-
-    endDate = inclusiveEndDateWithTimeZone.day;
-    endMonth = inclusiveEndDateWithTimeZone.month;
-    endYear = inclusiveEndDateWithTimeZone.year;
-  } else {
-    // display full time when the hours are not at 00:00
-    inclusiveEndDate = end;
-
-    timeString = `(${start
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone,
-      })
-      .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone,
-      })
-      .replace(/\s/g, "")})`;
-  }
-
-  // month is the same
-  if (startMonth === endMonth && startYear === endYear) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "short",
-      timeZone,
-    })} ${startDate}-${endDate}, ${startYear} ${timeString}`;
-  }
-
-  // year is the same
-  if (startYear === endYear) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      timeZone,
-    })} - ${inclusiveEndDate.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      timeZone,
-    })}, ${startYear} ${timeString}`;
-  }
-  // year is different
-  const dateFormatOptions: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone,
-  };
-  return `${start.toLocaleDateString(
-    undefined,
-    dateFormatOptions,
-  )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
-};
 
 /**
  * Return start and end date such that the results include

@@ -7,9 +7,9 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -57,6 +57,7 @@
 
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
+  $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
@@ -65,21 +66,30 @@
       ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
       : 0;
 
-  $: measures.forEach(({ name, label, formatter }) => {
-    if (!$measureLengths.has(name)) {
-      const estimatedWidth = calculateMeasureWidth(
-        name,
-        label,
-        formatter,
-        totalsRow,
-        dataRows,
-      );
+  $: {
+    // Get the longest column dimension header to ensure proper width calculation
+    const maxColumnDimensionHeader = getMaxColumnDimensionHeader(
+      hasColumnDimension,
+      headerGroups,
+    );
 
-      measureLengths.update((measureLengths) => {
-        return measureLengths.set(name, estimatedWidth);
-      });
-    }
-  });
+    measures.forEach(({ name, label, formatter }) => {
+      if (!$measureLengths.has(name)) {
+        const estimatedWidth = calculateMeasureWidth(
+          name,
+          label,
+          formatter,
+          totalsRow,
+          dataRows,
+          hasColumnDimension ? maxColumnDimensionHeader : undefined,
+        );
+
+        measureLengths.update((measureLengths) => {
+          return measureLengths.set(name, estimatedWidth);
+        });
+      }
+    });
+  }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
     containerRefElement.scrollTo({
@@ -158,6 +168,25 @@
     return (index + offset) % measureCount === 0 && index > 0;
   }
 
+  function getMaxColumnDimensionHeader(
+    hasColumnDimension: boolean,
+    headerGroups: HeaderGroup<PivotDataRow>[],
+  ): string {
+    if (!hasColumnDimension || headerGroups.length === 0) return "";
+
+    // Get the second-to-last header group which contains column dimension values
+    const colDimensionHeaderGroup =
+      headerGroups.length >= 2
+        ? headerGroups[headerGroups.length - 2]
+        : undefined;
+    if (!colDimensionHeaderGroup?.headers) return "";
+
+    return colDimensionHeaderGroup.headers.reduce((longest, header) => {
+      const headerText = String(header.column?.columnDef?.header ?? "");
+      return headerText.length > longest.length ? headerText : longest;
+    }, "");
+  }
+
   function shouldShowRightBorder(index: number): boolean {
     let offset = 0;
     if (!hasRowDimension) offset = 1;
@@ -232,6 +261,8 @@
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
   class:with-expandable-rows={hasExpandableRows}
+  class:with-totals-row={!!totalsRow}
+  class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
   on:click={modified({ shift: onCellCopy, click: onCellClick })}
@@ -442,18 +473,24 @@
   }
 
   /* The totals row */
-  tbody > tr:nth-of-type(2) {
+  .with-totals-row tbody > tr:nth-of-type(2) {
     @apply bg-surface sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
 
-  /* The totals row header */
-  .with-row-dimension tbody > tr:nth-of-type(2) > td:first-of-type {
+  /* The totals row header - only apply when there are actual measures and totals */
+  .with-row-dimension.with-totals-row.with-measures
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply font-semibold;
   }
 
-  .with-expandable-rows tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-expandable-rows.with-totals-row
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply pl-5;
   }
 

@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +25,7 @@ type metricsResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	mv         *runtimev1.MetricsViewSpec
-	executor   *metricsview.Executor
+	executor   *executor.Executor
 	query      *metricsview.Query
 	args       *metricsResolverArgs
 	claims     *runtime.SecurityClaims
@@ -66,7 +67,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, runtime.ErrForbidden
 	}
 
-	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func (r *metricsResolver) Close() error {
 }
 
 func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	// get the underlying executor's cache key
+	// Get the underlying executor's cache key
 	key, ok, err := cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.args.Priority)
 	if err != nil {
 		return nil, false, err
@@ -106,15 +107,12 @@ func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 
-	queryMap, err := r.query.AsMap()
+	// Combine the executor's cache key with the query
+	data, err := json.Marshal(r.query)
 	if err != nil {
 		return nil, false, err
 	}
-
-	queryMap["mv_cache_key"] = key
-
-	b, err := json.Marshal(queryMap)
-	return b, true, err
+	return append(key, data...), true, nil
 }
 
 func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
@@ -143,6 +141,7 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 	}
 
 	meta := map[string]any{}
+	meta["metrics_view"] = r.query.MetricsView
 	meta["fields"] = fieldsFromQuery(r.mv, r.query)
 
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
@@ -155,6 +154,37 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+
+	if r.query.Where != nil {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					Expression:         metricsview.ExpressionToProto(r.query.Where),
+				},
+			},
+		})
+	}
+
+	fields := metricsview.AnalyzeQueryFields(r.query)
+	if len(fields) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					Fields:             fields,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
 }
 
 // fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.

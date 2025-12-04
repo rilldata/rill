@@ -1,110 +1,133 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceCreateBookmark,
     createAdminServiceRemoveBookmark,
+    createAdminServiceUpdateBookmark,
     getAdminServiceListBookmarksQueryKey,
+    type V1Bookmark,
   } from "@rilldata/web-admin/client";
-  import BookmarkDialog from "@rilldata/web-admin/features/bookmarks/BookmarkDialog.svelte";
-  import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
-  import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
-  import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
+  import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
+  import BookmarksFormDialog from "@rilldata/web-admin/features/bookmarks/BookmarksFormDialog.svelte";
+  import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
-    categorizeBookmarks,
-    getBookmarks,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+    type Bookmarks,
+    getBookmarkData,
+    searchBookmarks,
+  } from "@rilldata/web-admin/features/bookmarks/utils.ts";
+  import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
   import {
+    getProjectIdQueryOptions,
     getProjectPermissions,
-    useProjectId,
-  } from "@rilldata/web-admin/features/projects/selectors";
+  } from "@rilldata/web-admin/features/projects/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { BookmarkIcon } from "lucide-svelte";
+  import { Search } from "@rilldata/web-common/components/search";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+  import { BookmarkIcon, BookmarkPlusIcon } from "lucide-svelte";
+  import { writable } from "svelte/store";
 
-  export let metricsViewName: string;
-  export let exploreName: string;
+  export let organization: string;
+  export let project: string;
+  export let resource: { name: string; kind: ResourceKind };
+  export let metricsViewNames: string[];
+  export let bookmarkData: {
+    bookmarks: V1Bookmark[];
+    categorizedBookmarks: Bookmarks;
+    defaultUrlParams?: URLSearchParams;
+    defaultHomeBookmarkUrl?: string;
+    showFiltersOnly?: boolean;
+  };
+
+  $: ({ name: resourceName, kind: resourceKind } = resource);
+  $: ({
+    bookmarks,
+    categorizedBookmarks,
+    defaultUrlParams,
+    defaultHomeBookmarkUrl,
+    showFiltersOnly,
+  } = bookmarkData);
 
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  const { validSpecStore } = getStateManagers();
+  const orgAndProjectNameStore = writable({ organization: "", project: "" });
+  $: orgAndProjectNameStore.set({ organization, project });
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: ({ instanceId } = $runtime);
-
-  $: exploreState = useExploreState(exploreName);
-  $: projectId = useProjectId(organization, project);
-  $: bookamrksResp = getBookmarks($projectId.data, exploreName);
-
-  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
-  $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-  $: metricsViewTimeRange = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-    queryClient,
+  const projectIdQuery = createQuery(
+    getProjectIdQueryOptions(orgAndProjectNameStore),
   );
-  $: schemaResp = createQueryServiceMetricsViewSchema(
-    instanceId,
-    metricsViewName,
-  );
-
-  $: urlForExploreYAMLDefaultState = createUrlForExploreYAMLDefaultState(
-    validExploreSpec,
-    metricsViewTimeRange,
-  );
-
-  $: categorizedBookmarks = categorizeBookmarks(
-    $bookamrksResp.data?.bookmarks ?? [],
-    metricsViewSpec,
-    exploreSpec,
-    $schemaResp.data?.schema ?? {},
-    $exploreState,
-    $metricsViewTimeRange.data?.timeRangeSummary,
-  );
+  $: projectId = $projectIdQuery.data ?? "";
 
   $: projectPermissions = getProjectPermissions(organization, project);
   $: manageProject = $projectPermissions.data?.manageProject;
 
+  $: curUrlParams = $page.url.searchParams;
+
   const queryClient = useQueryClient();
-  $: homeBookmarkModifier = createHomeBookmarkModifier(exploreName);
+  const bookmarkCreator = createAdminServiceCreateBookmark();
+  const bookmarkUpdater = createAdminServiceUpdateBookmark();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(
-      getBookmarkDataForDashboard(
-        $exploreState,
-        $validSpecStore.data?.explore ?? {},
-      ),
-      $projectId.data,
-      $bookamrksResp.data?.bookmarks ?? [],
-    );
+    const homeBookmarkUrlSearch = getBookmarkData({
+      curUrlParams,
+      defaultUrlParams,
+    });
+    const homeBookmark = bookmarks.find(isHomeBookmark);
+
+    if (homeBookmark) {
+      await $bookmarkUpdater.mutateAsync({
+        data: {
+          bookmarkId: homeBookmark.id,
+          displayName: "Go to Home",
+          description: "",
+          shared: true,
+          default: true,
+          urlSearch: homeBookmarkUrlSearch,
+        },
+      });
+    } else {
+      await $bookmarkCreator.mutateAsync({
+        data: {
+          displayName: "Go to Home",
+          description: "",
+          projectId,
+          resourceKind,
+          resourceName,
+          shared: true,
+          default: true,
+          urlSearch: homeBookmarkUrlSearch,
+        },
+      });
+    }
+
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId: $projectId.data ?? "",
-        resourceKind: ResourceKind.Explore,
-        resourceName: exploreName,
+        projectId,
+        resourceKind,
+        resourceName,
       }),
     });
+  }
+
+  function onEdit(editingBookmark: BookmarkEntry) {
+    showDialog = true;
+    bookmark = editingBookmark;
   }
 
   async function deleteBookmark(bookmark: BookmarkEntry) {
@@ -117,22 +140,26 @@
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId: $projectId.data ?? "",
-        resourceKind: ResourceKind.Explore,
-        resourceName: exploreName,
+        projectId,
+        resourceKind,
+        resourceName,
       }),
     });
   }
 
   let open = false;
+
+  let searchText: string;
+
+  $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 </script>
 
 <HomeBookmarkButton
   {organization}
   {project}
-  {exploreName}
+  {resource}
   homeBookmark={categorizedBookmarks.home}
-  urlForExploreYAMLDefaultState={$urlForExploreYAMLDefaultState ?? ""}
+  {defaultHomeBookmarkUrl}
   onCreate={createHomeBookmark}
   onDelete={deleteBookmark}
   {manageProject}
@@ -150,23 +177,81 @@
       <BookmarkIcon class="inline-flex" size="16px" />
     </Button>
   </DropdownMenuTrigger>
-  <BookmarksContent
-    onCreate={() => (showDialog = true)}
-    onEdit={(editingBookmark) => {
-      showDialog = true;
-      bookmark = editingBookmark;
-    }}
-    onDelete={deleteBookmark}
-    {categorizedBookmarks}
-    {manageProject}
-  />
+  <DropdownMenuContent class="w-[450px]">
+    <DropdownMenuItem on:click={() => (showDialog = true)}>
+      <div class="flex flex-row gap-x-2 items-center">
+        <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
+        <div class="text-xs">Bookmark current view</div>
+      </div>
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <div class="p-2">
+      <Search
+        autofocus={false}
+        bind:value={searchText}
+        showBorderOnFocus={false}
+      />
+    </div>
+    {#if filteredBookmarks}
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel class="text-gray-500 text-[10px] h-6 uppercase">
+          Your bookmarks
+        </DropdownMenuLabel>
+        {#if filteredBookmarks.personal?.length}
+          {#each filteredBookmarks.personal as bookmark (bookmark.resource.id)}
+            {#key bookmark.resource.id}
+              <BookmarksMenuItem
+                {bookmark}
+                {onEdit}
+                onDelete={deleteBookmark}
+                on:select
+              />
+            {/key}
+          {/each}
+        {:else}
+          <div class="my-2 ui-copy-disabled text-center">
+            You have no bookmarks for this dashboard.
+          </div>
+        {/if}
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel class="text-gray-500">
+          <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
+          <div class="text-[11px] font-normal">Created by project admin</div>
+        </DropdownMenuLabel>
+        {#if filteredBookmarks.shared?.length}
+          {#each filteredBookmarks.shared as bookmark (bookmark.resource.id)}
+            {#key bookmark.resource.id}
+              <BookmarksMenuItem
+                {bookmark}
+                {onEdit}
+                onDelete={deleteBookmark}
+                readOnly={!manageProject}
+              />
+            {/key}
+          {/each}
+        {:else}
+          <div class="my-2 ui-copy-disabled text-center">
+            There are no shared bookmarks for this dashboard.
+          </div>
+        {/if}
+      </DropdownMenuGroup>
+    {/if}
+  </DropdownMenuContent>
 </DropdownMenu>
 
 {#if showDialog}
-  <BookmarkDialog
+  <BookmarksFormDialog
+    {organization}
+    {project}
+    {projectId}
     {bookmark}
-    {metricsViewName}
-    {exploreName}
+    {resource}
+    {defaultUrlParams}
+    {showFiltersOnly}
+    {metricsViewNames}
     onClose={() => {
       showDialog = false;
       bookmark = null;

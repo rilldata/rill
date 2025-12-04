@@ -7,12 +7,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -83,7 +81,9 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 
 	if specHash == t.State.SpecHash {
-		return runtime.ReconcileResult{}
+		// The connector configuration should be tested even when spec has not changed since connector errors can be transient (e.g. cluster temporarily down)
+		err := r.testConnector(ctx, self.Meta.Name.Name)
+		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Update instance connectors
@@ -94,13 +94,10 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 
 	// Test the connector configuration
 	err = r.testConnector(ctx, self.Meta.Name.Name)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("validation failed: %w", err)}
-	}
-
+	// update state even if test fails because the instance connectors have already been updated
 	t.State.SpecHash = specHash
 
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
+	err = errors.Join(err, r.C.UpdateState(ctx, self.Meta.Name, self))
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -108,16 +105,17 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	return runtime.ReconcileResult{}
 }
 
-func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.ConnectorSpec) (string, error) {
-	instance, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return "", err
+func (r *ConnectorReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetConnector() == nil {
+		return nil, fmt.Errorf("not a connector resource")
 	}
-	vars := instance.ResolveVariables(false)
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
 
+func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.ConnectorSpec) (string, error) {
 	hash := md5.New()
 
-	_, err = hash.Write([]byte(spec.Driver))
+	_, err := hash.Write([]byte(spec.Driver))
 	if err != nil {
 		return "", err
 	}
@@ -133,31 +131,20 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 			return "", err
 		}
 	}
-
-	// write properties to hash
-	props, err := runtime.ResolveConnectorProperties(instance.Environment, vars, &runtimev1.Connector{
-		Type:                spec.Driver,
-		Config:              spec.Properties,
-		TemplatedProperties: spec.TemplatedProperties,
-		Provision:           spec.Provision,
-		ProvisionArgs:       spec.ProvisionArgs,
-	})
-	if err != nil {
-		return "", err
-	}
-	keys := maps.Keys(props)
-	slices.Sort(keys)
-	for _, k := range keys {
-		_, err = hash.Write([]byte(k))
+	if spec.Properties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.Properties), hash)
 		if err != nil {
 			return "", err
 		}
-		_, err = hash.Write([]byte(props[k]))
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.Properties.AsMap())
+		if err != nil {
+			return "", err
+		}
+		err = hashWriteMapOrdered(hash, res)
 		if err != nil {
 			return "", err
 		}
 	}
-
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 

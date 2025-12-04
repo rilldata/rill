@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/server/auth"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 )
@@ -60,7 +61,6 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			jwt = strings.TrimSpace(authorizationHeader[6:])
 		}
 	}
-
 	// If a direct JWT was not provided, we rely on admin service auth to issue a new ephemeral runtime JWT for the proxied request.
 	// TODO: This mirrors logic in GetProject. Consider refactoring to avoid duplication.
 	if jwt == "" {
@@ -70,7 +70,12 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			permissions.ReadProd = true
 		}
 		if !permissions.ReadProd {
-			return httputil.Errorf(http.StatusForbidden, "does not have permission to access the production deployment")
+			if claims.OwnerType() == auth.OwnerTypeAnon {
+				// This means no token was provided, so return instructions for how to initiate an OAuth flow.
+				// This is currently used by MCP clients that authenticate with OAuth.
+				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata(r)))
+			}
+			return httputil.Errorf(http.StatusUnauthorized, "does not have permission to access the production deployment")
 		}
 
 		var attr map[string]any
@@ -91,21 +96,21 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			return httputil.Errorf(http.StatusBadRequest, "runtime proxy not available for owner type %q", claims.OwnerType())
 		}
 
-		instancePermissions := []runtimeauth.Permission{
-			runtimeauth.ReadObjects,
-			runtimeauth.ReadMetrics,
-			runtimeauth.ReadAPI,
-			runtimeauth.UseAI,
+		instancePermissions := []runtime.Permission{
+			runtime.ReadObjects,
+			runtime.ReadMetrics,
+			runtime.ReadAPI,
+			runtime.UseAI,
 		}
 		if permissions.ManageProject {
-			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+			instancePermissions = append(instancePermissions, runtime.EditTrigger)
 		}
 
 		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
 			AudienceURL: depl.RuntimeAudience,
 			Subject:     claims.OwnerID(),
 			TTL:         runtimeProxyAccessTokenTTL,
-			InstancePermissions: map[string][]runtimeauth.Permission{
+			InstancePermissions: map[string][]runtime.Permission{
 				depl.RuntimeInstanceID: instancePermissions,
 			},
 			Attributes: attr,
@@ -165,9 +170,12 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 	defer res.Body.Close()
 
-	// Copy response headers
+	// Copy response headers except from "Access-Control-Allow-Origin" (which is also added by the admin server), thus causing browser CORS errors.
 	outHeader := w.Header()
 	for k, v := range res.Header {
+		if strings.EqualFold(k, "Access-Control-Allow-Origin") {
+			continue
+		}
 		for _, vv := range v {
 			outHeader.Add(k, vv)
 		}

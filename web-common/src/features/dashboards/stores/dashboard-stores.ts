@@ -9,6 +9,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import {
   TimeRangePreset,
   type DashboardTimeControls,
@@ -22,10 +23,7 @@ import type {
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import {
-  V1Operation,
-  type V1StructType,
-} from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
@@ -170,17 +168,11 @@ const metricsViewReducers = {
     urlState: string,
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
-    schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(
-      urlState,
-      metricsView,
-      explore,
-      schema,
-    );
+    const partial = getDashboardStateFromUrl(urlState, metricsView, explore);
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (exploreState) => {
@@ -418,6 +410,8 @@ const metricsViewReducers = {
   },
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
+    measureSelection.clear();
+
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, undefined);
       exploreState.selectedTimeRange = timeRange;
@@ -425,6 +419,8 @@ const metricsViewReducers = {
   },
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
+    if (!scrubRange) measureSelection.clear();
+
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, scrubRange);
     });
@@ -560,6 +556,15 @@ export function useExploreState(name: string): Readable<ExploreState> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
+}
+
+export function useStableExploreState(exploreNameStore: Readable<string>) {
+  return derived(
+    [metricsExplorerStore, exploreNameStore],
+    ([$store, $exploreName]) => {
+      return $store.entities[$exploreName];
+    },
+  );
 }
 
 export function sortTypeForContextColumnType(

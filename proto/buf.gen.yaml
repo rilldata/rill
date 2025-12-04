@@ -9,6 +9,8 @@ managed:
       file_option: go_package_prefix
     - module: buf.build/envoyproxy/protoc-gen-validate
       file_option: go_package_prefix
+    - module: buf.build/grpc-ecosystem/grpc-gateway
+      file_option: go_package_prefix
 plugins:
   - remote: buf.build/protocolbuffers/go:v1.34.2
     out: gen

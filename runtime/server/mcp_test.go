@@ -2,142 +2,95 @@ package server
 
 import (
 	"context"
-	"encoding/json"
+	"net/http/httptest"
 	"testing"
 
-	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
-// testCtx provides authentication context for testing
-func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
-}
-
-func newMCPTestServer(t *testing.T) (*Server, string) {
+func TestMCP(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
-			"rill.yaml": ``,
-			// Create a simple model
-			"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
-			// Create a metrics view
-			"test_metrics.yaml": `
+			"rill.yaml": "",
+			"m.sql": `
+SELECT 'US' AS country
+`,
+			// Metrics view
+			"mv1.yaml": `
 type: metrics_view
-version: 1
-model: test_data
+model: m
 dimensions:
 - column: country
 measures:
-- expression: SUM(revenue)
-  name: total_revenue
+- expression: COUNT(*)
+explore:
+  skip: true
+`,
+			// Metrics view
+			"mv2.yaml": `
+type: metrics_view
+model: m
+dimensions:
+- column: country
+measures:
+- expression: COUNT(*)
+explore:
+  skip: true
 `,
 		},
 	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
-	// Wait for reconciliation to complete
-	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
-
-	srv, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	return srv, instanceID
-}
+	// Create a test server for the MCP handler with auth middleware
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
 
-func TestMCPListTools(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
-
-	ctx := testCtx()
-
-	// Test listing tools
-	tools, err := srv.mcpListTools(ctx, instanceID)
+	// Connect an MCP client
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "mcp/test", Version: "1.0.0"}, nil)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, nil)
 	require.NoError(t, err)
+	defer conn.Close()
 
-	// Verify expected tools are present
-	expectedToolNames := []string{
-		"list_metrics_views",
-		"get_metrics_view",
-		"query_metrics_view_time_range",
-		"query_metrics_view",
-	}
+	// TODO: Use JWT with limited permissions when mcp-go supports client-side auth.
+	// jwt, err := auth.NewDevToken(nil, []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI})
+	// require.NoError(t, err)
 
-	require.Len(t, tools, len(expectedToolNames))
-
-	// Check that all tools have proper metadata
-	for _, tool := range tools {
-		require.Contains(t, expectedToolNames, tool.Name)
-		require.NotEmpty(t, tool.Description, "Tool %s should have a description", tool.Name)
-		require.NotEmpty(t, tool.Name, "Tool should have a name")
-	}
-
-	// Verify specific tool metadata for get_metrics_view (has input schema)
-	var getMetricsViewTool *aiv1.Tool
-	for _, tool := range tools {
-		if tool.Name == "get_metrics_view" {
-			getMetricsViewTool = tool
-			break
-		}
-	}
-	require.NotNil(t, getMetricsViewTool, "get_metrics_view tool should be found")
-	require.Contains(t, getMetricsViewTool.Description, "metrics view", "Description should mention metrics view")
-
-	// Verify InputSchema is valid JSON when present
-	if getMetricsViewTool.InputSchema != "" {
-		t.Logf("InputSchema: %s", getMetricsViewTool.InputSchema)
-		var schema interface{}
-		err := json.Unmarshal([]byte(getMetricsViewTool.InputSchema), &schema)
-		require.NoError(t, err, "InputSchema should be valid JSON")
-	} else {
-		t.Log("No InputSchema found for get_metrics_view tool")
-	}
-}
-
-func TestMCPExecuteTool_Success(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
-
-	ctx := testCtx()
-
-	// Test executing list_metrics_views tool (no parameters required)
-	textResult, err := srv.mcpExecuteTool(ctx, instanceID, "list_metrics_views", map[string]any{})
+	// Test tool listings
+	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
 	require.NoError(t, err)
-
-	// The response should be valid JSON with metrics view data
-	var jsonData map[string]interface{}
-	err = json.Unmarshal([]byte(textResult), &jsonData)
-	require.NoError(t, err, "expected valid JSON response from successful tool execution")
-
-	// Verify the response contains the expected structure
-	require.Contains(t, jsonData, "metrics_views", "response should contain metrics_views field")
-
-	metricsViews, ok := jsonData["metrics_views"].([]interface{})
-	require.True(t, ok, "metrics_views should be an array")
-	require.Len(t, metricsViews, 1, "should have one metrics view")
-
-	// Verify the metrics view has expected fields
-	mv, ok := metricsViews[0].(map[string]interface{})
-	require.True(t, ok, "metrics view should be an object")
-	require.Equal(t, "test_metrics", mv["name"], "metrics view should have correct name")
-}
-
-func TestMCPExecuteTool_MissingParam(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
-
-	ctx := testCtx()
-
-	// Test executing get_metrics_view tool without required parameter
-	result, err := srv.mcpExecuteTool(ctx, instanceID, "get_metrics_view", map[string]any{})
-
-	// The tool should either error or return an error message in the response
-	if err != nil {
-		// If it errors, it should mention the missing parameter
-		require.Contains(t, err.Error(), "metrics_view")
-	} else {
-		// If it succeeds, check that result indicates an issue
-		require.NotEmpty(t, result)
-		t.Logf("Tool succeeded with error in response: %v", result)
-		// This is valid behavior - MCP tools return errors in response content
+	expectedTools := []string{
+		ai.ListMetricsViewsName,
+		ai.GetMetricsViewName,
+		ai.QueryMetricsViewName,
+		ai.QueryMetricsViewSummaryName,
 	}
+	require.Len(t, tools.Tools, len(expectedTools))
+	for _, tool := range tools.Tools {
+		require.Contains(t, expectedTools, tool.Name)
+		require.NotEmpty(t, tool.Name)
+		require.NotEmpty(t, tool.Description)
+		require.NotEmpty(t, tool.InputSchema)
+	}
+
+	// Test metrics view listing
+	mvs, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
+	require.NoError(t, err)
+	require.False(t, mvs.IsError)
+	mvsText := mvs.Content[0].(*mcp.TextContent).Text
+	require.Contains(t, mvsText, "mv1")
+	require.Contains(t, mvsText, "mv2")
+
+	// Test that it handles missing parameters
+	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.GetMetricsViewName})
+	require.ErrorContains(t, err, "missing properties")
 }

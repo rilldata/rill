@@ -49,17 +49,45 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type ConfigProperties struct {
-	Path    string            `mapstructure:"path"`
-	URI     string            `mapstructure:"uri"`
 	Headers map[string]string `mapstructure:"headers"`
+	// A list of HTTP/HTTPS URL prefixes that this connector is allowed to access.
+	// Useful when different URL namespaces use different credentials, enabling the
+	// system to choose the appropriate connector based on the URL path.
+	// Example formats: `https://example.com/` `https://example.com/path/` `https://example.com/path/prefix`
+	PathPrefixes []string `mapstructure:"path_prefixes"`
 }
 
-func (p *ConfigProperties) ResolvePath() string {
-	// Backwards compatibility for "uri" renamed to "path"
-	if p.URI != "" {
-		return p.URI
+func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
+	config := &ConfigProperties{}
+	err := mapstructure.WeakDecode(prop, config)
+	if err != nil {
+		return nil, err
 	}
-	return p.Path
+	return config, nil
+}
+
+type ModelInputProperties struct {
+	Path    string             `mapstructure:"path"`
+	URI     string             `mapstructure:"uri"`
+	Format  drivers.FileFormat `mapstructure:"format"`
+	Headers map[string]string  `mapstructure:"headers"`
+}
+
+func (p *ModelInputProperties) Decode(props map[string]any) error {
+	err := mapstructure.WeakDecode(props, p)
+	if err != nil {
+		return fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if p.Path == "" && p.URI == "" {
+		return fmt.Errorf("missing property `path`")
+	}
+	if p.Path != "" && p.URI != "" {
+		return fmt.Errorf("cannot specify both `path` and `uri`")
+	}
+	if p.URI != "" { // Backwards compatibility
+		p.Path = p.URI
+	}
+	return nil
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -73,7 +101,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	conn := &connection{
+	conn := &Connection{
 		config: config,
 		logger: logger,
 	}
@@ -92,47 +120,26 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 	return nil, nil
 }
 
-type sourceProperties struct {
-	Path    string            `mapstructure:"path"`
-	URI     string            `mapstructure:"uri"`
-	Headers map[string]string `mapstructure:"headers"`
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	// Backwards compatibility for "uri" renamed to "path"
-	if conf.URI != "" {
-		conf.Path = conf.URI
-	}
-
-	return conf, nil
-}
-
-type connection struct {
+type Connection struct {
 	config map[string]any
 	logger *zap.Logger
 }
 
-var _ drivers.Handle = &connection{}
+var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
-func (c *connection) Ping(ctx context.Context) error {
+func (c *Connection) Ping(ctx context.Context) error {
 	// no properties to define in connector so ping always return true.
 	return nil
 }
 
 // Driver implements drivers.Connection.
-func (c *connection) Driver() string {
+func (c *Connection) Driver() string {
 	return "https"
 }
 
 // Config implements drivers.Connection.
-func (c *connection) Config() map[string]any {
+func (c *Connection) Config() map[string]any {
 	m := make(map[string]any)
 	err := mapstructure.Decode(c.config, &m)
 	if err != nil {
@@ -142,112 +149,122 @@ func (c *connection) Config() map[string]any {
 }
 
 // InformationSchema implements drivers.Handle.
-func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
+func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
 // Close implements drivers.Connection.
-func (c *connection) Close() error {
+func (c *Connection) Close() error {
 	return nil
 }
 
 // AsRegistry implements drivers.Connection.
-func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // AsCatalogStore implements drivers.Connection.
-func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // AsRepoStore implements drivers.Connection.
-func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsAdmin implements drivers.Handle.
-func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
 // AsOLAP implements drivers.Connection.
-func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
 // AsAI implements drivers.Handle.
-func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
 // Migrate implements drivers.Connection.
-func (c *connection) Migrate(ctx context.Context) (err error) {
+func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
 // MigrationStatus implements drivers.Connection.
-func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
 // AsObjectStore implements drivers.Connection.
-func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 
-func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
 
 // AsWarehouse implements drivers.Handle.
-func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
-func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // FilePaths implements drivers.FileStore
-func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
-	conf, err := parseSourceProperties(src)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
+	modelProp := &ModelInputProperties{}
+	if err := modelProp.Decode(src); err != nil {
+		return nil, fmt.Errorf("failed to parse properties: %w", err)
 	}
 
-	extension, err := urlExtension(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
+	path := modelProp.Path
+	if path == "" {
+		return nil, fmt.Errorf("missing required property: `path`")
+	}
+	var extension string
+	if modelProp.Format != "" {
+		extension = fmt.Sprintf(".%s", modelProp.Format)
+	} else {
+		var err error
+		extension, err = urlExtension(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse extension from path %s, %w", path, err)
+		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, conf.Path, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to create request for path %s:  %w", path, err)
 	}
 
-	for k, v := range conf.Headers {
+	for k, v := range modelProp.Headers {
 		req.Header.Set(k, v)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to fetch url %s:  %w", path, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
+		return nil, fmt.Errorf("failed to fetch url %s: %s", path, resp.Status)
 	}
 
 	file, _, err := fileutil.CopyToTempFile(resp.Body, "", extension)

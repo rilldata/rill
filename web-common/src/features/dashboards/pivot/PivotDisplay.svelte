@@ -1,9 +1,13 @@
 <script lang="ts">
+  import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
+  import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { derived } from "svelte/store";
+  import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
   import PivotEmpty from "./PivotEmpty.svelte";
@@ -12,14 +16,29 @@
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
 
+  export let isEmbedded: boolean = false;
+
   const stateManagers = getStateManagers();
   const {
     exploreName,
     dashboardStore,
     selectors: {
-      pivot: { columns },
+      pivot: { columns, measures, dimensions },
     },
+    timeRangeSummaryStore,
   } = stateManagers;
+
+  const { adminServer, exports } = featureFlags;
+
+  const timeControlsStore = useTimeControlStore(stateManagers);
+  $: timeControlsForPillActions = {
+    timeStart: $timeControlsStore.timeStart,
+    timeEnd: $timeControlsStore.timeEnd,
+    minTimeGrain: $timeControlsStore.minTimeGrain,
+  };
+
+  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+
   const { cloudDataViewer, readOnly } = featureFlags;
 
   $: isRillDeveloper = $readOnly === false;
@@ -45,25 +64,71 @@
   }
 </script>
 
-<div class="layout">
+<div class="layout" class:h-full={!$dynamicHeight}>
   {#if showPanels}
-    <PivotSidebar />
+    <PivotSidebar
+      pivotState={$dashboardStore.pivot}
+      measures={$measures}
+      dimensions={$dimensions}
+      {timeControlsForPillActions}
+    />
   {/if}
-  <div class="flex flex-col size-full overflow-hidden">
+  <div
+    class="flex flex-col overflow-hidden"
+    class:w-full={$dynamicHeight}
+    class:size-full={!$dynamicHeight}
+  >
     {#if showPanels}
-      <PivotHeader />
+      <PivotHeader
+        pivotState={$dashboardStore.pivot}
+        setRows={(rows) =>
+          metricsExplorerStore.setPivotRows($exploreName, rows)}
+        setColumns={(columns) =>
+          metricsExplorerStore.setPivotColumns($exploreName, columns)}
+      />
     {/if}
     <div
       class="content"
+      class:size-full={!$dynamicHeight}
       role="presentation"
       on:mousedown|self={removeActiveCell}
     >
-      <PivotToolbar {isFetching} bind:showPanels />
+      <PivotToolbar
+        pivotState={$dashboardStore.pivot}
+        setTableMode={(tableMode, rows, columns) =>
+          metricsExplorerStore.setPivotTableMode(
+            $exploreName,
+            tableMode,
+            rows,
+            columns,
+          )}
+        collapseAll={() =>
+          metricsExplorerStore.setPivotExpanded($exploreName, {})}
+        {isFetching}
+        bind:showPanels
+      >
+        <svelte:fragment slot="export-menu">
+          {#if $exports}
+            <ExportMenu
+              label="Export pivot data"
+              includeScheduledReport={$adminServer && exploreHasTimeDimension}
+              getQuery={(isScheduled) =>
+                getPivotExportQuery(stateManagers, isScheduled)}
+              exploreName={$exploreName}
+            />
+          {/if}
+        </svelte:fragment>
+      </PivotToolbar>
 
       {#if $pivotDataStore?.error?.length}
         <PivotError errors={$pivotDataStore.error} />
       {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
+        <PivotEmpty
+          {assembled}
+          {isFetching}
+          {hasColumnAndNoMeasure}
+          {isEmbedded}
+        />
       {:else}
         <PivotTable
           {pivotDataStore}
@@ -91,11 +156,11 @@
 
 <style lang="postcss">
   .layout {
-    @apply flex box-border h-full overflow-hidden;
+    @apply flex box-border overflow-hidden;
   }
 
   .content {
-    @apply flex w-full flex-col bg-gray-50 overflow-hidden size-full;
+    @apply flex w-full flex-col bg-gray-50 overflow-hidden;
     @apply p-2 gap-y-2;
   }
 </style>

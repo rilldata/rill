@@ -10,7 +10,7 @@
     ScrubBoxColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import type { TimeSeriesDatum } from "./timeseries-data-store";
   import type { DateTimeUnit } from "luxon";
@@ -19,15 +19,19 @@
   export let stop: Date | null;
   export let isScrubbing = false;
   export let showLabels = false;
-  export let mouseoverTimeFormat: (d: unknown) => string;
-
   export let labelAccessor: string;
   export let timeGrainLabel: DateTimeUnit;
   export let data: TimeSeriesDatum[];
-
   export let isOverStart: boolean;
   export let isOverEnd: boolean;
   export let isInsideScrub: boolean;
+  export let mouseoverTimeFormat: (d: unknown) => string;
+  export let onUpdate: (data: {
+    start: Date | null;
+    stop: Date | null;
+    isScrubbing: boolean;
+  }) => void;
+  export let onReset: () => void;
 
   // scrub local control points
   let justCreatedScrub = false;
@@ -36,7 +40,6 @@
   let isResizing: "start" | "end" | undefined = undefined;
   let isMovingScrub = false;
 
-  const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
   const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
@@ -68,7 +71,7 @@
       // check if we are scrubbing on the edges of scrub rect
       if (isOverStart || isOverEnd) {
         isResizing = isOverStart ? "start" : "end";
-        dispatch("update", {
+        onUpdate({
           start: start,
           stop: stop,
           isScrubbing: true,
@@ -119,7 +122,7 @@
         const newStart = isResizing === "start" ? intermediateScrubVal : start;
         const newEnd = isResizing === "end" ? intermediateScrubVal : stop;
 
-        dispatch("update", {
+        onUpdate({
           start: newStart,
           stop: newEnd,
           isScrubbing: true,
@@ -153,7 +156,7 @@
 
         const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
         if (insideBounds && newStart?.getTime() !== start?.getTime()) {
-          dispatch("update", {
+          onUpdate({
             start: newStart,
             stop: newEnd,
             isScrubbing: true,
@@ -166,7 +169,7 @@
         scrubStartDate?.getTime() !== start?.getTime() ||
         intermediateScrubVal?.getTime() !== stop?.getTime()
       ) {
-        dispatch("update", {
+        onUpdate({
           start: scrubStartDate,
           stop: intermediateScrubVal,
           isScrubbing: true,
@@ -180,13 +183,13 @@
     // check if any parent of explicitOriginalTarget is a svg or not
     const hoverElem = Array.from(document.querySelectorAll(":hover")).pop();
     if (hoverElem?.nodeName !== "svg" && !hoverElem?.closest("svg")) {
-      dispatch("reset");
+      onReset();
       return;
     }
 
     // Remove scrub if start and end are same
     if (hasSubrangeSelected && start?.getTime() === stop?.getTime()) {
-      dispatch("reset");
+      onReset();
       return;
     }
 
@@ -199,7 +202,7 @@
       justCreatedScrub = false;
     }, 100);
 
-    dispatch("update", {
+    onUpdate({
       start,
       stop,
       isScrubbing: false,

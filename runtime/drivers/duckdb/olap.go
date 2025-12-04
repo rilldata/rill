@@ -31,7 +31,7 @@ func (c *connection) Dialect() drivers.Dialect {
 }
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
+	return c.config.CanScaleToZero
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
@@ -50,7 +50,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	// Call fn with connection embedded in context
 	wrappedCtx := contextWithConn(ctx, conn)
 	ensuredCtx := contextWithConn(context.Background(), conn)
-	return fn(wrappedCtx, ensuredCtx, conn.Conn)
+	return fn(wrappedCtx, ensuredCtx)
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {

@@ -1,8 +1,11 @@
 package project
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -30,7 +33,7 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// get project
-			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{OrganizationName: ch.Org, Name: name})
+			res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{Org: ch.Org, Project: name})
 			if err != nil {
 				return err
 			}
@@ -72,10 +75,17 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printf("Cloned project %q to %q\n", name, path)
+			var subpath string
+			if res.Project.Subpath != "" {
+				subpath = filepath.Join(path, res.Project.Subpath)
+			} else {
+				subpath = path
+			}
+
+			ch.Printf("Cloned project %q to %q\n", name, subpath)
 
 			// download variables
-			err = env.PullVars(cmd.Context(), ch, path, name, "prod", false)
+			err = env.PullVars(cmd.Context(), ch, subpath, name, "prod", false)
 			if err != nil {
 				return fmt.Errorf("failed to download variables: %w", err)
 			}
@@ -103,6 +113,9 @@ func isDirAbsentOrEmpty(path string) (bool, error) {
 	// Read the directory entries
 	entries, err := f.Readdirnames(1)
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return len(entries) == 0, nil
+		}
 		return false, err
 	}
 

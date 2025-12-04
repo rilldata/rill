@@ -6,7 +6,8 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { reverseMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+
+import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 const BinaryOperationMap: Record<string, V1Operation> = {

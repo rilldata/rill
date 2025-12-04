@@ -100,13 +100,13 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 // ListDeployments returns a list of deployments for a given project.
 func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymentsRequest) (*adminv1.ListDeploymentsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.Org),
+		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
 		attribute.String("args.user_id", req.UserId),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -223,29 +223,29 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtimeauth.Permission{
-		runtimeauth.ReadObjects,
-		runtimeauth.ReadMetrics,
-		runtimeauth.ReadAPI,
-		runtimeauth.UseAI,
+	instancePermissions := []runtime.Permission{
+		runtime.ReadObjects,
+		runtime.ReadMetrics,
+		runtime.ReadAPI,
+		runtime.UseAI,
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
-			runtimeauth.ReadOLAP,
-			runtimeauth.ReadProfiling,
-			runtimeauth.ReadRepo,
-			runtimeauth.ReadResolvers,
+			runtime.ReadOLAP,
+			runtime.ReadProfiling,
+			runtime.ReadRepo,
+			runtime.ReadResolvers,
 		)
 		if permissions.ManageDev {
 			instancePermissions = append(instancePermissions,
-				runtimeauth.EditRepo,
-				runtimeauth.EditTrigger,
+				runtime.EditRepo,
+				runtime.EditTrigger,
 			)
 		}
 	} else if permissions.ManageProd {
 		instancePermissions = append(instancePermissions,
-			runtimeauth.ReadResolvers,
-			runtimeauth.EditTrigger,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
 		)
 	}
 
@@ -254,7 +254,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
 		},
 		Attributes: attr,
@@ -276,12 +276,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 // CreateDeployment creates a new deployment for a project.
 func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploymentRequest) (*adminv1.CreateDeploymentResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization_name", req.OrganizationName),
-		attribute.String("args.project_name", req.ProjectName),
+		attribute.String("args.organization_name", req.Org),
+		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.ProjectName)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -351,21 +351,11 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		ownerUserID = &id
 	}
 
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, req.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
 	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: ownerUserID,
 		Environment: req.Environment,
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
 		Branch:      branch,
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
 	})
 	if err != nil {
 		return nil, err
@@ -432,33 +422,7 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		}
 	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid environment, must be 'prod' or 'dev'")
-	}
-
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
-	depl, err = s.admin.StartDeployment(ctx, depl, &admin.StartDeploymentOptions{
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
-	})
+	depl, err = s.admin.StartDeployment(ctx, depl)
 	if err != nil {
 		return nil, err
 	}
@@ -547,13 +511,13 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
 func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetDeploymentCredentialsRequest) (*adminv1.GetDeploymentCredentialsResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -608,12 +572,12 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-				runtimeauth.UseAI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+				runtime.UseAI,
 			},
 		},
 		Attributes: attr,
@@ -634,7 +598,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (*adminv1.GetIFrameResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.branch", req.Branch),
 		attribute.String("args.type", req.Type),
@@ -648,7 +612,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
 	}
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -661,6 +625,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	s.admin.Used.Deployment(prodDepl.ID)
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
@@ -673,6 +638,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
+	// Get user attributes to pass in the JWT
 	var attr map[string]any
 	if req.For != nil {
 		switch forVal := req.For.(type) {
@@ -693,6 +659,40 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 	}
 
+	// Add an `embed` attribute for use in security policies or feature flags (as `{{.user.embed}}`).
+	if _, ok := attr["embed"]; !ok {
+		if attr == nil {
+			attr = make(map[string]any)
+		}
+		attr["embed"] = true
+	}
+
+	// Backwards compatibility for req.Type and req.Kind
+	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
+		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
+	}
+	if req.Type == "" {
+		// Default to an explore if no type is explicitly provided
+		req.Type = runtime.ResourceKindExplore
+	}
+	req.Type = runtime.ResourceKindFromShorthand(req.Type)
+
+	// If navigation is disabled and a specific resource is requested, limit access to only that resource.
+	var rules []*runtimev1.SecurityRule
+	if !req.Navigation && req.Resource != "" {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+					Resource: &runtimev1.ResourceName{
+						Kind: req.Type,
+						Name: req.Resource,
+					},
+				},
+			},
+		})
+	}
+
+	// Determine TTL for the access token
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
@@ -703,38 +703,30 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-				runtimeauth.UseAI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+				runtime.UseAI,
 			},
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.Used.Deployment(prodDepl.ID)
-
+	// Build the iframe URL search params
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
 	}
 
-	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
-		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
-	}
-	if req.Type == "" {
-		// Default to an explore if no type is explicitly provided
-		req.Type = runtime.ResourceKindExplore
-	}
-	req.Type = runtime.ResourceKindFromShorthand(req.Type)
 	iframeQuery["type"] = req.Type
-	iframeQuery["kind"] = iframeQuery["type"] // For backwards compatibility
+	iframeQuery["kind"] = req.Type // For backwards compatibility
 
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource

@@ -6,8 +6,8 @@
 
   $: reconcilingItems = fileArtifacts.getReconcilingResourceNames();
   $: typedReconcilingItems = $reconcilingItems.map((reconcilingItem) => ({
-    name: reconcilingItem.name as string,
-    kind: reconcilingItem.kind as string,
+    name: reconcilingItem.name,
+    kind: reconcilingItem.kind,
   }));
 
   const userFriendlyPhrases: Partial<Record<ResourceKind, string>> = {
@@ -28,12 +28,14 @@
 <div class="size-full p-2 flex flex-col gap-y-2 items-center justify-center">
   <Spinner size="1.5em" status={EntityStatus.Running} />
   <div class="flex flex-col w-full text-center gap-y-1">
-    {#each typedReconcilingItems as reconcilingItem (reconcilingItem.name)}
-      {@const kind = reconcilingItem.kind}
-      <div class="w-full truncate">
-        {userFriendlyPhrases[kind]}
-        <span class="font-mono font-medium">{reconcilingItem.name}</span>
-      </div>
+    {#each typedReconcilingItems as { name, kind }, i (i)}
+      {#if name && kind}
+        <div class="w-full truncate">
+          {userFriendlyPhrases[kind]}
+
+          <span class="font-mono font-medium">{name}</span>
+        </div>
+      {/if}
     {/each}
   </div>
 </div>

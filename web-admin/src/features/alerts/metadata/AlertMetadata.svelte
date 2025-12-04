@@ -25,6 +25,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -62,10 +63,15 @@
     ? formatRefreshSchedule(alertSpec.refreshSchedule.cron)
     : "Whenever your data refreshes";
 
-  $: metricsViewAggregationRequest = JSON.parse(
+  $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
-      alertSpec?.queryArgsJson ||
-      "{}",
+    alertSpec?.queryArgsJson ||
+    "{}";
+  $: queryName =
+    alertSpec?.queryName ||
+    (alertSpec?.resolverProperties?.query_name as string);
+  $: metricsViewAggregationRequest = JSON.parse(
+    queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
 
   $: dashboardState = useAlertDashboardState(instanceId, alertSpec);
@@ -75,13 +81,29 @@
   $: emailNotifier = extractNotifier(alertSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(alertSpec?.notifiers, "slack");
 
+  $: exploreUrl = getMappedExploreUrl(
+    {
+      exploreName: $exploreName.data,
+      queryName,
+      queryArgsJson,
+    },
+    {
+      exploreProtoState: alertSpec?.annotations?.web_open_state,
+    },
+    {
+      instanceId,
+      organization,
+      project,
+    },
+  );
+
   // Actions
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });
@@ -152,9 +174,7 @@
                 </Tooltip>
               </div>
             {:else}
-              <a
-                href={`/${organization}/${project}/explore/${encodeURIComponent($exploreName.data)}`}
-              >
+              <a href={$exploreUrl}>
                 {dashboardTitle}
               </a>
             {/if}

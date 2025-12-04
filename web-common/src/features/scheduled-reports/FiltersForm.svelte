@@ -8,20 +8,12 @@
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
-  import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
+  import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-  import {
-    mapSelectedComparisonTimeRangeToV1TimeRange,
-    mapSelectedTimeRangeToV1TimeRange,
-  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
@@ -30,15 +22,17 @@
     type TimeRange,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types.ts";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
+  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
   export let filters: Filters;
   export let timeControls: TimeControls;
   export let readOnly = false;
-  export let maxWidth: number;
+  export let maxWidth: number | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   /** the height of a row of chips */
@@ -51,6 +45,7 @@
     allMeasureFilterItems,
     measureHasFilter,
     hasFilters,
+
     removeDimensionFilter,
     toggleDimensionFilterMode,
     toggleMultipleDimensionValueSelections,
@@ -73,13 +68,12 @@
     allTimeRange,
     timeRangeStateStore,
     comparisonRangeStateStore,
+    minTimeGrain: _minTimeGrain,
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
     displayTimeComparison,
   } = timeControls);
-
-  const newPicker = featureFlags.rillTime;
 
   $: exploreSpec = $validSpecQuery.data?.explore ?? {};
 
@@ -102,16 +96,7 @@
   $: availableTimeZones = exploreSpec.timeZones ?? [];
   $: timeRanges = exploreSpec.timeRanges ?? [];
 
-  $: v1TimeRange = mapSelectedTimeRangeToV1TimeRange(
-    selectedTimeRange,
-    $selectedTimezone,
-    exploreSpec,
-  );
-  $: v1ComparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    selectedComparisonTimeRange,
-    Boolean($comparisonRangeStateStore?.showTimeComparison),
-    v1TimeRange,
-  );
+  $: minTimeGrain = $_minTimeGrain;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -147,7 +132,11 @@
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
-  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+  function selectRange(
+    range: TimeRange,
+    grain?: V1TimeGrain,
+    rangeOnly: boolean = false,
+  ) {
     const defaultTimeGrain =
       grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
@@ -157,22 +146,19 @@
     // Get valid option for the new time range
     const validComparison = $allTimeRange && comparisonOption;
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      range,
+      defaultTimeGrain,
+      rangeOnly
+        ? undefined
+        : ({
+            name: validComparison,
+          } as DashboardTimeControls),
+    );
   }
 
-  async function onSelectRange(name: string) {
+  async function onSelectRange(name: string, rangeOnly: boolean = false) {
     if (!$allTimeRange?.end) {
-      return;
-    }
-
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        $allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
       return;
     }
 
@@ -184,12 +170,14 @@
       if (timeZone) setTimeZone(timeZone);
     }
 
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
     const { interval, grain } = await deriveInterval(
       name,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate($allTimeRange.start),
-        DateTime.fromJSDate($allTimeRange.end),
-      ),
+
       metricsViewName,
       $selectedTimezone,
     );
@@ -202,7 +190,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(baseTimeRange, grain, rangeOnly);
     }
   }
 
@@ -233,6 +221,10 @@
 
     setTimeZone(timeZone);
   }
+
+  onMount(() => {
+    if (selectedRangeAlias) onSelectRange(selectedRangeAlias, true);
+  });
 </script>
 
 <div
@@ -240,62 +232,51 @@
   style:max-width="{maxWidth}px"
   aria-label="Filters form"
 >
-  {#if $newPicker}
-    {#if v1TimeRange}
-      <div class="flex flex-wrap gap-2">
-        <!-- We dont support the new dropdown in alert creation -->
-        <TimeRangeReadOnly
-          timeRange={v1TimeRange}
-          comparisonTimeRange={v1ComparisonTimeRange}
-        />
-      </div>
+  <div
+    class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
+  >
+    <Calendar size="16px" />
+    {#if $allTimeRange}
+      <SuperPill
+        allTimeRange={$allTimeRange}
+        {selectedRangeAlias}
+        showPivot={false}
+        {defaultTimeRange}
+        {availableTimeZones}
+        {timeRanges}
+        complete={false}
+        {interval}
+        {timeStart}
+        {timeEnd}
+        {activeTimeGrain}
+        activeTimeZone={$selectedTimezone}
+        allowCustomTimeRange={false}
+        showDefaultItem
+        applyRange={selectRange}
+        {onSelectRange}
+        {onTimeGrainSelect}
+        {onSelectTimeZone}
+        hidePan
+        onPan={() => {}}
+        {minTimeGrain}
+        {side}
+      />
+      <CanvasComparisonPill
+        {minTimeGrain}
+        allTimeRange={$allTimeRange}
+        {selectedTimeRange}
+        {selectedComparisonTimeRange}
+        showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+          false}
+        activeTimeZone={$selectedTimezone}
+        onDisplayTimeComparison={displayTimeComparison}
+        onSetSelectedComparisonRange={setSelectedComparisonRange}
+        allowCustomTimeRange={false}
+        {side}
+      />
     {/if}
-  {:else}
-    <div
-      class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
-    >
-      <Calendar size="16px" />
-      {#if $allTimeRange}
-        <SuperPill
-          allTimeRange={$allTimeRange}
-          {selectedRangeAlias}
-          showPivot={false}
-          {defaultTimeRange}
-          {availableTimeZones}
-          {timeRanges}
-          complete={false}
-          {interval}
-          {timeStart}
-          {timeEnd}
-          {activeTimeGrain}
-          activeTimeZone={$selectedTimezone}
-          allowCustomTimeRange={false}
-          showDefaultItem
-          applyRange={selectRange}
-          {onSelectRange}
-          {onTimeGrainSelect}
-          {onSelectTimeZone}
-          canPanLeft={false}
-          canPanRight={false}
-          onPan={() => {}}
-          minTimeGrain={undefined}
-          {side}
-        />
-        <CanvasComparisonPill
-          allTimeRange={$allTimeRange}
-          {selectedTimeRange}
-          {selectedComparisonTimeRange}
-          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-            false}
-          activeTimeZone={$selectedTimezone}
-          onDisplayTimeComparison={displayTimeComparison}
-          onSetSelectedComparisonRange={setSelectedComparisonRange}
-          allowCustomTimeRange={false}
-          {side}
-        />
-      {/if}
-    </div>
-  {/if}
+  </div>
+
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />

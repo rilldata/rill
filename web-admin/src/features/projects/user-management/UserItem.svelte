@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
+  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import UserSetRole from "./UserSetRole.svelte";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";

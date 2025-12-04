@@ -3,10 +3,16 @@
   import { marked } from "marked";
 
   export let content: string;
+  export let converter = (c: string) => marked(c);
+
+  // Sometimes LLM response adds markdown syntax around the content, so we need to remove it
+  $: sanitisedContext = content
+    .replace(/^```markdown\n/m, "")
+    .replace(/\n```$/m, "");
 </script>
 
 <div class="chat-markdown">
-  {#await marked(content) then html}
+  {#await converter(sanitisedContext) then html}
     {@html DOMPurify.sanitize(html)}
   {/await}
 </div>

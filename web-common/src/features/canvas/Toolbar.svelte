@@ -12,6 +12,7 @@
   export let onDuplicate: () => void;
   export let editable = false;
   export let component: BaseCanvasComponent;
+  export let navigationEnabled: boolean = true;
 
   // Component types that support link to explore functionality
   const EXPLORE_SUPPORTED_TYPES = [
@@ -29,7 +30,9 @@
     "heatmap",
   ] as const;
 
-  $: showExplore = EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
+  $: showExplore =
+    navigationEnabled &&
+    EXPLORE_SUPPORTED_TYPES.includes(component.type as any);
   $: exploreComponent = showExplore
     ? (component as BaseCanvasComponent<ComponentWithMetricsView>)
     : null;
@@ -41,9 +44,12 @@
 >
   {#if editable}
     <!-- Editable mode: Show dropdown with explore option -->
-    <DropdownMenu.Root bind:open={dropdownOpen}>
+    <DropdownMenu.Root
+      bind:open={dropdownOpen}
+      portal=".dashboard-theme-boundary"
+    >
       <DropdownMenu.Trigger
-        class="size-7 grid place-content-center hover:bg-slate-100 active:bg-slate-200"
+        class="size-7 grid place-content-center bg-card hover:brightness-[85%] active:brightness-75"
       >
         <ThreeDot size="16px" />
       </DropdownMenu.Trigger>

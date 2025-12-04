@@ -24,8 +24,8 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			name = args[0]
 
 			res, err := client.GetUsergroup(cmd.Context(), &adminv1.GetUsergroupRequest{
-				Organization: ch.Org,
-				Usergroup:    name,
+				Org:       ch.Org,
+				Usergroup: name,
 			})
 			if err != nil {
 				return err

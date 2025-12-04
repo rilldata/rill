@@ -1,4 +1,5 @@
 # `docs/`
+
 [![Netlify Status](https://api.netlify.com/api/v1/badges/23baf08e-2d3e-44db-8bd4-938e54467a29/deploy-status)](https://app.netlify.com/sites/rill-developer/deploys)
 
 This folder contains docs for Rill, generated using [Docusaurus](https://docusaurus.io/) and deployed to [https://docs.rilldata.com](https://docs.rilldata.com).
@@ -37,6 +38,7 @@ The docs site is deployed via Netlify.
 ### CLI reference
 
 The CLI reference docs in `docs/reference/cli` are auto-generated based on the CLI help text. To re-generate the docs, run the following command from the repository root:
+
 ```bash
 make docs.generate
 ```

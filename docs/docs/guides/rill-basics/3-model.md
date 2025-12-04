@@ -11,7 +11,7 @@ tags:
 ---
 
 ### What is a model?
-A model in Rill is used to perform intermediate processing as well as any last-mile ETL on the source data. This includes joining lookup tables to your table to enrich and transform the data for analysis. We recommend creating <a href="https://docs.rilldata.com/build/models/#one-big-table-and-dashboarding" target="_blank">"One Big Table"</a> to power your metrics views. 
+A model in Rill is used to perform intermediate processing as well as any last-mile ETL on the source data. This includes joining lookup tables to your table to enrich and transform the data for analysis. We recommend creating [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) to power your metrics views. 
 
 ### Create a Model from the Source
 
@@ -56,7 +56,7 @@ We will grab all the columns from `commits` and only a few from `modified_files`
 
 ```SQL
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+-- Reference documentation: https://docs.rilldata.com/build/models
 -- @materialize: true
 
 SELECT
