@@ -164,8 +164,12 @@
 
               if (newParam) updateLocalFilterString(newParam);
             }}
-            onApply={({ dimension, filter }) => {
-              const newParam = setMeasureFilter(dimension, filter);
+            onApply={({ dimension, filter, oldDimension }) => {
+              const newParam = setMeasureFilter(
+                dimension,
+                filter,
+                oldDimension,
+              );
               if (newParam) updateLocalFilterString(newParam);
             }}
             toggleFilterPin={undefined}
