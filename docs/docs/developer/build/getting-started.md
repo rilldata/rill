@@ -42,6 +42,6 @@ Now that you understand the basics, you can:
 1. **[Create your first model](/developer/build/models)** - Transform your raw data
 2. **[Build a metrics view](/developer/build/metrics-view)** - Define your metrics and dimensions
 3. **[Create a dashboard](/developer/build/dashboards)** - Visualize your data
-4. **[Deploy to Rill Cloud](/deploy)** - Deploy your project to Rill Cloud
+4. **[Deploy to Rill Cloud](/developer/deploy)** - Deploy your project to Rill Cloud
 
 When you need more control over your project configuration, see our [project configuration guide](/developer/build/project-configuration) for advanced settings and customization options.

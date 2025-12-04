@@ -49,7 +49,7 @@ To calculate your current usage and pricing, see our [pricing page](https://www.
 
 ## Enterprise Plan
 
-Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](../../contact).
+Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](/contact).
 
 ### Enterprise usage-based billing
 

@@ -37,7 +37,7 @@ Rill is particularly suited for exploratory analysis - to be able to slice & dic
 :::tip Human readable URL
 With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
 
-.../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
+./user-guide/explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
 :::
 
 ## Add / Hide Dimensions and Metrics

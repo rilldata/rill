@@ -54,7 +54,7 @@ rill start --port 10010 --port-grpc 10011
 
 ### How do I share my dashboard with my colleagues?
 
-To share your dashboards with your colleagues, you need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project). Once deployed, you have various ways to share this dashboard with your team. Since Rill does not charge by number of users, you can simply [add them to your organization](../manage/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard include [public URLs](../explore/public-url) for a limited view and [project invites](../manage/user-management#how-to-add-a-project-user).
+To share your dashboards with your colleagues, you need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project). Once deployed, you have various ways to share this dashboard with your team. Since Rill does not charge by number of users, you can simply [add them to your organization](/user-guide/manage/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard include [public URLs](/user-guide/explore/public-url) for a limited view and [project invites](/user-guide/manage/user-management#how-to-add-a-project-user).
 
 ## Rill Cloud
 
@@ -79,7 +79,7 @@ You can follow the same steps as above. After deploying to Rill Cloud, if you re
 
 ### How do I share my dashboard to other users?
 
-You will need to [invite users to your organization](../manage/user-management#how-to-add-an-organization-user) or [project](../manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](../manage/user-management#user-requests-access-via-url), or if you just want them to see the contents of your dashboard, you can look into using [public URLs](../explore/public-url).
+You will need to [invite users to your organization](/user-guide/manage/user-management#how-to-add-an-organization-user) or [project](/user-guide/manage/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](/user-guide/manage/user-management#user-requests-access-via-url), or if you just want them to see the contents of your dashboard, you can look into using [public URLs](/user-guide/explore/public-url).
 
 
 ## Rill Cloud Trial
@@ -127,13 +127,13 @@ A Rill Team Plan unlocks unlimited projects with a 50 GB data storage limit per 
 At Rill, we do not charge per seat! From subscription to a Rill Team Plan, you'll have access to unlimited seats! Invite all of your colleagues or just a few—the choice is yours. 
 
 ### How are payments calculated?
-We charge you by the amount of data that you load into Rill when building your sources and models. Use the [pricing calculator](https://www.rilldata.com/pricing) on our pricing site for more insight into how much your data might cost! If you'd like a more detailed inspection of your objects, [contact us](../contact), and we'll set this up for you. 
+We charge you by the amount of data that you load into Rill when building your sources and models. Use the [pricing calculator](https://www.rilldata.com/pricing) on our pricing site for more insight into how much your data might cost! If you'd like a more detailed inspection of your objects, [contact us](/contact), and we'll set this up for you. 
 
 ### When am I billed? 
 You'll be billed on the first of each month via our partner at Stripe. You'll need to set up a valid credit card as explained in [our billing documentation](/developer/other/plans#managing-payment-information). If there are any issues with the card, you'll be notified in the UI and be given a few days' grace period to update your information. If you start in the middle of the month, you'll be billed prorated for the number of days you have access to Rill Cloud.
 
 ### Why was I billed $XXX? 
-You can check your data usage in your organization settings usage page. The graph will display the data that you have over 10GB. Use the [pricing calculator](https://www.rilldata.com/pricing) to see your cost of your current data usage. If you'd like a more detailed inspection of your objects, [contact us](../contact), and we'll set this up for you. 
+You can check your data usage in your organization settings usage page. The graph will display the data that you have over 10GB. Use the [pricing calculator](https://www.rilldata.com/pricing) to see your cost of your current data usage. If you'd like a more detailed inspection of your objects, [contact us](/contact), and we'll set this up for you. 
 
 ## Enterprise Plan
 
@@ -228,7 +228,7 @@ For data ingestion & processing, Rill elastically scales up compute slots when y
 - A more complex ingestion involving joins will consume more RCUs as compared to a less complex pipeline.
 
 ### How can I estimate my RCU usage?
-The best way to get an accurate RCU estimate is to load some sample data into Rill service and track the RCU usage. For estimates on larger projects [contact us](../contact) for a pricing calculator that reflects the latest volume incentives and discounts.
+The best way to get an accurate RCU estimate is to load some sample data into Rill service and track the RCU usage. For estimates on larger projects [contact us](/contact) for a pricing calculator that reflects the latest volume incentives and discounts.
 
 
 ### How can I track my RCU usage?

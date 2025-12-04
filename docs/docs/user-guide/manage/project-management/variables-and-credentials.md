@@ -65,7 +65,7 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/developer/build/connectors/olap/druid) and [ClickHouse](/developer/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/developer/build/connectors/olap/druid) and [ClickHouse](/developer/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)! 
 
 
 
