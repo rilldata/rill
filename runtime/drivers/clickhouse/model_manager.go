@@ -13,6 +13,8 @@ const _defaultConcurrentInserts = 1
 
 type ModelInputProperties struct {
 	SQL string `mapstructure:"sql"`
+	// CreateNamedCollectionsFromConnectors is list of connector names to create Named Collections for before executing models.
+	CreateNamedCollectionsFromConnectors []string `mapstructure:"create_named_collections_from_connectors"`
 }
 
 type ModelOutputProperties struct {

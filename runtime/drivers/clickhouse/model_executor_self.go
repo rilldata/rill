@@ -3,8 +3,10 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -46,6 +48,14 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	asView := outputProps.Typ == "VIEW"
 	tableName := outputProps.Table
+
+	if !e.c.config.isClickhouseCloud() {
+		connectorsForNamedCollections, autoDetected := connectorsForNameCollection(inputProps.CreateNamedCollectionsFromConnectors, e.c.config.CreateNamedCollectionsFromConnectors, opts.Env.Connectors)
+		err = e.c.createOrReplaceNamedCollections(ctx, connectorsForNamedCollections, autoDetected, opts.Env)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	var metrics *tableWriteMetrics
 	if !opts.IncrementalRun {
@@ -104,4 +114,39 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		Table:        tableName,
 		ExecDuration: metrics.duration,
 	}, nil
+}
+
+// connectorsForNamedCollections returns the list of connectors to be used for NamedCollection creation.
+// Priority:
+// 1. If the model configuration specifies connector names, use those.
+// 2. if duckdb connector configuration specifies connector names, use those
+// 3. If neither is configured, automatically detect all connectors of type s3, azure, gcs, or https.
+// The boolean return value is true if the list of connectors was automatically detected.
+func connectorsForNameCollection(modelNamedCollections, duckdbNamedCollections []string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+	var configuredConnectorsForNamedCollections []string
+	if len(modelNamedCollections) > 0 {
+		configuredConnectorsForNamedCollections = append(configuredConnectorsForNamedCollections, modelNamedCollections...)
+	} else if len(duckdbNamedCollections) > 0 {
+		configuredConnectorsForNamedCollections = append(configuredConnectorsForNamedCollections, duckdbNamedCollections...)
+	}
+
+	// If no connectors are configured, automatically detect all connectors of type s3, azure, gcs, or https from the project.
+	// If a single configured value contains a comma-separated list of connector names, split it into individual entries.
+	// Otherwise, return the explicitly configured list of connectors.
+	if len(configuredConnectorsForNamedCollections) == 0 {
+		var res []string
+		for _, c := range allConnectors {
+			if c.Type == "s3" || c.Type == "gcs" {
+				res = append(res, c.Name)
+			}
+		}
+		return res, true
+	} else if len(configuredConnectorsForNamedCollections) == 1 && strings.Contains(configuredConnectorsForNamedCollections[0], ",") {
+		res := strings.Split(configuredConnectorsForNamedCollections[0], ",")
+		for i, s := range res {
+			res[i] = strings.TrimSpace(s)
+		}
+		return res, false
+	}
+	return configuredConnectorsForNamedCollections, false
 }
