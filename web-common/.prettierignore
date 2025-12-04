@@ -1,8 +1,0 @@
-static/fonts
-tests/projects
-src/proto/gen
-src/runtime-client/gen
-src/features/dashboards/url-state/filters/expression.cjs
-src/features/dashboards/pivot/regular-table-style.css
-core
-.svelte-kit

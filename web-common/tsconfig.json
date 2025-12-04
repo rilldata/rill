@@ -2,21 +2,5 @@
   "compilerOptions": {
     "types": ["@testing-library/jest-dom"]
   },
-  "extends": ["./.svelte-kit/tsconfig.json", "../tsconfig.json"],
-  "include": [
-    "src/**/*",
-    "tests/**/*",
-    "app.d.ts",
-    "vite.config.ts",
-    "orval.config.ts",
-    "vitest-setup.ts",
-    "svelte.config.js",
-    "tailwind.config.ts",
-    ".storybook/**/*"
-  ],
-  "exclude": [
-    "tests/projects/**",
-    "src/proto/gen/**",
-    "src/runtime-client/gen/**"
-  ]
+  "extends": ["./.svelte-kit/tsconfig.json", "../tsconfig.json"]
 }
