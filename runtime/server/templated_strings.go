@@ -59,7 +59,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 			return ref.Name, nil
 		},
 		ExtraFuncs: map[string]any{
-			"metrics_sql": func(sql string) (any, error) {
+			"metrics_sql": func(sql string) (string, error) {
 				// Run metrics SQL resolver
 				resolveRes, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 					InstanceID: req.InstanceId,
@@ -78,49 +78,41 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 				}
 				defer resolveRes.Close()
 
-				var rows []map[string]any
-				for {
-					row, err := resolveRes.Next()
-					if err != nil {
-						if err.Error() == "EOF" || err.Error() == "sql: no rows in result set" {
-							break
-						}
-						return "", fmt.Errorf("failed to get result: %w", err)
+				// Get only column in the only row
+				row, err := resolveRes.Next()
+				if err != nil {
+					return "", fmt.Errorf("failed to get result: %w", err)
+				}
+				if len(row) != 1 {
+					return "", fmt.Errorf("metrics_sql in templating only allows one result field, got %d", len(row))
+				}
+				_, err = resolveRes.Next()
+				if err == nil {
+					return "", fmt.Errorf("metrics_sql in templating must return one row, but the query returned multiple")
+				}
+				var field string
+				var val any
+				for k, v := range row {
+					field = k
+					val = v
+				}
+
+				// Return value wrapped in a format token if requested
+				if req.UseFormatTokens {
+					// The "metrics" resolver returns the metrics view in the metadata.
+					// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
+					var mv string
+					if meta := resolveRes.Meta(); meta != nil {
+						mv, _ = meta["metrics_view"].(string)
 					}
-					rows = append(rows, row)
-				}
-
-				if len(rows) == 0 {
-					return "", fmt.Errorf("metrics_sql query returned no results")
-				}
-
-				// Get metrics view from metadata for format tokens
-				var mv string
-				if meta := resolveRes.Meta(); meta != nil {
-					mv, _ = meta["metrics_view"].(string)
-				}
-
-				if len(rows) == 1 && len(rows[0]) == 1 {
-					var field string
-					var val any
-					for k, v := range rows[0] {
-						field = k
-						val = v
-					}
-
-					// Return value wrapped in a format token if requested
-					if req.UseFormatTokens && mv != "" {
+					if mv != "" {
 						return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val), nil
 					}
-					return fmt.Sprintf("%v", val), nil
+					// Fallthrough to raw value if we can't find the metrics view
 				}
 
-				// Single row, multiple fields: return as map
-				if len(rows) == 1 {
-					return rows[0], nil
-				}
-
-				return rows, nil
+				// Return stringified raw value
+				return fmt.Sprintf("%v", val), nil
 			},
 		},
 	}
