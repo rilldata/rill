@@ -834,6 +834,44 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-canvas:
+    post:
+      summary: GenerateCanvasFile generates a canvas YAML file from a metrics view
+      operationId: RuntimeService_GenerateCanvasFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateCanvasFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              metricsViewName:
+                type: string
+                description: Metrics view name to base the canvas on.
+              path:
+                type: string
+                description: Path to save the canvas file to.
+              useAi:
+                type: boolean
+                description: |-
+                  If true, the AI will be used to generate the canvas file.
+                  Otherwise, it falls back to a simpler heuristic approach.
+            title: Request message for RuntimeService.GenerateCanvasFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -2304,6 +2342,46 @@ paths:
           required: false
           type: integer
           format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/resolve-templated-string:
+    post:
+      summary: ResolveTemplatedString resolves a templated strings.
+      operationId: QueryService_ResolveTemplatedString
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveTemplatedStringResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              body:
+                type: string
+                title: Any string with Go templating
+              useFormatTokens:
+                type: boolean
+                description: If true, output format tokens instead of raw values.
+              additionalWhereByMetricsView:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
+                title: Additional filters to inject into metrics SQL queries by metrics view name
+              additionalTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Additional time range to add to metrics SQL queries
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
@@ -4759,6 +4837,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1GenerateCanvasFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
+        type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+    title: Response message for RuntimeService.GenerateCanvasFile
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
@@ -6635,6 +6720,11 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+  v1ResolveTemplatedStringResponse:
+    type: object
+    properties:
+      body:
+        type: string
   v1ResolvedTimeRange:
     type: object
     properties:

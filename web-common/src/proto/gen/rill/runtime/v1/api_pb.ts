@@ -2260,6 +2260,111 @@ export class GenerateMetricsViewFileResponse extends Message$1<GenerateMetricsVi
 }
 
 /**
+ * Request message for RuntimeService.GenerateCanvasFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasFileRequest
+ */
+export class GenerateCanvasFileRequest extends Message$1<GenerateCanvasFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Metrics view name to base the canvas on.
+   *
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * Path to save the canvas file to.
+   *
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  /**
+   * If true, the AI will be used to generate the canvas file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
+   * @generated from field: bool use_ai = 4;
+   */
+  useAi = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasFileRequest | PlainMessage<GenerateCanvasFileRequest> | undefined, b: GenerateCanvasFileRequest | PlainMessage<GenerateCanvasFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasFileRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateCanvasFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasFileResponse
+ */
+export class GenerateCanvasFileResponse extends Message$1<GenerateCanvasFileResponse> {
+  /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasFileResponse | PlainMessage<GenerateCanvasFileResponse> | undefined, b: GenerateCanvasFileResponse | PlainMessage<GenerateCanvasFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasFileResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GenerateResolverRequest
  */
 export class GenerateResolverRequest extends Message$1<GenerateResolverRequest> {
@@ -4421,6 +4526,14 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
    */
   initProject = false;
 
+  /**
+   * Optional path to the file that the user is currently viewing/editing.
+   * This helps the agent understand which file the user is referring to in their request.
+   *
+   * @generated from field: string current_file_path = 2;
+   */
+  currentFilePath = "";
+
   constructor(data?: PartialMessage<DeveloperAgentContext>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4430,6 +4543,7 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
   static readonly typeName = "rill.runtime.v1.DeveloperAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "init_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "current_file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeveloperAgentContext {

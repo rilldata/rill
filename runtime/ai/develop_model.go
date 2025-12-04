@@ -54,8 +54,9 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 		args.Path = "/" + args.Path
 	}
 
-	// Pre-invoke file listing to get context about existing models
 	session := GetSession(ctx)
+
+	// Pre-invoke file listing to get context about existing models
 	_, err := session.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err

@@ -7,74 +7,73 @@ import (
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type Query struct {
-	MetricsView         string      `mapstructure:"metrics_view"`
-	Dimensions          []Dimension `mapstructure:"dimensions"`
-	Measures            []Measure   `mapstructure:"measures"`
-	PivotOn             []string    `mapstructure:"pivot_on"`
-	Spine               *Spine      `mapstructure:"spine"`
-	Sort                []Sort      `mapstructure:"sort"`
-	TimeRange           *TimeRange  `mapstructure:"time_range"`
-	ComparisonTimeRange *TimeRange  `mapstructure:"comparison_time_range"`
-	Where               *Expression `mapstructure:"where"`
-	Having              *Expression `mapstructure:"having"`
-	Limit               *int64      `mapstructure:"limit"`
-	Offset              *int64      `mapstructure:"offset"`
-	TimeZone            string      `mapstructure:"time_zone"`
-	UseDisplayNames     bool        `mapstructure:"use_display_names"`
-	Rows                bool        `mapstructure:"rows"`
+	MetricsView         string      `json:"metrics_view" mapstructure:"metrics_view"`
+	Dimensions          []Dimension `json:"dimensions" mapstructure:"dimensions"`
+	Measures            []Measure   `json:"measures" mapstructure:"measures"`
+	PivotOn             []string    `json:"pivot_on" mapstructure:"pivot_on"`
+	Spine               *Spine      `json:"spine" mapstructure:"spine"`
+	Sort                []Sort      `json:"sort" mapstructure:"sort"`
+	TimeRange           *TimeRange  `json:"time_range" mapstructure:"time_range"`
+	ComparisonTimeRange *TimeRange  `json:"comparison_time_range" mapstructure:"comparison_time_range"`
+	Where               *Expression `json:"where" mapstructure:"where"`
+	Having              *Expression `json:"having" mapstructure:"having"`
+	Limit               *int64      `json:"limit" mapstructure:"limit"`
+	Offset              *int64      `json:"offset" mapstructure:"offset"`
+	TimeZone            string      `json:"time_zone" mapstructure:"time_zone"`
+	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
+	Rows                bool        `json:"rows" mapstructure:"rows"`
 }
 
 type Dimension struct {
-	Name    string            `mapstructure:"name"`
-	Compute *DimensionCompute `mapstructure:"compute"`
+	Name    string            `json:"name" mapstructure:"name"`
+	Compute *DimensionCompute `json:"compute" mapstructure:"compute"`
 }
 
 type DimensionCompute struct {
-	TimeFloor *DimensionComputeTimeFloor `mapstructure:"time_floor"`
+	TimeFloor *DimensionComputeTimeFloor `json:"time_floor" mapstructure:"time_floor"`
 }
 
 type DimensionComputeTimeFloor struct {
-	Dimension string    `mapstructure:"dimension"`
-	Grain     TimeGrain `mapstructure:"grain"`
+	Dimension string    `json:"dimension" mapstructure:"dimension"`
+	Grain     TimeGrain `json:"grain" mapstructure:"grain"`
 }
 
 type Measure struct {
-	Name    string          `mapstructure:"name"`
-	Compute *MeasureCompute `mapstructure:"compute"`
+	Name    string          `json:"name" mapstructure:"name"`
+	Compute *MeasureCompute `json:"compute" mapstructure:"compute"`
 }
 
 type MeasureCompute struct {
-	Count           bool                           `mapstructure:"count"`
-	CountDistinct   *MeasureComputeCountDistinct   `mapstructure:"count_distinct"`
-	ComparisonValue *MeasureComputeComparisonValue `mapstructure:"comparison_value"`
-	ComparisonDelta *MeasureComputeComparisonDelta `mapstructure:"comparison_delta"`
-	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
-	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
-	URI             *MeasureComputeURI             `mapstructure:"uri"`
-	ComparisonTime  *MeasureComputeComparisonTime  `mapstructure:"comparison_time"`
+	Count           bool                           `json:"count" mapstructure:"count"`
+	CountDistinct   *MeasureComputeCountDistinct   `json:"count_distinct" mapstructure:"count_distinct"`
+	ComparisonValue *MeasureComputeComparisonValue `json:"comparison_value" mapstructure:"comparison_value"`
+	ComparisonDelta *MeasureComputeComparisonDelta `json:"comparison_delta" mapstructure:"comparison_delta"`
+	ComparisonRatio *MeasureComputeComparisonRatio `json:"comparison_ratio" mapstructure:"comparison_ratio"`
+	PercentOfTotal  *MeasureComputePercentOfTotal  `json:"percent_of_total" mapstructure:"percent_of_total"`
+	URI             *MeasureComputeURI             `json:"uri" mapstructure:"uri"`
+	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time" mapstructure:"comparison_time"`
 }
 
 func (q *Query) AsMap() (map[string]any, error) {
-	queryMap := make(map[string]any)
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:     &queryMap,
-		DecodeHook: timeDecodeFunc,
-	})
+	// We do a JSON roundtrip to convert to a map[string]any.
+	// We don't use mapstructure here because it doesn't correctly handle time.Time roundtrips to a map[string]any, even with decoder hooks.
+	// And anyway, since JSON is the usual entrypoint for TimeRange maps, this is more representative of real usage.
+	data, err := json.Marshal(q)
 	if err != nil {
 		return nil, err
 	}
-	err = decoder.Decode(q)
+	var res map[string]any
+	err = json.Unmarshal(data, &res)
 	if err != nil {
 		return nil, err
 	}
-	return queryMap, nil
+	return res, nil
 }
 
 func (q *Query) Validate() error {
@@ -142,86 +141,118 @@ func (m *MeasureCompute) Validate() error {
 }
 
 type MeasureComputeCountDistinct struct {
-	Dimension string `mapstructure:"dimension"`
+	Dimension string `json:"dimension" mapstructure:"dimension"`
 }
 
 type MeasureComputeComparisonValue struct {
-	Measure string `mapstructure:"measure"`
+	Measure string `json:"measure" mapstructure:"measure"`
 }
 
 type MeasureComputeComparisonDelta struct {
-	Measure string `mapstructure:"measure"`
+	Measure string `json:"measure" mapstructure:"measure"`
 }
 
 type MeasureComputeComparisonRatio struct {
-	Measure string `mapstructure:"measure"`
+	Measure string `json:"measure" mapstructure:"measure"`
 }
 
 type MeasureComputePercentOfTotal struct {
-	Measure string   `mapstructure:"measure"`
-	Total   *float64 `mapstructure:"total"`
+	Measure string   `json:"measure" mapstructure:"measure"`
+	Total   *float64 `json:"total" mapstructure:"total"`
 }
 
 type MeasureComputeURI struct {
-	Dimension string `mapstructure:"dimension"`
+	Dimension string `json:"dimension" mapstructure:"dimension"`
 }
 
 type MeasureComputeComparisonTime struct {
-	Dimension string `mapstructure:"dimension"`
+	Dimension string `json:"dimension" mapstructure:"dimension"`
 }
 
 type Spine struct {
-	Where     *WhereSpine `mapstructure:"where"`
-	TimeRange *TimeSpine  `mapstructure:"time"`
+	Where     *WhereSpine `json:"where" mapstructure:"where"`
+	TimeRange *TimeSpine  `json:"time" mapstructure:"time"`
 }
 
 type WhereSpine struct {
-	Expression *Expression `mapstructure:"expr"`
+	Expression *Expression `json:"expr" mapstructure:"expr"`
 }
 
 type TimeSpine struct {
-	Start         time.Time `mapstructure:"start"`
-	End           time.Time `mapstructure:"end"`
-	Grain         TimeGrain `mapstructure:"grain"`
-	TimeDimension string    `mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
+	Start         time.Time `json:"start" mapstructure:"start"`
+	End           time.Time `json:"end" mapstructure:"end"`
+	Grain         TimeGrain `json:"grain" mapstructure:"grain"`
+	TimeDimension string    `json:"time_dimension" mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 type Sort struct {
-	Name string `mapstructure:"name"`
-	Desc bool   `mapstructure:"desc"`
+	Name string `json:"name" mapstructure:"name"`
+	Desc bool   `json:"desc" mapstructure:"desc"`
 }
 
 type TimeRange struct {
-	Start         time.Time `mapstructure:"start"`
-	End           time.Time `mapstructure:"end"`
-	Expression    string    `mapstructure:"expression"`
-	IsoDuration   string    `mapstructure:"iso_duration"`
-	IsoOffset     string    `mapstructure:"iso_offset"`
-	RoundToGrain  TimeGrain `mapstructure:"round_to_grain"`
-	TimeDimension string    `mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
+	Start         time.Time `json:"start" mapstructure:"start"`
+	End           time.Time `json:"end" mapstructure:"end"`
+	Expression    string    `json:"expression" mapstructure:"expression"`
+	IsoDuration   string    `json:"iso_duration" mapstructure:"iso_duration"`
+	IsoOffset     string    `json:"iso_offset" mapstructure:"iso_offset"`
+	RoundToGrain  TimeGrain `json:"round_to_grain" mapstructure:"round_to_grain"`
+	TimeDimension string    `json:"time_dimension" mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
 }
 
 func (tr *TimeRange) IsZero() bool {
 	return tr.Start.IsZero() && tr.End.IsZero() && tr.Expression == "" && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified
 }
 
+func (tr *TimeRange) AsMap() (map[string]any, error) {
+	// We do a JSON roundtrip to convert to a map[string]any.
+	// We don't use mapstructure here because it doesn't correctly handle time.Time roundtrips to a map[string]any, even with decoder hooks.
+	// And anyway, since JSON is the usual entrypoint for TimeRange maps, this is more representative of real usage.
+	data, err := json.Marshal(tr)
+	if err != nil {
+		return nil, err
+	}
+	var res map[string]any
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 type Expression struct {
-	Name      string     `mapstructure:"name" json:"name"`
-	Value     any        `mapstructure:"val" json:"val"`
-	Condition *Condition `mapstructure:"cond" json:"cond"`
-	Subquery  *Subquery  `mapstructure:"subquery" json:"subquery"`
+	Name      string     `json:"name" mapstructure:"name"`
+	Value     any        `json:"val" mapstructure:"val"`
+	Condition *Condition `json:"cond" mapstructure:"cond"`
+	Subquery  *Subquery  `json:"subquery" mapstructure:"subquery"`
+}
+
+func (e *Expression) AsMap() (map[string]any, error) {
+	// We do a JSON roundtrip to convert to a map[string]any.
+	// We don't use mapstructure here because it doesn't correctly handle time.Time roundtrips to a map[string]any, even with decoder hooks.
+	// And anyway, since JSON is the usual entrypoint for TimeRange maps, this is more representative of real usage.
+	data, err := json.Marshal(e)
+	if err != nil {
+		return nil, err
+	}
+	var res map[string]any
+	err = json.Unmarshal(data, &res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 type Condition struct {
-	Operator    Operator      `mapstructure:"op" json:"op"`
-	Expressions []*Expression `mapstructure:"exprs" json:"exprs"`
+	Operator    Operator      `json:"op" mapstructure:"op"`
+	Expressions []*Expression `json:"exprs" mapstructure:"exprs"`
 }
 
 type Subquery struct {
-	Dimension Dimension   `mapstructure:"dimension" json:"dimension"`
-	Measures  []Measure   `mapstructure:"measures" json:"measures"`
-	Where     *Expression `mapstructure:"where" json:"where"`
-	Having    *Expression `mapstructure:"having" json:"having"`
+	Dimension Dimension   `json:"dimension" mapstructure:"dimension"`
+	Measures  []Measure   `json:"measures" mapstructure:"measures"`
+	Where     *Expression `json:"where" mapstructure:"where"`
+	Having    *Expression `json:"having" mapstructure:"having"`
 }
 
 type Operator string
@@ -420,19 +451,6 @@ func getMeasureName(m Measure) string {
 	default:
 		panic("could not find measure name")
 	}
-}
-
-var timeDecodeFunc mapstructure.DecodeHookFunc = func(from reflect.Type, to reflect.Type, data any) (any, error) {
-	if from == reflect.TypeOf(&time.Time{}) {
-		t, ok := data.(*time.Time)
-		if !ok {
-			return nil, fmt.Errorf("expected *time.Time, got %T", data)
-		}
-		return map[string]any{
-			"t": t.Format(time.RFC3339Nano),
-		}, nil
-	}
-	return data, nil
 }
 
 // TypeSchemas returns a map of JSON schemas for this package's query types (currently Query and Expression).
