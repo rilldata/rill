@@ -199,6 +199,7 @@ func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
 	res = append(res, i.ProjectConnectors...)
 	// implicit connectors
 	vars := i.ResolveVariables(true)
+	var implicitAzure bool
 	for k := range vars {
 		// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
 		// NOTE: only object stores are handled here.
@@ -209,10 +210,13 @@ func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
 				Name: "s3",
 			})
 		case "azure_storage_account", "azure_storage_key", "azure_storage_sas_token", "azure_storage_connection_string":
-			res = append(res, &runtimev1.Connector{
-				Type: "azure",
-				Name: "azure",
-			})
+			if !implicitAzure {
+				res = append(res, &runtimev1.Connector{
+					Type: "azure",
+					Name: "azure",
+				})
+				implicitAzure = true
+			}
 		case "google_application_credentials":
 			res = append(res, &runtimev1.Connector{
 				Type: "gcs",

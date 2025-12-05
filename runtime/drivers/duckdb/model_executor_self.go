@@ -119,10 +119,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			createSecretSQLs = append(createSecretSQLs, createSecretSQL)
 			dropSecretSQLs = append(dropSecretSQLs, dropSecretSQL)
 		}
-		if len(createSecretSQLs) > 0 {
-			inputProps.InternalCreateSecretSQL = strings.Join(createSecretSQLs, "; ")
-			inputProps.InternalDropSecretSQL = strings.Join(dropSecretSQLs, "; ")
-		}
+		inputProps.InternalCreateSecretSQL = strings.Join(createSecretSQLs, "; ")
+		inputProps.InternalDropSecretSQL = strings.Join(dropSecretSQLs, "; ")
 	}
 
 	if parsedConnectorType == "gcs" && !connectorSecretsAvailable["gcs"] {
