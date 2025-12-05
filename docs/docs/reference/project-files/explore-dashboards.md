@@ -231,7 +231,7 @@ _[object]_ - Configuration options for embedded dashboard views
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering) 
+_[object]_ - Defines [security rules and access control policies](/developer/build/metrics-view/security) for dashboards (without row filtering) 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
