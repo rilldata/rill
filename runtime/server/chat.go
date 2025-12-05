@@ -89,6 +89,27 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}, nil
 }
 
+func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest) (*runtimev1.ListToolsResponse, error) {
+	// Access check
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	// List all registered tools
+	var pbs []*aiv1.Tool
+	for _, tool := range s.ai.Tools {
+		pb, err := tool.AsProto()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert tool %q to proto: %w", tool.Name, err)
+		}
+		pbs = append(pbs, pb)
+	}
+	return &runtimev1.ListToolsResponse{
+		Tools: pbs,
+	}, nil
+}
+
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, resErr error) {
 	// Access check
@@ -130,25 +151,36 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
-	if req.Explore != "" {
+	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.Explore,
-			Dimensions: req.Dimensions,
-			Measures:   req.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.Where),
-			TimeStart:  req.TimeStart.AsTime(),
-			TimeEnd:    req.TimeEnd.AsTime(),
+			Explore:    req.AnalystAgentContext.Explore,
+			Dimensions: req.AnalystAgentContext.Dimensions,
+			Measures:   req.AnalystAgentContext.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+		}
+	}
+	var developerAgentArgs *ai.DeveloperAgentArgs
+	if req.DeveloperAgentContext != nil {
+		developerAgentArgs = &ai.DeveloperAgentArgs{
+			InitProject:     req.DeveloperAgentContext.InitProject,
+			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
-	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt:           req.Prompt,
-		AnalystAgentArgs: analystAgentArgs,
+	msg, err := session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt:             req.Prompt,
+		Agent:              req.Agent,
+		AnalystAgentArgs:   analystAgentArgs,
+		DeveloperAgentArgs: developerAgentArgs,
 	})
-	if err != nil {
+	if err != nil && msg == nil {
+		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return nil, err
 	}
 
@@ -240,25 +272,36 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
+	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
-	if req.Explore != "" {
+	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.Explore,
-			Dimensions: req.Dimensions,
-			Measures:   req.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.Where),
-			TimeStart:  req.TimeStart.AsTime(),
-			TimeEnd:    req.TimeEnd.AsTime(),
+			Explore:    req.AnalystAgentContext.Explore,
+			Dimensions: req.AnalystAgentContext.Dimensions,
+			Measures:   req.AnalystAgentContext.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+		}
+	}
+	var developerAgentArgs *ai.DeveloperAgentArgs
+	if req.DeveloperAgentContext != nil {
+		developerAgentArgs = &ai.DeveloperAgentArgs{
+			InitProject:     req.DeveloperAgentContext.InitProject,
+			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
-	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt:           req.Prompt,
-		AnalystAgentArgs: analystAgentArgs,
+	msg, err := session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt:             req.Prompt,
+		Agent:              req.Agent,
+		AnalystAgentArgs:   analystAgentArgs,
+		DeveloperAgentArgs: developerAgentArgs,
 	})
-	if err != nil && !errors.Is(err, context.Canceled) {
+	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
+		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return err
 	}
 	return nil

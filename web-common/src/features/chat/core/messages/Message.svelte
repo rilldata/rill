@@ -7,14 +7,19 @@
   import CallMessage from "./CallMessage.svelte";
   import ProgressMessage from "./ProgressMessage.svelte";
   import TextMessage from "./TextMessage.svelte";
+  import UserMessage from "@rilldata/web-common/features/chat/core/messages/UserMessage.svelte";
 
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;
 
   $: isRouterAgent = message.tool === ToolName.ROUTER_AGENT;
+  $: isUserMessage = isRouterAgent && message.role === "user";
+  $: isAgentResponse = isRouterAgent && message.role !== "user";
 </script>
 
-{#if isRouterAgent}
+{#if isUserMessage}
+  <UserMessage {message} />
+{:else if isAgentResponse}
   <TextMessage {message} />
 {:else if message.type === MessageType.PROGRESS}
   <!-- Progress/thinking messages -->

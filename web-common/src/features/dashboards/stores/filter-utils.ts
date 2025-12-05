@@ -275,8 +275,11 @@ function filterSubQuery(
   };
 }
 
-export function copyFilterExpression(expr: V1Expression) {
-  return filterExpressions(expr, () => true) ?? createAndExpression([]);
+export function copyFilterExpression(
+  expr: V1Expression,
+  defaultExpr: V1Expression | undefined = createAndExpression([]),
+) {
+  return filterExpressions(expr, () => true) ?? defaultExpr;
 }
 
 export function filterIdentifiers(
@@ -378,6 +381,12 @@ export function isAndOrExpression(expression: V1Expression | undefined) {
     (expression.cond.op === V1Operation.OPERATION_AND ||
       expression.cond.op === V1Operation.OPERATION_OR)
   );
+}
+
+export function isExpressionEmpty(expression: V1Expression | undefined) {
+  if (!expression) return true;
+  if (!isAndOrExpression(expression)) return false;
+  return expression?.cond?.exprs?.length === 0;
 }
 
 export function removeWrapperAndOrExpression(

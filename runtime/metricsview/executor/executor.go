@@ -486,7 +486,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		}
 		q := &metricsview.Query{
 			MetricsView:         qry.MetricsView,
-			Dimensions:          []metricsview.Dimension{{Name: d}},
+			Dimensions:          []metricsview.Dimension{{Name: d, Compute: nil}},
 			Measures:            nil,
 			PivotOn:             nil,
 			Spine:               nil,

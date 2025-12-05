@@ -23,9 +23,10 @@ export function getCitationUrlRewriter(
     marked.use({
       renderer: {
         link: (tokens) => {
-          const url = new URL(tokens.href);
+          const url = URL.parse(tokens.href);
           // If the url is not a citation url, do not change the link.
-          if (!CITATION_URL_PATHNAME_REGEX.test(url.pathname)) return false;
+          if (!url || !CITATION_URL_PATHNAME_REGEX.test(url.pathname))
+            return false;
 
           // If mapper was not provided, remove citation urls.
           // This happens when something went wrong getting the mapper in an explore chat.

@@ -4,9 +4,12 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
-
-import type { V1Message } from "@rilldata/web-common/runtime-client";
+import {
+  getRuntimeServiceListConversationsQueryKey,
+  type V1Message,
+} from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 // =============================================================================
 // ID GENERATION
@@ -124,4 +127,14 @@ export function parseChartData(toolCall: any) {
     console.error("Failed to parse chart data:", error);
     return null;
   }
+}
+
+export function invalidateConversationsList(instanceId: string) {
+  const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
+    instanceId,
+    {
+      userAgentPattern: "rill%",
+    },
+  );
+  return queryClient.invalidateQueries({ queryKey: listConversationsKey });
 }

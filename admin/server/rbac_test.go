@@ -309,7 +309,7 @@ func TestRBAC(t *testing.T) {
 			UserName:        u1.DisplayName,
 			RoleName:        database.OrganizationRoleNameAdmin,
 			ProjectsCount:   2,
-			UsergroupsCount: 2, // The autogroups
+			UsergroupsCount: 0, // Does not include the autogroups
 		})
 		require.Contains(t, r6.Members, &adminv1.OrganizationMemberUser{
 			UserId:          u2.ID,
@@ -317,7 +317,7 @@ func TestRBAC(t *testing.T) {
 			UserName:        u2.DisplayName,
 			RoleName:        database.OrganizationRoleNameViewer,
 			ProjectsCount:   2, // Through the autogroup:member being added by default
-			UsergroupsCount: 3, // The autogroups and the one added
+			UsergroupsCount: 1, // Only the one added
 		})
 	})
 
@@ -703,6 +703,77 @@ func TestRBAC(t *testing.T) {
 		orgs, err := c2.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 		require.NoError(t, err)
 		require.Len(t, orgs.Organizations, 0)
+	})
+
+	t.Run("Adding org and project members with a service account", func(t *testing.T) {
+		// Create users
+		_, c1 := fix.NewUser(t)
+		u2, _ := fix.NewUser(t)
+
+		// Create org and project
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		r2, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        r1.Organization.Name,
+			Project:    "proj1",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+
+		// Create service
+		r3, err := c1.CreateService(ctx, &adminv1.CreateServiceRequest{
+			Name:        "service1",
+			Org:         r1.Organization.Name,
+			OrgRoleName: database.OrganizationRoleNameAdmin,
+		})
+		require.NoError(t, err)
+		r4, err := c1.IssueServiceAuthToken(ctx, &adminv1.IssueServiceAuthTokenRequest{
+			Org:         r1.Organization.Name,
+			ServiceName: r3.Service.Name,
+		})
+		c3 := fix.NewClient(t, r4.Token)
+
+		// Add u2 to the project using the service account
+		_, err = c3.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:     r1.Organization.Name,
+			Project: r2.Project.Name,
+			Email:   u2.Email,
+			Role:    database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// Invite a user that doesn't exist to the org, project and group
+		userEmail := randomName() + "@example.com"
+		_, err = c3.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: userEmail,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+		_, err = c3.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
+			Org:     r1.Organization.Name,
+			Project: r2.Project.Name,
+			Email:   userEmail,
+			Role:    database.ProjectRoleNameAdmin,
+		})
+		require.NoError(t, err)
+
+		// List org and project members
+		r5, err := c3.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, r5.Members, 2) // u1, u2
+		r6, err := c3.ListProjectMemberUsers(ctx, &adminv1.ListProjectMemberUsersRequest{Org: r1.Organization.Name, Project: r2.Project.Name})
+		require.NoError(t, err)
+		require.Len(t, r6.Members, 2) // u1, u2
+
+		// List org and project invites
+		r7, err := c3.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{Org: r1.Organization.Name})
+		require.NoError(t, err)
+		require.Len(t, r7.Invites, 1)
+		r8, err := c3.ListProjectInvites(ctx, &adminv1.ListProjectInvitesRequest{Org: r1.Organization.Name, Project: r2.Project.Name})
+		require.NoError(t, err)
+		require.Len(t, r8.Invites, 1)
 	})
 
 	t.Run("Whitelisting domains on orgs", func(t *testing.T) {

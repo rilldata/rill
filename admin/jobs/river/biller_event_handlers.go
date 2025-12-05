@@ -190,10 +190,6 @@ type PaymentFailedGracePeriodCheckWorker struct {
 }
 
 func (w *PaymentFailedGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[PaymentFailedGracePeriodCheckArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.paymentFailedGracePeriodCheck)
-}
-
-func (w *PaymentFailedGracePeriodCheckWorker) paymentFailedGracePeriodCheck(ctx context.Context) error {
 	failures, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypePaymentFailed, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {

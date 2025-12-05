@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -398,10 +399,24 @@ func (u *URLs) PaymentPortal(org string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing", "payment")
 }
 
+// OAuthExternalResourceURL returns the external URL for OAuth 2.0 resource access.
+// If a request is provided, it uses the request's Host header to construct the URL to make sure protected resource URLs origin matches with the resource URL being accessed by the client.
+// This helps in cases, for example, where the MCP server url starts with api.rilldata.com instead of admin.rilldata.com.
+func (u *URLs) OAuthExternalResourceURL(r *http.Request) string {
+	if r != nil {
+		scheme := "http"
+		if u.IsHTTPS() {
+			scheme = "https"
+		}
+		return fmt.Sprintf("%s://%s", scheme, r.Host)
+	}
+	return u.External()
+}
+
 // OAuthProtectedResourceMetadata returns the URL for the OAuth 2.0 Protected Resource Metadata endpoint.
 // This endpoint is used by MCP clients to discover authorization server information.
-func (u *URLs) OAuthProtectedResourceMetadata() string {
-	return urlutil.MustJoinURL(u.External(), "/.well-known/oauth-protected-resource")
+func (u *URLs) OAuthProtectedResourceMetadata(r *http.Request) string {
+	return urlutil.MustJoinURL(u.OAuthExternalResourceURL(r), "/.well-known/oauth-protected-resource")
 }
 
 // OAuthRegister returns the URL for the OAuth 2.0 Dynamic Client Registration endpoint.
