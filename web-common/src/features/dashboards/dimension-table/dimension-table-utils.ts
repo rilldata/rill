@@ -10,13 +10,9 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
-  filterExpressions,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  type V1MetricsViewAggregationResponseDataItem,
-  V1Operation,
-} from "../../../runtime-client";
+import { type V1MetricsViewAggregationResponseDataItem } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
