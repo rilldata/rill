@@ -9,6 +9,7 @@
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
+  import FileDiffBlock from "./file-diff/FileDiffBlock.svelte";
   import PlanningBlock from "./planning/PlanningBlock.svelte";
   import AssistantMessage from "./text/AssistantMessage.svelte";
   import UserMessage from "./text/UserMessage.svelte";
@@ -103,6 +104,12 @@
         <ChartBlock
           chartType={block.chartData.chartType}
           chartSpec={block.chartData.chartSpec}
+        />
+      {:else if block.type === "file-diff"}
+        <FileDiffBlock
+          filePath={block.filePath}
+          diff={block.diff}
+          isNewFile={block.isNewFile}
         />
       {/if}
     {/each}

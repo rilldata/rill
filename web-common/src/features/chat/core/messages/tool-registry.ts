@@ -11,6 +11,10 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { ToolName } from "../types";
 import { createChartBlock, type ChartBlock } from "./chart/chart-block";
+import {
+  createFileDiffBlock,
+  type FileDiffBlock,
+} from "./file-diff/file-diff-block";
 
 // =============================================================================
 // RENDER MODES
@@ -31,6 +35,9 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 /**
  * Configuration for a tool's rendering behavior.
  */
+/** Block types that can be created by tools */
+export type ToolBlockType = ChartBlock | FileDiffBlock;
+
 export interface ToolConfig {
   renderMode: ToolRenderMode;
   /**
@@ -40,7 +47,7 @@ export interface ToolConfig {
   createBlock?: (
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
-  ) => ChartBlock | null; // Union with other block types as they're added
+  ) => ToolBlockType | null;
 }
 
 /**
@@ -70,12 +77,10 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     renderMode: "block",
     createBlock: createChartBlock,
   },
-
-  // Future block tools:
-  // [ToolName.WRITE_FILE]: {
-  //   renderMode: "block",
-  //   createBlock: createFileDiffBlock,
-  // },
+  [ToolName.WRITE_FILE]: {
+    renderMode: "block",
+    createBlock: createFileDiffBlock,
+  },
 
   // All other tools default to "inline" (shown in thinking blocks)
 };

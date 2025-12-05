@@ -92,9 +92,13 @@ messages/
 │   ├── tool-display-names.ts
 │   └── tool-icons.ts
 │
-└── chart/                       # Chart visualizations
-    ├── chart-block.ts
-    └── ChartBlock.svelte
+├── chart/                       # Chart visualizations
+│   ├── chart-block.ts
+│   └── ChartBlock.svelte
+│
+└── file-diff/                   # File change diffs
+    ├── file-diff-block.ts
+    └── FileDiffBlock.svelte
 ```
 
 ## Transformation Flow
@@ -113,16 +117,16 @@ messages/
 
 ## Adding New Block Types
 
-To add a new block-level tool (e.g., file diff):
+To add a new block-level tool (like `ChartBlock` or `FileDiffBlock`):
 
-1. **Create block directory**: `messages/file-diff/`
-2. **Define type and factory**: `file-diff-block.ts`
-3. **Create component**: `FileDiffBlock.svelte`
+1. **Create block directory**: `messages/my-block/`
+2. **Define type and factory**: `my-block.ts`
+3. **Create component**: `MyBlock.svelte`
 4. **Register in tool registry**:
    ```typescript
-   [ToolName.WRITE_FILE]: {
+   [ToolName.MY_TOOL]: {
      renderMode: "block",
-     createBlock: createFileDiffBlock,
+     createBlock: createMyBlock,
    },
    ```
 5. **Add to MessageBlock union** in `message-blocks.ts`

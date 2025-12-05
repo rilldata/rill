@@ -13,6 +13,7 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
+import { type FileDiffBlock } from "./file-diff/file-diff-block";
 import {
   shouldShowPlanning,
   type PlanningBlock,
@@ -32,10 +33,17 @@ export type MessageBlock =
   | TextMessage
   | ThinkingBlock
   | ChartBlock
+  | FileDiffBlock
   | PlanningBlock;
 
 // Re-export individual block types for convenience
-export type { ChartBlock, PlanningBlock, TextMessage, ThinkingBlock };
+export type {
+  ChartBlock,
+  FileDiffBlock,
+  PlanningBlock,
+  TextMessage,
+  ThinkingBlock,
+};
 
 // =============================================================================
 // MESSAGE ROUTING
