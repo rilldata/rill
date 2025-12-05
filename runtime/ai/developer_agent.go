@@ -132,7 +132,7 @@ At a high level, you should follow these steps:
 {{ backticks }}
 ## Summary of Changes
 I've created the following files for you:
-- <resource_type>: [<file_name>](<absolute file path starting with '/'>)
+- <resource_type>: [<file_name>](<file name with a prefix '/files/'>)
 ...
 {{ backticks }}
 

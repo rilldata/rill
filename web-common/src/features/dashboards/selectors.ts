@@ -174,6 +174,7 @@ export function getMetricsViewTimeRangeFromExploreQueryOptions(
 ) {
   const validSpecQuery = createQuery(
     getExploreValidSpecQueryOptions(exploreNameStore),
+    queryClient,
   );
 
   return derived(
