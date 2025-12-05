@@ -12,7 +12,9 @@ import (
 	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
+	"go.uber.org/zap"
 )
 
 var _ drivers.OLAPStore = &Connection{}
@@ -43,6 +45,17 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // Query implements drivers.OLAPStore.
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	if c.config.LogQueries {
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("redshift query", fields...)
+	}
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, err

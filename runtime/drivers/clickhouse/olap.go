@@ -144,6 +144,16 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 				stmt.Query += ", " + c.config.QuerySettings
 			}
 		}
+
+		settings := make(map[string]any)
+		if len(stmt.QueryAttributes) > 0 {
+			for k, v := range stmt.QueryAttributes {
+				settings[k] = v
+			}
+		}
+		if len(settings) > 0 {
+			ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+		}
 	}
 
 	// Gather metrics only for actual queries

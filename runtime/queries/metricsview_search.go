@@ -63,7 +63,12 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	exec, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
+	var userAttrs map[string]any
+	if q.SecurityClaims != nil {
+		userAttrs = q.SecurityClaims.UserAttributes
+	}
+
+	exec, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority, userAttrs)
 	if err != nil {
 		return err
 	}

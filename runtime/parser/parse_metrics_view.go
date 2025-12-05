@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -78,8 +79,9 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
-	Security *SecurityPolicyYAML
-	Cache    struct {
+	Security        *SecurityPolicyYAML
+	QueryAttributes map[string]string `yaml:"query_attributes"`
+	Cache           struct {
 		Enabled *bool  `yaml:"enabled"`
 		KeySQL  string `yaml:"key_sql"`
 		KeyTTL  string `yaml:"key_ttl"`
@@ -298,6 +300,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if err := validateQueryAttributes(tmp.QueryAttributes); err != nil {
+		return fmt.Errorf("invalid query_attributes: %w", err)
 	}
 
 	if tmp.Parent != "" {
@@ -796,6 +802,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
+	spec.QueryAttributes = tmp.QueryAttributes
 
 	// When version is greater than 0 or inline explore is defined or skip explore set to true, we skip creating a default explore resource. Application should set version to 0 now to enable automatic explore emission.
 	if node.Version > 0 || skipExplore {
@@ -1106,4 +1113,26 @@ func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName
 	}
 	// No need to deduplicate because that's done upstream when the resource is inserted.
 	return refs, nil
+}
+
+// validateQueryAttributes validates query attribute keys
+func validateQueryAttributes(attrs map[string]string) error {
+	for key := range attrs {
+		if key == "" {
+			return errors.New("query attribute key cannot be empty")
+		}
+
+		if !isValidQueryAttributeKey(key) {
+			return fmt.Errorf("query attribute key %q contains invalid characters (must be alphanumeric with underscores, hyphens, or dots only)", key)
+		}
+	}
+
+	return nil
+}
+
+var queryAttributeKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+
+// isValidQueryAttributeKey checks if a key contains only safe characters
+func isValidQueryAttributeKey(key string) bool {
+	return queryAttributeKeyRegex.MatchString(key)
 }

@@ -439,7 +439,7 @@ func (t *DevelopMetricsView) generateMetricsViewYAMLWithAI(ctx context.Context, 
 		})
 	}
 
-	e, err := executor.New(ctx, t.Runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(ctx, t.Runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0, nil)
 	if err != nil {
 		return nil, err
 	}

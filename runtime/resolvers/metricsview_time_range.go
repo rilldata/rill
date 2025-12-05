@@ -81,7 +81,12 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	var userAttrs map[string]any
+	if opts.Claims != nil {
+		userAttrs = opts.Claims.UserAttributes
+	}
+
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}
