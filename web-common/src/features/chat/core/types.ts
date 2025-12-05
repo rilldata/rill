@@ -76,3 +76,30 @@ export type ChatConfig = {
 export function isHiddenAgentTool(toolName: string | undefined): boolean {
   return !!toolName && HIDDEN_AGENT_TOOLS.includes(toolName);
 }
+
+// =============================================================================
+// WRITE FILE TYPES
+// =============================================================================
+
+/**
+ * Data structure for write_file tool call arguments
+ */
+export interface WriteFileCallData {
+  path: string;
+  contents: string;
+}
+
+/**
+ * Data structure for write_file tool result
+ */
+export interface WriteFileResultData {
+  diff?: string;
+  is_new_file?: boolean;
+  resources?: Array<{
+    kind: string;
+    name: string;
+    reconcile_status: string;
+    reconcile_error: string;
+  }>;
+  parse_error?: string;
+}

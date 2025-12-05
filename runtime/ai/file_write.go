@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -23,6 +24,8 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
+	Diff       string           `json:"diff,omitempty"` // Unified diff (empty for new files)
+	IsNewFile  bool             `json:"is_new_file"`    // True if file didn't exist before
 	Resources  []map[string]any `json:"resources,omitempty"`
 	ParseError string           `json:"parse_error,omitempty"`
 }
@@ -50,10 +53,20 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 		args.Path = "/" + args.Path
 	}
 
-	err := t.Runtime.PutFile(ctx, s.InstanceID(), args.Path, strings.NewReader(args.Contents), true, false)
+	// Read existing content before writing (for diff computation)
+	originalContent, _, err := t.Runtime.GetFile(ctx, s.InstanceID(), args.Path)
+	isNewFile := err != nil // File doesn't exist if there's an error
+	if isNewFile {
+		originalContent = ""
+	}
+
+	err = t.Runtime.PutFile(ctx, s.InstanceID(), args.Path, strings.NewReader(args.Contents), true, false)
 	if err != nil {
 		return nil, err
 	}
+
+	// Compute unified diff (for new files, originalContent is empty so all lines show as additions)
+	diff := computeUnifiedDiff(args.Path, originalContent, args.Contents, isNewFile)
 
 	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
 	if err != nil {
@@ -77,6 +90,8 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 	for _, pe := range p.GetProjectParser().State.ParseErrors {
 		if pe.FilePath == args.Path {
 			return &WriteFileResult{
+				Diff:       diff,
+				IsNewFile:  isNewFile,
 				ParseError: pe.Message,
 			}, nil
 		}
@@ -92,7 +107,10 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 		return nil, err
 	}
 	if len(rs) == 0 {
-		return &WriteFileResult{}, nil
+		return &WriteFileResult{
+			Diff:      diff,
+			IsNewFile: isNewFile,
+		}, nil
 	}
 
 	resources := []map[string]any{}
@@ -106,6 +124,29 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 	}
 
 	return &WriteFileResult{
+		Diff:      diff,
+		IsNewFile: isNewFile,
 		Resources: resources,
 	}, nil
+}
+
+// computeUnifiedDiff generates a unified diff between original and new content
+func computeUnifiedDiff(path, original, updated string, isNewFile bool) string {
+	fromFile := "a" + path
+	if isNewFile {
+		fromFile = "/dev/null"
+	}
+
+	diff := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(original),
+		B:        difflib.SplitLines(updated),
+		FromFile: fromFile,
+		ToFile:   "b" + path,
+		Context:  3,
+	}
+	text, err := difflib.GetUnifiedDiffString(diff)
+	if err != nil {
+		return ""
+	}
+	return text
 }
