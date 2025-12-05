@@ -412,6 +412,7 @@
                         { value: "9440", label: "9440 (Native Secure)" },
                       ]
                     : undefined}
+                  fontSize={12}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                 <Checkbox

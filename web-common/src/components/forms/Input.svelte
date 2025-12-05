@@ -45,6 +45,7 @@
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
+  export let fontSize: number | undefined = undefined;
   export let additionalClass = "";
   export let onInput: (
     newValue: string,
@@ -236,7 +237,7 @@
       {options}
       {onChange}
       {size}
-      fontSize={size === "sm" ? 12 : 14}
+      fontSize={fontSize ?? (size === "sm" ? 12 : 14)}
       {truncate}
       placeholder={disabled ? disabledMessage : placeholder}
     />
