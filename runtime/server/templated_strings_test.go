@@ -82,7 +82,7 @@ measures:
 			body:            `Total: {{ metrics_sql "SELECT total_revenue FROM mv1" }}`,
 			useFormatTokens: true,
 			additionalWhere: nil,
-			expected:        []string{`__RILL__FORMAT__("mv1", "total_revenue", 700)`},
+			expected:        []string{`__RILL__FORMAT__({"metrics_view":"mv1","field":"total_revenue","value":700})`},
 			expectEqual:     false,
 		},
 		{
@@ -307,8 +307,8 @@ Top Spenders:
 {{ end }}`,
 			useFormatTokens: true,
 			expected: []string{
-				`__RILL__FORMAT__("bids_metrics", "advertiser_name"`,
-				`__RILL__FORMAT__("bids_metrics", "overall_spend"`,
+				`__RILL__FORMAT__({"metrics_view":"bids_metrics","field":"overall_spend","value":3000})`,
+				`__RILL__FORMAT__({"metrics_view":"bids_metrics","field":"overall_spend","value":2500})`,
 			},
 		},
 	}

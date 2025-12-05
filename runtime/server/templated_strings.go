@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -99,18 +101,19 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 
 				// Return value wrapped in a format token if requested
 				if req.UseFormatTokens {
-					// The "metrics" resolver returns the metrics view in the metadata.
-					// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
-					var mv string
-					var isDimension bool
 					if meta := resolveRes.Meta(); meta != nil {
-						mv, _ = meta["metrics_view"].(string)
-						isDimension = isFieldDimension(meta, field)
+						mv, _ := meta["metrics_view"].(string)
+						if mv != "" {
+							if dims, err := s.metricsViewDimensions(ctx, req.InstanceId, mv); err == nil {
+								if !dims[field] {
+									payload := tokenPayload{MetricsView: mv, Field: field, Value: val}
+									if b, err := json.Marshal(payload); err == nil {
+										return fmt.Sprintf("__RILL__FORMAT__(%s)", string(b)), nil
+									}
+								}
+							}
+						}
 					}
-					if mv != "" && !isDimension {
-						return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val), nil
-					}
-					// Fallthrough to raw value if we can't find the metrics view or if it's a dimension
 				}
 
 				// Return stringified raw value
@@ -138,7 +141,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 				for {
 					row, err := resolveRes.Next()
 					if err != nil {
-						if err.Error() == "EOF" || err.Error() == "sql: no rows in result set" {
+						if errors.Is(err, io.EOF) {
 							break
 						}
 						return nil, fmt.Errorf("failed to get result: %w", err)
@@ -146,38 +149,43 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					rows = append(rows, row)
 				}
 
-				// Handle empty result
-				if len(rows) == 0 {
-					return nil, fmt.Errorf("metrics_sql_rows query returned no results")
-				}
-
 				// Get metrics view from metadata for format tokens
 				var mv string
 				var fieldTypes map[string]string
 				if meta := resolveRes.Meta(); meta != nil {
 					mv, _ = meta["metrics_view"].(string)
-					fieldTypes = buildFieldTypeMap(meta)
-				}
-
-				// Apply format tokens if requested
-				if req.UseFormatTokens && mv != "" {
-					formattedRows := make([]map[string]any, len(rows))
-					for i, row := range rows {
-						formattedRow := make(map[string]any)
-						for field, val := range row {
-							// Only apply formatting if the field is not a dimension
-							if fieldTypes != nil && fieldTypes[field] == "dimension" {
-								formattedRow[field] = val
-							} else {
-								formattedRow[field] = fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val)
+					if mv != "" {
+						if dims, err := s.metricsViewDimensions(ctx, req.InstanceId, mv); err == nil {
+							fieldTypes = make(map[string]string, len(dims))
+							for k, v := range dims {
+								if v {
+									fieldTypes[k] = "dimension"
+								}
 							}
 						}
-						formattedRows[i] = formattedRow
 					}
-					return formattedRows, nil
+				}
+				if !req.UseFormatTokens || mv == "" {
+					return rows, nil
 				}
 
-				return rows, nil
+				dims, _ := s.metricsViewDimensions(ctx, req.InstanceId, mv)
+				formattedRows := make([]map[string]any, len(rows))
+				for i, row := range rows {
+					formattedRow := make(map[string]any, len(row))
+					for field, val := range row {
+						if dims != nil && dims[field] {
+							formattedRow[field] = val
+						} else {
+							payload := tokenPayload{MetricsView: mv, Field: field, Value: val}
+							if b, err := json.Marshal(payload); err == nil {
+								formattedRow[field] = fmt.Sprintf("__RILL__FORMAT__(%s)", string(b))
+							}
+						}
+					}
+					formattedRows[i] = formattedRow
+				}
+				return formattedRows, nil
 			},
 		},
 	}
@@ -196,61 +204,43 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}, nil
 }
 
-// isFieldDimension checks if a field is a dimension by looking it up in the metadata fields.
-func isFieldDimension(meta map[string]any, fieldName string) bool {
-	fields := getFieldsFromMeta(meta)
-	if fields == nil {
-		return false
+// metricsViewDimensions retrieves the metrics view resource for the given instance and metrics view name
+func (s *Server) metricsViewDimensions(ctx context.Context, instanceID, metricsView string) (map[string]bool, error) {
+	if metricsView == "" {
+		return nil, nil
 	}
-	for _, f := range fields {
-		name, _ := f["name"].(string)
-		fieldType, _ := f["type"].(string)
-		if name == fieldName && fieldType == "dimension" {
-			return true
+
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsView}, false)
+	if err != nil {
+		return nil, err
+	}
+
+	mv := r.GetMetricsView()
+	if mv == nil || mv.State == nil || mv.State.ValidSpec == nil {
+		return nil, fmt.Errorf("metrics view %q has no valid spec", metricsView)
+	}
+
+	res := make(map[string]bool)
+	for _, d := range mv.State.ValidSpec.Dimensions {
+		if d != nil && d.Name != "" {
+			res[d.Name] = true
 		}
 	}
-	return false
+
+	if mv.State.ValidSpec.TimeDimension != "" {
+		res[mv.State.ValidSpec.TimeDimension] = true
+	}
+
+	return res, nil
 }
 
-// buildFieldTypeMap builds a map of field names to their types from metadata.
-func buildFieldTypeMap(meta map[string]any) map[string]string {
-	fieldTypes := make(map[string]string)
-	fields := getFieldsFromMeta(meta)
-	if fields == nil {
-		return fieldTypes
-	}
-	for _, f := range fields {
-		name, _ := f["name"].(string)
-		fieldType, _ := f["type"].(string)
-		if name != "" && fieldType != "" {
-			fieldTypes[name] = fieldType
-		}
-	}
-	return fieldTypes
-}
-
-// getFieldsFromMeta extracts the fields array from metadata, handling different type assertions.
-func getFieldsFromMeta(meta map[string]any) []map[string]any {
-	fieldsVal, ok := meta["fields"]
-	if !ok {
-		return nil
-	}
-
-	// Try asserting as []map[string]any first (direct type)
-	if fields, ok := fieldsVal.([]map[string]any); ok {
-		return fields
-	}
-
-	// Try asserting as []any and then convert each element
-	if fieldsAny, ok := fieldsVal.([]any); ok {
-		fields := make([]map[string]any, 0, len(fieldsAny))
-		for _, f := range fieldsAny {
-			if fieldMap, ok := f.(map[string]any); ok {
-				fields = append(fields, fieldMap)
-			}
-		}
-		return fields
-	}
-
-	return nil
+type tokenPayload struct {
+	MetricsView string `json:"metrics_view"`
+	Field       string `json:"field"`
+	Value       any    `json:"value"`
 }
