@@ -3,6 +3,7 @@
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
   import { convertPromptWithInlineContextToComponents } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
+  import InlineContext from "@rilldata/web-common/features/chat/core/context/InlineContext.svelte";
 
   export let message: V1Message;
 
@@ -15,11 +16,14 @@
 <div class="chat-message">
   <div class="chat-message-content">
     {#each linesOfTextOrComponents as textOrComponents, i (i)}
-      {#each textOrComponents as { isSvelteComponent, text, component, props }, i (i)}
-        {#if isSvelteComponent}
-          <svelte:component this={component} {...props} />
-        {:else}
-          <span>{text}</span>
+      {#each textOrComponents as textOrComponent, i (i)}
+        {#if textOrComponent.type === "text"}
+          <span>{textOrComponent.text}</span>
+        {:else if textOrComponent.type === "context"}
+          <InlineContext
+            selectedChatContext={textOrComponent.context}
+            props={{ mode: "readonly" }}
+          />
         {/if}
       {/each}
       {#if i < linesOfTextOrComponents.length - 1}

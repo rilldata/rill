@@ -216,13 +216,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    const shouldUpdateSelectedRange =
-      $dashboardChat &&
-      !isScrubbing &&
-      measureSelection.hasSelection() &&
-      // Type safety
-      measure.name &&
-      TIME_GRAIN[timeGrain];
+    const shouldUpdateSelectedRange = $dashboardChat && !isScrubbing;
     if (shouldUpdateSelectedRange) {
       measureSelection.setRange(measure.name!, start, end);
     }

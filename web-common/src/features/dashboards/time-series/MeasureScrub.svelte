@@ -47,7 +47,7 @@
   const xLabelBuffer = 8;
   const yLabelBuffer = 10;
   $: y1 = $plotConfig.plotTop + $plotConfig.top + 5;
-  $: y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
+  $: y2 = $plotConfig.plotBottom - 5;
 
   $: hasSubrangeSelected = Boolean(start && stop);
 

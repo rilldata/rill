@@ -8,14 +8,21 @@
     InlineContextConfig,
     type InlineContext,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
   import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
 
-  export let conversationManager: ConversationManager; // TODO: use svelte context to get this?
+  type InlineContextReadonlyProps = {
+    mode: "readonly";
+  };
+
+  type InlineContextEditableProps = {
+    mode: "editable";
+    onSelect: (ctx: InlineContext) => void;
+    onDropdownToggle: (open: boolean) => void;
+    focusEditor: () => void;
+  };
+
   export let selectedChatContext: InlineContext;
-  export let onSelect: (ctx: InlineContext) => void;
-  export let onDropdownToggle: (open: boolean) => void;
-  export let focusEditor: () => void;
+  export let props: InlineContextReadonlyProps | InlineContextEditableProps;
 
   let left = 0;
   let bottom = 0;
@@ -45,15 +52,16 @@
     selectedChatContext.type === InlineContextType.MetricsView ||
     selectedChatContext.type === InlineContextType.Measure ||
     selectedChatContext.type === InlineContextType.Dimension;
-  $: supportsEditing = isEditableContextType;
+  $: isEditable = props.mode === "editable" && isEditableContextType;
 
   function toggleDropdown() {
+    if (props.mode !== "editable") return;
     const rect = chatElement.getBoundingClientRect();
     left = rect.left;
     bottom = window.innerHeight - rect.bottom + 16;
 
     open = !open;
-    onDropdownToggle(open);
+    props.onDropdownToggle(open);
     tooltipOpen = false;
   }
 
@@ -65,10 +73,12 @@
   }
 
   function handleKeyDown(event: KeyboardEvent) {
+    if (props.mode !== "editable") return;
+
     if (open && event.key === "Escape") {
       open = false;
-      onDropdownToggle(false);
-      focusEditor();
+      props.onDropdownToggle(false);
+      props.focusEditor();
     }
   }
 </script>
@@ -81,9 +91,9 @@
   contenteditable="false"
 >
   <svelte:element
-    this={supportsEditing ? "button" : "div"}
+    this={isEditable ? "button" : "div"}
     class="inline-chat-context-value"
-    class:cursor-default={!supportsEditing}
+    class:cursor-default={!isEditable}
     on:click={toggleDropdown}
     type="button"
     role="button"
@@ -106,19 +116,19 @@
     {:else}
       <span>{label}</span>
     {/if}
-    {#if supportsEditing}
+    {#if isEditable}
       <ChevronDownIcon size="12px" />
     {/if}
   </svelte:element>
 
-  {#if supportsEditing && open}
+  <!-- props.mode === "editable" check helps with type safety. Explainer variable doesnt propagate to typescript checks -->
+  {#if props.mode === "editable" && isEditable && open}
     <InlineContextPicker
-      {conversationManager}
       {left}
       {bottom}
       {selectedChatContext}
-      {onSelect}
-      {focusEditor}
+      onSelect={props.onSelect}
+      focusEditor={props.focusEditor}
     />
   {/if}
 </span>

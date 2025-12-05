@@ -1,6 +1,5 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
   import {
     getInlineChatContextFilteredOptions,
     type MetricsViewContextOption,
@@ -9,7 +8,6 @@
   import MetricsViewGroup from "@rilldata/web-common/features/chat/core/context/MetricsViewGroup.svelte";
   import { InlineContextHighlightManager } from "@rilldata/web-common/features/chat/core/context/inline-context-highlight-manager.ts";
 
-  export let conversationManager: ConversationManager;
   export let left: number;
   export let bottom: number;
   export let selectedChatContext: InlineContext | null = null;
@@ -20,10 +18,7 @@
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
-  const filteredOptions = getInlineChatContextFilteredOptions(
-    searchTextStore,
-    conversationManager,
-  );
+  const filteredOptions = getInlineChatContextFilteredOptions(searchTextStore);
 
   const highlightManager = new InlineContextHighlightManager();
   const highlightedContext = highlightManager.highlightedContext;

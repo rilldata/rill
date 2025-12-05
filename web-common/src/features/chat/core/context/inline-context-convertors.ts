@@ -1,11 +1,7 @@
 import {
-  InlineContextConfig,
   INLINE_CHAT_CONTEXT_TAG,
   type InlineContext,
-  type InlineContextMetadata,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import ReadonlyInlineContext from "@rilldata/web-common/features/chat/core/context/ReadonlyInlineContext.svelte";
-import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 
 export function convertContextToInlinePrompt(ctx: InlineContext) {
   const parts: string[] = [`type="${ctx.type}"`];
@@ -55,12 +51,12 @@ export function parseInlineAttr(content: string, key: string) {
 const OpeningTag = `<${INLINE_CHAT_CONTEXT_TAG}>`;
 const ClosingTag = `</${INLINE_CHAT_CONTEXT_TAG}>`;
 
-type TextOrComponent = {
-  isSvelteComponent: boolean;
-  text?: string;
-  component?: any;
-  props?: Record<string, any>;
-};
+type TextOrComponent =
+  | { type: "text"; text: string }
+  | {
+      type: "context";
+      context: InlineContext;
+    };
 export function convertPromptWithInlineContextToComponents(prompt: string) {
   const lines = prompt.split("\n");
   return lines.map((line) => {
@@ -81,23 +77,20 @@ export function convertPromptWithInlineContextToComponents(prompt: string) {
       if (!ctx) break;
 
       lineComponents.push({
-        isSvelteComponent: false,
+        type: "text",
         text: line.substring(cursor, line.indexOf(OpeningTag, contextIndex)),
       });
 
       lineComponents.push({
-        isSvelteComponent: true,
-        component: ReadonlyInlineContext,
-        props: {
-          chatContext: ctx,
-        },
+        type: "context",
+        context: ctx,
       });
       cursor = closingIndex + ClosingTag.length;
     }
 
     if (cursor < line.length) {
       lineComponents.push({
-        isSvelteComponent: false,
+        type: "text",
         text: line.substring(cursor),
       });
     }

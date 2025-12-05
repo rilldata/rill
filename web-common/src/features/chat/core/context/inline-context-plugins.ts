@@ -21,12 +21,10 @@ import {
 export function getEditorPlugins({
   enableMention,
   placeholder,
-  conversationManager,
   onSubmit,
 }: {
   enableMention: boolean;
   placeholder: string;
-  conversationManager: ConversationManager;
   onSubmit: () => void;
 }) {
   const sharedEditorStore = new SharedEditorStore();
@@ -43,12 +41,7 @@ export function getEditorPlugins({
   ];
 
   if (enableMention) {
-    plugins.push(
-      configureInlineContextTipTapExtension(
-        conversationManager,
-        sharedEditorStore,
-      ),
-    );
+    plugins.push(configureInlineContextTipTapExtension(sharedEditorStore));
   }
 
   return plugins;
@@ -103,7 +96,6 @@ const EditorSubmitExtension = Extension.create(() => {
 });
 
 type InlineContextOptions = MentionOptions<never, InlineContext> & {
-  manager: ConversationManager;
   sharedEditorStore: SharedEditorStore;
 };
 
@@ -188,24 +180,25 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       const comp = new InlineContextComponent({
         target,
         props: {
-          // TODO: fix type so that InlineContextExtension has manager in options
-          conversationManager: this.options.manager,
           selectedChatContext: normalizeInlineContext(
             node.attrs as InlineContext,
           ),
-          onSelect: (selectedChatContext) => {
-            const pos = getPos();
-            if (!pos) return;
+          props: {
+            mode: "editable",
+            onSelect: (selectedChatContext) => {
+              const pos = getPos();
+              if (!pos) return;
 
-            // Dispatch a transaction to update the node attributes with the new context.
-            view.dispatch(
-              getTransactionForContext(selectedChatContext, view, pos),
-            );
-            editor.commands.focus();
+              // Dispatch a transaction to update the node attributes with the new context.
+              view.dispatch(
+                getTransactionForContext(selectedChatContext, view, pos),
+              );
+              editor.commands.focus();
+            },
+            onDropdownToggle: (isOpen) =>
+              sharedEditorStore.dropdownToggled(comp, isOpen),
+            focusEditor: () => editor.commands.focus(),
           },
-          onDropdownToggle: (isOpen) =>
-            sharedEditorStore.dropdownToggled(comp, isOpen),
-          focusEditor: () => editor.commands.focus(),
         },
       });
       sharedEditorStore.componentAdded(comp);
@@ -226,14 +219,12 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
  * Renders the InlineContextPicker svelte component.
  */
 export function configureInlineContextTipTapExtension(
-  manager: ConversationManager,
   sharedEditorStore: SharedEditorStore,
 ) {
   let comp: InlineContextPicker | null = null;
   let selected = false;
 
   return InlineContextExtension.configure({
-    manager,
     sharedEditorStore,
     suggestion: {
       char: "@",
@@ -249,7 +240,6 @@ export function configureInlineContextTipTapExtension(
           comp = new InlineContextPicker({
             target: document.body,
             props: {
-              conversationManager: manager,
               left,
               bottom,
               onSelect: (item) => {
