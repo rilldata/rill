@@ -47,18 +47,8 @@ export const ToolName = {
 } as const;
 
 // =============================================================================
-// TOOL FILTERING
+// CHAT CONFIG
 // =============================================================================
-
-/**
- * High-level agent tools that should not be rendered in the UI
- * These are internal orchestration agents, not user-facing tools
- */
-const HIDDEN_AGENT_TOOLS: readonly string[] = [
-  ToolName.ROUTER_AGENT,
-  ToolName.ANALYST_AGENT,
-  ToolName.DEVELOPER_AGENT,
-];
 
 export type ChatConfig = {
   agent: string;
@@ -69,10 +59,3 @@ export type ChatConfig = {
   placeholder: string;
   enableMention: boolean; // TODO: should be a list of allowed mentions in the future
 };
-
-/**
- * Check if a tool call should be hidden from the UI
- */
-export function isHiddenAgentTool(toolName: string | undefined): boolean {
-  return !!toolName && HIDDEN_AGENT_TOOLS.includes(toolName);
-}

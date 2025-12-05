@@ -9,9 +9,9 @@
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
+  import PlanningBlock from "./planning/PlanningBlock.svelte";
   import AssistantMessage from "./text/AssistantMessage.svelte";
   import UserMessage from "./text/UserMessage.svelte";
-  import PlanningBlock from "./thinking/PlanningBlock.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
 
   export let conversationManager: ConversationManager;
@@ -41,13 +41,9 @@
   $: messageBlocksStore = currentConversation.getMessageBlocks();
   $: messageBlocks = $messageBlocksStore;
 
-  // Data for ThinkingBlock (still needs result map for CallMessage rendering)
-  $: messages = $getConversationQuery.data?.messages ?? [];
-  $: resultMessagesByParentId = new Map(
-    messages
-      .filter((msg) => msg.type === "result" && msg.tool !== "router_agent")
-      .map((msg) => [msg.parentId, msg]),
-  );
+  // Check if conversation is empty (for empty state display)
+  $: isConversationEmpty =
+    ($getConversationQuery.data?.messages?.length ?? 0) === 0;
 
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {
@@ -79,7 +75,7 @@
       headline="Unable to load conversation"
       error={$conversationQueryError}
     />
-  {:else if messages.length === 0}
+  {:else if isConversationEmpty}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
@@ -96,7 +92,7 @@
       {:else if block.type === "thinking"}
         <ThinkingBlock
           messages={block.messages}
-          {resultMessagesByParentId}
+          resultMessagesByParentId={block.resultMessagesByParentId}
           isComplete={block.isComplete}
           duration={block.duration}
           {tools}

@@ -9,7 +9,8 @@
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import LoadingSpinner from "../../../../../components/icons/LoadingSpinner.svelte";
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
-  import { isHiddenAgentTool, MessageContentType } from "../../types";
+  import { MessageContentType } from "../../types";
+  import { isHiddenTool } from "../tool-registry";
   import { getToolDisplayName } from "./tool-display-names";
   import { getToolIcon } from "./tool-icons";
 
@@ -22,7 +23,8 @@
 
   // Call message properties
   $: toolInput = formatContentData(message);
-  $: isHidden = isHiddenAgentTool(message.tool);
+  // Note: Hidden tools are filtered upstream in getMessageTarget(), so this is defensive
+  $: isHidden = isHiddenTool(message.tool);
 
   // Result message properties
   $: hasResult = !!resultMessage;

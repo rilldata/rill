@@ -1,9 +1,12 @@
 <!--
   Renders a planning indicator shown while waiting for the first AI response.
+  
+  This is the universal "AI is working" state before we know what kind
+  of response we'll get (thinking with tools, or direct text).
 -->
 <script lang="ts">
   import Brain from "../../../../../components/icons/Brain.svelte";
-  import ShimmerText from "./ShimmerText.svelte";
+  import ShimmerText from "../ShimmerText.svelte";
 </script>
 
 <div class="planning-block">

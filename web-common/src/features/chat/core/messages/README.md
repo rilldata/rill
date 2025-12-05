@@ -1,97 +1,131 @@
 # Message Blocks
 
-This directory contains the presentation layer for chat conversations. It transforms raw API messages into structured blocks for rendering.
+This directory transforms raw API messages (`V1Message`) into UI blocks (`MessageBlock`) for rendering chat conversations.
 
-## Architecture
+## Conceptual Model
 
-### Message Block Types
+### Message Sources → UI Blocks
 
-Messages are transformed into one of three block types for display:
+```
+V1Message (from API)          →  MessageBlock (for UI)
+─────────────────────────────────────────────────────────
+router_agent                  →  TextMessage (main conversation)
+progress                      →  ThinkingBlock (grouped)
+tool call (inline)            →  ThinkingBlock (grouped)
+tool call (block)             →  ThinkingBlock + ChartBlock/etc.
+tool call (hidden)            →  (not rendered)
+result                        →  (attached to parent call)
+(streaming, no response yet)  →  PlanningBlock (placeholder)
+```
 
-- **`TextMessage`** - A single text message (user prompt or assistant response), rendered by either `UserMessage` or `AssistantMessage` components
-- **`ThinkingBlock`** - A collapsible block containing grouped progress updates and tool calls
-- **`ChartBlock`** - A visualization created from a `create_chart` tool call
+### Block Flow
 
-These are unified under the `MessageBlock` discriminated union for rendering purposes.
+```
+                    ┌─────────────────┐
+                    │  PlanningBlock  │  ← "AI is working" (before response arrives)
+                    └─────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            ↓                               ↓
+    (AI uses tools)                  (AI responds directly)
+    ┌───────────────┐                       │
+    │ ThinkingBlock │                       │
+    └───────────────┘                       │
+            ↓                               ↓
+    ┌───────────────┐               ┌───────────────┐
+    │  TextMessage  │               │  TextMessage  │
+    └───────────────┘               └───────────────┘
+```
 
-### Directory Structure
+### Key Abstraction: `getMessageTarget()`
 
-Each block type is **completely self-contained** in its own directory:
+All routing logic is centralized in one function:
+
+```typescript
+function getMessageTarget(msg: V1Message): MessageTarget {
+  // router_agent → "text" (main conversation)
+  // progress → "thinking"
+  // tool calls → consult registry (inline/block/hidden)
+  // results → "skip" (attached to parent calls)
+}
+```
+
+This makes the transformation loop trivial—just a switch on the target.
+
+### Tool Registry
+
+The **tool registry** (`tool-registry.ts`) configures how tool calls render:
+
+- **`inline`** - Shown in thinking blocks (most tools)
+- **`block`** - Shown in thinking, then produces a top-level block
+- **`hidden`** - Not shown (internal orchestration agents)
+
+Note: `router_agent` is NOT in the registry—it produces TEXT, not thinking content.
+
+## Directory Structure
+
+Each block type has its own directory:
 
 ```
 messages/
-├── text/
-│   ├── text-message.ts           # TextMessage type & creation
-│   ├── AssistantMessage.svelte   # Renders assistant responses (markdown + citations)
-│   ├── UserMessage.svelte        # Renders user prompts (with inline context)
-│   └── rewrite-citation-urls.ts  # Citation URL utilities
+├── message-blocks.ts            # Transformation: V1Message → MessageBlock
+├── tool-registry.ts             # Tool rendering configuration
+├── Messages.svelte              # Main container component
 │
-├── thinking/
-│   ├── thinking-block.ts         # ThinkingBlock type & utilities
-│   ├── ThinkingBlock.svelte      # Main collapsible component
-│   ├── CallMessage.svelte        # Tool call display
-│   ├── ProgressMessage.svelte    # Progress update display
-│   ├── ShimmerText.svelte        # Loading animation
-│   ├── tool-display-names.ts     # Tool metadata
-│   └── tool-icons.ts             # Tool icon mappings
+├── ShimmerText.svelte           # Shared: loading animation
+├── Error.svelte                 # Shared: error display
 │
-├── chart/
-│   ├── chart-block.ts            # ChartBlock type, parsing & creation
-│   └── ChartBlock.svelte         # Chart rendering
+├── text/                        # Main conversation (user/assistant)
+│   ├── text-message.ts
+│   ├── AssistantMessage.svelte
+│   ├── UserMessage.svelte
+│   └── rewrite-citation-urls.ts
 │
-├── message-blocks.ts             # MessageBlockTransformer (orchestration)
-├── Messages.svelte               # Main container component
-└── Error.svelte                  # Shared error display
+├── planning/                    # "AI is working" placeholder
+│   ├── planning-block.ts        # Type + shouldShowPlanning()
+│   └── PlanningBlock.svelte
+│
+├── thinking/                    # AI reasoning (progress + tool calls)
+│   ├── thinking-block.ts
+│   ├── ThinkingBlock.svelte
+│   ├── CallMessage.svelte
+│   ├── tool-display-names.ts
+│   └── tool-icons.ts
+│
+└── chart/                       # Chart visualizations
+    ├── chart-block.ts
+    └── ChartBlock.svelte
 ```
 
-## Key Concepts
-
-### Transformation Pipeline
-
-1. **Raw messages** (from API) → `Conversation.getMessageBlocks()`
-2. **Message filtering** → Filter out internal tool results
-3. **Grouping logic** → `MessageBlockTransformer.transform()`
-   - Text messages remain standalone
-   - Progress/tool call messages are grouped into thinking blocks
-   - `create_chart` tool calls **end** the current thinking block (so charts appear at top level)
-   - Planning indicator added when waiting for AI response
-4. **Message blocks** → Rendered by `Messages.svelte`
-
-### Thinking Block Splitting
-
-Thinking blocks are split on `create_chart` tool calls to achieve this flow:
+## Transformation Flow
 
 ```
-Thinking Block (progress + create_chart call)
-  ↓
-Chart Visualization
-  ↓
-Thinking Block (new progress + create_chart call)
-  ↓
-Chart Visualization
+1. Build result map (tool call ID → result message)
+2. For each message:
+   - getMessageTarget() → text | thinking | block | skip
+   - text: flush thinking, add TextMessage
+   - thinking: accumulate in buffer
+   - block: accumulate, flush thinking, add block
+   - skip: ignore
+3. Flush remaining thinking
+4. Add planning indicator if streaming with no response
 ```
-
-This ensures each chart appears prominently between thinking blocks rather than hidden inside them.
-
-### Planning Indicator
-
-When the user sends a message but no AI response has arrived yet, a placeholder thinking block is shown with "Thinking..." to provide immediate feedback.
 
 ## Adding New Block Types
 
-To add a new block type:
+To add a new block-level tool (e.g., file diff):
 
-1. Create a new directory: `messages/new-type/`
-2. Add type definition and creation logic: `new-type.ts`
-3. Add rendering component: `NewType.svelte`
-4. Update `message-blocks.ts` to handle the new type
-5. Update `Messages.svelte` to render it
+1. **Create block directory**: `messages/file-diff/`
+2. **Define type and factory**: `file-diff-block.ts`
+3. **Create component**: `FileDiffBlock.svelte`
+4. **Register in tool registry**:
+   ```typescript
+   [ToolName.WRITE_FILE]: {
+     renderMode: "block",
+     createBlock: createFileDiffBlock,
+   },
+   ```
+5. **Add to MessageBlock union** in `message-blocks.ts`
+6. **Add rendering case** in `Messages.svelte`
 
-## Testing
-
-When modifying block transformation logic, verify:
-
-- Charts split thinking blocks correctly
-- Planning indicator appears/disappears smoothly
-- Empty thinking blocks are hidden
-- All message types render in correct order
+No changes to transformation logic needed—the registry handles routing.

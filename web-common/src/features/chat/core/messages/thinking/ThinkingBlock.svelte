@@ -8,8 +8,8 @@
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
   import { MessageType } from "../../types";
+  import ShimmerText from "../ShimmerText.svelte";
   import CallMessage from "./CallMessage.svelte";
-  import ShimmerText from "./ShimmerText.svelte";
 
   export let messages: V1Message[];
   export let resultMessagesByParentId: Map<string | undefined, V1Message>;
