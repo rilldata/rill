@@ -544,7 +544,7 @@
     </div>
 
     <div class="mt-6 flex-shrink-0">
-      <NeedHelpText {connector} {paramsForm} {isMultiStepConnector} />
+      <NeedHelpText {connector} />
     </div>
   </div>
 </div>
