@@ -1,7 +1,7 @@
 <!-- Renders user prompt messages. -->
 <script lang="ts">
-  import type { V1Message } from "../../../../runtime-client";
-  import { extractMessageText } from "../utils";
+  import type { V1Message } from "../../../../../runtime-client";
+  import { extractMessageText } from "../../utils";
   import DOMPurify from "dompurify";
   import { convertPromptWithInlineContextToHTML } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";

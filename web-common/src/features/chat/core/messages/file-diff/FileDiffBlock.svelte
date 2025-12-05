@@ -7,8 +7,8 @@
   import { html } from "diff2html";
   import "diff2html/bundles/css/diff2html.min.css";
   import DOMPurify from "dompurify";
-  import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
-  import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
+  import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
+  import ChevronRight from "../../../../../components/icons/ChevronRight.svelte";
 
   export let filePath: string;
   export let diff: string = "";
