@@ -102,13 +102,15 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					// The "metrics" resolver returns the metrics view in the metadata.
 					// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
 					var mv string
+					var isDimension bool
 					if meta := resolveRes.Meta(); meta != nil {
 						mv, _ = meta["metrics_view"].(string)
+						isDimension = isFieldDimension(meta, field)
 					}
-					if mv != "" {
+					if mv != "" && !isDimension {
 						return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val), nil
 					}
-					// Fallthrough to raw value if we can't find the metrics view
+					// Fallthrough to raw value if we can't find the metrics view or if it's a dimension
 				}
 
 				// Return stringified raw value
@@ -151,8 +153,10 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 
 				// Get metrics view from metadata for format tokens
 				var mv string
+				var fieldTypes map[string]string
 				if meta := resolveRes.Meta(); meta != nil {
 					mv, _ = meta["metrics_view"].(string)
+					fieldTypes = buildFieldTypeMap(meta)
 				}
 
 				// Apply format tokens if requested
@@ -161,7 +165,12 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					for i, row := range rows {
 						formattedRow := make(map[string]any)
 						for field, val := range row {
-							formattedRow[field] = fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val)
+							// Only apply formatting if the field is not a dimension
+							if fieldTypes != nil && fieldTypes[field] == "dimension" {
+								formattedRow[field] = val
+							} else {
+								formattedRow[field] = fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val)
+							}
 						}
 						formattedRows[i] = formattedRow
 					}
@@ -185,4 +194,63 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	return &runtimev1.ResolveTemplatedStringResponse{
 		Body: body,
 	}, nil
+}
+
+// isFieldDimension checks if a field is a dimension by looking it up in the metadata fields.
+func isFieldDimension(meta map[string]any, fieldName string) bool {
+	fields := getFieldsFromMeta(meta)
+	if fields == nil {
+		return false
+	}
+	for _, f := range fields {
+		name, _ := f["name"].(string)
+		fieldType, _ := f["type"].(string)
+		if name == fieldName && fieldType == "dimension" {
+			return true
+		}
+	}
+	return false
+}
+
+// buildFieldTypeMap builds a map of field names to their types from metadata.
+func buildFieldTypeMap(meta map[string]any) map[string]string {
+	fieldTypes := make(map[string]string)
+	fields := getFieldsFromMeta(meta)
+	if fields == nil {
+		return fieldTypes
+	}
+	for _, f := range fields {
+		name, _ := f["name"].(string)
+		fieldType, _ := f["type"].(string)
+		if name != "" && fieldType != "" {
+			fieldTypes[name] = fieldType
+		}
+	}
+	return fieldTypes
+}
+
+// getFieldsFromMeta extracts the fields array from metadata, handling different type assertions.
+func getFieldsFromMeta(meta map[string]any) []map[string]any {
+	fieldsVal, ok := meta["fields"]
+	if !ok {
+		return nil
+	}
+
+	// Try asserting as []map[string]any first (direct type)
+	if fields, ok := fieldsVal.([]map[string]any); ok {
+		return fields
+	}
+
+	// Try asserting as []any and then convert each element
+	if fieldsAny, ok := fieldsVal.([]any); ok {
+		fields := make([]map[string]any, 0, len(fieldsAny))
+		for _, f := range fieldsAny {
+			if fieldMap, ok := f.(map[string]any); ok {
+				fields = append(fields, fieldMap)
+			}
+		}
+		return fields
+	}
+
+	return nil
 }
