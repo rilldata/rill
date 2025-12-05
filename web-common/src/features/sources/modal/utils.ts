@@ -94,10 +94,7 @@ export function applyClickHouseCloudRequirements(
   values: Record<string, unknown>,
 ): Record<string, unknown> {
   if (connectorName === "clickhouse" && connectorType === "clickhouse-cloud") {
-    return { ...values, ssl: true} as Record<
-      string,
-      unknown
-    >;
+    return { ...values, ssl: true } as Record<string, unknown>;
   }
   return values;
 }

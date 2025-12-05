@@ -1,13 +1,12 @@
 <script lang="ts">
   import { SelectSeparator } from "@rilldata/web-common/components/select";
   import * as Select from "@rilldata/web-common/components/select";
-  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
-  import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
+  import InputLabel from "./InputLabel.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -30,7 +29,7 @@
   export let addNewLabel: string | null = null;
   export let placeholder: string = "";
   export let optional: boolean = false;
-  export let tooltip: string = "";
+  export let hint: string = "";
   export let width: number | null = null;
   export let minWidth: number | null = null;
   export let dropdownWidth: string | null = null;
@@ -66,29 +65,7 @@
 
 <div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
   {#if label?.length}
-    <label
-      for={id}
-      class="{size === 'sm' ? 'text-xs' : 'text-sm'} flex items-center gap-x-1"
-    >
-      <span class="text-gray-800 font-medium">
-        {label}
-      </span>
-      {#if optional}
-        <span class="text-gray-500">(optional)</span>
-      {/if}
-      {#if tooltip}
-        <Tooltip.Root portal="body">
-          <Tooltip.Trigger>
-            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
-          </Tooltip.Trigger>
-          <Tooltip.Content side="right">
-            {#each tooltip.split(/\n/gm) as line (line)}
-              <div>{line}</div>
-            {/each}
-          </Tooltip.Content>
-        </Tooltip.Root>
-      {/if}
-    </label>
+    <InputLabel {id} {label} {hint} {optional} small={size === "sm"} />
   {/if}
 
   <Select.Root
@@ -155,24 +132,11 @@
             {disabled}
             class="text-[{fontSize}px] gap-x-2 items-start"
           >
-            {#if tooltip}
-              <Tooltip.Root portal="body">
-                <Tooltip.Trigger class="select-tooltip cursor-default">
-                  {#if type}
-                    <DataTypeIcon {type} />
-                  {/if}
-                  {label ?? value}
-                </Tooltip.Trigger>
-                <Tooltip.Content side="right" sideOffset={8}>
-                  {tooltip}
-                </Tooltip.Content>
-              </Tooltip.Root>
-            {:else}
-              {#if type}
-                <DataTypeIcon {type} />
-              {/if}
-              {label ?? value}
+            {#if type}
+              <DataTypeIcon {type} />
             {/if}
+            <span>{label ?? value}</span>
+            <!-- Tooltip implementation can be added here -->
           </Select.Item>
         {:else}
           <div class="px-2.5 py-1.5 text-gray-600">No results found</div>

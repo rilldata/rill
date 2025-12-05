@@ -401,6 +401,7 @@
                   <Select
                     id={propertyKey}
                     label={property.displayName}
+                    hint={property.hint}
                     bind:value={$paramsForm[propertyKey]}
                     options={[
                       { value: "8443", label: "8443 (HTTPS)" },
