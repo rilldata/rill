@@ -432,27 +432,16 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 		return err
 	}
 
-	// Construct the full frontend URL including custom domain (if any) and org/project path
-	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
-
-	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, d.Environment, true)
-	if err != nil {
-		return err
-	}
-
-	// Connect to the runtime, and update the instance's variables/annotations.
-	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
+	// Connect to the runtime and call ReloadConfig.
+	// The runtime will pull the latest variables, annotations, and frontend_url from the admin service,
+	// and will also force a repo pull.
 	rt, err := s.OpenRuntimeClient(d)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
-	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:  d.RuntimeInstanceID,
-		Variables:   vars,
-		Annotations: annotations.ToMap(),
-		FrontendUrl: &frontendURL,
+	_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{
+		InstanceId: d.RuntimeInstanceID,
 	})
 	if err != nil {
 		return err

@@ -260,6 +260,12 @@ service AdminService {
     };
   }
 
+  // GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+  // This is called by the runtime to pull its Variables and Annotations from the admin service.
+  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (GetDeploymentConfigResponse) {
+    option (google.api.http) = {get: "/v1/deployment-config"};
+  }
+
   // GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
   rpc GetDeployment(GetDeploymentRequest) returns (GetDeploymentResponse) {
     option (google.api.http) = {
@@ -1269,6 +1275,19 @@ message CreateDeploymentRequest {
 
 message CreateDeploymentResponse {
   Deployment deployment = 1;
+}
+
+message GetDeploymentConfigRequest {
+  // The deployment is inferred from the authorization token.
+}
+
+message GetDeploymentConfigResponse {
+  // Variables for the deployment (connector credentials, etc.)
+  map<string, string> variables = 1;
+  // Annotations for the deployment (org/project metadata, etc.)
+  map<string, string> annotations = 2;
+  // Frontend URL for the deployment.
+  string frontend_url = 3;
 }
 
 message GetDeploymentRequest {

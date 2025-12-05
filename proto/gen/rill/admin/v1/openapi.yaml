@@ -658,6 +658,22 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1GetDeploymentConfigResponse:
+            properties:
+                annotations:
+                    additionalProperties:
+                        type: string
+                    title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                frontendUrl:
+                    description: Frontend URL for the deployment.
+                    type: string
+                variables:
+                    additionalProperties:
+                        type: string
+                    title: Variables for the deployment (connector credentials, etc.)
+                    type: object
+            type: object
         v1GetDeploymentCredentialsResponse:
             properties:
                 accessToken:
@@ -2340,6 +2356,25 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListPublicBillingPlans lists all public billing plans
+    /v1/deployment-config:
+        get:
+            operationId: AdminService_GetDeploymentConfig
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}:
         delete:
             operationId: AdminService_DeleteDeployment

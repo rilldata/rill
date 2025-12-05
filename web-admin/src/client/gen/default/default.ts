@@ -148,6 +148,7 @@ import type {
   V1GetCloneCredentialsResponse,
   V1GetCurrentMagicAuthTokenResponse,
   V1GetCurrentUserResponse,
+  V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
   V1GetGithubRepoStatusResponse,
@@ -542,6 +543,89 @@ export function createAdminServiceListPublicBillingPlans<
 } {
   const queryOptions =
     getAdminServiceListPublicBillingPlansQueryOptions(options);
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+This is called by the runtime to pull its Variables and Annotations from the admin service.
+ */
+export const adminServiceGetDeploymentConfig = (signal?: AbortSignal) => {
+  return httpClient<V1GetDeploymentConfigResponse>({
+    url: `/v1/deployment-config`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetDeploymentConfigQueryKey = () => {
+  return [`/v1/deployment-config`] as const;
+};
+
+export const getAdminServiceGetDeploymentConfigQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetDeploymentConfigQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>
+  > = ({ signal }) => adminServiceGetDeploymentConfig(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetDeploymentConfigQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>
+>;
+export type AdminServiceGetDeploymentConfigQueryError = RpcStatus;
+
+/**
+ * @summary GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+This is called by the runtime to pull its Variables and Annotations from the admin service.
+ */
+
+export function createAdminServiceGetDeploymentConfig<
+  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+  TError = RpcStatus,
+>(
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetDeploymentConfigQueryOptions(options);
 
   const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
     TData,
