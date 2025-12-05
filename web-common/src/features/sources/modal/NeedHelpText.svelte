@@ -1,26 +1,13 @@
 <script lang="ts">
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import { ExternalLinkIcon } from "lucide-svelte";
-  import {
-    connectorStepStore,
-    setStep,
-    setConnectorConfig,
-  } from "./connectorStepStore";
-  import { get } from "svelte/store";
+  import { ExternalLinkIcon, InfoIcon } from "lucide-svelte";
+  import { connectorStepStore } from "./connectorStepStore";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let connector: V1ConnectorDriver;
-  export let paramsForm: any = undefined;
-  export let isMultiStepConnector: boolean = false;
 
   $: stepState = $connectorStepStore;
-
-  function handleSkipToImport() {
-    if (!isMultiStepConnector || stepState.step !== "connector") return;
-    if (paramsForm) {
-      setConnectorConfig(get(paramsForm) as Record<string, unknown>);
-    }
-    setStep("source");
-  }
 </script>
 
 <div>
@@ -54,17 +41,7 @@
       </a> for detailed instructions on how to customize up your data source ingestion.
     </div>
   {/if}
-  {#if isMultiStepConnector && stepState.step === "connector"}
-    <div class="text-sm leading-normal font-medium text-muted-foreground mb-2">
-      Already connected? <button
-        type="button"
-        class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium group-hover:underline break-all"
-        on:click={handleSkipToImport}
-      >
-        Click here to import your data.
-      </button>
-    </div>
-  {/if}
+
   {#if connector.displayName === "DuckDB" || connector.displayName === "SQLite"}
     <div class="mt-8">
       <div class="text-sm leading-none font-medium mb-4">
