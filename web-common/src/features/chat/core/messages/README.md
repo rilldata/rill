@@ -90,9 +90,8 @@ To add a new block type:
 ## Testing
 
 When modifying block transformation logic, verify:
+
 - Charts split thinking blocks correctly
 - Planning indicator appears/disappears smoothly
 - Empty thinking blocks are hidden
 - All message types render in correct order
-
-
