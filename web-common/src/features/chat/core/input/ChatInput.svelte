@@ -199,6 +199,6 @@
   }
 
   .chat-input-footer {
-    @apply flex flex-row;
+    @apply flex flex-row px-1;
   }
 </style>

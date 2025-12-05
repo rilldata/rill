@@ -2,12 +2,6 @@
  * Block Transformation
  *
  * Transforms raw API messages (V1Message) into UI blocks (Block).
- *
- * Conceptual Model:
- * - `router_agent` messages → TEXT (the main conversation)
- * - `progress` messages → THINKING (collapsible reasoning UI)
- * - Tool calls → THINKING (inline) or BLOCK (top-level) based on registry
- * - `result` messages → Not rendered directly (attached to their parent calls)
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
@@ -26,7 +20,7 @@ import {
 import { getToolConfig, type ToolConfig } from "./tool-registry";
 
 // =============================================================================
-// BLOCK TYPES
+// TYPES & TRANSFORMATION
 // =============================================================================
 
 export type Block =
@@ -44,67 +38,6 @@ export type {
   TextBlock,
   ThinkingBlock,
 };
-
-// =============================================================================
-// ROUTING
-// =============================================================================
-
-/**
- * Where a message should be routed for rendering.
- */
-export type BlockRoute =
-  | { route: "text" }
-  | { route: "thinking" }
-  | { route: "block"; config: ToolConfig }
-  | { route: "skip" };
-
-/**
- * Determines where a message should be routed.
- *
- * This centralizes all routing logic in one place:
- * - router_agent → text (main conversation)
- * - result messages → skip (attached to parent calls via map)
- * - progress messages → thinking
- * - tool calls → consult registry (inline/block/hidden)
- */
-export function getBlockRoute(msg: V1Message): BlockRoute {
-  // Router agent produces the main conversation text (user prompts, assistant responses)
-  if (msg.tool === ToolName.ROUTER_AGENT) {
-    return { route: "text" };
-  }
-
-  // Result messages are not directly rendered—they're attached to their parent calls
-  if (msg.type === MessageType.RESULT) {
-    return { route: "skip" };
-  }
-
-  // Progress messages always go to thinking block
-  if (msg.type === MessageType.PROGRESS) {
-    return { route: "thinking" };
-  }
-
-  // Tool calls: consult the registry
-  if (msg.type === MessageType.CALL) {
-    const config = getToolConfig(msg.tool);
-
-    switch (config.renderMode) {
-      case "block":
-        return { route: "block", config };
-      case "hidden":
-        return { route: "skip" };
-      case "inline":
-      default:
-        return { route: "thinking" };
-    }
-  }
-
-  // Unknown message types are skipped
-  return { route: "skip" };
-}
-
-// =============================================================================
-// TRANSFORMATION
-// =============================================================================
 
 /**
  * Transforms raw chat messages into a list of UI blocks.
@@ -187,12 +120,64 @@ export function transformToBlocks(
 }
 
 // =============================================================================
-// HELPERS
+// ROUTING & HELPERS
 // =============================================================================
 
 /**
+ * Where a message should be routed for rendering.
+ */
+type BlockRoute =
+  | { route: "text" }
+  | { route: "thinking" }
+  | { route: "block"; config: ToolConfig }
+  | { route: "skip" };
+
+/**
+ * Determines where a message should be routed.
+ *
+ * Routing rules:
+ * - router_agent → text (main conversation)
+ * - result messages → skip (attached to parent calls via map)
+ * - progress messages → thinking
+ * - tool calls → consult registry (inline/block/hidden)
+ */
+export function getBlockRoute(msg: V1Message): BlockRoute {
+  // Router agent produces the main conversation text
+  if (msg.tool === ToolName.ROUTER_AGENT) {
+    return { route: "text" };
+  }
+
+  // Result messages are attached to their parent calls, not rendered directly
+  if (msg.type === MessageType.RESULT) {
+    return { route: "skip" };
+  }
+
+  // Progress messages always go to thinking block
+  if (msg.type === MessageType.PROGRESS) {
+    return { route: "thinking" };
+  }
+
+  // Tool calls: consult the registry
+  if (msg.type === MessageType.CALL) {
+    const config = getToolConfig(msg.tool);
+
+    switch (config.renderMode) {
+      case "block":
+        return { route: "block", config };
+      case "hidden":
+        return { route: "skip" };
+      case "inline":
+      default:
+        return { route: "thinking" };
+    }
+  }
+
+  // Unknown message types are skipped
+  return { route: "skip" };
+}
+
+/**
  * Build a map from tool call message IDs to their result messages.
- * Used to correlate tool calls with their results for display.
  */
 function buildResultMessageMap(
   messages: V1Message[],
