@@ -15,27 +15,34 @@ tool call (inline)            →  ThinkingBlock (grouped)
 tool call (block)             →  ThinkingBlock + ChartBlock/etc.
 tool call (hidden)            →  (not rendered)
 result                        →  (attached to parent call)
-(streaming, no response yet)  →  PlanningBlock (placeholder)
+(streaming, not ending text)  →  WorkingBlock (animated indicator)
 ```
 
 ### Block Flow
 
 ```
-                    ┌─────────────────┐
-                    │  PlanningBlock  │  ← "AI is working" (before response arrives)
-                    └─────────────────┘
-                            │
-            ┌───────────────┴───────────────┐
-            ↓                               ↓
-    (AI uses tools)                  (AI responds directly)
-    ┌───────────────┐                       │
-    │ ThinkingBlock │                       │
-    └───────────────┘                       │
-            ↓                               ↓
-    ┌───────────────┐               ┌───────────────┐
-    │   TextBlock   │               │   TextBlock   │
-    └───────────────┘               └───────────────┘
+    ┌───────────────┐
+    │ WorkingBlock  │  ← Animated dots (shown while AI is working)
+    └───────────────┘
+            │
+            ↓
+    ┌───────────────┐
+    │ ThinkingBlock │  ← AI reasoning + tool calls
+    └───────────────┘
+            │
+            ↓
+    ┌───────────────┐
+    │  ChartBlock   │  ← Tool output (chart, file diff, etc.)
+    │ FileDiffBlock │
+    └───────────────┘
+            │
+            ↓
+    ┌───────────────┐
+    │   TextBlock   │  ← Final response (streaming text = no WorkingBlock)
+    └───────────────┘
 ```
+
+**WorkingBlock appears when:** `isStreaming && lastBlock?.type !== "text"`
 
 ### Key Abstraction: `getBlockRoute()`
 
@@ -81,9 +88,9 @@ messages/
 │   ├── UserMessage.svelte
 │   └── rewrite-citation-urls.ts
 │
-├── planning/                    # "AI is working" placeholder
-│   ├── planning-block.ts        # Type + shouldShowPlanning()
-│   └── PlanningBlock.svelte
+├── working/                     # "AI is working" indicator
+│   ├── working-block.ts
+│   └── WorkingBlock.svelte
 │
 ├── thinking/                    # AI reasoning (progress + tool calls)
 │   ├── thinking-block.ts

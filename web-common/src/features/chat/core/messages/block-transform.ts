@@ -8,16 +8,13 @@ import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
 import { type FileDiffBlock } from "./file-diff/file-diff-block";
-import {
-  shouldShowPlanning,
-  type PlanningBlock,
-} from "./planning/planning-block";
 import { createTextBlock, type TextBlock } from "./text/text-block";
 import {
   createThinkingBlock,
   type ThinkingBlock,
 } from "./thinking/thinking-block";
 import { getToolConfig, type ToolConfig } from "./tool-registry";
+import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 
 // =============================================================================
 // TYPES & TRANSFORMATION
@@ -28,15 +25,15 @@ export type Block =
   | ThinkingBlock
   | ChartBlock
   | FileDiffBlock
-  | PlanningBlock;
+  | WorkingBlock;
 
 // Re-export individual block types for convenience
 export type {
   ChartBlock,
   FileDiffBlock,
-  PlanningBlock,
   TextBlock,
   ThinkingBlock,
+  WorkingBlock,
 };
 
 /**
@@ -108,11 +105,11 @@ export function transformToBlocks(
   const isRemainingComplete = !isStreaming && !isConversationLoading;
   flushThinking(isRemainingComplete);
 
-  // Add planning indicator if needed
-  if (shouldShowPlanning(messages, isStreaming, isConversationLoading)) {
+  // Add working indicator if AI is still processing
+  if (shouldShowWorking(blocks, isStreaming, isConversationLoading)) {
     blocks.push({
-      type: "planning",
-      id: "planning-indicator",
+      type: "working",
+      id: "working-indicator",
     });
   }
 

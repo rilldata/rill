@@ -10,10 +10,10 @@
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
   import FileDiffBlock from "./file-diff/FileDiffBlock.svelte";
-  import PlanningBlock from "./planning/PlanningBlock.svelte";
   import AssistantMessage from "./text/AssistantMessage.svelte";
   import UserMessage from "./text/UserMessage.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
+  import WorkingBlock from "./working/WorkingBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -98,8 +98,8 @@
           duration={block.duration}
           {tools}
         />
-      {:else if block.type === "planning"}
-        <PlanningBlock />
+      {:else if block.type === "working"}
+        <WorkingBlock />
       {:else if block.type === "chart"}
         <ChartBlock chartType={block.chartType} chartSpec={block.chartSpec} />
       {:else if block.type === "file-diff"}
