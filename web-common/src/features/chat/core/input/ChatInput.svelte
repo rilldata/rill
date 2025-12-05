@@ -77,7 +77,6 @@
       extensions: getEditorPlugins({
         enableMention,
         placeholder,
-        conversationManager,
         onSubmit: () => void sendMessage(),
       }),
       content: "",

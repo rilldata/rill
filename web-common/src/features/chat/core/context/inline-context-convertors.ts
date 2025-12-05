@@ -1,8 +1,6 @@
 import {
-  InlineContextConfig,
   INLINE_CHAT_CONTEXT_TAG,
   type InlineContext,
-  type InlineContextMetadata,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function convertContextToInlinePrompt(ctx: InlineContext) {
@@ -50,27 +48,53 @@ export function parseInlineAttr(content: string, key: string) {
   return match[1];
 }
 
-const ChatContextRegex = new RegExp(
-  `<${INLINE_CHAT_CONTEXT_TAG}>(.*?)</${INLINE_CHAT_CONTEXT_TAG}>`,
-  "gm",
-);
-export function convertPromptWithInlineContextToHTML(
-  prompt: string,
-  meta: InlineContextMetadata,
-) {
+const OpeningTag = `<${INLINE_CHAT_CONTEXT_TAG}>`;
+const ClosingTag = `</${INLINE_CHAT_CONTEXT_TAG}>`;
+
+type TextOrComponent =
+  | { type: "text"; text: string }
+  | {
+      type: "context";
+      context: InlineContext;
+    };
+export function convertPromptWithInlineContextToComponents(prompt: string) {
   const lines = prompt.split("\n");
-  const htmlLines = lines.map((line) =>
-    line.replaceAll(ChatContextRegex, (raw, contextValue: string) => {
-      const entry = convertPromptValueToContext(contextValue);
-      if (!entry) return raw;
+  return lines.map((line) => {
+    const lineComponents: TextOrComponent[] = [];
 
-      const data = InlineContextConfig[entry.type];
-      if (!data) return raw;
-      const label = data.getLabel(entry, meta);
+    let cursor = 0;
 
-      // TODO: once we support editing messages, embed other parts of context here.
-      return `<span class="underline">${label}</span>`;
-    }),
-  );
-  return htmlLines.join("<br>");
+    while (cursor < line.length) {
+      const contextIndex = line.indexOf(OpeningTag, cursor);
+      if (contextIndex === -1) break;
+
+      const closingIndex = line.indexOf(ClosingTag, contextIndex);
+      if (closingIndex === -1) break;
+
+      const ctx = convertPromptValueToContext(
+        line.substring(contextIndex + OpeningTag.length, closingIndex),
+      );
+      if (!ctx) break;
+
+      lineComponents.push({
+        type: "text",
+        text: line.substring(cursor, line.indexOf(OpeningTag, contextIndex)),
+      });
+
+      lineComponents.push({
+        type: "context",
+        context: ctx,
+      });
+      cursor = closingIndex + ClosingTag.length;
+    }
+
+    if (cursor < line.length) {
+      lineComponents.push({
+        type: "text",
+        text: line.substring(cursor),
+      });
+    }
+
+    return lineComponents;
+  });
 }

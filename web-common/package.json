@@ -37,6 +37,7 @@
     "@codemirror/view": "^6.34.1",
     "@connectrpc/connect": "^1.4.0",
     "@connectrpc/connect-web": "^1.4.0",
+    "@floating-ui/dom": "^1.7.4",
     "@replit/codemirror-indentation-markers": "^6.5.3",
     "@storybook/addon-actions": "^7.6.17",
     "@storybook/addon-essentials": "^7.6.13",

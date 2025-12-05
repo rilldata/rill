@@ -28,9 +28,9 @@
   );
   const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
-  $: ({ top, bottom, plotTop, plotBottom, bodyBuffer } = $plotConfig);
+  $: ({ top, plotTop, plotBottom, bodyBuffer } = $plotConfig);
   $: y1 = plotTop + top + 5;
-  $: y2 = plotBottom - bottom - 1;
+  $: y2 = plotBottom - 5;
 
   $: ({ measure, start, end } = measureSelection);
   $: hasSelection = $measure && $start;
