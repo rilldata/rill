@@ -537,7 +537,7 @@
             class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
             on:click={() => formManager.handleSkip()}
           >
-            Click here to import your data.
+            Import your data
           </button>
         </div>
       {/if}
