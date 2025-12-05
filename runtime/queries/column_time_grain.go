@@ -162,6 +162,48 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
+	case drivers.DialectStarRocks:
+		if sampleSize <= cq.Result {
+			useSample = fmt.Sprintf("ORDER BY rand() LIMIT %d", sampleSize)
+		}
+		estimateSQL = fmt.Sprintf(`
+		WITH cleaned_column AS (
+			SELECT %s as cd
+			from %s
+			%s
+		),
+		time_grains as (
+		SELECT
+			approx_count_distinct(year(cd)) as year,
+			approx_count_distinct(month(cd)) as month,
+			approx_count_distinct(dayofyear(cd)) as dayofyear,
+			approx_count_distinct(dayofmonth(cd)) as dayofmonth,
+			min(cd = last_day(cd)) = TRUE as lastdayofmonth,
+			approx_count_distinct(weekofyear(cd)) as weekofyear,
+			approx_count_distinct(dayofweek(cd)) as dayofweek,
+			approx_count_distinct(hour(cd)) as hour,
+			approx_count_distinct(minute(cd)) as minute,
+			approx_count_distinct(second(cd)) as second,
+			approx_count_distinct(CAST(UNIX_TIMESTAMP(cd) * 1000 AS BIGINT) %% 1000) as ms
+		FROM cleaned_column
+		)
+		SELECT
+		  COALESCE(
+			  case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
+			  CASE WHEN second > 1 THEN 'SECOND' else NULL END,
+			  CASE WHEN minute > 1 THEN 'MINUTE' else null END,
+			  CASE WHEN hour > 1 THEN 'HOUR' else null END,
+			  CASE WHEN dayofyear = 1 and year > 1 THEN 'YEAR' else null END,
+			  CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'MONTH' else null END,
+			  CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'WEEK' else null END,
+			  CASE WHEN hour = 1 THEN 'DAY' else null END
+		  ) as estimatedSmallestTimeGrain
+		FROM time_grains
+		`,
+			safeName(olap.Dialect(), q.ColumnName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			useSample,
+		)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

@@ -232,7 +232,7 @@ export const getYupSchema = {
     username: yup.string().required("Username is required"),
     password: yup.string(),
     catalog: yup.string().required("Catalog is required").default("default_catalog"),
-    database: yup.string().required("Database is required"),
+    database: yup.string().optional(),
     ssl: yup.boolean(),
     name: yup.string(),
   }),

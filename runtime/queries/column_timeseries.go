@@ -93,8 +93,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	// StarRocks doesn't support CREATE TEMPORARY TABLE in the same way, return empty result
+	if olap.Dialect() == drivers.DialectStarRocks {
+		q.Result = &ColumnTimeseriesResult{}
+		return nil
 	}
 
 	timeRange, err := q.ResolveNormaliseTimeRange(ctx, rt, instanceID, priority)

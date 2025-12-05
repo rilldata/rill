@@ -60,7 +60,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	defer release()
 
 	// Check dialect
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
