@@ -1,6 +1,7 @@
 <!-- Renders assistant responses from router_agent. -->
 <script lang="ts">
   import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import {
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
@@ -28,10 +29,18 @@
   $: convertCitationUrls = renderedInExplore
     ? getCitationUrlRewriter($mapperStore.data)
     : undefined;
+
+  function handleClick(e: MouseEvent) {
+    if (!e.target || !(e.target instanceof HTMLElement)) return;
+    const urlParams = e.target.getAttribute("data-url-params");
+    if (!urlParams) return;
+    void goto("?" + urlParams);
+  }
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content">
+  <!-- svelte-ignore a11y-no-static-element-interactions a11y-click-events-have-key-events -->
+  <div class="chat-message-content" on:click={handleClick}>
     <Markdown {content} converter={convertCitationUrls} />
   </div>
 </div>
