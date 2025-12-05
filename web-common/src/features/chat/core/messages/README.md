@@ -8,7 +8,7 @@ This directory contains the presentation layer for chat conversations. It transf
 
 Messages are transformed into one of three block types for display:
 
-- **`TextMessage`** - A single text message (user prompt or assistant response)
+- **`TextMessage`** - A single text message (user prompt or assistant response), rendered by either `UserMessage` or `AssistantMessage` components
 - **`ThinkingBlock`** - A collapsible block containing grouped progress updates and tool calls
 - **`ChartBlock`** - A visualization created from a `create_chart` tool call
 
@@ -21,8 +21,9 @@ Each block type is **completely self-contained** in its own directory:
 ```
 messages/
 ├── text/
-│   ├── text-message.ts          # TextMessage type & creation
-│   ├── TextMessage.svelte        # Rendering component
+│   ├── text-message.ts           # TextMessage type & creation
+│   ├── AssistantMessage.svelte   # Renders assistant responses (markdown + citations)
+│   ├── UserMessage.svelte        # Renders user prompts (with inline context)
 │   └── rewrite-citation-urls.ts  # Citation URL utilities
 │
 ├── thinking/
@@ -31,7 +32,7 @@ messages/
 │   ├── CallMessage.svelte        # Tool call display
 │   ├── ProgressMessage.svelte    # Progress update display
 │   ├── ShimmerText.svelte        # Loading animation
-│   ├── tool-display-names.ts    # Tool metadata
+│   ├── tool-display-names.ts     # Tool metadata
 │   └── tool-icons.ts             # Tool icon mappings
 │
 ├── chart/

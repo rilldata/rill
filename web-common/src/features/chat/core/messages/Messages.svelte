@@ -5,10 +5,10 @@
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
-  import TextMessage from "./text/TextMessage.svelte";
+  import AssistantMessage from "./text/AssistantMessage.svelte";
+  import UserMessage from "./text/UserMessage.svelte";
   import PlanningBlock from "./thinking/PlanningBlock.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
-  import UserMessage from "./UserMessage.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -81,7 +81,7 @@
       {#if block.type === "text" && block.message.role === "user"}
         <UserMessage message={block.message} />
       {:else if block.type === "text" && block.message.role === "assistant"}
-        <TextMessage message={block.message} />
+        <AssistantMessage message={block.message} />
       {:else if block.type === "thinking"}
         <ThinkingBlock
           messages={block.messages}
