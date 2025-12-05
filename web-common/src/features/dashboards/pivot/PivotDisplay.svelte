@@ -156,7 +156,7 @@
 
 <style lang="postcss">
   .layout {
-    @apply flex box-border overflow-hidden;
+    @apply flex box-border overflow-hidden size-full;
   }
 
   .content {
