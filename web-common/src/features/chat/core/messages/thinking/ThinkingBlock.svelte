@@ -6,7 +6,7 @@
   import Brain from "../../../../../components/icons/Brain.svelte";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../../runtime-client";
+  import type { V1Message, V1Tool } from "../../../../../runtime-client";
   import { MessageType } from "../../types";
   import CallMessage from "./CallMessage.svelte";
   import ShimmerText from "./ShimmerText.svelte";
@@ -15,6 +15,7 @@
   export let resultMessagesByParentId: Map<string | undefined, V1Message>;
   export let isComplete: boolean;
   export let duration: number;
+  export let tools: V1Tool[] | undefined = undefined;
 
   let isExpanded = true;
   let hasUserInteracted = false;
@@ -80,6 +81,7 @@
           <CallMessage
             message={msg}
             resultMessage={resultMessagesByParentId.get(msg.id)}
+            {tools}
           />
         {/if}
       {/each}

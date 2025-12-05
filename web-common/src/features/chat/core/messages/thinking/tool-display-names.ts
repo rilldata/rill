@@ -1,65 +1,39 @@
 /**
- * Display names for AI tools.
- * These match the openai/toolInvocation metadata from the backend tool specs.
+ * Utilities for getting display names from AI tools.
+ * Display names are fetched from the ListTools API and stored in tool.meta.
  */
 
-export interface ToolDisplayName {
-  invoking: string; // Loading state - while tool is executing
-  invoked: string; // Complete state - after tool has finished
-}
+import type { V1Tool } from "@rilldata/web-common/runtime-client";
+
+// Meta keys for tool invocation display names (matches backend conventions)
+const META_KEY_INVOKING = "openai/toolInvocation/invoking";
+const META_KEY_INVOKED = "openai/toolInvocation/invoked";
 
 /**
- * Tool display names mapping.
- * Sync these with the Meta annotations in runtime/ai/*_tool.go files.
- */
-export const TOOL_DISPLAY_NAMES: Record<string, ToolDisplayName> = {
-  router_agent: {
-    invoking: "Routing prompt…",
-    invoked: "Prompt completed",
-  },
-  analyst_agent: {
-    invoking: "Analyzing…",
-    invoked: "Completed analysis",
-  },
-  list_metrics_views: {
-    invoking: "Listing metrics…",
-    invoked: "Listed metrics",
-  },
-  get_metrics_view: {
-    invoking: "Getting metrics definition…",
-    invoked: "Found metrics definition",
-  },
-  query_metrics_view_summary: {
-    invoking: "Querying metrics summary…",
-    invoked: "Completed summary query",
-  },
-  query_metrics_view: {
-    invoking: "Querying metrics…",
-    invoked: "Completed metrics query",
-  },
-  create_chart: {
-    invoking: "Creating chart…",
-    invoked: "Finished creating chart",
-  },
-};
-
-/**
- * Gets the display name for a tool based on its state.
+ * Gets the display name for a tool based on its completion state.
+ * Uses the tool's meta field from the ListTools API response.
  */
 export function getToolDisplayName(
   toolName: string,
   isComplete: boolean,
+  tools: V1Tool[] | undefined,
 ): string {
-  const displayName = TOOL_DISPLAY_NAMES[toolName];
-  if (!displayName) {
-    // Fallback to formatted tool name if not in mapping
-    return formatToolName(toolName);
+  const tool = tools?.find((t) => t.name === toolName);
+
+  if (tool?.meta) {
+    const metaKey = isComplete ? META_KEY_INVOKED : META_KEY_INVOKING;
+    const displayName = tool.meta[metaKey];
+    if (typeof displayName === "string") {
+      return displayName;
+    }
   }
-  return isComplete ? displayName.invoked : displayName.invoking;
+
+  // Fallback to formatted tool name if no meta or tool not found
+  return formatToolName(toolName);
 }
 
 /**
- * Formats a tool name for display when no mapping exists.
+ * Formats a tool name for display when no meta exists.
  * Converts snake_case to Title Case.
  */
 function formatToolName(toolName: string): string {

@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
+  import { derived } from "svelte/store";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
+  import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import type { ConversationManager } from "../conversation-manager";
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
@@ -13,6 +17,13 @@
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
+
+  // Prefetch tools metadata for CallMessage display names
+  const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
+    getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
+  );
+  const listToolsQuery = createQuery(listToolsQueryOptionsStore);
+  $: tools = $listToolsQuery.data?.tools;
 
   let messagesContainer: HTMLDivElement;
 
@@ -88,6 +99,7 @@
           {resultMessagesByParentId}
           isComplete={block.isComplete}
           duration={block.duration}
+          {tools}
         />
       {:else if block.type === "planning"}
         <PlanningBlock />

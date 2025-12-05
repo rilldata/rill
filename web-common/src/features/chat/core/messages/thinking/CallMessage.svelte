@@ -8,13 +8,14 @@
   import CodeBlock from "../../../../../components/code-block/CodeBlock.svelte";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import LoadingSpinner from "../../../../../components/icons/LoadingSpinner.svelte";
-  import type { V1Message } from "../../../../../runtime-client";
+  import type { V1Message, V1Tool } from "../../../../../runtime-client";
+  import { isHiddenAgentTool, MessageContentType } from "../../types";
   import { getToolDisplayName } from "./tool-display-names";
   import { getToolIcon } from "./tool-icons";
-  import { isHiddenAgentTool, MessageContentType } from "../../types";
 
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;
+  export let tools: V1Tool[] | undefined = undefined;
 
   let isExpanded = false;
   let activeTab: "request" | "response" = "request";
@@ -28,10 +29,11 @@
   $: isError = resultMessage?.contentType === MessageContentType.ERROR;
   $: resultContent = resultMessage ? formatContentData(resultMessage) : "";
 
-  // Display name based on completion state
+  // Display name from API metadata (tools passed from parent)
   $: toolDisplayName = getToolDisplayName(
     message.tool || "Unknown Tool",
     hasResult,
+    tools,
   );
 
   // Icon based on tool type
