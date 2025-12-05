@@ -224,6 +224,26 @@ func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
 				Name: name,
 			})
 		}
+
+		// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
+		// NOTE: only object stores are handled here.
+		switch k {
+		case "aws_access_key_id":
+			res = append(res, &runtimev1.Connector{
+				Type: "s3",
+				Name: "s3",
+			})
+		case "azure_storage_account", "azure_storage_key", "azure_storage_sas_token", "azure_storage_connection_string":
+			res = append(res, &runtimev1.Connector{
+				Type: "azure",
+				Name: "azure",
+			})
+		case "google_application_credentials":
+			res = append(res, &runtimev1.Connector{
+				Type: "gcs",
+				Name: "gcs",
+			})
+		}
 	}
 	return res
 }
