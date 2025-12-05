@@ -54,55 +54,40 @@ export function formatResolvedContent(
 ): string {
   if (!text) return text;
 
-  const formatPattern =
-    /__RILL__FORMAT__\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*([^)]+?)\s*\)/g;
+  const formatPattern = /__RILL__FORMAT__\((\{[^}]+\})\)/g;
 
-  return text.replace(
-    formatPattern,
-    (
-      fullMatch,
-      metricsViewName: string,
-      measureName: string,
-      valueStr: string,
-    ) => {
-      const metricsView = metricsViews[metricsViewName];
-      if (!metricsView) {
-        return fullMatch;
-      }
+  return text.replace(formatPattern, (fullMatch, jsonStr: string) => {
+    try {
+      const {
+        metrics_view,
+        field,
+        value,
+      }: { metrics_view: string; field: string; value: number | string } =
+        JSON.parse(jsonStr) as {
+          metrics_view: string;
+          field: string;
+          value: number | string;
+        };
 
-      const mvSpec = metricsView?.state?.validSpec;
-      if (!mvSpec) {
-        return fullMatch;
-      }
+      const metricsView = metricsViews[metrics_view];
+      const metricsViewSpec = metricsView?.state?.validSpec;
+      if (!metricsViewSpec) return fullMatch;
 
-      const measures = mvSpec.measures ?? [];
-      const measure = measures.find(
-        (m: MetricsViewSpecMeasure) => m.name === measureName,
+      const measure = metricsViewSpec.measures?.find(
+        (m: MetricsViewSpecMeasure) => m.name === field,
       );
+      if (!measure) return fullMatch;
 
-      if (!measure) {
-        return fullMatch;
-      }
+      const numericValue =
+        typeof value === "number" ? value : parseFloat(String(value));
+      if (isNaN(numericValue)) return fullMatch;
 
-      const trimmedValue = valueStr.trim();
-      let value: number;
-      try {
-        value = parseFloat(trimmedValue);
-        if (isNaN(value)) {
-          return fullMatch;
-        }
-      } catch {
-        return fullMatch;
-      }
-
-      try {
-        const formatter = createMeasureValueFormatter(measure);
-        return formatter(value);
-      } catch {
-        return fullMatch;
-      }
-    },
-  );
+      const formatter = createMeasureValueFormatter(measure);
+      return formatter(numericValue);
+    } catch {
+      return fullMatch;
+    }
+  });
 }
 
 export function buildRequestBody(params: {
@@ -133,15 +118,17 @@ export function buildRequestBody(params: {
   ) {
     for (const metricsViewName of metricsViewNames) {
       const metricsView = metricsViews[metricsViewName];
-      const mvSpec = metricsView?.state?.validSpec;
-      const dims: MetricsViewSpecDimension[] = mvSpec?.dimensions ?? [];
-      const meas: MetricsViewSpecMeasure[] = mvSpec?.measures ?? [];
+      const metricsViewSpec = metricsView?.state?.validSpec;
+      const dimensions: MetricsViewSpecDimension[] =
+        metricsViewSpec?.dimensions ?? [];
+      const measures: MetricsViewSpecMeasure[] =
+        metricsViewSpec?.measures ?? [];
 
       const whereFilter = buildValidMetricsViewFilter(
         globalWhereFilter || createAndExpression([]),
         globalDimensionThresholdFilters,
-        dims,
-        meas,
+        dimensions,
+        measures,
       );
 
       if (
