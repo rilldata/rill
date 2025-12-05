@@ -60,16 +60,16 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	defer release()
 
 	// Check dialect
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectStarRocks {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
 	// Build SQL
 	qry := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
-		safeName(q.ColumnName),
+		safeName(olap.Dialect(), q.ColumnName),
 		q.Agg,
 		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
-		safeName(q.ColumnName),
+		safeName(olap.Dialect(), q.ColumnName),
 		q.K,
 	)
 

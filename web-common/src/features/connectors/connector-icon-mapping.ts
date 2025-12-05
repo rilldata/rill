@@ -11,6 +11,7 @@ import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.sve
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
+import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 
 export const connectorIconMapping = {
   athena: AthenaIcon,
@@ -26,4 +27,5 @@ export const connectorIconMapping = {
   redshift: RedshiftIcon,
   s3: AmazonS3Icon,
   snowflake: SnowflakeIcon,
+  starrocks: StarRocksIcon,
 };
