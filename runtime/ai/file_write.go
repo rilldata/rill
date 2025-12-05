@@ -24,8 +24,8 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
-	Diff       string           `json:"diff,omitempty"`    // Unified diff (empty for new files)
-	IsNewFile  bool             `json:"is_new_file"`       // True if file didn't exist before
+	Diff       string           `json:"diff,omitempty"` // Unified diff (empty for new files)
+	IsNewFile  bool             `json:"is_new_file"`    // True if file didn't exist before
 	Resources  []map[string]any `json:"resources,omitempty"`
 	ParseError string           `json:"parse_error,omitempty"`
 }
@@ -131,7 +131,7 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 }
 
 // computeUnifiedDiff generates a unified diff between original and new content
-func computeUnifiedDiff(path, original, new string, isNewFile bool) string {
+func computeUnifiedDiff(path, original, updated string, isNewFile bool) string {
 	fromFile := "a" + path
 	if isNewFile {
 		fromFile = "/dev/null"
@@ -139,7 +139,7 @@ func computeUnifiedDiff(path, original, new string, isNewFile bool) string {
 
 	diff := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(original),
-		B:        difflib.SplitLines(new),
+		B:        difflib.SplitLines(updated),
 		FromFile: fromFile,
 		ToFile:   "b" + path,
 		Context:  3,
