@@ -16,6 +16,7 @@
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
+    type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
@@ -130,6 +131,8 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+
+  let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -392,6 +395,7 @@
               paramsErrors={$paramsErrors}
               {onStringInputChange}
               {handleFileUpload}
+              bind:gcsAuthMethod
             />
           </AddDataFormSection>
         {:else}
@@ -448,33 +452,50 @@
           </Button>
         {/if}
 
-        {#if isMultiStepConnector && stepState.step === "connector"}
-          <Button onClick={() => formManager.handleSkip()} type="secondary"
-            >Skip</Button
-          >
-        {/if}
-
         <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
+          disabled={isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
+            ? false
+            : connector.name === "clickhouse"
+              ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+              : submitting || isSubmitDisabled}
           loading={connector.name === "clickhouse"
             ? clickhouseSubmitting
             : submitting}
           loadingCopy={connector.name === "clickhouse"
             ? "Connecting..."
             : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm
+          form={isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
+            ? undefined
+            : connector.name === "clickhouse"
+              ? clickhouseFormId
+              : formId}
+          submitForm={!(
+            isMultiStepConnector &&
+            stepState.step === "connector" &&
+            gcsAuthMethod === "public"
+          )}
+          onClick={isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
+            ? () => formManager.handleSkip()
+            : undefined}
           type="primary"
         >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-          })}
+          {isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
+            ? "Continue"
+            : formManager.getPrimaryButtonLabel({
+                isConnectorForm,
+                step: stepState.step,
+                submitting,
+                clickhouseConnectorType,
+                clickhouseSubmitting,
+              })}
         </Button>
       </div>
     </div>
@@ -482,32 +503,48 @@
 
   <!-- RIGHT SIDE PANEL -->
   <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
+    class="add-data-side-panel flex flex-col p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 h-full overflow-hidden"
   >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (onlyDsn || connectionTab === "dsn"
-            ? dsnErrorDetails
-            : paramsErrorDetails) ??
-          ""}
+    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+      {#if dsnError || paramsError || clickhouseError}
+        <SubmissionError
+          message={clickhouseError ??
+            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+            ""}
+          details={clickhouseErrorDetails ??
+            (onlyDsn || connectionTab === "dsn"
+              ? dsnErrorDetails
+              : paramsErrorDetails) ??
+            ""}
+        />
+      {/if}
+
+      <YamlPreview
+        title={isMultiStepConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
       />
-    {/if}
 
-    <YamlPreview
-      title={isMultiStepConnector
-        ? stepState.step === "connector"
-          ? "Connector preview"
-          : "Model preview"
-        : isSourceForm
-          ? "Model preview"
-          : "Connector preview"}
-      yaml={yamlPreview}
-    />
+      {#if isMultiStepConnector && $connectorStepStore.step === "connector"}
+        <div class="text-sm leading-normal font-medium text-muted-foreground">
+          Already connected? <button
+            type="button"
+            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+            on:click={() => formManager.handleSkip()}
+          >
+            Import your data
+          </button>
+        </div>
+      {/if}
+    </div>
 
-    <NeedHelpText {connector} />
+    <div class="mt-6 flex-shrink-0">
+      <NeedHelpText {connector} />
+    </div>
   </div>
 </div>

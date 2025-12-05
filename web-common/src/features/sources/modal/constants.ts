@@ -17,7 +17,7 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
-export type GCSAuthMethod = "credentials" | "hmac";
+export type GCSAuthMethod = "credentials" | "hmac" | "public";
 
 export const GCS_AUTH_OPTIONS: {
   value: GCSAuthMethod;
@@ -36,6 +36,11 @@ export const GCS_AUTH_OPTIONS: {
     label: "HMAC keys",
     description:
       "Use HMAC access key and secret for S3-compatible authentication.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access public GCS buckets without authentication.",
   },
 ];
 
