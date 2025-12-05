@@ -10,13 +10,9 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
-  filterExpressions,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  type V1MetricsViewAggregationResponseDataItem,
-  V1Operation,
-} from "../../../runtime-client";
+import { type V1MetricsViewAggregationResponseDataItem } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
@@ -46,37 +42,29 @@ export function updateFilterOnSearch(
   dimensionName: string,
 ): V1Expression | undefined {
   if (!filterForDimension) return undefined;
-  // create a copy
-  const addNull = "null".includes(searchText);
-  if (searchText !== "") {
-    let cond: V1Expression;
-    if (addNull) {
-      cond = createOrExpression([
-        // TODO: do we need a `IS NULL` expression?
-        createInExpression(dimensionName, [null]),
-        createLikeExpression(dimensionName, `%${searchText}%`),
-      ]);
-    } else {
-      cond = createLikeExpression(dimensionName, `%${searchText}%`);
-    }
+  if (searchText === "") return filterForDimension;
 
-    filterForDimension = copyFilterExpression(filterForDimension);
-    const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
-      matchExpressionByName(e, dimensionName),
-    );
-    if (filterIdx === undefined || filterIdx === -1) {
-      filterForDimension.cond?.exprs?.push(cond);
-    } else {
-      filterForDimension.cond?.exprs?.splice(filterIdx, 0, cond);
-    }
+  const addNull = "null".includes(searchText);
+
+  let cond: V1Expression;
+  if (addNull) {
+    cond = createOrExpression([
+      // TODO: do we need a `IS NULL` expression?
+      createInExpression(dimensionName, [null]),
+      createLikeExpression(dimensionName, `%${searchText}%`),
+    ]);
   } else {
-    filterForDimension =
-      filterExpressions(
-        filterForDimension,
-        (e) =>
-          e.cond?.op !== V1Operation.OPERATION_LIKE &&
-          e.cond?.op !== V1Operation.OPERATION_NLIKE,
-      ) ?? createAndExpression([]);
+    cond = createLikeExpression(dimensionName, `%${searchText}%`);
+  }
+
+  filterForDimension = copyFilterExpression(filterForDimension);
+  const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
+    matchExpressionByName(e, dimensionName),
+  );
+  if (filterIdx === undefined || filterIdx === -1) {
+    filterForDimension.cond?.exprs?.push(cond);
+  } else {
+    filterForDimension.cond?.exprs?.splice(filterIdx, 0, cond);
   }
   return filterForDimension;
 }
