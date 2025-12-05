@@ -99,6 +99,13 @@ func (p *Parser) parseAlert(node *Node) error {
 		return err
 	}
 
+	// Handle cron schedules can be independent of resource updates.
+	if tmp.Refresh != nil && tmp.Refresh.RefUpdate == nil && (tmp.Refresh.Cron != "" || tmp.Refresh.Every != "") {
+		if schedule != nil {
+			schedule.RefUpdate = false
+		}
+	}
+
 	// Parse watermark
 	watermarkInherit := false
 	if tmp.Watermark != "" {
