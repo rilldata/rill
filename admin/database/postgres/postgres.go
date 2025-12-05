@@ -668,9 +668,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()) RETURNING *`,
+		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -700,6 +700,15 @@ func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *data
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus database.DeploymentStatus) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET desired_status=$1, desired_status_updated_on=now(), updated_on=now() WHERE id=$2 RETURNING *", desiredStatus, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -1726,14 +1735,17 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
-func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*database.AuthClient, error) {
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes, redirectURIs []string) (*database.AuthClient, error) {
 	if grantTypes == nil {
 		grantTypes = []string{}
 	}
+	if redirectURIs == nil {
+		redirectURIs = []string{}
+	}
 	dto := &authClientDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`INSERT INTO auth_clients (display_name, scope, grant_types) VALUES ($1, $2, $3) RETURNING *`,
-		displayName, scope, grantTypes).StructScan(dto)
+		`INSERT INTO auth_clients (display_name, scope, grant_types, redirect_uris) VALUES ($1, $2, $3, $4) RETURNING *`,
+		displayName, scope, grantTypes, redirectURIs).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("auth client", err)
 	}
@@ -1874,7 +1886,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 				SELECT COUNT(*)
 				FROM usergroups_users uus
 				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
-				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id AND NOT ugu.managed
 			) as usergroups_count
 		`)
 	}
@@ -3359,7 +3371,8 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 
 type authClientDTO struct {
 	*database.AuthClient
-	GrantTypes pgtype.TextArray `db:"grant_types"`
+	GrantTypes   pgtype.TextArray `db:"grant_types"`
+	RedirectURIs pgtype.TextArray `db:"redirect_uris"`
 }
 
 func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
@@ -3367,6 +3380,9 @@ func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
 		dto.AuthClient = &database.AuthClient{}
 	}
 	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
+		return nil, err
+	}
+	if err := dto.RedirectURIs.AssignTo(&dto.AuthClient.RedirectURIs); err != nil {
 		return nil, err
 	}
 	return dto.AuthClient, nil

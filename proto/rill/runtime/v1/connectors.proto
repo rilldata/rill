@@ -7,39 +7,18 @@ import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
 service ConnectorService {
-  // S3ListBuckets lists buckets accessible with the configured credentials.
-  rpc S3ListBuckets(S3ListBucketsRequest) returns (S3ListBucketsResponse) {
-    option (google.api.http) = {get: "/v1/s3/buckets"};
+ // ListBuckets lists buckets accessible with the configured credentials.
+  rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/connectors/{connector}/buckets"
+    };
   }
 
-  // S3ListBuckets lists objects for the given bucket.
-  rpc S3ListObjects(S3ListObjectsRequest) returns (S3ListObjectsResponse) {
-    option (google.api.http) = {get: "/v1/s3/bucket/{bucket}/objects"};
-  }
-
-  // S3GetBucketMetadata returns metadata for the given bucket.
-  rpc S3GetBucketMetadata(S3GetBucketMetadataRequest) returns (S3GetBucketMetadataResponse) {
-    option (google.api.http) = {get: "/v1/s3/bucket/{bucket}/metadata"};
-  }
-
-  // S3GetCredentialsInfo returns metadata for the given bucket.
-  rpc S3GetCredentialsInfo(S3GetCredentialsInfoRequest) returns (S3GetCredentialsInfoResponse) {
-    option (google.api.http) = {get: "/v1/s3/credentials_info"};
-  }
-
-  // GCSListBuckets lists buckets accessible with the configured credentials.
-  rpc GCSListBuckets(GCSListBucketsRequest) returns (GCSListBucketsResponse) {
-    option (google.api.http) = {get: "/v1/gcs/buckets"};
-  }
-
-  // GCSListObjects lists objects for the given bucket.
-  rpc GCSListObjects(GCSListObjectsRequest) returns (GCSListObjectsResponse) {
-    option (google.api.http) = {get: "/v1/gcs/bucket/{bucket}/objects"};
-  }
-
-  // GCSGetCredentialsInfo returns metadata for the given bucket.
-  rpc GCSGetCredentialsInfo(GCSGetCredentialsInfoRequest) returns (GCSGetCredentialsInfoResponse) {
-    option (google.api.http) = {get: "/v1/gcs/credentials_info"};
+  // ListObjects lists objects for the given bucket.
+  rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/connectors/{connector}/buckets/{bucket}/objects"
+    };
   }
 
   // OLAPListTables list all tables across all databases in an OLAP
@@ -67,116 +46,40 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/connectors/table_metadata"};
   }
 
-  // BigQueryListDatasets list all datasets in a bigquery project
-  rpc BigQueryListDatasets(BigQueryListDatasetsRequest) returns (BigQueryListDatasetsResponse) {
-    option (google.api.http) = {get: "/v1/bigquery/datasets"};
-  }
-
-  // BigQueryListTables list all tables in a bigquery project:dataset
-  rpc BigQueryListTables(BigQueryListTablesRequest) returns (BigQueryListTablesResponse) {
-    option (google.api.http) = {get: "/v1/bigquery/tables"};
-  }
 }
 
-message S3Object {
-  string name = 1;
-  google.protobuf.Timestamp modified_on = 2;
-  int64 size = 3;
-  bool is_dir = 4;
-}
-
-message S3ListBucketsRequest {
+message ListBucketsRequest {
   string instance_id = 1;
   string connector = 2;
   uint32 page_size = 3;
   string page_token = 4;
 }
 
-message S3ListBucketsResponse {
+message ListBucketsResponse {
   string next_page_token = 1;
   repeated string buckets = 2;
 }
 
-message S3ListObjectsRequest {
-  string instance_id = 1;
-  string connector = 2;
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 4;
-  string bucket = 5 [(validate.rules).string.min_len = 1];
-  string prefix = 7;
-  string start_after = 8;
-  string delimiter = 9;
-}
-
-message S3ListObjectsResponse {
-  string next_page_token = 1;
-  repeated S3Object objects = 2;
-}
-
-message S3GetBucketMetadataRequest {
+message ListObjectsRequest {
   string instance_id = 1;
   string connector = 2;
   string bucket = 3 [(validate.rules).string.min_len = 1];
+  string path = 4;
+  string delimiter = 5;
+  uint32 page_size = 6 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 7;
 }
 
-message S3GetBucketMetadataResponse {
-  string region = 1;
+message ListObjectsResponse {
+  string next_page_token = 1;
+  repeated Object objects = 2;
 }
 
-message S3GetCredentialsInfoRequest {
-  string instance_id = 1;
-  string connector = 2;
-}
-
-message S3GetCredentialsInfoResponse {
-  bool exist = 1;
-  string provider = 2;
-}
-
-message GCSObject {
+message Object {
   string name = 1;
   google.protobuf.Timestamp modified_on = 2;
   int64 size = 3;
   bool is_dir = 4;
-}
-
-message GCSListBucketsRequest {
-  string instance_id = 1;
-  string connector = 2;
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 4;
-}
-
-message GCSListBucketsResponse {
-  string next_page_token = 1;
-  repeated string buckets = 2;
-}
-
-message GCSListObjectsRequest {
-  string instance_id = 1;
-  string connector = 2;
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 4;
-  string bucket = 5 [(validate.rules).string.min_len = 1];
-  string prefix = 6;
-  string start_offset = 7;
-  string end_offset = 8;
-  string delimiter = 9;
-}
-
-message GCSListObjectsResponse {
-  string next_page_token = 1;
-  repeated GCSObject objects = 2;
-}
-
-message GCSGetCredentialsInfoRequest {
-  string instance_id = 1;
-  string connector = 2;
-}
-
-message GCSGetCredentialsInfoResponse {
-  bool exist = 1;
-  string project_id = 2;
 }
 
 message OLAPListTablesRequest {
@@ -272,30 +175,4 @@ message GetTableRequest {
 
 message GetTableResponse {
   map<string, string> schema = 1;
-}
-
-
-message BigQueryListDatasetsRequest {
-  string instance_id = 1;
-  string connector = 2;
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 4;
-}
-
-message BigQueryListDatasetsResponse {
-  string next_page_token = 1;
-  repeated string names = 2;
-}
-
-message BigQueryListTablesRequest {
-  string instance_id = 1;
-  string connector = 2;
-  string dataset = 3;
-  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 5;
-}
-
-message BigQueryListTablesResponse {
-  string next_page_token = 1;
-  repeated string names = 2;
 }

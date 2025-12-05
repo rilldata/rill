@@ -1,11 +1,14 @@
 import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
 import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 
 // Formats a Luxon interval for human readable display throughout the application.
 export function prettyFormatTimeRange(
   interval: Interval | undefined,
-  grain: V1TimeGrain,
+  grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
 ) {
   if (!interval?.isValid || !interval.start || !interval.end)
     return "Invalid interval";
@@ -17,6 +20,21 @@ export function prettyFormatTimeRange(
     grain,
   );
   return `${datePart}${timePart}`;
+}
+
+/**
+ * Formates a resolved V1TimeRange. Must contain start and end.
+ */
+export function prettyFormatResolvedV1TimeRange(timeRange: V1TimeRange) {
+  if (!timeRange.start || !timeRange.end) return "";
+
+  return prettyFormatTimeRange(
+    Interval.fromDateTimes(
+      DateTime.fromISO(timeRange.start),
+      DateTime.fromISO(timeRange.end),
+    ),
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  );
 }
 
 const yearGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR];

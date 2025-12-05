@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const WriteFileName = "write_file"
+
 type WriteFile struct {
 	Runtime *runtime.Runtime
 }
@@ -27,17 +29,18 @@ type WriteFileResult struct {
 
 func (t *WriteFile) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "write_file",
+		Name:        WriteFileName,
 		Title:       "Write file",
 		Description: "Creates or updates a file in a Rill project. If the file already exists, it will be overwritten. If the file declares a Rill resource, it will wait for the resource to reconcile and return its kind, name and any errors encountered.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Writing file...",
+			"openai/toolInvocation/invoked":  "Wrote file",
+		},
 	}
 }
 
-func (t *WriteFile) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.EditRepo)
-	return false
+func (t *WriteFile) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {

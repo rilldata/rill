@@ -82,7 +82,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
-				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+				if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
 					fmt.Printf("  Status: %s\n", depl.Status.String())
 					fmt.Printf("  Status Message: %s\n", depl.StatusMessage)
 

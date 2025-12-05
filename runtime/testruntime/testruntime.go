@@ -237,6 +237,14 @@ func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, strin
 // The passed name should match a test project in the testdata folder.
 // You should not do mutable repo operations on the returned instance.
 func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
+	return newInstanceHelper(t, name, nil)
+}
+
+func NewInstanceForProjectWithConfigs(t TestingT, name string, instConfig map[string]string) (*runtime.Runtime, string) {
+	return newInstanceHelper(t, name, instConfig)
+}
+
+func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*runtime.Runtime, string) {
 	rt := New(t, true)
 	ctx := t.Context()
 
@@ -276,6 +284,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 			},
 		},
+		Variables: instConfig,
 	}
 
 	err := rt.CreateInstance(ctx, inst)

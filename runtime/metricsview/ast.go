@@ -1119,9 +1119,6 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			newDims = append(newDims, f)
 		}
 
-		start := spine.TimeRange.Start
-		end := spine.TimeRange.End
-		grain := spine.TimeRange.Grain
 		tz := time.UTC
 		if a.Query.TimeZone != "" {
 			var err error
@@ -1130,7 +1127,8 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 				return nil, fmt.Errorf("invalid time zone %q: %w", a.Query.TimeZone, err)
 			}
 		}
-		sel, args, err := a.Dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias, tz)
+
+		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}

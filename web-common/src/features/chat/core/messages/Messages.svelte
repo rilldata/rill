@@ -2,13 +2,16 @@
   import { afterUpdate } from "svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
+  import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
   import TextMessage from "./text/TextMessage.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
+  import UserMessage from "./UserMessage.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
+  export let config: ChatConfig;
 
   let messagesContainer: HTMLDivElement;
 
@@ -68,11 +71,15 @@
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
-      <div class="chat-empty-subtitle">Happy to help explore your data</div>
+      <div class="chat-empty-subtitle">
+        {config.emptyChatLabel}
+      </div>
     </div>
   {:else}
     {#each messageBlocks as block (block.id)}
-      {#if block.type === "text"}
+      {#if block.type === "text" && block.message.role === "user"}
+        <UserMessage message={block.message} />
+      {:else if block.type === "text" && block.message.role === "assistant"}
         <TextMessage message={block.message} />
       {:else if block.type === "thinking"}
         <ThinkingBlock

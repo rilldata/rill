@@ -1,12 +1,12 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
     cleanupConversationManager,
     getConversationManager,
   } from "../../core/conversation-manager";
-  import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import SidebarHeader from "./SidebarHeader.svelte";
@@ -16,11 +16,16 @@
     sidebarWidth,
   } from "./sidebar-store";
 
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+
+  export let config: ChatConfig;
+
   $: ({ instanceId } = $runtime);
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
+    agent: config.agent,
   });
 
   let chatInputComponent: ChatInput;
@@ -42,9 +47,18 @@
       cleanupConversationManager(instanceId);
     }
   });
+
+  onMount(() => {
+    chatInputComponent?.focusInput();
+  });
 </script>
 
-<div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">
+<div
+  class="chat-sidebar"
+  style="--sidebar-width: {$sidebarWidth}px;"
+  on:click|stopPropagation
+  role="presentation"
+>
   <Resizer
     min={SIDEBAR_DEFAULTS.MIN_SIDEBAR_WIDTH}
     max={SIDEBAR_DEFAULTS.MAX_SIDEBAR_WIDTH}
@@ -62,26 +76,20 @@
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <Messages {conversationManager} layout="sidebar" />
+    <Messages {conversationManager} layout="sidebar" {config} />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}
       onSend={onMessageSend}
+      {config}
     />
-    <ChatFooter />
   </div>
 </div>
 
 <style lang="postcss">
   .chat-sidebar {
-    position: relative;
+    @apply flex flex-col relative h-full bg-surface border;
     width: var(--sidebar-width);
-    height: 100%;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
   }
 
   .chat-sidebar-content {

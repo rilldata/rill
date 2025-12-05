@@ -192,7 +192,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	nextTime := time.Time{}
 	resetTimelineTimer := func() {
 		_, t := c.timeline.Peek()
-		if t == nextTime {
+		if t.Equal(nextTime) {
 			return
 		}
 		nextTime = t

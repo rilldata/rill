@@ -496,8 +496,7 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: GCS connector configuration
 type: connector # Must be `connector` (required)
 driver: gcs # Must be `gcs` _(required)_
-google_application_credentials: "credentialjsonstring" # Google Cloud credentials JSON string  
-bucket: "my-gcs-bucket" # Name of gcs bucket  
+google_application_credentials: "credentialjsonstring" # Google Cloud credentials JSON string   
 ```
 
 ## HTTPS

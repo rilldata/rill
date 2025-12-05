@@ -232,6 +232,7 @@ const connectorSubmissions = new Map<
   {
     promise: Promise<void>;
     connectorName: string;
+    completed: boolean;
   }
 >();
 
@@ -332,7 +333,7 @@ export async function submitAddConnectorForm(
         instanceId,
       );
       return;
-    } else {
+    } else if (!existingSubmission.completed) {
       // If Test and Connect is clicked while another operation is running,
       // wait for it to complete
       await existingSubmission.promise;
@@ -475,8 +476,12 @@ export async function submitAddConnectorForm(
       }
       throw error;
     } finally {
-      // Clean up the submission
-      connectorSubmissions.delete(uniqueConnectorSubmissionKey);
+      // Mark the submission as completed but keep the connector name around
+      // so a subsequent "Save Anyway" can still reuse the same connector file
+      const submission = connectorSubmissions.get(uniqueConnectorSubmissionKey);
+      if (submission) {
+        submission.completed = true;
+      }
     }
   })();
 
@@ -484,6 +489,7 @@ export async function submitAddConnectorForm(
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     connectorName: newConnectorName,
+    completed: false,
   });
 
   // Wait for the submission to complete

@@ -24,9 +24,14 @@ The Local File connector allows you to import data from CSV, JSON, Parquet, and 
 Create a YAML configuration file in your project's `sources` directory:
 
 ```yaml
-type: source
-connector: local_file
-path: /path/to/your/data.csv
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+materialize: true
+
+connector: duckdb
+sql: "select * from read_csv('data/your_file_name.csv', auto_detect=true, ignore_errors=1, header=true)
 ```
 
 **Important:** When using relative paths, they should be relative to your Rill project root (where `rill.yaml` is located), not the `sources` directory.
