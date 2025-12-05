@@ -425,7 +425,7 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
 // Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
 func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceName, spec *runtimev1.AlertSpec, claims *SecurityClaims, rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
-	explicitAllow := false
+	var explicitAllow bool
 	// Allow if the user is an admin
 	if claims.Admin() {
 		explicitAllow = true
@@ -501,7 +501,7 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
 // Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
 func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.ResourceName, spec *runtimev1.ReportSpec, claims *SecurityClaims, rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
-	explicitAllow := false
+	var explicitAllow bool
 	// Allow if the user is an admin
 	if claims.Admin() {
 		explicitAllow = true
