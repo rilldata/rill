@@ -53,6 +53,19 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
+	dimensionsCache := make(map[string]map[string]bool)
+	getOrCacheDimensions := func(metricsView string) (map[string]bool, error) {
+		if dims, ok := dimensionsCache[metricsView]; ok {
+			return dims, nil
+		}
+		dims, err := s.metricsViewDimensions(ctx, req.InstanceId, metricsView)
+		if err != nil {
+			return nil, err
+		}
+		dimensionsCache[metricsView] = dims
+		return dims, nil
+	}
+
 	templateData := parser.TemplateData{
 		User:      claims.UserAttributes,
 		Variables: inst.ResolveVariables(false),
@@ -101,19 +114,28 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 
 				// Return value wrapped in a format token if requested
 				if req.UseFormatTokens {
-					if meta := resolveRes.Meta(); meta != nil {
-						mv, _ := meta["metrics_view"].(string)
-						if mv != "" {
-							if dims, err := s.metricsViewDimensions(ctx, req.InstanceId, mv); err == nil {
-								if !dims[field] {
-									payload := tokenPayload{MetricsView: mv, Field: field, Value: val}
-									if b, err := json.Marshal(payload); err == nil {
-										return fmt.Sprintf("__RILL__FORMAT__(%s)", string(b)), nil
-									}
-								}
-							}
-						}
+					meta := resolveRes.Meta()
+					if meta == nil {
+						return fmt.Sprintf("%v", val), nil
 					}
+
+					metricsViewName, ok := meta["metrics_view"].(string)
+					if !ok || metricsViewName == "" {
+						return fmt.Sprintf("%v", val), nil
+					}
+
+					dims, err := getOrCacheDimensions(metricsViewName)
+					if err != nil || dims[field] {
+						return fmt.Sprintf("%v", val), nil
+					}
+
+					payload := tokenPayload{MetricsView: metricsViewName, Field: field, Value: val}
+					b, err := json.Marshal(payload)
+					if err != nil {
+						return fmt.Sprintf("%v", val), nil
+					}
+
+					return fmt.Sprintf("__RILL__FORMAT__(%s)", string(b)), nil
 				}
 
 				// Return stringified raw value
@@ -149,32 +171,28 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 					rows = append(rows, row)
 				}
 
-				// Get metrics view from metadata for format tokens
-				var mv string
-				var fieldTypes map[string]string
-				if meta := resolveRes.Meta(); meta != nil {
-					mv, _ = meta["metrics_view"].(string)
-					if mv != "" {
-						if dims, err := s.metricsViewDimensions(ctx, req.InstanceId, mv); err == nil {
-							fieldTypes = make(map[string]string, len(dims))
-							for k, v := range dims {
-								if v {
-									fieldTypes[k] = "dimension"
-								}
-							}
-						}
-					}
-				}
-				if !req.UseFormatTokens || mv == "" {
+				if !req.UseFormatTokens {
 					return rows, nil
 				}
 
-				dims, _ := s.metricsViewDimensions(ctx, req.InstanceId, mv)
+				var mv string
+				if meta := resolveRes.Meta(); meta != nil {
+					mv, _ = meta["metrics_view"].(string)
+				}
+				if mv == "" {
+					return rows, nil
+				}
+
+				dims, err := getOrCacheDimensions(mv)
+				if err != nil {
+					return rows, nil
+				}
+
 				formattedRows := make([]map[string]any, len(rows))
 				for i, row := range rows {
 					formattedRow := make(map[string]any, len(row))
 					for field, val := range row {
-						if dims != nil && dims[field] {
+						if dims[field] {
 							formattedRow[field] = val
 						} else {
 							payload := tokenPayload{MetricsView: mv, Field: field, Value: val}
@@ -204,39 +222,30 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}, nil
 }
 
-// metricsViewDimensions retrieves the metrics view resource for the given instance and metrics view name
+// metricsViewDimensions retrieves the dimension names for a metrics view.
 func (s *Server) metricsViewDimensions(ctx context.Context, instanceID, metricsView string) (map[string]bool, error) {
 	if metricsView == "" {
 		return nil, nil
 	}
 
-	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	_, mv, err := lookupMetricsView(ctx, s.runtime, instanceID, metricsView)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsView}, false)
-	if err != nil {
-		return nil, err
-	}
-
-	mv := r.GetMetricsView()
-	if mv == nil || mv.State == nil || mv.State.ValidSpec == nil {
-		return nil, fmt.Errorf("metrics view %q has no valid spec", metricsView)
-	}
-
-	res := make(map[string]bool)
-	for _, d := range mv.State.ValidSpec.Dimensions {
+	spec := mv.ValidSpec
+	dims := make(map[string]bool)
+	for _, d := range spec.Dimensions {
 		if d != nil && d.Name != "" {
-			res[d.Name] = true
+			dims[d.Name] = true
 		}
 	}
 
-	if mv.State.ValidSpec.TimeDimension != "" {
-		res[mv.State.ValidSpec.TimeDimension] = true
+	if spec.TimeDimension != "" {
+		dims[spec.TimeDimension] = true
 	}
 
-	return res, nil
+	return dims, nil
 }
 
 type tokenPayload struct {
