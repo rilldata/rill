@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import { ExternalLinkIcon, InfoIcon } from "lucide-svelte";
+  import { ExternalLinkIcon } from "lucide-svelte";
   import { connectorStepStore } from "./connectorStepStore";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let connector: V1ConnectorDriver;
 
