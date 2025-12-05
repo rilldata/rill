@@ -232,16 +232,13 @@ export function configureInlineContextTipTapExtension(
       items: () => [], // TODO: would it make sense to manage the options here?
       render: () => ({
         onStart: (props) => {
-          const rect = props.clientRect?.();
-          const left = rect?.left ?? 0;
-          const bottom = window.innerHeight - (rect?.bottom ?? 0) + 16;
+          if (!(props.decorationNode instanceof HTMLElement)) return;
           selected = false;
 
           comp = new InlineContextPicker({
             target: document.body,
             props: {
-              left,
-              bottom,
+              refNode: props.decorationNode,
               onSelect: (item) => {
                 selected = true;
                 props.command(item);

@@ -24,8 +24,6 @@
   export let selectedChatContext: InlineContext;
   export let props: InlineContextReadonlyProps | InlineContextEditableProps;
 
-  let left = 0;
-  let bottom = 0;
   let chatElement: HTMLSpanElement;
   let open = false;
   let tooltipOpen = false;
@@ -56,9 +54,6 @@
 
   function toggleDropdown() {
     if (props.mode !== "editable") return;
-    const rect = chatElement.getBoundingClientRect();
-    left = rect.left;
-    bottom = window.innerHeight - rect.bottom + 16;
 
     open = !open;
     props.onDropdownToggle(open);
@@ -124,9 +119,8 @@
   <!-- props.mode === "editable" check helps with type safety. Explainer variable doesnt propagate to typescript checks -->
   {#if props.mode === "editable" && isEditable && open}
     <InlineContextPicker
-      {left}
-      {bottom}
       {selectedChatContext}
+      refNode={chatElement}
       onSelect={props.onSelect}
       focusEditor={props.focusEditor}
     />
