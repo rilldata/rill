@@ -1,13 +1,13 @@
 <script lang="ts">
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { Editor } from "@tiptap/core";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
-  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
@@ -145,7 +145,7 @@
 
 <style lang="postcss">
   .chat-input-form {
-    @apply flex flex-col gap-1 p-1 m-4;
+    @apply flex flex-col gap-1 py-1 mx-4 mb-4;
     @apply bg-background border rounded-md;
     transition: border-color 0.2s;
   }
@@ -159,7 +159,7 @@
   }
 
   :global(.tiptap) {
-    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply px-2 py-2 min-h-[2.5rem] outline-none;
     @apply text-sm leading-relaxed;
   }
 

@@ -42,7 +42,7 @@
   }
 
   .chat-message-content {
-    @apply px-4 py-2 rounded-2xl;
+    @apply py-2;
     @apply text-sm leading-relaxed break-words;
     @apply text-gray-700;
   }

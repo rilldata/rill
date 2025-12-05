@@ -131,7 +131,7 @@
   }
 
   .tool-header {
-    @apply w-full flex items-center gap-1.5 px-1 py-1;
+    @apply w-full flex items-center gap-1.5 py-1;
     @apply bg-transparent border-none cursor-pointer;
     @apply text-xs text-gray-500 transition-colors;
     @apply sticky top-0;

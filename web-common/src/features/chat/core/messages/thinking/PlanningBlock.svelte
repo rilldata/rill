@@ -23,7 +23,7 @@
   }
 
   .planning-header {
-    @apply w-full flex items-center gap-1.5 px-1 py-1;
+    @apply w-full flex items-center gap-1.5 py-1;
     @apply text-xs text-gray-500;
   }
 
