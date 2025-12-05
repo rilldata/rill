@@ -630,10 +630,16 @@ paths:
           required: true
           type: string
         - name: path
+          description: Lists objects within a folder-like level (using path prefix and delimiter).
           in: query
           required: false
           type: string
         - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: glob
+          description: Lists objects matching the glob pattern.
           in: query
           required: false
           type: string

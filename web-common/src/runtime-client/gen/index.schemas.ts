@@ -2586,8 +2586,15 @@ export type ConnectorServiceListBucketsParams = {
 };
 
 export type ConnectorServiceListObjectsParams = {
+  /**
+   * Lists objects within a folder-like level (using path prefix and delimiter).
+   */
   path?: string;
   delimiter?: string;
+  /**
+   * Lists objects matching the glob pattern.
+   */
+  glob?: string;
   pageSize?: number;
   pageToken?: string;
 };
