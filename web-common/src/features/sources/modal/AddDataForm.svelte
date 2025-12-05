@@ -452,14 +452,10 @@
           </Button>
         {/if}
 
-        {#if isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod !== "public"}
-          <Button onClick={() => formManager.handleSkip()} type="secondary"
-            >Skip</Button
-          >
-        {/if}
-
         <Button
-          disabled={isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+          disabled={isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
             ? false
             : connector.name === "clickhouse"
               ? clickhouseSubmitting || clickhouseIsSubmitDisabled
@@ -470,16 +466,28 @@
           loadingCopy={connector.name === "clickhouse"
             ? "Connecting..."
             : "Testing connection..."}
-          form={isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+          form={isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
             ? undefined
-            : connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm={!(isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public")}
-          onClick={isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+            : connector.name === "clickhouse"
+              ? clickhouseFormId
+              : formId}
+          submitForm={!(
+            isMultiStepConnector &&
+            stepState.step === "connector" &&
+            gcsAuthMethod === "public"
+          )}
+          onClick={isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
             ? () => formManager.handleSkip()
             : undefined}
           type="primary"
         >
-          {isMultiStepConnector && stepState.step === "connector" && gcsAuthMethod === "public"
+          {isMultiStepConnector &&
+          stepState.step === "connector" &&
+          gcsAuthMethod === "public"
             ? "Continue"
             : formManager.getPrimaryButtonLabel({
                 isConnectorForm,
@@ -521,6 +529,6 @@
       yaml={yamlPreview}
     />
 
-    <NeedHelpText {connector} />
+    <NeedHelpText {connector} {paramsForm} {isMultiStepConnector} />
   </div>
 </div>
