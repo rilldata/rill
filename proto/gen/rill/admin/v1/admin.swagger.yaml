@@ -1524,6 +1524,14 @@ paths:
             properties:
               environment:
                 type: string
+              branch:
+                type: string
+                description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+              editable:
+                type: boolean
+                description: |-
+                  Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                  Can't be set for `prod` deployments.
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -4793,6 +4801,8 @@ definitions:
         type: string
       branch:
         type: string
+      editable:
+        type: boolean
       runtimeHost:
         type: string
       runtimeInstanceId:

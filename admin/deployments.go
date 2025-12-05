@@ -29,6 +29,7 @@ type CreateDeploymentOptions struct {
 	OwnerUserID *string
 	Environment string
 	Branch      string
+	Editable    bool
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -38,6 +39,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		OwnerUserID:       opts.OwnerUserID,
 		Environment:       opts.Environment,
 		Branch:            opts.Branch,
+		Editable:          opts.Editable,
 		RuntimeHost:       "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeInstanceID: "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeAudience:   "",                               // Will be populated after provisioning in startDeploymentInner
@@ -90,7 +92,18 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 	return nil
 }
 
-func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment) error {
+func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *database.UpdateDeploymentOptions) error {
+	// Update the deployment if deployment parameters have changed
+	updateDeployment := opts.Branch != depl.Branch || opts.RuntimeHost != depl.RuntimeHost ||
+		opts.RuntimeInstanceID != depl.RuntimeInstanceID ||
+		opts.RuntimeAudience != depl.RuntimeAudience
+	if updateDeployment {
+		_, err := s.DB.UpdateDeployment(ctx, depl.ID, opts)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Update the desired deployment status to running
 	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
 	if err != nil {
@@ -123,10 +136,9 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 }
 
 // UpdateDeploymentsForProject updates the deployments of a project.
-// In normal operation, projects only have one deployment. But during (re)deployment and in various error scenarios, there may be multiple deployments.
 // Care must be taken to avoid one broken deployment from blocking updates to other healthy deployments.
 func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 	if err != nil {
 		return err
 	}
@@ -137,7 +149,20 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	for _, d := range ds {
 		d := d
 		grp.Go(func() error {
-			err := s.UpdateDeployment(ctx, d)
+			// If this is the default prod deployment and the prod branch has changed, update the deployment branch too.
+			opts := &database.UpdateDeploymentOptions{
+				Branch:            d.Branch,
+				RuntimeHost:       d.RuntimeHost,
+				RuntimeInstanceID: d.RuntimeInstanceID,
+				RuntimeAudience:   d.RuntimeAudience,
+				Status:            d.Status,
+				StatusMessage:     d.StatusMessage,
+			}
+			if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID && p.ProdBranch != d.Branch {
+				opts.Branch = p.ProdBranch
+			}
+
+			err := s.UpdateDeployment(ctx, d, opts)
 			if err != nil {
 				if ctx.Err() != nil {
 					return ctx.Err()

@@ -51,14 +51,14 @@ func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[Res
 }
 
 func (w *ResetAllDeploymentsWorker) resetAllDeploymentsForProject(ctx context.Context, proj *database.Project) error {
-	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", "")
 	if err != nil {
 		return err
 	}
 
 	for _, depl := range depls {
 		w.admin.Logger.Info("reset all deployments: redeploying deployment", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-		_, err = w.admin.RedeployProject(ctx, proj, depl)
+		_, err = w.admin.RedeployProject(ctx, proj, depl, depl.Environment)
 		if err != nil {
 			return err
 		}

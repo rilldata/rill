@@ -396,6 +396,7 @@ export interface V1Deployment {
   ownerUserId?: string;
   environment?: string;
   branch?: string;
+  editable?: boolean;
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
@@ -1833,6 +1834,13 @@ export type AdminServiceListDeploymentsParams = {
 
 export type AdminServiceCreateDeploymentBody = {
   environment?: string;
+  /** Branch to deploy from. 
+Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+Optional for `dev` deployments. */
+  branch?: string;
+  /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
+Can't be set for `prod` deployments. */
+  editable?: boolean;
 };
 
 export type AdminServiceHibernateProjectParams = {

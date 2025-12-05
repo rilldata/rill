@@ -972,6 +972,23 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
    */
   environment = "";
 
+  /**
+   * Branch to deploy from. 
+   * Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+   * Optional for `dev` deployments.
+   *
+   * @generated from field: string branch = 4;
+   */
+  branch = "";
+
+  /**
+   * Whether the deployment is editable and the edited changes are persisted back to the git repo.
+   * Can't be set for `prod` deployments.
+   *
+   * @generated from field: bool editable = 5;
+   */
+  editable = false;
+
   constructor(data?: PartialMessage<CreateDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -983,6 +1000,8 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDeploymentRequest {
@@ -15375,6 +15394,11 @@ export class Deployment extends Message<Deployment> {
   branch = "";
 
   /**
+   * @generated from field: bool editable = 13;
+   */
+  editable = false;
+
+  /**
    * @generated from field: string runtime_host = 5;
    */
   runtimeHost = "";
@@ -15417,6 +15441,7 @@ export class Deployment extends Message<Deployment> {
     { no: 12, name: "owner_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },

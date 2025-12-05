@@ -100,7 +100,7 @@ type DB interface {
 
 	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
-	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
+	FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
@@ -591,6 +591,7 @@ type Deployment struct {
 	OwnerUserID            *string          `db:"owner_user_id"`
 	Environment            string           `db:"environment"`
 	Branch                 string           `db:"branch"`
+	Editable               bool             `db:"editable"`
 	RuntimeHost            string           `db:"runtime_host"`
 	RuntimeInstanceID      string           `db:"runtime_instance_id"`
 	RuntimeAudience        string           `db:"runtime_audience"`
@@ -609,6 +610,7 @@ type InsertDeploymentOptions struct {
 	OwnerUserID       *string
 	Environment       string
 	Branch            string
+	Editable          bool
 	RuntimeHost       string
 	RuntimeInstanceID string
 	RuntimeAudience   string

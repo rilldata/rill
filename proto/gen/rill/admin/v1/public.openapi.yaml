@@ -502,6 +502,8 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                editable:
+                    type: boolean
                 environment:
                     type: string
                 id:

@@ -2258,6 +2258,10 @@ func (m *CreateDeploymentRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Branch
+
+	// no validation rules for Editable
+
 	if len(errors) > 0 {
 		return CreateDeploymentRequestMultiError(errors)
 	}
@@ -41918,6 +41922,8 @@ func (m *Deployment) validate(all bool) error {
 	// no validation rules for Environment
 
 	// no validation rules for Branch
+
+	// no validation rules for Editable
 
 	// no validation rules for RuntimeHost
 

@@ -192,7 +192,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			if err != nil {
 				return err
 			}
-			fmt.Printf("engine of the table %v\n", engine)
 			if !strings.Contains(engine, "ReplacingMergeTree") {
 				return fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
 			}

@@ -83,8 +83,8 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 	ctx, cancel := context.WithTimeout(ctx, validateDeploymentsForProjectTimeout)
 	defer cancel()
 
-	// Get all project deployments
-	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	// Get all project deployments for prod environment
+	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "prod", "")
 	if err != nil {
 		return err
 	}
