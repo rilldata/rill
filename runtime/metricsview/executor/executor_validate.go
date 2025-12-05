@@ -682,16 +682,34 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 
 	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
+		// Find the dimension's data type, and infer the dimension type
+		var code runtimev1.Type_Code
 		typ, ok := types[d.Name]
-		if !ok {
-			// ignore dimensions that don't have a type in the schema
+		if ok {
+			code = typ.Code
+			d.DataType = typ
+		}
+
+		// Don't infer the dimension type if it's already set
+		if d.Type != runtimev1.MetricsViewSpec_DIMENSION_TYPE_UNSPECIFIED {
 			continue
 		}
-		d.DataType = typ
-		switch d.DataType.GetCode() {
-		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+
+		// Infer the dimension type
+		switch code {
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME:
+			// TIMESTAMP and TIME types always default to the TIME dimension type
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case runtimev1.Type_CODE_UNSPECIFIED, runtimev1.Type_CODE_DATE:
+			// Unspecified types (e.g. if type detection failed) or DATE types only default to the TIME dimension type if they are the default time dimension.
+			// Otherwise they default to CATEGORICAL.
+			if d.Name == e.metricsView.TimeDimension {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+			} else {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+			}
 		default:
+			// All other types default to CATEGORICAL
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 		}
 	}

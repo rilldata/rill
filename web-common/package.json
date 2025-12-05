@@ -17,6 +17,10 @@
     "build-filter-grammar": "nearleyc src/features/dashboards/url-state/filters/expression.ne -o src/features/dashboards/url-state/filters/expression.cjs",
     "build-rill-time-grammar": "nearleyc src/features/dashboards/url-state/time-ranges/rill-time.ne -o src/features/dashboards/url-state/time-ranges/rill-time.cjs"
   },
+  "dependencies": {
+    "@dagrejs/dagre": "^1.1.3",
+    "@xyflow/svelte": "^0.1.39"
+  },
   "devDependencies": {
     "@bufbuild/protobuf": "^1.0.0",
     "@codemirror/autocomplete": "^6.18.1",
@@ -77,6 +81,7 @@
     "d3-shape": "^3.1.0",
     "d3-time-format": "^4.1.0",
     "deepmerge": "^4.3.1",
+    "diff2html": "^3.4.52",
     "dompurify": "^3.1.0",
     "fflate": "^0.8.2",
     "globals": "^16.0.0",
