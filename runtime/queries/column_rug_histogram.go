@@ -8,6 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/starrocks"
 )
 
 type ColumnRugHistogram struct {
@@ -64,8 +65,8 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if olap.Dialect() == drivers.DialectClickHouse || olap.Dialect() == drivers.DialectStarRocks {
-		// Returning early with empty results because this query tends to hang on ClickHouse/StarRocks.
+	if olap.Dialect() == drivers.DialectClickHouse {
+		// Returning early with empty results because this query tends to hang on ClickHouse.
 		return nil
 	}
 
@@ -79,7 +80,34 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 
 	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
 	outlierPseudoBucketCount := 500
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+
+	// StarRocks uses CAST() function instead of ::TYPE syntax
+	var castDouble, castFloat string
+	if olap.Dialect() == drivers.DialectStarRocks {
+		castDouble = starrocks.GetTypeCast("DOUBLE")
+		castFloat = starrocks.GetTypeCast("FLOAT")
+	} else {
+		castDouble = "::DOUBLE"
+		castFloat = "::FLOAT"
+	}
+
+	// StarRocks: "values" is a reserved keyword
+	var valuesAlias string
+	if olap.Dialect() == drivers.DialectStarRocks {
+		valuesAlias = starrocks.EscapeReservedKeyword("values")
+	} else {
+		valuesAlias = "values"
+	}
+
+	// StarRocks doesn't support referencing SELECT column aliases in WHERE clause
+	var whereClause string
+	if olap.Dialect() == drivers.DialectStarRocks {
+		whereClause = "WHERE count>0"
+	} else {
+		whereClause = "WHERE present=true"
+	}
+
+	selectColumn := fmt.Sprintf("%s%s", sanitizedColumnName, castDouble)
 
 	rugSQL := fmt.Sprintf(
 		`
@@ -87,21 +115,21 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		SELECT %[1]s as %[2]s
 		FROM %[3]s
 		WHERE %[2]s IS NOT NULL
-  ), values AS (
+  ), `+valuesAlias+` AS (
 		SELECT %[2]s as value from data_table
 		WHERE %[2]s IS NOT NULL
   ), buckets AS (
 		SELECT
-		`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket, -- range
+		`+rangeNumbersCol(olap.Dialect())+castFloat+` as bucket, -- range
 		  (bucket) * (%[7]v) / %[4]v + (%[5]v) AS low, -- bucket * (max-min) / bucketCount + min
 		  (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) AS high -- (bucket+1) * (max-min) / bucketCount + min
-		FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v) -- range(0,bucketCount)
+		FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v`+rangeNumbersEnd(olap.Dialect())+` -- range(0,bucketCount)
 	),
 	-- bin the values
 	binned_data AS (
-		SELECT 
+		SELECT
 		  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket -- floor((value - min) / (max-min) * bucketCount)
-		from values
+		from `+valuesAlias+`
 	),
 	-- join the bucket set with the binned values to generate the histogram
 	histogram_stage AS (
@@ -118,7 +146,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	-- calculate the right edge, sine in histogram_stage we don't look at the values that
 	-- might be the largest.
 	right_edge AS (
-		SELECT count(*) as c from values WHERE value = (%[6]v) -- value = max
+		SELECT count(*) as c from `+valuesAlias+` WHERE value = (%[6]v) -- value = max
 	), histrogram_with_edge AS (
 	  SELECT
 			bucket,
@@ -135,7 +163,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		CASE WHEN count>0 THEN true ELSE false END AS present,
 		ifNull(count, 0)
 	  FROM histrogram_with_edge
-	  WHERE present=true
+	  `+whereClause+`
 	  ORDER BY bucket
 `,
 		selectColumn,        // 1
@@ -185,6 +213,9 @@ func rangeNumbers(dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return "numbers"
+	case drivers.DialectStarRocks:
+		// StarRocks uses generate_series for number sequences
+		return "TABLE(generate_series"
 	default:
 		return "range"
 	}
@@ -194,7 +225,23 @@ func rangeNumbersCol(dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return "number"
+	case drivers.DialectStarRocks:
+		// generate_series returns a column named 'generate_series'
+		return "generate_series"
 	default:
 		return "range"
+	}
+}
+
+// rangeNumbersEnd returns the closing syntax for range/numbers/generate_series
+// For StarRocks generate_series, end is inclusive so we need to subtract 1 to match DuckDB range behavior
+func rangeNumbersEnd(dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectStarRocks:
+		// generate_series(start, end) has inclusive end, so subtract 1 to match range(start, end) exclusive behavior
+		// Then close both generate_series() and TABLE()
+		return "-1))"
+	default:
+		return ")"
 	}
 }
