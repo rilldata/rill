@@ -8,7 +8,7 @@
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-import { getMessageTarget } from "../message-blocks";
+import { getBlockRoute } from "../block-transform";
 
 export type PlanningBlock = {
   type: "planning";
@@ -32,8 +32,8 @@ export function shouldShowPlanning(
 
   // Check if there's any visible AI content after the last user message
   const hasVisibleResponse = messages.slice(lastUserIndex + 1).some((msg) => {
-    const routing = getMessageTarget(msg);
-    return routing.target !== "skip";
+    const routing = getBlockRoute(msg);
+    return routing.route !== "skip";
   });
 
   return !hasVisibleResponse;

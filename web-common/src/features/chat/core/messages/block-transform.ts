@@ -1,7 +1,7 @@
 /**
- * Message Block Transformation
+ * Block Transformation
  *
- * Transforms raw API messages (V1Message) into UI blocks (MessageBlock).
+ * Transforms raw API messages (V1Message) into UI blocks (Block).
  *
  * Conceptual Model:
  * - `router_agent` messages → TEXT (the main conversation)
@@ -18,7 +18,7 @@ import {
   shouldShowPlanning,
   type PlanningBlock,
 } from "./planning/planning-block";
-import { createTextMessage, type TextMessage } from "./text/text-message";
+import { createTextBlock, type TextBlock } from "./text/text-block";
 import {
   createThinkingBlock,
   type ThinkingBlock,
@@ -29,8 +29,8 @@ import { getToolConfig, type ToolConfig } from "./tool-registry";
 // BLOCK TYPES
 // =============================================================================
 
-export type MessageBlock =
-  | TextMessage
+export type Block =
+  | TextBlock
   | ThinkingBlock
   | ChartBlock
   | FileDiffBlock
@@ -41,25 +41,25 @@ export type {
   ChartBlock,
   FileDiffBlock,
   PlanningBlock,
-  TextMessage,
+  TextBlock,
   ThinkingBlock,
 };
 
 // =============================================================================
-// MESSAGE ROUTING
+// ROUTING
 // =============================================================================
 
 /**
- * Where a message should be rendered in the UI.
+ * Where a message should be routed for rendering.
  */
-export type MessageTarget =
-  | { target: "text" }
-  | { target: "thinking" }
-  | { target: "block"; config: ToolConfig }
-  | { target: "skip" };
+export type BlockRoute =
+  | { route: "text" }
+  | { route: "thinking" }
+  | { route: "block"; config: ToolConfig }
+  | { route: "skip" };
 
 /**
- * Determines where a message should be rendered.
+ * Determines where a message should be routed.
  *
  * This centralizes all routing logic in one place:
  * - router_agent → text (main conversation)
@@ -67,20 +67,20 @@ export type MessageTarget =
  * - progress messages → thinking
  * - tool calls → consult registry (inline/block/hidden)
  */
-export function getMessageTarget(msg: V1Message): MessageTarget {
+export function getBlockRoute(msg: V1Message): BlockRoute {
   // Router agent produces the main conversation text (user prompts, assistant responses)
   if (msg.tool === ToolName.ROUTER_AGENT) {
-    return { target: "text" };
+    return { route: "text" };
   }
 
   // Result messages are not directly rendered—they're attached to their parent calls
   if (msg.type === MessageType.RESULT) {
-    return { target: "skip" };
+    return { route: "skip" };
   }
 
   // Progress messages always go to thinking block
   if (msg.type === MessageType.PROGRESS) {
-    return { target: "thinking" };
+    return { route: "thinking" };
   }
 
   // Tool calls: consult the registry
@@ -89,17 +89,17 @@ export function getMessageTarget(msg: V1Message): MessageTarget {
 
     switch (config.renderMode) {
       case "block":
-        return { target: "block", config };
+        return { route: "block", config };
       case "hidden":
-        return { target: "skip" };
+        return { route: "skip" };
       case "inline":
       default:
-        return { target: "thinking" };
+        return { route: "thinking" };
     }
   }
 
   // Unknown message types are skipped
-  return { target: "skip" };
+  return { route: "skip" };
 }
 
 // =============================================================================
@@ -109,12 +109,12 @@ export function getMessageTarget(msg: V1Message): MessageTarget {
 /**
  * Transforms raw chat messages into a list of UI blocks.
  */
-export function transformToMessageBlocks(
+export function transformToBlocks(
   messages: V1Message[],
   isStreaming: boolean,
   isConversationLoading: boolean,
-): MessageBlock[] {
-  const blocks: MessageBlock[] = [];
+): Block[] {
+  const blocks: Block[] = [];
 
   // Build result map for correlating tool calls with their results
   const resultMap = buildResultMessageMap(messages);
@@ -139,13 +139,13 @@ export function transformToMessageBlocks(
 
   // Process each message
   for (const msg of messages) {
-    const routing = getMessageTarget(msg);
+    const routing = getBlockRoute(msg);
 
-    switch (routing.target) {
+    switch (routing.route) {
       case "text":
-        // Text messages close any open thinking block
+        // Text blocks close any open thinking block
         flushThinking(true);
-        blocks.push(createTextMessage(msg, `text-${blocks.length}`));
+        blocks.push(createTextBlock(msg, `text-${blocks.length}`));
         break;
 
       case "thinking":

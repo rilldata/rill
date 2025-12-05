@@ -32,12 +32,12 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 // TOOL CONFIGURATION
 // =============================================================================
 
-/**
- * Configuration for a tool's rendering behavior.
- */
 /** Block types that can be created by tools */
 export type ToolBlockType = ChartBlock | FileDiffBlock;
 
+/**
+ * Configuration for a tool's rendering behavior.
+ */
 export interface ToolConfig {
   renderMode: ToolRenderMode;
   /**
@@ -98,23 +98,9 @@ export function getToolConfig(toolName: string | undefined): ToolConfig {
 }
 
 /**
- * Check if a tool renders as a top-level block.
- */
-export function isBlockTool(toolName: string | undefined): boolean {
-  return getToolConfig(toolName).renderMode === "block";
-}
-
-/**
  * Check if a tool is hidden from the UI.
  * Hidden tools are internal orchestration agents whose calls shouldn't be displayed.
  */
 export function isHiddenTool(toolName: string | undefined): boolean {
   return getToolConfig(toolName).renderMode === "hidden";
-}
-
-/**
- * Check if a tool renders inline within thinking blocks.
- */
-export function isInlineTool(toolName: string | undefined): boolean {
-  return getToolConfig(toolName).renderMode === "inline";
 }

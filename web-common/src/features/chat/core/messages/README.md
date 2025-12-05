@@ -1,15 +1,15 @@
 # Message Blocks
 
-This directory transforms raw API messages (`V1Message`) into UI blocks (`MessageBlock`) for rendering chat conversations.
+This directory transforms raw API messages (`V1Message`) into UI blocks (`Block`) for rendering chat conversations.
 
 ## Conceptual Model
 
 ### Message Sources → UI Blocks
 
 ```
-V1Message (from API)          →  MessageBlock (for UI)
+V1Message (from API)          →  Block (for UI)
 ─────────────────────────────────────────────────────────
-router_agent                  →  TextMessage (main conversation)
+router_agent                  →  TextBlock (main conversation)
 progress                      →  ThinkingBlock (grouped)
 tool call (inline)            →  ThinkingBlock (grouped)
 tool call (block)             →  ThinkingBlock + ChartBlock/etc.
@@ -33,16 +33,16 @@ result                        →  (attached to parent call)
     └───────────────┘                       │
             ↓                               ↓
     ┌───────────────┐               ┌───────────────┐
-    │  TextMessage  │               │  TextMessage  │
+    │   TextBlock   │               │   TextBlock   │
     └───────────────┘               └───────────────┘
 ```
 
-### Key Abstraction: `getMessageTarget()`
+### Key Abstraction: `getBlockRoute()`
 
 All routing logic is centralized in one function:
 
 ```typescript
-function getMessageTarget(msg: V1Message): MessageTarget {
+function getBlockRoute(msg: V1Message): BlockRoute {
   // router_agent → "text" (main conversation)
   // progress → "thinking"
   // tool calls → consult registry (inline/block/hidden)
@@ -50,7 +50,7 @@ function getMessageTarget(msg: V1Message): MessageTarget {
 }
 ```
 
-This makes the transformation loop trivial—just a switch on the target.
+This makes the transformation loop trivial—just a switch on the route.
 
 ### Tool Registry
 
@@ -68,7 +68,7 @@ Each block type has its own directory:
 
 ```
 messages/
-├── message-blocks.ts            # Transformation: V1Message → MessageBlock
+├── block-transform.ts           # Transformation: V1Message → Block
 ├── tool-registry.ts             # Tool rendering configuration
 ├── Messages.svelte              # Main container component
 │
@@ -76,7 +76,7 @@ messages/
 ├── Error.svelte                 # Shared: error display
 │
 ├── text/                        # Main conversation (user/assistant)
-│   ├── text-message.ts
+│   ├── text-block.ts
 │   ├── AssistantMessage.svelte
 │   ├── UserMessage.svelte
 │   └── rewrite-citation-urls.ts
@@ -106,8 +106,8 @@ messages/
 ```
 1. Build result map (tool call ID → result message)
 2. For each message:
-   - getMessageTarget() → text | thinking | block | skip
-   - text: flush thinking, add TextMessage
+   - getBlockRoute() → text | thinking | block | skip
+   - text: flush thinking, add TextBlock
    - thinking: accumulate in buffer
    - block: accumulate, flush thinking, add block
    - skip: ignore
@@ -129,7 +129,7 @@ To add a new block-level tool (like `ChartBlock` or `FileDiffBlock`):
      createBlock: createMyBlock,
    },
    ```
-5. **Add to MessageBlock union** in `message-blocks.ts`
+5. **Add to Block union** in `block-transform.ts`
 6. **Add rendering case** in `Messages.svelte`
 
 No changes to transformation logic needed—the registry handles routing.

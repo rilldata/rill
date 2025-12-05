@@ -1,5 +1,20 @@
+import type { ChartType } from "@rilldata/web-common/features/components/charts";
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
+
+// =============================================================================
+// BACKEND TYPES (mirror runtime/ai tool definitions)
+// =============================================================================
+
+/** Arguments for the create_chart tool call */
+interface CreateChartCallData {
+  chart_type: ChartType;
+  spec: unknown;
+}
+
+// =============================================================================
+// BLOCK TYPE
+// =============================================================================
 
 /**
  * Chart block representation.
@@ -9,7 +24,8 @@ export type ChartBlock = {
   type: "chart";
   id: string;
   message: V1Message;
-  chartData: any;
+  chartType: ChartType;
+  chartSpec: unknown;
 };
 
 /**
@@ -20,40 +36,37 @@ export function createChartBlock(
   message: V1Message,
   resultMessage: V1Message | undefined,
 ): ChartBlock | null {
-  const hasResult = !!resultMessage;
-  const isError = resultMessage?.contentType === MessageContentType.ERROR;
-  const chartData = parseChartData({ input: message.contentData });
+  if (!resultMessage) return null;
+  if (resultMessage.contentType === MessageContentType.ERROR) return null;
 
-  if (!chartData || !hasResult || isError) {
-    return null;
-  }
+  const callData = parseCallData(message.contentData);
+  if (!callData) return null;
 
   return {
     type: "chart",
     id: `chart-${message.id}`,
     message,
-    chartData,
+    chartType: callData.chart_type,
+    chartSpec: callData.spec,
   };
 }
 
-/**
- * Parses chart data from a tool call.
- * Returns null if parsing fails.
- */
-function parseChartData(toolCall: any) {
-  try {
-    // Check if input is already an object or needs parsing
-    const parsed =
-      typeof toolCall?.input === "string"
-        ? JSON.parse(toolCall.input)
-        : toolCall?.input;
+// =============================================================================
+// HELPERS
+// =============================================================================
 
-    return {
-      chartType: parsed.chart_type,
-      chartSpec: parsed.spec,
-    };
-  } catch (error) {
-    console.error("Failed to parse chart data:", error);
+/**
+ * Parses the create_chart tool call data.
+ */
+function parseCallData(
+  contentData: string | undefined,
+): CreateChartCallData | null {
+  try {
+    const parsed =
+      typeof contentData === "string" ? JSON.parse(contentData) : contentData;
+    if (!parsed?.chart_type) return null;
+    return parsed as CreateChartCallData;
+  } catch {
     return null;
   }
 }

@@ -1,9 +1,32 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-import {
-  MessageContentType,
-  type WriteFileCallData,
-  type WriteFileResultData,
-} from "../../types";
+import { MessageContentType } from "../../types";
+
+// =============================================================================
+// BACKEND TYPES (mirror runtime/ai tool definitions)
+// =============================================================================
+
+/** Arguments for the write_file tool call */
+interface WriteFileCallData {
+  path: string;
+  contents: string;
+}
+
+/** Result from the write_file tool */
+interface WriteFileResultData {
+  diff?: string;
+  is_new_file?: boolean;
+  resources?: Array<{
+    kind: string;
+    name: string;
+    reconcile_status: string;
+    reconcile_error: string;
+  }>;
+  parse_error?: string;
+}
+
+// =============================================================================
+// BLOCK TYPE
+// =============================================================================
 
 /**
  * File diff block representation.

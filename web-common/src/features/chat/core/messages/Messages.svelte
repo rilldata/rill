@@ -2,9 +2,9 @@
   import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
   import { derived } from "svelte/store";
-  import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
   import { runtime } from "../../../../runtime-client/runtime-store";
+  import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
@@ -39,8 +39,8 @@
   $: hasStreamError = !!$streamErrorStore;
 
   // Message blocks for display
-  $: messageBlocksStore = currentConversation.getMessageBlocks();
-  $: messageBlocks = $messageBlocksStore;
+  $: blocksStore = currentConversation.getBlocks();
+  $: blocks = $blocksStore;
 
   // Check if conversation is empty (for empty state display)
   $: isConversationEmpty =
@@ -85,7 +85,7 @@
       </div>
     </div>
   {:else}
-    {#each messageBlocks as block (block.id)}
+    {#each blocks as block (block.id)}
       {#if block.type === "text" && block.message.role === "user"}
         <UserMessage message={block.message} />
       {:else if block.type === "text" && block.message.role === "assistant"}
@@ -101,10 +101,7 @@
       {:else if block.type === "planning"}
         <PlanningBlock />
       {:else if block.type === "chart"}
-        <ChartBlock
-          chartType={block.chartData.chartType}
-          chartSpec={block.chartData.chartSpec}
-        />
+        <ChartBlock chartType={block.chartType} chartSpec={block.chartSpec} />
       {:else if block.type === "file-diff"}
         <FileDiffBlock
           filePath={block.filePath}
