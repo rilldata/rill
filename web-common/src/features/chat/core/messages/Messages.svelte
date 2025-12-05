@@ -6,6 +6,7 @@
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
   import TextMessage from "./text/TextMessage.svelte";
+  import PlanningBlock from "./thinking/PlanningBlock.svelte";
   import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
   import UserMessage from "./UserMessage.svelte";
 
@@ -88,6 +89,8 @@
           isComplete={block.isComplete}
           duration={block.duration}
         />
+      {:else if block.type === "planning"}
+        <PlanningBlock />
       {:else if block.type === "chart"}
         <ChartBlock
           chartType={block.chartData.chartType}

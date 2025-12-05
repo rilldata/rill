@@ -3,13 +3,24 @@ import { isHiddenAgentTool, MessageType, ToolName } from "../types";
 import { createChartBlock, type ChartBlock } from "./chart/chart-block";
 import { createTextMessage, type TextMessage } from "./text/text-message";
 import {
-  createPlanningIndicator,
   createThinkingBlock,
   hasDisplayableContent,
   type ThinkingBlock,
 } from "./thinking/thinking-block";
 
-export type MessageBlock = TextMessage | ThinkingBlock | ChartBlock;
+/**
+ * Planning indicator block - shown while waiting for the first AI response
+ */
+export type PlanningBlock = {
+  type: "planning";
+  id: string;
+};
+
+export type MessageBlock =
+  | TextMessage
+  | ThinkingBlock
+  | ChartBlock
+  | PlanningBlock;
 
 // Re-export individual block types for convenience
 export type { ChartBlock, TextMessage, ThinkingBlock };
@@ -85,7 +96,10 @@ export function transformToMessageBlocks(
   if (
     shouldShowPlanningIndicator(messages, isStreaming, isConversationLoading)
   ) {
-    blocks.push(createPlanningIndicator());
+    blocks.push({
+      type: "planning",
+      id: "planning-indicator",
+    });
   }
 
   return blocks;
@@ -128,13 +142,32 @@ function shouldShowPlanningIndicator(
 
   if (lastUserMessageIndex === -1) return false;
 
-  // Check if there are any AI messages after the last user message
-  const hasAIResponseAfterUser = messages.slice(lastUserMessageIndex + 1).some(
-    (msg) =>
-      (msg.role === "assistant" && msg.tool !== ToolName.ROUTER_AGENT) || // Ignore router_agent calls which are user messages
-      msg.type === MessageType.PROGRESS ||
-      (msg.type === MessageType.CALL && !isHiddenAgentTool(msg.tool)),
-  );
+  // Check if there are any visible AI messages after the last user message
+  const hasAIResponseAfterUser = messages
+    .slice(lastUserMessageIndex + 1)
+    .some((msg) => {
+      // 1. Progress messages are always visible responses
+      if (msg.type === MessageType.PROGRESS) return true;
+
+      // 2. Tool calls are responses if they are not hidden
+      if (msg.type === MessageType.CALL) {
+        return !isHiddenAgentTool(msg.tool);
+      }
+
+      // 3. Other assistant messages (Results/Text)
+      if (msg.role === "assistant") {
+        // Special case: Router Agent results are the main text response, so they count
+        if (msg.tool === ToolName.ROUTER_AGENT) return true;
+
+        // Other hidden tools should be ignored
+        if (isHiddenAgentTool(msg.tool)) return false;
+
+        // Default to true for any other visible assistant message
+        return true;
+      }
+
+      return false;
+    });
 
   return !hasAIResponseAfterUser;
 }

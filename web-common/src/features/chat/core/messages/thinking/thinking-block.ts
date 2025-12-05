@@ -11,7 +11,6 @@ export type ThinkingBlock = {
   messages: V1Message[];
   isComplete: boolean;
   duration: number;
-  isPlaceholder?: boolean;
 };
 
 /**
@@ -97,19 +96,5 @@ export function createThinkingBlock(
     messages,
     isComplete: isThinkingBlockComplete(messages, allMessages),
     duration: calculateThinkingDuration(messages),
-  };
-}
-
-/**
- * Creates a planning indicator (placeholder thinking block).
- */
-export function createPlanningIndicator(): ThinkingBlock {
-  return {
-    type: "thinking",
-    id: "thinking-placeholder",
-    messages: [],
-    isComplete: false,
-    duration: 0,
-    isPlaceholder: true,
   };
 }

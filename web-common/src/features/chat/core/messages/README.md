@@ -94,3 +94,4 @@ When modifying block transformation logic, verify:
 - Empty thinking blocks are hidden
 - All message types render in correct order
 
+
