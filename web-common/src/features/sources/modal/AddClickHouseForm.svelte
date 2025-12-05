@@ -1,6 +1,7 @@
 <script lang="ts">
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
@@ -244,7 +245,7 @@
       connectionTab === "parameters"
     ) {
       (values as any).ssl = true;
-      (values as any).port = "8443";
+      // Port is now user-selectable (8443 or 9440), so don't override it
     }
 
     try {
@@ -396,19 +397,31 @@
 
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                  disabled={connectorType === "clickhouse-cloud" && isPortField}
-                />
+                {#if connectorType === "clickhouse-cloud" && isPortField}
+                  <Select
+                    id={propertyKey}
+                    label={property.displayName}
+                    bind:value={$paramsForm[propertyKey]}
+                    options={[
+                      { value: "8443", label: "8443 (HTTPS)" },
+                      { value: "9440", label: "9440 (Native Secure)" },
+                    ]}
+                    optional={property.required}
+                  />
+                {:else}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {/if}
               {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
                 <Checkbox
                   id={propertyKey}
