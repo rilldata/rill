@@ -59,12 +59,14 @@ const (
 	AdminService_LeaveOrganization_FullMethodName                      = "/rill.admin.v1.AdminService/LeaveOrganization"
 	AdminService_SetOrganizationMemberUserRole_FullMethodName          = "/rill.admin.v1.AdminService/SetOrganizationMemberUserRole"
 	AdminService_GetOrganizationMemberUser_FullMethodName              = "/rill.admin.v1.AdminService/GetOrganizationMemberUser"
+	AdminService_ListUsergroupsForProjectAndUser_FullMethodName        = "/rill.admin.v1.AdminService/ListUsergroupsForProjectAndUser"
 	AdminService_UpdateOrganizationMemberUserAttributes_FullMethodName = "/rill.admin.v1.AdminService/UpdateOrganizationMemberUserAttributes"
 	AdminService_ListProjectMemberUsers_FullMethodName                 = "/rill.admin.v1.AdminService/ListProjectMemberUsers"
 	AdminService_ListProjectInvites_FullMethodName                     = "/rill.admin.v1.AdminService/ListProjectInvites"
 	AdminService_AddProjectMemberUser_FullMethodName                   = "/rill.admin.v1.AdminService/AddProjectMemberUser"
 	AdminService_RemoveProjectMemberUser_FullMethodName                = "/rill.admin.v1.AdminService/RemoveProjectMemberUser"
 	AdminService_SetProjectMemberUserRole_FullMethodName               = "/rill.admin.v1.AdminService/SetProjectMemberUserRole"
+	AdminService_GetProjectMemberUser_FullMethodName                   = "/rill.admin.v1.AdminService/GetProjectMemberUser"
 	AdminService_ListUsergroupsForOrganizationAndUser_FullMethodName   = "/rill.admin.v1.AdminService/ListUsergroupsForOrganizationAndUser"
 	AdminService_CreateUsergroup_FullMethodName                        = "/rill.admin.v1.AdminService/CreateUsergroup"
 	AdminService_GetUsergroup_FullMethodName                           = "/rill.admin.v1.AdminService/GetUsergroup"
@@ -269,6 +271,8 @@ type AdminServiceClient interface {
 	SetOrganizationMemberUserRole(ctx context.Context, in *SetOrganizationMemberUserRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUserRoleResponse, error)
 	// GetOrganizationMemberUser gets the member details
 	GetOrganizationMemberUser(ctx context.Context, in *GetOrganizationMemberUserRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserResponse, error)
+	// ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+	ListUsergroupsForProjectAndUser(ctx context.Context, in *ListUsergroupsForProjectAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForProjectAndUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(ctx context.Context, in *UpdateOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*UpdateOrganizationMemberUserAttributesResponse, error)
 	// ListProjectMemberUsers lists all the project members
@@ -281,6 +285,8 @@ type AdminServiceClient interface {
 	RemoveProjectMemberUser(ctx context.Context, in *RemoveProjectMemberUserRequest, opts ...grpc.CallOption) (*RemoveProjectMemberUserResponse, error)
 	// SetProjectMemberUserRole sets the role for the member
 	SetProjectMemberUserRole(ctx context.Context, in *SetProjectMemberUserRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberUserRoleResponse, error)
+	// GetProjectMemberUser gets the member details
+	GetProjectMemberUser(ctx context.Context, in *GetProjectMemberUserRequest, opts ...grpc.CallOption) (*GetProjectMemberUserResponse, error)
 	// ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
 	ListUsergroupsForOrganizationAndUser(ctx context.Context, in *ListUsergroupsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForOrganizationAndUserResponse, error)
 	// CreateUsergroup creates a user group in the organization
@@ -915,6 +921,16 @@ func (c *adminServiceClient) GetOrganizationMemberUser(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *adminServiceClient) ListUsergroupsForProjectAndUser(ctx context.Context, in *ListUsergroupsForProjectAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForProjectAndUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUsergroupsForProjectAndUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListUsergroupsForProjectAndUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateOrganizationMemberUserAttributes(ctx context.Context, in *UpdateOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*UpdateOrganizationMemberUserAttributesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateOrganizationMemberUserAttributesResponse)
@@ -969,6 +985,16 @@ func (c *adminServiceClient) SetProjectMemberUserRole(ctx context.Context, in *S
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetProjectMemberUserRoleResponse)
 	err := c.cc.Invoke(ctx, AdminService_SetProjectMemberUserRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectMemberUser(ctx context.Context, in *GetProjectMemberUserRequest, opts ...grpc.CallOption) (*GetProjectMemberUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectMemberUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetProjectMemberUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2149,6 +2175,8 @@ type AdminServiceServer interface {
 	SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error)
 	// GetOrganizationMemberUser gets the member details
 	GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error)
+	// ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+	ListUsergroupsForProjectAndUser(context.Context, *ListUsergroupsForProjectAndUserRequest) (*ListUsergroupsForProjectAndUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error)
 	// ListProjectMemberUsers lists all the project members
@@ -2161,6 +2189,8 @@ type AdminServiceServer interface {
 	RemoveProjectMemberUser(context.Context, *RemoveProjectMemberUserRequest) (*RemoveProjectMemberUserResponse, error)
 	// SetProjectMemberUserRole sets the role for the member
 	SetProjectMemberUserRole(context.Context, *SetProjectMemberUserRoleRequest) (*SetProjectMemberUserRoleResponse, error)
+	// GetProjectMemberUser gets the member details
+	GetProjectMemberUser(context.Context, *GetProjectMemberUserRequest) (*GetProjectMemberUserResponse, error)
 	// ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
 	ListUsergroupsForOrganizationAndUser(context.Context, *ListUsergroupsForOrganizationAndUserRequest) (*ListUsergroupsForOrganizationAndUserResponse, error)
 	// CreateUsergroup creates a user group in the organization
@@ -2515,6 +2545,9 @@ func (UnimplementedAdminServiceServer) SetOrganizationMemberUserRole(context.Con
 func (UnimplementedAdminServiceServer) GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationMemberUser not implemented")
 }
+func (UnimplementedAdminServiceServer) ListUsergroupsForProjectAndUser(context.Context, *ListUsergroupsForProjectAndUserRequest) (*ListUsergroupsForProjectAndUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUsergroupsForProjectAndUser not implemented")
+}
 func (UnimplementedAdminServiceServer) UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganizationMemberUserAttributes not implemented")
 }
@@ -2532,6 +2565,9 @@ func (UnimplementedAdminServiceServer) RemoveProjectMemberUser(context.Context, 
 }
 func (UnimplementedAdminServiceServer) SetProjectMemberUserRole(context.Context, *SetProjectMemberUserRoleRequest) (*SetProjectMemberUserRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberUserRole not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectMemberUser(context.Context, *GetProjectMemberUserRequest) (*GetProjectMemberUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectMemberUser not implemented")
 }
 func (UnimplementedAdminServiceServer) ListUsergroupsForOrganizationAndUser(context.Context, *ListUsergroupsForOrganizationAndUserRequest) (*ListUsergroupsForOrganizationAndUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsergroupsForOrganizationAndUser not implemented")
@@ -3598,6 +3634,24 @@ func _AdminService_GetOrganizationMemberUser_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListUsergroupsForProjectAndUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUsergroupsForProjectAndUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListUsergroupsForProjectAndUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListUsergroupsForProjectAndUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListUsergroupsForProjectAndUser(ctx, req.(*ListUsergroupsForProjectAndUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateOrganizationMemberUserAttributes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateOrganizationMemberUserAttributesRequest)
 	if err := dec(in); err != nil {
@@ -3702,6 +3756,24 @@ func _AdminService_SetProjectMemberUserRole_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SetProjectMemberUserRole(ctx, req.(*SetProjectMemberUserRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectMemberUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectMemberUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectMemberUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetProjectMemberUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectMemberUser(ctx, req.(*GetProjectMemberUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5818,6 +5890,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetOrganizationMemberUser_Handler,
 		},
 		{
+			MethodName: "ListUsergroupsForProjectAndUser",
+			Handler:    _AdminService_ListUsergroupsForProjectAndUser_Handler,
+		},
+		{
 			MethodName: "UpdateOrganizationMemberUserAttributes",
 			Handler:    _AdminService_UpdateOrganizationMemberUserAttributes_Handler,
 		},
@@ -5840,6 +5916,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetProjectMemberUserRole",
 			Handler:    _AdminService_SetProjectMemberUserRole_Handler,
+		},
+		{
+			MethodName: "GetProjectMemberUser",
+			Handler:    _AdminService_GetProjectMemberUser_Handler,
 		},
 		{
 			MethodName: "ListUsergroupsForOrganizationAndUser",

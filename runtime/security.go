@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
@@ -346,7 +347,7 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	// Admins and creators/recipients can access an alert.
 	case ResourceKindAlert:
 		spec := r.GetAlert().Spec
-		rule := p.builtInAlertSecurityRule(spec, claims)
+		rule := p.builtInAlertSecurityRule(r.Meta.Name, spec, claims, rules)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
@@ -402,7 +403,7 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	// Admins and creators/recipients can access a report.
 	case ResourceKindReport:
 		spec := r.GetReport().Spec
-		rule := p.builtInReportSecurityRule(spec, claims)
+		rule := p.builtInReportSecurityRule(r.Meta.Name, spec, claims, rules)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
@@ -423,10 +424,11 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 //
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
 // Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
-func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceName, spec *runtimev1.AlertSpec, claims *SecurityClaims, rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
+	var explicitAllow bool
 	// Allow if the user is an admin
 	if claims.Admin() {
-		return allowAccessRule
+		explicitAllow = true
 	}
 
 	// Extract attributes
@@ -438,7 +440,7 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, cla
 
 	// Allow if the owner is accessing the alert
 	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		return allowAccessRule
+		explicitAllow = true
 	}
 
 	// Allow if the user is an email recipient
@@ -448,7 +450,7 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, cla
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
 				if recipient == email {
-					return allowAccessRule
+					explicitAllow = true
 				}
 			}
 		case "slack":
@@ -459,28 +461,50 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, cla
 			}
 			for _, user := range props.Users {
 				if user == email {
-					return allowAccessRule
+					explicitAllow = true
 				}
 			}
 			// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
 			if len(props.Channels) > 0 {
-				return allowAccessRule
+				explicitAllow = true
 			}
 		}
 	}
 
-	// Don't allow (but don't deny either)
-	return nil
+	if !explicitAllow {
+		// Don't allow (but don't deny either)
+		return nil
+	}
+	// check if there is a security access rule with exclusive flag if yes then append to condition of the same rule
+	// otherwise create a security rule with allow true for this report resource
+	for _, rule := range rules {
+		if accessRule, ok := rule.Rule.(*runtimev1.SecurityRule_Access); ok {
+			if accessRule.Access.Exclusive {
+				// append to condition resources
+				accessRule.Access.ConditionResources = append(accessRule.Access.ConditionResources, alertRes)
+				return nil
+			}
+		}
+	}
+	return &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Allow:              true,
+				ConditionResources: []*runtimev1.ResourceName{alertRes},
+			},
+		},
+	}
 }
 
 // builtInReportSecurityRule returns a built-in security rule to apply to a report.
 //
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
 // Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
-func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.ResourceName, spec *runtimev1.ReportSpec, claims *SecurityClaims, rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
+	var explicitAllow bool
 	// Allow if the user is an admin
 	if claims.Admin() {
-		return allowAccessRule
+		explicitAllow = true
 	}
 
 	// Extract attributes
@@ -492,7 +516,7 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 
 	// Allow if the owner is accessing the report
 	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		return allowAccessRule
+		explicitAllow = true
 	}
 
 	// Allow if the user is an email recipient
@@ -502,7 +526,7 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 			for _, recipient := range recipients {
 				if recipient == email {
-					return allowAccessRule
+					explicitAllow = true
 				}
 			}
 		case "slack":
@@ -513,14 +537,35 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 			}
 			for _, user := range props.Users {
 				if user == email {
-					return allowAccessRule
+					explicitAllow = true
 				}
 			}
 		}
 	}
 
-	// Don't allow (but don't deny either)
-	return nil
+	if !explicitAllow {
+		// Don't allow (but don't deny either)
+		return nil
+	}
+	// check if there is a security access rule with exclusive flag if yes then append to condition of the same rule
+	// otherwise create a security rule with allow true for this report resource
+	for _, rule := range rules {
+		if accessRule, ok := rule.Rule.(*runtimev1.SecurityRule_Access); ok {
+			if accessRule.Access.Exclusive {
+				// append to condition resources
+				accessRule.Access.ConditionResources = append(accessRule.Access.ConditionResources, reportRes)
+				return nil
+			}
+		}
+	}
+	return &runtimev1.SecurityRule{
+		Rule: &runtimev1.SecurityRule_Access{
+			Access: &runtimev1.SecurityRuleAccess{
+				Allow:              true,
+				ConditionResources: []*runtimev1.ResourceName{reportRes},
+			},
+		},
+	}
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.
@@ -680,12 +725,15 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *ru
 // This involves looking up the referenced resource, determining its dependencies, and adding the necessary access rules for those dependencies.
 // For example, a transitive access rule on a report will add access rules for the underlying metrics view, explore, and any fields or rows that are accessible in the report.
 func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
+	hasTransitive := false
+	transitiveCount := 0
 	var rules []*runtimev1.SecurityRule
 	for _, rule := range claims.AdditionalRules {
 		if rule.GetTransitiveAccess() == nil {
 			rules = append(rules, rule)
 			continue
 		}
+		hasTransitive = true
 		// If the rule is a transitive access rule, we need to resolve it
 		resName := rule.GetTransitiveAccess().GetResource()
 		if resName == nil {
@@ -697,13 +745,29 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 		}
 		res, err := ctr.Get(ctx, resName, false)
 		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				// resource not found, skip transitive access
+				continue
+			}
 			return nil, fmt.Errorf("failed to get resource %q of kind %q: %w", resName.Name, resName.Kind, err)
 		}
 		resolvedRules, err := ctr.reconciler(res.Meta.Name.Kind).ResolveTransitiveAccess(ctx, claims, res)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve transitive access rule: %w", err)
 		}
+		transitiveCount++
 		rules = append(rules, resolvedRules...)
+	}
+
+	if hasTransitive && transitiveCount == 0 {
+		// add access: false rule as no transitive access could be resolved
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
+				},
+			},
+		})
 	}
 	// gather all conditions kinds and resources mentioned in the rules so that we can add a single security rule access policy for them at the end.
 	// making sure only a single rule with the exclusive flag is added, otherwise we may get false rejections depending on which rule with the exclusive flag is evaluated first

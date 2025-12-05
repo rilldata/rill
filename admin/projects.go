@@ -46,7 +46,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// The creating user becomes project admin
 	if opts.CreatedByUserID != nil {
-		err = s.InsertProjectMemberUser(txCtx, org.ID, proj.ID, *opts.CreatedByUserID, adminRole.ID, nil)
+		err = s.InsertProjectMemberUser(txCtx, org.ID, proj.ID, *opts.CreatedByUserID, adminRole.ID, nil, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +54,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Add the system-managed autogroup:members group to the project with the org.DefaultProjectRoleID role (if configured)
 	if org.DefaultProjectRoleID != nil {
-		err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, *org.DefaultProjectRoleID)
+		err = s.DB.InsertProjectMemberUsergroup(txCtx, allMembers.ID, proj.ID, *org.DefaultProjectRoleID, false, nil)
 		if err != nil {
 			return nil, err
 		}
