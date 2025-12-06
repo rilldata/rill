@@ -65,6 +65,7 @@ export class TimeManager {
   ) {
     this.largestMinTimeGrain = derived(this.minTimeGrainMap, (map) => {
       let largest: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
       for (const grain of map.values()) {
         if (isGrainBigger(grain, largest)) {
           largest = grain;

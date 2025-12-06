@@ -5,7 +5,7 @@ import type { DateTimeUnit } from "luxon";
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
-type TimeGrainAlias =
+export type TimeGrainAlias =
   | "ms"
   | "MS"
   | "s"

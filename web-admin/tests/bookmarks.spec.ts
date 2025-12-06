@@ -559,7 +559,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=adomain IN ('hyundaiusa.com','instacart.com')`,
+          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f.bids_metrics=adomain IN ('hyundaiusa.com','instacart.com')`,
         );
       });
 

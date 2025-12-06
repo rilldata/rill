@@ -103,7 +103,6 @@
   $: canPan = $canPanStore;
 
   function onPan(direction: "left" | "right") {
-    console.log({ interval, selectedRange });
     if (!interval || !selectedRange) return;
     const getPanRange = getPanRangeForTimeRange(
       {
@@ -114,16 +113,13 @@
       activeTimeZone,
     );
     const panRange = getPanRange(direction);
-    console.log({ panRange });
+
     if (!panRange) return;
     const { start, end } = panRange;
-
-    console.log({ start, end }, activeTimeGrain);
 
     if (!activeTimeGrain) return;
 
     set.range(`${start.toISOString()},${end.toISOString()}`);
-    // set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
 </script>
 

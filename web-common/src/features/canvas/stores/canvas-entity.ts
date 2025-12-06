@@ -125,7 +125,6 @@ export class CanvasEntity {
             }
           });
 
-          console.log({ existingParams: existingParams.toString() });
           goto(`?${existingParams.toString()}`, { replaceState }).catch(
             console.error,
           );
