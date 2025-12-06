@@ -1,40 +1,13 @@
-import { getComponentMetricsViewFromSpec } from "@rilldata/web-common/features/canvas/components/util";
-import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import {
-  calculateComparisonTimeRangePartial,
-  calculateTimeRangePartial,
-  type ComparisonTimeRangeState,
-  type TimeRangeState,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { fromTimeRangeUrlParam } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
-import {
-  FromURLParamTimeGrainMap,
-  ToURLParamTimeGrainMapMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ToURLParamTimeGrainMapMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import {
-  TimeComparisonOption,
-  TimeRangePreset,
-  type DashboardTimeControls,
-  type TimeRange,
-} from "@rilldata/web-common/lib/time/types";
-import {
-  createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
   V1TimeGrain,
   type V1ExploreTimeRange,
-  type V1MetricsView,
-  type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
-import {
-  runtime,
-  type Runtime,
-} from "@rilldata/web-common/runtime-client/runtime-store";
 import { DateTime, Interval, Settings } from "luxon";
 import {
   derived,
@@ -44,250 +17,144 @@ import {
   type Writable,
 } from "svelte/store";
 import {
+  ALL_TIME_RANGE_ALIAS,
   deriveInterval,
   normalizeWeekday,
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
-import type { SearchParamsStore } from "./canvas-entity";
+import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 import {
   RillLegacyDaxInterval,
   RillPeriodToGrainInterval,
+  RillTime,
 } from "../../dashboards/url-state/time-ranges/RillTime";
-import { minTimeGrainToDefaultTimeRange } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  DateTimeUnitToV1TimeGrain,
+  getRangePrecision,
+  isGrainAllowed,
+  minTimeGrainToDefaultTimeRange,
+} from "@rilldata/web-common/lib/time/new-grains";
 
-type AllTimeRange = TimeRange & { isFetching: boolean };
-
-let lastAllTimeRange: AllTimeRange | undefined;
+export type MinMax = {
+  min: DateTime<true>;
+  max: DateTime<true>;
+};
 
 function maybeWritable<T>(value?: T): Writable<T | undefined> {
   return writable(value);
 }
 
-// This class is used for global and widget time controls on Canvas
-// To avoid methods running in widgets, use isWidgetInstance flag
-export class TimeControls {
-  isWidgetInstance: boolean;
-  selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
-  showTimeComparison: Writable<boolean>;
-  selectedTimezone: Writable<string>;
-
-  allTimeRange: Readable<AllTimeRange>;
-  isReady: Readable<boolean>;
-  minTimeGrain: Writable<V1TimeGrain> = writable(
-    V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-  );
-  interval: Writable<Interval> = writable(
-    Interval.fromDateTimes(DateTime.fromJSDate(new Date(0)), DateTime.now()),
-  );
+export class TimeManager {
+  largestMinTimeGrain: Readable<V1TimeGrain>;
+  minMaxTimeStamps = maybeWritable<MinMax>();
+  defaultTimeRangeStore = maybeWritable<string>();
+  defaultComparisonRangeStore = maybeWritable<string>();
+  timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
+  availableTimeZonesStore = writable<string[]>([]);
+  allowCustomRangeStore = writable<boolean>(true);
+  hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
+  minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
   hasTimeSeries: Readable<boolean>;
-  timeRangeStateStore: Writable<TimeRangeState | undefined> =
-    writable(undefined);
-  comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
-  _canPan: Readable<{ left: boolean; right: boolean }>;
-  _defaultTimeRange = maybeWritable<string>();
-  _defaultComparisonRange = maybeWritable<string>();
-  _timeRangeOptions = writable<V1ExploreTimeRange[]>([]);
-  _availableTimeZones = writable<string[]>([]);
-  _allowCustomRange = writable<boolean>(true);
+  specInitialized = false;
+  global: TimeControls;
 
   constructor(
-    private specStore: CanvasSpecResponseStore,
     public searchParamsStore: SearchParamsStore,
-    public componentName?: string,
-    public canvasName?: string,
+    public parent: CanvasEntity,
   ) {
-    this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
-    this.selectedComparisonTimeRange = writable(undefined);
-    this.showTimeComparison = writable(false);
-    this.selectedTimezone = writable("UTC");
-    this.isWidgetInstance = Boolean(componentName);
-
-    this.hasTimeSeries = derived(specStore, (spec) => {
-      let metricsViews = spec?.data?.metricsViews || {};
-
-      const metricsViewName = getComponentMetricsViewFromSpec(
-        componentName,
-        spec?.data?.components,
-      );
-      if (metricsViewName && metricsViews[metricsViewName]) {
-        metricsViews = {
-          [metricsViewName]: metricsViews[metricsViewName],
-        };
+    this.largestMinTimeGrain = derived(this.minTimeGrainMap, (map) => {
+      let largest: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+      for (const grain of map.values()) {
+        if (isGrainBigger(grain, largest)) {
+          largest = grain;
+        }
       }
-      return Object.keys(metricsViews).some((metricView) => {
-        const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
-        return Boolean(metricsViewSpec?.timeDimension);
-      });
+      return largest;
     });
 
-    const listener = derived(
-      [specStore, this.allTimeRange, this.searchParamsStore, this.minTimeGrain],
-      async ([spec, allTimeRange, searchParams, minTimeGrain]) => {
-        if (!spec?.data || !allTimeRange) {
-          return undefined;
-        }
-
-        if (!searchParams.toString() && !this.isWidgetInstance) {
-          this.processSpec(spec.data);
-        }
-
-        const {
-          timeRange,
-          selectedComparisonTimeRange,
-          showTimeComparison,
-          timeZone,
-          // grain: urlGrain,  // Not supported on the Canvas surface at the moment - bgh
-        } = parseSearchParams(searchParams);
-
-        // Component does not have local time range
-        if (this.isWidgetInstance && !timeRange) return;
-
-        // TODO: figure out a better way of handling this property
-        // when it's not consistent across all metrics views - bgh
-        const firstMetricsViewName = Object.keys(spec.data.metricsViews)?.[0];
-        const firstDayOfWeekOfFirstMetricsView =
-          spec.data.metricsViews[firstMetricsViewName]?.state?.validSpec
-            ?.firstDayOfWeek;
-
-        if (!firstMetricsViewName) return;
-
-        Settings.defaultWeekSettings = {
-          firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
-          weekend: [6, 7],
-          minimalDays: 4,
-        };
-
-        const { defaultPreset } = spec.data?.canvas || {};
-
-        const finalRange: string = timeRange || get(this._defaultTimeRange)!;
-
-        const result = await deriveInterval(
-          finalRange,
-          firstMetricsViewName,
-          timeZone,
-        );
-
-        if (result.error || !result.interval.start || !result.interval.end)
-          return;
-
-        const selectedTimeRange: DashboardTimeControls = {
-          name: finalRange,
-          start: result.interval.start?.toJSDate() ?? new Date(),
-          end: result.interval.end?.toJSDate() ?? new Date(),
-          interval: result.grain,
-        };
-
-        this.interval.set(result.interval);
-
-        this.selectedTimezone.set(timeZone);
-
-        if (selectedComparisonTimeRange) {
-          this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
-        }
-
-        this.showTimeComparison.set(showTimeComparison);
-
-        const defaultTimeRange = isoDurationToFullTimeRange(
-          defaultPreset?.timeRange,
-          allTimeRange.start,
-          allTimeRange.end,
-          timeZone,
-        );
-
-        const timeRangeState = calculateTimeRangePartial(
-          allTimeRange,
-          selectedTimeRange,
-          undefined, // scrub not present in canvas yet
-          timeZone,
-          defaultTimeRange,
-          minTimeGrain,
-        );
-
-        if (!timeRangeState) return undefined;
-
-        this.timeRangeStateStore.set(timeRangeState);
+    this.hasTimeSeries = derived(
+      [this.hasTimeSeriesMap],
+      ([$hasTimeSeriesMap]) => {
+        const values = Array.from($hasTimeSeriesMap.values());
+        return values.some((v) => v);
       },
     );
 
-    listener.subscribe(() => {});
-
-    this.comparisonRangeStateStore = derived(
-      [
-        specStore,
-        this.allTimeRange,
-        this.selectedComparisonTimeRange,
-        this.selectedTimezone,
-        this.showTimeComparison,
-        this.timeRangeStateStore,
-      ],
-      ([
-        spec,
-        allTimeRange,
-        selectedComparisonTimeRange,
-        selectedTimezone,
-        showTimeComparison,
-        timeRangeState,
-      ]) => {
-        if (!spec?.data || !timeRangeState) return undefined;
-        const timeRanges = spec.data?.canvas?.timeRanges;
-        return calculateComparisonTimeRangePartial(
-          timeRanges,
-          allTimeRange,
-          selectedComparisonTimeRange,
-          selectedTimezone,
-          undefined, // scrub not present in canvas yet
-          showTimeComparison,
-          timeRangeState,
-        );
-      },
-    );
-
-    if (!componentName) {
-      this.specStore.subscribe((spec) => {
-        if (!spec?.data) return;
-        this.processSpec(spec.data);
-      });
-    }
-
-    this._canPan = derived(
-      [this.interval, this.allTimeRange],
-      ([interval, allTimeRange]) => {
-        if (!interval || !interval.start || !interval.end)
-          return { left: false, right: false };
-
-        const canPanLeft =
-          interval?.start > DateTime.fromJSDate(allTimeRange.start);
-        const canPanRight =
-          interval?.end < DateTime.fromJSDate(allTimeRange.end);
-
-        return { left: canPanLeft, right: canPanRight };
-      },
-    );
+    this.global = new TimeControls(this.searchParamsStore, this.parent, this);
   }
 
-  processSpec = (spec: CanvasResponse) => {
+  createLocalTimeControls = (
+    componentName: string,
+    searchParamsStore: SearchParamsStore,
+  ) => {
+    return new TimeControls(
+      searchParamsStore,
+      this.parent,
+      this,
+      componentName,
+    );
+  };
+
+  onSpecChange = (spec: CanvasResponse) => {
+    this.specInitialized = true;
     const defaultPreset = spec?.canvas?.defaultPreset;
 
-    const minTimeGrain = this.checkAndSetMinTimeGrain(spec);
     const ranges = this.checkAndSetTimeRangeOptions(spec);
-    this.checkAndSetDefaultTimeRange(spec, minTimeGrain, ranges);
+    this.checkAndSetDefaultTimeRange(spec, ranges);
     this.checkAndSetAvailableTimeZones(spec);
+    this.checkIfHasTimeSeries(spec);
+    this.checkAndSetFirstDayOfWeek(spec);
 
     if (
       defaultPreset?.comparisonMode ===
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
     ) {
-      this._defaultComparisonRange.set("rill-PP");
+      this.defaultComparisonRangeStore.set("rill-PP");
     } else {
-      this._defaultComparisonRange.set(undefined);
+      this.defaultComparisonRangeStore.set(undefined);
     }
   };
+
+  checkAndSetFirstDayOfWeek(response: CanvasResponse) {
+    // TODO: figure out a better way of handling this property
+    // when it's not consistent across all metrics views - bgh
+    const firstMetricsViewName = Object.keys(response.metricsViews)?.[0];
+    const firstDayOfWeekOfFirstMetricsView =
+      response.metricsViews[firstMetricsViewName]?.state?.validSpec
+        ?.firstDayOfWeek;
+
+    if (!firstMetricsViewName) return;
+
+    Settings.defaultWeekSettings = {
+      firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
+      weekend: [6, 7],
+      minimalDays: 4,
+    };
+  }
+
+  checkIfHasTimeSeries(response: CanvasResponse) {
+    const metricsViews = response.metricsViews || {};
+
+    const timeGrainMap = new Map<string, V1TimeGrain>();
+    const hasTimeSeriesMap = new Map<string, boolean>();
+
+    Object.entries(metricsViews).forEach(([mvName, mv]) => {
+      const metricsViewSpec = mv?.state?.validSpec;
+      const timeGrain = metricsViewSpec?.smallestTimeGrain;
+      timeGrainMap.set(mvName, timeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED);
+      const hasTimeDimension = Boolean(metricsViewSpec?.timeDimension);
+      hasTimeSeriesMap.set(mvName, hasTimeDimension);
+    });
+
+    this.minTimeGrainMap.set(timeGrainMap);
+    this.hasTimeSeriesMap.set(hasTimeSeriesMap);
+  }
 
   checkAndSetAllowCustomRange = (response: CanvasResponse) => {
     const allowCustomRange = response.canvas?.allowCustomTimeRange ?? true;
 
-    this._allowCustomRange.set(allowCustomRange);
+    this.allowCustomRangeStore.set(allowCustomRange);
 
     return allowCustomRange;
   };
@@ -295,167 +162,267 @@ export class TimeControls {
   checkAndSetAvailableTimeZones(response: CanvasResponse) {
     const timeZones = response.canvas?.timeZones ?? [];
 
-    this._availableTimeZones.set(timeZones);
+    this.availableTimeZonesStore.set(timeZones);
 
     return timeZones;
   }
 
   checkAndSetDefaultTimeRange(
     response: CanvasResponse,
-    minTimeGrain: V1TimeGrain,
+
     timeRanges: V1ExploreTimeRange[],
   ) {
     const defaultTimeRange = response.canvas?.defaultPreset?.timeRange;
 
-    const finalRange =
-      defaultTimeRange ??
-      timeRanges[0]?.range ??
-      minTimeGrainToDefaultTimeRange[minTimeGrain];
+    const finalRange = defaultTimeRange ?? timeRanges[0]?.range;
 
-    const currentValue = get(this._defaultTimeRange);
+    const currentValue = get(this.defaultTimeRangeStore);
     if (currentValue !== finalRange && finalRange) {
-      this._defaultTimeRange.set(finalRange);
+      this.defaultTimeRangeStore.set(finalRange);
     }
   }
 
   checkAndSetTimeRangeOptions(response: CanvasResponse) {
     const timeRangeOptions = response.canvas?.timeRanges ?? [];
 
-    this._timeRangeOptions.set(timeRangeOptions);
+    this.timeRangeOptionsStore.set(timeRangeOptions);
 
     return timeRangeOptions;
   }
+}
 
-  checkAndSetMinTimeGrain(response: CanvasResponse) {
-    const currentValue = get(this.minTimeGrain);
-    const minTimeGrain = deriveMinTimeGrain(
-      this.componentName,
-      response.metricsViews,
-      response.components,
+// This class is used for global and widget time controls on Canvas
+// To avoid methods running in widgets, use isWidgetInstance flag
+export class TimeControls {
+  isWidgetInstance: boolean;
+
+  interval: Readable<Interval<true> | undefined>;
+
+  rangeStore: Readable<string | undefined>;
+  grainStore: Readable<V1TimeGrain | undefined>;
+  timeZoneStore: Readable<string>;
+
+  private parsedRange: Readable<RillTime | undefined>;
+
+  comparisonRangeStore = writable<string>("rill-PP");
+  comparisonIntervalStore: Readable<Interval<true> | undefined>;
+  showTimeComparisonStore = writable<boolean>(false);
+
+  urlRangeStore = maybeWritable<string>();
+  urlGrainStore = maybeWritable<V1TimeGrain>();
+  urlTimeZoneStore = maybeWritable<string>();
+  urlComparisonRangeStore = maybeWritable<string>();
+
+  canPanStore: Readable<{ left: boolean; right: boolean }>;
+
+  urlInitialized = false;
+
+  constructor(
+    public searchParamsStore: SearchParamsStore,
+    public parent: CanvasEntity,
+    public manager: TimeManager,
+    public componentName?: string,
+    public metricsViewName?: string,
+  ) {
+    this.isWidgetInstance = Boolean(componentName);
+
+    this.rangeStore = derived(
+      [
+        this.urlRangeStore,
+        this.manager.defaultTimeRangeStore,
+        this.manager.largestMinTimeGrain,
+        this.manager.timeRangeOptionsStore,
+        this.manager.minTimeGrainMap,
+      ],
+      ([urlRange, defaultRange, minTimeGrain, timeRangeOptions]) => {
+        if (!this.urlInitialized || !this.manager.specInitialized)
+          return undefined;
+
+        if (urlRange) return urlRange;
+
+        if (this.isWidgetInstance) return undefined;
+
+        if (defaultRange) return defaultRange;
+
+        if (timeRangeOptions.length > 0) return timeRangeOptions[0].range;
+
+        const derivedDefault = minTimeGrainToDefaultTimeRange[minTimeGrain];
+
+        if (derivedDefault) return derivedDefault;
+
+        return ALL_TIME_RANGE_ALIAS;
+      },
     );
 
-    if (currentValue !== minTimeGrain) {
-      this.minTimeGrain.set(minTimeGrain);
-    }
+    this.parsedRange = derived(this.rangeStore, (range) => {
+      if (!range) return undefined;
 
-    return minTimeGrain;
-  }
-
-  combinedTimeRangeSummaryStore = (
-    runtime: Writable<Runtime>,
-    specStore: CanvasSpecResponseStore,
-  ): Readable<AllTimeRange> => {
-    return derived([runtime, specStore], ([r, spec], set) => {
-      const metricsViews = spec?.data?.metricsViews || {};
-
-      const metricsViewName = getComponentMetricsViewFromSpec(
-        this.componentName,
-        spec?.data?.components,
-      );
-
-      const metricsReferred = metricsViewName
-        ? [metricsViewName]
-        : Object.keys(metricsViews);
-
-      if (
-        !metricsReferred.length ||
-        (metricsViewName && !metricsViews[metricsViewName])
-      ) {
-        return set({
-          name: TimeRangePreset.ALL_TIME,
-          start: new Date(0),
-          end: new Date(),
-          isFetching: false,
-        });
+      try {
+        const parsed = parseRillTime(range);
+        return parsed;
+      } catch {
+        return undefined;
       }
+    });
 
-      const timeRangeQueries = [...metricsReferred].map((metricView) => {
-        return createQueryServiceMetricsViewTimeRange(
-          r.instanceId,
-          metricView,
-          {},
-          {
-            query: {
-              enabled:
-                !!metricsViews[metricView]?.state?.validSpec?.timeDimension,
-              staleTime: Infinity,
-              gcTime: Infinity,
-            },
-          },
-          queryClient,
-        );
-      });
+    this.timeZoneStore = derived([this.urlTimeZoneStore], ([urlTimeZone]) => {
+      if (urlTimeZone) return urlTimeZone;
 
-      return derived(timeRangeQueries, (timeRanges, querySet) => {
-        const isFetching = timeRanges.some((q) => q.isFetching);
-        let start = new Date();
-        let end = new Date(0);
-        timeRanges.forEach((timeRange) => {
-          const metricsStart = timeRange.data?.timeRangeSummary?.min;
-          const metricsEnd = timeRange.data?.timeRangeSummary?.max;
-          if (metricsStart) {
-            const metricsStartDate = new Date(metricsStart);
-            start = new Date(
-              Math.min(start.getTime(), metricsStartDate.getTime()),
-            );
-          }
-          if (metricsEnd) {
-            const metricsEndDate = new Date(metricsEnd);
-            end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
-          }
-        });
-        if (start.getTime() > end.getTime()) {
-          start = new Date(0);
-          end = new Date();
-        }
-        let newTimeRange: AllTimeRange = {
-          name: TimeRangePreset.ALL_TIME,
-          start,
-          end,
-          isFetching,
-        };
-        if (isFetching && lastAllTimeRange) {
-          newTimeRange = { ...lastAllTimeRange, isFetching };
-        }
-        const noChange =
-          lastAllTimeRange &&
-          lastAllTimeRange.start.getTime() === newTimeRange.start.getTime() &&
-          lastAllTimeRange.end.getTime() === newTimeRange.end.getTime();
+      return "UTC";
+    });
 
-        /**
-         * TODO: We want to avoid updating the store when there is no change
-         * to avoid any downstream updates which depend on allTimeRange
-         * Returning without setting any value leads to undefined value in the store.
-         */
-        if (noChange) {
-          querySet(lastAllTimeRange);
+    this.interval = derived<
+      [
+        typeof this.rangeStore,
+        typeof this.parent._metricsViews,
+        typeof this.timeZoneStore,
+      ],
+      Interval<true> | undefined
+    >(
+      [this.rangeStore, this.parent._metricsViews, this.timeZoneStore],
+      ([range, allMetricsViews, timeZone], set) => {
+        const allMetricsViewNames = Object.keys(allMetricsViews || {});
+
+        if (!allMetricsViewNames.length || !range || !timeZone) {
+          set(undefined);
           return;
         }
 
-        if (!isFetching) {
-          lastAllTimeRange = newTimeRange;
+        const promises = allMetricsViewNames.map((mvName) => {
+          return deriveInterval(range, mvName, timeZone);
+        });
+
+        Promise.all(promises)
+          .then((results) => {
+            let latestInterval: Interval<true> | undefined = undefined;
+            let minDate: DateTime<true> | undefined = undefined;
+            let maxDate: DateTime<true> | undefined = undefined;
+
+            results.forEach((res) => {
+              const interval = res.interval;
+              const fullTimeRange = res.fullTimeRange;
+
+              if (
+                !interval?.end ||
+                !interval?.start ||
+                !fullTimeRange?.max ||
+                !fullTimeRange?.min
+              ) {
+                return;
+              }
+
+              const min = DateTime.fromISO(fullTimeRange.min).setZone(timeZone);
+              const max = DateTime.fromISO(fullTimeRange.max).setZone(timeZone);
+
+              if (min.isValid && (!minDate || min < minDate)) {
+                minDate = min;
+              }
+              if (max.isValid && (!maxDate || max > maxDate)) {
+                maxDate = max;
+              }
+
+              if (
+                interval?.isValid &&
+                (!latestInterval || latestInterval.end < interval.end)
+              ) {
+                latestInterval = interval;
+              }
+            });
+
+            set(latestInterval);
+            this.manager.minMaxTimeStamps.set(
+              minDate && maxDate ? { min: minDate, max: maxDate } : undefined,
+            );
+          })
+          .catch(console.error);
+      },
+    );
+
+    this.comparisonIntervalStore = derived(
+      [
+        this.interval,
+        this.comparisonRangeStore,
+        this.rangeStore,
+        this.timeZoneStore,
+      ],
+      ([interval, comparisonRange, range, zone]) => {
+        if (range === ALL_TIME_RANGE_ALIAS) return undefined;
+
+        return getComparisonInterval(interval, comparisonRange, zone);
+      },
+    );
+
+    this.canPanStore = derived(
+      [this.interval, this.manager.minMaxTimeStamps],
+      ([interval, minMaxTimeStamps]) => {
+        if (!interval || !interval.start || !interval.end || !minMaxTimeStamps)
+          return { left: false, right: false };
+
+        const canPanLeft = interval?.start > minMaxTimeStamps.min;
+        const canPanRight = interval?.end < minMaxTimeStamps.max;
+
+        return { left: canPanLeft, right: canPanRight };
+      },
+    );
+
+    this.grainStore = derived(
+      [this.urlGrainStore, this.manager.largestMinTimeGrain, this.parsedRange],
+      ([urlGrain, minTimeGrain, parsedRange]) => {
+        if (urlGrain && isGrainAllowed(urlGrain, minTimeGrain)) {
+          return urlGrain;
+        } else if (parsedRange) {
+          const parsedRangePrecision = getRangePrecision(parsedRange);
+
+          if (isGrainAllowed(parsedRangePrecision, minTimeGrain)) {
+            return parsedRangePrecision;
+          } else {
+            return minTimeGrain;
+          }
+        } else {
+          return minTimeGrain;
         }
-        querySet(newTimeRange);
-      }).subscribe(set);
-    });
+      },
+    );
+  }
+
+  onUrlChange = (searchParams: URLSearchParams) => {
+    this.urlInitialized = true;
+
+    const { range, comparisonRange, zone, grain } =
+      parseSearchParams(searchParams);
+
+    // Component without local time range
+    if (this.isWidgetInstance && !range) return;
+
+    this.urlRangeStore.set(range);
+    this.urlGrainStore.set(grain);
+    this.urlTimeZoneStore.set(zone);
+    this.urlComparisonRangeStore.set(comparisonRange);
+
+    this.showTimeComparisonStore.set(!!comparisonRange);
+
+    if (comparisonRange) {
+      this.comparisonRangeStore.set(comparisonRange);
+    }
   };
 
   set = {
     zone: (timeZone: string, checkIfSet = false, replaceState = false) => {
-      return this.searchParamsStore.set(
-        ExploreStateURLParams.TimeZone,
-        timeZone,
-        checkIfSet,
-        replaceState,
-      );
+      const props = new Map([[ExploreStateURLParams.TimeZone, timeZone]]);
+      return this.searchParamsStore.set(props, checkIfSet, replaceState);
     },
-    range: (range: string, checkIfSet = false, replaceState = false) => {
-      return this.searchParamsStore.set(
-        ExploreStateURLParams.TimeRange,
-        range,
-        checkIfSet,
-        replaceState,
-      );
+    range: (
+      range: string,
+      checkIfSet = false,
+      replaceState = false,
+      setComparisonToContinuous = false,
+    ) => {
+      const props = new Map([[ExploreStateURLParams.TimeRange, range]]);
+
+      if (setComparisonToContinuous) {
+        props.set(ExploreStateURLParams.ComparisonTimeRange, "rill-PP");
+      }
+      return this.searchParamsStore.set(props, checkIfSet, replaceState);
     },
     grain: (
       timeGrain: V1TimeGrain,
@@ -463,13 +430,10 @@ export class TimeControls {
       replaceState = false,
     ) => {
       const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
+      const props = new Map<string, string>();
       if (mappedTimeGrain) {
-        return this.searchParamsStore.set(
-          ExploreStateURLParams.TimeGrain,
-          mappedTimeGrain,
-          checkIfSet,
-          replaceState,
-        );
+        props.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
+        return this.searchParamsStore.set(props, checkIfSet, replaceState);
       }
     },
     comparison: (
@@ -478,141 +442,74 @@ export class TimeControls {
       replaceState = false,
     ) => {
       const showTimeComparison = Boolean(range);
-
       if (showTimeComparison) {
         if (range === true) {
-          const comparisonStore = get(this.comparisonRangeStateStore);
-          const selectedComparisonTimeRange =
-            comparisonStore?.selectedComparisonTimeRange;
-
+          const selectedComparisonTimeRange = get(this.comparisonRangeStore);
           if (!selectedComparisonTimeRange) return;
-
-          return this.searchParamsStore.set(
-            ExploreStateURLParams.ComparisonTimeRange,
-            toTimeRangeParam(selectedComparisonTimeRange),
-            checkIfSet,
-            replaceState,
-          );
+          const props = new Map([
+            [
+              ExploreStateURLParams.ComparisonTimeRange,
+              selectedComparisonTimeRange,
+            ],
+          ]);
+          return this.searchParamsStore.set(props, checkIfSet, replaceState);
         } else if (typeof range === "string") {
-          return this.searchParamsStore.set(
-            ExploreStateURLParams.ComparisonTimeRange,
-            range,
-            checkIfSet,
-            replaceState,
-          );
+          const props = new Map([
+            [ExploreStateURLParams.ComparisonTimeRange, range],
+          ]);
+          return this.searchParamsStore.set(props, checkIfSet, replaceState);
         }
       } else {
-        return this.searchParamsStore.set(
-          ExploreStateURLParams.ComparisonTimeRange,
-          undefined,
-          checkIfSet,
-          replaceState,
-        );
+        const props = new Map([
+          [ExploreStateURLParams.ComparisonTimeRange, undefined],
+        ]);
+        return this.searchParamsStore.set(props, checkIfSet, replaceState);
       }
     },
   };
 
   clearAll = () => {
-    this.searchParamsStore.set(ExploreStateURLParams.TimeRange, undefined);
-    this.searchParamsStore.set(ExploreStateURLParams.TimeGrain, undefined);
-    this.searchParamsStore.set(
-      ExploreStateURLParams.ComparisonTimeRange,
-      undefined,
-    );
-    this.searchParamsStore.set(ExploreStateURLParams.TimeZone, undefined);
-  };
+    const props = new Map([
+      [ExploreStateURLParams.TimeRange, undefined],
+      [ExploreStateURLParams.TimeGrain, undefined],
+      [ExploreStateURLParams.ComparisonTimeRange, undefined],
+      [ExploreStateURLParams.TimeZone, undefined],
+    ]);
 
-  setSelectedComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {
-    this.selectedComparisonTimeRange.set(comparisonTimeRange);
+    return this.searchParamsStore.set(props);
   };
 }
 
 export function parseSearchParams(urlParams: URLSearchParams) {
   const { preset } = fromTimeRangesParams(urlParams, new Map());
 
-  let timeRange: string | undefined;
-  let selectedComparisonTimeRange: DashboardTimeControls | undefined;
-  let showTimeComparison = false;
-  let timeZone: string = "UTC";
-  let grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  let range: string | undefined;
+  let comparisonRange: string | undefined;
+  let zone: string | undefined;
+  let grain: V1TimeGrain | undefined = undefined;
 
   if (preset.timeRange) {
-    timeRange = preset.timeRange;
+    range = preset.timeRange;
   }
 
-  if (preset.timeGrain && timeRange) {
-    grain = FromURLParamTimeGrainMap[preset.timeGrain];
+  if (preset.timeGrain) {
+    grain = DateTimeUnitToV1TimeGrain[preset.timeGrain];
   }
 
   if (preset.compareTimeRange) {
-    selectedComparisonTimeRange = fromTimeRangeUrlParam(
-      preset.compareTimeRange,
-    );
-    showTimeComparison = true;
-  } else if (
-    preset.comparisonMode ===
-    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-  ) {
-    showTimeComparison = true;
+    comparisonRange = preset.compareTimeRange;
   }
 
-  if (
-    preset.comparisonMode ===
-    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
-  ) {
-    // unset all comparison setting if mode is none
-    selectedComparisonTimeRange = undefined;
-    showTimeComparison = false;
-  }
   if (preset.timezone) {
-    timeZone = preset.timezone;
+    zone = preset.timezone;
   }
 
   return {
-    timeRange,
-    selectedComparisonTimeRange,
-    showTimeComparison,
-    timeZone,
+    range,
+    zone,
     grain,
+    comparisonRange,
   };
-}
-
-export function deriveMinTimeGrain(
-  componentName: string | undefined,
-  metricsViews: Record<string, V1MetricsView | undefined>,
-  components?: V1ResolveCanvasResponseResolvedComponents,
-): V1TimeGrain {
-  if (componentName) {
-    const metricsViewName = getComponentMetricsViewFromSpec(
-      componentName,
-      components,
-    );
-
-    if (metricsViewName && metricsViews[metricsViewName]) {
-      metricsViews = {
-        [metricsViewName]: metricsViews[metricsViewName],
-      };
-    }
-  }
-
-  const minTimeGrain = Object.values(metricsViews).reduce<V1TimeGrain>(
-    (min: V1TimeGrain, metricsView) => {
-      const timeGrain = metricsView?.state?.validSpec?.smallestTimeGrain;
-
-      if (!timeGrain || timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
-        return min;
-      }
-
-      if (min === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
-        return timeGrain;
-      }
-
-      return isGrainBigger(timeGrain, min) ? timeGrain : min;
-    },
-    V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-  );
-
-  return minTimeGrain;
 }
 
 export function getComparisonTypeFromRangeString(
@@ -654,3 +551,39 @@ const timeGrainToComparisonOptionMap: Record<
   [V1TimeGrain.TIME_GRAIN_YEAR]: TimeComparisonOption.YEAR,
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
 };
+
+function getComparisonInterval(
+  interval: Interval<true> | undefined,
+  comparisonRange: string | undefined,
+  activeTimeZone: string,
+): Interval<true> | undefined {
+  if (!interval || !comparisonRange) return undefined;
+
+  let comparisonInterval: Interval | undefined = undefined;
+
+  const COMPARISON_DURATIONS = {
+    "rill-PP": interval.toDuration(),
+    "rill-PD": { days: 1 },
+    "rill-PW": { weeks: 1 },
+    "rill-PM": { months: 1 },
+    "rill-PQ": { quarter: 1 },
+    "rill-PY": { years: 1 },
+  };
+
+  const duration =
+    COMPARISON_DURATIONS[comparisonRange as keyof typeof COMPARISON_DURATIONS];
+
+  if (duration) {
+    comparisonInterval = Interval.fromDateTimes(
+      interval.start.minus(duration),
+      interval.end.minus(duration),
+    );
+  } else {
+    const normalizedRange = comparisonRange.replace(",", "/");
+    comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>
+      dt.setZone(activeTimeZone),
+    );
+  }
+
+  return comparisonInterval.isValid ? comparisonInterval : undefined;
+}

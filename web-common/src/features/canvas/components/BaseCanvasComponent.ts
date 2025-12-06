@@ -91,14 +91,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       });
       return {
         subscribe: store.subscribe,
-        set: (key: string, value: string | undefined) => {
+        set: (map: Map<string, string | undefined>) => {
           const searchParams = get(store);
 
-          if (value === undefined || value === null || value === "") {
-            searchParams.delete(key);
-          } else {
-            searchParams.set(key, value);
-          }
+          map.forEach((value, key) => {
+            if (value === undefined || value === null || value === "") {
+              searchParams.delete(key);
+            } else {
+              searchParams.set(key, value);
+            }
+          });
 
           this.updateProperty(
             "time_filters" as AllKeys<T>,
@@ -121,11 +123,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       };
     })();
 
-    this.localTimeControls = new TimeControls(
-      this.parent.specStore,
-      yamlTimeFilterStore,
+    this.localTimeControls = this.parent.timeManager.createLocalTimeControls(
       this.id,
-      this.parent.name,
+      yamlTimeFilterStore,
     );
 
     this.localFilters = this.parent.filterManager.createLocalFilterStore(
@@ -135,6 +135,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.specStore.subscribe((spec) => {
       this.localFilters.onFilterStringChange(
         spec["dimension_filters"] as string,
+      );
+      this.localTimeControls.onUrlChange(
+        new URLSearchParams(spec?.["time_filters"] ?? ""),
       );
     });
   }
@@ -150,30 +153,41 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   get timeAndFilterStore(): Readable<TimeAndFilterStore> {
     return derived(
       [
-        this.parent.timeControls.timeRangeStateStore,
-        this.localTimeControls.timeRangeStateStore,
-        this.parent.timeControls.comparisonRangeStateStore,
-        this.localTimeControls.comparisonRangeStateStore,
-        this.parent.timeControls.selectedTimezone,
+        this.parent.timeManager.global.interval,
+        this.localTimeControls.interval,
+        this.parent.timeManager.global.comparisonIntervalStore,
+        this.localTimeControls.comparisonIntervalStore,
+        this.parent.timeManager.global.timeZoneStore,
         this.parent.filterManager.metricsViewFilters,
         this.parent.specStore,
-        this.parent.timeControls.hasTimeSeries,
+        this.parent.timeManager.hasTimeSeriesMap,
         this.specStore,
+        this.parent.timeManager.global.grainStore,
+        this.parent.timeManager.global.showTimeComparisonStore,
+        this.localTimeControls.showTimeComparisonStore,
+        this.localTimeControls.grainStore,
       ],
       (
         [
-          globalTimeRangeState,
-          localTimeRangeState,
-          globalComparisonRangeState,
-          localComparisonRangeState,
+          globalInterval,
+          localInterval,
+          globalComparisonInterval,
+          localComparisonInterval,
           timeZone,
           metricsViewFilters,
           canvasData,
-          hasTimeSeries,
+          hasTimeSeriesMap,
           componentSpec,
+          globalGrainStore,
+          globalShowTimeComparison,
+          localShowTimeComparison,
+          localGrainStore,
         ],
         set,
       ) => {
+        const hasTimeSeries =
+          hasTimeSeriesMap.get(this.metricsViewName) ?? false;
+
         const mvFilters = metricsViewFilters.get(this.metricsViewName);
 
         if (!mvFilters) {
@@ -197,46 +211,55 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           const measures = metricsView?.state?.validSpec?.measures ?? [];
 
           let timeRange: V1TimeRange = {
-            start: globalTimeRangeState?.timeStart,
-            end: globalTimeRangeState?.timeEnd,
+            start: globalInterval?.start.toISO(),
+            end: globalInterval?.end.toISO(),
             timeZone,
           };
 
-          let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
-
-          const localShowTimeComparison =
-            !!localComparisonRangeState?.showTimeComparison;
-          const globalShowTimeComparison =
-            !!globalComparisonRangeState?.showTimeComparison;
+          let timeGrain = globalGrainStore;
 
           let showTimeComparison = globalShowTimeComparison;
 
           let comparisonTimeRange: V1TimeRange | undefined = {
-            start: globalComparisonRangeState?.comparisonTimeStart,
-            end: globalComparisonRangeState?.comparisonTimeEnd,
+            start: globalComparisonInterval?.start.toISO(),
+            end: globalComparisonInterval?.end.toISO(),
             timeZone,
           };
 
-          let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
-          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-            globalComparisonRangeState;
+          let timeRangeState: TimeRangeState | undefined = {
+            timeStart: globalInterval?.start.toISO(),
+            timeEnd: globalInterval?.end.toISO(),
+          };
+          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined = {
+            comparisonTimeStart: globalComparisonInterval?.start.toISO(),
+            comparisonTimeEnd: globalComparisonInterval?.end.toISO(),
+          };
 
           if (componentSpec?.["time_filters"]) {
             timeRange = {
-              start: localTimeRangeState?.timeStart,
-              end: localTimeRangeState?.timeEnd,
+              start: localInterval?.start.toISO(),
+              end: localInterval?.end.toISO(),
               timeZone,
             };
 
             comparisonTimeRange = {
-              start: localComparisonRangeState?.comparisonTimeStart,
-              end: localComparisonRangeState?.comparisonTimeEnd,
+              start: localComparisonInterval?.start.toISO(),
+              end: localComparisonInterval?.end.toISO(),
               timeZone,
             };
 
             showTimeComparison = localShowTimeComparison;
 
-            timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
+            timeGrain = localGrainStore ?? globalGrainStore;
+
+            const localTimeRangeState: TimeRangeState = {
+              timeStart: localInterval?.start.toISO(),
+              timeEnd: localInterval?.end.toISO(),
+            };
+            const localComparisonRangeState: ComparisonTimeRangeState = {
+              comparisonTimeStart: localComparisonInterval?.start.toISO(),
+              comparisonTimeEnd: localComparisonInterval?.end.toISO(),
+            };
 
             timeRangeState = localTimeRangeState;
             comparisonTimeRangeState = localComparisonRangeState;

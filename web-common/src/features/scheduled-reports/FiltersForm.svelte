@@ -64,7 +64,7 @@
 
   $: ({
     selectedTimezone,
-    allTimeRange,
+    allTimeRange: allTimeRangeStore,
     timeRangeStateStore,
     comparisonRangeStateStore,
     minTimeGrain: _minTimeGrain,
@@ -74,6 +74,7 @@
     displayTimeComparison,
   } = timeControls);
 
+  $: allTimeRange = $allTimeRangeStore;
   $: exploreSpec = $validSpecQuery.data?.explore ?? {};
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
@@ -97,15 +98,42 @@
 
   $: minTimeGrain = $_minTimeGrain;
 
-  $: interval = selectedTimeRange
+  $: activeTimeZone = $selectedTimezone;
+
+  $: maybeInterval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : Interval.fromDateTimes(
-        $allTimeRange?.start ?? new Date(),
-        $allTimeRange?.end ?? new Date(),
-      );
+    : allTimeRange
+      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+      : undefined;
+
+  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+
+  $: maybeMinDate = allTimeRange?.start
+    ? DateTime.fromJSDate(allTimeRange.start)
+    : undefined;
+  $: maybeMaxDate = allTimeRange?.end
+    ? DateTime.fromJSDate(allTimeRange.end)
+    : undefined;
+
+  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
+  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
+
+  $: maybeComparisonInterval = selectedComparisonTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedComparisonTimeRange.start).setZone(
+          activeTimeZone,
+        ),
+        DateTime.fromJSDate(selectedComparisonTimeRange.end).setZone(
+          activeTimeZone,
+        ),
+      )
+    : undefined;
+  $: comparisonInterval = maybeComparisonInterval?.isValid
+    ? maybeComparisonInterval
+    : undefined;
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -143,7 +171,7 @@
       ?.defaultComparison as TimeComparisonOption;
 
     // Get valid option for the new time range
-    const validComparison = $allTimeRange && comparisonOption;
+    const validComparison = allTimeRange && comparisonOption;
 
     makeTimeSeriesTimeRangeAndUpdateAppState(
       range,
@@ -157,7 +185,7 @@
   }
 
   async function onSelectRange(name: string, rangeOnly: boolean = false) {
-    if (!$allTimeRange?.end) {
+    if (!allTimeRange?.end) {
       return;
     }
 
@@ -204,7 +232,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -235,9 +263,10 @@
     class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
   >
     <Calendar size="16px" />
-    {#if $allTimeRange}
+    {#if allTimeRange}
       <SuperPill
-        allTimeRange={$allTimeRange}
+        {minDate}
+        {maxDate}
         {selectedRangeAlias}
         showPivot={false}
         {defaultTimeRange}
@@ -262,9 +291,13 @@
       />
       <CanvasComparisonPill
         {minTimeGrain}
-        allTimeRange={$allTimeRange}
-        {selectedTimeRange}
-        {selectedComparisonTimeRange}
+        {minDate}
+        {maxDate}
+        {interval}
+        selectedRange={selectedRangeAlias}
+        comparisonRange={selectedComparisonTimeRange?.name}
+        {comparisonInterval}
+        {activeTimeGrain}
         showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
           false}
         activeTimeZone={$selectedTimezone}

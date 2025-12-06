@@ -39,7 +39,7 @@ import {
 import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
-import { getComparisonTypeFromRangeString, TimeControls } from "./time-control";
+import { getComparisonTypeFromRangeString, TimeManager } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
@@ -55,8 +55,7 @@ export const lastVisitedState = new Map<string, string>();
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
   set: (
-    key: string,
-    value?: string,
+    map: Map<string, string | undefined>,
     checkIfSet?: boolean,
     replaceState?: boolean,
     prefixes?: string[],
@@ -70,7 +69,7 @@ export class CanvasEntity {
   _rows: Grid = new Grid(this);
 
   // Time state controls
-  timeControls: TimeControls;
+  timeManager: TimeManager;
 
   // Dimension and measure filter state
   filterManager: FilterManager;
@@ -100,7 +99,7 @@ export class CanvasEntity {
 
   constructor(
     public name: string,
-    private instanceId: string,
+    public instanceId: string,
     private spec: CanvasResponse,
   ) {
     this.specStore = useCanvas(instanceId, name, {}, queryClient);
@@ -110,26 +109,27 @@ export class CanvasEntity {
       return {
         subscribe: this.searchParams.subscribe,
         set: (
-          key: string,
-          value: string | undefined,
+          map: Map<string, string>,
+
           checkIfSet = false,
           replaceState = false,
-          prefixes = [""],
         ) => {
           const existingParams = new URLSearchParams(window.location.search);
 
-          prefixes.forEach((prefix) => {
-            const effectiveKey = prefix ? `${key}.${prefix}` : key;
+          map.forEach((value, key) => {
+            // prefixes.forEach((prefix) => {
+            // const effectiveKey = prefix ? `${key}.${prefix}` : key;
 
-            if (checkIfSet && existingParams.has(effectiveKey)) return false;
+            if (checkIfSet && existingParams.has(key)) return false;
 
             if (value === undefined || value === null || value === "") {
-              existingParams.delete(effectiveKey);
+              existingParams.delete(key);
             } else {
-              existingParams.set(effectiveKey, value);
+              existingParams.set(key, value);
             }
           });
 
+          console.log({ existingParams: existingParams.toString() });
           goto(`?${existingParams.toString()}`, { replaceState }).catch(
             console.error,
           );
@@ -152,12 +152,7 @@ export class CanvasEntity {
       this.instanceId,
     );
 
-    this.timeControls = new TimeControls(
-      this.specStore,
-      searchParamsStore,
-      undefined,
-      this.name,
-    );
+    this.timeManager = new TimeManager(searchParamsStore, this);
 
     this.processSpec(this.spec);
 
@@ -279,12 +274,8 @@ export class CanvasEntity {
     }
   };
 
-  processSpec = ({
-    canvas,
-    components,
-    filePath,
-    metricsViews,
-  }: CanvasResponse) => {
+  processSpec = (response: CanvasResponse) => {
+    const { canvas, components, metricsViews, filePath } = response;
     const validSpec = canvas;
     if (!validSpec) return;
 
@@ -296,6 +287,8 @@ export class CanvasEntity {
     this.checkAndSetEmbeddedTheme(validSpec);
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
+
+    this.timeManager.onSpecChange(response);
 
     this.titleStore.set(validSpec.displayName ?? "");
 
@@ -361,13 +354,11 @@ export class CanvasEntity {
       }
     }
 
-    const timeRangeState = get(this.timeControls.timeRangeStateStore);
+    const timeRange = get(this.timeManager.global.rangeStore);
+    const comparisonOn = get(this.timeManager.global.showTimeComparisonStore);
 
-    const selectedTimeRange = timeRangeState?.selectedTimeRange?.name;
-    const comparisonOn = get(this.timeControls.showTimeComparison);
-
-    if (selectedTimeRange) {
-      yaml.setIn(["defaults", "time_range"], selectedTimeRange);
+    if (timeRange) {
+      yaml.setIn(["defaults", "time_range"], timeRange);
     }
 
     if (comparisonOn) {
@@ -454,6 +445,7 @@ export class CanvasEntity {
     this.searchParams.set(searchParams);
     this.themeName.set(searchParams.get("theme") ?? undefined);
     this.saveSnapshot(searchParams.toString());
+    this.timeManager.global.onUrlChange(searchParams);
   };
 
   // Not currently being used

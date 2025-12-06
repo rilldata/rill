@@ -166,14 +166,16 @@
     ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
     : Interval.invalid("Invalid interval");
 
-  $: interval = selectedTimeRange
+  $: maybeInterval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : allTimeRange
       ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
+      : undefined;
+
+  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -181,6 +183,16 @@
       start: selectedTimeRange.start,
       end: selectedTimeRange.end,
     };
+
+  $: maybeMinDate = allTimeRange?.start
+    ? DateTime.fromJSDate(allTimeRange.start)
+    : undefined;
+  $: maybeMaxDate = allTimeRange?.end
+    ? DateTime.fromJSDate(allTimeRange.end)
+    : undefined;
+
+  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
+  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -296,7 +308,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -363,7 +375,8 @@
       </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          {allTimeRange}
+          {minDate}
+          {maxDate}
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}

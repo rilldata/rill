@@ -190,7 +190,8 @@ export function handleCanvasStoreInitialization(
       store = setCanvasStore(canvasName, currentInstanceId, processed);
 
       response.canvasStoreStore.set(store);
-    } catch {
+    } catch (e) {
+      console.log(e);
       response.errorMessageStore.set(
         `The canvas dashboard you requested could not be found. Please check that you provided the name of a working canvas dashboard.`,
       );

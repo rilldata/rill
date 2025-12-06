@@ -13,7 +13,6 @@
     type,
     localFilters,
     localTimeControls,
-
     parent: { name: canvasName },
   } = component);
 
@@ -42,6 +41,7 @@
         <TimeFiltersInput
           {canvasName}
           id={key}
+          {metricsView}
           {localTimeControls}
           showComparison={config?.meta?.hasComparison}
           showGrain={config?.meta?.hasGrain}

@@ -8,9 +8,7 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { DateTime, Interval } from "luxon";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
 
@@ -48,36 +46,51 @@
       },
 
       metricsView: { allDimensions },
-      timeControls: {
-        _canPan,
-        allTimeRange,
-        timeRangeStateStore,
-        comparisonRangeStateStore,
-        selectedTimezone,
-        minTimeGrain,
-        set,
-        _defaultTimeRange,
-        _timeRangeOptions,
-        _availableTimeZones,
-        _allowCustomRange,
+      timeManager: {
+        global: {
+          comparisonIntervalStore,
+          showTimeComparisonStore,
+          timeZoneStore,
+          canPanStore,
+          set,
+          rangeStore,
+          grainStore,
+          comparisonRangeStore,
+          interval: intervalStore,
+        },
+        minMaxTimeStamps,
+        largestMinTimeGrain,
+        defaultTimeRangeStore,
+        timeRangeOptionsStore,
+        availableTimeZonesStore,
+        allowCustomRangeStore,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+  $: selectedRange = $rangeStore;
+  $: interval = $intervalStore;
+  $: minTimeGrain = $largestMinTimeGrain;
 
-  $: activeTimeZone = $selectedTimezone;
+  $: timeStart = interval?.start.toISO();
+  $: timeEnd = interval?.end.toISO();
+
+  $: minMax = $minMaxTimeStamps;
+
+  $: minDate = minMax?.min;
+  $: maxDate = minMax?.max;
+  $: showTimeComparison = $showTimeComparisonStore;
+
+  $: activeTimeZone = $timeZoneStore;
   $: temporaryFilterKeys = $_temporaryFilterKeys;
+  $: comparisonInterval = $comparisonIntervalStore;
+  $: comparisonRange = $comparisonRangeStore;
 
-  $: selectedComparisonTimeRange =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange;
-
-  $: selectedRangeAlias = selectedTimeRange?.name;
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $_defaultTimeRange;
-  $: availableTimeZones = $_availableTimeZones;
-  $: timeRanges = $_timeRangeOptions;
-  $: allowCustomTimeRange = $_allowCustomRange;
+  $: activeTimeGrain = $grainStore;
+  $: defaultTimeRange = $defaultTimeRangeStore;
+  $: availableTimeZones = $availableTimeZonesStore;
+  $: timeRanges = $timeRangeOptionsStore;
+  $: allowCustomTimeRange = $allowCustomRangeStore;
 
   $: ({
     dimensionFilters,
@@ -87,28 +100,30 @@
     hasClearableFilters,
   } = $_activeUIFilters);
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.invalid("Unable to parse time range");
-
-  $: canPan = $_canPan;
+  $: canPan = $canPanStore;
 
   function onPan(direction: "left" | "right") {
+    console.log({ interval, selectedRange });
+    if (!interval || !selectedRange) return;
     const getPanRange = getPanRangeForTimeRange(
-      selectedTimeRange,
+      {
+        end: interval?.end.toJSDate(),
+        start: interval?.start.toJSDate(),
+        name: selectedRange,
+      },
       activeTimeZone,
     );
     const panRange = getPanRange(direction);
+    console.log({ panRange });
     if (!panRange) return;
     const { start, end } = panRange;
+
+    console.log({ start, end }, activeTimeGrain);
 
     if (!activeTimeGrain) return;
 
     set.range(`${start.toISOString()},${end.toISOString()}`);
-    set.comparison(TimeComparisonOption.CONTIGUOUS);
+    // set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
 </script>
 
@@ -126,10 +141,11 @@
       >
         <SuperPill
           context={canvasName}
-          allTimeRange={$allTimeRange}
-          {selectedRangeAlias}
+          {minDate}
+          {maxDate}
+          selectedRangeAlias={selectedRange}
           showPivot={false}
-          minTimeGrain={$minTimeGrain}
+          {minTimeGrain}
           {defaultTimeRange}
           {availableTimeZones}
           {timeRanges}
@@ -154,13 +170,16 @@
           {onPan}
         />
         <CanvasComparisonPill
-          allTimeRange={$allTimeRange}
-          {selectedTimeRange}
-          {selectedComparisonTimeRange}
+          {minDate}
+          {maxDate}
+          {comparisonInterval}
+          {comparisonRange}
+          {interval}
+          {selectedRange}
+          {activeTimeGrain}
           {activeTimeZone}
-          minTimeGrain={$minTimeGrain}
-          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-            false}
+          {minTimeGrain}
+          {showTimeComparison}
           onDisplayTimeComparison={set.comparison}
           onSetSelectedComparisonRange={(range) => {
             if (range.name === "CUSTOM_COMPARISON_RANGE") {
@@ -201,7 +220,7 @@
           {timeStart}
           {timeEnd}
           openOnMount={temporaryFilterKeys.get(id)}
-          timeControlsReady={!!$timeRangeStateStore}
+          timeControlsReady={!!interval}
           expressionMap={$_filterMap}
           {removeDimensionFilter}
           {toggleDimensionFilterMode}

@@ -13,19 +13,19 @@
     canvasEntity: {
       clearDefaultFilters,
       filterManager: { _defaultUIFilters },
-      timeControls: {
-        interval: _interval,
-        _defaultTimeRange,
-        _defaultComparisonRange,
+      timeManager: {
+        global: { interval: _interval },
+        defaultTimeRangeStore,
+        defaultComparisonRangeStore,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: interval = $_interval;
 
-  $: defaultTimeRange = $_defaultTimeRange;
+  $: defaultTimeRange = $defaultTimeRangeStore;
 
-  $: defaultComparisonRange = $_defaultComparisonRange;
+  $: defaultComparisonRange = $defaultComparisonRangeStore;
 </script>
 
 <div class="flex-col flex h-full">
