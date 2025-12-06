@@ -117,9 +117,6 @@ export class CanvasEntity {
           const existingParams = new URLSearchParams(window.location.search);
 
           map.forEach((value, key) => {
-            // prefixes.forEach((prefix) => {
-            // const effectiveKey = prefix ? `${key}.${prefix}` : key;
-
             if (checkIfSet && existingParams.has(key)) return false;
 
             if (value === undefined || value === null || value === "") {
