@@ -161,6 +161,7 @@ export class Filters {
           $dimensionNameMap,
           $whereFilter,
           $dimensionsWithInlistFilter,
+          this.metricsViewMetadata.metricsViewName,
         );
       },
     );
@@ -176,16 +177,23 @@ export class Filters {
           ...dfi,
           metricsViewNames: [this.metricsViewMetadata.metricsViewName],
         }));
-        if (tempFilter && $dimensionNameMap.has(tempFilter)) {
-          merged.push({
-            mode: DimensionFilterMode.Select,
-            name: tempFilter,
-            label: getDimensionDisplayName($dimensionNameMap.get(tempFilter)),
-            selectedValues: [],
-            isInclude: true,
-            metricsViewNames: [this.metricsViewMetadata.metricsViewName],
-          });
+        if (tempFilter) {
+          const dimension = $dimensionNameMap.get(tempFilter);
+          if (dimension) {
+            merged.push({
+              mode: DimensionFilterMode.Select,
+              name: tempFilter,
+              label: getDimensionDisplayName(dimension),
+              selectedValues: [],
+              isInclude: true,
+              metricsViewNames: [this.metricsViewMetadata.metricsViewName],
+              dimensions: new Map([
+                [this.metricsViewMetadata.metricsViewName, dimension],
+              ]),
+            });
+          }
         }
+
         return merged.sort(filterItemsSortFunction);
       },
     );

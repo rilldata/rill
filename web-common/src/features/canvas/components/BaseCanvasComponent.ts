@@ -23,6 +23,7 @@ import {
 } from "../../dashboards/stores/filter-utils";
 import type {
   ComparisonTimeRangeState,
+  TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
 import type {
@@ -30,9 +31,10 @@ import type {
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import { Filters } from "../stores/filters";
+
 import { TimeControls } from "../stores/time-control";
-import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
+import type { MetricsViewFilter } from "../stores/metrics-view-filter";
+import type { Readable } from "svelte/motion";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -43,7 +45,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
   // Widget specific dimension and measure filters
-  localFilters: Filters;
+  localFilters: MetricsViewFilter;
   // Widget specific time filters
   localTimeControls: TimeControls;
 
@@ -65,6 +67,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
   getExploreTransformerProperties?(): Partial<ExploreState>;
 
+  metricsViewName: string;
+
   constructor(
     resource: V1Resource,
     public parent: CanvasEntity,
@@ -74,6 +78,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     const yamlSpec = resource.component?.state?.validSpec?.rendererProperties;
 
     const mergedSpec = { ...defaultSpec, ...yamlSpec };
+    this.metricsViewName = mergedSpec["metrics_view"] as string;
     this.specStore = writable(mergedSpec);
     this.pathInYAML = path;
 
@@ -86,14 +91,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       });
       return {
         subscribe: store.subscribe,
-        set: (key: string, value: string | undefined) => {
+        set: (map: Map<string, string | undefined>) => {
           const searchParams = get(store);
 
-          if (value === undefined || value === null || value === "") {
-            searchParams.delete(key);
-          } else {
-            searchParams.set(key, value);
-          }
+          map.forEach((value, key) => {
+            if (value === undefined || value === null || value === "") {
+              searchParams.delete(key);
+            } else {
+              searchParams.set(key, value);
+            }
+          });
 
           this.updateProperty(
             "time_filters" as AllKeys<T>,
@@ -116,61 +123,23 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       };
     })();
 
-    const yamlDimensionFilterStore: SearchParamsStore = (() => {
-      const store = derived(this.specStore, (spec) => {
-        const dimensionFiltersString = spec?.["dimension_filters"] ?? "";
-        const searchParams = new URLSearchParams();
-
-        if (dimensionFiltersString) {
-          searchParams.set(
-            ExploreStateURLParams.Filters,
-            dimensionFiltersString,
-          );
-        }
-
-        return searchParams;
-      });
-      return {
-        subscribe: store.subscribe,
-        set: (key: string, value: string) => {
-          const searchParams = get(store);
-
-          searchParams.set(key, value);
-
-          this.updateProperty(
-            "dimension_filters" as AllKeys<T>,
-            value as T[AllKeys<T>],
-          );
-
-          return true;
-        },
-        clearAll: () => {
-          const searchParams = get(store);
-
-          searchParams.forEach((_, key) => {
-            searchParams.delete(key);
-          });
-
-          this.updateProperty(
-            "dimension_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
-          );
-        },
-      };
-    })();
-
-    this.localTimeControls = new TimeControls(
-      this.parent.specStore,
+    this.localTimeControls = this.parent.timeManager.createLocalTimeControls(
+      this.id,
       yamlTimeFilterStore,
-      this.id,
-      this.parent.name,
     );
 
-    this.localFilters = new Filters(
-      this.parent.metricsView,
-      yamlDimensionFilterStore,
-      this.id,
+    this.localFilters = this.parent.filterManager.createLocalFilterStore(
+      this.metricsViewName,
     );
+
+    this.specStore.subscribe((spec) => {
+      this.localFilters.onFilterStringChange(
+        spec["dimension_filters"] as string,
+      );
+      this.localTimeControls.onUrlChange(
+        new URLSearchParams(spec?.["time_filters"] ?? ""),
+      );
+    });
   }
 
   update(resource: V1Resource, path: ComponentPath) {
@@ -181,107 +150,168 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.specStore.set(yamlSpec);
   }
 
-  get timeAndFilterStore() {
+  // This will be deprecated eventually - bgh
+  get timeAndFilterStore(): Readable<TimeAndFilterStore> {
     return derived(
       [
-        this.parent.timeControls.timeRangeStateStore,
-        this.localTimeControls.timeRangeStateStore,
-        this.parent.timeControls.comparisonRangeStateStore,
-        this.localTimeControls.comparisonRangeStateStore,
-        this.parent.timeControls.selectedTimezone,
-        this.parent.filters.whereFilter,
-        this.parent.filters.dimensionThresholdFilters,
+        this.parent.timeManager.global.interval,
+        this.localTimeControls.interval,
+        this.parent.timeManager.global.comparisonIntervalStore,
+        this.localTimeControls.comparisonIntervalStore,
+        this.parent.timeManager.global.timeZoneStore,
+        this.parent.filterManager.metricsViewFilters,
         this.parent.specStore,
-        this.parent.timeControls.hasTimeSeries,
+        this.parent.timeManager.hasTimeSeriesMap,
         this.specStore,
+        this.parent.timeManager.global.grainStore,
+        this.parent.timeManager.global.showTimeComparisonStore,
+        this.localTimeControls.showTimeComparisonStore,
+        this.localTimeControls.grainStore,
+        this.parent.timeManager.global.comparisonRangeStore,
+        this.localTimeControls.comparisonRangeStore,
       ],
-      ([
-        globalTimeRangeState,
-        localTimeRangeState,
-        globalComparisonRangeState,
-        localComparisonRangeState,
-        timeZone,
-        whereFilter,
-        dtf,
-        canvasData,
-        hasTimeSeries,
-        componentSpec,
-      ]) => {
-        const metricsViewName = componentSpec["metrics_view"];
-        const metricsView = canvasData.data?.metricsViews?.[metricsViewName];
-        const dimensions = metricsView?.state?.validSpec?.dimensions ?? [];
-        const measures = metricsView?.state?.validSpec?.measures ?? [];
-
-        let timeRange: V1TimeRange = {
-          start: globalTimeRangeState?.timeStart,
-          end: globalTimeRangeState?.timeEnd,
+      (
+        [
+          globalInterval,
+          localInterval,
+          globalComparisonInterval,
+          localComparisonInterval,
           timeZone,
-        };
+          metricsViewFilters,
+          canvasData,
+          hasTimeSeriesMap,
+          componentSpec,
+          globalGrainStore,
+          globalShowTimeComparison,
+          localShowTimeComparison,
+          localGrainStore,
+          globalComparisonRange,
+          localComparisonRange,
+        ],
+        set,
+      ) => {
+        const hasTimeSeries =
+          hasTimeSeriesMap.get(this.metricsViewName) ?? false;
 
-        let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
+        const mvFilters = metricsViewFilters.get(this.metricsViewName);
 
-        const localShowTimeComparison =
-          !!localComparisonRangeState?.showTimeComparison;
-        const globalShowTimeComparison =
-          !!globalComparisonRangeState?.showTimeComparison;
+        if (!mvFilters) {
+          set({
+            timeRange: { start: "", end: "", timeZone: "UTC" },
+            where: undefined,
+            timeGrain: undefined,
+            hasTimeSeries: false,
+            comparisonTimeRange: undefined,
+            timeRangeState: undefined,
+            comparisonTimeRangeState: undefined,
+            showTimeComparison: false,
+          });
+          return;
+        }
 
-        let showTimeComparison = globalShowTimeComparison;
+        derived([mvFilters.parsed], ([parsedFilter]) => {
+          const metricsViewName = componentSpec["metrics_view"];
+          const metricsView = canvasData.data?.metricsViews?.[metricsViewName];
+          const dimensions = metricsView?.state?.validSpec?.dimensions ?? [];
+          const measures = metricsView?.state?.validSpec?.measures ?? [];
 
-        let comparisonTimeRange: V1TimeRange | undefined = {
-          start: globalComparisonRangeState?.comparisonTimeStart,
-          end: globalComparisonRangeState?.comparisonTimeEnd,
-          timeZone,
-        };
-
-        let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
-        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-          globalComparisonRangeState;
-
-        if (componentSpec?.["time_filters"]) {
-          timeRange = {
-            start: localTimeRangeState?.timeStart,
-            end: localTimeRangeState?.timeEnd,
+          let timeRange: V1TimeRange = {
+            start: globalInterval?.start.toISO(),
+            end: globalInterval?.end.toISO(),
             timeZone,
           };
 
-          comparisonTimeRange = {
-            start: localComparisonRangeState?.comparisonTimeStart,
-            end: localComparisonRangeState?.comparisonTimeEnd,
+          let timeGrain = globalGrainStore;
+
+          let showTimeComparison = globalShowTimeComparison;
+
+          let comparisonTimeRange: V1TimeRange | undefined = {
+            start: globalComparisonInterval?.start.toISO(),
+            end: globalComparisonInterval?.end.toISO(),
             timeZone,
           };
 
-          showTimeComparison = localShowTimeComparison;
+          let timeRangeState: TimeRangeState | undefined = {
+            timeStart: globalInterval?.start.toISO(),
+            timeEnd: globalInterval?.end.toISO(),
+          };
+          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+            globalComparisonInterval && {
+              comparisonTimeStart: globalComparisonInterval.start.toISO(),
+              comparisonTimeEnd: globalComparisonInterval.end.toISO(),
+              selectedComparisonTimeRange: {
+                start: globalComparisonInterval.start.toJSDate(),
+                end: globalComparisonInterval.end.toJSDate(),
+                name: globalComparisonRange,
+              },
+            };
 
-          timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
+          if (componentSpec?.["time_filters"]) {
+            timeRange = {
+              start: localInterval?.start.toISO(),
+              end: localInterval?.end.toISO(),
+              timeZone,
+            };
 
-          timeRangeState = localTimeRangeState;
-          comparisonTimeRangeState = localComparisonRangeState;
-        }
+            comparisonTimeRange = {
+              start: localComparisonInterval?.start.toISO(),
+              end: localComparisonInterval?.end.toISO(),
+              timeZone,
+            };
 
-        // Dimension Filters
-        const globalWhere =
-          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
-          createAndExpression([]);
+            showTimeComparison = localShowTimeComparison;
 
-        let where: V1Expression | undefined = globalWhere;
+            timeGrain = localGrainStore ?? globalGrainStore;
 
-        if (componentSpec?.["dimension_filters"]) {
-          const { expr: componentWhere } = getFiltersFromText(
-            componentSpec?.["dimension_filters"] as string,
-          );
-          where = mergeFilters(globalWhere, componentWhere);
-        }
+            const localTimeRangeState: TimeRangeState = {
+              timeStart: localInterval?.start.toISO(),
+              timeEnd: localInterval?.end.toISO(),
+            };
+            const localComparisonRangeState:
+              | ComparisonTimeRangeState
+              | undefined = localComparisonInterval && {
+              comparisonTimeStart: localComparisonInterval.start.toISO(),
+              comparisonTimeEnd: localComparisonInterval.end.toISO(),
+              selectedComparisonTimeRange: {
+                start: localComparisonInterval.start.toJSDate(),
+                end: localComparisonInterval.end.toJSDate(),
+                name: localComparisonRange,
+              },
+            };
 
-        return {
-          timeRange,
-          showTimeComparison,
-          comparisonTimeRange,
-          where,
-          timeGrain,
-          timeRangeState,
-          comparisonTimeRangeState,
-          hasTimeSeries,
-        };
+            timeRangeState = localTimeRangeState;
+            comparisonTimeRangeState = localComparisonRangeState;
+          }
+
+          // Dimension Filters
+          const globalWhere =
+            buildValidMetricsViewFilter(
+              parsedFilter.where,
+              parsedFilter.dimensionThresholdFilters,
+              dimensions,
+              measures,
+            ) ?? createAndExpression([]);
+
+          let where: V1Expression | undefined = globalWhere;
+
+          if (componentSpec?.["dimension_filters"]) {
+            const { expr: componentWhere } = getFiltersFromText(
+              componentSpec?.["dimension_filters"] as string,
+            );
+            where = mergeFilters(globalWhere, componentWhere);
+          }
+
+          return {
+            timeRange,
+            showTimeComparison,
+            comparisonTimeRange,
+            where,
+            timeGrain,
+            timeRangeState,
+            comparisonTimeRangeState,
+            hasTimeSeries,
+          };
+        }).subscribe(set);
       },
     );
   }

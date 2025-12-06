@@ -25,8 +25,8 @@
 
   $: excludedDimensions =
     type === "leaderboard"
-      ? (localParamValues as LeaderboardSpec).dimensions
-      : [];
+      ? new Set((localParamValues as LeaderboardSpec).dimensions)
+      : new Set<string>();
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,
@@ -41,15 +41,19 @@
         <TimeFiltersInput
           {canvasName}
           id={key}
+          {metricsView}
           {localTimeControls}
           showComparison={config?.meta?.hasComparison}
           showGrain={config?.meta?.hasGrain}
         />
       {:else if config.type == "dimension_filters" && metricsView}
         <DimensionFiltersInput
+          {localFilters}
           {canvasName}
           {metricsView}
-          {localFilters}
+          updateLocalFilterString={(newString) => {
+            component.updateProperty("dimension_filters", newString);
+          }}
           {excludedDimensions}
           id={key}
         />

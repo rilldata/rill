@@ -435,6 +435,7 @@
   {filtersEnabled}
   showGrabCursor={activelyDragging}
   onClick={resetSelection}
+  builder
   bind:clientWidth
 >
   {#each layoutRows as row, rowIndex (rowIndex)}

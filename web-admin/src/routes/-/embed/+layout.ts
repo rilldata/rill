@@ -2,8 +2,10 @@ import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts"
 import { removeEmbedParams } from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { redirect } from "@sveltejs/kit";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
-export const load = ({ url }) => {
+export const load = async ({ url }) => {
   const embedStore = EmbedStore.getInstance();
   if (!embedStore) {
     EmbedStore.init(url);
@@ -33,6 +35,14 @@ export const load = ({ url }) => {
     navigationEnabled,
     visibleExplores,
   } = embedStore;
+
+  await runtime.setRuntime(
+    queryClient,
+    runtimeHost,
+    instanceId,
+    accessToken,
+    "embed",
+  );
 
   return {
     instanceId,

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
@@ -12,6 +11,7 @@
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
   export let embedded: boolean = false;
+  export let builder = false;
   export let onClick: () => void = () => {};
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
@@ -19,16 +19,10 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    url: { searchParams },
-  } = $page);
-
-  $: ({
-    canvasEntity: { onUrlParamsChange, theme },
+    canvasEntity: { theme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ width: clientWidth } = contentRect);
-
-  $: onUrlParamsChange(searchParams, !embedded).catch(console.error);
 </script>
 
 <ThemeProvider theme={$theme}>
@@ -43,7 +37,7 @@
         class="bg-background border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
         on:click|self={onClick}
       >
-        <CanvasFilters {canvasName} {maxWidth} />
+        <CanvasFilters {canvasName} {maxWidth} {builder} />
       </header>
     {/if}
 

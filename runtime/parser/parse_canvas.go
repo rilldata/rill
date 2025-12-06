@@ -28,12 +28,14 @@ type CanvasYAML struct {
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
-		Enable *bool `yaml:"enable"`
+		Enable *bool    `yaml:"enable"`
+		Pinned []string `yaml:"pinned"`
 	}
 	Defaults *struct {
-		TimeRange           string `yaml:"time_range"`
-		ComparisonMode      string `yaml:"comparison_mode"`
-		ComparisonDimension string `yaml:"comparison_dimension"`
+		TimeRange           string            `yaml:"time_range"`
+		ComparisonMode      string            `yaml:"comparison_mode"`
+		ComparisonDimension string            `yaml:"comparison_dimension"`
+		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
@@ -44,7 +46,8 @@ type CanvasYAML struct {
 			InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
-	Security *SecurityPolicyYAML `yaml:"security"`
+	Security   *SecurityPolicyYAML `yaml:"security"`
+	FilterExpr map[string]string   `yaml:"filter_expr"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -231,6 +234,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
+			FilterExpr:          tmp.Defaults.Filters,
 		}
 	}
 
@@ -273,6 +277,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Rows = rows
 	r.CanvasSpec.SecurityRules = rules
+	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

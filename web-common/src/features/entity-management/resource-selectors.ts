@@ -13,6 +13,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import type { ErrorType } from "../../runtime-client/http-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -201,6 +202,7 @@ export function useFilteredResources<T = Array<V1Resource>>(
         select: selector,
       },
     },
+    queryClient,
   );
 }
 

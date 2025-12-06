@@ -23,7 +23,6 @@
   import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -37,16 +36,9 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import type { Interval } from "luxon";
-
-  const baseFilterState = {
-    filters: createAndExpression([]),
-    dimensionsWithInlistFilter: [],
-    dimensionThresholdFilters: [],
-    queryTimeStart: "",
-    queryTimeEnd: "",
-    displayTimeRange: { expression: "" } as V1TimeRange,
-    selectedTimeRange: "",
-  };
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
 
   export let organization: string;
   export let project: string;
@@ -58,7 +50,10 @@
   export let metricsViewNames: string[];
   export let onClose = () => {};
 
-  let filterState = baseFilterState;
+  let filterState: undefined | Awaited<ReturnType<typeof processUrl>> =
+    undefined;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
@@ -117,6 +112,23 @@
         intervalWithLatestEndPoint.grain ||
         V1TimeGrain.TIME_GRAIN_MINUTE;
 
+      const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
+
+      if (resource.kind === ResourceKind.Canvas) {
+        const uiFilters = getCanvasStore(
+          resourceName,
+          instanceId,
+        ).canvasEntity.filterManager.getUIFiltersFromString(searchParams);
+
+        return {
+          uiFilters,
+          queryTimeStart: start,
+          queryTimeEnd: end,
+          displayTimeRange: timeRange,
+          selectedTimeRange,
+        };
+      }
+
       const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
         searchParamsObj.get(ExploreStateURLParams.Filters) || "",
       );
@@ -124,9 +136,7 @@
       const { dimensionFilters, dimensionThresholdFilters } =
         splitWhereFilter(expr);
 
-      const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
-
-      return <typeof baseFilterState>{
+      return {
         dimensionThresholdFilters,
         dimensionsWithInlistFilter,
         filters: dimensionFilters,
@@ -136,7 +146,7 @@
         selectedTimeRange,
       };
     } catch {
-      return baseFilterState;
+      return undefined;
     }
   }
 
@@ -248,7 +258,26 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             Inherited from underlying dashboard view.
           </div>
         </Label>
-        <ExploreFilterChipsReadOnly {...filterState} {metricsViewNames} />
+        {#if filterState && "uiFilters" in filterState}
+          <CanvasFilterChipsReadOnly
+            col={false}
+            uiFilters={filterState.uiFilters}
+            timeRangeString={filterState.displayTimeRange.expression}
+            comparisonRange={undefined}
+            timeStart={filterState.queryTimeStart}
+            timeEnd={filterState.queryTimeEnd}
+          />
+        {:else if filterState}
+          <ExploreFilterChipsReadOnly
+            filters={filterState.filters}
+            dimensionsWithInlistFilter={filterState.dimensionsWithInlistFilter}
+            dimensionThresholdFilters={filterState.dimensionThresholdFilters}
+            displayTimeRange={filterState.displayTimeRange}
+            queryTimeStart={filterState.queryTimeStart}
+            queryTimeEnd={filterState.queryTimeEnd}
+            {metricsViewNames}
+          />
+        {/if}
       </div>
       <ProjectAccessControls {organization} {project}>
         <Select
@@ -311,9 +340,11 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               </TooltipContent>
             </Tooltip>
           </div>
-          <div class="text-gray-500 text-sm">
-            {filterState.selectedTimeRange}
-          </div>
+          {#if filterState}
+            <div class="text-gray-500 text-sm">
+              {filterState.selectedTimeRange}
+            </div>
+          {/if}
         </Label>
       </div>
     </form>

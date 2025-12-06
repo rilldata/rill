@@ -26,12 +26,12 @@ export function useMetricFieldData(
   searchValue = "",
   excludedValues: string[] | undefined = undefined,
 ) {
-  const { metricsView, timeControls } = ctx.canvasEntity;
+  const { metricsView, timeManager } = ctx.canvasEntity;
 
   const metricsViewQuery = metricsView.getMetricsViewFromName(metricViewName);
 
   return derived(
-    [metricsViewQuery, timeControls.minTimeGrain],
+    [metricsViewQuery, timeManager.largestMinTimeGrain],
     ([$metricsViewQuery, minTimeGrain]) => {
       const metricsViewSpec = $metricsViewQuery.metricsView;
       let items: string[] = [];
