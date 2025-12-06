@@ -98,6 +98,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     });
   }
 
+  protected supportsComparison(): boolean {
+    return true;
+  }
+
   getMeasureLabels(): string[] | undefined {
     const config = get(this.specStore);
     const metricsViewName = config.metrics_view;
