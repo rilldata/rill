@@ -90,7 +90,7 @@ After making these changes, you should commit and [push these changes](/deploy/d
 
 ### Configure a Slack alert
 
-To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](../explore/alerts/slack). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
+To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](/build/connectors/data-source/slack#setting-up-the-slack-integration). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
 
 ```yaml
 type: alert

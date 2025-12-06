@@ -25,10 +25,6 @@ type TrialEndingSoonWorker struct {
 }
 
 func (w *TrialEndingSoonWorker) Work(ctx context.Context, job *river.Job[TrialEndingSoonArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.trialEndingSoon)
-}
-
-func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
 	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeOnTrial, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -104,10 +100,6 @@ type TrialEndCheckWorker struct {
 }
 
 func (w *TrialEndCheckWorker) Work(ctx context.Context, job *river.Job[TrialEndCheckArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.trialEndCheck)
-}
-
-func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 	onTrialOrgs, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeOnTrial, true)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -225,10 +217,6 @@ type TrialGracePeriodCheckWorker struct {
 }
 
 func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[TrialGracePeriodCheckArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.trialGracePeriodCheck)
-}
-
-func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context) error {
 	trailEndedOrgs, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeTrialEnded, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {

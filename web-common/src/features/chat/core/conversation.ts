@@ -17,7 +17,11 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
+import {
+  getOptimisticMessageId,
+  invalidateConversationsList,
+  NEW_CONVERSATION_ID,
+} from "./utils";
 import { MessageContentType, MessageType, ToolName } from "./types";
 
 /**
@@ -133,6 +137,9 @@ export class Conversation {
 
       // Stream has completed successfully
       options?.onStreamComplete?.(this.conversationId);
+
+      // Temporary fix to make sure the title of the conversation is updated.
+      void invalidateConversationsList(this.instanceId);
     } catch (error) {
       // Transport errors can occur at two different stages:
       // 1. Before streaming starts: message not persisted, needs rollback

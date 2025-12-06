@@ -333,28 +333,27 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 	// Delete all provisioned resources for the deployment
 	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
 	if err != nil {
-		s.Logger.Error("failed to find provisioner resources for deployment", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-	} else {
-		for _, pr := range prs {
-			p, ok := s.ProvisionerSet[pr.Provisioner]
-			if !ok {
-				s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
-			} else {
-				err = p.Deprovision(ctx, &provisioner.Resource{
-					ID:     pr.ID,
-					Type:   provisioner.ResourceType(pr.Type),
-					State:  pr.State,
-					Config: pr.Config,
-				})
-				if err != nil {
-					s.Logger.Error("provisioner: failed to deprovision", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), zap.Error(err), observability.ZapCtx(ctx))
-				}
-			}
-
-			err = s.DB.DeleteProvisionerResource(ctx, pr.ID)
+		return err
+	}
+	for _, pr := range prs {
+		p, ok := s.ProvisionerSet[pr.Provisioner]
+		if !ok {
+			s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
+		} else {
+			err = p.Deprovision(ctx, &provisioner.Resource{
+				ID:     pr.ID,
+				Type:   provisioner.ResourceType(pr.Type),
+				State:  pr.State,
+				Config: pr.Config,
+			})
 			if err != nil {
-				s.Logger.Error("failed to delete provisioner resource", zap.String("deployment_id", depl.ID), zap.String("provisioner_resource_id", pr.ID), zap.Error(err), observability.ZapCtx(ctx))
+				return err
 			}
+		}
+
+		err = s.DB.DeleteProvisionerResource(ctx, pr.ID)
+		if err != nil {
+			return err
 		}
 	}
 
