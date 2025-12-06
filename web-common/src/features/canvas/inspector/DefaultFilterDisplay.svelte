@@ -12,9 +12,9 @@
   $: ({
     canvasEntity: {
       clearDefaultFilters,
-      filterManager: { _defaultUIFilters },
+      filterManager: { defaultUIFiltersStore },
       timeManager: {
-        global: { interval: _interval },
+        state: { interval: _interval },
         defaultTimeRangeStore,
         defaultComparisonRangeStore,
       },
@@ -36,7 +36,7 @@
     </p>
 
     <CanvasFilterChipsReadOnly
-      uiFilters={$_defaultUIFilters}
+      uiFilters={$defaultUIFiltersStore}
       timeRangeString={defaultTimeRange}
       comparisonRange={defaultComparisonRange}
       timeStart={interval?.start?.toISO()}

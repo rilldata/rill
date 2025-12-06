@@ -39,7 +39,8 @@ import {
 import { FilterManager } from "./filter-manager";
 import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
-import { getComparisonTypeFromRangeString, TimeManager } from "./time-control";
+import { getComparisonTypeFromRangeString } from "./time-state";
+import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
@@ -109,7 +110,6 @@ export class CanvasEntity {
         subscribe: this.searchParams.subscribe,
         set: (
           map: Map<string, string>,
-
           checkIfSet = false,
           replaceState = false,
         ) => {
@@ -349,8 +349,8 @@ export class CanvasEntity {
       }
     }
 
-    const timeRange = get(this.timeManager.global.rangeStore);
-    const comparisonOn = get(this.timeManager.global.showTimeComparisonStore);
+    const timeRange = get(this.timeManager.state.rangeStore);
+    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
     if (timeRange) {
       yaml.setIn(["defaults", "time_range"], timeRange);
@@ -438,7 +438,7 @@ export class CanvasEntity {
     this.searchParams.set(searchParams);
     this.themeName.set(searchParams.get("theme") ?? undefined);
     this.saveSnapshot(searchParams.toString());
-    this.timeManager.global.onUrlChange(searchParams);
+    this.timeManager.state.onUrlChange(searchParams);
   };
 
   // Not currently being used

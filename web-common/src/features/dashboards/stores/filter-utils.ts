@@ -407,6 +407,7 @@ const SupportedOperations = new Set<V1Operation>([
   V1Operation.OPERATION_LIKE,
   V1Operation.OPERATION_NLIKE,
 ]);
+
 export function isExpressionUnsupported(expression: V1Expression) {
   if (
     !expression.cond ||

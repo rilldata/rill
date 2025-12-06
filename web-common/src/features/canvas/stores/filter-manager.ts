@@ -20,7 +20,7 @@ import {
 } from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { goto } from "$app/navigation";
-import { MetricsViewFilter } from "./metrics-view-filter";
+import { FilterState } from "./metrics-view-filter";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 
 export type UIFilters = {
@@ -33,8 +33,9 @@ export type UIFilters = {
 
 type MetricsViewName = string;
 type DimensionName = string;
+type MeasureName = string;
 
-type Lookup<T> = Map<MetricsViewName, Map<DimensionName, T>>;
+type Lookup<T> = Map<MetricsViewName, Map<DimensionName | MeasureName, T>>;
 
 export type DimensionLookup = Lookup<MetricsViewSpecDimension>;
 export type MeasureLookup = Lookup<MetricsViewSpecMeasure>;
@@ -111,32 +112,29 @@ class StoreOfStores<T> {
   }
 }
 
-// wip - bgh
 export class FilterManager {
-  metricsViewFilters = new StoreOfStores<MetricsViewFilter>();
+  metricsViewFilters = new StoreOfStores<FilterState>();
   _pinnedFilterKeys = writable<Set<string>>(new Set());
   _defaultPinnedFilterKeys = writable<Set<string>>(new Set());
   _temporaryFilterKeys = writable<Map<string, boolean>>(new Map());
   _allDimensions = writable<DimensionLookup>(new Map());
   _allMeasures = writable<MeasureLookup>(new Map());
   _dimensionFilterKeys: Readable<string[]>;
-  _defaultUIFilters: Readable<UIFilters>;
+  defaultUIFiltersStore: Readable<UIFilters>;
   _defaultExpression: Readable<V1Expression>;
   _activeUIFilters: Readable<UIFilters>;
   _activeExpression: Readable<V1Expression>;
   metricsViewNameDimensionMap: Map<
-    string,
-    Map<string, MetricsViewSpecDimension>
+    MetricsViewName,
+    Map<DimensionName, MetricsViewSpecDimension>
   > = new Map();
-  metricsViewNameMeasureMap: Map<string, Map<string, MetricsViewSpecMeasure>> =
-    new Map();
+  metricsViewNameMeasureMap: Map<
+    MetricsViewName,
+    Map<MeasureName, MetricsViewSpecMeasure>
+  > = new Map();
   _filterMap: Readable<Map<string, V1Expression>>;
   _scopedDimensions = writable<Map<string, DimensionLookup>>(new Map());
   _scopedMeasures = writable<Map<string, MeasureLookup>>(new Map());
-
-  createLocalFilterStore = (metricsViewName: string) => {
-    return new MetricsViewFilter(metricsViewName, this);
-  };
 
   constructor(
     metricsViews: Record<string, V1MetricsView | undefined>,
@@ -145,7 +143,7 @@ export class FilterManager {
   ) {
     this.updateConfig(metricsViews, pinnedFilters, defaultFilters);
 
-    this._defaultUIFilters = derived(
+    this.defaultUIFiltersStore = derived(
       [this.metricsViewFilters],
       ([metricsViewFilters], set) => {
         const stores = Array.from(metricsViewFilters.values()).map(
@@ -154,13 +152,11 @@ export class FilterManager {
         derived(
           [this._defaultPinnedFilterKeys, ...stores],
           ([defaultPinnedFilterKeys, ...filters]) => {
-            const okay = this.convertToUIFilters(
+            return this.convertToUIFilters(
               filters,
               new Map(),
               defaultPinnedFilterKeys,
             );
-
-            return structuredClone(okay);
           },
         ).subscribe(set);
       },
@@ -205,12 +201,18 @@ export class FilterManager {
     );
   }
 
+  createLocalFilterStore = (metricsViewName: string) => {
+    return new FilterState(metricsViewName, this);
+  };
+
   onUrlChange = (searchParams: URLSearchParams) => {
     const legacyFilter = searchParams.get(ExploreStateURLParams.Filters);
 
     this.metricsViewFilters.forEach((filters, mvName) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
       const filterString = searchParams.get(paramKey) ?? legacyFilter ?? "";
+
+      console.log({ filterString, mvName });
 
       filters.onFilterStringChange(filterString);
     });
@@ -221,64 +223,85 @@ export class FilterManager {
     pinnedFilters?: string[],
     defaultFilters?: V1CanvasPresetFilterExpr,
   ) {
-    const dimensionIdMap: Map<string, string[]> = new Map();
-    const measureIdMap: Map<string, string[]> = new Map();
+    const dimensionNameToMetricsViewNames: Map<
+      DimensionName,
+      MetricsViewName[]
+    > = new Map();
+    const measureNameToMetricsViewNames: Map<MeasureName, MetricsViewName[]> =
+      new Map();
     const dimensionLookups: Map<string, DimensionLookup> = new Map();
     const measureLookups: Map<string, MeasureLookup> = new Map();
 
-    Object.entries(metricsViews).forEach(([name, mv]) => {
-      const dimensionMap: DimensionLookup = new Map();
+    Object.entries(metricsViews).forEach(([metricsViewName, metricsView]) => {
+      const dimensionNameToDimension: DimensionLookup = new Map();
       const measureMap: MeasureLookup = new Map();
-      if (mv) {
-        this.metricsViewNameDimensionMap.set(name, new Map());
-        this.metricsViewNameMeasureMap.set(name, new Map());
 
-        mv.state?.validSpec?.dimensions?.forEach((dim) => {
+      if (metricsView) {
+        this.metricsViewNameDimensionMap.set(metricsViewName, new Map());
+        this.metricsViewNameMeasureMap.set(metricsViewName, new Map());
+
+        const { measures, dimensions } = metricsView.state?.validSpec || {};
+
+        dimensions?.forEach((dim) => {
           const dimName = dim.name;
           if (!dimName || dim.type === "DIMENSION_TYPE_TIME") return;
-          dimensionMap.set(dimName, new Map([[name, dim]]));
 
-          const array = dimensionIdMap.get(dimName) || [];
-          array.push(name);
-          dimensionIdMap.set(dimName, array);
-          this.metricsViewNameDimensionMap.get(name)?.set(dimName, dim);
+          dimensionNameToDimension.set(
+            dimName,
+            new Map([[metricsViewName, dim]]),
+          );
+
+          const existingMetricsViews =
+            dimensionNameToMetricsViewNames.get(dimName) || [];
+          existingMetricsViews.push(metricsViewName);
+          dimensionNameToMetricsViewNames.set(dimName, existingMetricsViews);
+
+          this.metricsViewNameDimensionMap
+            .get(metricsViewName)
+            ?.set(dimName, dim);
         });
 
-        mv.state?.validSpec?.measures?.forEach((measure) => {
+        measures?.forEach((measure) => {
           const measureName = measure.name;
           if (!measureName) return;
 
-          measureMap.set(measureName, new Map([[name, measure]]));
+          measureMap.set(measureName, new Map([[metricsViewName, measure]]));
 
-          const array = measureIdMap.get(measureName) || [];
-          array.push(name);
-          measureIdMap.set(measureName, array);
-          this.metricsViewNameMeasureMap.get(name)?.set(measureName, measure);
+          const existingMetricsViews =
+            measureNameToMetricsViewNames.get(measureName) || [];
+          existingMetricsViews.push(metricsViewName);
+          measureNameToMetricsViewNames.set(measureName, existingMetricsViews);
+
+          this.metricsViewNameMeasureMap
+            .get(metricsViewName)
+            ?.set(measureName, measure);
         });
 
-        dimensionLookups.set(name, dimensionMap);
-        measureLookups.set(name, measureMap);
+        dimensionLookups.set(metricsViewName, dimensionNameToDimension);
+        measureLookups.set(metricsViewName, measureMap);
 
-        let existingFilterStore = this.metricsViewFilters.get(name);
+        let existingFilterStore = this.metricsViewFilters.get(metricsViewName);
 
         if (!existingFilterStore) {
-          existingFilterStore = new MetricsViewFilter(name, this);
-          this.metricsViewFilters.set(name, existingFilterStore);
+          existingFilterStore = new FilterState(metricsViewName, this);
+          this.metricsViewFilters.set(metricsViewName, existingFilterStore);
         }
 
-        existingFilterStore.onDefaultFilterStringChange(defaultFilters?.[name]);
+        existingFilterStore.onDefaultFilterStringChange(
+          defaultFilters?.[metricsViewName],
+        );
       }
     });
 
     const mergedDimensions = mergeFilters(
       this.metricsViewNameDimensionMap,
-      dimensionIdMap,
+      dimensionNameToMetricsViewNames,
       "all",
     );
 
     const mergedMeasures = mergeFilters(
       this.metricsViewNameMeasureMap,
-      measureIdMap,
+      measureNameToMetricsViewNames,
       "all",
     );
 
@@ -380,8 +403,8 @@ export class FilterManager {
         const parsed = parsedMap.get(metricsViewName);
         if (!parsed) return;
 
-        const dimFilter = parsed.measureFilters.get(measure.name as string);
-        if (!dimFilter) {
+        const measureFilter = parsed.measureFilters.get(measure.name as string);
+        if (!measureFilter) {
           if (pinned || temporary) {
             filters.push({
               dimensionName: "",
@@ -395,11 +418,11 @@ export class FilterManager {
           }
         } else {
           if (pinned) {
-            dimFilter.pinned = true;
+            measureFilter.pinned = true;
           } else {
-            dimFilter.pinned = false;
+            measureFilter.pinned = false;
           }
-          filters.push(dimFilter);
+          filters.push(measureFilter);
         }
       });
 

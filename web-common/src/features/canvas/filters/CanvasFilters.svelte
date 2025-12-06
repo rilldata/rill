@@ -31,6 +31,7 @@
         _activeUIFilters,
         _filterMap,
         _temporaryFilterKeys,
+        _scopedDimensions,
         actions: {
           toggleDimensionValueSelections,
           toggleDimensionFilterMode,
@@ -47,7 +48,7 @@
 
       metricsView: { allDimensions },
       timeManager: {
-        global: {
+        state: {
           comparisonIntervalStore,
           showTimeComparisonStore,
           timeZoneStore,
@@ -206,6 +207,7 @@
       {/if}
 
       {#each complexFilters as filter, i (i)}
+        hello
         <AdvancedFilter advancedFilter={filter} />
       {/each}
 

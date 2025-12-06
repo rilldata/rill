@@ -1,27 +1,15 @@
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import { ToURLParamTimeGrainMapMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-import {
-  V1ExploreComparisonMode,
-  V1TimeGrain,
-  type V1ExploreTimeRange,
-} from "@rilldata/web-common/runtime-client";
-import { DateTime, Interval, Settings } from "luxon";
-import {
-  derived,
-  get,
-  writable,
-  type Readable,
-  type Writable,
-} from "svelte/store";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { DateTime, Interval } from "luxon";
+import { derived, get, writable, type Readable } from "svelte/store";
 import {
   ALL_TIME_RANGE_ALIAS,
   deriveInterval,
-  normalizeWeekday,
 } from "../../dashboards/time-controls/new-time-controls";
-import { type CanvasResponse } from "../selector";
+
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 import {
@@ -35,166 +23,17 @@ import {
   isGrainAllowed,
   minTimeGrainToDefaultTimeRange,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
+import type { TimeManager } from "./time-manager";
 
 export type MinMax = {
   min: DateTime<true>;
   max: DateTime<true>;
 };
 
-function maybeWritable<T>(value?: T): Writable<T | undefined> {
-  return writable(value);
-}
-
-export class TimeManager {
-  largestMinTimeGrain: Readable<V1TimeGrain>;
-  minMaxTimeStamps = maybeWritable<MinMax>();
-  defaultTimeRangeStore = maybeWritable<string>();
-  defaultComparisonRangeStore = maybeWritable<string>();
-  timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
-  availableTimeZonesStore = writable<string[]>([]);
-  allowCustomRangeStore = writable<boolean>(true);
-  hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
-  minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
-  hasTimeSeries: Readable<boolean>;
-  specInitialized = false;
-  global: TimeControls;
-
-  constructor(
-    public searchParamsStore: SearchParamsStore,
-    public parent: CanvasEntity,
-  ) {
-    this.largestMinTimeGrain = derived(this.minTimeGrainMap, (map) => {
-      let largest: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-
-      for (const grain of map.values()) {
-        if (isGrainBigger(grain, largest)) {
-          largest = grain;
-        }
-      }
-      return largest;
-    });
-
-    this.hasTimeSeries = derived(
-      [this.hasTimeSeriesMap],
-      ([$hasTimeSeriesMap]) => {
-        const values = Array.from($hasTimeSeriesMap.values());
-        return values.some((v) => v);
-      },
-    );
-
-    this.global = new TimeControls(this.searchParamsStore, this.parent, this);
-  }
-
-  createLocalTimeControls = (
-    componentName: string,
-    searchParamsStore: SearchParamsStore,
-  ) => {
-    return new TimeControls(
-      searchParamsStore,
-      this.parent,
-      this,
-      componentName,
-    );
-  };
-
-  onSpecChange = (spec: CanvasResponse) => {
-    this.specInitialized = true;
-    const defaultPreset = spec?.canvas?.defaultPreset;
-
-    const ranges = this.checkAndSetTimeRangeOptions(spec);
-    this.checkAndSetDefaultTimeRange(spec, ranges);
-    this.checkAndSetAvailableTimeZones(spec);
-    this.checkIfHasTimeSeries(spec);
-    this.checkAndSetFirstDayOfWeek(spec);
-
-    if (
-      defaultPreset?.comparisonMode ===
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-    ) {
-      this.defaultComparisonRangeStore.set("rill-PP");
-    } else {
-      this.defaultComparisonRangeStore.set(undefined);
-    }
-  };
-
-  checkAndSetFirstDayOfWeek(response: CanvasResponse) {
-    // TODO: figure out a better way of handling this property
-    // when it's not consistent across all metrics views - bgh
-    const firstMetricsViewName = Object.keys(response.metricsViews)?.[0];
-    const firstDayOfWeekOfFirstMetricsView =
-      response.metricsViews[firstMetricsViewName]?.state?.validSpec
-        ?.firstDayOfWeek;
-
-    if (!firstMetricsViewName) return;
-
-    Settings.defaultWeekSettings = {
-      firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
-      weekend: [6, 7],
-      minimalDays: 4,
-    };
-  }
-
-  checkIfHasTimeSeries(response: CanvasResponse) {
-    const metricsViews = response.metricsViews || {};
-
-    const timeGrainMap = new Map<string, V1TimeGrain>();
-    const hasTimeSeriesMap = new Map<string, boolean>();
-
-    Object.entries(metricsViews).forEach(([mvName, mv]) => {
-      const metricsViewSpec = mv?.state?.validSpec;
-      const timeGrain = metricsViewSpec?.smallestTimeGrain;
-      timeGrainMap.set(mvName, timeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED);
-      const hasTimeDimension = Boolean(metricsViewSpec?.timeDimension);
-      hasTimeSeriesMap.set(mvName, hasTimeDimension);
-    });
-
-    this.minTimeGrainMap.set(timeGrainMap);
-    this.hasTimeSeriesMap.set(hasTimeSeriesMap);
-  }
-
-  checkAndSetAllowCustomRange = (response: CanvasResponse) => {
-    const allowCustomRange = response.canvas?.allowCustomTimeRange ?? true;
-
-    this.allowCustomRangeStore.set(allowCustomRange);
-
-    return allowCustomRange;
-  };
-
-  checkAndSetAvailableTimeZones(response: CanvasResponse) {
-    const timeZones = response.canvas?.timeZones ?? [];
-
-    this.availableTimeZonesStore.set(timeZones);
-
-    return timeZones;
-  }
-
-  checkAndSetDefaultTimeRange(
-    response: CanvasResponse,
-
-    timeRanges: V1ExploreTimeRange[],
-  ) {
-    const defaultTimeRange = response.canvas?.defaultPreset?.timeRange;
-
-    const finalRange = defaultTimeRange ?? timeRanges[0]?.range;
-
-    const currentValue = get(this.defaultTimeRangeStore);
-    if (currentValue !== finalRange && finalRange) {
-      this.defaultTimeRangeStore.set(finalRange);
-    }
-  }
-
-  checkAndSetTimeRangeOptions(response: CanvasResponse) {
-    const timeRangeOptions = response.canvas?.timeRanges ?? [];
-
-    this.timeRangeOptionsStore.set(timeRangeOptions);
-
-    return timeRangeOptions;
-  }
-}
-
-// This class is used for global and widget time controls on Canvas
-// To avoid methods running in widgets, use isWidgetInstance flag
-export class TimeControls {
+export class TimeState {
+  // This class is used for global and widget time controls on Canvas
+  // To avoid methods running in widgets, use isWidgetInstance flag
   isWidgetInstance: boolean;
 
   interval: Readable<Interval<true> | undefined>;

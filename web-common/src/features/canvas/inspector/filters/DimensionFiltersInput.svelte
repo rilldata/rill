@@ -6,7 +6,7 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasFilterButton from "@rilldata/web-common/features/dashboards/filters/CanvasFilterButton.svelte";
-  import type { MetricsViewFilter } from "../../stores/metrics-view-filter";
+  import type { FilterState } from "../../stores/metrics-view-filter";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
@@ -14,7 +14,7 @@
   export let id: string;
   export let canvasName: string;
   export let metricsView: string;
-  export let localFilters: MetricsViewFilter;
+  export let localFilters: FilterState;
   export let excludedDimensions: Set<string>;
   export let updateLocalFilterString: (newFilterString: string) => void;
 

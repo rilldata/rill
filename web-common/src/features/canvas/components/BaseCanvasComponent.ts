@@ -31,9 +31,8 @@ import type {
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-
-import { TimeControls } from "../stores/time-control";
-import type { MetricsViewFilter } from "../stores/metrics-view-filter";
+import { TimeState } from "../stores/time-state";
+import type { FilterState } from "../stores/metrics-view-filter";
 import type { Readable } from "svelte/motion";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
@@ -45,9 +44,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Path in the YAML where the component is stored
   pathInYAML: ComponentPath;
   // Widget specific dimension and measure filters
-  localFilters: MetricsViewFilter;
+  localFilters: FilterState;
   // Widget specific time filters
-  localTimeControls: TimeControls;
+  localTimeControls: TimeState;
 
   visible = writable(false);
 
@@ -123,7 +122,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       };
     })();
 
-    this.localTimeControls = this.parent.timeManager.createLocalTimeControls(
+    this.localTimeControls = this.parent.timeManager.createLocalTimeState(
       this.id,
       yamlTimeFilterStore,
     );
@@ -154,39 +153,39 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   get timeAndFilterStore(): Readable<TimeAndFilterStore> {
     return derived(
       [
-        this.parent.timeManager.global.interval,
+        this.parent.timeManager.state.interval,
+        this.parent.timeManager.state.grainStore,
+        this.parent.timeManager.state.showTimeComparisonStore,
+        this.parent.timeManager.state.comparisonRangeStore,
+        this.parent.timeManager.state.comparisonIntervalStore,
+        this.parent.timeManager.state.timeZoneStore,
         this.localTimeControls.interval,
-        this.parent.timeManager.global.comparisonIntervalStore,
         this.localTimeControls.comparisonIntervalStore,
-        this.parent.timeManager.global.timeZoneStore,
+        this.localTimeControls.showTimeComparisonStore,
+        this.localTimeControls.grainStore,
+        this.localTimeControls.comparisonRangeStore,
         this.parent.filterManager.metricsViewFilters,
         this.parent.specStore,
         this.parent.timeManager.hasTimeSeriesMap,
         this.specStore,
-        this.parent.timeManager.global.grainStore,
-        this.parent.timeManager.global.showTimeComparisonStore,
-        this.localTimeControls.showTimeComparisonStore,
-        this.localTimeControls.grainStore,
-        this.parent.timeManager.global.comparisonRangeStore,
-        this.localTimeControls.comparisonRangeStore,
       ],
       (
         [
           globalInterval,
-          localInterval,
+          globalGrainStore,
+          globalShowTimeComparison,
+          globalComparisonRange,
           globalComparisonInterval,
-          localComparisonInterval,
           timeZone,
+          localInterval,
+          localComparisonInterval,
+          localShowTimeComparison,
+          localGrainStore,
+          localComparisonRange,
           metricsViewFilters,
           canvasData,
           hasTimeSeriesMap,
           componentSpec,
-          globalGrainStore,
-          globalShowTimeComparison,
-          localShowTimeComparison,
-          localGrainStore,
-          globalComparisonRange,
-          localComparisonRange,
         ],
         set,
       ) => {

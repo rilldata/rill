@@ -37,8 +37,7 @@ import {
 } from "./filter-manager";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 
-// wip - bgh
-export class MetricsViewFilter {
+export class FilterState {
   parsed: Writable<ParsedFilters>;
   parsedDefaultFilters: Writable<ParsedFilters>;
   temporaryFilterKeys = writable(new Set<string>());
@@ -80,13 +79,22 @@ export class MetricsViewFilter {
   };
 
   parseFilterString(filterString: string = ""): ParsedFilters {
+    // console.log({ filterString });
     const { expr, dimensionsWithInlistFilter } =
       getFiltersFromText(filterString);
 
     const { dimensionThresholdFilters, dimensionFilters } =
       splitWhereFilter(expr);
 
+    console.log({
+      dimensionThresholdFilters,
+      expr,
+      dimensionsWithInlistFilter,
+    });
+
     const isComplexFilter = isExpressionUnsupported(expr);
+
+    console.log({ expr, isComplexFilter });
 
     if (isComplexFilter) {
       return {
@@ -98,7 +106,7 @@ export class MetricsViewFilter {
         dimensionThresholdFilters,
         dimensionFilters: new Map(),
         measureFilters: new Map(),
-        complexFilters: [],
+        complexFilters: [expr],
         hasClearableFilters: false,
         hasFilters: false,
       };
