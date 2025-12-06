@@ -150,6 +150,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.specStore.set(yamlSpec);
   }
 
+  // This will be deprecated eventually - bgh
   get timeAndFilterStore(): Readable<TimeAndFilterStore> {
     return derived(
       [
@@ -166,6 +167,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeManager.global.showTimeComparisonStore,
         this.localTimeControls.showTimeComparisonStore,
         this.localTimeControls.grainStore,
+        this.parent.timeManager.global.comparisonRangeStore,
+        this.localTimeControls.comparisonRangeStore,
       ],
       (
         [
@@ -182,6 +185,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           globalShowTimeComparison,
           localShowTimeComparison,
           localGrainStore,
+          globalComparisonRange,
+          localComparisonRange,
         ],
         set,
       ) => {
@@ -230,10 +235,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             timeStart: globalInterval?.start.toISO(),
             timeEnd: globalInterval?.end.toISO(),
           };
-          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined = {
-            comparisonTimeStart: globalComparisonInterval?.start.toISO(),
-            comparisonTimeEnd: globalComparisonInterval?.end.toISO(),
-          };
+          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+            globalComparisonInterval && {
+              comparisonTimeStart: globalComparisonInterval.start.toISO(),
+              comparisonTimeEnd: globalComparisonInterval.end.toISO(),
+              selectedComparisonTimeRange: {
+                start: globalComparisonInterval.start.toJSDate(),
+                end: globalComparisonInterval.end.toJSDate(),
+                name: globalComparisonRange,
+              },
+            };
 
           if (componentSpec?.["time_filters"]) {
             timeRange = {
@@ -256,9 +267,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
               timeStart: localInterval?.start.toISO(),
               timeEnd: localInterval?.end.toISO(),
             };
-            const localComparisonRangeState: ComparisonTimeRangeState = {
-              comparisonTimeStart: localComparisonInterval?.start.toISO(),
-              comparisonTimeEnd: localComparisonInterval?.end.toISO(),
+            const localComparisonRangeState:
+              | ComparisonTimeRangeState
+              | undefined = localComparisonInterval && {
+              comparisonTimeStart: localComparisonInterval.start.toISO(),
+              comparisonTimeEnd: localComparisonInterval.end.toISO(),
+              selectedComparisonTimeRange: {
+                start: localComparisonInterval.start.toJSDate(),
+                end: localComparisonInterval.end.toJSDate(),
+                name: localComparisonRange,
+              },
             };
 
             timeRangeState = localTimeRangeState;
