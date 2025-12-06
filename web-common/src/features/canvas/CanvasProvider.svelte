@@ -1,7 +1,7 @@
 <script lang="ts">
   import { handleCanvasStoreInitialization } from "./state-managers/state-managers";
   import { page } from "$app/stores";
-  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     DashboardBannerID,
