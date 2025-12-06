@@ -16,6 +16,7 @@
   export let instanceId: string;
   export let ready = false;
   export let showBanner = false;
+  export let projectId: string | undefined = undefined;
 
   $: ({ url } = $page);
 
@@ -30,7 +31,7 @@
 
   $: if (resolvedStore) {
     resolvedStore.canvasEntity
-      .onUrlChange({ url, loadFunction: false })
+      .onUrlChange({ url, projectId })
       .catch(console.error);
   }
 

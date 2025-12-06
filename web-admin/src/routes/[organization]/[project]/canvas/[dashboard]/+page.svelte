@@ -5,11 +5,14 @@
 
   export let data;
 
-  $: ({ canvasName } = data);
+  $: ({
+    canvasName,
+    project: { id: projectId },
+  } = data);
 
   $: ({ instanceId } = $runtime);
 </script>
 
-<CanvasProvider {canvasName} {instanceId} showBanner>
+<CanvasProvider {canvasName} {instanceId} {projectId} showBanner>
   <CanvasDashboardEmbed {canvasName} />
 </CanvasProvider>

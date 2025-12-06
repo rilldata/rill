@@ -5,9 +5,14 @@
 
   export let data: PageData;
 
-  $: ({ canvasName, instanceId, navigationEnabled } = data);
+  $: ({
+    canvasName,
+    instanceId,
+    navigationEnabled,
+    project: { id: projectId },
+  } = data);
 </script>
 
-<CanvasProvider {canvasName} {instanceId} showBanner>
+<CanvasProvider {canvasName} {instanceId} {projectId} showBanner>
   <CanvasDashboardEmbed {canvasName} {navigationEnabled} />
 </CanvasProvider>

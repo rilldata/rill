@@ -42,7 +42,6 @@ import { Grid } from "./grid";
 import { getComparisonTypeFromRangeString, TimeManager } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
-import { redirect } from "@sveltejs/kit";
 import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
@@ -422,17 +421,15 @@ export class CanvasEntity {
   onUrlChange = async ({
     url: { searchParams, pathname },
     projectId,
-    loadFunction,
   }: {
     url: URL;
     projectId?: string;
-    loadFunction: boolean;
   }) => {
     const redirected = await this.handleCanvasRedirect({
       canvasName: this.name,
       searchParams,
       pathname,
-      loadFunction,
+
       projectId,
     });
 
@@ -455,12 +452,11 @@ export class CanvasEntity {
     searchParams,
     pathname,
     projectId,
-    loadFunction,
   }: {
     canvasName: string;
     searchParams: URLSearchParams;
     pathname: string;
-    loadFunction: boolean;
+
     projectId?: string;
   }) => {
     // If there are no URL params, check for last visited state or home bookmark
@@ -469,16 +465,12 @@ export class CanvasEntity {
 
       // First priority
       if (snapshotSearchParams) {
-        if (loadFunction) {
-          throw redirect(307, `?${snapshotSearchParams}`);
-        } else {
-          await goto(`?${snapshotSearchParams}`, { replaceState: true });
-          return true;
-        }
+        await goto(`?${snapshotSearchParams}`, { replaceState: true });
+        return true;
       }
 
       // Second priority
-      const deployed = projectId && !loadFunction;
+      const deployed = projectId;
 
       if (deployed) {
         let homeBookmarkUrlSearch: string | undefined = undefined;
@@ -506,7 +498,8 @@ export class CanvasEntity {
         }
 
         if (homeBookmarkUrlSearch) {
-          throw redirect(307, homeBookmarkUrlSearch);
+          await goto(homeBookmarkUrlSearch, { replaceState: true });
+          return true;
         }
       }
 
@@ -514,24 +507,17 @@ export class CanvasEntity {
       const defaultParamsString = get(this._defaultUrlParams).toString();
 
       if (defaultParamsString) {
-        if (loadFunction) {
-          throw redirect(307, `?${defaultParamsString}`);
-        } else {
-          await goto(`?${defaultParamsString}`, {
-            replaceState: true,
-          });
-          return true;
-        }
+        await goto(`?${defaultParamsString}`, {
+          replaceState: true,
+        });
+        return true;
       }
     } else if (searchParams.get("default")) {
       // If the default parameter exists, we clear last visited state and redirect to clean URL
       lastVisitedState.set(canvasName, "");
-      if (loadFunction) {
-        throw redirect(307, pathname);
-      } else {
-        await goto(pathname, { replaceState: true });
-        return true;
-      }
+
+      await goto(pathname, { replaceState: true });
+      return true;
     }
   };
 
