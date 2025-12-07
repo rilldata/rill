@@ -228,7 +228,43 @@ func (c *connection) Ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return db.PingContext(ctx)
+
+	// Basic connection ping - this validates credentials and connectivity
+	if err := db.PingContext(ctx); err != nil {
+		return err
+	}
+
+	// Validate catalog exists (only if specified and not default_catalog)
+	if c.configProp.Catalog != "" && c.configProp.Catalog != defaultCatalog {
+		var catalogCount int
+		catalogQuery := "SELECT COUNT(*) FROM information_schema.catalogs WHERE catalog_name = ?"
+		if err := db.QueryRowContext(ctx, catalogQuery, c.configProp.Catalog).Scan(&catalogCount); err != nil {
+			return fmt.Errorf("failed to validate catalog: %w", err)
+		}
+		if catalogCount == 0 {
+			return fmt.Errorf("catalog '%s' does not exist", c.configProp.Catalog)
+		}
+	}
+
+	// Validate database exists (only if specified)
+	// Use fully qualified path: <catalog>.information_schema.schemata
+	if c.configProp.Database != "" {
+		catalog := c.configProp.Catalog
+		if catalog == "" {
+			catalog = defaultCatalog
+		}
+
+		var dbCount int
+		dbQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s.information_schema.schemata WHERE schema_name = ?", catalog)
+		if err := db.QueryRowContext(ctx, dbQuery, c.configProp.Database).Scan(&dbCount); err != nil {
+			return fmt.Errorf("failed to validate database: %w", err)
+		}
+		if dbCount == 0 {
+			return fmt.Errorf("database '%s' does not exist in catalog '%s'", c.configProp.Database, catalog)
+		}
+	}
+
+	return nil
 }
 
 // Migrate implements drivers.Handle.
