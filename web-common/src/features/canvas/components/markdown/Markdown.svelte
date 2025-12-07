@@ -5,7 +5,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { writable } from "svelte/store";
   import type { MarkdownCanvasComponent } from "./";
   import {
     getPositionClasses,
@@ -82,50 +81,72 @@
   );
 
   // Store the last successfully resolved content to prevent flashing during refetches
-  let lastResolvedContent = writable<string | null>(null);
+  let lastResolvedContent: string | null = null;
 
-  $: {
-    // Update stored resolved content when we have new data
-    if (needsTemplating && $resolveQuery?.data?.body) {
-      const newResolvedContent =
-        applyFormatting && metricsViews && Object.keys(metricsViews).length > 0
-          ? formatResolvedContent($resolveQuery.data.body, metricsViews)
-          : $resolveQuery.data.body;
-      lastResolvedContent.set(newResolvedContent);
-    } else if (!needsTemplating) {
-      // If no templating is needed, clear the stored value
-      lastResolvedContent.set(null);
+  function applyFormattingIfNeeded(content: string): string {
+    if (
+      applyFormatting &&
+      metricsViews &&
+      Object.keys(metricsViews).length > 0
+    ) {
+      return formatResolvedContent(content, metricsViews);
     }
+    return content;
   }
 
   $: resolvedContent = (() => {
     if (!needsTemplating) {
+      lastResolvedContent = null;
       return content;
     }
 
+    // If there's an error, return empty string so error message is shown instead
+    if ($resolveQuery?.isError) {
+      return "";
+    }
+
     // If we're fetching and have a previous resolved value, use it to prevent flash
-    if ($resolveQuery?.isFetching && $lastResolvedContent) {
-      return $lastResolvedContent;
+    if ($resolveQuery?.isFetching && lastResolvedContent) {
+      return lastResolvedContent;
     }
 
+    // Update stored resolved content when we have new data
     if ($resolveQuery?.data?.body) {
-      return applyFormatting &&
-        metricsViews &&
-        Object.keys(metricsViews).length > 0
-        ? formatResolvedContent($resolveQuery.data.body, metricsViews)
-        : $resolveQuery.data.body;
+      const newResolvedContent = applyFormattingIfNeeded(
+        $resolveQuery.data.body,
+      );
+      lastResolvedContent = newResolvedContent;
+      return newResolvedContent;
     }
 
-    return $lastResolvedContent ?? content;
+    return lastResolvedContent ?? content;
   })();
   $: renderPromise = marked(resolvedContent || "");
+
+  $: errorMessage = (() => {
+    const error = $resolveQuery?.error;
+    if (!error) return "Failed to resolve template.";
+
+    const err = error as any;
+    return (
+      err?.response?.data?.message ??
+      err?.message ??
+      "Failed to resolve template."
+    );
+  })();
 </script>
 
 <div class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface">
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
-    {#await renderPromise then htmlContent}
-      {@html DOMPurify.sanitize(htmlContent)}
-    {/await}
+    {#if needsTemplating && $resolveQuery?.isError}
+      <div class="markdown-error">
+        <p>{errorMessage}</p>
+      </div>
+    {:else}
+      {#await renderPromise then htmlContent}
+        {@html DOMPurify.sanitize(htmlContent)}
+      {/await}
+    {/if}
   </div>
 </div>
 
@@ -205,5 +226,8 @@
   }
   :global(.canvas-markdown img) {
     @apply max-w-full h-auto my-3;
+  }
+  .markdown-error {
+    @apply bg-red-50 border border-red-200 rounded px-3 py-2 my-2 text-sm text-red-700;
   }
 </style>

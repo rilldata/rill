@@ -54,16 +54,17 @@ export function formatResolvedContent(
 ): string {
   if (!text) return text;
 
-  const formatPattern = /__RILL__FORMAT__\((\{[^}]+\})\)/g;
+  const formatPattern = /__RILL__FORMAT__\(([^)]+)\)/g;
 
-  return text.replace(formatPattern, (fullMatch, jsonStr: string) => {
+  return text.replace(formatPattern, (fullMatch, tokenContent: string) => {
     try {
+      const trimmed = tokenContent.trim();
       const {
         metrics_view,
         field,
         value,
       }: { metrics_view: string; field: string; value: number | string } =
-        JSON.parse(jsonStr) as {
+        JSON.parse(trimmed) as {
           metrics_view: string;
           field: string;
           value: number | string;
