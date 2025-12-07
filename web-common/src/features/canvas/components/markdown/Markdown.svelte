@@ -5,6 +5,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { writable } from "svelte/store";
   import type { MarkdownCanvasComponent } from "./";
   import {
     getPositionClasses,
@@ -16,29 +17,28 @@
   export let component: MarkdownCanvasComponent;
 
   $: specStore = component?.specStore;
-  $: parent = component?.parent;
-  $: markdownProperties = specStore ? $specStore : undefined;
-  $: positionClasses = getPositionClasses(markdownProperties?.alignment);
-  $: content = markdownProperties?.content ?? "";
+  $: spec = specStore ? $specStore : undefined;
+  $: content = spec?.content ?? "";
+  $: applyFormatting = spec?.apply_formatting === true;
+  $: positionClasses = getPositionClasses(spec?.alignment);
   $: needsTemplating = hasTemplatingSyntax(content);
-  $: applyFormatting = markdownProperties?.apply_formatting === true;
+
+  $: parent = component?.parent;
+  $: parentWhereFilterStore = parent?.filters?.whereFilter;
+  $: globalWhereFilter = parentWhereFilterStore
+    ? $parentWhereFilterStore
+    : undefined;
+  $: parentDimensionThresholdStore = parent?.filters?.dimensionThresholdFilters;
+  $: globalDimensionThresholdFilters = parentDimensionThresholdStore
+    ? $parentDimensionThresholdStore
+    : [];
+  $: parentSpecStore = parent?.specStore;
+  $: metricsViews = parentSpecStore
+    ? ($parentSpecStore?.data?.metricsViews ?? {})
+    : {};
 
   $: timeAndFilterStore = component?.timeAndFilterStore;
   $: timeAndFilters = timeAndFilterStore ? $timeAndFilterStore : undefined;
-
-  $: parentFilters = parent?.filters;
-  $: parentWhereFilterStore = parentFilters?.whereFilter;
-  $: parentDimensionThresholdStore = parentFilters?.dimensionThresholdFilters;
-  $: globalWhereFilter =
-    parentWhereFilterStore !== undefined ? $parentWhereFilterStore : undefined;
-  $: globalDimensionThresholdFilters =
-    parentDimensionThresholdStore !== undefined
-      ? $parentDimensionThresholdStore
-      : [];
-
-  $: parentSpecStore = parent?.specStore;
-  $: canvasData = parentSpecStore ? $parentSpecStore?.data : undefined;
-  $: metricsViews = canvasData?.metricsViews ?? {};
   $: ({ instanceId } = $runtime);
 
   $: requestBody =
@@ -81,14 +81,44 @@
     queryClient,
   );
 
-  $: resolvedContent =
-    needsTemplating && $resolveQuery?.data?.body
-      ? applyFormatting && metricsViews && Object.keys(metricsViews).length > 0
-        ? formatResolvedContent($resolveQuery.data.body, metricsViews)
-        : $resolveQuery.data.body
-      : content;
+  // Store the last successfully resolved content to prevent flashing during refetches
+  let lastResolvedContent = writable<string | null>(null);
 
-  $: renderPromise = marked(resolvedContent);
+  $: {
+    // Update stored resolved content when we have new data
+    if (needsTemplating && $resolveQuery?.data?.body) {
+      const newResolvedContent =
+        applyFormatting && metricsViews && Object.keys(metricsViews).length > 0
+          ? formatResolvedContent($resolveQuery.data.body, metricsViews)
+          : $resolveQuery.data.body;
+      lastResolvedContent.set(newResolvedContent);
+    } else if (!needsTemplating) {
+      // If no templating is needed, clear the stored value
+      lastResolvedContent.set(null);
+    }
+  }
+
+  $: resolvedContent = (() => {
+    if (!needsTemplating) {
+      return content;
+    }
+
+    // If we're fetching and have a previous resolved value, use it to prevent flash
+    if ($resolveQuery?.isFetching && $lastResolvedContent) {
+      return $lastResolvedContent;
+    }
+
+    if ($resolveQuery?.data?.body) {
+      return applyFormatting &&
+        metricsViews &&
+        Object.keys(metricsViews).length > 0
+        ? formatResolvedContent($resolveQuery.data.body, metricsViews)
+        : $resolveQuery.data.body;
+    }
+
+    return $lastResolvedContent ?? content;
+  })();
+  $: renderPromise = marked(resolvedContent || "");
 </script>
 
 <div class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface">
