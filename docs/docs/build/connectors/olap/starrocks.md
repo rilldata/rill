@@ -9,10 +9,6 @@ sidebar_position: 5
 
 Rill supports connecting to an existing StarRocks cluster via a "live connector" and using it as an OLAP engine built against [external tables](/build/connectors/olap#external-olap-tables) to power Rill dashboards.
 
-:::note Read-Only Connector
-
-StarRocks is supported as a read-only OLAP connector in Rill. This means you can connect to existing StarRocks tables and build dashboards, but model creation is not supported.
-
 :::
 
 ## Connect to StarRocks
@@ -66,7 +62,7 @@ user:password@tcp(host:port)/database?parseTime=true
 | `username` | Username for authentication | Required |
 | `password` | Password for authentication | - |
 | `catalog` | StarRocks catalog name (for external catalogs like Iceberg, Hive) | `default_catalog` |
-| `database` | StarRocks database name | Required |
+| `database` | StarRocks database name | - |
 | `ssl` | Enable SSL/TLS encryption | `false` |
 | `dsn` | Full connection string (alternative to individual parameters) | - |
 
@@ -110,18 +106,10 @@ If you encounter connection issues:
 3. Ensure network connectivity to the StarRocks FE node
 4. For SSL connections, verify SSL is enabled on the StarRocks server
 
-### Port Information
-
-- **9030**: MySQL protocol port (used by Rill)
-- **8030**: HTTP port
-- **9020**: RPC port
 
 ## Known Limitations
 
-- **Read-only connector**: Model creation/execution is not supported. Use StarRocks for dashboards built on existing tables.
-- **Timezone in date_trunc**: Timezone parameter is not supported in date truncation functions. All date operations use server timezone.
-- **Physical size**: Table physical size is not available for external catalogs.
-- **Reserved keywords**: Some SQL reserved keywords (like `range`, `values`) are automatically escaped. If you encounter syntax errors, the keyword list may need to be extended.
+- **Model execution**: Model creation and execution is not yet supported. This feature is under development.
 
 :::info Need help connecting to StarRocks?
 
