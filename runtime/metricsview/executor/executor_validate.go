@@ -77,6 +77,18 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
+
+	// Apply resolved database/schema from Lookup back to metricsView.
+	// This is essential for connectors like StarRocks where external catalogs require
+	// fully qualified table names (catalog.database.table) for all queries.
+	// When YAML omits the database field, Lookup fills it from connector defaults.
+	if mv.Database == "" && t.Database != "" {
+		mv.Database = t.Database
+	}
+	if mv.DatabaseSchema == "" && t.DatabaseSchema != "" {
+		mv.DatabaseSchema = t.DatabaseSchema
+	}
+
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
 		cols[strings.ToLower(f.Name)] = f

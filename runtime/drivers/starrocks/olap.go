@@ -61,12 +61,8 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 			zap.Any("args", stmt.Args))
 	}
 
-	execCtx := ctx
-	if stmt.ExecutionTimeout > 0 {
-		var cancel context.CancelFunc
-		execCtx, cancel = context.WithTimeout(ctx, stmt.ExecutionTimeout)
-		defer cancel()
-	}
+	// Remove deadline but preserve cancellation (ClickHouse pattern)
+	execCtx := contextWithoutDeadline(ctx)
 
 	_, err = db.ExecContext(execCtx, stmt.Query, stmt.Args...)
 	return err
@@ -85,12 +81,8 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 			zap.Any("args", stmt.Args))
 	}
 
-	queryCtx := ctx
-	if stmt.ExecutionTimeout > 0 {
-		var cancel context.CancelFunc
-		queryCtx, cancel = context.WithTimeout(ctx, stmt.ExecutionTimeout)
-		defer cancel()
-	}
+	// Remove deadline but preserve cancellation (ClickHouse pattern)
+	queryCtx := contextWithoutDeadline(ctx)
 
 	rows, err := db.QueryxContext(queryCtx, stmt.Query, stmt.Args...)
 	if err != nil {
@@ -119,10 +111,10 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 	// Use LIMIT 0 to get schema without data
 	schemaQuery := fmt.Sprintf("SELECT * FROM (%s) AS _schema_query LIMIT 0", query)
 
-	ctx, cancel := context.WithTimeout(ctx, drivers.DefaultQuerySchemaTimeout)
-	defer cancel()
+	// Remove deadline but preserve cancellation (ClickHouse pattern)
+	queryCtx := contextWithoutDeadline(ctx)
 
-	rows, err := db.QueryxContext(ctx, schemaQuery, args...)
+	rows, err := db.QueryxContext(queryCtx, schemaQuery, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -215,4 +207,16 @@ type sqlRows struct {
 // MapScan implements drivers.Rows.
 func (r *sqlRows) MapScan(dest map[string]any) error {
 	return r.Rows.MapScan(dest)
+}
+
+// contextWithoutDeadline removes the deadline from the context but preserves cancellation.
+// This prevents queries from being cancelled due to tight client timeouts while still
+// respecting explicit cancellation signals.
+func contextWithoutDeadline(parent context.Context) context.Context {
+	ctx, cancel := context.WithCancel(context.WithoutCancel(parent))
+	go func() {
+		<-parent.Done()
+		cancel()
+	}()
+	return ctx
 }

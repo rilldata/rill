@@ -31,15 +31,23 @@ func safeSQLName(name string) string {
 // GetTypeCast returns the type casting syntax for StarRocks.
 //
 // StarRocks uses MySQL-style CAST() function instead of PostgreSQL-style ::TYPE syntax.
-// This returns an empty string as StarRocks requires explicit CAST() function calls.
+// This function returns an empty string to rely on StarRocks' implicit type conversion
+// for numeric operations, which works correctly for histogram queries.
 //
-// Example:
+// The calling code uses suffix concatenation pattern (column + castSuffix), so returning
+// an empty string means no explicit cast is applied, allowing implicit conversion.
 //
-//	PostgreSQL: column::DOUBLE
-//	StarRocks:  CAST(column AS DOUBLE)
+// Example usage in column_numeric_histogram.go:
+//
+//	PostgreSQL: column::DOUBLE  (explicit cast using suffix)
+//	StarRocks:  column          (implicit conversion - works for numeric histogram)
+//
+// Note: StarRocks' implicit type conversion handles numeric operations correctly.
+// If explicit CAST(column AS TYPE) is needed in the future, the calling pattern
+// would need to change from suffix concatenation to function wrapping.
 func GetTypeCast(typeName string) string {
-	// StarRocks uses CAST() function, not suffix notation
-	// Return empty string to indicate no suffix-style casting is available
+	// Return empty string to rely on implicit type conversion
+	// StarRocks handles numeric operations without explicit CAST() for histogram queries
 	return ""
 }
 

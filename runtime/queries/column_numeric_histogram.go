@@ -176,11 +176,21 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 
 	// StarRocks uses CAST() function instead of ::TYPE syntax
-	var castDouble string
+	var selectColumn string
 	if olap.Dialect() == drivers.DialectStarRocks {
-		castDouble = starrocks.GetTypeCast("DOUBLE")
+		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
-		castDouble = "::DOUBLE"
+		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	}
+
+	// For bucket column casting - generate_series returns BIGINT, cast to DOUBLE for calculations
+	// StarRocks: CAST(column AS DOUBLE)
+	// DuckDB/ClickHouse: column::DOUBLE
+	var bucketColumn string
+	if olap.Dialect() == drivers.DialectStarRocks {
+		bucketColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", rangeNumbersCol(olap.Dialect()))
+	} else {
+		bucketColumn = rangeNumbersCol(olap.Dialect()) + "::DOUBLE"
 	}
 
 	// StarRocks: "values" is a reserved keyword
@@ -190,8 +200,6 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	} else {
 		valuesAlias = "values"
 	}
-
-	selectColumn := fmt.Sprintf("%s%s", sanitizedColumnName, castDouble)
 	histogramSQL := fmt.Sprintf(
 		`
           WITH data_table AS (
@@ -203,7 +211,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
             WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
           ), buckets AS (
             SELECT
-              `+rangeNumbersCol(olap.Dialect())+castDouble+` as bucket,
+              `+bucketColumn+` as bucket,
               (bucket) * (%[7]v) / %[4]v + (%[5]v) as low,
               (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) as high
             FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v`+rangeNumbersEnd(olap.Dialect())+`
@@ -439,7 +447,14 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
 func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, database, databaseSchema, tableName string, priority int) (*float64, *float64, *float64, error) {
 	sanitizedColumnName := safeName(olap.Dialect(), columnName)
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+
+	// StarRocks uses CAST() instead of ::TYPE syntax
+	var selectColumn string
+	if olap.Dialect() == drivers.DialectStarRocks {
+		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
+	} else {
+		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	}
 
 	minMaxSQL := fmt.Sprintf(
 		`
@@ -490,8 +505,9 @@ func isNonNullFinite(d drivers.Dialect, floatCol string) string {
 	case drivers.DialectDuckDB:
 		return fmt.Sprintf("%s IS NOT NULL AND NOT isinf(%s)", floatCol, floatCol)
 	case drivers.DialectStarRocks:
-		// StarRocks doesn't have isinf(), so we only check for NULL
-		return fmt.Sprintf("%s IS NOT NULL", floatCol)
+		// StarRocks doesn't have isinf(), use range check to filter Infinity
+		// -1e308 to 1e308 covers all finite DOUBLE values
+		return fmt.Sprintf("%s IS NOT NULL AND %s > -1e308 AND %s < 1e308", floatCol, floatCol, floatCol)
 	default:
 		return "1=1"
 	}

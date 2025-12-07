@@ -66,17 +66,17 @@ func TestConvertDSN(t *testing.T) {
 		{
 			name:     "mysql format passthrough",
 			input:    "user:pass@tcp(host:9030)/db",
-			expected: "user:pass@tcp(host:9030)/db",
+			expected: "user:pass@tcp(host:9030)/?timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true",
 		},
 		{
 			name:     "starrocks url format",
 			input:    "starrocks://user:pass@host:9030/db",
-			expected: "user:pass@tcp(host:9030)/db?parseTime=true",
+			expected: "user:pass@tcp(host:9030)/?timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true",
 		},
 		{
 			name:     "starrocks url without user",
 			input:    "starrocks://host:9030/db",
-			expected: "tcp(host:9030)/db?parseTime=true",
+			expected: "tcp(host:9030)/?timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true",
 		},
 	}
 

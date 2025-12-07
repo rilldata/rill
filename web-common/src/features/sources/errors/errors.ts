@@ -14,6 +14,16 @@ const connectorErrorMap = {
     "context deadline exceeded":
       "Connection to ClickHouse server timed out. Please check your network connection and server status.",
   },
+  starrocks: {
+    "connection refused":
+      "Could not connect to StarRocks server. Please check if the server is running and the host/port are correct.",
+    "context deadline exceeded":
+      "Connection to StarRocks server timed out. Please check your network connection and server status.",
+    "Unknown database":
+      "Database not found. Please check the catalog and database name in your connector configuration.",
+    "Access denied":
+      "Access denied. Please check your username and password.",
+  },
   // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
   s3: {
     MissingRegion: "Region not detected. Please enter a region.",
@@ -110,6 +120,16 @@ export function humanReadableErrorMessage(
       if (connectorName === "clickhouse") {
         for (const [key, value] of Object.entries(
           connectorErrorMap.clickhouse,
+        )) {
+          if (serverError.includes(key)) {
+            return value;
+          }
+        }
+      }
+      // StarRocks errors
+      if (connectorName === "starrocks") {
+        for (const [key, value] of Object.entries(
+          connectorErrorMap.starrocks,
         )) {
           if (serverError.includes(key)) {
             return value;
