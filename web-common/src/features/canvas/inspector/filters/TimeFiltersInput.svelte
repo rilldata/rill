@@ -5,11 +5,11 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { TimeControls } from "../../stores/time-state";
+  import type { TimeState } from "../../stores/time-state";
   import { ALL_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 
   export let id: string;
-  export let localTimeControls: TimeControls;
+  export let localTimeControls: TimeState;
   export let showComparison: boolean;
   export let showGrain: boolean;
   export let canvasName: string;
