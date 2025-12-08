@@ -26,7 +26,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import S3MultiStepForm from "./S3MultiStepForm.svelte";
+  import S3ConnectorForm from "./S3ConnectorForm.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -397,7 +397,7 @@
                 {handleFileUpload}
               />
             {:else if connector.name === "s3"}
-              <S3MultiStepForm
+              <S3ConnectorForm
                 properties={stepProperties}
                 {paramsForm}
                 paramsErrors={$paramsErrors}
