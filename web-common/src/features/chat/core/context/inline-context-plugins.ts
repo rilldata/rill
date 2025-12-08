@@ -189,6 +189,8 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
               const pos = getPos();
               if (!pos) return;
 
+              comp.$set({ selectedChatContext });
+
               // Dispatch a transaction to update the node attributes with the new context.
               view.dispatch(
                 getTransactionForContext(selectedChatContext, view, pos),

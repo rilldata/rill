@@ -8,6 +8,7 @@
   import MetricsViewGroup from "@rilldata/web-common/features/chat/core/context/MetricsViewGroup.svelte";
   import { InlineContextHighlightManager } from "@rilldata/web-common/features/chat/core/context/inline-context-highlight-manager.ts";
   import {
+    autoUpdate,
     computePosition,
     offset,
     flip,
@@ -59,15 +60,25 @@
   function positionHandler(node: Node) {
     if (!(node instanceof HTMLElement)) return;
 
-    void computePosition(refNode, node, {
-      placement: "top-start",
-      middleware: [offset(10), flip(), shift(), inline()],
-    }).then(({ x, y }) => {
-      Object.assign(node.style, {
-        left: `${x}px`,
-        top: `${y}px`,
+    const compute = () => {
+      void computePosition(refNode, node, {
+        placement: "top-start",
+        middleware: [offset(10), flip(), shift(), inline()],
+      }).then(({ x, y }) => {
+        Object.assign(node.style, {
+          left: `${x}px`,
+          top: `${y}px`,
+        });
       });
-    });
+    };
+
+    const cleanup = autoUpdate(refNode, node, compute);
+
+    return {
+      destroy() {
+        cleanup();
+      },
+    };
   }
 </script>
 
@@ -81,7 +92,7 @@
     <MetricsViewGroup
       {metricsViewContextOption}
       {selectedChatContext}
-      highlightedContext={$highlightedContext}
+      {highlightManager}
       {searchTextStore}
       {onSelect}
       {focusEditor}
