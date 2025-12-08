@@ -133,7 +133,12 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
       credentials: ["key_id", "secret"],
       hmac: ["google_application_credentials"],
     },
-    excludedKeys: ["google_application_credentials", "key_id", "secret"],
+    excludedKeys: [
+      "google_application_credentials",
+      "key_id",
+      "secret",
+      "name",
+    ],
     authFieldGroups: {
       credentials: [
         {
@@ -179,6 +184,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
       "aws_role_arn",
       "aws_role_session_name",
       "aws_external_id",
+      "name",
     ],
     authFieldGroups: {
       access_keys: [
@@ -249,6 +255,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
       "azure_storage_key",
       "azure_storage_sas_token",
       "azure_storage_connection_string",
+      "name",
     ],
     authFieldGroups: {
       account_key: [
