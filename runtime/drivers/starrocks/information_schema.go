@@ -106,10 +106,18 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 	}
 
 	// StarRocks mapping: database parameter = catalog
+	// If database is empty, use connector's configured catalog
 	catalog := database
+	if catalog == "" {
+		catalog = i.c.configProp.Catalog
+	}
 
 	// StarRocks mapping: schema parameter = database
+	// If schema is empty, use connector's configured database
 	dbSchema := schema
+	if dbSchema == "" {
+		dbSchema = i.c.configProp.Database
+	}
 
 	// Query table metadata using fully qualified information_schema path
 	tableQuery := fmt.Sprintf(`
@@ -176,11 +184,13 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 		return nil, err
 	}
 
+	// StarRocks: Always save database (catalog) and databaseSchema (database) in metrics view YAML
+	// because StarRocks queries require fully qualified table names (catalog.database.table)
 	return &drivers.OlapTable{
 		Database:                catalog,
 		DatabaseSchema:          tableSchema,
-		IsDefaultDatabase:       catalog == i.c.configProp.Catalog || catalog == defaultCatalog,
-		IsDefaultDatabaseSchema: tableSchema == i.c.configProp.Database,
+		IsDefaultDatabase:       false,
+		IsDefaultDatabaseSchema: false,
 		Name:                    tableName,
 		View:                    isView,
 		Schema:                  &runtimev1.StructType{Fields: fields},

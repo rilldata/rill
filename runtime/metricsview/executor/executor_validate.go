@@ -78,6 +78,16 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
 
+	// Populate empty database/databaseSchema from table metadata.
+	// This is needed for connectors like StarRocks that require fully qualified table names,
+	// even when the metrics view YAML doesn't explicitly specify them (e.g., when using models).
+	if mv.Database == "" && t.Database != "" {
+		mv.Database = t.Database
+	}
+	if mv.DatabaseSchema == "" && t.DatabaseSchema != "" {
+		mv.DatabaseSchema = t.DatabaseSchema
+	}
+
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
 		cols[strings.ToLower(f.Name)] = f
@@ -144,11 +154,6 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Pinot does not have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
-	}
-
-	// StarRocks does not support timezone in date_trunc
-	if e.olap.Dialect() == drivers.DialectStarRocks && mv.TimeDimension != "" && mv.TimeZone != "UTC" && mv.TimeZone != "" {
-		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("timezone not supported for StarRocks dialect, TimeZone must be UTC or empty"))
 	}
 
 	// StarRocks does not support time shift using time grain specifiers
