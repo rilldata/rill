@@ -196,8 +196,24 @@ export class ScatterPlotChartProvider {
     const config = get(this.spec);
     const xField = fields[config.x?.field || ""];
     const yField = fields[config.y?.field || ""];
+    const dimensionField = fields[config.dimension?.field || ""];
+    const sizeField = fields[config.size?.field || ""];
+    
     const xTitle = xField?.displayName || config.x?.field || "X";
     const yTitle = yField?.displayName || config.y?.field || "Y";
-    return `${xTitle} vs ${yTitle}`;
+    const dimensionTitle = dimensionField?.displayName || config.dimension?.field || "";
+    const sizeTitle = sizeField?.displayName || config.size?.field || "";
+    
+    let title = `${xTitle} vs ${yTitle}`;
+    
+    if (dimensionTitle) {
+      title += ` for ${dimensionTitle}`;
+    }
+    
+    if (sizeTitle) {
+      title += ` sized by ${sizeTitle}`;
+    }
+    
+    return title;
   }
 }
