@@ -102,7 +102,16 @@ export function generateVLScatterPlotSpec(
 
   return {
     ...spec,
+    selection: {
+      grid: {
+        type: "interval",
+        bind: "scales",
+        translate: "[mousedown[event.shiftKey], mouseup] > mousemove",
+        zoom: "wheel![!event.shiftKey]",
+        clear: "dblclick",
+      },
+    },
     ...(vegaConfig && { config: vegaConfig }),
-  };
+  } as VisualizationSpec;
 }
 
