@@ -101,12 +101,21 @@
       {:else if block.type === "working"}
         <WorkingBlock />
       {:else if block.type === "chart"}
-        <ChartBlock chartType={block.chartType} chartSpec={block.chartSpec} />
+        <ChartBlock
+          message={block.message}
+          resultMessage={block.resultMessage}
+          chartType={block.chartType}
+          chartSpec={block.chartSpec}
+          {tools}
+        />
       {:else if block.type === "file-diff"}
         <FileDiffBlock
+          message={block.message}
+          resultMessage={block.resultMessage}
           filePath={block.filePath}
           diff={block.diff}
           isNewFile={block.isNewFile}
+          {tools}
         />
       {/if}
     {/each}

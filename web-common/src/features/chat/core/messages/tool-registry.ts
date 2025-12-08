@@ -21,9 +21,9 @@ import {
 // =============================================================================
 
 /**
- * How a tool call renders in the thinking block UI:
+ * How a tool call renders in the UI:
  * - "inline": Shown as a collapsible tool call in thinking blocks
- * - "block": Shown in thinking, then produces a top-level block (chart, diff, etc.)
+ * - "block": Renders as a standalone block with its own header (chart, diff, etc.)
  * - "hidden": Not shown (internal orchestration agents)
  */
 export type ToolRenderMode = "inline" | "block" | "hidden";
@@ -74,7 +74,7 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   [ToolName.DEVELOP_MODEL]: { renderMode: "hidden" },
   [ToolName.DEVELOP_METRICS_VIEW]: { renderMode: "hidden" },
 
-  // Block tools - shown in thinking, then render a top-level block
+  // Block tools - render as standalone blocks with their own header
   [ToolName.CREATE_CHART]: {
     renderMode: "block",
     createBlock: createChartBlock,

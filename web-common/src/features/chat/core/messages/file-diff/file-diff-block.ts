@@ -36,6 +36,7 @@ export type FileDiffBlock = {
   type: "file-diff";
   id: string;
   message: V1Message;
+  resultMessage: V1Message;
   filePath: string;
   diff: string;
   isNewFile: boolean;
@@ -65,6 +66,7 @@ export function createFileDiffBlock(
       type: "file-diff",
       id: `file-diff-${message.id}`,
       message,
+      resultMessage,
       filePath,
       diff: resultData.diff || "",
       isNewFile: resultData.is_new_file || false,

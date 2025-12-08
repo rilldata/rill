@@ -84,8 +84,7 @@ export function transformToBlocks(
         break;
 
       case "block": {
-        // Block tools: add to thinking, flush it, then create the block
-        thinkingMessages.push(msg);
+        // Block tools render their own header, so flush thinking first
         flushThinking(true);
 
         const block = routing.config.createBlock?.(msg, resultMap.get(msg.id));

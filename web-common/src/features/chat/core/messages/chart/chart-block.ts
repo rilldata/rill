@@ -24,6 +24,7 @@ export type ChartBlock = {
   type: "chart";
   id: string;
   message: V1Message;
+  resultMessage: V1Message;
   chartType: ChartType;
   chartSpec: unknown;
 };
@@ -46,6 +47,7 @@ export function createChartBlock(
     type: "chart",
     id: `chart-${message.id}`,
     message,
+    resultMessage,
     chartType: callData.chart_type,
     chartSpec: callData.spec,
   };
