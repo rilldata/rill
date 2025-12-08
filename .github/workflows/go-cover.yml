@@ -1,8 +1,5 @@
 on:
   push:
-    branches:
-      - main
-      - cover
     paths:
       - ".github/workflows/go-cover.yml"
       - "**.go"
