@@ -75,8 +75,9 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if err != nil {
 			return nil, err
 		}
-		// Close rows and return nil result for dry run
-		return nil, rows.Close()
+		rows.Close()
+		// Return nil result for dry run (query is valid)
+		return nil, nil
 	}
 
 	rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)

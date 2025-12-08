@@ -171,7 +171,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
-			safeName(drivers.DialectDruid, q.ColumnName),
+			safeName(q.ColumnName),
 			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName)
 		)
 
