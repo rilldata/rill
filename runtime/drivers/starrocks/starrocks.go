@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -32,8 +31,9 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "StarRocks Connection String",
 			Required:    false,
-			Placeholder: "starrocks://user:password@host:9030/database",
-			Hint:        "Either provide a connection string or fill in the individual fields below",
+			Placeholder: "user:password@tcp(host:9030)/?timeout=30s&readTimeout=300s&parseTime=true",
+			Hint:        "MySQL DSN format only. If provided, do not set host/port/username/password. Catalog and database should be set separately for external catalogs.",
+			Description: "Complete MySQL connection string. Use either DSN or individual fields below, not both.",
 			Secret:      true,
 		},
 		{
@@ -119,6 +119,9 @@ var spec = drivers.Spec{
 type driver struct{}
 
 // ConfigProperties defines the configuration for StarRocks connection.
+// NOTE: Timezone configuration is not supported for StarRocks.
+// StarRocks uses server-side timezone settings and queries use UTC by default.
+// Unlike some other drivers, there is no client-side timezone parameter in the DSN.
 type ConfigProperties struct {
 	// DSN is the complete connection string. Either DSN or individual fields should be set.
 	DSN string `mapstructure:"dsn"`
@@ -142,9 +145,19 @@ type ConfigProperties struct {
 
 // Validate checks the configuration for errors.
 func (c *ConfigProperties) Validate() error {
+	// Either DSN or individual connection parameters must be provided
 	if c.DSN == "" && c.Host == "" {
 		return errors.New("either DSN or Host must be provided")
 	}
+
+	// If DSN is provided, other connection parameters should not be set
+	// Exception: catalog and database can be set for external catalog configuration
+	if c.DSN != "" {
+		if c.Host != "" || c.Port != 0 || c.Username != "" || c.Password != "" {
+			return errors.New("when DSN is provided, individual connection parameters (host, port, username, password) should not be set")
+		}
+	}
+
 	return nil
 }
 
@@ -178,8 +191,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		configProp: cfg,
 		logger:     logger,
 		activity:   ac,
-		// Single concurrent query allowed for connection affinity
-		querySem: semaphore.NewWeighted(10),
+	}
+
+	// Open database connection immediately in drivers.Open
+	// This ensures the connection is established and validated upfront
+	if err := conn.initDB(); err != nil {
+		return nil, fmt.Errorf("failed to initialize database connection: %w", err)
 	}
 
 	return conn, nil
@@ -202,10 +219,8 @@ type connection struct {
 	logger     *zap.Logger
 	activity   *activity.Client
 
-	// db is lazily initialized
+	// db is initialized in drivers.Open
 	db *sqlx.DB
-	// querySem limits concurrent queries
-	querySem *semaphore.Weighted
 }
 
 var _ drivers.Handle = (*connection)(nil)
@@ -352,24 +367,22 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return nil, false
 }
 
-// getDB returns the database connection, creating it if necessary.
-func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
-	if c.db != nil {
-		return c.db, nil
-	}
-
+// initDB initializes the database connection.
+// Called during drivers.Open to establish connection upfront.
+func (c *connection) initDB() error {
 	dsn, err := c.buildDSN()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build DSN: %w", err)
+		return fmt.Errorf("failed to build DSN: %w", err)
 	}
 
 	db, err := sqlx.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return fmt.Errorf("failed to open database: %w", err)
 	}
 
 	// Configure connection pool
-	db.SetMaxOpenConns(20)
+	// Rely on database driver's internal connection pooling (uses driver default for MaxOpenConns)
+	// MaxOpenConns can be controlled via DSN parameters if needed
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetConnMaxIdleTime(5 * time.Minute)
@@ -381,18 +394,27 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 	defer cancel()
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	c.db = db
-	return db, nil
+	return nil
+}
+
+// getDB returns the database connection.
+// The connection is initialized in drivers.Open, so this always returns a valid connection.
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+	if c.db == nil {
+		return nil, errors.New("database connection not initialized")
+	}
+	return c.db, nil
 }
 
 // buildDSN constructs the MySQL DSN from configuration.
 func (c *connection) buildDSN() (string, error) {
-	// If DSN is provided, use it directly (with potential conversion)
+	// If DSN is provided, use it as-is (MySQL format expected)
 	if c.configProp.DSN != "" {
-		return c.convertDSN(c.configProp.DSN)
+		return c.configProp.DSN, nil
 	}
 
 	// Build DSN from individual fields
@@ -410,89 +432,14 @@ func (c *connection) buildDSN() (string, error) {
 	// Set timeouts to prevent connection issues
 	// timeout: connection timeout (30 seconds)
 	// readTimeout: read timeout (300 seconds for long-running queries)
-	// writeTimeout: write timeout (30 seconds)
+	// writeTimeout: write timeout (300 seconds, matching readTimeout for consistency)
 	cfg.Timeout = 30 * time.Second
 	cfg.ReadTimeout = 300 * time.Second
-	cfg.WriteTimeout = 30 * time.Second
+	cfg.WriteTimeout = 300 * time.Second
 
 	if c.configProp.SSL {
 		cfg.TLSConfig = "true"
 	}
 
 	return cfg.FormatDSN(), nil
-}
-
-// convertDSN converts StarRocks URL format to MySQL DSN format if needed.
-// StarRocks URL: starrocks://user:password@host:port/database
-// MySQL DSN: user:password@tcp(host:port)/
-// Note: Database name is stripped from DSN because external catalogs require
-// SET CATALOG before accessing databases. All queries use fully qualified names.
-func (c *connection) convertDSN(dsn string) (string, error) {
-	// Default timeout parameters
-	timeoutParams := "timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true"
-
-	// If already in MySQL format, strip database name if present
-	if !strings.HasPrefix(dsn, "starrocks://") {
-		// For MySQL format, strip database name after the closing parenthesis
-		// e.g., "user:pass@tcp(host:port)/dbname" -> "user:pass@tcp(host:port)/"
-		if idx := strings.LastIndex(dsn, ")/"); idx != -1 {
-			// Keep everything up to ")/" and add "?" for params
-			rest := dsn[idx+2:]
-			if qIdx := strings.Index(rest, "?"); qIdx != -1 {
-				// Preserve existing parameters and add timeout parameters if not present
-				existingParams := rest[qIdx+1:]
-				if !strings.Contains(existingParams, "timeout=") {
-					if strings.Contains(existingParams, "parseTime") {
-						// Replace parseTime if present
-						existingParams = strings.ReplaceAll(existingParams, "parseTime=true", "")
-						existingParams = strings.Trim(existingParams, "&")
-						if existingParams != "" {
-							dsn = dsn[:idx+2] + "?" + timeoutParams + "&" + existingParams
-						} else {
-							dsn = dsn[:idx+2] + "?" + timeoutParams
-						}
-					} else {
-						dsn = dsn[:idx+2] + "?" + timeoutParams + "&" + existingParams
-					}
-				} else {
-					// Timeout already present, keep as is
-					dsn = dsn[:idx+2] + rest[qIdx:]
-				}
-			} else {
-				dsn = dsn[:idx+2] + "?" + timeoutParams
-			}
-		}
-		return dsn, nil
-	}
-
-	// Parse StarRocks URL format
-	dsn = strings.TrimPrefix(dsn, "starrocks://")
-
-	// Split user:pass@host:port/db
-	var userPass, hostPortDB string
-	if atIdx := strings.Index(dsn, "@"); atIdx != -1 {
-		userPass = dsn[:atIdx]
-		hostPortDB = dsn[atIdx+1:]
-	} else {
-		hostPortDB = dsn
-	}
-
-	// Split host:port/db (we ignore the database name)
-	var hostPort string
-	if slashIdx := strings.Index(hostPortDB, "/"); slashIdx != -1 {
-		hostPort = hostPortDB[:slashIdx]
-		// Ignore database name - we use fully qualified table names
-	} else {
-		hostPort = hostPortDB
-	}
-
-	// Build MySQL DSN without database name and with timeout parameters
-	var result string
-	if userPass != "" {
-		result = fmt.Sprintf("%s@tcp(%s)/?%s", userPass, hostPort, timeoutParams)
-	} else {
-		result = fmt.Sprintf("tcp(%s)/?%s", hostPort, timeoutParams)
-	}
-
-	return result, nil
 }

@@ -83,6 +83,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectStarRocks:
+		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
 			"CAST(min(%[1]s) AS DOUBLE) as min, "+
 			"CAST(percentile_approx(%[1]s, 0.25) AS DOUBLE) as q25, "+

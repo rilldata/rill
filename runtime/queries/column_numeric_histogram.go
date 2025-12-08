@@ -178,6 +178,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	// StarRocks uses CAST() function instead of ::TYPE syntax
 	var selectColumn string
 	if olap.Dialect() == drivers.DialectStarRocks {
+		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -193,7 +194,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		bucketColumn = rangeNumbersCol(olap.Dialect()) + "::DOUBLE"
 	}
 
-	// StarRocks: "values" is a reserved keyword
+	// StarRocks: "values" is a reserved keyword, use alias
 	var valuesAlias string
 	if olap.Dialect() == drivers.DialectStarRocks {
 		valuesAlias = starrocks.EscapeReservedKeyword("values")
@@ -325,17 +326,18 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
 
-	// StarRocks uses CAST() function instead of ::TYPE syntax
+	// StarRocks uses implicit type conversion instead of ::TYPE syntax
 	var castDouble, castFloat string
 	if olap.Dialect() == drivers.DialectStarRocks {
-		castDouble = starrocks.GetTypeCast("DOUBLE")
-		castFloat = starrocks.GetTypeCast("FLOAT")
+		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
+		castDouble = ""
+		castFloat = ""
 	} else {
 		castDouble = "::DOUBLE"
 		castFloat = "::FLOAT"
 	}
 
-	// StarRocks: "values" and "range" are reserved keywords
+	// StarRocks: "values" and "range" are reserved keywords, use aliases
 	var valuesAlias, rangeAlias string
 	if olap.Dialect() == drivers.DialectStarRocks {
 		valuesAlias = starrocks.EscapeReservedKeyword("values")
@@ -451,9 +453,16 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 	// StarRocks uses CAST() instead of ::TYPE syntax
 	var selectColumn string
 	if olap.Dialect() == drivers.DialectStarRocks {
+		sanitizedColumnName = olap.Dialect().EscapeIdentifier(columnName)
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	}
+
+	// StarRocks: "range" is a reserved keyword, use backtick escaping
+	rangeAlias := "range"
+	if olap.Dialect() == drivers.DialectStarRocks {
+		rangeAlias = "`range`"
 	}
 
 	minMaxSQL := fmt.Sprintf(
@@ -461,7 +470,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 			SELECT
 				min(%[2]s) AS min,
 				max(%[2]s) AS max,
-				max(%[2]s) - min(%[2]s) AS range
+				max(%[2]s) - min(%[2]s) AS `+rangeAlias+`
 			FROM %[1]s
 			WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
 		`,

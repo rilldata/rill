@@ -590,9 +590,11 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		}
 		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
 	case DialectStarRocks:
-		// StarRocks supports date_trunc similar to DuckDB
+		// StarRocks supports date_trunc similar to DuckDB but does not support timezone parameter
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear
-		// For now, StarRocks doesn't support timezone in date_trunc, so we ignore tz parameter
+		if tz != "" {
+			return "", fmt.Errorf("StarRocks does not support timezone in date_trunc")
+		}
 		return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)

@@ -2,6 +2,7 @@ package starrocks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 )
+
+var errUnsupportedType = errors.New("encountered unsupported StarRocks type")
 
 var _ drivers.OLAPStore = (*connection)(nil)
 
@@ -24,28 +27,10 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 }
 
 // WithConnection implements drivers.OLAPStore.
+// StarRocks is a read-only OLAP connector and does not support connection affinity operations.
+// This is only used by model executors, which are not supported for StarRocks.
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
-	// Acquire semaphore for connection affinity
-	if err := c.querySem.Acquire(ctx, 1); err != nil {
-		return err
-	}
-	defer c.querySem.Release(1)
-
-	db, err := c.getDB(ctx)
-	if err != nil {
-		return err
-	}
-
-	conn, err := db.Connx(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get connection: %w", err)
-	}
-	defer conn.Close()
-
-	// Create ensured context that won't be cancelled
-	ensuredCtx := context.WithoutCancel(ctx)
-
-	return fn(ctx, ensuredCtx)
+	return fmt.Errorf("starrocks: WithConnection not supported")
 }
 
 // Exec implements drivers.OLAPStore.
@@ -61,10 +46,13 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 			zap.Any("args", stmt.Args))
 	}
 
-	// Remove deadline but preserve cancellation (ClickHouse pattern)
-	execCtx := contextWithoutDeadline(ctx)
+	// Handle DryRun: validate query without execution
+	if stmt.DryRun {
+		_, err := db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		return err
+	}
 
-	_, err = db.ExecContext(execCtx, stmt.Query, stmt.Args...)
+	_, err = db.ExecContext(ctx, stmt.Query, stmt.Args...)
 	return err
 }
 
@@ -81,10 +69,17 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 			zap.Any("args", stmt.Args))
 	}
 
-	// Remove deadline but preserve cancellation (ClickHouse pattern)
-	queryCtx := contextWithoutDeadline(ctx)
+	// Handle DryRun: validate query without execution
+	if stmt.DryRun {
+		rows, err := db.QueryxContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		if err != nil {
+			return nil, err
+		}
+		// Close rows and return nil result for dry run
+		return nil, rows.Close()
+	}
 
-	rows, err := db.QueryxContext(queryCtx, stmt.Query, stmt.Args...)
+	rows, err := db.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +91,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	}
 
 	return &drivers.Result{
-		Rows:   &sqlRows{rows},
+		Rows:   rows,
 		Schema: schema,
 	}, nil
 }
@@ -111,10 +106,7 @@ func (c *connection) QuerySchema(ctx context.Context, query string, args []any) 
 	// Use LIMIT 0 to get schema without data
 	schemaQuery := fmt.Sprintf("SELECT * FROM (%s) AS _schema_query LIMIT 0", query)
 
-	// Remove deadline but preserve cancellation (ClickHouse pattern)
-	queryCtx := contextWithoutDeadline(ctx)
-
-	rows, err := db.QueryxContext(queryCtx, schemaQuery, args...)
+	rows, err := db.QueryxContext(ctx, schemaQuery, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +129,17 @@ func (c *connection) rowsToSchema(rows *sqlx.Rows) (*runtimev1.StructType, error
 
 	fields := make([]*runtimev1.StructType_Field, len(colTypes))
 	for i, ct := range colTypes {
+		runtimeType, err := c.databaseTypeToRuntimeType(ct.DatabaseTypeName())
+		if err != nil {
+			if errors.Is(err, errUnsupportedType) {
+				// Skip unsupported types or handle gracefully
+				return nil, fmt.Errorf("unsupported type %s for column %s: %w", ct.DatabaseTypeName(), ct.Name(), err)
+			}
+			return nil, err
+		}
 		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
-			Type: c.databaseTypeToRuntimeType(ct.DatabaseTypeName()),
+			Type: runtimeType,
 		}
 	}
 
@@ -147,14 +147,9 @@ func (c *connection) rowsToSchema(rows *sqlx.Rows) (*runtimev1.StructType, error
 }
 
 // databaseTypeToRuntimeType converts StarRocks/MySQL types to runtime types.
-func (c *connection) databaseTypeToRuntimeType(dbType string) *runtimev1.Type {
+// Returns an error for unsupported types instead of falling back to string.
+func (c *connection) databaseTypeToRuntimeType(dbType string) (*runtimev1.Type, error) {
 	dbType = strings.ToUpper(dbType)
-
-	// Handle nullable types
-	if strings.HasPrefix(dbType, "NULLABLE(") {
-		dbType = strings.TrimPrefix(dbType, "NULLABLE(")
-		dbType = strings.TrimSuffix(dbType, ")")
-	}
 
 	// Handle parameterized types
 	if idx := strings.Index(dbType, "("); idx != -1 {
@@ -163,60 +158,38 @@ func (c *connection) databaseTypeToRuntimeType(dbType string) *runtimev1.Type {
 
 	switch dbType {
 	case "BOOLEAN", "BOOL", "TINYINT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_BOOL}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_BOOL}, nil
 	case "SMALLINT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT16}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT16}, nil
 	case "INT", "INTEGER":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}, nil
 	case "BIGINT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}, nil
 	case "LARGEINT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT128}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT128}, nil
 	case "FLOAT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT32}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT32}, nil
 	case "DOUBLE":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_FLOAT64}, nil
 	case "DECIMAL", "DECIMALV2", "DECIMAL32", "DECIMAL64", "DECIMAL128":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_DECIMAL}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_DECIMAL}, nil
 	case "CHAR", "VARCHAR", "STRING", "TEXT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 	case "DATE":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}, nil
 	case "DATETIME", "TIMESTAMP":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}, nil
 	case "JSON", "JSONB":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_JSON}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_JSON}, nil
 	case "ARRAY":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY}, nil
 	case "MAP":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_MAP}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_MAP}, nil
 	case "STRUCT":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT}, nil
 	case "BINARY", "VARBINARY":
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_BYTES}
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_BYTES}, nil
 	default:
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}
+		return nil, errUnsupportedType
 	}
-}
-
-// sqlRows wraps sqlx.Rows to implement drivers.Rows interface.
-type sqlRows struct {
-	*sqlx.Rows
-}
-
-// MapScan implements drivers.Rows.
-func (r *sqlRows) MapScan(dest map[string]any) error {
-	return r.Rows.MapScan(dest)
-}
-
-// contextWithoutDeadline removes the deadline from the context but preserves cancellation.
-// This prevents queries from being cancelled due to tight client timeouts while still
-// respecting explicit cancellation signals.
-func contextWithoutDeadline(parent context.Context) context.Context {
-	ctx, cancel := context.WithCancel(context.WithoutCancel(parent))
-	go func() {
-		<-parent.Done()
-		cancel()
-	}()
-	return ctx
 }

@@ -2,6 +2,7 @@ package starrocks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,9 +27,6 @@ func (i *informationSchema) All(ctx context.Context, like string, pageSize uint3
 	}
 
 	catalog := i.c.configProp.Catalog
-	if catalog == "" {
-		catalog = defaultCatalog
-	}
 
 	// Build query using fully qualified information_schema path
 	// Pattern: catalog.information_schema.tables
@@ -107,19 +105,11 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 		return nil, err
 	}
 
-	// Use provided catalog or default
+	// StarRocks mapping: database parameter = catalog
 	catalog := database
-	if catalog == "" {
-		catalog = i.c.configProp.Catalog
-		if catalog == "" {
-			catalog = defaultCatalog
-		}
-	}
 
-	// Use provided schema or default database
-	if schema == "" {
-		schema = i.c.configProp.Database
-	}
+	// StarRocks mapping: schema parameter = database
+	dbSchema := schema
 
 	// Query table metadata using fully qualified information_schema path
 	tableQuery := fmt.Sprintf(`
@@ -137,7 +127,7 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 
 	var tableSchema, tableName string
 	var isView bool
-	err = db.QueryRowxContext(ctx, tableQuery, schema, name).Scan(&tableSchema, &tableName, &isView)
+	err = db.QueryRowxContext(ctx, tableQuery, dbSchema, name).Scan(&tableSchema, &tableName, &isView)
 	if err != nil {
 		return nil, fmt.Errorf("table not found: %w", err)
 	}
@@ -152,7 +142,7 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 		ORDER BY ordinal_position
 	`, safeSQLName(catalog))
 
-	rows, err := db.QueryxContext(ctx, columnsQuery, schema, name)
+	rows, err := db.QueryxContext(ctx, columnsQuery, dbSchema, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get columns: %w", err)
 	}
@@ -167,9 +157,13 @@ func (i *informationSchema) Lookup(ctx context.Context, database, schema, name s
 			return nil, err
 		}
 
-		runtimeType := i.c.databaseTypeToRuntimeType(dataType)
-		if runtimeType.Code == runtimev1.Type_CODE_STRING && !isSimpleType(dataType) {
-			unsupportedCols[colName] = dataType
+		runtimeType, err := i.c.databaseTypeToRuntimeType(dataType)
+		if err != nil {
+			if errors.Is(err, errUnsupportedType) {
+				unsupportedCols[colName] = dataType
+				continue // Skip unsupported types
+			}
+			return nil, err
 		}
 
 		fields = append(fields, &runtimev1.StructType_Field{
@@ -238,9 +232,6 @@ func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSiz
 	}
 
 	catalog := i.c.configProp.Catalog
-	if catalog == "" {
-		catalog = defaultCatalog
-	}
 
 	// Query information_schema.schemata using fully qualified path
 	q := fmt.Sprintf(`
@@ -304,19 +295,11 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 		return nil, "", err
 	}
 
-	// database parameter is the catalog
+	// StarRocks mapping: database parameter = catalog
 	catalog := database
-	if catalog == "" {
-		catalog = i.c.configProp.Catalog
-		if catalog == "" {
-			catalog = defaultCatalog
-		}
-	}
 
-	// databaseSchema is the actual database name
-	if databaseSchema == "" {
-		databaseSchema = i.c.configProp.Database
-	}
+	// StarRocks mapping: databaseSchema parameter = database
+	dbSchema := databaseSchema
 
 	// Query information_schema.tables using fully qualified path
 	q := fmt.Sprintf(`
@@ -331,7 +314,7 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 		WHERE table_schema = ?
 	`, safeSQLName(catalog))
 
-	args := []any{databaseSchema}
+	args := []any{dbSchema}
 
 	if pageToken != "" {
 		q += " AND table_name > ?"
@@ -385,66 +368,55 @@ func (i *informationSchemaImpl) GetTable(ctx context.Context, database, database
 		return nil, err
 	}
 
-	// database parameter is the catalog
+	// StarRocks mapping: database parameter = catalog
 	catalog := database
-	if catalog == "" {
-		catalog = i.c.configProp.Catalog
-		if catalog == "" {
-			catalog = defaultCatalog
-		}
-	}
 
-	// databaseSchema is the actual database name
-	if databaseSchema == "" {
-		databaseSchema = i.c.configProp.Database
-	}
+	// StarRocks mapping: databaseSchema parameter = database
+	dbSchema := databaseSchema
 
-	// Check if table exists and get view status
-	tableQuery := fmt.Sprintf(`
+	// Query table metadata and columns using JOIN
+	query := fmt.Sprintf(`
 		SELECT
 			CASE
-				WHEN table_type = 'VIEW' THEN true
-				WHEN table_type = 'MATERIALIZED VIEW' THEN true
+				WHEN t.table_type = 'VIEW' THEN true
+				WHEN t.table_type = 'MATERIALIZED VIEW' THEN true
 				ELSE false
-			END AS is_view
-		FROM %s.information_schema.tables
-		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
-	`, safeSQLName(catalog))
+			END AS is_view,
+			c.column_name,
+			c.data_type
+		FROM %s.information_schema.tables t
+		JOIN %s.information_schema.columns c
+			ON t.table_schema = c.table_schema
+			AND t.table_name = c.table_name
+		WHERE t.table_schema = ? AND LOWER(t.table_name) = LOWER(?)
+		ORDER BY c.ordinal_position
+	`, safeSQLName(catalog), safeSQLName(catalog))
 
-	var isView bool
-	err = db.QueryRowxContext(ctx, tableQuery, databaseSchema, tableName).Scan(&isView)
+	rows, err := db.QueryxContext(ctx, query, dbSchema, tableName)
 	if err != nil {
-		return nil, fmt.Errorf("table not found: %w", err)
-	}
-
-	// Query column information using fully qualified information_schema path
-	columnsQuery := fmt.Sprintf(`
-		SELECT
-			column_name,
-			data_type
-		FROM %s.information_schema.columns
-		WHERE table_schema = ? AND LOWER(table_name) = LOWER(?)
-		ORDER BY ordinal_position
-	`, safeSQLName(catalog))
-
-	rows, err := db.QueryxContext(ctx, columnsQuery, databaseSchema, tableName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get columns: %w", err)
+		return nil, fmt.Errorf("failed to get table metadata: %w", err)
 	}
 	defer rows.Close()
 
 	schema := make(map[string]string)
+	var isView bool
+	hasRows := false
 
 	for rows.Next() {
 		var colName, dataType string
-		if err := rows.Scan(&colName, &dataType); err != nil {
+		if err := rows.Scan(&isView, &colName, &dataType); err != nil {
 			return nil, err
 		}
 		schema[colName] = dataType
+		hasRows = true
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	if !hasRows {
+		return nil, fmt.Errorf("table not found")
 	}
 
 	return &drivers.TableMetadata{

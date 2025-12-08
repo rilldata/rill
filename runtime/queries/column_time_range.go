@@ -125,7 +125,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
-			safeName(olap.Dialect(), q.ColumnName),
+			safeName(drivers.DialectDruid, q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
@@ -158,7 +158,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
-			safeName(olap.Dialect(), q.ColumnName),
+			safeName(drivers.DialectDruid, q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 

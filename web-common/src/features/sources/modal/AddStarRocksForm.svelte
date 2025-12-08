@@ -13,8 +13,6 @@
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
-  import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "../errors/errors";
   import { submitAddConnectorForm } from "./submitAddDataForm";
   import type { ConnectorType } from "./types";

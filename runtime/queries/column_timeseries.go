@@ -785,14 +785,14 @@ func (q *ColumnTimeseries) resolveStarRocks(ctx context.Context, olap drivers.OL
 	// Build COALESCE statements for measures
 	var coalesceStatements string
 	for i, measure := range measures {
-		safeMeasureName := safeName(dialect, measure.SqlName)
+		safeMeasureName := dialect.EscapeIdentifier(measure.SqlName)
 		coalesceStatements += `COALESCE(` + safeMeasureName + `, 0) as ` + safeMeasureName
 		if i < len(measures)-1 {
 			coalesceStatements += ", "
 		}
 	}
 
-	colSQL := `date_trunc('` + dateTruncSpecifier + `', ` + safeName(dialect, q.TimestampColumnName) + `)`
+	colSQL := `date_trunc('` + dateTruncSpecifier + `', ` + dialect.EscapeIdentifier(q.TimestampColumnName) + `)`
 
 	// Source table uses fully qualified name
 	sourceTable := dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName)

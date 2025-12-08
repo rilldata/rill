@@ -84,6 +84,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	// StarRocks uses CAST() function instead of ::TYPE syntax
 	var selectColumn string
 	if olap.Dialect() == drivers.DialectStarRocks {
+		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
@@ -97,7 +98,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		castFloat = "::FLOAT"
 	}
 
-	// StarRocks: "values" is a reserved keyword
+	// StarRocks: "values" is a reserved keyword, use alias
 	var valuesAlias string
 	if olap.Dialect() == drivers.DialectStarRocks {
 		valuesAlias = starrocks.EscapeReservedKeyword("values")
