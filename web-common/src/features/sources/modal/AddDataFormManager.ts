@@ -127,6 +127,8 @@ export class AddDataFormManager {
     // Superforms: params
     const paramsSchemaDef = getValidationSchemaForConnector(
       connector.name as string,
+      formType,
+      { isMultiStepConnector: this.isMultiStepConnector },
     );
     const paramsAdapter = yup(paramsSchemaDef);
     type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
