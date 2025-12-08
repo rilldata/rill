@@ -26,9 +26,6 @@
         }),
       )
     : "";
-
-  // Get display name for the header
-  $: fileName = filePath.split("/").pop() || filePath;
 </script>
 
 <div class="file-diff-block">
@@ -36,23 +33,20 @@
 
   <div class="diff-container">
     <div class="diff-header">
-      <span class="diff-action">{isNewFile ? "Created" : "Modified"}:</span>
       <a href="/files{filePath}" class="file-path-link">
-        {fileName}
+        {filePath}
       </a>
       {#if isNewFile}
-        <span class="new-badge">New</span>
+        <span class="new-badge">new</span>
       {/if}
     </div>
-    <div class="diff-content">
-      {#if diffHtml}
-        <div class="diff-view">
-          {@html diffHtml}
-        </div>
-      {:else}
-        <div class="no-changes-message">No changes detected</div>
-      {/if}
-    </div>
+    {#if diffHtml}
+      <div class="diff-view">
+        {@html diffHtml}
+      </div>
+    {:else}
+      <div class="no-changes-message">No changes detected</div>
+    {/if}
   </div>
 </div>
 
@@ -63,35 +57,26 @@
 
   /* Diff container */
   .diff-container {
-    @apply border border-gray-200 rounded-lg overflow-hidden;
-    background-color: #f6f8fa;
+    @apply border border-gray-200 rounded-md overflow-hidden;
   }
 
   .diff-header {
-    @apply flex items-center gap-2 px-3 py-2;
-    @apply text-sm border-b border-gray-200;
+    @apply flex items-center gap-2 px-3 py-1.5;
+    @apply text-xs border-b border-gray-200;
     background-color: #f6f8fa;
   }
 
-  .diff-action {
-    @apply text-gray-600 font-medium;
-  }
-
   .file-path-link {
-    @apply text-primary-600 font-mono text-xs;
+    @apply text-gray-600 font-mono;
   }
 
   .file-path-link:hover {
-    @apply text-primary-800 underline;
+    @apply text-gray-800 underline;
   }
 
   .new-badge {
-    @apply text-[0.625rem] px-1.5 py-0.5 rounded;
-    @apply bg-green-100 text-green-700 font-medium uppercase;
-  }
-
-  .diff-content {
-    @apply overflow-hidden;
+    @apply text-[0.5rem] px-1 py-0.5 rounded;
+    @apply bg-green-100 text-green-700 font-medium;
   }
 
   .no-changes-message {
