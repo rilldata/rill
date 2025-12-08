@@ -1,0 +1,83 @@
+{
+  "success": false,
+  "summary": {
+    "total_resources": 12,
+    "parse_errors": 0,
+    "reconcile_errors": 0
+  },
+  "resources": [
+    {
+      "kind": "MetricsView",
+      "name": "debug_metrics",
+      "status": "Running",
+      "file_path": "/metrics/debug_metrics.yaml"
+    },
+    {
+      "kind": "MetricsView",
+      "name": "demand_debug_metrics",
+      "status": "Running",
+      "file_path": "/metrics/demand_debug_metrics.yaml"
+    },
+    {
+      "kind": "MetricsView",
+      "name": "my_first_table_metrics",
+      "status": "Running",
+      "file_path": "/metrics/my_first_table_metrics.yaml"
+    },
+    {
+      "kind": "MetricsView",
+      "name": "orgs_prod_metrics",
+      "status": "Running",
+      "file_path": "/metrics/orgs_prod_metrics.yaml"
+    },
+    {
+      "kind": "Model",
+      "name": "model",
+      "status": "Running",
+      "file_path": "/models/model.sql"
+    },
+    {
+      "kind": "Connector",
+      "name": "clickhouse",
+      "status": "Running",
+      "file_path": "/connectors/clickhouse.yaml"
+    },
+    {
+      "kind": "Connector",
+      "name": "clickhouse_2",
+      "status": "Running",
+      "file_path": "/connectors/clickhouse_2.yaml"
+    },
+    {
+      "kind": "Explore",
+      "name": "debug_metrics_explore",
+      "status": "Pending",
+      "file_path": "/dashboards/debug_metrics_explore.yaml"
+    },
+    {
+      "kind": "Explore",
+      "name": "demand_debug_metrics_explore",
+      "status": "Pending",
+      "file_path": "/dashboards/demand_debug_metrics_explore.yaml"
+    },
+    {
+      "kind": "Explore",
+      "name": "my_first_table_metrics_explore",
+      "status": "Pending",
+      "file_path": "/dashboards/my_first_table_metrics_explore.yaml"
+    },
+    {
+      "kind": "Explore",
+      "name": "my_first_table_metrics_explore_1",
+      "status": "Pending",
+      "file_path": "/dashboards/my_first_table_metrics_explore_1.yaml"
+    },
+    {
+      "kind": "Explore",
+      "name": "orgs_prod_metrics_explore",
+      "status": "Pending",
+      "file_path": "/dashboards/orgs_prod_metrics_explore.yaml"
+    }
+  ],
+  "timeout": true
+}

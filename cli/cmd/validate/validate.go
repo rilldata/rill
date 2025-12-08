@@ -66,6 +66,7 @@ type ResourceStatus struct {
 func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose bool
 	var debug bool
+	var silent bool
 	var reset bool
 	var logFormat string
 	var envVars []string
@@ -137,6 +138,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				Ch:             ch,
 				Verbose:        verbose,
 				Debug:          debug,
+				Silent:         silent,
 				Reset:          reset,
 				Environment:    environment,
 				ProjectPath:    projectPath,
@@ -160,6 +162,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	validateCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	validateCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
+	validateCmd.Flags().BoolVar(&silent, "silent", false, "Suppress all log output")
 	validateCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	validateCmd.Flags().DurationVar(&reconcileTimeout, "reconcile-timeout", 60*time.Second, "Timeout for reconciliation (e.g. 60s, 2m)")
 	validateCmd.Flags().StringVar(&outputFormat, "output-format", "table", "Output format (options: \"table\", \"json\")")

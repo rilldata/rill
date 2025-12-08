@@ -64,6 +64,7 @@ type AppOptions struct {
 	Ch             *cmdutil.Helper
 	Verbose        bool
 	Debug          bool
+	Silent         bool
 	Reset          bool
 	Environment    string
 	ProjectPath    string
@@ -80,7 +81,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger, cleanupFn := initLogger(opts.Verbose, opts.LogFormat, logPath)
+	logger, cleanupFn := initLogger(opts.Verbose, opts.Silent, opts.LogFormat, logPath)
 	sugarLogger := logger.Sugar()
 
 	var tracesExporter observability.Exporter
