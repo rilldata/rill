@@ -15,6 +15,7 @@
   import { isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
+    multiStepFormConfigs,
     type ClickHouseConnectorType,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
@@ -22,9 +23,8 @@
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
-  import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
-  import S3MultiStepForm from "./S3MultiStepForm.svelte";
-  import AzureMultiStepForm from "./AzureMultiStepForm.svelte";
+  import MultiStepFormRenderer from "./MultiStepFormRenderer.svelte";
+
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
@@ -179,6 +179,12 @@
       return $paramsSubmitting;
     }
   })();
+
+  $: activeMultiStepConfig = isMultiStepConnector
+    ? multiStepFormConfigs[
+        connector.name as keyof typeof multiStepFormConfigs
+      ] || null
+    : null;
 
   $: isSubmitting = submitting;
 
@@ -388,24 +394,9 @@
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            {#if connector.name === "gcs"}
-              <GCSMultiStepForm
-                properties={filteredParamsProperties}
-                {paramsForm}
-                paramsErrors={$paramsErrors}
-                {onStringInputChange}
-                {handleFileUpload}
-              />
-            {:else if connector.name === "s3"}
-              <S3MultiStepForm
-                properties={filteredParamsProperties}
-                {paramsForm}
-                paramsErrors={$paramsErrors}
-                {onStringInputChange}
-                {handleFileUpload}
-              />
-            {:else if connector.name === "azure"}
-              <AzureMultiStepForm
+            {#if activeMultiStepConfig}
+              <MultiStepFormRenderer
+                config={activeMultiStepConfig}
                 properties={filteredParamsProperties}
                 {paramsForm}
                 paramsErrors={$paramsErrors}
