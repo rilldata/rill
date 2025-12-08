@@ -1,4 +1,6 @@
 <script lang="ts">
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
   import ColorRangeSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorRangeSelector.svelte";
@@ -19,7 +21,7 @@
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
 
-  export let onChange: (updatedConfig: FieldConfig) => void;
+  export let onChange: (updatedConfig: FieldConfig | undefined) => void;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -126,21 +128,41 @@
 
   $: popoverKey = `${$selectedComponent}-${metricsView}-${fieldConfig.field}`;
   $: hasPopoverContent = shouldShowPopover(chartFieldInput);
+  $: isSizeField = key === "size";
+  $: hasSizeValue = isSizeField && fieldConfig?.field;
+
+  function clearSizeField() {
+    const emptyConfig: FieldConfig = {};
+    onChange(emptyConfig);
+  }
 </script>
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
-    {#key popoverKey}
-      {#if hasPopoverContent}
-        <FieldConfigPopover
-          {fieldConfig}
-          label={config.label ?? key}
-          onChange={updateFieldProperty}
-          {chartFieldInput}
-        />
+    <div class="flex items-center gap-x-1">
+      {#if isSizeField && hasSizeValue}
+        <IconButton
+          square
+          small
+          type="ghost"
+          ariaLabel="Clear size measure"
+          on:click={clearSizeField}
+        >
+          <CancelCircle size="16px" />
+        </IconButton>
       {/if}
-    {/key}
+      {#key popoverKey}
+        {#if hasPopoverContent}
+          <FieldConfigPopover
+            {fieldConfig}
+            label={config.label ?? key}
+            onChange={updateFieldProperty}
+            {chartFieldInput}
+          />
+        {/if}
+      {/key}
+    </div>
   </div>
 
   <div class="flex flex-col gap-y-2">

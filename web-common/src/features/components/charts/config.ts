@@ -28,6 +28,8 @@ import { FunnelChartProvider } from "./funnel/FunnelChartProvider";
 import { generateVLFunnelChartSpec } from "./funnel/spec";
 import { HeatmapChartProvider } from "./heatmap/HeatmapChartProvider";
 import { generateVLHeatmapSpec } from "./heatmap/spec";
+import { ScatterPlotChartProvider } from "./scatter/ScatterPlotChartProvider";
+import { generateVLScatterPlotSpec } from "./scatter/spec";
 import type {
   ChartDataResult,
   ChartProvider,
@@ -142,6 +144,12 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     icon: MultiChart,
     provider: ComboChartProvider,
     generateSpec: generateVLComboChartSpec,
+  },
+  scatter_plot: {
+    title: "Scatter Plot",
+    icon: LineChart, // Using LineChart icon as placeholder, can be replaced with a dedicated icon later
+    provider: ScatterPlotChartProvider,
+    generateSpec: generateVLScatterPlotSpec,
   },
 };
 
