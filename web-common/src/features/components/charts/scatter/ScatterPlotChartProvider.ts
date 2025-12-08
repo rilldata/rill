@@ -1,6 +1,7 @@
 import type {
   ChartDataQuery,
   ChartDomainValues,
+  ChartFieldsMap,
   FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
@@ -189,5 +190,14 @@ export class ScatterPlotChartProvider {
     }
 
     return result;
+  }
+
+  chartTitle(fields: ChartFieldsMap): string {
+    const config = get(this.spec);
+    const xField = fields[config.x?.field || ""];
+    const yField = fields[config.y?.field || ""];
+    const xTitle = xField?.displayName || config.x?.field || "X";
+    const yTitle = yField?.displayName || config.y?.field || "Y";
+    return `${xTitle} vs ${yTitle}`;
   }
 }

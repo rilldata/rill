@@ -132,8 +132,7 @@
   $: hasSizeValue = isSizeField && fieldConfig?.field;
 
   function clearSizeField() {
-    const emptyConfig: FieldConfig = {};
-    onChange(emptyConfig);
+    onChange(undefined);
   }
 </script>
 
@@ -143,9 +142,7 @@
     <div class="flex items-center gap-x-1">
       {#if isSizeField && hasSizeValue}
         <IconButton
-          square
-          small
-          type="ghost"
+          size={16}
           ariaLabel="Clear size measure"
           on:click={clearSizeField}
         >
