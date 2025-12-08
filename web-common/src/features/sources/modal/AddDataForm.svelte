@@ -134,6 +134,30 @@
   let clickhouseShowSaveAnyway: boolean = false;
 
   $: isSubmitDisabled = (() => {
+    // Multi-step connectors, connector step: check auth fields (any satisfied group enables button)
+    if (isMultiStepConnector && stepState.step === "connector") {
+      const config =
+        multiStepFormConfigs[
+          connector.name as keyof typeof multiStepFormConfigs
+        ];
+      if (!config) return true;
+      const groups = Object.values(config.authFieldGroups || {});
+      if (!groups.length) return false;
+      const hasError = (fieldId: string) =>
+        Boolean(($paramsErrors[fieldId] as any)?.length);
+      const groupSatisfied = groups.some((fields) =>
+        fields.every((field: any) => {
+          const required = !(field.optional ?? false);
+          if (!required) return true;
+          const value = $paramsForm[field.id];
+          if (isEmpty(value)) return false;
+          if (hasError(field.id)) return false;
+          return true;
+        }),
+      );
+      return !groupSatisfied;
+    }
+
     if (onlyDsn || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
