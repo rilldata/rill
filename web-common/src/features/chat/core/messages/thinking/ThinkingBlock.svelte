@@ -8,7 +8,7 @@
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
   import { MessageType } from "../../types";
-  import ShimmerText from "../ShimmerText.svelte";
+  import AnimatedDots from "../AnimatedDots.svelte";
   import ToolCall from "../tools/ToolCall.svelte";
 
   export let messages: V1Message[];
@@ -19,10 +19,6 @@
 
   let isExpanded = true;
   let hasUserInteracted = false;
-
-  $: headerText = isComplete
-    ? `Thought for ${formatDuration(duration)}`
-    : "Thinking...";
 
   // Auto-collapse when thinking completes, unless user has interacted
   $: if (isComplete && !hasUserInteracted) {
@@ -60,10 +56,10 @@
       {/if}
     </div>
     <div class="thinking-title">
-      {#if !isComplete}
-        <ShimmerText>{headerText}</ShimmerText>
+      {#if isComplete}
+        Thought for {formatDuration(duration)}
       {:else}
-        {headerText}
+        <AnimatedDots>Thinking</AnimatedDots>
       {/if}
     </div>
   </button>

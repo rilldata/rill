@@ -21,7 +21,7 @@
 
   .dot {
     @apply w-1.5 h-1.5 rounded-full bg-gray-400;
-    animation: pulse 1.4s ease-in-out infinite;
+    animation: pulse 1.2s ease-in-out infinite;
   }
 
   .dot:nth-child(1) {
@@ -29,11 +29,11 @@
   }
 
   .dot:nth-child(2) {
-    animation-delay: 0.2s;
+    animation-delay: 0.15s;
   }
 
   .dot:nth-child(3) {
-    animation-delay: 0.4s;
+    animation-delay: 0.3s;
   }
 
   @keyframes pulse {

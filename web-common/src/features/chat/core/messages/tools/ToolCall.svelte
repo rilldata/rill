@@ -82,7 +82,9 @@
   >
     <button class="tool-button" on:click={toggleExpanded}>
       <div class="tool-icon">
-        {#if isExpanded}
+        {#if !hasResult && !isExpanded}
+          <LoadingSpinner size="14px" />
+        {:else if isExpanded}
           <CaretDownIcon size="14" />
         {:else}
           <svelte:component this={ToolIcon} size="14" />
