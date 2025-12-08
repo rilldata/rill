@@ -31,6 +31,7 @@
   import CanvasTabs from "./CanvasTabs.svelte";
 
   import DefaultFilterDisplay from "./DefaultFilterDisplay.svelte";
+  import { goto } from "$app/navigation";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -104,13 +105,13 @@
   async function toggleFilterBar() {
     const updatedShowFilterBar = !showFilterBar;
 
-    if (!updatedShowFilterBar) {
-      // setFilters(createAndExpression([]));
-    }
-
     await updateProperties({
       filters: { enable: updatedShowFilterBar },
     });
+
+    if (!updatedShowFilterBar) {
+      await goto("?default=true");
+    }
   }
 
   let currentTab: string = "options";
