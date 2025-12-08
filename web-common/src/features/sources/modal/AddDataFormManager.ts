@@ -63,6 +63,8 @@ export class AddDataFormManager {
   // superforms instances
   params: ReturnType<typeof superForm>;
   dsn: ReturnType<typeof superForm>;
+  // Options object for dynamic validator updates (accessed via type assertion)
+  private paramsOptions: { validators?: any } | undefined;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
 
@@ -159,6 +161,9 @@ export class AddDataFormManager {
       onUpdate: onParamsUpdate,
       resetForm: false,
     });
+    // Store options reference for dynamic validator updates
+    // Type assertion: superform returns options object that allows dynamic validator updates
+    this.paramsOptions = (this.params as any).options;
 
     // Superforms: dsn
     const dsnAdapter = yup(dsnSchema);
@@ -200,14 +205,42 @@ export class AddDataFormManager {
     setConnectorConfig(get(this.params.form) as Record<string, unknown>);
     setConnectorInstanceName(null);
     setStep("source");
+    // Update validators for step 2
+    this.updateValidatorsForStep("source");
   }
 
   handleBack(onBack: () => void): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (this.isMultiStepConnector && stepState.step === "source") {
       setStep("connector");
+      // Update validators for step 1
+      this.updateValidatorsForStep("connector");
     } else {
       onBack();
+    }
+  }
+
+  /**
+   * Update form validators based on the current step for multi-step connectors.
+   * This is necessary because the validation schema differs between connector and source steps.
+   */
+  private updateValidatorsForStep(step: "connector" | "source"): void {
+    if (!this.isMultiStepConnector || this.connector.name !== "s3") {
+      return;
+    }
+
+    const newSchemaDef = getValidationSchemaForConnector(
+      this.connector.name as string,
+      step,
+    );
+    const newAdapter = yup(newSchemaDef);
+
+    // Update validators dynamically
+    // superform allows updating validators via the options object
+    if (this.paramsOptions) {
+      this.paramsOptions.validators = newAdapter;
+      // Trigger re-validation with the new schema
+      // The form will use the new validators on the next validation
     }
   }
 
@@ -312,6 +345,8 @@ export class AddDataFormManager {
           setConnectorConfig(values);
           setConnectorInstanceName(connectorInstanceName);
           setStep("source");
+          // Update validators for step 2
+          this.updateValidatorsForStep("source");
           return;
         } else if (this.formType === "source") {
           await submitAddSourceForm(queryClient, connector, values);
