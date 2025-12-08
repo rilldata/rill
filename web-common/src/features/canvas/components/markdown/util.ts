@@ -67,12 +67,15 @@ export function formatResolvedContent(
         metrics_view,
         field,
         value,
-      }: { metrics_view: string; field: string; value: number | string | null } =
-        JSON.parse(trimmed) as {
-          metrics_view: string;
-          field: string;
-          value: number | string | null;
-        };
+      }: {
+        metrics_view: string;
+        field: string;
+        value: number | string | null;
+      } = JSON.parse(trimmed) as {
+        metrics_view: string;
+        field: string;
+        value: number | string | null;
+      };
 
       const metricsView = metricsViews[metrics_view];
       const metricsViewSpec = metricsView?.state?.validSpec;
@@ -196,8 +199,7 @@ export function getResolveTemplatedStringQueryOptions(
       const globalWhereFilter = parentWhereFilter ?? undefined;
       const globalDimensionThresholdFilters =
         parentDimensionThresholdFilters ?? [];
-      const metricsViews =
-        parentSpec?.data?.metricsViews ?? {};
+      const metricsViews = parentSpec?.data?.metricsViews ?? {};
 
       const requestBody = buildRequestBody({
         content,
@@ -218,12 +220,13 @@ export function getResolveTemplatedStringQueryOptions(
       // Always return query options, but use enabled to control execution
       // When disabled, the query won't execute, so we use a minimal body (won't be used)
       // When enabled, we use the actual requestBody
-      const body: QueryServiceResolveTemplatedStringBody = (!enabled || !requestBody)
-        ? { body: content, useFormatTokens: applyFormatting }
-        : requestBody;
-      
+      const body: QueryServiceResolveTemplatedStringBody =
+        !enabled || !requestBody
+          ? { body: content, useFormatTokens: applyFormatting }
+          : requestBody;
+
       const queryEnabled = enabled && !!requestBody;
-      
+
       // TypeScript can't fully infer generic return type in derived callback,
       // but the runtime type is correct. The type assertion helps TypeScript
       // understand the return type matches the function signature.
