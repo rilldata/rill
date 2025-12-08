@@ -10,7 +10,6 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import WithBisector from "web-common/src/components/data-graphic/functional-components/WithBisector.svelte";
-  import { Bot } from "lucide-svelte";
 
   export let data;
   export let measureName: string;
@@ -28,7 +27,7 @@
   );
   const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
-  $: ({ top, plotTop, plotBottom, bodyBuffer } = $plotConfig);
+  $: ({ top, plotTop, plotBottom } = $plotConfig);
   $: y1 = plotTop + top + 5;
   $: y2 = plotBottom - 5;
 
@@ -38,11 +37,8 @@
   $: showLine = hasSelection && !$end;
   $: showBox = forThisMeasure && $end;
 
-  function onExplain(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    measureSelection.startAnomalyExplanationChat(metricsViewName);
-  }
+  $: if ($start)
+    measureSelection.calculatePoint($start, $end, $xScale, $plotConfig);
 </script>
 
 {#if showLine}
@@ -59,27 +55,6 @@
           : "stroke-primary-300"}
         strokeWidth={forThisMeasure ? 3 : 2}
       />
-
-      {#if forThisMeasure}
-        <Bot
-          size={16}
-          class="stroke-primary cursor-pointer"
-          x={$xScale(point[xAccessor]) - 35}
-          y={plotBottom - 3 + bodyBuffer}
-          on:click={onExplain}
-        />
-        <text
-          role="presentation"
-          class="fill-primary stroke-surface cursor-pointer hover:underline"
-          style:paint-order="stroke"
-          stroke-width="1px"
-          x={$xScale(point[xAccessor]) - 15}
-          y={plotBottom + 10 + bodyBuffer}
-          on:click={onExplain}
-        >
-          Explain (E)
-        </text>
-      {/if}
     {/if}
   </WithBisector>
 {:else if showBox && $start && $end}
@@ -94,25 +69,6 @@
       fill="url('#scrub-selection-gradient')"
     />
   </g>
-
-  <Bot
-    size={16}
-    class="stroke-primary cursor-pointer"
-    x={(xStart + xEnd) / 2 - 35}
-    y={plotBottom - 3 + bodyBuffer}
-    on:click={onExplain}
-  />
-  <text
-    role="presentation"
-    class="fill-primary stroke-surface cursor-pointer hover:underline"
-    style:paint-order="stroke"
-    stroke-width="1px"
-    x={(xStart + xEnd) / 2 - 15}
-    y={plotBottom + 10 + bodyBuffer}
-    on:click={onExplain}
-  >
-    Explain (E)
-  </text>
 
   <defs>
     <linearGradient
