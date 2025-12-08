@@ -26,10 +26,6 @@ type SubscriptionCancellationCheckWorker struct {
 
 // Work This worker runs at end of the current subscription term after subscription cancellation
 func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *river.Job[SubscriptionCancellationCheckArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.subscriptionCancellationCheck)
-}
-
-func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx context.Context) error {
 	cancelled, err := w.admin.DB.FindBillingIssueByTypeAndOverdueProcessed(ctx, database.BillingIssueTypeSubscriptionCancelled, false)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
