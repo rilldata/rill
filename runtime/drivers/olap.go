@@ -591,10 +591,7 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
 	case DialectStarRocks:
 		// StarRocks supports date_trunc similar to DuckDB but does not support timezone parameter
-		// TODO: Handle firstDayOfWeek and firstMonthOfYear
-		if tz != "" {
-			return "", fmt.Errorf("StarRocks does not support timezone in date_trunc")
-		}
+		// NOTE: Timezone and time shift parameters are validated in runtime/metricsview/executor/executor_validate.go
 		return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
@@ -669,7 +666,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// StarRocks uses UNION ALL for generating time series
 		var sb strings.Builder
 		first := true
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
+		for t != start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if !first {
 				sb.WriteString(" UNION ALL ")
 			}
