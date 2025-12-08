@@ -372,17 +372,12 @@ export async function submitAddConnectorForm(
   saveAnyway: boolean = false,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId, connector);
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
 
-  const newConnectorName = getName(
-    connector.name as string,
-    fileArtifacts.getNamesForKind(ResourceKind.Connector),
-  );
-
   // Check if there's already an ongoing submission for this connector
+  // This check happens BEFORE any async operations to prevent race conditions
   const existingSubmission = connectorSubmissions.get(
     uniqueConnectorSubmissionKey,
   );
@@ -413,6 +408,13 @@ export async function submitAddConnectorForm(
       return existingSubmission.connectorName;
     }
   }
+
+  await beforeSubmitForm(instanceId, connector);
+
+  const newConnectorName = getName(
+    connector.name as string,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
 
   // Create abort controller for this submission
   const abortController = new AbortController();
@@ -558,7 +560,9 @@ export async function submitAddConnectorForm(
     }
   })();
 
-  // Store the submission promise
+  // Store the submission promise immediately after creation (before any await)
+  // This prevents race conditions where another call could check the map
+  // before this entry exists
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     connectorName: newConnectorName,
