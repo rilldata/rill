@@ -36,7 +36,7 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { compileModelYAML, prepareSourceFormData } from "../sourceUtils";
 import { CONNECTORS_USING_INSTANCE_SECRETS, OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
@@ -227,10 +227,11 @@ export async function submitAddSourceForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
-    blob: compileSourceYAML(
-      rewrittenConnector,
+    blob: compileModelYAML(
+      rewrittenConnector.name as string,
       rewrittenFormValues,
-      connectorInstanceName,
+      rewrittenConnector.sourceProperties,
+      { connectorInstanceName },
     ),
     create: true,
     createOnly: false,

@@ -15,20 +15,23 @@ const SOURCE_MODEL_FILE_TOP = `# Model YAML
 type: model
 materialize: true`;
 
-export function compileSourceYAML(
-  connector: V1ConnectorDriver,
+export function compileModelYAML(
+  connectorName: string,
   formValues: Record<string, unknown>,
-  connectorInstanceName?: string,
+  sourceProperties?: Array<ConnectorDriverProperty>,
+  options?: {
+    connectorInstanceName?: string;
+  },
 ) {
   // Get the secret property keys
   const secretPropertyKeys =
-    connector.sourceProperties
+    sourceProperties
       ?.filter((property) => property.secret)
       .map((property) => property.key) || [];
 
   // Get the string property keys
   const stringPropertyKeys =
-    connector.sourceProperties
+    sourceProperties
       ?.filter(
         (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
       )
@@ -37,7 +40,7 @@ export function compileSourceYAML(
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
     .filter((key) => {
-      // For source files, exclude user-provided name since we use connector type
+      // For model files, exclude user-provided name since we use connector type
       if (key === "name") return false;
       const value = formValues[key];
       if (value === undefined) return false;
@@ -50,9 +53,9 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        // For source files, we include secret properties
+        // For model files, we include secret properties
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          connector.name as string,
+          connectorName,
           key,
         )} }}"`;
       }
@@ -74,14 +77,13 @@ export function compileSourceYAML(
     })
     .join("\n");
 
-  // Add create_secrets_from_connectors for S3 models
-  // Use the provided connector instance name if available
-  const createSecretsLine = connectorInstanceName
-    ? `\ncreate_secrets_from_connectors: ${connectorInstanceName}`
+  // Add create_secrets_from_connectors for models that reference connectors
+  const createSecretsLine = options?.connectorInstanceName
+    ? `\ncreate_secrets_from_connectors: ${options.connectorInstanceName}`
     : "";
 
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}${createSecretsLine}\n\n` +
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connectorName}${createSecretsLine}\n\n` +
     compiledKeyValues
   );
 }

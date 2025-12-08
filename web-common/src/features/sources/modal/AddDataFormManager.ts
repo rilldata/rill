@@ -31,7 +31,7 @@ import {
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
-import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { compileModelYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
@@ -515,10 +515,11 @@ export class AddDataFormManager {
       );
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
       if (isRewrittenToDuckDb) {
-        return compileSourceYAML(
-          rewrittenConnector,
+        return compileModelYAML(
+          rewrittenConnector.name as string,
           rewrittenFormValues,
-          options?.connectorInstanceName,
+          rewrittenConnector.sourceProperties,
+          { connectorInstanceName: options?.connectorInstanceName },
         );
       }
       return getConnectorYamlPreview(rewrittenFormValues);
