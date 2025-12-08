@@ -644,15 +644,12 @@ func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID, e
 	query.WriteString("SELECT * FROM deployments d WHERE d.project_id=$1")
 	args = append(args, projectID)
 
-	argCount := 1
 	if environment != "" {
-		argCount++
-		query.WriteString(fmt.Sprintf(" AND d.environment=$%d", argCount))
+		query.WriteString(fmt.Sprintf(" AND d.environment=$%d", len(args)+1))
 		args = append(args, environment)
 	}
 	if branch != "" {
-		argCount++
-		query.WriteString(fmt.Sprintf(" AND d.branch=$%d", argCount))
+		query.WriteString(fmt.Sprintf(" AND d.branch=$%d", len(args)+1))
 		args = append(args, branch)
 	}
 
