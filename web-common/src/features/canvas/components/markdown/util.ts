@@ -67,11 +67,11 @@ export function formatResolvedContent(
         metrics_view,
         field,
         value,
-      }: { metrics_view: string; field: string; value: number | string } =
+      }: { metrics_view: string; field: string; value: number | string | null } =
         JSON.parse(trimmed) as {
           metrics_view: string;
           field: string;
-          value: number | string;
+          value: number | string | null;
         };
 
       const metricsView = metricsViews[metrics_view];
@@ -82,6 +82,11 @@ export function formatResolvedContent(
         (m: MetricsViewSpecMeasure) => m.name === field,
       );
       if (!measure) return fullMatch;
+
+      if (value === null) {
+        const formatter = createMeasureValueFormatter<null>(measure);
+        return formatter(null);
+      }
 
       const numericValue =
         typeof value === "number" ? value : parseFloat(String(value));
