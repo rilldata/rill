@@ -11,10 +11,10 @@ export const getYupSchema = {
       .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
       .required("S3 URI is required"),
     aws_region: yup.string(),
-    // name: yup
-    //   .string()
-    //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-    //   .required("Source name is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
   }),
 
   gcs: yup.object().shape({
@@ -74,10 +74,10 @@ export const getYupSchema = {
       )
       .required("Path is required"),
     azure_storage_account: yup.string(),
-    // name: yup
-    //   .string()
-    //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-    //   .required("Source name is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
   }),
 
   postgres: yup.object().shape({
