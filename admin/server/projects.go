@@ -1853,7 +1853,7 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		}
 	}
 
-	_, err = s.admin.RedeployProject(ctx, proj, depl, "prod")
+	_, err = s.admin.RedeployProject(ctx, proj, depl)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1908,7 +1908,6 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
 	var proj *database.Project
 	var depl *database.Deployment
-	var environment string
 	if req.DeploymentId != "" {
 		var err error
 		depl, err = s.admin.DB.FindDeployment(ctx, req.DeploymentId)
@@ -1920,7 +1919,6 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		environment = depl.Environment
 	} else {
 		var err error
 		proj, err = s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
@@ -1934,7 +1932,6 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 		}
-		environment = "prod"
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -1942,7 +1939,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
-	_, err = s.admin.RedeployProject(ctx, proj, depl, environment)
+	_, err = s.admin.RedeployProject(ctx, proj, depl)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

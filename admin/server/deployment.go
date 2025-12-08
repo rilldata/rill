@@ -319,11 +319,11 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			branch = req.Branch
 			// only one deployment per branch allowed
 			depl, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", branch)
-			if err != nil && !errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+			if err != nil {
+				return nil, err
 			}
 			if len(depl) > 0 {
-				return nil, status.Error(codes.InvalidArgument, "another deployment for the specified branch %q already exists", req.Branch)
+				return nil, status.Errorf(codes.InvalidArgument, "another deployment for the specified branch %q already exists", req.Branch)
 			}
 		} else {
 			// Generate a random branch name for dev deployments
