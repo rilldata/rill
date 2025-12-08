@@ -12,8 +12,8 @@ import (
 
 var ErrExportNotSupported = fmt.Errorf("exporting is not supported")
 
-func safeName(dialect drivers.Dialect, name string) string {
-	return dialect.EscapeIdentifier(name)
+func safeName(name string) string {
+	return drivers.DialectDuckDB.EscapeIdentifier(name)
 }
 
 func tempName(prefix string) string {

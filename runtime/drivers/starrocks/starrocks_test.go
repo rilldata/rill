@@ -129,7 +129,7 @@ func TestEscapeReservedKeyword(t *testing.T) {
 		{
 			name:     "reserved keyword range",
 			input:    "range",
-			expected: "scope",
+			expected: "valRange",
 		},
 		{
 			name:     "reserved keyword values",
@@ -139,7 +139,7 @@ func TestEscapeReservedKeyword(t *testing.T) {
 		{
 			name:     "reserved keyword RANGE uppercase",
 			input:    "RANGE",
-			expected: "scope",
+			expected: "valRange",
 		},
 		{
 			name:     "non-reserved word",

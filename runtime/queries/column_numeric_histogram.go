@@ -79,7 +79,7 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
-	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 	var qryString string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
@@ -165,7 +165,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return nil
 	}
 
-	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 	bucketSize, err := q.calculateBucketSize(ctx, olap, priority)
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	// StarRocks: "values" is a reserved keyword, use alias
 	var valuesAlias string
 	if olap.Dialect() == drivers.DialectStarRocks {
-		valuesAlias = starrocks.EscapeReservedKeyword("values")
+		valuesAlias = starrocks.EscapeReservedKeyword("values") // vals
 	} else {
 		valuesAlias = "values"
 	}
@@ -324,7 +324,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		bucketCount++
 	}
 
-	sanitizedColumnName := safeName(olap.Dialect(), q.ColumnName)
+	sanitizedColumnName := safeName(q.ColumnName)
 
 	// StarRocks uses implicit type conversion instead of ::TYPE syntax
 	var castDouble, castFloat string
@@ -340,8 +340,8 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	// StarRocks: "values" and "range" are reserved keywords, use aliases
 	var valuesAlias, rangeAlias string
 	if olap.Dialect() == drivers.DialectStarRocks {
-		valuesAlias = starrocks.EscapeReservedKeyword("values")
-		rangeAlias = starrocks.EscapeReservedKeyword("range")
+		valuesAlias = starrocks.EscapeReservedKeyword("values") // vals
+		rangeAlias = starrocks.EscapeReservedKeyword("range") // valRange
 	} else {
 		valuesAlias = "values"
 		rangeAlias = "range"
@@ -448,7 +448,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
 func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, database, databaseSchema, tableName string, priority int) (*float64, *float64, *float64, error) {
-	sanitizedColumnName := safeName(olap.Dialect(), columnName)
+	sanitizedColumnName := safeName(columnName)
 
 	// StarRocks uses CAST() instead of ::TYPE syntax
 	var selectColumn string

@@ -8,7 +8,7 @@ import (
 // Maps reserved keywords to safe alternatives for use in SQL queries.
 // Reference: https://docs.starrocks.io/docs/sql-reference/sql-statements/keywords/
 var reservedKeywordAliases = map[string]string{
-	"range":  "scope",  // Used in histogram queries - conflicts with RANGE keyword
+	"range":  "valRange",  // Used in histogram queries - conflicts with RANGE keyword
 	"values": "vals",   // Used in histogram queries - conflicts with VALUES keyword
 }
 
@@ -28,7 +28,7 @@ func safeSQLName(name string) string {
 //
 // Example:
 //
-//	Input:  "range"  → Output: "scope"
+//	Input:  "range"  → Output: "valRange"
 //	Input:  "values" → Output: "vals"
 //	Input:  "other"  → Output: "other"
 func EscapeReservedKeyword(keyword string) string {
