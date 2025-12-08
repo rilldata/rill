@@ -23,6 +23,8 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
+  import S3MultiStepForm from "./S3MultiStepForm.svelte";
+  import AzureMultiStepForm from "./AzureMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
@@ -380,22 +382,48 @@
         </AddDataFormSection>
       {:else if isMultiStepConnector}
         {#if stepState.step === "connector"}
-          <!-- GCS Step 1: Connector configuration -->
+          <!-- Multi-step connector: step 1 (connector configuration) -->
           <AddDataFormSection
             id={paramsFormId}
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            <GCSMultiStepForm
-              properties={filteredParamsProperties}
-              {paramsForm}
-              paramsErrors={$paramsErrors}
-              {onStringInputChange}
-              {handleFileUpload}
-            />
+            {#if connector.name === "gcs"}
+              <GCSMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else if connector.name === "s3"}
+              <S3MultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else if connector.name === "azure"}
+              <AzureMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else}
+              <FormRenderer
+                properties={filteredParamsProperties}
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
+            {/if}
           </AddDataFormSection>
         {:else}
-          <!-- GCS Step 2: Source configuration -->
+          <!-- Multi-step connector: step 2 (source configuration) -->
           <AddDataFormSection
             id={paramsFormId}
             enhance={paramsEnhance}
