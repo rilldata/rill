@@ -318,7 +318,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		if req.Branch != "" {
 			branch = req.Branch
 			// only one deployment per branch allowed
-			depl, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "dev", branch)
+			depl, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", branch)
 			if err != nil && !errors.Is(err, database.ErrNotFound) {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
