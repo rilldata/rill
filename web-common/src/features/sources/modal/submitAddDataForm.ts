@@ -148,6 +148,14 @@ async function getOriginalEnvBlob(
   }
 }
 
+/**
+ * Resolves the connector instance name for a given driver by analyzing available connectors.
+ *
+ * Looks up all connectors in the project and finds those matching the specified driver name.
+ * Prefers a connector instance that is literally named after the driver (e.g., "s3" for the S3 driver),
+ * otherwise returns the first matching connector instance name. Returns undefined if no matching
+ * connectors are found or if the lookup fails.
+ */
 async function resolveConnectorInstanceName(
   queryClient: QueryClient,
   instanceId: string,
