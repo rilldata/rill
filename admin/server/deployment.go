@@ -323,7 +323,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			if len(depl) > 0 {
-				return nil, status.Error(codes.InvalidArgument, "another deployment for the specified branch already exists")
+				return nil, status.Error(codes.InvalidArgument, "another deployment for the specified branch %q already exists", req.Branch)
 			}
 		} else {
 			// Generate a random branch name for dev deployments
