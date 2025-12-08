@@ -88,7 +88,8 @@ export function formatResolvedContent(
 
       if (value === null) {
         const formatter = createMeasureValueFormatter<null>(measure);
-        return formatter(null);
+        const formatted = formatter(null);
+        return formatted ?? "";
       }
 
       const numericValue =
@@ -217,9 +218,6 @@ export function getResolveTemplatedStringQueryOptions(
         !!requestBody &&
         !!requestBody.additionalTimeRange;
 
-      // Always return query options, but use enabled to control execution
-      // When disabled, the query won't execute, so we use a minimal body (won't be used)
-      // When enabled, we use the actual requestBody
       const body: QueryServiceResolveTemplatedStringBody =
         !enabled || !requestBody
           ? { body: content, useFormatTokens: applyFormatting }
@@ -227,9 +225,6 @@ export function getResolveTemplatedStringQueryOptions(
 
       const queryEnabled = enabled && !!requestBody;
 
-      // TypeScript can't fully infer generic return type in derived callback,
-      // but the runtime type is correct. The type assertion helps TypeScript
-      // understand the return type matches the function signature.
       return getQueryServiceResolveTemplatedStringQueryOptions(
         instanceId,
         body,
