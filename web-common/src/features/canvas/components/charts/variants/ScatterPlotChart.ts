@@ -21,7 +21,8 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
-export type ScatterPlotCanvasChartSpec = BaseChartConfig & ScatterPlotChartSpecBase;
+export type ScatterPlotCanvasChartSpec = BaseChartConfig &
+  ScatterPlotChartSpecBase;
 
 const DEFAULT_SPLIT_LIMIT = 10;
 
@@ -133,9 +134,8 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
 
     const randomMeasure1 = measures[Math.floor(Math.random() * measures.length)]
       ?.name as string;
-    const randomMeasure2 = measures[
-      Math.floor(Math.random() * measures.length)
-    ]?.name as string;
+    const randomMeasure2 = measures[Math.floor(Math.random() * measures.length)]
+      ?.name as string;
     const randomDimension = dimensions[
       Math.floor(Math.random() * dimensions.length)
     ]?.name as string;
@@ -163,4 +163,3 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
     };
   }
 }
-

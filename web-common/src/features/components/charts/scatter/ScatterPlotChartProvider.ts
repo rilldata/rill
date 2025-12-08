@@ -22,9 +22,7 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
-import {
-  getFilterWithNullHandling,
-} from "../query-util";
+import { getFilterWithNullHandling } from "../query-util";
 
 export type ScatterPlotChartSpec = {
   metrics_view: string;
@@ -193,4 +191,3 @@ export class ScatterPlotChartProvider {
     return result;
   }
 }
-

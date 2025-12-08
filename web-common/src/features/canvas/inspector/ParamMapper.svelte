@@ -227,8 +227,11 @@
             {metricsView}
             fieldConfig={localParamValues[key] || {}}
             onChange={(updatedConfig) => {
-              const isEmpty = updatedConfig === undefined || 
-                (updatedConfig && updatedConfig.field === undefined && Object.keys(updatedConfig).length === 0);
+              const isEmpty =
+                updatedConfig === undefined ||
+                (updatedConfig &&
+                  updatedConfig.field === undefined &&
+                  Object.keys(updatedConfig).length === 0);
               const valueToSet = isEmpty ? undefined : updatedConfig;
               localParamValues[key] = valueToSet;
               component.updateProperty(key, valueToSet);

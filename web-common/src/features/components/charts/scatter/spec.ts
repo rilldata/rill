@@ -19,18 +19,21 @@ export function generateVLScatterPlotSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createSingleLayerBaseSpec("point");
-  
+
   const vegaConfig = createConfigWithLegend(config, config.color);
-  
-  const legendOrientation = 
-    (typeof config.color === "object" && config.color?.legendOrientation) || "top";
+
+  const legendOrientation =
+    (typeof config.color === "object" && config.color?.legendOrientation) ||
+    "top";
 
   const tooltip: TooltipValue[] = [];
 
   if (config.dimension && config.dimension.type !== "value") {
     tooltip.push({
       field: sanitizeValueForVega(config.dimension.field),
-      title: data.fields[config.dimension.field]?.displayName || config.dimension.field,
+      title:
+        data.fields[config.dimension.field]?.displayName ||
+        config.dimension.field,
       type: config.dimension.type,
     });
   }
@@ -62,10 +65,7 @@ export function generateVLScatterPlotSpec(
     });
   }
 
-  const colorTooltip = createDefaultTooltipEncoding(
-    [config.color],
-    data,
-  );
+  const colorTooltip = createDefaultTooltipEncoding([config.color], data);
 
   const xEncoding = createPositionEncoding(config.x, data);
   const yEncoding = createPositionEncoding(config.y, data);
@@ -85,8 +85,7 @@ export function generateVLScatterPlotSpec(
     ...(config.size && {
       size: {
         field: sanitizeValueForVega(config.size.field),
-        title:
-          data.fields[config.size.field]?.displayName || config.size.field,
+        title: data.fields[config.size.field]?.displayName || config.size.field,
         type: "quantitative",
         scale: {
           zero: false,
@@ -114,4 +113,3 @@ export function generateVLScatterPlotSpec(
     ...(vegaConfig && { config: vegaConfig }),
   } as VisualizationSpec;
 }
-
