@@ -206,6 +206,26 @@ export interface RpcStatus {
   details?: ProtobufAny[];
 }
 
+export type Runtimev1Operation =
+  (typeof Runtimev1Operation)[keyof typeof Runtimev1Operation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const Runtimev1Operation = {
+  OPERATION_UNSPECIFIED: "OPERATION_UNSPECIFIED",
+  OPERATION_EQ: "OPERATION_EQ",
+  OPERATION_NEQ: "OPERATION_NEQ",
+  OPERATION_LT: "OPERATION_LT",
+  OPERATION_LTE: "OPERATION_LTE",
+  OPERATION_GT: "OPERATION_GT",
+  OPERATION_GTE: "OPERATION_GTE",
+  OPERATION_OR: "OPERATION_OR",
+  OPERATION_AND: "OPERATION_AND",
+  OPERATION_IN: "OPERATION_IN",
+  OPERATION_NIN: "OPERATION_NIN",
+  OPERATION_LIKE: "OPERATION_LIKE",
+  OPERATION_NLIKE: "OPERATION_NLIKE",
+} as const;
+
 export interface Runtimev1Type {
   code?: TypeCode;
   nullable?: boolean;
@@ -668,7 +688,7 @@ export interface V1ComponentVariable {
 }
 
 export interface V1Condition {
-  op?: V1Operation;
+  op?: Runtimev1Operation;
   exprs?: V1Expression[];
 }
 
@@ -1876,25 +1896,6 @@ export interface V1OlapTableInfo {
   /** physical_size_bytes is the physical size of the table. Set to -1 if the size cannot be determined. */
   physicalSizeBytes?: string;
 }
-
-export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1Operation = {
-  OPERATION_UNSPECIFIED: "OPERATION_UNSPECIFIED",
-  OPERATION_EQ: "OPERATION_EQ",
-  OPERATION_NEQ: "OPERATION_NEQ",
-  OPERATION_LT: "OPERATION_LT",
-  OPERATION_LTE: "OPERATION_LTE",
-  OPERATION_GT: "OPERATION_GT",
-  OPERATION_GTE: "OPERATION_GTE",
-  OPERATION_OR: "OPERATION_OR",
-  OPERATION_AND: "OPERATION_AND",
-  OPERATION_IN: "OPERATION_IN",
-  OPERATION_NIN: "OPERATION_NIN",
-  OPERATION_LIKE: "OPERATION_LIKE",
-  OPERATION_NLIKE: "OPERATION_NLIKE",
-} as const;
 
 export interface V1ParseError {
   message?: string;

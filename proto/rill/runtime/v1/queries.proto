@@ -11,6 +11,8 @@ import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
 
+import "protoc-gen-openapiv2/options/annotations.proto";
+
 service QueryService {
   // Query runs a SQL query against the instance's OLAP datastore.
   rpc Query(QueryRequest) returns (QueryResponse) {
@@ -193,6 +195,14 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 

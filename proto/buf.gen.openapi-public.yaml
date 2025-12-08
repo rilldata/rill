@@ -10,5 +10,5 @@ plugins:
     opt:
       - logtostderr=true
       - output_format=yaml
-      - allow_merge=true,merge_file_name=rill/runtime/v1/runtime
+      - allow_merge=true,merge_file_name=rill/public/v1/api
       - disable_service_tags=true
