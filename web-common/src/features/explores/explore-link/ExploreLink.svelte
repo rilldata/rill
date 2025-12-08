@@ -57,7 +57,9 @@
   }
 
   $: canNavigate = !isNavigating && !!exploreState && !disabled;
-  $: tooltipText = displayName ? `Go to ${displayName}` : "Go to Explore Dashboard";
+  $: tooltipText = displayName
+    ? `Go to ${displayName}`
+    : "Go to Explore Dashboard";
 </script>
 
 {#if mode === "dropdown-item"}
