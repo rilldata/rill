@@ -79,22 +79,13 @@ export class FilterState {
   };
 
   parseFilterString(filterString: string = ""): ParsedFilters {
-    // console.log({ filterString });
     const { expr, dimensionsWithInlistFilter } =
       getFiltersFromText(filterString);
 
     const { dimensionThresholdFilters, dimensionFilters } =
       splitWhereFilter(expr);
 
-    console.log({
-      dimensionThresholdFilters,
-      expr,
-      dimensionsWithInlistFilter,
-    });
-
     const isComplexFilter = isExpressionUnsupported(expr);
-
-    console.log({ expr, isComplexFilter });
 
     if (isComplexFilter) {
       return {
