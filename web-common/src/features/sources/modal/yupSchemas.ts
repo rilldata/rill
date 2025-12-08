@@ -5,17 +5,22 @@ import {
 } from "../../entity-management/name-utils";
 
 export const getYupSchema = {
-  s3: yup.object().shape({
-    aws_access_key_id: yup.string().optional(),
-    aws_secret_access_key: yup.string().optional(),
+  s3_connector: yup.object().shape({
+    aws_access_key_id: yup.string().required("AWS access key ID is required"),
+    aws_secret_access_key: yup
+      .string()
+      .required("AWS secret access key is required"),
+  }),
+
+  s3_source: yup.object().shape({
     path: yup
       .string()
       .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
-      .optional(),
+      .required(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .optional(),
+      .required(),
   }),
 
   gcs: yup.object().shape({
