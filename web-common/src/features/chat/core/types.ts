@@ -35,15 +35,23 @@ export const MessageContentType = {
  */
 export const ToolName = {
   ROUTER_AGENT: "router_agent",
+
+  // Analyst Agent tools
   ANALYST_AGENT: "analyst_agent",
-  DEVELOPER_AGENT: "developer_agent",
-  CREATE_CHART: "create_chart",
+  LIST_METRICS_VIEWS: "list_metrics_views",
+  GET_METRICS_VIEW: "get_metrics_view",
+  QUERY_METRICS_VIEW_SUMMARY: "query_metrics_view_summary",
   QUERY_METRICS_VIEW: "query_metrics_view",
-  LIST_FILES: "list_files",
-  READ_FILE: "read_file",
-  WRITE_FILE: "write_file",
+  CREATE_CHART: "create_chart",
+
+  // Developer Agent tools
+  DEVELOPER_AGENT: "developer_agent",
   DEVELOP_MODEL: "develop_model",
   DEVELOP_METRICS_VIEW: "develop_metrics_view",
+  LIST_FILES: "list_files",
+  SEARCH_FILES: "search_files",
+  READ_FILE: "read_file",
+  WRITE_FILE: "write_file",
 } as const;
 
 // =============================================================================

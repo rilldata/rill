@@ -71,6 +71,8 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   // Note: router_agent is NOT here—it produces text, not thinking content
   [ToolName.ANALYST_AGENT]: { renderMode: "hidden" },
   [ToolName.DEVELOPER_AGENT]: { renderMode: "hidden" },
+  [ToolName.DEVELOP_MODEL]: { renderMode: "hidden" },
+  [ToolName.DEVELOP_METRICS_VIEW]: { renderMode: "hidden" },
 
   // Block tools - shown in thinking, then render a top-level block
   [ToolName.CREATE_CHART]: {
