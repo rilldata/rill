@@ -365,6 +365,25 @@ async function saveConnectorAnyway(
   await goto(`/files/${newConnectorFilePath}`);
 }
 
+/**
+ * Submits a connector form to create a new connector instance.
+ *
+ * Handles race conditions when multiple submissions occur for the same connector type.
+ * The return value (connector name) can change based on the submission state:
+ *
+ * - If `saveAnyway` is true and there's an ongoing submission, returns the connector name
+ *   from the existing submission (reusing the same connector file).
+ * - If there's an ongoing submission that hasn't completed, waits for it and returns
+ *   the connector name from that submission.
+ * - Otherwise, generates a new unique connector name and returns it.
+ *
+ * @param queryClient - The query client for data fetching
+ * @param connector - The connector driver configuration
+ * @param formValues - The form values to submit
+ * @param saveAnyway - If true, bypasses reconciliation and saves immediately
+ * @returns The connector instance name. This may be a newly generated name or the name
+ *          from an existing submission depending on the submission state.
+ */
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
