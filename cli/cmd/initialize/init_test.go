@@ -1,55 +1,98 @@
 package initialize
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddCursorRulesCreatesAllFilesWhenNoneExist(t *testing.T) {
+func TestInitCursorRulesCreatesAllFilesWhenNoneExist(t *testing.T) {
 	tmp := t.TempDir()
-	cwd, err := os.Getwd()
+	repo, instanceID, err := cmdutil.RepoForProjectPath(tmp)
 	require.NoError(t, err)
-	defer func() { _ = os.Chdir(cwd) }()
 
-	require.NoError(t, os.Chdir(tmp))
+	ctx := context.Background()
+	err = parser.InitEmpty(ctx, repo, instanceID, "Test Project", "duckdb")
+	require.NoError(t, err)
 
 	// Ensure .cursor doesn't exist yet
-	_, err = os.Stat(filepath.Join(tmp, ".cursor"))
-	require.True(t, os.IsNotExist(err))
+	cursorFiles, _ := repo.Get(ctx, ".cursor/rules/code-style.mdc")
+	require.Empty(t, cursorFiles)
 
-	// Run addCursorRules
-	err = addCursorRules(false, tmp)
+	err = parser.InitCursorRules(ctx, repo, false)
 	require.NoError(t, err)
-
-	// Assert directory created
-	info, err := os.Stat(filepath.Join(tmp, ".cursor", "rules"))
-	require.NoError(t, err)
-	require.True(t, info.IsDir())
 
 	// Both template files should be created and contain expected headers
 	files := map[string]string{
-		"code-style.mdc":        "# Rill Code Style",
-		"project-structure.mdc": "# Rill Project Structure",
+		".cursor/rules/code-style.mdc":        "# Rill Code Style",
+		".cursor/rules/project-structure.mdc": "# Rill Project Structure",
 	}
 
-	for fileName, sample := range files {
-		p := filepath.Join(".cursor", "rules", fileName)
-		contents, err := os.ReadFile(p)
+	for filePath, expectedContent := range files {
+		contents, err := repo.Get(ctx, filePath)
 		require.NoError(t, err)
-		require.Contains(t, string(contents), sample)
+		require.Contains(t, contents, expectedContent)
 	}
 }
 
-func TestAddCursorRulesBasePathIsFileReturnsError(t *testing.T) {
+func TestInitCursorRulesDoesNotOverwriteWithoutForce(t *testing.T) {
 	tmp := t.TempDir()
 
-	// Create a file and use it as basePath which should cause MkdirAll to fail
-	filePath := filepath.Join(tmp, "not_a_dir")
-	require.NoError(t, os.WriteFile(filePath, []byte("i am a file"), 0o644))
+	repo, instanceID, err := cmdutil.RepoForProjectPath(tmp)
+	require.NoError(t, err)
 
-	err := addCursorRules(false, filePath)
-	require.Error(t, err)
+	ctx := context.Background()
+	err = parser.InitEmpty(ctx, repo, instanceID, "Test Project", "duckdb")
+	require.NoError(t, err)
+
+	// Create a cursor rule file with custom content using filesystem
+	customContent := "# My Custom Rules\n"
+	cursorDir := filepath.Join(tmp, ".cursor", "rules")
+	err = os.MkdirAll(cursorDir, 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(cursorDir, "code-style.mdc"), []byte(customContent), 0o644)
+	require.NoError(t, err)
+
+	// Run InitCursorRules without force
+	err = parser.InitCursorRules(ctx, repo, false)
+	require.NoError(t, err)
+
+	// Read the file back and verify it wasn't overwritten
+	contents, err := repo.Get(ctx, ".cursor/rules/code-style.mdc")
+	require.NoError(t, err)
+	require.Equal(t, customContent, contents)
+}
+
+func TestInitCursorRulesOverwritesWithForce(t *testing.T) {
+	tmp := t.TempDir()
+
+	repo, instanceID, err := cmdutil.RepoForProjectPath(tmp)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	err = parser.InitEmpty(ctx, repo, instanceID, "Test Project", "duckdb")
+	require.NoError(t, err)
+
+	// Create a cursor rule file with custom content using filesystem
+	customContent := "# My Custom Rules\n"
+	cursorDir := filepath.Join(tmp, ".cursor", "rules")
+	err = os.MkdirAll(cursorDir, 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(cursorDir, "code-style.mdc"), []byte(customContent), 0o644)
+	require.NoError(t, err)
+
+	// Run InitCursorRules with force
+	err = parser.InitCursorRules(ctx, repo, true)
+	require.NoError(t, err)
+
+	// Read the file back and verify it was overwritten
+	contents, err := repo.Get(ctx, ".cursor/rules/code-style.mdc")
+	require.NoError(t, err)
+	require.Contains(t, contents, "# Rill Code Style")
+	require.NotContains(t, contents, customContent)
 }
