@@ -1,11 +1,10 @@
 /**
  * Tool Registry
  *
- * Central configuration for how tools render in the chat UI.
+ * Central configuration for how tool calls render in the chat UI.
  *
- * Note: This registry is for tools that produce THINKING BLOCK content.
- * The `router_agent` is handled separately—it produces TEXT (the main
- * conversation), not tool call UI.
+ * Note: `router_agent` is NOT in this registry—its output goes to TextBlocks
+ * (the main conversation), not tool call UI.
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";

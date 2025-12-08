@@ -13,13 +13,10 @@ export type TextBlock = {
 /**
  * Creates a text block from a message.
  */
-export function createTextBlock(
-  message: V1Message,
-  fallbackId: string,
-): TextBlock {
+export function createTextBlock(message: V1Message): TextBlock {
   return {
     type: "text",
-    id: message.id || fallbackId,
+    id: message.id!,
     message,
   };
 }

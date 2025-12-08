@@ -1,10 +1,8 @@
 # Message Blocks
 
-This directory transforms raw API messages (`V1Message`) into UI blocks (`Block`) for rendering chat conversations.
+Transforms raw API messages (`V1Message`) into UI blocks (`Block`) for rendering chat conversations.
 
 ## Conceptual Model
-
-### Message Sources → UI Blocks
 
 ```
 V1Message (from API)          →  Block (for UI)
@@ -12,41 +10,17 @@ V1Message (from API)          →  Block (for UI)
 router_agent                  →  TextBlock (main conversation)
 progress                      →  ThinkingBlock (grouped)
 tool call (inline)            →  ThinkingBlock (grouped)
-tool call (block)             →  ThinkingBlock + ChartBlock/etc.
+tool call (block)             →  ChartBlock / FileDiffBlock / etc.
 tool call (hidden)            →  (not rendered)
 result                        →  (attached to parent call)
-(streaming, not ending text)  →  WorkingBlock (animated indicator)
+(streaming, no text yet)      →  WorkingBlock (animated indicator)
 ```
 
-### Block Flow
+## Key Abstractions
 
-```
-    ┌───────────────┐
-    │ WorkingBlock  │  ← Animated dots (shown while AI is working)
-    └───────────────┘
-            │
-            ↓
-    ┌───────────────┐
-    │ ThinkingBlock │  ← AI reasoning + tool calls
-    └───────────────┘
-            │
-            ↓
-    ┌───────────────┐
-    │  ChartBlock   │  ← Tool output (chart, file diff, etc.)
-    │ FileDiffBlock │
-    └───────────────┘
-            │
-            ↓
-    ┌───────────────┐
-    │   TextBlock   │  ← Final response (streaming text = no WorkingBlock)
-    └───────────────┘
-```
+### `getBlockRoute()`
 
-**WorkingBlock appears when:** `isStreaming && lastBlock?.type !== "text"`
-
-### Key Abstraction: `getBlockRoute()`
-
-All routing logic is centralized in one function:
+Centralizes all routing logic:
 
 ```typescript
 function getBlockRoute(msg: V1Message): BlockRoute {
@@ -57,86 +31,39 @@ function getBlockRoute(msg: V1Message): BlockRoute {
 }
 ```
 
-This makes the transformation loop trivial—just a switch on the route.
-
 ### Tool Registry
 
-The **tool registry** (`tool-registry.ts`) configures how tool calls render:
+Configures how each tool renders:
 
-- **`inline`** - Shown in thinking blocks (most tools)
-- **`block`** - Shown in thinking, then produces a top-level block
-- **`hidden`** - Not shown (internal orchestration agents)
+- **`inline`** — Shown inside thinking blocks (most tools)
+- **`block`** — Renders as a standalone block with its own header
+- **`hidden`** — Not shown (internal orchestration)
 
-Note: `router_agent` is NOT in the registry—it produces TEXT, not thinking content.
-
-## Directory Structure
-
-Each block type has its own directory:
-
-```
-messages/
-├── block-transform.ts           # Transformation: V1Message → Block
-├── tool-registry.ts             # Tool rendering configuration
-├── Messages.svelte              # Main container component
-│
-├── ShimmerText.svelte           # Shared: loading animation
-├── Error.svelte                 # Shared: error display
-│
-├── text/                        # Main conversation (user/assistant)
-│   ├── text-block.ts
-│   ├── AssistantMessage.svelte
-│   ├── UserMessage.svelte
-│   └── rewrite-citation-urls.ts
-│
-├── working/                     # "AI is working" indicator
-│   ├── working-block.ts
-│   └── WorkingBlock.svelte
-│
-├── thinking/                    # AI reasoning (progress + tool calls)
-│   ├── thinking-block.ts
-│   ├── ThinkingBlock.svelte
-│   ├── CallMessage.svelte
-│   ├── tool-display-names.ts
-│   └── tool-icons.ts
-│
-├── chart/                       # Chart visualizations
-│   ├── chart-block.ts
-│   └── ChartBlock.svelte
-│
-└── file-diff/                   # File change diffs
-    ├── file-diff-block.ts
-    └── FileDiffBlock.svelte
-```
+Note: `router_agent` is NOT in the registry—it produces text, not thinking content.
 
 ## Transformation Flow
 
-```
 1. Build result map (tool call ID → result message)
 2. For each message:
-   - getBlockRoute() → text | thinking | block | skip
-   - text: flush thinking, add TextBlock
-   - thinking: accumulate in buffer
-   - block: accumulate, flush thinking, add block
-   - skip: ignore
-3. Flush remaining thinking
-4. Add planning indicator if streaming with no response
-```
+   - `getBlockRoute()` → text | thinking | block | skip
+   - **text**: flush thinking buffer, add TextBlock
+   - **thinking**: accumulate in buffer
+   - **block**: flush thinking, add specific block (Chart, FileDiff, etc.)
+   - **skip**: ignore (results are attached to their parent calls)
+3. Flush any remaining thinking messages
+4. Add WorkingBlock if streaming with no text response yet
 
 ## Adding New Block Types
 
-To add a new block-level tool (like `ChartBlock` or `FileDiffBlock`):
-
-1. **Create block directory**: `messages/my-block/`
-2. **Define type and factory**: `my-block.ts`
-3. **Create component**: `MyBlock.svelte`
-4. **Register in tool registry**:
+1. Create block directory: `messages/my-block/`
+2. Define type and factory: `my-block.ts`
+3. Create component: `MyBlock.svelte`
+4. Register in `tools/tool-registry.ts`:
    ```typescript
    [ToolName.MY_TOOL]: {
      renderMode: "block",
      createBlock: createMyBlock,
    },
    ```
-5. **Add to Block union** in `block-transform.ts`
-6. **Add rendering case** in `Messages.svelte`
-
-No changes to transformation logic needed—the registry handles routing.
+5. Add to `Block` union in `block-transform.ts`
+6. Add rendering case in `Messages.svelte`

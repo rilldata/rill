@@ -75,7 +75,7 @@ export function transformToBlocks(
       case "text":
         // Text blocks close any open thinking block
         flushThinking(true);
-        blocks.push(createTextBlock(msg, `text-${blocks.length}`));
+        blocks.push(createTextBlock(msg));
         break;
 
       case "thinking":

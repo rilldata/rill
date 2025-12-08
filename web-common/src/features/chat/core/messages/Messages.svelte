@@ -19,7 +19,7 @@
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
 
-  // Prefetch tools metadata for CallMessage display names
+  // Prefetch tools metadata for tool call display names
   const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
     getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
   );
