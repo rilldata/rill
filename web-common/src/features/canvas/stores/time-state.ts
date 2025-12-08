@@ -55,7 +55,7 @@ export class TimeState {
 
   canPanStore: Readable<{ left: boolean; right: boolean }>;
 
-  urlInitialized = false;
+  urlInitialized = writable<boolean>(false);
 
   constructor(
     public searchParamsStore: SearchParamsStore,
@@ -73,10 +73,16 @@ export class TimeState {
         this.manager.largestMinTimeGrain,
         this.manager.timeRangeOptionsStore,
         this.manager.minTimeGrainMap,
+        this.urlInitialized,
       ],
-      ([urlRange, defaultRange, minTimeGrain, timeRangeOptions]) => {
-        if (!this.urlInitialized || !this.manager.specInitialized)
-          return undefined;
+      ([
+        urlRange,
+        defaultRange,
+        minTimeGrain,
+        timeRangeOptions,
+        urlInitialized,
+      ]) => {
+        if (!urlInitialized || !this.manager.specInitialized) return undefined;
 
         if (urlRange) return urlRange;
 
@@ -226,7 +232,7 @@ export class TimeState {
   }
 
   onUrlChange = (searchParams: URLSearchParams) => {
-    this.urlInitialized = true;
+    this.urlInitialized.set(true);
 
     const { range, comparisonRange, zone, grain } =
       parseSearchParams(searchParams);

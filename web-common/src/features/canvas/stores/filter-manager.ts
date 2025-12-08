@@ -212,8 +212,6 @@ export class FilterManager {
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
       const filterString = searchParams.get(paramKey) ?? legacyFilter ?? "";
 
-      console.log({ filterString, mvName });
-
       filters.onFilterStringChange(filterString);
     });
   };

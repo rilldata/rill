@@ -31,7 +31,6 @@
         _activeUIFilters,
         _filterMap,
         _temporaryFilterKeys,
-
         actions: {
           toggleDimensionValueSelections,
           toggleDimensionFilterMode,
