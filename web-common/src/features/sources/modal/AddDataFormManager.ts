@@ -135,8 +135,13 @@ export class AddDataFormManager {
     );
 
     // Superforms: params
+    // For multi-step connectors, get the current step from the store (defaults to "connector")
+    const currentStep = isMultiStep
+      ? (get(connectorStepStore) as ConnectorStepState).step
+      : undefined;
     const paramsSchemaDef = getValidationSchemaForConnector(
       connector.name as string,
+      currentStep,
     );
     const paramsAdapter = yup(paramsSchemaDef);
     type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
