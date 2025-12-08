@@ -7,7 +7,7 @@
   import "diff2html/bundles/css/diff2html.min.css";
   import DOMPurify from "dompurify";
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
-  import ToolCallHeader from "../shared/ToolCallHeader.svelte";
+  import ToolCall from "../tools/ToolCall.svelte";
 
   export let message: V1Message;
   export let resultMessage: V1Message;
@@ -32,7 +32,7 @@
 </script>
 
 <div class="file-diff-block">
-  <ToolCallHeader {message} {resultMessage} {tools} />
+  <ToolCall {message} {resultMessage} {tools} variant="block" />
 
   <div class="diff-container">
     <div class="diff-header">

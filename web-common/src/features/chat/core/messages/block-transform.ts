@@ -13,7 +13,7 @@ import {
   createThinkingBlock,
   type ThinkingBlock,
 } from "./thinking/thinking-block";
-import { getToolConfig, type ToolConfig } from "./tool-registry";
+import { getToolConfig, type ToolConfig } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 
 // =============================================================================

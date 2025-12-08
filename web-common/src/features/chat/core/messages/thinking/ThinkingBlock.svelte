@@ -9,7 +9,7 @@
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
   import { MessageType } from "../../types";
   import ShimmerText from "../ShimmerText.svelte";
-  import CallMessage from "./CallMessage.svelte";
+  import ToolCall from "../tools/ToolCall.svelte";
 
   export let messages: V1Message[];
   export let resultMessagesByParentId: Map<string | undefined, V1Message>;
@@ -78,10 +78,11 @@
             </div>
           {/if}
         {:else if msg.type === MessageType.CALL}
-          <CallMessage
+          <ToolCall
             message={msg}
             resultMessage={resultMessagesByParentId.get(msg.id)}
             {tools}
+            variant="inline"
           />
         {/if}
       {/each}

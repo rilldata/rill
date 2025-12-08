@@ -11,7 +11,7 @@
   import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
   import { readable } from "svelte/store";
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
-  import ToolCallHeader from "../shared/ToolCallHeader.svelte";
+  import ToolCall from "../tools/ToolCall.svelte";
 
   export let message: V1Message;
   export let resultMessage: V1Message;
@@ -56,7 +56,7 @@
 </script>
 
 <div class="chart-block">
-  <ToolCallHeader {message} {resultMessage} {tools} />
+  <ToolCall {message} {resultMessage} {tools} variant="block" />
 
   <div class="chart-container">
     <ChartContainer
