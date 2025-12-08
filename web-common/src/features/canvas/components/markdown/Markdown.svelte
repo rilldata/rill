@@ -1,8 +1,6 @@
 <script lang="ts">
   import DOMPurify from "dompurify";
   import { marked } from "marked";
-  import { queryServiceResolveTemplatedString } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createQuery } from "@tanstack/svelte-query";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { MarkdownCanvasComponent } from "./";
@@ -10,7 +8,7 @@
     getPositionClasses,
     hasTemplatingSyntax,
     formatResolvedContent,
-    buildRequestBody,
+    getResolveTemplatedStringQueryOptions,
   } from "./util";
 
   export let component: MarkdownCanvasComponent;
@@ -22,63 +20,13 @@
   $: positionClasses = getPositionClasses(spec?.alignment);
   $: needsTemplating = hasTemplatingSyntax(content);
 
-  $: parent = component?.parent;
-  $: parentWhereFilterStore = parent?.filters?.whereFilter;
-  $: globalWhereFilter = parentWhereFilterStore
-    ? $parentWhereFilterStore
-    : undefined;
-  $: parentDimensionThresholdStore = parent?.filters?.dimensionThresholdFilters;
-  $: globalDimensionThresholdFilters = parentDimensionThresholdStore
-    ? $parentDimensionThresholdStore
-    : [];
-  $: parentSpecStore = parent?.specStore;
+  $: parentSpecStore = component?.parent?.specStore;
   $: metricsViews = parentSpecStore
     ? ($parentSpecStore?.data?.metricsViews ?? {})
     : {};
 
-  $: timeAndFilterStore = component?.timeAndFilterStore;
-  $: timeAndFilters = timeAndFilterStore ? $timeAndFilterStore : undefined;
-  $: ({ instanceId } = $runtime);
-
-  $: requestBody =
-    needsTemplating && content && instanceId
-      ? buildRequestBody({
-          content,
-          applyFormatting,
-          timeRange: timeAndFilters?.timeRange,
-          globalWhereFilter,
-          globalDimensionThresholdFilters,
-          metricsViews,
-        })
-      : null;
-
-  $: resolveQuery = createQuery(
-    {
-      queryKey: [
-        "resolveTemplatedString",
-        instanceId,
-        content,
-        JSON.stringify(globalWhereFilter),
-        JSON.stringify(globalDimensionThresholdFilters),
-        JSON.stringify(timeAndFilters?.timeRange),
-        Object.keys(metricsViews).join(","),
-        applyFormatting,
-      ],
-      queryFn: async () => {
-        if (!instanceId || !requestBody) return null;
-        return await queryServiceResolveTemplatedString(
-          instanceId,
-          requestBody,
-        );
-      },
-      enabled:
-        needsTemplating &&
-        !!requestBody &&
-        !!instanceId &&
-        !!requestBody.additionalTimeRange,
-    },
-    queryClient,
-  );
+  $: queryOptionsStore = getResolveTemplatedStringQueryOptions(component);
+  $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 
   // Store the last successfully resolved content to prevent flashing during refetches
   let lastResolvedContent: string | null = null;
@@ -111,12 +59,19 @@
     }
 
     // Update stored resolved content when we have new data
-    if ($resolveQuery?.data?.body) {
-      const newResolvedContent = applyFormattingIfNeeded(
-        $resolveQuery.data.body,
-      );
-      lastResolvedContent = newResolvedContent;
-      return newResolvedContent;
+    const queryData = $resolveQuery?.data;
+    if (
+      queryData &&
+      typeof queryData === "object" &&
+      queryData !== null &&
+      "body" in queryData
+    ) {
+      const body = (queryData as { body?: string }).body;
+      if (body) {
+        const newResolvedContent = applyFormattingIfNeeded(body);
+        lastResolvedContent = newResolvedContent;
+        return newResolvedContent;
+      }
     }
 
     return lastResolvedContent ?? content;

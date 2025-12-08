@@ -1,5 +1,6 @@
 import { defaultMarkdownAlignment } from "@rilldata/web-common/features/canvas/components/markdown";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+import type { MarkdownCanvasComponent } from "@rilldata/web-common/features/canvas/components/markdown";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   buildValidMetricsViewFilter,
@@ -14,6 +15,9 @@ import type {
   V1TimeRange,
   QueryServiceResolveTemplatedStringBody,
 } from "@rilldata/web-common/runtime-client";
+import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { derived } from "svelte/store";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
   if (!alignment) alignment = defaultMarkdownAlignment;
@@ -91,7 +95,7 @@ export function formatResolvedContent(
   });
 }
 
-export function buildRequestBody(params: {
+function buildRequestBody(params: {
   content: string;
   applyFormatting: boolean;
   timeRange: V1TimeRange | undefined;
@@ -157,4 +161,76 @@ export function buildRequestBody(params: {
       additionalWhereByMetricsView,
     }),
   };
+}
+
+export function getResolveTemplatedStringQueryOptions(
+  component: MarkdownCanvasComponent,
+) {
+  return derived(
+    [
+      component.specStore,
+      component.timeAndFilterStore,
+      component.parent?.filters?.whereFilter ?? null,
+      component.parent?.filters?.dimensionThresholdFilters ?? null,
+      component.parent?.specStore ?? null,
+      runtime,
+    ],
+    ([
+      spec,
+      timeAndFilters,
+      parentWhereFilter,
+      parentDimensionThresholdFilters,
+      parentSpec,
+      runtimeState,
+    ]) => {
+      const content = spec?.content ?? "";
+      const applyFormatting = spec?.apply_formatting === true;
+      const needsTemplating = hasTemplatingSyntax(content);
+      const instanceId = runtimeState?.instanceId ?? "";
+
+      const globalWhereFilter = parentWhereFilter ?? undefined;
+      const globalDimensionThresholdFilters =
+        parentDimensionThresholdFilters ?? [];
+      const metricsViews =
+        parentSpec?.data?.metricsViews ?? {};
+
+      const requestBody = buildRequestBody({
+        content,
+        applyFormatting,
+        timeRange: timeAndFilters?.timeRange,
+        globalWhereFilter,
+        globalDimensionThresholdFilters,
+        metricsViews,
+      });
+
+      const enabled =
+        !!needsTemplating &&
+        !!content &&
+        !!instanceId &&
+        !!requestBody &&
+        !!requestBody.additionalTimeRange;
+
+      // Always return query options, but use enabled to control execution
+      // When disabled, the query won't execute, so we use a minimal body (won't be used)
+      // When enabled, we use the actual requestBody
+      const body: QueryServiceResolveTemplatedStringBody = (!enabled || !requestBody)
+        ? { body: content, useFormatTokens: applyFormatting }
+        : requestBody;
+      
+      const queryEnabled = enabled && !!requestBody;
+      
+      // TypeScript can't fully infer generic return type in derived callback,
+      // but the runtime type is correct. The type assertion helps TypeScript
+      // understand the return type matches the function signature.
+      return getQueryServiceResolveTemplatedStringQueryOptions(
+        instanceId,
+        body,
+        {
+          query: {
+            enabled: queryEnabled,
+          },
+        },
+      );
+    },
+  );
 }
