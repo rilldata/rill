@@ -99,7 +99,7 @@ measures:
 			body:            `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}, Sales: {{ metrics_sql "SELECT total_sales FROM mv2" }}`,
 			useFormatTokens: false,
 			additionalWhere: map[string]*runtimev1.Expression{
-				"mv1": &runtimev1.Expression{
+				"mv1": {
 					Expression: &runtimev1.Expression_Cond{
 						Cond: &runtimev1.Condition{
 							Op: runtimev1.Operation_OPERATION_IN,
@@ -119,7 +119,7 @@ measures:
 						},
 					},
 				},
-				"mv2": &runtimev1.Expression{
+				"mv2": {
 					Expression: &runtimev1.Expression_Cond{
 						Cond: &runtimev1.Condition{
 							Op: runtimev1.Operation_OPERATION_EQ,
@@ -151,7 +151,7 @@ measures:
 			body:            `Revenue in US and UK from 2024-01-01 to 2024-02-01: {{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }}`,
 			useFormatTokens: false,
 			additionalWhere: map[string]*runtimev1.Expression{
-				"mv1": &runtimev1.Expression{
+				"mv1": {
 					Expression: &runtimev1.Expression_Cond{
 						Cond: &runtimev1.Condition{
 							Op: runtimev1.Operation_OPERATION_IN,
