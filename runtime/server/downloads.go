@@ -387,7 +387,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *run
 	}
 
 	if len(res) > maxDownloadTokenSize {
-		return "", status.Errorf(codes.InvalidArgument, "download token size %d exceeds maximum allowed size of %d bytes", len(res), maxDownloadTokenSize)
+		return "", status.Errorf(codes.InvalidArgument, "download token size %d exceeds maximum allowed size of %d bytes (hint: this may be due to too many filter values)", len(res), maxDownloadTokenSize)
 	}
 
 	return res, nil
