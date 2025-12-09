@@ -278,6 +278,7 @@ export class AddDataFormManager {
       const selectedAuthMethod = getSelectedAuthMethod?.();
       const stepState = get(connectorStepStore) as ConnectorStepState;
 
+      // FIXME: simplify this logic
       // For non-ClickHouse connectors, expose Save Anyway when a submission starts,
       // but skip for multi-step public auth where we bypass submission.
       if (
@@ -289,7 +290,9 @@ export class AddDataFormManager {
           isMultiStepConnector &&
           stepState?.step === "connector" &&
           selectedAuthMethod === "public"
-        )
+        ) &&
+        // Do not show Save Anyway on the model (source) step of multi-step flows.
+        stepState?.step !== "source"
       ) {
         setShowSaveAnyway(true);
       }
