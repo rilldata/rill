@@ -53,38 +53,52 @@ func TestConfigPropertiesValidate(t *testing.T) {
 	}
 }
 
-func TestConvertDSN(t *testing.T) {
-	c := &connection{
-		configProp: &ConfigProperties{},
-	}
-
+func TestBuildDSN(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    string
-		expected string
+		cfg      *ConfigProperties
+		wantErr  bool
+		contains string // substring that should be in the result
 	}{
 		{
-			name:     "mysql format passthrough",
-			input:    "user:pass@tcp(host:9030)/db",
-			expected: "user:pass@tcp(host:9030)/?timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true",
+			name: "dsn passthrough",
+			cfg: &ConfigProperties{
+				DSN: "user:pass@tcp(host:9030)/db?parseTime=true",
+			},
+			contains: "user:pass@tcp(host:9030)/db",
 		},
 		{
-			name:     "starrocks url format",
-			input:    "starrocks://user:pass@host:9030/db",
-			expected: "user:pass@tcp(host:9030)/?timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true",
+			name: "build from fields",
+			cfg: &ConfigProperties{
+				Host:     "localhost",
+				Port:     9030,
+				Username: "root",
+				Password: "secret",
+			},
+			contains: "root:secret@tcp(localhost:9030)",
 		},
 		{
-			name:     "starrocks url without user",
-			input:    "starrocks://host:9030/db",
-			expected: "tcp(host:9030)/?timeout=30s&readTimeout=300s&writeTimeout=30s&parseTime=true",
+			name: "build from fields with ssl",
+			cfg: &ConfigProperties{
+				Host:     "localhost",
+				Port:     9030,
+				Username: "root",
+				SSL:      true,
+			},
+			contains: "tls=true",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := c.convertDSN(tt.input)
+			c := &connection{configProp: tt.cfg}
+			result, err := c.buildDSN()
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
-			require.Equal(t, tt.expected, result)
+			require.Contains(t, result, tt.contains)
 		})
 	}
 }
@@ -160,24 +174,31 @@ func TestDatabaseTypeToRuntimeType(t *testing.T) {
 	c := &connection{}
 
 	tests := []struct {
-		dbType   string
-		expected string
+		dbType    string
+		expected  string
+		expectErr bool
 	}{
-		{"BOOLEAN", "CODE_BOOL"},
-		{"INT", "CODE_INT32"},
-		{"BIGINT", "CODE_INT64"},
-		{"DOUBLE", "CODE_FLOAT64"},
-		{"VARCHAR(255)", "CODE_STRING"},
-		{"DATETIME", "CODE_TIMESTAMP"},
-		{"DATE", "CODE_DATE"},
-		{"JSON", "CODE_JSON"},
-		{"NULLABLE(INT)", "CODE_INT32"},
-		{"UNKNOWN_TYPE", "CODE_STRING"}, // default fallback
+		{"BOOLEAN", "CODE_BOOL", false},
+		{"INT", "CODE_INT32", false},
+		{"BIGINT", "CODE_INT64", false},
+		{"DOUBLE", "CODE_FLOAT64", false},
+		{"VARCHAR(255)", "CODE_STRING", false},
+		{"DATETIME", "CODE_TIMESTAMP", false},
+		{"DATE", "CODE_DATE", false},
+		{"JSON", "CODE_JSON", false},
+		{"DECIMAL(10,2)", "CODE_DECIMAL", false},
+		{"ARRAY", "CODE_ARRAY", false},
+		{"UNKNOWN_TYPE", "", true}, // unsupported type returns error
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.dbType, func(t *testing.T) {
-			result := c.databaseTypeToRuntimeType(tt.dbType)
+			result, err := c.databaseTypeToRuntimeType(tt.dbType)
+			if tt.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 			require.Contains(t, result.Code.String(), tt.expected)
 		})
 	}

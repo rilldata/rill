@@ -13,6 +13,7 @@
   } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { humanReadableErrorMessage } from "../errors/errors";
   import { submitAddConnectorForm } from "./submitAddDataForm";
   import type { ConnectorType } from "./types";
@@ -252,18 +253,93 @@
     }
   }
 
-  $: hasDsnProperty = properties.some((p) => p.key === "dsn");
+  $: hasDsnProperty = connector.configProperties?.some((p) => p.key === "dsn") ?? false;
 </script>
 
-{#if hasDsnProperty}
-  <Tabs
-    options={CONNECTION_TAB_OPTIONS}
-    bind:activeTab={connectionTab}
-    class="mb-3"
-  />
-{/if}
-
-{#if connectionTab === "parameters"}
+<div class="h-full w-full flex flex-col">
+  {#if hasDsnProperty}
+    <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
+    <TabsContent value="parameters">
+      <form
+        id={paramsFormId}
+        class="flex-grow overflow-y-auto"
+        method="POST"
+        use:paramsEnhance
+        on:submit|preventDefault={paramsSubmit}
+      >
+        {#each filteredProperties as property (property.key)}
+          {@const propertyKey = property.key ?? ""}
+          <div class="py-1.5 first:pt-0 last:pb-0">
+            {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+              <Input
+                id={propertyKey}
+                label={property.displayName}
+                placeholder={property.placeholder}
+                optional={!property.required}
+                secret={property.secret}
+                hint={property.hint}
+                errors={normalizeErrors($paramsErrors[propertyKey])}
+                bind:value={$paramsForm[propertyKey]}
+                alwaysShowError
+              />
+            {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+              <Checkbox
+                id={propertyKey}
+                bind:checked={$paramsForm[propertyKey]}
+                label={property.displayName}
+                hint={property.hint}
+                optional={!property.required}
+              />
+            {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+              <InformationalField
+                description={property.description}
+                hint={property.hint}
+                href={property.docsUrl}
+              />
+            {/if}
+          </div>
+        {/each}
+      </form>
+    </TabsContent>
+    <TabsContent value="dsn">
+      <form
+        id={dsnFormId}
+        class="flex-grow overflow-y-auto"
+        method="POST"
+        use:dsnEnhance
+        on:submit|preventDefault={dsnSubmit}
+      >
+        {#each dsnProperties as property (property.key)}
+          {@const propertyKey = property.key ?? ""}
+          <div class="py-1.0 first:pt-0 last:pb-0">
+            <Input
+              id={propertyKey}
+              label={property.displayName}
+              placeholder={property.placeholder}
+              secret={property.secret}
+              hint={property.hint}
+              errors={normalizeErrors($dsnErrors[propertyKey])}
+              bind:value={$dsnForm[propertyKey]}
+              alwaysShowError
+            />
+          </div>
+        {/each}
+        <InformationalField>
+          Refer to the
+          <a
+            href="https://docs.starrocks.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="underline"
+          >
+            StarRocks documentation
+          </a>
+          for DSN format.
+        </InformationalField>
+      </form>
+    </TabsContent>
+  </Tabs>
+{:else}
   <form
     id={paramsFormId}
     class="flex-grow overflow-y-auto"
@@ -304,40 +380,5 @@
       </div>
     {/each}
   </form>
-{:else}
-  <form
-    id={dsnFormId}
-    class="flex-grow overflow-y-auto"
-    method="POST"
-    use:dsnEnhance
-    on:submit|preventDefault={dsnSubmit}
-  >
-    {#each dsnProperties as property (property.key)}
-      {@const propertyKey = property.key ?? ""}
-      <div class="py-1.0 first:pt-0 last:pb-0">
-        <Input
-          id={propertyKey}
-          label={property.displayName}
-          placeholder={property.placeholder}
-          secret={property.secret}
-          hint={property.hint}
-          errors={normalizeErrors($dsnErrors[propertyKey])}
-          bind:value={$dsnForm[propertyKey]}
-          alwaysShowError
-        />
-      </div>
-    {/each}
-    <InformationalField>
-      Refer to the
-      <a
-        href="https://docs.starrocks.io/"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="underline"
-      >
-        StarRocks documentation
-      </a>
-      for DSN format.
-    </InformationalField>
-  </form>
-{/if}
+  {/if}
+</div>
