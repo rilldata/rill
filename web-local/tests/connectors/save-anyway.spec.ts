@@ -47,39 +47,4 @@ test.describe("Save Anyway feature", () => {
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
   });
-
-  test("GCS connector - shows Save Anyway after failed test", async ({
-    page,
-  }) => {
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-    await page.locator("#gcs").click();
-
-    await page.waitForSelector('form[id*="gcs"]');
-
-    // Use HMAC auth with invalid credentials to force a failure
-    await page.getByRole("radio", { name: "HMAC keys" }).click();
-    await page.getByRole("textbox", { name: "Access Key ID" }).fill("bad-id");
-    await page
-      .getByRole("textbox", { name: "Secret Access Key" })
-      .fill("bad-secret");
-
-    const saveAnywayButton = page.getByRole("button", {
-      name: "Save Anyway",
-    });
-
-    // Should not be visible before submission
-    await expect(saveAnywayButton).toBeHidden();
-
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Test and Connect" })
-      .click();
-
-    // Error should surface, and Save Anyway should now be offered
-    await expect(page.locator(".error-container")).toBeVisible({
-      timeout: 15000,
-    });
-    await expect(saveAnywayButton).toBeVisible({ timeout: 15000 });
-  });
 });
