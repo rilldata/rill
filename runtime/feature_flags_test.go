@@ -113,7 +113,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"reports":             false,
 				"darkMode":            true,
 				"chat":                false,
-				"dashboardChat":       true,
+				"dashboardChat":       false, // forced false because chat is false
 				"developerChat":       false,
 				"chatCharts":          true,
 				"deploy":              true,

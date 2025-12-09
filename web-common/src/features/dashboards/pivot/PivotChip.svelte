@@ -51,7 +51,7 @@
     on:click
     {onRemove}
   >
-    <div slot="body" class="flex gap-x-1 items-center">
+    <div slot="body" class="flex gap-x-1 items-center justify-start text-left">
       {#if item.type === PivotChipType.Time}
         <b>Time</b>
         {#if capitalizedLabel}

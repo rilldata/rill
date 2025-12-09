@@ -47,7 +47,7 @@ You can also add `ai_instructions` to your project file and metrics views, which
 
 :::tip Configure AI instructions
 Set project-wide AI instructions to provide context unique to your project and improve MCP responses.
-[Learn more about AI configuration →](/build/project-configuration#ai-configuration)
+[Learn more about AI configuration →](/build/ai-configuration)
 :::
 
 Users can then ask questions like:
@@ -227,84 +227,19 @@ If Claude Desktop cannot connect to the MCP server, check that Rill is running (
 
 If you're still experiencing issues, check the logs in Claude Desktop. Click on Developer → Open MCP Log File and check the logs for any errors.
 
-## Adding AI instructions to your model
+## Adding AI instructions to your metrics view or project YAML
 
 LLMs give their best results when they have good context. For a conversation with Rill Data, this means things like clarifying project-specific terms, routing questions to the correct metrics view, or defining business rules. Rather than expecting the user to provide this context every time, you can add `ai_instructions` to your model. This adds the context automatically for every conversation.
 
 There are two places to add `ai_instructions`:
 
 1. `rill.yaml` for project-wide context, such as instructions on how to use Rill MCP Server
-2. Every `metrics.yaml`, with examples of Explore URLs for that metrics view
+2. Every metrics view YAML (`<metrics_view>.yaml`), with examples of Explore URLs for that metrics view
 
-### Sample AI Instructions
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
 
-Here's an example of how you might configure `ai_instructions` to provide project context, metrics routing, and business definitions:
+You can look at one of our [example projects](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) to see how these are used. Experiment with the instructions and see what works best for your requirements.
 
-```yaml
-ai_instructions: |
-  # Project Context
-  This project tracks e-commerce metrics for our multi-brand retail business.
-  
-  # Metrics View Routing
-  - For questions about overall sales, revenue, or order volume → use `company_sales_metrics`
-  - For questions about customer behavior, retention, or cohorts → use `customer_analytics`
-  - For questions about product performance or inventory → use `product_metrics`
-  - For questions about marketing campaigns or attribution → use `marketing_performance`
-  - For questions about fulfillment, shipping, or logistics → use `operations_metrics`
-  
-  # Business Rules & Definitions
-  - "Revenue" always refers to net revenue (after returns and discounts)
-  - "Conversion rate" is calculated as orders/sessions, not users
-  - Our fiscal year starts in February, not January
-  - "Active customer" means a purchase within the last 90 days
-  - Weekend traffic patterns are anomalous due to our B2B focus
-  
-  # Company Acronyms
-  - GMV = Gross Merchandise Value
-  - AOV = Average Order Value
-  - ROAS = Return on Ad Spend
-  - SKU = Stock Keeping Unit
-  - NDR = Net Dollar Retention
-  - CLTV = Customer Lifetime Value
-  
-  # Known Data Quirks
-  - Mobile web data before March 2024 is incomplete due to tracking migration
-  - European region data excludes VAT (use `revenue_with_vat` dimension if needed)
-  - Refunds are processed with a 2-3 day delay, so recent data may shift
-
-  When you include data in your responses, either from tool use or using your own analysis capabilities, do not build web pages or React apps. For visualizing data, you can use text-based techniques for data visualization:
-  - Bar Charts using block characters:
-    Q1 ████████░░ 411
-    Q2 ██████████ 514
-    Q3 ██████░░░░ 300
-    Q4 ████████░░ 400
-
-  - Horizontal progress bars: Project Progress:
-    Frontend ▓▓▓▓▓▓▓▓░░ 80%
-    Backend ▓▓▓▓▓▓░░░░ 60%
-    Testing ▓▓░░░░░░░░ 20%
-  
-  - Using different block densities: Trends:
-    Jan ▁▂▃▄▅▆▇█ High
-    Feb ▁▂▃▄▅░░░ Medium
-    Mar ▁▂░░░░░░ Low
-    
-  - Sparklines with Unicode Basic sparklines:
-    Stock prices: ▁▂▃▅▂▇▆▃▅▇
-    Website traffic: ▁▁▂▃▅▄▆▇▆▅▄▂▁
-    CPU usage: ▂▄▆█▇▅▃▂▄▆█▇▄▂
-    
-  - Trend indicators: 
-    AAPL ▲ +2.3% 
-    GOOG ▼ -1.2% 
-    MSFT ► +0.5% 
-    TSLA ▼ -3.1%
-  
-  - Simple trend arrows: 
-    Sales ↗️ (+15%)
-    Costs ↘️ (-8%)
-    Profit ⤴️ (+28%)
-```
 
 ## Using Rill MCP Server in Claude
 
