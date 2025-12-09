@@ -5,13 +5,7 @@
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import { ConnectorDriverPropertyType } from "@rilldata/web-common/runtime-client";
   import { normalizeErrors } from "./utils";
-
-  export type AuthOption = {
-    value: string;
-    label: string;
-    description: string;
-    hint?: string;
-  };
+  import type { AuthOption } from "./types";
 
   export let properties: any[] = [];
   export let paramsForm: any;
@@ -56,7 +50,7 @@
         name="auth-fields"
         {option}
         paramsFormStore={paramsForm}
-        paramsErrors={paramsErrors}
+        {paramsErrors}
         {handleFileUpload}
       />
     </svelte:fragment>
