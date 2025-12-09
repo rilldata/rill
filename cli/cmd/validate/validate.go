@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -21,14 +22,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	defaultOLAPConnector = "duckdb"
-	listResourcesTimeout = 10 * time.Second
-)
-
 // ValidationResult represents the complete validation output
 type ValidationResult struct {
-	Success     bool              `json:"success"`
 	Summary     ValidationSummary `json:"summary"`
 	ParseErrors []ParseError      `json:"parse_errors,omitempty"`
 	Resources   []ResourceStatus  `json:"resources,omitempty"`
@@ -43,15 +38,9 @@ type ValidationSummary struct {
 
 // ParseError represents a parse error (serializable version of runtimev1.ParseError)
 type ParseError struct {
-	Message       string        `json:"message" header:"message"`
-	FilePath      string        `json:"file_path,omitempty" header:"file_path"`
-	StartLocation *CharLocation `json:"start_location,omitempty" header:"line"`
-	External      bool          `json:"external,omitempty" header:"external"`
-}
-
-// CharLocation represents a character location in a file
-type CharLocation struct {
-	Line uint32 `json:"line,omitempty"`
+	Message   string `json:"message" header:"message"`
+	FilePath  string `json:"file_path,omitempty" header:"file_path"`
+	StartLine uint32 `json:"start_line,omitempty" header:"start_line"`
 }
 
 type ResourceStatus struct {
@@ -73,7 +62,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var environment string
 	var reconcileTimeout time.Duration
 	var outputFile string
-	var outputFormat string
 
 	validateCmd := &cobra.Command{
 		Use:   "validate [<path>]",
@@ -86,15 +74,18 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Validate output format
-			if outputFormat != "table" && outputFormat != "json" {
-				return fmt.Errorf("invalid output format %q (options: \"table\", \"json\")", outputFormat)
+			outputFormat := ch.Printer.Format
+			switch outputFormat {
+			case printer.FormatHuman, printer.FormatJSON:
+				// supported formats
+			default:
+				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
 
 			if !local.IsProjectInit(projectPath) {
 				return fmt.Errorf("no Rill project found at %q (missing rill.yaml)", projectPath)
 			}
 
-			environment = "dev" // always use dev environment for validation
 			if ch.IsAuthenticated() {
 				err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
 				if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
@@ -124,7 +115,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			// If there are parse errors, output them and exit
 			if len(parseErrors) > 0 {
 				result := &ValidationResult{
-					Success: false,
 					Summary: ValidationSummary{
 						ParseErrors: len(parseErrors),
 					},
@@ -137,8 +127,8 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Ch:             ch,
 				Verbose:        verbose,
-				Debug:          debug,
 				Silent:         silent,
+				Debug:          debug,
 				Reset:          reset,
 				Environment:    environment,
 				ProjectPath:    projectPath,
@@ -160,13 +150,13 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().SortFlags = false
 	validateCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
 	validateCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
+	validateCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	validateCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	validateCmd.Flags().BoolVar(&silent, "silent", false, "Suppress all log output by setting log level to panic, overrides verbose flag")
 	validateCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
-	validateCmd.Flags().BoolVar(&silent, "silent", false, "Suppress all log output")
 	validateCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	validateCmd.Flags().DurationVar(&reconcileTimeout, "reconcile-timeout", 60*time.Second, "Timeout for reconciliation (e.g. 60s, 2m)")
-	validateCmd.Flags().StringVar(&outputFormat, "output-format", "table", "Output format (options: \"table\", \"json\")")
-	validateCmd.Flags().StringVarP(&outputFile, "output", "o", "", "Output file for validation results (JSON format)")
+	validateCmd.Flags().StringVarP(&outputFile, "output-file", "o", "", "Output file for validation results (JSON format)")
 
 	return validateCmd
 }
@@ -227,7 +217,7 @@ func parseProject(ctx context.Context, projectPath, environment string) ([]Parse
 		return nil, err
 	}
 
-	p, err := parser.Parse(ctx, repo, instanceID, environment, defaultOLAPConnector)
+	p, err := parser.Parse(ctx, repo, instanceID, environment, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
@@ -243,20 +233,17 @@ func parseProject(ctx context.Context, projectPath, environment string) ([]Parse
 		parseErr := ParseError{
 			Message:  e.Message,
 			FilePath: e.FilePath,
-			External: e.External,
 		}
 		// Convert start location if available
 		if e.StartLocation != nil {
-			parseErr.StartLocation = &CharLocation{
-				Line: e.StartLocation.Line,
-			}
+			parseErr.StartLine = e.StartLocation.Line
 		}
 		parseErrors = append(parseErrors, parseErr)
 	}
 	return parseErrors, nil
 }
 
-func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, reconcileTimeout time.Duration, outputFormat, outputFile string) error {
+func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, reconcileTimeout time.Duration, outputFormat printer.Format, outputFile string) error {
 	ctrl, err := app.Runtime.Controller(ctx, app.Instance.ID)
 	if err != nil {
 		return err
@@ -286,11 +273,7 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App,
 		}
 	}
 
-	// List resources (use parent ctx with a timeout to avoid blocking indefinitely)
-	listCtx, listCancel := context.WithTimeout(ctx, listResourcesTimeout)
-	defer listCancel()
-
-	resources, err := ctrl.List(listCtx, "", "", false)
+	resources, err := ctrl.List(ctx, "", "", false)
 	if err != nil {
 		return fmt.Errorf("failed to list resources: %w", err)
 	}
@@ -304,7 +287,6 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App,
 
 func buildValidationResult(resources []*runtimev1.Resource, timedOut bool) *ValidationResult {
 	result := &ValidationResult{
-		Success: !timedOut,
 		Timeout: timedOut,
 		Summary: ValidationSummary{},
 	}
@@ -330,7 +312,6 @@ func buildValidationResult(resources []*runtimev1.Resource, timedOut bool) *Vali
 
 		if r.Meta.ReconcileError != "" {
 			result.Summary.ReconcileErrors++
-			result.Success = false
 			resourceStatus.Error = r.Meta.ReconcileError
 		}
 
@@ -340,11 +321,11 @@ func buildValidationResult(resources []*runtimev1.Resource, timedOut bool) *Vali
 	return result
 }
 
-func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat, outputFile string) error {
+func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat printer.Format, outputFile string) error {
 	// Write JSON to file if requested
 	var jsonData []byte
 	var err error
-	if outputFile != "" || outputFormat == "json" {
+	if outputFile != "" || outputFormat == printer.FormatJSON {
 		jsonData, err = json.MarshalIndent(result, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal validation result: %w", err)
@@ -357,7 +338,7 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat, ou
 		ch.Printf("Validation results written to output file %s\n", outputFile)
 	} else {
 		// Output to console based on format
-		if outputFormat == "json" {
+		if outputFormat == printer.FormatJSON {
 			fmt.Println(string(jsonData))
 		} else {
 			// Table format - show parse errors and resources separately
@@ -376,10 +357,10 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat, ou
 	}
 
 	// Print summary in the end
-	if !result.Success {
-		if result.Timeout {
-			return fmt.Errorf("reconciliation timed out. If a model processes full data, consider adding an explicit dev partition or rerun with --reconcile-timeout to allow more time")
-		}
+	if result.Timeout {
+		return fmt.Errorf("reconciliation timed out. If a model processes full data, consider adding an explicit dev partition or rerun with --reconcile-timeout to allow more time")
+	}
+	if result.Summary.ParseErrors+result.Summary.ReconcileErrors > 0 {
 		return fmt.Errorf("validation failed: %d error(s) (%d parse, %d reconcile)", result.Summary.ParseErrors+result.Summary.ReconcileErrors, result.Summary.ParseErrors, result.Summary.ReconcileErrors)
 	}
 

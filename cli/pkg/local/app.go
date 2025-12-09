@@ -63,8 +63,8 @@ type App struct {
 type AppOptions struct {
 	Ch             *cmdutil.Helper
 	Verbose        bool
-	Debug          bool
 	Silent         bool
+	Debug          bool
 	Reset          bool
 	Environment    string
 	ProjectPath    string
