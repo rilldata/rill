@@ -39,7 +39,7 @@ export const GCS_AUTH_OPTIONS: {
   },
 ];
 
-export type S3AuthMethod = "access_keys" | "role";
+export type S3AuthMethod = "access_keys";
 
 export const S3_AUTH_OPTIONS: {
   value: S3AuthMethod;
@@ -51,12 +51,6 @@ export const S3_AUTH_OPTIONS: {
     value: "access_keys",
     label: "Access keys",
     description: "Use AWS access key ID and secret access key.",
-  },
-  {
-    value: "role",
-    label: "Assume role",
-    description:
-      "Assume an AWS IAM role using your local or provided credentials.",
   },
 ];
 
