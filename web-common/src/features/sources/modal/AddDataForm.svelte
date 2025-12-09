@@ -19,7 +19,7 @@
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
-  import { connectorStepStore } from "./connectorStepStore";
+  import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import MultiStepFormRenderer from "./MultiStepFormRenderer.svelte";
@@ -28,6 +28,7 @@
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { multiStepFormConfigs } from "./multi-step-auth-configs";
+  import { get } from "svelte/store";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -56,13 +57,23 @@
     formType,
     onParamsUpdate: (e: any) => handleOnUpdate(e),
     onDsnUpdate: (e: any) => handleOnUpdate(e),
-    getSelectedAuthMethod: () => selectedAuthMethod,
+    getSelectedAuthMethod: () =>
+      get(connectorStepStore).selectedAuthMethod ?? undefined,
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   const onlyDsn = hasOnlyDsn(connector, isConnectorForm);
+  const selectedAuthMethodStore = {
+    subscribe: (run: (value: string) => void) =>
+      connectorStepStore.subscribe((state) =>
+        run(state.selectedAuthMethod ?? ""),
+      ),
+    set: (method: string) => setAuthMethod(method || null),
+  };
+  let selectedAuthMethod: string = "";
+  $: selectedAuthMethod = $selectedAuthMethodStore;
   $: stepState = $connectorStepStore;
   $: stepProperties =
     isMultiStepConnector && stepState.step === "source"
@@ -221,6 +232,22 @@
       ] || null
     : null;
 
+  $: if (isMultiStepConnector && activeMultiStepConfig) {
+    const options = activeMultiStepConfig.authOptions ?? [];
+    const fallback =
+      activeMultiStepConfig.defaultAuthMethod || options[0]?.value || null;
+    const hasValidSelection = options.some(
+      (option) => option.value === stepState.selectedAuthMethod,
+    );
+    if (!hasValidSelection) {
+      if (fallback !== stepState.selectedAuthMethod) {
+        setAuthMethod(fallback ?? null);
+      }
+    }
+  } else if (stepState.selectedAuthMethod) {
+    setAuthMethod(null);
+  }
+
   $: isSubmitting = submitting;
 
   // Reset errors when form is modified
@@ -314,23 +341,6 @@
   $: saveAnywayLoading = isClickhouse
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
-
-  // Track selected auth method for multi-step connectors to adjust UI labels.
-  // Only initialize when config becomes available; do not reset after user selection.
-  let selectedAuthMethod: string = "";
-  $: if (
-    activeMultiStepConfig &&
-    !selectedAuthMethod &&
-    activeMultiStepConfig.authOptions?.length
-  ) {
-    selectedAuthMethod =
-      activeMultiStepConfig.defaultAuthMethod ||
-      activeMultiStepConfig.authOptions?.[0]?.value ||
-      "";
-  }
-  $: if (!activeMultiStepConfig) {
-    selectedAuthMethod = "";
-  }
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -455,7 +465,7 @@
                 paramsErrors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
-                bind:authMethod={selectedAuthMethod}
+                bind:authMethod={$selectedAuthMethodStore}
               />
             {:else}
               <FormRenderer
