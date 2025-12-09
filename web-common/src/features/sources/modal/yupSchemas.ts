@@ -71,7 +71,14 @@ export const getYupSchema = {
       .required("Google application credentials is required"),
   }),
 
-  azure: yup.object().shape({
+  azure_connector: yup.object().shape({
+    azure_storage_account: yup.string().optional(),
+    azure_storage_key: yup.string().optional(),
+    azure_storage_sas_token: yup.string().optional(),
+    azure_storage_connection_string: yup.string().optional(),
+  }),
+
+  azure_source: yup.object().shape({
     path: yup
       .string()
       .matches(
@@ -79,7 +86,6 @@ export const getYupSchema = {
         "Must be an Azure URI (e.g. azure://container/path)",
       )
       .required("Path is required"),
-    azure_storage_account: yup.string(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
