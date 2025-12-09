@@ -57,7 +57,13 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
     clearFieldsByMethod: {
       access_keys: [],
     },
-    excludedKeys: ["aws_access_key_id", "aws_secret_access_key", "name"],
+    excludedKeys: [
+      "aws_access_key_id",
+      "aws_secret_access_key",
+      "region",
+      "endpoint",
+      "name",
+    ],
     authFieldGroups: {
       access_keys: [
         {
@@ -80,19 +86,19 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
         },
         {
           type: "input",
-          id: "aws_region",
+          id: "region",
           label: "Region",
           placeholder: "us-east-1",
           optional: true,
-          hint: "AWS region for the bucket",
+          hint: "Rill uses your default AWS region unless you set it explicitly.",
         },
         {
           type: "input",
-          id: "aws_endpoint",
+          id: "endpoint",
           label: "Endpoint",
           placeholder: "https://s3.example.com",
           optional: true,
-          hint: "AWS endpoint for the bucket",
+          hint: "Override the S3 endpoint (for S3-compatible services like R2/MinIO).",
         },
       ],
     },
