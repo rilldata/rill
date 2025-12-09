@@ -58,6 +58,12 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
     defaultAuthMethod: "access_keys",
     clearFieldsByMethod: {
       access_keys: [],
+      public: [
+        "aws_access_key_id",
+        "aws_secret_access_key",
+        "region",
+        "endpoint",
+      ],
     },
     excludedKeys: [
       "aws_access_key_id",
@@ -103,6 +109,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
           hint: "Override the S3 endpoint (for S3-compatible services like R2/MinIO).",
         },
       ],
+      public: [],
     },
   },
   azure: {
@@ -118,6 +125,12 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
         "azure_storage_account",
         "azure_storage_key",
         "azure_storage_sas_token",
+      ],
+      public: [
+        "azure_storage_account",
+        "azure_storage_key",
+        "azure_storage_sas_token",
+        "azure_storage_connection_string",
       ],
     },
     excludedKeys: [
@@ -176,6 +189,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
           hint: "Shared Access Signature token for the storage account",
         },
       ],
+      public: [],
     },
   },
 };
