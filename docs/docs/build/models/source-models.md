@@ -29,6 +29,18 @@ The YAML configuration file contains several key parameters:
 - **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes. See [Environment Templating](/build/models/templating) for more information.
 
 
+## Data Explorer
+
+After connecting and importing the data into a [Rill Managed OLAP engine](/build/connectors/data-source), you will find the materialized table in the default OLAP engine's Data Explorer panel. This is different than the data source explorer as this data is now ingested in Rill's embedded OLAP engine and is ready to [create metrics](/build/metrics-view).
+
+<!-- ![Data Explorer](/img/build/connectors/data-explorer/olap-engine.gif) -->
+
+Looking for information on data source data explorer or live connector? See our [connector docs](/build/connectors/data-explorer).
+
+
+
+
+
 ## Retry Configuration
 
 By default, a model will retry if the initial load fails. This helps ensure reliable data processing by automatically retrying failed operations. The default retry settings are:
