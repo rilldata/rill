@@ -42,6 +42,12 @@ type SuperFormUpdateEvent = {
   form: SuperValidated<Record<string, unknown>, any, Record<string, unknown>>;
 };
 
+const BUTTON_LABELS = {
+  public: { idle: "Continue", submitting: "Continuing..." },
+  connector: { idle: "Test and Connect", submitting: "Testing connection..." },
+  source: { idle: "Import Data", submitting: "Importing data..." },
+};
+
 export class AddDataFormManager {
   formHeight: string;
   paramsFormId: string;
@@ -269,14 +275,22 @@ export class AddDataFormManager {
     if (isConnectorForm) {
       if (this.isMultiStepConnector && step === "connector") {
         if (selectedAuthMethod === "public") {
-          return submitting ? "Continuing..." : "Continue";
+          return submitting
+            ? BUTTON_LABELS.public.submitting
+            : BUTTON_LABELS.public.idle;
         }
-        return submitting ? "Testing connection..." : "Test and Connect";
+        return submitting
+          ? BUTTON_LABELS.connector.submitting
+          : BUTTON_LABELS.connector.idle;
       }
       if (this.isMultiStepConnector && step === "source") {
-        return submitting ? "Importing data..." : "Import Data";
+        return submitting
+          ? BUTTON_LABELS.source.submitting
+          : BUTTON_LABELS.source.idle;
       }
-      return submitting ? "Testing connection..." : "Test and Connect";
+      return submitting
+        ? BUTTON_LABELS.connector.submitting
+        : BUTTON_LABELS.connector.idle;
     }
 
     return "Test and Add data";
