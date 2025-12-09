@@ -105,9 +105,12 @@ export function isMultiStepConnectorDisabled(
 
   if (!method) return true;
 
+  // Selecting "public" should always enable the button for multi-step auth flows.
+  if (method === "public") return false;
+
   const fields = config.authFieldGroups?.[method] || [];
-  // If method isn't known or has no fields, only allow when explicitly public.
-  if (!fields.length) return method === "public";
+  // Unknown auth methods or ones without fields stay disabled.
+  if (!fields.length) return true;
 
   return !fields.every((field) => {
     if (field.optional ?? false) return true;
