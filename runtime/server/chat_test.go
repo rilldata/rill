@@ -156,16 +156,46 @@ measures:
 	require.NoError(t, err)
 	require.Len(t, list2.Conversations, 0)
 
-	// Check that an anonymous user cannot list the conversations
+	// Check that an anonymous user can create a conversation
 	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
 		UserID:      "",
 		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}, // Sufficient for analyst_agent, excludes developer agents
 	})
+	res4, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
+		InstanceId: instanceID,
+		Prompt:     "What are the names of the available metrics views?",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, res1.ConversationId)
+	require.NotEmpty(t, res1.Messages)
+	require.Len(t, res1.Messages, 6)
+
+	// Check that an anonymous user cannot list conversations, even their own (since we don't know if it's the same or a different anonymous user).
 	list3, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
 		InstanceId: instanceID,
 	})
 	require.NoError(t, err)
 	require.Len(t, list3.Conversations, 0)
+
+	// Check that an anonymous user with SkipChecks can list and get conversations.
+	// (This matches Rill Developer behavior where auth is disabled.)
+	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+		UserID:      "",
+		Permissions: runtime.AllPermissions,
+		SkipChecks:  true,
+	})
+	list6, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+	})
+	require.NoError(t, err)
+	require.Len(t, list6.Conversations, 1)
+	require.Equal(t, res4.ConversationId, list6.Conversations[0].Id)
+	get3, err := srv.GetConversation(ctx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: res4.ConversationId,
+	})
+	require.NoError(t, err)
+	require.Len(t, get3.Messages, len(res4.Messages))
 }
 
 func TestAgentChoiceAndContext(t *testing.T) {
