@@ -163,7 +163,7 @@ export class ScatterPlotChartProvider {
             dimensions,
             where: combinedWhere,
             timeRange,
-            limit: "5000",
+            limit: "9999",
           },
           {
             query: {

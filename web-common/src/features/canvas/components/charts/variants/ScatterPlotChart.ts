@@ -58,7 +58,6 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
       meta: {
         chartFieldInput: {
           type: "dimension",
-          limitSelector: { defaultLimit: DEFAULT_SPLIT_LIMIT },
           nullSelector: true,
         },
       },
