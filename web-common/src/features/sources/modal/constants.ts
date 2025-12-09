@@ -69,19 +69,19 @@ export const AZURE_AUTH_OPTIONS: {
   hint?: string;
 }[] = [
   {
+    value: "connection_string",
+    label: "Connection String",
+    description: "Alternative for cloud deployment",
+  },
+  {
     value: "account_key",
-    label: "Access key",
-    description: "Authenticate with storage account name and access key.",
+    label: "Storage Account Key",
+    description: "Recommended for cloud deployment",
   },
   {
     value: "sas_token",
-    label: "SAS token",
-    description: "Authenticate with storage account name and SAS token.",
-  },
-  {
-    value: "connection_string",
-    label: "Connection string",
-    description: "Authenticate with a full Azure storage connection string.",
+    label: "Shared Access Signature (SAS) Token",
+    description: "Most secure, fine-grained control",
   },
 ];
 

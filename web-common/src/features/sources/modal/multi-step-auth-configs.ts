@@ -146,7 +146,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
           placeholder: "Enter Azure storage connection string",
           optional: false,
           secret: true,
-          hint: "Full connection string for the storage account",
+          hint: "Paste an Azure Storage connection string",
         },
       ],
       account_key: [
