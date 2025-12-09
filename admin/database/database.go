@@ -105,6 +105,8 @@ type DB interface {
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
+	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
+	UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus DeploymentStatus) (*Deployment, error)
 	// UpdateDeploymentUnsafe updates deployment fields that must only be called from the `reconcile_deployment` background job.
 	UpdateDeploymentUnsafe(ctx context.Context, id string, opts *UpdateDeploymentUnsafeOptions) (*Deployment, error)
 	// UpdateDeploymentSafe updates deployment fields that are safe to be called from anywhere. Any call to this should subsequently trigger a reconcile_deployment job.

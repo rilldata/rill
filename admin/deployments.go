@@ -52,7 +52,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerDeploymentReconcileJob(ctx, depl)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,16 +62,13 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 
 func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment) (*database.Deployment, error) {
 	// Update the desired deployment status to running
-	depl1, err := s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
-		DesiredStatus: database.DeploymentStatusRunning,
-		Branch:        depl.Branch,
-	})
+	depl1, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
 	if err != nil {
 		return nil, err
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerDeploymentReconcileJob(ctx, depl)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +78,13 @@ func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment
 
 func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Update the deployment desired status to stopped
-	_, err := s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
-		DesiredStatus: database.DeploymentStatusStopped,
-		Branch:        depl.Branch,
-	})
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusStopped)
 	if err != nil {
 		return err
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerDeploymentReconcileJob(ctx, depl)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -100,16 +94,13 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, branch string) error {
 	// Update the deployment with the new branch (or existing branch) and set desired status to running
-	_, err := s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
-		DesiredStatus: database.DeploymentStatusRunning,
-		Branch:        branch,
-	})
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
 	if err != nil {
 		return err
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerDeploymentReconcileJob(ctx, depl)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -119,16 +110,13 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 
 func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Update the desired deployment status to deleted
-	_, err := s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
-		DesiredStatus: database.DeploymentStatusDeleted,
-		Branch:        depl.Branch,
-	})
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusDeleted)
 	if err != nil {
 		return err
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerDeploymentReconcileJob(ctx, depl)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -612,22 +600,15 @@ type provisionRuntimeOptions struct {
 
 // triggerDeploymentReconcileJob triggers a reconcile deployment job for the given deployment ID.
 // For more details, see the comments in the ReconcileDeployment job.
-func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deployment *database.Deployment) error {
+func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deploymentID string) error {
 	// Trigger reconcile deployment job
-	_, err := s.Jobs.ReconcileDeployment(ctx, deployment.ID)
+	_, err := s.Jobs.ReconcileDeployment(ctx, deploymentID)
 	if err != nil {
-		// If the job fails to be added, we directly update the deployment status to error using UpdateDeploymentUnsafe.
+		// If the job fails to be added, we update the deployment status to error.
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		opts := &database.UpdateDeploymentUnsafeOptions{
-			RuntimeHost:       deployment.RuntimeHost,
-			RuntimeInstanceID: deployment.RuntimeInstanceID,
-			RuntimeAudience:   deployment.RuntimeAudience,
-			Status:            database.DeploymentStatusErrored,
-			StatusMessage:     fmt.Sprintf("Failed to Trigger reconcile deployment job: %v", err),
-		}
-		_, err2 := s.DB.UpdateDeploymentUnsafe(ctx, deployment.ID, opts)
-		s.Logger.Error("failed to schedule reconcile deployment job", zap.String("deployment_id", deployment.ID), zap.Error(err), observability.ZapCtx(ctx))
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusErrored, fmt.Sprintf("Failed to Trigger reconcile deployment job: %v", err))
+		s.Logger.Error("failed to schedule reconcile deployment job", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 		return errors.Join(err, err2)
 	}
 	return nil
