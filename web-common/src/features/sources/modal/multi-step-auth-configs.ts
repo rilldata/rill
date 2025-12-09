@@ -10,6 +10,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
     authOptions: GCS_AUTH_OPTIONS,
     defaultAuthMethod: "credentials",
     clearFieldsByMethod: {
+      public: ["google_application_credentials", "key_id", "secret"],
       credentials: ["key_id", "secret"],
       hmac: ["google_application_credentials"],
     },
@@ -20,6 +21,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
       "name",
     ],
     authFieldGroups: {
+      public: [],
       credentials: [
         {
           type: "credentials",

@@ -11,6 +11,15 @@
   export let paramsErrors: Record<string, any>;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
+
+  // Bubble the selected auth method to the parent so it can adjust UI.
+  export let authMethod: string =
+    config?.defaultAuthMethod || config?.authOptions?.[0]?.value || "";
+
+  $: if (config && !authMethod) {
+    authMethod =
+      config.defaultAuthMethod || config.authOptions?.[0]?.value || "";
+  }
 </script>
 
 {#if config}
@@ -20,6 +29,7 @@
     {paramsErrors}
     {onStringInputChange}
     {handleFileUpload}
+    bind:authMethod
     authOptions={config.authOptions}
     defaultAuthMethod={config.defaultAuthMethod ||
       config.authOptions?.[0]?.value}

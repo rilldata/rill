@@ -304,10 +304,28 @@
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
 
+  // Track selected auth method for multi-step connectors to adjust UI labels.
+  // Only initialize when config becomes available; do not reset after user selection.
+  let selectedAuthMethod: string = "";
+  $: if (
+    activeMultiStepConfig &&
+    !selectedAuthMethod &&
+    activeMultiStepConfig.authOptions?.length
+  ) {
+    selectedAuthMethod =
+      activeMultiStepConfig.defaultAuthMethod ||
+      activeMultiStepConfig.authOptions?.[0]?.value ||
+      "";
+  }
+  $: if (!activeMultiStepConfig) {
+    selectedAuthMethod = "";
+  }
+
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
     queryClient,
     getConnectionTab: () => connectionTab,
+    getSelectedAuthMethod: () => selectedAuthMethod,
     setParamsError: (message: string | null, details?: string) => {
       paramsError = message;
       paramsErrorDetails = details;
@@ -426,6 +444,7 @@
                 paramsErrors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
+                bind:authMethod={selectedAuthMethod}
               />
             {:else}
               <FormRenderer
@@ -491,12 +510,6 @@
           </Button>
         {/if}
 
-        {#if isMultiStepConnector && stepState.step === "connector"}
-          <Button onClick={() => formManager.handleSkip()} type="secondary"
-            >Skip</Button
-          >
-        {/if}
-
         <Button
           disabled={connector.name === "clickhouse"
             ? clickhouseSubmitting || clickhouseIsSubmitDisabled
@@ -506,7 +519,9 @@
             : submitting}
           loadingCopy={connector.name === "clickhouse"
             ? "Connecting..."
-            : "Testing connection..."}
+            : selectedAuthMethod === "public"
+              ? "Continuing..."
+              : "Testing connection..."}
           form={connector.name === "clickhouse" ? clickhouseFormId : formId}
           submitForm
           type="primary"
@@ -517,6 +532,7 @@
             submitting,
             clickhouseConnectorType,
             clickhouseSubmitting,
+            selectedAuthMethod,
           })}
         </Button>
       </div>
