@@ -21,7 +21,7 @@ var _ drivers.OLAPInformationSchema = (*informationSchema)(nil)
 // All returns metadata about all tables and views.
 // For StarRocks, we query from the configured catalog's information_schema.
 func (i *informationSchema) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	db, err := i.c.getDB(ctx)
+	db, err := i.c.db(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -100,7 +100,7 @@ func (i *informationSchema) All(ctx context.Context, like string, pageSize uint3
 // Lookup returns metadata about a specific table or view.
 // database parameter = catalog, schema parameter = database in StarRocks terms.
 func (i *informationSchema) Lookup(ctx context.Context, database, schema, name string) (*drivers.OlapTable, error) {
-	db, err := i.c.getDB(ctx)
+	db, err := i.c.db(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ type informationSchemaImpl struct {
 // StarRocks structure: Catalog -> Database -> Table
 // We map: Database = catalog, DatabaseSchema = database
 func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	db, err := i.c.getDB(ctx)
+	db, err := i.c.db(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -284,7 +284,7 @@ func (i *informationSchemaImpl) ListDatabaseSchemas(ctx context.Context, pageSiz
 // ListTables returns a list of tables in a specific database schema.
 // database parameter = catalog, databaseSchema parameter = database
 func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
-	db, err := i.c.getDB(ctx)
+	db, err := i.c.db(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -357,7 +357,7 @@ func (i *informationSchemaImpl) ListTables(ctx context.Context, database, databa
 
 // GetTable returns metadata about a specific table.
 func (i *informationSchemaImpl) GetTable(ctx context.Context, database, databaseSchema, tableName string) (*drivers.TableMetadata, error) {
-	db, err := i.c.getDB(ctx)
+	db, err := i.c.db(ctx)
 	if err != nil {
 		return nil, err
 	}

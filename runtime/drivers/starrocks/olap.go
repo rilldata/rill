@@ -35,7 +35,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 
 // Exec implements drivers.OLAPStore.
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	db, err := c.getDB(ctx)
+	db, err := c.db(ctx)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	db, err := c.getDB(ctx)
+	db, err := c.db(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	db, err := c.getDB(ctx)
+	db, err := c.db(ctx)
 	if err != nil {
 		return nil, err
 	}

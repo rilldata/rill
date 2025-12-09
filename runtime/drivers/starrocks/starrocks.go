@@ -238,7 +238,7 @@ func (c *connection) Config() map[string]any {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB(ctx)
+	db, err := c.db(ctx)
 	if err != nil {
 		return err
 	}
