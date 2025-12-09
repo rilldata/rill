@@ -179,6 +179,40 @@ export class AddDataFormManager {
     return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
   }
 
+  /**
+   * Determines whether the "Save Anyway" button should be shown for the current submission.
+   */
+  private shouldShowSaveAnywayButton(args: {
+    isConnectorForm: boolean;
+    event?:
+      | {
+          result?: Extract<ActionResult, { type: "success" | "failure" }>;
+        }
+      | undefined;
+    stepState: ConnectorStepState | undefined;
+    selectedAuthMethod?: string;
+  }): boolean {
+    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
+
+    // Only show for connector forms (not sources)
+    if (!isConnectorForm) return false;
+
+    // ClickHouse has its own error handling
+    if (this.connector.name === "clickhouse") return false;
+
+    // Need a submission result to show the button
+    if (!event?.result) return false;
+
+    // Multi-step connectors: don't show on source step (final step)
+    if (stepState?.step === "source") return false;
+
+    // Public auth bypasses connection test, so no "Save Anyway" needed
+    if (stepState?.step === "connector" && selectedAuthMethod === "public")
+      return false;
+
+    return true;
+  }
+
   getActiveFormId(args: {
     connectionTab: "parameters" | "dsn";
     onlyDsn: boolean;
@@ -286,21 +320,14 @@ export class AddDataFormManager {
       const selectedAuthMethod = getSelectedAuthMethod?.();
       const stepState = get(connectorStepStore) as ConnectorStepState;
 
-      // FIXME: simplify this logic
-      // For non-ClickHouse connectors, expose Save Anyway when a submission starts,
-      // but skip for multi-step public auth where we bypass submission.
       if (
-        isConnectorForm &&
-        connector.name !== "clickhouse" &&
         typeof setShowSaveAnyway === "function" &&
-        event?.result &&
-        !(
-          isMultiStepConnector &&
-          stepState?.step === "connector" &&
-          selectedAuthMethod === "public"
-        ) &&
-        // Do not show Save Anyway on the model (source) step of multi-step flows.
-        stepState?.step !== "source"
+        this.shouldShowSaveAnywayButton({
+          isConnectorForm,
+          event,
+          stepState,
+          selectedAuthMethod,
+        })
       ) {
         setShowSaveAnyway(true);
       }
