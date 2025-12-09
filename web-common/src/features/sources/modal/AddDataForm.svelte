@@ -134,6 +134,11 @@
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
 
+  // Hide Save Anyway once we advance to the model step in multi-step flows.
+  $: if (isMultiStepConnector && stepState.step === "source") {
+    showSaveAnyway = false;
+  }
+
   $: isSubmitDisabled = (() => {
     // Multi-step connectors, connector step: check auth fields (any satisfied group enables button)
     if (isMultiStepConnector && stepState.step === "connector") {
