@@ -519,9 +519,11 @@
             : submitting}
           loadingCopy={connector.name === "clickhouse"
             ? "Connecting..."
-            : selectedAuthMethod === "public"
-              ? "Continuing..."
-              : "Testing connection..."}
+            : isMultiStepConnector && stepState.step === "source"
+              ? "Importing data..."
+              : selectedAuthMethod === "public"
+                ? "Continuing..."
+                : "Testing connection..."}
           form={connector.name === "clickhouse" ? clickhouseFormId : formId}
           submitForm
           type="primary"
