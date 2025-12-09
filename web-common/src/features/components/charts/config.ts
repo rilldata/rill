@@ -4,6 +4,7 @@ import Funnel from "@rilldata/web-common/components/icons/Funnel.svelte";
 import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import MultiChart from "@rilldata/web-common/components/icons/MultiChart.svelte";
+import ScatterChart from "@rilldata/web-common/components/icons/ScatterChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
@@ -146,8 +147,8 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     generateSpec: generateVLComboChartSpec,
   },
   scatter_plot: {
-    title: "Scatter Plot",
-    icon: LineChart, // Using LineChart icon as placeholder, can be replaced with a dedicated icon later
+    title: "Scatter",
+    icon: ScatterChart,
     provider: ScatterPlotChartProvider,
     generateSpec: generateVLScatterPlotSpec,
   },
