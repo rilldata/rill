@@ -26,11 +26,6 @@ export const GCS_AUTH_OPTIONS: {
   hint?: string;
 }[] = [
   {
-    value: "public",
-    label: "Public",
-    description: "Access publicly readable buckets without credentials.",
-  },
-  {
     value: "credentials",
     label: "GCP credentials",
     description:
@@ -41,6 +36,11 @@ export const GCS_AUTH_OPTIONS: {
     label: "HMAC keys",
     description:
       "Use HMAC access key and secret for S3-compatible authentication.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable buckets without credentials.",
   },
 ];
 
@@ -53,14 +53,14 @@ export const S3_AUTH_OPTIONS: {
   hint?: string;
 }[] = [
   {
-    value: "public",
-    label: "Public",
-    description: "Access publicly readable buckets without credentials.",
-  },
-  {
     value: "access_keys",
     label: "Access keys",
     description: "Use AWS access key ID and secret access key.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable buckets without credentials.",
   },
 ];
 
@@ -77,11 +77,6 @@ export const AZURE_AUTH_OPTIONS: {
   hint?: string;
 }[] = [
   {
-    value: "public",
-    label: "Public",
-    description: "Access publicly readable blobs without credentials.",
-  },
-  {
     value: "connection_string",
     label: "Connection String",
     description: "Alternative for cloud deployment",
@@ -95,6 +90,11 @@ export const AZURE_AUTH_OPTIONS: {
     value: "sas_token",
     label: "Shared Access Signature (SAS) Token",
     description: "Most secure, fine-grained control",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable blobs without credentials.",
   },
 ];
 
