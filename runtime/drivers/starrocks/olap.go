@@ -134,7 +134,7 @@ func (c *connection) rowsToSchema(rows *sqlx.Rows) (*runtimev1.StructType, error
 		if err != nil {
 			if errors.Is(err, errUnsupportedType) {
 				// Skip unsupported types or handle gracefully
-				return nil, fmt.Errorf("unsupported type %s for column %s: %w", ct.DatabaseTypeName(), ct.Name(), err)
+				return nil, fmt.Errorf("unsupported type %q for column %q: %w", ct.DatabaseTypeName(), ct.Name(), err)
 			}
 			return nil, err
 		}

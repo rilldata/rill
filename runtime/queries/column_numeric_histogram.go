@@ -79,7 +79,7 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, priority int) (float64, error) {
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 	var qryString string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
@@ -165,7 +165,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return nil
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 	bucketSize, err := q.calculateBucketSize(ctx, olap, priority)
 	if err != nil {
 		return err
@@ -196,11 +196,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 
 	// StarRocks: "values" is a reserved keyword, use alias
 	var valuesAlias string
-	if olap.Dialect() == drivers.DialectStarRocks {
-		valuesAlias = starrocks.EscapeReservedKeyword("values") // vals
-	} else {
-		valuesAlias = "values"
-	}
+	valuesAlias = "vals"
 	histogramSQL := fmt.Sprintf(
 		`
           WITH data_table AS (
@@ -324,7 +320,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		bucketCount++
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 
 	// StarRocks uses implicit type conversion instead of ::TYPE syntax
 	var castDouble, castFloat string
@@ -339,13 +335,8 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 	// StarRocks: "values" and "range" are reserved keywords, use aliases
 	var valuesAlias, rangeAlias string
-	if olap.Dialect() == drivers.DialectStarRocks {
-		valuesAlias = starrocks.EscapeReservedKeyword("values") // vals
-		rangeAlias = starrocks.EscapeReservedKeyword("range") // valRange
-	} else {
-		valuesAlias = "values"
-		rangeAlias = "range"
-	}
+	valuesAlias = "vals"
+	rangeAlias = "valRange"
 
 	selectColumn := fmt.Sprintf("%s%s", sanitizedColumnName, castDouble)
 	histogramSQL := fmt.Sprintf(

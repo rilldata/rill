@@ -78,7 +78,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return nil
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 	outlierPseudoBucketCount := 500
 
 	// StarRocks uses CAST() function instead of ::TYPE syntax
@@ -100,11 +100,8 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 
 	// StarRocks: "values" is a reserved keyword, use alias
 	var valuesAlias string
-	if olap.Dialect() == drivers.DialectStarRocks {
-		valuesAlias = starrocks.EscapeReservedKeyword("values") // vals
-	} else {
-		valuesAlias = "values"
-	}
+	valuesAlias = "vals"
+
 
 	// StarRocks doesn't support referencing SELECT column aliases in WHERE clause
 	var whereClause string

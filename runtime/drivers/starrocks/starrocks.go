@@ -244,41 +244,7 @@ func (c *connection) Ping(ctx context.Context) error {
 	}
 
 	// Basic connection ping - this validates credentials and connectivity
-	if err := db.PingContext(ctx); err != nil {
-		return err
-	}
-
-	// Validate catalog exists (only if specified and not default_catalog)
-	if c.configProp.Catalog != "" && c.configProp.Catalog != defaultCatalog {
-		var catalogCount int
-		catalogQuery := "SELECT COUNT(*) FROM information_schema.catalogs WHERE catalog_name = ?"
-		if err := db.QueryRowContext(ctx, catalogQuery, c.configProp.Catalog).Scan(&catalogCount); err != nil {
-			return fmt.Errorf("failed to validate catalog: %w", err)
-		}
-		if catalogCount == 0 {
-			return fmt.Errorf("catalog '%s' does not exist", c.configProp.Catalog)
-		}
-	}
-
-	// Validate database exists (only if specified)
-	// Use fully qualified path: <catalog>.information_schema.schemata
-	if c.configProp.Database != "" {
-		catalog := c.configProp.Catalog
-		if catalog == "" {
-			catalog = defaultCatalog
-		}
-
-		var dbCount int
-		dbQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s.information_schema.schemata WHERE schema_name = ?", catalog)
-		if err := db.QueryRowContext(ctx, dbQuery, c.configProp.Database).Scan(&dbCount); err != nil {
-			return fmt.Errorf("failed to validate database: %w", err)
-		}
-		if dbCount == 0 {
-			return fmt.Errorf("database '%s' does not exist in catalog '%s'", c.configProp.Database, catalog)
-		}
-	}
-
-	return nil
+	return db.PingContext(ctx)
 }
 
 // Migrate implements drivers.Handle.
@@ -381,7 +347,8 @@ func (c *connection) initDB() error {
 
 	// Configure connection pool
 	// Rely on database driver's internal connection pooling (uses driver default for MaxOpenConns)
-	// MaxOpenConns can be controlled via DSN parameters if needed
+	// MaxOpenConns set to 20 to default limit concurrent connections
+	db.SetMaxOpenConns(20) // 0 means unlimited
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetConnMaxIdleTime(5 * time.Minute)
@@ -396,17 +363,44 @@ func (c *connection) initDB() error {
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	// Validate catalog exists (only if specified and not default_catalog)
+	// This validation happens once during initialization, not on every Ping()
+	if c.configProp.Catalog != "" && c.configProp.Catalog != defaultCatalog {
+		var catalogCount int
+		catalogQuery := "SELECT COUNT(*) FROM information_schema.catalogs WHERE catalog_name = ?"
+		if err := db.QueryRowContext(pingCtx, catalogQuery, c.configProp.Catalog).Scan(&catalogCount); err != nil {
+			db.Close()
+			return fmt.Errorf("failed to validate catalog: %w", err)
+		}
+		if catalogCount == 0 {
+			db.Close()
+			return fmt.Errorf("catalog %q does not exist", c.configProp.Catalog)
+		}
+	}
+
+	// Validate database exists (only if specified)
+	// Use fully qualified path: <catalog>.information_schema.schemata
+	// This validation happens once during initialization, not on every Ping()
+	if c.configProp.Database != "" {
+		catalog := c.configProp.Catalog
+		if catalog == "" {
+			catalog = defaultCatalog
+		}
+
+		var dbCount int
+		dbQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s.information_schema.schemata WHERE schema_name = ?", catalog)
+		if err := db.QueryRowContext(pingCtx, dbQuery, c.configProp.Database).Scan(&dbCount); err != nil {
+			db.Close()
+			return fmt.Errorf("failed to validate database: %w", err)
+		}
+		if dbCount == 0 {
+			db.Close()
+			return fmt.Errorf("database %q does not exist in catalog %q", c.configProp.Database, catalog)
+		}
+	}
+
 	c.db = db
 	return nil
-}
-
-// getDB returns the database connection.
-// The connection is initialized in drivers.Open, so this always returns a valid connection.
-func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
-	if c.db == nil {
-		return nil, errors.New("database connection not initialized")
-	}
-	return c.db, nil
 }
 
 // buildDSN constructs the MySQL DSN from configuration.

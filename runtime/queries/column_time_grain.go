@@ -112,7 +112,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		  ) as estimatedSmallestTimeGrain
 		FROM time_grains
 		`,
-			safeName(q.ColumnName),
+			olap.Dialect().EscapeIdentifier(q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)
@@ -158,7 +158,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		  ) as estimatedSmallestTimeGrain
 		FROM time_grains
 		`,
-			safeName(q.ColumnName),
+			olap.Dialect().EscapeIdentifier(q.ColumnName),
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 			useSample,
 		)

@@ -55,7 +55,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	}
 	defer release()
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 	var descriptiveStatisticsSQL string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
