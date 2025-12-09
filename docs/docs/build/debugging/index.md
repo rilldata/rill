@@ -7,8 +7,6 @@ sidebar_position: 30
 
 When building Rill projects, you'll encounter various debugging scenarios—from understanding project logs to tracing resource reconciliation. This section covers the tools and techniques available for troubleshooting your Rill projects.
 
-## Debugging Tools
-
 - **[Understanding Project Logs](#understanding-project-logs)** - Learn the basics of reading and interpreting logs
 - **[Troubleshooting Common Errors](#troubleshooting-common-errors)** - Resolve common error patterns
 - **[Advanced Debugging Techniques](#advanced-debugging-techniques)** - Use debug flags, trace viewer, and cloud logs
@@ -28,8 +26,6 @@ Reconciled resource             {"name": "commits__ (copy)_metrics_explore", "ty
 Executed model partition        {"model": "CH_incremental_commits_directory", "key": "55454ed4ad31cd3266988fe523103637", "data": {"path":"github-analytics/Clickhouse/2025/08","uri":"gs://rilldata-public/github-analytics/Clickhouse/2025/08"}, "elapsed": "283.188333ms"}
 Executed model partition        {"model": "staging_to_CH", "key": "0030406e528b3799c8cbad6bfe609e83", "trace_id": "3073a89ac5cee9e7e3433ce0a34d291a", "span_id": "c3cb402d7b4af9b6", "data": {"day":"2022-12-20T00:00:00Z"}}
 ```
-
-### Common Log Fields
 
 ### Generic Logging
 
@@ -177,14 +173,104 @@ The surfaced error might not be the root cause. A dashboard error could stem fro
 
 ## Advanced Debugging Techniques
 
+When standard logs aren't providing enough detail, Rill offers several advanced debugging options to help you diagnose issues more effectively.
+
 ### Using Debug and Verbose Flags
 
-Sometimes the default logs don't have enough information to figure out why something isn't working as planned. In these cases, you can set `--debug` or `--verbose` to get more information.
+Rill Developer provides two flags for increasing log verbosity:
+
+**`--verbose`**: Sets the log level to debug, showing more detailed information about what Rill is doing internally. This includes:
+- More granular resource reconciliation steps
+- Additional context about operations
+- Extended error details
+
+**`--debug`**: Collects additional debug information beyond just log verbosity. This flag enables:
+- Enhanced debugging metadata
+- More detailed trace information
+- Additional diagnostic data useful for troubleshooting complex issues
+
+```bash
+# Increase log verbosity
+rill start --verbose
+
+# Collect additional debug info
+rill start --debug
+
+# Combine both for maximum detail
+rill start --debug --verbose
+```
+
+:::tip When to use each flag
+- Use `--verbose` when you need more detail about what Rill is doing but don't need deep debugging info
+- Use `--debug` when troubleshooting complex issues that require additional diagnostic data
+- Use both together when you need the most comprehensive debugging information
+:::
+
+### Log Format Options
+
+By default, Rill outputs logs in a human-readable console format. For programmatic processing or filtering, you can output logs in JSON format:
+
+```bash
+rill start --log-format json
+```
+
+JSON format is useful when:
+- Parsing logs with scripts or tools
+- Filtering logs programmatically
+- Integrating with log aggregation systems
+
+### Viewing Rill Cloud Logs
+
+For projects deployed to Rill Cloud, you can view logs directly from the CLI:
+
+```bash
+# View recent logs
+rill project logs <project-name>
+
+# Follow logs in real-time (like tail -f)
+rill project logs <project-name> --follow
+
+# Show only the last N lines
+rill project logs <project-name> --tail 100
+
+# Filter by log level
+rill project logs <project-name> --level DEBUG
+```
+
+The `rill project logs` command provides the same structured log output you see in Rill Developer, making it easy to debug issues in production deployments.
+
+### Checking Project Status
+
+Use the `rill project status` command to get a quick overview of your project's health:
+
+```bash
+# Check status of a deployed project
+rill project status <project-name>
+
+# Check status of locally running project
+rill project status --local
+```
+
+This command shows:
+- Resource reconciliation status
+- Error states for individual resources
+- Dependency relationships
+- Overall project health
+
+
+### Trace Viewer
+
+For complex debugging scenarios involving multiple resources and dependencies, use the [Trace Viewer](/build/debugging/trace-viewer) to visualize resource reconciliation and trace execution paths across your project. The Trace Viewer helps you:
+
+- Understand resource dependency chains
+- Identify bottlenecks in reconciliation
+- Visualize execution flows
+- Debug cascading failures
+
+To use the Trace Viewer, start Rill with the `--debug` flag:
 
 ```bash
 rill start --debug
-rill start --verbose
 ```
-### Trace Viewer
 
-For complex debugging scenarios, use the [Trace Viewer](/build/debugging/trace-viewer) to visualize resource reconciliation and trace execution paths across your project.
+Then access the Trace Viewer through the Rill Developer UI to see a visual representation of your project's resource reconciliation.

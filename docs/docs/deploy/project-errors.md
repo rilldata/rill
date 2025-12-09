@@ -29,15 +29,12 @@ Most errors will surface during local development in Rill Developer. However, af
 
 1. **Production configuration missing** - Your YAML files reference `prod:` parameters that have been defined incorrectly. Verify your [dev/prod setup](/build/connectors/templating).
 2. **Timeouts, OOM** - Production data volumes may be larger than local development data, leading to timeouts and out-of-memory issues. [Contact us](/contact) if you see any related error messages.
-3. **Production credentials** - Connector credentials configured for production may differ from local development. Verify your [production credentials](/build/connectors/templating).
 
 To troubleshoot deployment errors:
 
 1. **Check the resource status** in the [project status page](/manage/project-management#checking-deployment-status)
 2. **Review project logs** using `rill project logs` or the Rill Cloud UI
 3. **Compare with local behavior** - If it worked locally, check production-specific configuration differences
-
-For detailed troubleshooting steps and common error solutions, see the [Debugging Rill Projects](/build/debugging#troubleshooting-common-errors) guide.
 
 ## Setting Up Error Alerts
 
