@@ -47,7 +47,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		// Check current status to either start or update the deployment
 		if depl.Status == database.DeploymentStatusRunning {
 			// Update the deployment status to updating
-			depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusUpdating, "Updating...")
+			_, err = w.admin.DB.UpdateDeploymentUnsafe(ctx, depl.ID, &database.UpdateDeploymentUnsafeOptions{
+				RuntimeHost:       depl.RuntimeHost,
+				RuntimeInstanceID: depl.RuntimeInstanceID,
+				RuntimeAudience:   depl.RuntimeAudience,
+				Status:            database.DeploymentStatusUpdating,
+				StatusMessage:     "Updating...",
+			})
 			if err != nil {
 				return err
 			}
@@ -59,7 +65,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 			}
 		} else {
 			// Update the deployment status to pending
-			depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
+			_, err = w.admin.DB.UpdateDeploymentUnsafe(ctx, depl.ID, &database.UpdateDeploymentUnsafeOptions{
+				RuntimeHost:       depl.RuntimeHost,
+				RuntimeInstanceID: depl.RuntimeInstanceID,
+				RuntimeAudience:   depl.RuntimeAudience,
+				Status:            database.DeploymentStatusPending,
+				StatusMessage:     "Provisioning...",
+			})
 			if err != nil {
 				return err
 			}
@@ -75,7 +87,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 	case database.DeploymentStatusStopped:
 		// Update the deployment status to stopping
-		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
+		_, err = w.admin.DB.UpdateDeploymentUnsafe(ctx, depl.ID, &database.UpdateDeploymentUnsafeOptions{
+			RuntimeHost:       depl.RuntimeHost,
+			RuntimeInstanceID: depl.RuntimeInstanceID,
+			RuntimeAudience:   depl.RuntimeAudience,
+			Status:            database.DeploymentStatusStopping,
+			StatusMessage:     "Stopping...",
+		})
 		if err != nil {
 			return err
 		}
@@ -90,7 +108,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 	case database.DeploymentStatusDeleted:
 		// Update the deployment status to deleting
-		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
+		_, err = w.admin.DB.UpdateDeploymentUnsafe(ctx, depl.ID, &database.UpdateDeploymentUnsafeOptions{
+			RuntimeHost:       depl.RuntimeHost,
+			RuntimeInstanceID: depl.RuntimeInstanceID,
+			RuntimeAudience:   depl.RuntimeAudience,
+			Status:            database.DeploymentStatusDeleting,
+			StatusMessage:     "Deleting...",
+		})
 		if err != nil {
 			return err
 		}
@@ -116,7 +140,13 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	}
 
 	// Update the deployment status
-	depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, newStatus, "")
+	depl, err = w.admin.DB.UpdateDeploymentUnsafe(ctx, depl.ID, &database.UpdateDeploymentUnsafeOptions{
+		RuntimeHost:       depl.RuntimeHost,
+		RuntimeInstanceID: depl.RuntimeInstanceID,
+		RuntimeAudience:   depl.RuntimeAudience,
+		Status:            newStatus,
+		StatusMessage:     "",
+	})
 	if err != nil {
 		return err
 	}

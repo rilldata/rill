@@ -105,9 +105,10 @@ type DB interface {
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
-	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
-	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
-	UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus DeploymentStatus) (*Deployment, error)
+	// UpdateDeploymentUnsafe updates deployment fields that must only be called from the `reconcile_deployment` background job.
+	UpdateDeploymentUnsafe(ctx context.Context, id string, opts *UpdateDeploymentUnsafeOptions) (*Deployment, error)
+	// UpdateDeploymentSafe updates deployment fields that are safe to be called from anywhere. Any call to this should subsequently trigger a reconcile_deployment job.
+	UpdateDeploymentSafe(ctx context.Context, id string, opts *UpdateDeploymentSafeOptions) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 
 	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
@@ -619,14 +620,17 @@ type InsertDeploymentOptions struct {
 	DesiredStatus     DeploymentStatus
 }
 
-// UpdateDeploymentOptions defines options for updating a Deployment.
-type UpdateDeploymentOptions struct {
-	Branch            string
+type UpdateDeploymentUnsafeOptions struct {
 	RuntimeHost       string
 	RuntimeInstanceID string
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	StatusMessage     string
+}
+
+type UpdateDeploymentSafeOptions struct {
+	DesiredStatus DeploymentStatus
+	Branch        string
 }
 
 // StaticRuntimeSlotsUsed is the number of slots currently assigned to a runtime host.
