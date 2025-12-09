@@ -189,8 +189,6 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
               const pos = getPos();
               if (!pos) return;
 
-              comp.$set({ selectedChatContext });
-
               // Dispatch a transaction to update the node attributes with the new context.
               view.dispatch(
                 getTransactionForContext(selectedChatContext, view, pos),
@@ -234,7 +232,7 @@ export function configureInlineContextTipTapExtension(
       items: () => [], // TODO: would it make sense to manage the options here?
       render: () => ({
         onStart: (props) => {
-          if (!(props.decorationNode instanceof HTMLElement)) return;
+          if (!(props.decorationNode instanceof HTMLElement)) return; // type safety, non-html will be in non-dom environment
           selected = false;
 
           comp = new InlineContextPicker({
@@ -252,7 +250,11 @@ export function configureInlineContextTipTapExtension(
         },
 
         onUpdate(props) {
-          comp?.$set({ searchText: props.query });
+          if (!(props.decorationNode instanceof HTMLElement)) return; // type safety, non-html will be in non-dom environment
+          comp?.$set({
+            searchText: props.query,
+            refNode: props.decorationNode,
+          });
         },
 
         onExit: ({ editor, range }) => {
@@ -312,16 +314,12 @@ function getTransactionForContext(
   view: EditorView,
   pos: number,
 ) {
-  let tr = view.state.tr.setNodeAttribute(pos, "type", inlineChatContext.type);
-  if (inlineChatContext.metricsView)
-    tr = tr.setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView);
-  if (inlineChatContext.measure)
-    tr = tr.setNodeAttribute(pos, "measure", inlineChatContext.measure);
-  if (inlineChatContext.dimension)
-    tr = tr.setNodeAttribute(pos, "dimension", inlineChatContext.dimension);
-  if (inlineChatContext.timeRange)
-    tr = tr.setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange);
-  return tr;
+  return view.state.tr
+    .setNodeAttribute(pos, "type", inlineChatContext.type)
+    .setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView)
+    .setNodeAttribute(pos, "measure", inlineChatContext.measure)
+    .setNodeAttribute(pos, "dimension", inlineChatContext.dimension)
+    .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange);
 }
 
 function createAttributeEntry(defaultValue: string | null, key: string) {

@@ -9,7 +9,7 @@
 
   $: forThisMeasure = $measure === measureName;
   $: correctedX = ($x ?? 0) - 35;
-  $: correctedY = -($y ?? 0);
+  $: correctedY = -($y ?? 0) + 5;
 
   function onExplain(e) {
     e.stopPropagation();

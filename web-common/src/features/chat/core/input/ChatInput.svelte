@@ -158,18 +158,17 @@
   }
 
   :global(.tiptap) {
-    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply p-2 min-h-16 outline-none;
     @apply text-sm leading-relaxed;
   }
 
   .chat-input-container {
-    @apply w-full;
+    @apply w-full max-h-32 overflow-auto;
   }
 
   .chat-input-container.fixed-height {
     min-height: unset;
     max-height: unset;
-    @apply overflow-auto;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {

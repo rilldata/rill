@@ -57,8 +57,22 @@
     }
   }
 
-  function positionHandler(node: Node) {
+  function positionHandler(node: Node, ref: HTMLElement) {
     if (!(node instanceof HTMLElement)) return;
+
+    let refNode = ref;
+    let cleanup: (() => void) | null = null;
+
+    // Temporary minimal implementation of https://github.com/romkor/svelte-portal/blob/master/src/Portal.svelte
+    // We wont need this once we upgrade to svelte5 and switch to using dropdown component.
+    const update = (newRef: HTMLElement) => {
+      cleanup?.();
+      document.body.appendChild(node);
+
+      refNode = newRef;
+      cleanup = autoUpdate(refNode, node, compute);
+      compute();
+    };
 
     const compute = () => {
       void computePosition(refNode, node, {
@@ -72,11 +86,14 @@
       });
     };
 
-    const cleanup = autoUpdate(refNode, node, compute);
-
+    update(ref);
     return {
+      update,
       destroy() {
-        cleanup();
+        cleanup?.();
+        if (node.parentNode) {
+          node.parentNode.removeChild(node);
+        }
       },
     };
   }
@@ -87,7 +104,7 @@
 <!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
-<div class="inline-chat-context-dropdown" use:positionHandler>
+<div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
   {#each $filteredOptions as metricsViewContextOption (metricsViewContextOption.metricsViewContext.metricsView)}
     <MetricsViewGroup
       {metricsViewContextOption}

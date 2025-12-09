@@ -100,11 +100,13 @@
           <span
             {...getAttrs([builder])}
             use:builderActions={{ builders: [builder] }}
+            class="cursor-pointer"
           >
             {label}
           </span>
         </Tooltip.Trigger>
-        <Tooltip.Content>
+        <!-- TODO: we do not have the correct styles for tooltip. Update app wise in a future PR. -->
+        <Tooltip.Content class="bg-black text-white">
           From {metricsViewName}
         </Tooltip.Content>
       </Tooltip.Root>
