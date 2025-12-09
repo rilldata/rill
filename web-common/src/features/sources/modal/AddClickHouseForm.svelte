@@ -399,7 +399,7 @@
                   id={propertyKey}
                   label={property.displayName}
                   placeholder={property.placeholder}
-                  optional={property.required}
+                  optional={!property.required}
                   secret={property.secret}
                   hint={property.hint}
                   errors={normalizeErrors($paramsErrors[propertyKey])}
