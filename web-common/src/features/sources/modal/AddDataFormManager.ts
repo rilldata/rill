@@ -69,15 +69,25 @@ export class AddDataFormManager {
     return normalizeConnectorError(this.connector.name ?? "", e);
   }
 
+  private getSelectedAuthMethod?: () => string | undefined;
+
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
     onDsnUpdate: (event: SuperFormUpdateEvent) => void;
+    getSelectedAuthMethod?: () => string | undefined;
   }) {
-    const { connector, formType, onParamsUpdate, onDsnUpdate } = args;
+    const {
+      connector,
+      formType,
+      onParamsUpdate,
+      onDsnUpdate,
+      getSelectedAuthMethod,
+    } = args;
     this.connector = connector;
     this.formType = formType;
+    this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Layout height
     this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
@@ -128,7 +138,10 @@ export class AddDataFormManager {
     const paramsSchemaDef = getValidationSchemaForConnector(
       connector.name as string,
       formType,
-      { isMultiStepConnector: this.isMultiStepConnector },
+      {
+        isMultiStepConnector: this.isMultiStepConnector,
+        authMethodGetter: this.getSelectedAuthMethod,
+      },
     );
     const paramsAdapter = yup(paramsSchemaDef);
     type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;

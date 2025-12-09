@@ -56,6 +56,7 @@
     formType,
     onParamsUpdate: (e: any) => handleOnUpdate(e),
     onDsnUpdate: (e: any) => handleOnUpdate(e),
+    getSelectedAuthMethod: () => selectedAuthMethod,
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;
@@ -141,7 +142,12 @@
           connector.name as keyof typeof multiStepFormConfigs
         ];
       if (!config) return true;
-      const groups = Object.values(config.authFieldGroups || {});
+      // Only validate the currently selected auth method; fall back to default.
+      const method =
+        selectedAuthMethod ||
+        config.defaultAuthMethod ||
+        config.authOptions?.[0]?.value;
+      const groups = method ? [config.authFieldGroups?.[method] || []] : [];
       if (!groups.length) return false;
       const hasError = (fieldId: string) =>
         Boolean(($paramsErrors[fieldId] as any)?.length);
