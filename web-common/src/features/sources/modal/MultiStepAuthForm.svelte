@@ -19,6 +19,10 @@
 
   // Keep auth method local to this component; default to provided value or first option.
   let authMethod: string = defaultAuthMethod || authOptions?.[0]?.value || "";
+  $: hasSingleAuthOption = authOptions?.length === 1;
+  $: if (hasSingleAuthOption && authOptions?.[0]?.value) {
+    authMethod = authOptions[0].value;
+  }
 
   // Reactive clearing of fields not relevant to the selected auth method.
   $: if (authMethod && clearFieldsByMethod[authMethod]?.length) {
@@ -42,20 +46,36 @@
 </script>
 
 <!-- Auth method selector and dynamic auth fields -->
-<div class="py-1.5 first:pt-0 last:pb-0">
-  <div class="text-sm font-medium mb-4">Authentication method</div>
-  <Radio bind:value={authMethod} options={authOptions} name="multi-auth-method">
-    <svelte:fragment slot="custom-content" let:option>
-      <slot
-        name="auth-fields"
-        {option}
-        paramsFormStore={paramsForm}
-        {paramsErrors}
-        {handleFileUpload}
-      />
-    </svelte:fragment>
-  </Radio>
-</div>
+{#if !hasSingleAuthOption}
+  <div class="py-1.5 first:pt-0 last:pb-0">
+    <div class="text-sm font-medium mb-4">Authentication method</div>
+    <Radio
+      bind:value={authMethod}
+      options={authOptions}
+      name="multi-auth-method"
+    >
+      <svelte:fragment slot="custom-content" let:option>
+        <slot
+          name="auth-fields"
+          {option}
+          paramsFormStore={paramsForm}
+          {paramsErrors}
+          {handleFileUpload}
+        />
+      </svelte:fragment>
+    </Radio>
+  </div>
+{:else if authOptions?.[0]}
+  <div class="py-1.5 first:pt-0 last:pb-0">
+    <slot
+      name="auth-fields"
+      option={authOptions[0]}
+      paramsFormStore={paramsForm}
+      {paramsErrors}
+      {handleFileUpload}
+    />
+  </div>
+{/if}
 
 <!-- Render other connector properties (excluding path and auth fields) -->
 {#each properties as property (property.key)}
