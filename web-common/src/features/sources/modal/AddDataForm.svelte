@@ -12,7 +12,7 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty } from "./utils";
+  import { hasOnlyDsn, isEmpty, isMultiStepConnectorDisabled } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
@@ -25,7 +25,6 @@
   import MultiStepFormRenderer from "./MultiStepFormRenderer.svelte";
 
   import { AddDataFormManager } from "./AddDataFormManager";
-  import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { multiStepFormConfigs } from "./multi-step-auth-configs";
   import { get } from "svelte/store";
@@ -72,6 +71,7 @@
       ),
     set: (method: string) => setAuthMethod(method || null),
   };
+
   let selectedAuthMethod: string = "";
   $: selectedAuthMethod = $selectedAuthMethodStore;
   $: stepState = $connectorStepStore;
@@ -153,31 +153,12 @@
   $: isSubmitDisabled = (() => {
     // Multi-step connectors, connector step: check auth fields (any satisfied group enables button)
     if (isMultiStepConnector && stepState.step === "connector") {
-      const config =
-        multiStepFormConfigs[
-          connector.name as keyof typeof multiStepFormConfigs
-        ];
-      if (!config) return true;
-      // Only validate the currently selected auth method; fall back to default.
-      const method =
-        selectedAuthMethod ||
-        config.defaultAuthMethod ||
-        config.authOptions?.[0]?.value;
-      const groups = method ? [config.authFieldGroups?.[method] || []] : [];
-      if (!groups.length) return false;
-      const hasError = (fieldId: string) =>
-        Boolean(($paramsErrors[fieldId] as any)?.length);
-      const groupSatisfied = groups.some((fields) =>
-        fields.every((field: any) => {
-          const required = !(field.optional ?? false);
-          if (!required) return true;
-          const value = $paramsForm[field.id];
-          if (isEmpty(value)) return false;
-          if (hasError(field.id)) return false;
-          return true;
-        }),
+      return isMultiStepConnectorDisabled(
+        activeMultiStepConfig,
+        selectedAuthMethod,
+        $paramsForm,
+        $paramsErrors,
       );
-      return !groupSatisfied;
     }
 
     if (onlyDsn || connectionTab === "dsn") {
