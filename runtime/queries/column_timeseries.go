@@ -638,7 +638,7 @@ func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, olap drivers.OLA
 func getExpressionColumnsFromMeasures(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += measure.Expression + " as " + safeName(measure.SqlName)
+		result += measure.Expression + " as " + dialect.EscapeIdentifier(measure.SqlName)
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -650,7 +650,7 @@ func getExpressionColumnsFromMeasures(dialect drivers.Dialect, measures []*runti
 func getCoalesceStatementsMeasures(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`series.%[1]s as %[1]s`, safeName(measure.SqlName))
+		result += fmt.Sprintf(`series.%[1]s as %[1]s`, dialect.EscapeIdentifier(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}
@@ -661,13 +661,14 @@ func getCoalesceStatementsMeasures(dialect drivers.Dialect, measures []*runtimev
 func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
+		safeMeasureName := dialect.EscapeIdentifier(measure.SqlName)
 		switch dialect {
 		case drivers.DialectDuckDB:
 			// "last" function of DuckDB returns non-deterministic results by default so requires an ORDER BY clause
 			// https://duckdb.org/docs/sql/functions/aggregates.html#order-by-clause-in-aggregate-functions
-			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeName(measure.SqlName))
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeMeasureName)
 		default:
-			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(measure.SqlName))
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeMeasureName)
 		}
 		if i < len(measures)-1 {
 			result += ", "

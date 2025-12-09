@@ -439,7 +439,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
 func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, database, databaseSchema, tableName string, priority int) (*float64, *float64, *float64, error) {
-	sanitizedColumnName := safeName(columnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 
 	// StarRocks uses CAST() instead of ::TYPE syntax
 	var selectColumn string

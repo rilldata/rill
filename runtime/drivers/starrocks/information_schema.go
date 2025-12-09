@@ -207,22 +207,6 @@ func (i *informationSchema) LoadPhysicalSize(ctx context.Context, tables []*driv
 	return nil
 }
 
-// isSimpleType checks if a type is a simple/supported type.
-func isSimpleType(dataType string) bool {
-	upper := strings.ToUpper(dataType)
-	simpleTypes := []string{
-		"BOOLEAN", "BOOL", "TINYINT", "SMALLINT", "INT", "INTEGER", "BIGINT", "LARGEINT",
-		"FLOAT", "DOUBLE", "DECIMAL", "CHAR", "VARCHAR", "STRING", "TEXT",
-		"DATE", "DATETIME", "TIMESTAMP", "BINARY", "VARBINARY",
-	}
-	for _, t := range simpleTypes {
-		if strings.HasPrefix(upper, t) {
-			return true
-		}
-	}
-	return false
-}
-
 // InformationSchema interface implementation for drivers.InformationSchema
 
 var _ drivers.InformationSchema = (*informationSchemaImpl)(nil)

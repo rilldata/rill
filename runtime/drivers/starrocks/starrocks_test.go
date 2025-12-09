@@ -134,41 +134,6 @@ func TestSafeSQLName(t *testing.T) {
 	}
 }
 
-func TestEscapeReservedKeyword(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "reserved keyword range",
-			input:    "range",
-			expected: "valRange",
-		},
-		{
-			name:     "reserved keyword values",
-			input:    "values",
-			expected: "vals",
-		},
-		{
-			name:     "reserved keyword RANGE uppercase",
-			input:    "RANGE",
-			expected: "valRange",
-		},
-		{
-			name:     "non-reserved word",
-			input:    "column_name",
-			expected: "column_name",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := EscapeReservedKeyword(tt.input)
-			require.Equal(t, tt.expected, result)
-		})
-	}
-}
 
 func TestDatabaseTypeToRuntimeType(t *testing.T) {
 	c := &connection{}
