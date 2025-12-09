@@ -236,6 +236,7 @@
       {options}
       {onChange}
       {size}
+      fontSize={size === "sm" ? 12 : 14}
       {truncate}
       placeholder={disabled ? disabledMessage : placeholder}
     />
