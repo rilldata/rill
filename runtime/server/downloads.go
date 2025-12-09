@@ -26,6 +26,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// maxDownloadTokenSize is the maximum allowed size for a download token.
+// This is necessary to prevent large URLs in GET requests, which cause obtuse browser or load balancer errors.
+// It appears 8 KB is a safe HTTP header limit, so setting this to 7.5 KB to leave room for other header components.
+const maxDownloadTokenSize int = 7.5 * 1024 // 7.5 KB
+
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
@@ -33,7 +38,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 
 	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx, req.InstanceId))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
+		return nil, err
 	}
 
 	out := fmt.Sprintf("/v1/download?token=%s", tkn)
@@ -130,7 +135,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		ExecutionTime:   valOrNullTime(t),
 	}, downloadClaims)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
+		return nil, err
 	}
 
 	out := fmt.Sprintf("/v1/download?token=%s", tkn)
@@ -353,20 +358,21 @@ func init() {
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
+// NOTE: The error it returns is a gRPC status.Error, so should be propagated as-is in gRPC handlers.
 func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *runtime.SecurityClaims) (string, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to marshal download token: %s", err.Error())
 	}
 
 	r, err = gzipCompress(r)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to compress download token: %s", err.Error())
 	}
 
 	claimsJSON, err := json.Marshal(claims)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to marshal claims: %s", err.Error())
 	}
 
 	tkn := downloadToken{
@@ -377,7 +383,11 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *run
 
 	res, err := s.codec.Encode(tkn)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to encode download token: %s", err.Error())
+	}
+
+	if len(res) > maxDownloadTokenSize {
+		return "", status.Errorf(codes.InvalidArgument, "download token size %d exceeds maximum allowed size of %d bytes", len(res), maxDownloadTokenSize)
 	}
 
 	return res, nil
