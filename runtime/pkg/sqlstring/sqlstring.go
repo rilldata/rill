@@ -16,11 +16,6 @@ func ToLiteral(val any) string {
 		return "NULL"
 	}
 
-	// Handle time.Time before reflection
-	if t, ok := val.(time.Time); ok {
-		return "'" + t.Format(time.RFC3339Nano) + "'"
-	}
-
 	v := reflect.ValueOf(val)
 
 	// Unwrap pointers
@@ -44,9 +39,9 @@ func ToLiteral(val any) string {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return strconv.FormatUint(v.Uint(), 10)
 	case reflect.Float32:
-		return strconv.FormatFloat(v.Float(), 'g', -1, 32)
+		return strconv.FormatFloat(v.Float(), 'f', -1, 32)
 	case reflect.Float64:
-		return strconv.FormatFloat(v.Float(), 'g', -1, 64)
+		return strconv.FormatFloat(v.Float(), 'f', -1, 64)
 	case reflect.Bool:
 		if v.Bool() {
 			return "TRUE"
