@@ -23,7 +23,7 @@ export const getYupSchema = {
       .required(),
   }),
 
-  gcs: yup.object().shape({
+  gcs_connector: yup.object().shape({
     google_application_credentials: yup.string().optional(),
     key_id: yup.string().optional(),
     secret: yup.string().optional(),
@@ -31,6 +31,17 @@ export const getYupSchema = {
       .string()
       .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
       .optional(),
+  }),
+
+  gcs_source: yup.object().shape({
+    path: yup
+      .string()
+      .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
+      .optional(),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required(),
   }),
 
   https: yup.object().shape({
