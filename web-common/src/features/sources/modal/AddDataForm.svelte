@@ -543,29 +543,43 @@
   <div
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
   >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (onlyDsn || connectionTab === "dsn"
-            ? dsnErrorDetails
-            : paramsErrorDetails) ??
-          ""}
-      />
-    {/if}
+    <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
+      {#if dsnError || paramsError || clickhouseError}
+        <SubmissionError
+          message={clickhouseError ??
+            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+            ""}
+          details={clickhouseErrorDetails ??
+            (onlyDsn || connectionTab === "dsn"
+              ? dsnErrorDetails
+              : paramsErrorDetails) ??
+            ""}
+        />
+      {/if}
 
-    <YamlPreview
-      title={isMultiStepConnector
-        ? stepState.step === "connector"
-          ? "Connector preview"
-          : "Model preview"
-        : isSourceForm
-          ? "Model preview"
-          : "Connector preview"}
-      yaml={yamlPreview}
-    />
+      <YamlPreview
+        title={isMultiStepConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
+      />
+
+      {#if isMultiStepConnector && $connectorStepStore.step === "connector"}
+        <div class="text-sm leading-normal font-medium text-muted-foreground">
+          Already connected? <button
+            type="button"
+            class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
+            on:click={() => formManager.handleSkip()}
+          >
+            Import your data
+          </button>
+        </div>
+      {/if}
+    </div>
 
     <NeedHelpText {connector} />
   </div>
