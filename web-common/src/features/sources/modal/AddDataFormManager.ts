@@ -27,6 +27,7 @@ import {
   connectorStepStore,
   setConnectorConfig,
   setStep,
+  type ConnectorStepState,
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
@@ -39,12 +40,6 @@ import type { ActionResult } from "@sveltejs/kit";
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
   form: SuperValidated<Record<string, unknown>, any, Record<string, unknown>>;
-};
-
-// Shape of the step store for multi-step connectors
-type ConnectorStepState = {
-  step: "connector" | "source";
-  connectorConfig: Record<string, unknown> | null;
 };
 
 export class AddDataFormManager {
