@@ -6,10 +6,10 @@ import {
 
 export const getYupSchema = {
   s3_connector: yup.object().shape({
-    aws_access_key_id: yup.string().required("AWS access key ID is required"),
-    aws_secret_access_key: yup
-      .string()
-      .required("AWS secret access key is required"),
+    aws_access_key_id: yup.string().optional(),
+    aws_secret_access_key: yup.string().optional(),
+    region: yup.string().optional(),
+    endpoint: yup.string().optional(),
   }),
 
   s3_source: yup.object().shape({
