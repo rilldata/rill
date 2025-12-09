@@ -16,7 +16,8 @@ test.describe("Test Connection", () => {
       name: /(Test and Connect|Continue)/,
     });
 
-    // Default method is Storage Account Key -> requires account + key.
+    // Select Storage Account Key (default may be different) -> requires account + key.
+    await page.getByRole("radio", { name: "Storage Account Key" }).click();
     await expect(button).toBeDisabled();
 
     await page.getByRole("textbox", { name: "Storage account" }).fill("acct");
