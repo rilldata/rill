@@ -19,5 +19,13 @@ export function getValidationSchemaForConnector(
     }
   }
 
+  // For multi-step connector step, prefer connector-specific schema when present.
+  if (isMultiStepConnector && formType === "connector") {
+    const connectorKey = `${name}_connector`;
+    if (connectorKey in getYupSchema) {
+      return getYupSchema[connectorKey as keyof typeof getYupSchema];
+    }
+  }
+
   return getYupSchema[name as keyof typeof getYupSchema];
 }
