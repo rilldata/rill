@@ -25,7 +25,7 @@
     ? ($parentSpecStore?.data?.metricsViews ?? {})
     : {};
 
-  $: queryOptionsStore = getResolveTemplatedStringQueryOptions(component);
+  const queryOptionsStore = getResolveTemplatedStringQueryOptions(component);
   $: resolveQuery = createQuery(queryOptionsStore, queryClient);
 
   // Store the last successfully resolved content to prevent flashing during refetches
