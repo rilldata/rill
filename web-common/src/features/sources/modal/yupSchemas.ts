@@ -5,6 +5,8 @@ import {
 } from "../../entity-management/name-utils";
 
 export const getYupSchema = {
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
   s3_connector: yup.object().shape({
     aws_access_key_id: yup.string().optional(),
     aws_secret_access_key: yup.string().optional(),
@@ -23,6 +25,8 @@ export const getYupSchema = {
       .required(),
   }),
 
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
   gcs_connector: yup.object().shape({
     google_application_credentials: yup.string().optional(),
     key_id: yup.string().optional(),
@@ -82,6 +86,9 @@ export const getYupSchema = {
       .required("Google application credentials is required"),
   }),
 
+  // Keep these optional here; per-auth required fields are enforced dynamically
+  // via multi-step auth configs. This schema acts as a safe fallback (e.g. source
+  // step selection of `${name}_connector`).
   azure_connector: yup.object().shape({
     azure_storage_account: yup.string().optional(),
     azure_storage_key: yup.string().optional(),
