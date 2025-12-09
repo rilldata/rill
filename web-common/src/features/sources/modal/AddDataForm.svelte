@@ -15,7 +15,6 @@
   import { isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
-    multiStepFormConfigs,
     type ClickHouseConnectorType,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
@@ -28,6 +27,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import { multiStepFormConfigs } from "./multi-step-auth-configs";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
