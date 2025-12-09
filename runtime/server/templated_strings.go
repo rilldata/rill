@@ -55,10 +55,10 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 
 	// Cache and getter function for metrics view measures.
 	//
-	// NOTE: It doesn't have to enforce field access security policies because those are already enforced in the metrics SQL resolver.
-	// So any field returned by the resolver is already allowed to be accessed by the user.
+	// NOTE: We skip enforcing field access security policies here because those are already enforced in the metrics SQL resolver.
+	// So any field that we lookup here is already allowed to be accessed by the user.
 	measuresCache := make(map[string]map[string]bool)
-	isMeasure := func(metricsView, measure string) (bool, error) {
+	isMeasure := func(metricsView, field string) (bool, error) {
 		if metricsView == "" {
 			return false, nil
 		}
@@ -71,7 +71,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 			}
 			measuresCache[metricsView] = measures
 		}
-		_, ok = measures[measure]
+		_, ok = measures[field]
 		return ok, nil
 	}
 
@@ -219,9 +219,8 @@ func (s *Server) metricsViewMeasures(ctx context.Context, instanceID, metricsVie
 		return nil, err
 	}
 
-	spec := mv.ValidSpec
 	measures := make(map[string]bool)
-	for _, d := range spec.Measures {
+	for _, d := range mv.ValidSpec.Measures {
 		measures[d.Name] = true
 	}
 
