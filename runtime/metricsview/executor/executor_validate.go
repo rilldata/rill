@@ -78,14 +78,16 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
 
-	// Populate empty database/databaseSchema from table metadata.
-	// This is needed for connectors like StarRocks that require fully qualified table names,
+	// Populate empty database/databaseSchema from table metadata for StarRocks only.
+	// StarRocks requires fully qualified table names (catalog.database.table),
 	// even when the metrics view YAML doesn't explicitly specify them (e.g., when using models).
-	if mv.Database == "" && t.Database != "" {
-		mv.Database = t.Database
-	}
-	if mv.DatabaseSchema == "" && t.DatabaseSchema != "" {
-		mv.DatabaseSchema = t.DatabaseSchema
+	if e.olap.Dialect() == drivers.DialectStarRocks {
+		if mv.Database == "" && t.Database != "" {
+			mv.Database = t.Database
+		}
+		if mv.DatabaseSchema == "" && t.DatabaseSchema != "" {
+			mv.DatabaseSchema = t.DatabaseSchema
+		}
 	}
 
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
