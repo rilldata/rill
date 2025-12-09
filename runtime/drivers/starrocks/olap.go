@@ -35,10 +35,8 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 
 // Exec implements drivers.OLAPStore.
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	db, err := c.db(ctx)
-	if err != nil {
-		return err
-	}
+	db := c.db
+	var err error
 
 	if c.configProp.LogQueries {
 		c.logger.Info("StarRocks exec",
@@ -48,7 +46,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 	// Handle DryRun: validate query without execution
 	if stmt.DryRun {
-		_, err := db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
+		_, err = db.ExecContext(ctx, fmt.Sprintf("EXPLAIN %s", stmt.Query), stmt.Args...)
 		return err
 	}
 
@@ -58,10 +56,8 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	db, err := c.db(ctx)
-	if err != nil {
-		return nil, err
-	}
+	
+	db := c.db
 
 	if c.configProp.LogQueries {
 		c.logger.Info("StarRocks query",
@@ -99,10 +95,8 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	db, err := c.db(ctx)
-	if err != nil {
-		return nil, err
-	}
+	
+	db := c.db
 
 	// Use LIMIT 0 to get schema without data
 	schemaQuery := fmt.Sprintf("SELECT * FROM (%s) AS _schema_query LIMIT 0", query)
