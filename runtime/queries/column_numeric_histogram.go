@@ -9,7 +9,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/starrocks"
 )
 
 type ColumnNumericHistogram struct {
@@ -439,22 +438,18 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
 func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, database, databaseSchema, tableName string, priority int) (*float64, *float64, *float64, error) {
-	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(columnName)
 
 	// StarRocks uses CAST() instead of ::TYPE syntax
 	var selectColumn string
 	if olap.Dialect() == drivers.DialectStarRocks {
-		sanitizedColumnName = olap.Dialect().EscapeIdentifier(columnName)
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 	}
 
 	// StarRocks: "range" is a reserved keyword, use backtick escaping
-	rangeAlias := "range"
-	if olap.Dialect() == drivers.DialectStarRocks {
-		rangeAlias = "`range`"
-	}
+	rangeAlias := "valRange"
 
 	minMaxSQL := fmt.Sprintf(
 		`

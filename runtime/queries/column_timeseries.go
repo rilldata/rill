@@ -286,7 +286,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 			-- transform the original data, and optionally sample it.
 			series AS (
 				SELECT
-					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(dialect, measures) + `
+					` + colSQL + ` AS ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 				FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 				GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -296,7 +296,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
 				SELECT
-				` + getCoalesceStatementsMeasures(dialect, measures) + `,
+				` + getCoalesceStatementsMeasures(measures) + `,
 				toTimeZone(template.` + tsAlias + `::DATETIME64, ?) AS ` + tsAlias + ` FROM template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
@@ -339,7 +339,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(dialect, measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + dialect.EscapeTable(q.Database, q.DatabaseSchema, q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -349,7 +349,7 @@ func timeSeriesDuckDBSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *ColumnTime
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
 				SELECT
-				` + getCoalesceStatementsMeasures(dialect, measures) + `,
+				` + getCoalesceStatementsMeasures(measures) + `,
 				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
@@ -658,7 +658,7 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest
 	return result
 }
 
-func getCoalesceStatementsMeasuresLast(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
 		switch dialect {
@@ -804,7 +804,7 @@ func (q *ColumnTimeseries) resolveStarRocks(ctx context.Context, olap drivers.OL
 			FROM TABLE(generate_series(0, TIMESTAMPDIFF(` + dateTruncSpecifier + `, '` + startTimeStr + `', '` + endTimeStr + `')))
 		),
 		series AS (
-			SELECT ` + colSQL + ` AS ` + tsAlias + `, ` + getExpressionColumnsFromMeasures(dialect, measures) + `
+			SELECT ` + colSQL + ` AS ` + tsAlias + `, ` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + sourceTable + `
 			GROUP BY ` + tsAlias + `
 		)

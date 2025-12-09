@@ -8,7 +8,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/starrocks"
 )
 
 type ColumnRugHistogram struct {
@@ -84,7 +83,6 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	// StarRocks uses CAST() function instead of ::TYPE syntax
 	var selectColumn string
 	if olap.Dialect() == drivers.DialectStarRocks {
-		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
 		selectColumn = fmt.Sprintf("CAST(%s AS DOUBLE)", sanitizedColumnName)
 	} else {
 		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
