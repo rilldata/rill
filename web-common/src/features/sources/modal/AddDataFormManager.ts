@@ -272,23 +272,29 @@ export class AddDataFormManager {
       >;
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
     }) => {
-      // For non-ClickHouse connectors, expose Save Anyway when a submission starts
-      if (
-        isConnectorForm &&
-        connector.name !== "clickhouse" &&
-        typeof setShowSaveAnyway === "function" &&
-        event?.result
-      ) {
-        setShowSaveAnyway(true);
-      }
-
       if (!event.form.valid) return;
 
       const values = event.form.data;
       const selectedAuthMethod = getSelectedAuthMethod?.();
+      const stepState = get(connectorStepStore) as ConnectorStepState;
+
+      // For non-ClickHouse connectors, expose Save Anyway when a submission starts,
+      // but skip for multi-step public auth where we bypass submission.
+      if (
+        isConnectorForm &&
+        connector.name !== "clickhouse" &&
+        typeof setShowSaveAnyway === "function" &&
+        event?.result &&
+        !(
+          isMultiStepConnector &&
+          stepState?.step === "connector" &&
+          selectedAuthMethod === "public"
+        )
+      ) {
+        setShowSaveAnyway(true);
+      }
 
       try {
-        const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
