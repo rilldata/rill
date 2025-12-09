@@ -44,7 +44,7 @@ export const GCS_AUTH_OPTIONS: {
   },
 ];
 
-export type S3AuthMethod = "access_keys";
+export type S3AuthMethod = "access_keys" | "public";
 
 export const S3_AUTH_OPTIONS: {
   value: S3AuthMethod;
@@ -53,13 +53,22 @@ export const S3_AUTH_OPTIONS: {
   hint?: string;
 }[] = [
   {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable buckets without credentials.",
+  },
+  {
     value: "access_keys",
     label: "Access keys",
     description: "Use AWS access key ID and secret access key.",
   },
 ];
 
-export type AzureAuthMethod = "account_key" | "sas_token" | "connection_string";
+export type AzureAuthMethod =
+  | "account_key"
+  | "sas_token"
+  | "connection_string"
+  | "public";
 
 export const AZURE_AUTH_OPTIONS: {
   value: AzureAuthMethod;
@@ -67,6 +76,11 @@ export const AZURE_AUTH_OPTIONS: {
   description: string;
   hint?: string;
 }[] = [
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable blobs without credentials.",
+  },
   {
     value: "connection_string",
     label: "Connection String",
