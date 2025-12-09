@@ -394,16 +394,22 @@ export class AddDataFormManager {
       clickhouseDsnValues,
     } = ctx;
 
+    const connectorPropertiesForPreview =
+      isMultiStepConnector && stepState?.step === "connector"
+        ? (connector.configProperties ?? [])
+        : filteredParamsProperties;
+
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
+      const orderedProperties =
+        onlyDsn || connectionTab === "dsn"
+          ? filteredDsnProperties
+          : connectorPropertiesForPreview;
       return compileConnectorYAML(connector, values, {
         fieldFilter: (property) => {
           if (onlyDsn || connectionTab === "dsn") return true;
           return !property.noPrompt;
         },
-        orderedProperties:
-          onlyDsn || connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
+        orderedProperties,
       });
     };
 
