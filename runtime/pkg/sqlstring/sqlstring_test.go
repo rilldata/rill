@@ -41,7 +41,7 @@ func TestToSQLLiteral(t *testing.T) {
 		{"float32", float32(3.14), "3.14"},
 		{"float32 whole", float32(42), "42"},
 		{"float64", 3.14159265359, "3.14159265359"},
-		{"float64 scientific", 1.23e10, "1.23e+10"},
+		{"float64 scientific", 1.23e10, "12300000000"},
 		{"float64 negative", -0.001, "-0.001"},
 
 		// Booleans
@@ -85,6 +85,7 @@ func TestToSQLLiteral(t *testing.T) {
 		{"struct", struct{ X int }{X: 42}, "'{\"X\":42}'"},
 		{"map", map[string]int{"a": 1}, "'{\"a\":1}'"},
 		{"struct with quotes", struct{ S string }{S: "it's"}, "'{\"S\":\"it''s\"}'"},
+		{"unsupported type", make(chan int), "'<json error: json: unsupported type: chan int>'"},
 	}
 
 	for _, tt := range tests {

@@ -3,6 +3,7 @@ package sqlstring
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -62,7 +63,10 @@ func ToLiteral(val any) string {
 		return "(" + strings.Join(parts, ", ") + ")"
 	default:
 		// Fallback: JSON-encode and treat as string
-		b, _ := json.Marshal(v.Interface())
-		return "'" + strings.ReplaceAll(strings.TrimSpace(string(b)), "'", "''") + "'"
+		b, err := json.Marshal(v.Interface())
+		if err != nil {
+			b = fmt.Appendf([]byte{}, "<json error: %s>", err.Error())
+		}
+		return "'" + strings.ReplaceAll(string(b), "'", "''") + "'"
 	}
 }
