@@ -18,7 +18,8 @@
   export let excludedKeys: string[] = [];
 
   // Keep auth method local to this component; default to provided value or first option.
-  let authMethod: string = defaultAuthMethod || authOptions?.[0]?.value || "";
+  export let authMethod: string =
+    defaultAuthMethod || authOptions?.[0]?.value || "";
   $: hasSingleAuthOption = authOptions?.length === 1;
   $: if (hasSingleAuthOption && authOptions?.[0]?.value) {
     authMethod = authOptions[0].value;

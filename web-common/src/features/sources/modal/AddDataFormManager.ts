@@ -203,6 +203,7 @@ export class AddDataFormManager {
     submitting: boolean;
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseSubmitting?: boolean;
+    selectedAuthMethod?: string;
   }): string {
     const {
       isConnectorForm,
@@ -210,6 +211,7 @@ export class AddDataFormManager {
       submitting,
       clickhouseConnectorType,
       clickhouseSubmitting,
+      selectedAuthMethod,
     } = args;
     const isClickhouse = this.connector.name === "clickhouse";
 
@@ -224,6 +226,9 @@ export class AddDataFormManager {
 
     if (isConnectorForm) {
       if (this.isMultiStepConnector && step === "connector") {
+        if (selectedAuthMethod === "public") {
+          return submitting ? "Continuing..." : "Continue";
+        }
         return submitting ? "Testing connection..." : "Test and Connect";
       }
       if (this.isMultiStepConnector && step === "source") {
@@ -239,6 +244,7 @@ export class AddDataFormManager {
     onClose: () => void;
     queryClient: any;
     getConnectionTab: () => "parameters" | "dsn";
+    getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
     setDsnError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
@@ -247,6 +253,7 @@ export class AddDataFormManager {
       onClose,
       queryClient,
       getConnectionTab,
+      getSelectedAuthMethod,
       setParamsError,
       setDsnError,
       setShowSaveAnyway,
@@ -278,6 +285,7 @@ export class AddDataFormManager {
       if (!event.form.valid) return;
 
       const values = event.form.data;
+      const selectedAuthMethod = getSelectedAuthMethod?.();
 
       try {
         const stepState = get(connectorStepStore) as ConnectorStepState;
@@ -285,6 +293,12 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
+          // For public auth, skip Test & Connect and go straight to the next step.
+          if (selectedAuthMethod === "public") {
+            setConnectorConfig(values);
+            setStep("source");
+            return;
+          }
           await submitAddConnectorForm(queryClient, connector, values, false);
           setConnectorConfig(values);
           setStep("source");
