@@ -23,26 +23,54 @@
   import { CONNECTION_TAB_OPTIONS } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
+  // Types
+  interface ApiError {
+    response?: {
+      data?: {
+        message?: string;
+        code?: string;
+      };
+    };
+    message?: string;
+    details?: string;
+  }
+
+  interface FormError {
+    message: string | null;
+    details?: string;
+  }
+
+  type FormErrors = Record<ConnectorType, FormError>;
+
+  // Props
   export let connector: V1ConnectorDriver;
-  export let formId: string;
-  export let isSubmitting: boolean;
-  export let isSubmitDisabled: boolean;
+  export let onClose: () => void;
+  export let setError: (error: string | null, details?: string) => void = () => {};
+
+  // Exported state
+  export let formId: string = "";
+  export let isSubmitting: boolean = false;
+  export let isSubmitDisabled: boolean = false;
   export let connectionTab: ConnectorType = "parameters";
   export let showSaveAnyway: boolean = false;
-  export let onClose: () => void;
-  export let setError: (
-    error: string | null,
-    details?: string,
-  ) => void = () => {};
 
-  export { paramsForm, dsnForm };
-  export { handleSaveAnyway };
+  export { paramsForm, dsnForm, handleSaveAnyway };
 
-  const starrocksSchema = yup(getYupSchema["starrocks"]);
-  const initialFormValues = getInitialFormValuesFromProperties(
-    connector.configProperties ?? [],
-  );
-  const paramsFormId = `add-starrocks-data-${connector.name}-form`;
+  // Constants
+  const CONNECTOR_NAME = "starrocks";
+  const paramsFormId = `add-${CONNECTOR_NAME}-data-${connector.name}-form`;
+  const dsnFormId = `add-${CONNECTOR_NAME}-data-${connector.name}-dsn-form`;
+
+  // Derived properties
+  $: dsnProperties = connector.configProperties?.filter((p) => p.key === "dsn") ?? [];
+  $: hasDsnProperty = dsnProperties.length > 0;
+  $: nonDsnProperties = (connector.configProperties ?? []).filter((p) => p.key !== "dsn");
+  $: filteredProperties = nonDsnProperties.filter((p) => !p.noPrompt);
+
+  // Parameters form setup
+  const starrocksSchema = yup(getYupSchema[CONNECTOR_NAME]);
+  const initialFormValues = getInitialFormValuesFromProperties(connector.configProperties ?? []);
+
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -56,14 +84,10 @@
     onUpdate: handleOnUpdate,
     resetForm: false,
   });
-  let paramsError: string | null = null;
-  let paramsErrorDetails: string | undefined = undefined;
 
-  const dsnFormId = `add-starrocks-data-${connector.name}-dsn-form`;
-  const dsnProperties =
-    connector.configProperties?.filter((property) => property.key === "dsn") ??
-    [];
+  // DSN form setup
   const dsnYupSchema = yup(dsnSchema);
+
   const {
     form: dsnForm,
     errors: dsnErrors,
@@ -77,130 +101,104 @@
     onUpdate: handleOnUpdate,
     resetForm: false,
   });
-  let dsnError: string | null = null;
-  let dsnErrorDetails: string | undefined = undefined;
 
-  $: submitting =
-    connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
-  $: isSubmitting = submitting;
+  // Error state (unified)
+  let formErrors: FormErrors = {
+    parameters: { message: null },
+    dsn: { message: null },
+  };
+
+  // Reactive bindings
+  $: isSubmitting = connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
   $: formId = connectionTab === "parameters" ? paramsFormId : dsnFormId;
 
-  // Reset errors when form is modified
-  $: if (connectionTab === "parameters") {
-    if ($paramsTainted) paramsError = null;
-  } else if (connectionTab === "dsn") {
-    if ($dsnTainted) dsnError = null;
+  // Clear errors when form is modified
+  $: if (connectionTab === "parameters" && $paramsTainted) {
+    formErrors.parameters = { message: null };
+  }
+  $: if (connectionTab === "dsn" && $dsnTainted) {
+    formErrors.dsn = { message: null };
   }
 
-  // Clear errors when switching tabs
-  $: if (connectionTab === "dsn") {
-    paramsError = null;
-    paramsErrorDetails = undefined;
-  } else {
-    dsnError = null;
-    dsnErrorDetails = undefined;
+  // Clear opposite tab's errors when switching
+  $: {
+    const oppositeTab = connectionTab === "parameters" ? "dsn" : "parameters";
+    formErrors[oppositeTab] = { message: null };
   }
 
-  function handleOnUpdate({ form }: { form: SuperValidated<any> }) {
-    // Show Save Anyway button as soon as form submission starts
+  // Compute disabled state
+  $: isSubmitDisabled = (() => {
+    const properties = connectionTab === "dsn" ? dsnProperties : filteredProperties;
+    const form = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    const errors = connectionTab === "dsn" ? $dsnErrors : $paramsErrors;
+
+    for (const property of properties) {
+      if (property.required) {
+        const key = String(property.key);
+        if (isEmpty(form[key]) || errors[key]?.length) {
+          return true;
+        }
+      }
+    }
+    return false;
+  })();
+
+  // Error extraction utility
+  function extractErrorInfo(e: unknown): { error: string; details?: string } {
+    const apiError = e as ApiError;
+    const originalMessage =
+      e instanceof Error
+        ? e.message
+        : apiError?.response?.data?.message ?? apiError?.message;
+
+    if (!originalMessage) {
+      return { error: "Unknown error" };
+    }
+
+    const humanReadable = humanReadableErrorMessage(
+      connector.name,
+      apiError?.response?.data?.code,
+      originalMessage,
+    );
+
+    const details =
+      humanReadable !== originalMessage
+        ? originalMessage
+        : apiError?.details !== originalMessage
+          ? apiError?.details
+          : undefined;
+
+    return { error: humanReadable, details };
+  }
+
+  function setCurrentError(error: string, details?: string) {
+    formErrors[connectionTab] = { message: error, details };
+    setError(error, details);
+  }
+
+  function clearAllErrors() {
+    formErrors = { parameters: { message: null }, dsn: { message: null } };
+    setError(null, undefined);
+  }
+
+  function handleOnUpdate({ form }: { form: SuperValidated<unknown> }) {
     showSaveAnyway = true;
-
     if (form.valid) {
       handleSubmit(form.data);
     }
   }
 
-  async function handleSubmit(values: any) {
-    // Clear previous errors
-    paramsError = null;
-    paramsErrorDetails = undefined;
-    dsnError = null;
-    dsnErrorDetails = undefined;
-    setError(null, undefined);
+  async function handleSubmit(values: unknown) {
+    clearAllErrors();
 
     try {
-      await submitAddConnectorForm(
-        queryClient,
-        connector,
-        values,
-        false, // Normal submission, not saveAnyway
-      );
+      await submitAddConnectorForm(queryClient, connector, values, false);
       onClose();
     } catch (e) {
-      let error: string;
-      let details: string | undefined = undefined;
-      let originalMessage: string | undefined;
-
-      // Extract the original message from various error formats
-      if (e instanceof Error) {
-        originalMessage = e.message;
-      } else if (e?.response?.data?.message) {
-        originalMessage = e.response.data.message;
-      } else if (e?.message) {
-        originalMessage = e.message;
-      }
-
-      // Apply human-readable error transformation
-      if (originalMessage) {
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e?.response?.data?.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        // Show original message as details only if it differs from the human-readable version
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-        // Also include e.details if available and different
-        if (!details && e?.details && e.details !== originalMessage) {
-          details = e.details;
-        }
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
-      if (connectionTab === "parameters") {
-        paramsError = error;
-        paramsErrorDetails = details;
-        setError(paramsError, paramsErrorDetails);
-      } else if (connectionTab === "dsn") {
-        dsnError = error;
-        dsnErrorDetails = details;
-        setError(dsnError, dsnErrorDetails);
-      }
+      const { error, details } = extractErrorInfo(e);
+      setCurrentError(error, details);
     }
   }
-
-  $: properties = (connector.configProperties ?? []).filter((p) =>
-    connectionTab !== "dsn" ? p.key !== "dsn" : true,
-  );
-
-  $: filteredProperties = properties.filter((property) => !property.noPrompt);
-
-  // Compute disabled state for the submit button
-  $: isSubmitDisabled = (() => {
-    if (connectionTab === "dsn") {
-      // DSN form
-      for (const property of dsnProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $dsnForm[key];
-          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
-        }
-      }
-      return false;
-    } else {
-      // Parameters form: check required properties
-      for (const property of filteredProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $paramsForm[key];
-          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
-        }
-      }
-      return false;
-    }
-  })();
 
   async function handleSaveAnyway() {
     showSaveAnyway = false;
@@ -211,174 +209,136 @@
       onClose();
     } catch (e) {
       showSaveAnyway = true;
-      let error: string;
-      let details: string | undefined = undefined;
-      let originalMessage: string | undefined;
-
-      // Extract the original message from various error formats
-      if (e instanceof Error) {
-        originalMessage = e.message;
-      } else if (e?.response?.data?.message) {
-        originalMessage = e.response.data.message;
-      } else if (e?.message) {
-        originalMessage = e.message;
-      }
-
-      // Apply human-readable error transformation
-      if (originalMessage) {
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e?.response?.data?.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-        if (!details && e?.details && e.details !== originalMessage) {
-          details = e.details;
-        }
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
-      if (connectionTab === "parameters") {
-        paramsError = error;
-        paramsErrorDetails = details;
-        setError(paramsError, paramsErrorDetails);
-      } else if (connectionTab === "dsn") {
-        dsnError = error;
-        dsnErrorDetails = details;
-        setError(dsnError, dsnErrorDetails);
-      }
+      const { error, details } = extractErrorInfo(e);
+      setCurrentError(error, details);
     }
   }
-
-  $: hasDsnProperty = connector.configProperties?.some((p) => p.key === "dsn") ?? false;
 </script>
 
 <div class="h-full w-full flex flex-col">
   {#if hasDsnProperty}
     <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
-    <TabsContent value="parameters">
-      <form
-        id={paramsFormId}
-        class="flex-grow overflow-y-auto"
-        method="POST"
-        use:paramsEnhance
-        on:submit|preventDefault={paramsSubmit}
-      >
-        {#each filteredProperties as property (property.key)}
-          {@const propertyKey = property.key ?? ""}
-          <div class="py-1.5 first:pt-0 last:pb-0">
-            {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+      <TabsContent value="parameters">
+        <form
+          id={paramsFormId}
+          class="flex-grow overflow-y-auto"
+          method="POST"
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          {#each filteredProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <Checkbox
+                  id={propertyKey}
+                  bind:checked={$paramsForm[propertyKey]}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {/if}
+            </div>
+          {/each}
+        </form>
+      </TabsContent>
+
+      <TabsContent value="dsn">
+        <form
+          id={dsnFormId}
+          class="flex-grow overflow-y-auto"
+          method="POST"
+          use:dsnEnhance
+          on:submit|preventDefault={dsnSubmit}
+        >
+          {#each dsnProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.0 first:pt-0 last:pb-0">
               <Input
                 id={propertyKey}
                 label={property.displayName}
                 placeholder={property.placeholder}
-                optional={!property.required}
                 secret={property.secret}
                 hint={property.hint}
-                errors={normalizeErrors($paramsErrors[propertyKey])}
-                bind:value={$paramsForm[propertyKey]}
+                errors={normalizeErrors($dsnErrors[propertyKey])}
+                bind:value={$dsnForm[propertyKey]}
                 alwaysShowError
               />
-            {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-              <Checkbox
-                id={propertyKey}
-                bind:checked={$paramsForm[propertyKey]}
-                label={property.displayName}
-                hint={property.hint}
-                optional={!property.required}
-              />
-            {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-              <InformationalField
-                description={property.description}
-                hint={property.hint}
-                href={property.docsUrl}
-              />
-            {/if}
-          </div>
-        {/each}
-      </form>
-    </TabsContent>
-    <TabsContent value="dsn">
-      <form
-        id={dsnFormId}
-        class="flex-grow overflow-y-auto"
-        method="POST"
-        use:dsnEnhance
-        on:submit|preventDefault={dsnSubmit}
-      >
-        {#each dsnProperties as property (property.key)}
-          {@const propertyKey = property.key ?? ""}
-          <div class="py-1.0 first:pt-0 last:pb-0">
+            </div>
+          {/each}
+          <InformationalField>
+            Refer to the
+            <a
+              href="https://docs.starrocks.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="underline"
+            >
+              StarRocks documentation
+            </a>
+            for DSN format.
+          </InformationalField>
+        </form>
+      </TabsContent>
+    </Tabs>
+  {:else}
+    <form
+      id={paramsFormId}
+      class="flex-grow overflow-y-auto"
+      method="POST"
+      use:paramsEnhance
+      on:submit|preventDefault={paramsSubmit}
+    >
+      {#each filteredProperties as property (property.key)}
+        {@const propertyKey = property.key ?? ""}
+        <div class="py-1.5 first:pt-0 last:pb-0">
+          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
             <Input
               id={propertyKey}
               label={property.displayName}
               placeholder={property.placeholder}
+              optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              errors={normalizeErrors($dsnErrors[propertyKey])}
-              bind:value={$dsnForm[propertyKey]}
+              errors={normalizeErrors($paramsErrors[propertyKey])}
+              bind:value={$paramsForm[propertyKey]}
               alwaysShowError
             />
-          </div>
-        {/each}
-        <InformationalField>
-          Refer to the
-          <a
-            href="https://docs.starrocks.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="underline"
-          >
-            StarRocks documentation
-          </a>
-          for DSN format.
-        </InformationalField>
-      </form>
-    </TabsContent>
-  </Tabs>
-{:else}
-  <form
-    id={paramsFormId}
-    class="flex-grow overflow-y-auto"
-    method="POST"
-    use:paramsEnhance
-    on:submit|preventDefault={paramsSubmit}
-  >
-    {#each filteredProperties as property (property.key)}
-      {@const propertyKey = property.key ?? ""}
-      <div class="py-1.5 first:pt-0 last:pb-0">
-        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-          <Input
-            id={propertyKey}
-            label={property.displayName}
-            placeholder={property.placeholder}
-            optional={!property.required}
-            secret={property.secret}
-            hint={property.hint}
-            errors={normalizeErrors($paramsErrors[propertyKey])}
-            bind:value={$paramsForm[propertyKey]}
-            alwaysShowError
-          />
-        {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-          <Checkbox
-            id={propertyKey}
-            bind:checked={$paramsForm[propertyKey]}
-            label={property.displayName}
-            hint={property.hint}
-            optional={!property.required}
-          />
-        {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-          <InformationalField
-            description={property.description}
-            hint={property.hint}
-            href={property.docsUrl}
-          />
-        {/if}
-      </div>
-    {/each}
-  </form>
+          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+            <Checkbox
+              id={propertyKey}
+              bind:checked={$paramsForm[propertyKey]}
+              label={property.displayName}
+              hint={property.hint}
+              optional={!property.required}
+            />
+          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+            <InformationalField
+              description={property.description}
+              hint={property.hint}
+              href={property.docsUrl}
+            />
+          {/if}
+        </div>
+      {/each}
+    </form>
   {/if}
 </div>
