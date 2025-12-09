@@ -114,7 +114,7 @@ export const multiStepFormConfigs: Record<string, MultiStepFormConfig> = {
   },
   azure: {
     authOptions: AZURE_AUTH_OPTIONS,
-    defaultAuthMethod: "account_key",
+    defaultAuthMethod: "connection_string",
     clearFieldsByMethod: {
       account_key: [
         "azure_storage_connection_string",
