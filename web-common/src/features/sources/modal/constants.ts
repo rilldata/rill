@@ -17,7 +17,7 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
-export type GCSAuthMethod = "credentials" | "hmac";
+export type GCSAuthMethod = "public" | "credentials" | "hmac";
 
 export const GCS_AUTH_OPTIONS: {
   value: GCSAuthMethod;
@@ -25,6 +25,11 @@ export const GCS_AUTH_OPTIONS: {
   description: string;
   hint?: string;
 }[] = [
+  {
+    value: "public",
+    label: "Public",
+    description: "Access publicly readable buckets without credentials.",
+  },
   {
     value: "credentials",
     label: "GCP credentials",
