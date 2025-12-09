@@ -88,6 +88,8 @@ export class CanvasEntity {
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
+  // This may sometimes be false due to discrepancy between two different ways
+  // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
   _defaultUrlParams = writable<URLSearchParams>(new URLSearchParams());
   viewingDefaultsStore: Readable<boolean>;
   filtersEnabledStore = writable<boolean>(true);

@@ -277,19 +277,21 @@ export function toggleDimensionFilterValue(
 ) {
   if (!expr.cond?.exprs) return -1;
 
-  const inIdx = getValueIndexInExpression(expr, dimensionValue);
-  if (inIdx === -1) {
+  const values = new Set(getValuesInExpression(expr));
+
+  const deleted = values.delete(dimensionValue);
+
+  if (deleted) {
+    expr.cond.exprs[1] = { val: Array.from(values) };
+  } else {
     if (isExclusiveFilter) {
       expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
         val: dimensionValue,
       });
     } else {
-      expr.cond.exprs.push({ val: dimensionValue });
+      values.add(dimensionValue);
+      expr.cond.exprs[1] = { val: Array.from(values) };
     }
-    return -1;
-  } else {
-    expr.cond.exprs.splice(inIdx, 1);
-    return inIdx;
   }
 }
 

@@ -282,6 +282,7 @@ export class FilterState {
     const wasLikeFilter =
       expr?.cond?.op === V1Operation.OPERATION_LIKE ||
       expr?.cond?.op === V1Operation.OPERATION_NLIKE;
+
     if (!expr?.cond?.exprs || wasLikeFilter) {
       expr = createInExpression(dimensionName, [], exclude);
       wf.cond?.exprs?.push(expr);

@@ -186,7 +186,7 @@ function escapeValue(value: unknown): string {
     case "object":
       if (!value) return "null";
       if (Array.isArray(value)) {
-        return `${value.map(escapeValue).join(",")}`;
+        return `[${value.map(escapeValue).join(",")}]`;
       }
       return `{${Object.keys(value)
         .map((k) => `'${k}':${escapeValue(value[k])}`)
