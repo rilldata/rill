@@ -232,7 +232,7 @@ export class AddDataFormManager {
         return submitting ? "Testing connection..." : "Test and Connect";
       }
       if (this.isMultiStepConnector && step === "source") {
-        return submitting ? "Creating model..." : "Test and Add data";
+        return submitting ? "Importing data..." : "Import Data";
       }
       return submitting ? "Testing connection..." : "Test and Connect";
     }
