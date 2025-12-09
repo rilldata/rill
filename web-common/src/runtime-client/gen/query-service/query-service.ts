@@ -46,6 +46,7 @@ import type {
   QueryServiceQueryBody,
   QueryServiceResolveCanvasBody,
   QueryServiceResolveComponentBody,
+  QueryServiceResolveMetricsViewFilterExpressionBody,
   QueryServiceResolveTemplatedStringBody,
   QueryServiceTableCardinalityParams,
   QueryServiceTableColumnsParams,
@@ -77,6 +78,7 @@ import type {
   V1QueryResponse,
   V1ResolveCanvasResponse,
   V1ResolveComponentResponse,
+  V1ResolveMetricsViewFilterExpressionResponse,
   V1ResolveTemplatedStringResponse,
   V1TableCardinalityResponse,
   V1TableColumnsResponse,
@@ -773,6 +775,115 @@ export const createQueryServiceExport = <
   TContext
 > => {
   const mutationOptions = getQueryServiceExportMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
+ */
+export const queryServiceResolveMetricsViewFilterExpression = (
+  instanceId: string,
+  queryServiceResolveMetricsViewFilterExpressionBody: QueryServiceResolveMetricsViewFilterExpressionBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveMetricsViewFilterExpressionResponse>({
+    url: `/v1/instances/${instanceId}/queries/filter-expression/resolve`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveMetricsViewFilterExpressionBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveMetricsViewFilterExpressionMutationOptions =
+  <TError = ErrorType<RpcStatus>, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>
+      >,
+      TError,
+      {
+        instanceId: string;
+        data: QueryServiceResolveMetricsViewFilterExpressionBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>>,
+    TError,
+    {
+      instanceId: string;
+      data: QueryServiceResolveMetricsViewFilterExpressionBody;
+    },
+    TContext
+  > => {
+    const mutationKey = ["queryServiceResolveMetricsViewFilterExpression"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>
+      >,
+      {
+        instanceId: string;
+        data: QueryServiceResolveMetricsViewFilterExpressionBody;
+      }
+    > = (props) => {
+      const { instanceId, data } = props ?? {};
+
+      return queryServiceResolveMetricsViewFilterExpression(instanceId, data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type QueryServiceResolveMetricsViewFilterExpressionMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>>
+  >;
+export type QueryServiceResolveMetricsViewFilterExpressionMutationBody =
+  QueryServiceResolveMetricsViewFilterExpressionBody;
+export type QueryServiceResolveMetricsViewFilterExpressionMutationError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
+ */
+export const createQueryServiceResolveMetricsViewFilterExpression = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>
+      >,
+      TError,
+      {
+        instanceId: string;
+        data: QueryServiceResolveMetricsViewFilterExpressionBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>>,
+  TError,
+  {
+    instanceId: string;
+    data: QueryServiceResolveMetricsViewFilterExpressionBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getQueryServiceResolveMetricsViewFilterExpressionMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

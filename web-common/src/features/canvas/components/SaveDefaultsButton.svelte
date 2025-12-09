@@ -12,7 +12,7 @@
   let justClickedSaveAsDefault = false;
 
   $: ({
-    canvasEntity: { _rows, setDefaultFilters, _viewingDefaults },
+    canvasEntity: { _rows, saveDefaultFilters, _viewingDefaults },
   } = getCanvasStore(canvasName, instanceId));
 
   $: viewingDefaults = $_viewingDefaults;
@@ -29,7 +29,7 @@
   disabled={canvasIsEmpty || viewingDefaults}
   onClick={async () => {
     justClickedSaveAsDefault = true;
-    await setDefaultFilters();
+    await saveDefaultFilters();
     setTimeout(() => {
       justClickedSaveAsDefault = false;
     }, 2500);

@@ -55,21 +55,37 @@ export class FilterState {
     keys.add(key);
     this.temporaryFilterKeys.set(keys);
 
-    this.parsed.set(this.parseFilterString(get(this.parsed).string));
+    const parsed = get(this.parsed);
+
+    this.parsed.set(
+      this.parseFilterExpression(
+        parsed.where,
+        parsed.dimensionsWithInlistFilter,
+      ),
+    );
   };
 
   onFilterStringChange(filterString: string) {
-    const { string } = get(this.parsed);
-    if (string === filterString) return;
+    // const { string } = get(this.parsed);
+    // if (string === filterString) return;
 
     this.parsed.set(this.parseFilterString(filterString));
   }
 
   onDefaultFilterStringChange(filterString: string | undefined) {
-    const { string } = get(this.parsedDefaultFilters);
-    if (string === filterString) return;
+    // const { string } = get(this.parsedDefaultFilters);
+    // if (string === filterString) return;
 
     this.parsedDefaultFilters.set(this.parseFilterString(filterString));
+  }
+
+  onDefaultExpressionChange(expr: V1Expression | undefined) {
+    // const { string } = get(this.parsedDefaultFilters);
+    // if (string === filterString) return;
+
+    if (!expr) return;
+
+    this.parsedDefaultFilters.set(this.parseFilterExpression(expr, []));
   }
 
   clearAllFilters = () => {
@@ -78,19 +94,23 @@ export class FilterState {
     return "";
   };
 
-  parseFilterString(filterString: string = ""): ParsedFilters {
-    const { expr, dimensionsWithInlistFilter } =
-      getFiltersFromText(filterString);
-
+  parseFilterExpression(
+    expr: V1Expression,
+    dimensionsWithInlistFilter: string[],
+    filterString?: string,
+  ): ParsedFilters {
     const { dimensionThresholdFilters, dimensionFilters } =
       splitWhereFilter(expr);
 
     const isComplexFilter = isExpressionUnsupported(expr);
 
+    filterString = filterString ?? "";
+
     if (isComplexFilter) {
       return {
         string: filterString,
         where: expr,
+        metricsSQL: "",
         dimensionFilter: dimensionFilters,
         metricsViewName: this.metricsViewName,
         dimensionsWithInlistFilter,
@@ -123,6 +143,7 @@ export class FilterState {
     return {
       string: filterString,
       where: expr,
+      metricsSQL: "",
       dimensionFilter: dimensionFilters,
       metricsViewName: this.metricsViewName,
       dimensionsWithInlistFilter,
@@ -130,6 +151,13 @@ export class FilterState {
       ...processed,
       complexFilters: [],
     };
+  }
+
+  parseFilterString(filterString: string = ""): ParsedFilters {
+    const { expr, dimensionsWithInlistFilter } =
+      getFiltersFromText(filterString);
+
+    return this.parseFilterExpression(expr, dimensionsWithInlistFilter);
   }
 
   removeDimensionFilter = (dimensionName: string) => {

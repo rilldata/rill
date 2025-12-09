@@ -649,6 +649,30 @@ type annotation struct {
 	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
+// ResolveMetricsViewFilterExpression implements QueryService.
+func (s *Server) ResolveMetricsViewFilterExpression(ctx context.Context, req *runtimev1.ResolveMetricsViewFilterExpressionRequest) (*runtimev1.ResolveMetricsViewFilterExpressionResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	expr := metricsview.NewExpressionFromProto(req.Expression)
+	sql, err := metricsview.ExpressionToSQL(expr, metricsview.DialectDuckDB)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.ResolveMetricsViewFilterExpressionResponse{
+		Sql: sql,
+	}, nil
+}
+
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {

@@ -852,7 +852,7 @@ message CanvasPreset {
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   optional string comparison_dimension = 8;
   // Filter expressions as key-value pairs for the canvas.
-  map<string, string> filter_expr = 19;
+  map<string, Expression> filter_expr = 19;
 }
 
 // API defines a custom operation for querying data stored in Rill.

@@ -10651,6 +10651,251 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewAnnotationsResponseValidationError{}
 
+// Validate checks the field values on
+// ResolveMetricsViewFilterExpressionRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ResolveMetricsViewFilterExpressionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ResolveMetricsViewFilterExpressionRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// ResolveMetricsViewFilterExpressionRequestMultiError, or nil if none found.
+func (m *ResolveMetricsViewFilterExpressionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveMetricsViewFilterExpressionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if all {
+		switch v := interface{}(m.GetExpression()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveMetricsViewFilterExpressionRequestValidationError{
+					field:  "Expression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveMetricsViewFilterExpressionRequestValidationError{
+					field:  "Expression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpression()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveMetricsViewFilterExpressionRequestValidationError{
+				field:  "Expression",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveMetricsViewFilterExpressionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveMetricsViewFilterExpressionRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// ResolveMetricsViewFilterExpressionRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveMetricsViewFilterExpressionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveMetricsViewFilterExpressionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveMetricsViewFilterExpressionRequestMultiError) AllErrors() []error { return m }
+
+// ResolveMetricsViewFilterExpressionRequestValidationError is the validation
+// error returned by ResolveMetricsViewFilterExpressionRequest.Validate if the
+// designated constraints aren't met.
+type ResolveMetricsViewFilterExpressionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveMetricsViewFilterExpressionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveMetricsViewFilterExpressionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveMetricsViewFilterExpressionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveMetricsViewFilterExpressionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveMetricsViewFilterExpressionRequestValidationError) ErrorName() string {
+	return "ResolveMetricsViewFilterExpressionRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveMetricsViewFilterExpressionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveMetricsViewFilterExpressionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveMetricsViewFilterExpressionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveMetricsViewFilterExpressionRequestValidationError{}
+
+// Validate checks the field values on
+// ResolveMetricsViewFilterExpressionResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ResolveMetricsViewFilterExpressionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ResolveMetricsViewFilterExpressionResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// ResolveMetricsViewFilterExpressionResponseMultiError, or nil if none found.
+func (m *ResolveMetricsViewFilterExpressionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveMetricsViewFilterExpressionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Sql
+
+	if len(errors) > 0 {
+		return ResolveMetricsViewFilterExpressionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveMetricsViewFilterExpressionResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// ResolveMetricsViewFilterExpressionResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveMetricsViewFilterExpressionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveMetricsViewFilterExpressionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveMetricsViewFilterExpressionResponseMultiError) AllErrors() []error { return m }
+
+// ResolveMetricsViewFilterExpressionResponseValidationError is the validation
+// error returned by ResolveMetricsViewFilterExpressionResponse.Validate if
+// the designated constraints aren't met.
+type ResolveMetricsViewFilterExpressionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveMetricsViewFilterExpressionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveMetricsViewFilterExpressionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveMetricsViewFilterExpressionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveMetricsViewFilterExpressionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveMetricsViewFilterExpressionResponseValidationError) ErrorName() string {
+	return "ResolveMetricsViewFilterExpressionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveMetricsViewFilterExpressionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveMetricsViewFilterExpressionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveMetricsViewFilterExpressionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveMetricsViewFilterExpressionResponseValidationError{}
+
 // Validate checks the field values on ResolveCanvasRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

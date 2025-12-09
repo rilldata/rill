@@ -3949,6 +3949,90 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
 }
 
 /**
+ * @generated from message rill.runtime.v1.ResolveMetricsViewFilterExpressionRequest
+ */
+export class ResolveMetricsViewFilterExpressionRequest extends Message<ResolveMetricsViewFilterExpressionRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * The filter expression to convert to SQL.
+   *
+   * @generated from field: rill.runtime.v1.Expression expression = 2;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<ResolveMetricsViewFilterExpressionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveMetricsViewFilterExpressionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveMetricsViewFilterExpressionRequest {
+    return new ResolveMetricsViewFilterExpressionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionRequest {
+    return new ResolveMetricsViewFilterExpressionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionRequest {
+    return new ResolveMetricsViewFilterExpressionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveMetricsViewFilterExpressionRequest | PlainMessage<ResolveMetricsViewFilterExpressionRequest> | undefined, b: ResolveMetricsViewFilterExpressionRequest | PlainMessage<ResolveMetricsViewFilterExpressionRequest> | undefined): boolean {
+    return proto3.util.equals(ResolveMetricsViewFilterExpressionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveMetricsViewFilterExpressionResponse
+ */
+export class ResolveMetricsViewFilterExpressionResponse extends Message<ResolveMetricsViewFilterExpressionResponse> {
+  /**
+   * The SQL filter string representation of the expression.
+   *
+   * @generated from field: string sql = 1;
+   */
+  sql = "";
+
+  constructor(data?: PartialMessage<ResolveMetricsViewFilterExpressionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveMetricsViewFilterExpressionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveMetricsViewFilterExpressionResponse {
+    return new ResolveMetricsViewFilterExpressionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionResponse {
+    return new ResolveMetricsViewFilterExpressionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionResponse {
+    return new ResolveMetricsViewFilterExpressionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveMetricsViewFilterExpressionResponse | PlainMessage<ResolveMetricsViewFilterExpressionResponse> | undefined, b: ResolveMetricsViewFilterExpressionResponse | PlainMessage<ResolveMetricsViewFilterExpressionResponse> | undefined): boolean {
+    return proto3.util.equals(ResolveMetricsViewFilterExpressionResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ResolveCanvasRequest
  */
 export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {

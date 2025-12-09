@@ -106,22 +106,22 @@
       error={mainError}
       showError={!!$remoteContent && selectedView === "code"}
     >
-      <CanvasProvider {canvasName} {instanceId} bind:ready>
-        {#if selectedView === "code"}
-          <CanvasEditor
-            bind:autoSave={$autoSave}
-            {canvasName}
-            {fileArtifact}
-            {lineBasedRuntimeErrors}
-          />
-        {:else if selectedView === "viz"}
+      {#if selectedView === "code"}
+        <CanvasEditor
+          bind:autoSave={$autoSave}
+          {canvasName}
+          {fileArtifact}
+          {lineBasedRuntimeErrors}
+        />
+      {:else if selectedView === "viz"}
+        <CanvasProvider {canvasName} {instanceId} bind:ready>
           <CanvasBuilder
             {canvasName}
             openSidebar={workspace.inspector.open}
             {fileArtifact}
           />
-        {/if}
-      </CanvasProvider>
+        </CanvasProvider>
+      {/if}
     </WorkspaceEditorContainer>
     <svelte:fragment slot="inspector">
       {#if ready}

@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -230,11 +232,17 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
+		
+		var FilterExpr, err = parseFilterExpressions(tmp.Defaults.Filters)
+		if err != nil {
+			return fmt.Errorf("invalid filter expression in defaults: %w", err)
+		}
+
 		defaultPreset = &runtimev1.CanvasPreset{
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
-			FilterExpr:          tmp.Defaults.Filters,
+			FilterExpr:          FilterExpr,
 		}
 	}
 
@@ -369,4 +377,20 @@ func pointerIfNotEmpty(v string) *string {
 		return nil
 	}
 	return &v
+}
+
+
+func parseFilterExpressions(filterMap map[string]string) (map[string]*runtimev1.Expression, error) {
+	result := make(map[string]*runtimev1.Expression)
+	for key, filterStr := range filterMap {
+		expr, err := metricssql.ParseFilter(filterStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter expression for key %q: %w", key, err)
+		}
+		// convert to runtimev1.Expression
+		converted := metricsview.ExpressionToProto(expr)
+		result[key] = converted
+
+	}
+	return result, nil
 }

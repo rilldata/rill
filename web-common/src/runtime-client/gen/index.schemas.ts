@@ -405,7 +405,7 @@ export interface V1CanvasItem {
 /**
  * Filter expressions as key-value pairs for the canvas.
  */
-export type V1CanvasPresetFilterExpr = { [key: string]: string };
+export type V1CanvasPresetFilterExpr = { [key: string]: V1Expression };
 
 export interface V1CanvasPreset {
   /** Time range for the explore.
@@ -2128,6 +2128,11 @@ export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
+export interface V1ResolveMetricsViewFilterExpressionResponse {
+  /** The SQL filter string representation of the expression. */
+  sql?: string;
+}
+
 export interface V1ResolveTemplatedStringResponse {
   body?: string;
 }
@@ -2809,6 +2814,10 @@ Only used if include_header is true. */
   originUrl?: string;
   /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
   executionTime?: string;
+};
+
+export type QueryServiceResolveMetricsViewFilterExpressionBody = {
+  expression?: V1Expression;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {

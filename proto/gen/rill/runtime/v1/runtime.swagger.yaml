@@ -1517,6 +1517,35 @@ paths:
                 description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/filter-expression/resolve:
+    post:
+      summary: ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
+      operationId: QueryService_ResolveMetricsViewFilterExpression
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveMetricsViewFilterExpressionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              expression:
+                $ref: '#/definitions/v1Expression'
+                description: The filter expression to convert to SQL.
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
     post:
       summary: MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -3833,7 +3862,7 @@ definitions:
       filterExpr:
         type: object
         additionalProperties:
-          type: string
+          $ref: '#/definitions/v1Expression'
         description: Filter expressions as key-value pairs for the canvas.
   v1CanvasRow:
     type: object
@@ -6730,6 +6759,12 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+  v1ResolveMetricsViewFilterExpressionResponse:
+    type: object
+    properties:
+      sql:
+        type: string
+        description: The SQL filter string representation of the expression.
   v1ResolveTemplatedStringResponse:
     type: object
     properties:

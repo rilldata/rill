@@ -21,6 +21,10 @@
     type V1MetricsView,
     type V1ResolveCanvasResponse,
   } from "@rilldata/web-common/runtime-client";
+  import {
+    ResourceKind,
+    useResource,
+  } from "../entity-management/resource-selectors";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -36,6 +40,17 @@
   $: ({ url } = $page);
 
   $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
+
+  $: resourceQuery = useResource(instanceId, canvasName, ResourceKind.Canvas, {
+    refetchInterval: (query) => {
+      // const resource = query?.state?.data?.resource;
+      // if (!resource) return false;
+      // if (isCanvasReconcilingForFirstTime(resource))
+      //   return PollIntervalWhenDashboardFirstReconciling;
+      // if (isCanvasErrored(resource)) return PollIntervalWhenDashboardErrored;
+      // return false;
+    },
+  });
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
@@ -66,7 +81,12 @@
 
   $: isReconciling = !existingStore && !validSpec && !reconcileError;
 
-  $: errorMessage = !validSpec && reconcileError;
+  $: resource = resourceQuery ? $resourceQuery?.data : undefined;
+
+  $: errorMessage =
+    !validSpec && (reconcileError || resource?.meta?.reconcileError);
+
+  $: console.log($fetchedCanvasQuery);
 
   $: if (fetchedCanvas && !isReconciling) {
     const metricsViews: Record<string, V1MetricsView | undefined> = {};
@@ -152,14 +172,14 @@
 <div class="size-full justify-center items-center flex flex-col">
   {#if resolvedStore}
     <slot />
-  {:else if isReconciling}
-    <DashboardBuilding />
   {:else if errorMessage}
     <ErrorPage
       statusCode={404}
       header="Canvas not found"
       body={errorMessage || "An unknown error occurred."}
     />
+  {:else if isReconciling}
+    <DashboardBuilding />
   {:else}
     <header
       role="presentation"

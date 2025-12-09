@@ -47,6 +47,7 @@ export function initFilterBase(metricsViewName: string) {
     where: createAndExpression([]),
     dimensionFilter: createAndExpression([]),
     string: "",
+    metricsSQL: "",
     metricsViewName,
     dimensionsWithInlistFilter: <string[]>[],
     dimensionThresholdFilters: <DimensionThresholdFilter[]>[],
@@ -285,7 +286,7 @@ export class FilterManager {
           this.metricsViewFilters.set(metricsViewName, existingFilterStore);
         }
 
-        existingFilterStore.onDefaultFilterStringChange(
+        existingFilterStore.onDefaultExpressionChange(
           defaultFilters?.[metricsViewName],
         );
       }

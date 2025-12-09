@@ -10831,7 +10831,51 @@ func (m *CanvasPreset) validate(all bool) error {
 
 	// no validation rules for ComparisonMode
 
-	// no validation rules for FilterExpr
+	{
+		sorted_keys := make([]string, len(m.GetFilterExpr()))
+		i := 0
+		for key := range m.GetFilterExpr() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetFilterExpr()[key]
+			_ = val
+
+			// no validation rules for FilterExpr[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, CanvasPresetValidationError{
+							field:  fmt.Sprintf("FilterExpr[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, CanvasPresetValidationError{
+							field:  fmt.Sprintf("FilterExpr[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return CanvasPresetValidationError{
+						field:  fmt.Sprintf("FilterExpr[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
 
 	if m.TimeRange != nil {
 		// no validation rules for TimeRange

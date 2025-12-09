@@ -7,6 +7,9 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  createQueryServiceResolveMetricsViewFilterExpression,
+  getQueryServiceResolveMetricsViewFilterExpressionMutationOptions,
+  queryServiceResolveMetricsViewFilterExpression,
   V1ExploreComparisonMode,
   type V1CanvasPreset,
   type V1CanvasSpec,
@@ -313,10 +316,12 @@ export class CanvasEntity {
     this.processRows({ canvas, components, metricsViews, filePath });
   };
 
-  setDefaultFilters = async () => {
-    // wait for one second, will remove - bgh
+  saveDefaultFilters = async () => {
+    // Temporary solution to wait for any pending filter updates to propagate
+    // This happens when a user has changed a filter but not yet
+    // clicked out of the filter input box to save the values
     await new Promise((resolve) => {
-      setTimeout(resolve, 1000);
+      setTimeout(resolve, 100);
     });
 
     const yaml = get(this.parsedContent);
@@ -366,14 +371,38 @@ export class CanvasEntity {
       }
     }
 
-    get(this.filterManager.metricsViewFilters)
+    const promises = get(this.filterManager.metricsViewFilters)
       .entries()
-      .forEach(([name, filters]) => {
-        filterMap.add({
-          key: name,
-          value: get(filters.parsed).string,
+      .map(([_, filters]) => {
+        const parsed = get(filters.parsed);
+
+        return queryClient.fetchQuery({
+          queryKey: [
+            "resolve-metrics-view-filter-expression",
+            this.instanceId,
+            parsed.where,
+          ],
+          queryFn: () =>
+            queryServiceResolveMetricsViewFilterExpression(this.instanceId, {
+              expression: parsed.where,
+            }),
         });
       });
+
+    const responses = await Promise.all(promises);
+
+    responses.forEach((response, index) => {
+      const name = Array.from(
+        get(this.filterManager.metricsViewFilters).keys(),
+      )[index];
+      if (!response.sql) return;
+      filterMap.add({
+        key: name,
+        value: response.sql,
+      });
+    });
+
+    console.log({ filterMap });
 
     yaml.setIn(["defaults", "filters"], filterMap);
 
@@ -743,10 +772,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
 
   Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
     ([metricsViewName, expression]) => {
-      const { dimensionsWithInlistFilter, expr } =
-        getFiltersFromText(expression);
-
-      const string = getFilterParam(expr, [], dimensionsWithInlistFilter);
+      const string = getFilterParam(expression, [], []);
 
       if (string) {
         defaultSearchParams.set(
