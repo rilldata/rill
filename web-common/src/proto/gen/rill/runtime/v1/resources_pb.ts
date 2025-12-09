@@ -5023,9 +5023,9 @@ export class CanvasPreset extends Message<CanvasPreset> {
   /**
    * Filter expressions as key-value pairs for the canvas.
    *
-   * @generated from field: map<string, rill.runtime.v1.Expression> filter_expr = 19;
+   * @generated from field: map<string, rill.runtime.v1.DefaultMetricsSQLFilter> filter_expr = 19;
    */
-  filterExpr: { [key: string]: Expression } = {};
+  filterExpr: { [key: string]: DefaultMetricsSQLFilter } = {};
 
   constructor(data?: PartialMessage<CanvasPreset>) {
     super();
@@ -5038,7 +5038,7 @@ export class CanvasPreset extends Message<CanvasPreset> {
     { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 19, name: "filter_expr", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
+    { no: 19, name: "filter_expr", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: DefaultMetricsSQLFilter} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
@@ -5055,6 +5055,49 @@ export class CanvasPreset extends Message<CanvasPreset> {
 
   static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
     return proto3.util.equals(CanvasPreset, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DefaultMetricsSQLFilter
+ */
+export class DefaultMetricsSQLFilter extends Message<DefaultMetricsSQLFilter> {
+  /**
+   * @generated from field: string sql = 1;
+   */
+  sql = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression expression = 2;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<DefaultMetricsSQLFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DefaultMetricsSQLFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined, b: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined): boolean {
+    return proto3.util.equals(DefaultMetricsSQLFilter, a, b);
   }
 }
 

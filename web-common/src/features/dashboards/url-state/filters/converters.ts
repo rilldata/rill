@@ -178,7 +178,7 @@ function escapeColumnName(columnName: string) {
   return columnName;
 }
 
-function escapeValue(value: unknown) {
+function escapeValue(value: unknown): string {
   switch (typeof value) {
     case "string":
       return escapeStringValue(value);
@@ -186,7 +186,7 @@ function escapeValue(value: unknown) {
     case "object":
       if (!value) return "null";
       if (Array.isArray(value)) {
-        return `[${value.map(escapeValue).join(",")}]`;
+        return `${value.map(escapeValue).join(",")}`;
       }
       return `{${Object.keys(value)
         .map((k) => `'${k}':${escapeValue(value[k])}`)

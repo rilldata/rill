@@ -7,8 +7,6 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  createQueryServiceResolveMetricsViewFilterExpression,
-  getQueryServiceResolveMetricsViewFilterExpressionMutationOptions,
   queryServiceResolveMetricsViewFilterExpression,
   V1ExploreComparisonMode,
   type V1CanvasPreset,
@@ -46,7 +44,6 @@ import { getComparisonTypeFromRangeString } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
-import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 
@@ -92,13 +89,17 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
   _defaultUrlParams = writable<URLSearchParams>(new URLSearchParams());
-  _viewingDefaults: Readable<boolean>;
-  _filtersEnabled = writable<boolean>(true);
+  viewingDefaultsStore: Readable<boolean>;
+  filtersEnabledStore = writable<boolean>(true);
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
-  _banner = writable<string | undefined>(undefined);
+  bannerStore = writable<string | undefined>(undefined);
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
   titleStore = writable<string>("");
+
+  // This is to skip processing the spec the first time the store updates with a value
+  // We've already called it as part of the constructor
+  firstTimeLoad = true;
 
   constructor(
     public name: string,
@@ -160,12 +161,16 @@ export class CanvasEntity {
     );
 
     this.unsubscriber = this.specStore.subscribe(({ data }) => {
+      if (this.firstTimeLoad) {
+        this.firstTimeLoad = false;
+        return;
+      }
       if (data) {
         this.processSpec(data);
       }
     });
 
-    this._viewingDefaults = derived(
+    this.viewingDefaultsStore = derived(
       [
         this.searchParams,
         this._defaultUrlParams,
@@ -217,9 +222,9 @@ export class CanvasEntity {
   };
 
   checkAndSetHasBanner = ({ banner }: V1CanvasSpec) => {
-    const currentValue = get(this._banner);
+    const currentValue = get(this.bannerStore);
     if (banner !== currentValue) {
-      this._banner.set(banner);
+      this.bannerStore.set(banner);
     }
   };
 
@@ -236,9 +241,9 @@ export class CanvasEntity {
       filtersEnabled = true;
     }
 
-    const currentValue = get(this._filtersEnabled);
+    const currentValue = get(this.filtersEnabledStore);
     if (filtersEnabled !== currentValue) {
-      this._filtersEnabled.set(filtersEnabled);
+      this.filtersEnabledStore.set(filtersEnabled);
     }
   };
 
@@ -304,13 +309,14 @@ export class CanvasEntity {
       } else {
         this.filterManager = new FilterManager(
           metricsViews,
+          this.instanceId,
           pinnedFilters,
           filterExpressions,
         );
       }
     } else {
       // need to find a better way to initialize this in certain contextx - bgh
-      this.filterManager = new FilterManager({}, [], {});
+      this.filterManager = new FilterManager({}, "", [], {});
     }
 
     this.processRows({ canvas, components, metricsViews, filePath });
@@ -401,8 +407,6 @@ export class CanvasEntity {
         value: response.sql,
       });
     });
-
-    console.log({ filterMap });
 
     yaml.setIn(["defaults", "filters"], filterMap);
 
@@ -771,14 +775,16 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   }
 
   Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
-    ([metricsViewName, expression]) => {
-      const string = getFilterParam(expression, [], []);
+    ([metricsViewName, { expression }]) => {
+      if (expression) {
+        const urlFormat = getFilterParam(expression, [], []);
 
-      if (string) {
-        defaultSearchParams.set(
-          `${ExploreStateURLParams.Filters}.${metricsViewName}`,
-          string,
-        );
+        if (urlFormat) {
+          defaultSearchParams.set(
+            `${ExploreStateURLParams.Filters}.${metricsViewName}`,
+            urlFormat,
+          );
+        }
       }
     },
   );

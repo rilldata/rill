@@ -56,6 +56,7 @@ export function useDimensionSearch(
       mode,
       searchText,
       values,
+      // TODO - revist whether passing an empty array is the correct approach - bgh
       additionalFilter: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(

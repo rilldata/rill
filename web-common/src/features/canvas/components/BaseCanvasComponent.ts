@@ -125,6 +125,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.localTimeControls = this.parent.timeManager.createLocalTimeState(
       this.id,
       yamlTimeFilterStore,
+      this.metricsViewName,
     );
 
     this.localFilters = this.parent.filterManager.createLocalFilterStore(
@@ -285,7 +286,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           // Dimension Filters
           const globalWhere =
             buildValidMetricsViewFilter(
-              parsedFilter.where,
+              parsedFilter.dimensionFilter,
               parsedFilter.dimensionThresholdFilters,
               dimensions,
               measures,

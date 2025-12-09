@@ -57,6 +57,8 @@ export class TimeState {
 
   urlInitialized = writable<boolean>(false);
 
+  minMaxTimeStamps = maybeWritable<MinMax>();
+
   constructor(
     public searchParamsStore: SearchParamsStore,
     public parent: CanvasEntity,
@@ -127,7 +129,9 @@ export class TimeState {
     >(
       [this.rangeStore, this.parent._metricsViews, this.timeZoneStore],
       ([range, allMetricsViews, timeZone], set) => {
-        const allMetricsViewNames = Object.keys(allMetricsViews || {});
+        const allMetricsViewNames = this.metricsViewName
+          ? [this.metricsViewName]
+          : Object.keys(allMetricsViews || {});
 
         if (!allMetricsViewNames.length || !range || !timeZone) {
           set(undefined);
@@ -176,9 +180,13 @@ export class TimeState {
             });
 
             set(latestInterval);
-            this.manager.minMaxTimeStamps.set(
-              minDate && maxDate ? { min: minDate, max: maxDate } : undefined,
-            );
+
+            if (minDate && maxDate) {
+              this.minMaxTimeStamps.set({
+                min: minDate,
+                max: maxDate,
+              });
+            }
           })
           .catch(console.error);
       },
@@ -199,7 +207,7 @@ export class TimeState {
     );
 
     this.canPanStore = derived(
-      [this.interval, this.manager.minMaxTimeStamps],
+      [this.interval, this.minMaxTimeStamps],
       ([interval, minMaxTimeStamps]) => {
         if (!interval || !interval.start || !interval.end || !minMaxTimeStamps)
           return { left: false, right: false };
@@ -230,6 +238,10 @@ export class TimeState {
       },
     );
   }
+
+  setMinMaxTimeStamps = (minMax: MinMax) => {
+    this.minMaxTimeStamps.set(minMax);
+  };
 
   onUrlChange = (searchParams: URLSearchParams) => {
     this.urlInitialized.set(true);

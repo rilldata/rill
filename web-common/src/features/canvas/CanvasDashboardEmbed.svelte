@@ -12,10 +12,16 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { components, _rows, firstLoad, _maxWidth, _filtersEnabled },
+    canvasEntity: {
+      components,
+      _rows,
+      firstLoad,
+      _maxWidth,
+      filtersEnabledStore,
+    },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: filtersEnabled = $_filtersEnabled;
+  $: filtersEnabled = $filtersEnabledStore;
   $: maxWidth = $_maxWidth;
   $: rows = $_rows;
 </script>

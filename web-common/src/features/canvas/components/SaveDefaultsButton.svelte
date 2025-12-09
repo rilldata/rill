@@ -12,10 +12,10 @@
   let justClickedSaveAsDefault = false;
 
   $: ({
-    canvasEntity: { _rows, saveDefaultFilters, _viewingDefaults },
+    canvasEntity: { _rows, saveDefaultFilters, viewingDefaultsStore },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: viewingDefaults = $_viewingDefaults;
+  $: viewingDefaults = $viewingDefaultsStore;
 
   $: rows = $_rows;
 

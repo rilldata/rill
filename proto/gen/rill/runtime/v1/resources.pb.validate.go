@@ -10962,6 +10962,139 @@ var _ interface {
 	ErrorName() string
 } = CanvasPresetValidationError{}
 
+// Validate checks the field values on DefaultMetricsSQLFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DefaultMetricsSQLFilter) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DefaultMetricsSQLFilter with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DefaultMetricsSQLFilterMultiError, or nil if none found.
+func (m *DefaultMetricsSQLFilter) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DefaultMetricsSQLFilter) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Sql
+
+	if all {
+		switch v := interface{}(m.GetExpression()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DefaultMetricsSQLFilterValidationError{
+					field:  "Expression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DefaultMetricsSQLFilterValidationError{
+					field:  "Expression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpression()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DefaultMetricsSQLFilterValidationError{
+				field:  "Expression",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return DefaultMetricsSQLFilterMultiError(errors)
+	}
+
+	return nil
+}
+
+// DefaultMetricsSQLFilterMultiError is an error wrapping multiple validation
+// errors returned by DefaultMetricsSQLFilter.ValidateAll() if the designated
+// constraints aren't met.
+type DefaultMetricsSQLFilterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DefaultMetricsSQLFilterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DefaultMetricsSQLFilterMultiError) AllErrors() []error { return m }
+
+// DefaultMetricsSQLFilterValidationError is the validation error returned by
+// DefaultMetricsSQLFilter.Validate if the designated constraints aren't met.
+type DefaultMetricsSQLFilterValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DefaultMetricsSQLFilterValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DefaultMetricsSQLFilterValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DefaultMetricsSQLFilterValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DefaultMetricsSQLFilterValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DefaultMetricsSQLFilterValidationError) ErrorName() string {
+	return "DefaultMetricsSQLFilterValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DefaultMetricsSQLFilterValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDefaultMetricsSQLFilter.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DefaultMetricsSQLFilterValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DefaultMetricsSQLFilterValidationError{}
+
 // Validate checks the field values on API with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.

@@ -3958,8 +3958,6 @@ export class ResolveMetricsViewFilterExpressionRequest extends Message<ResolveMe
   instanceId = "";
 
   /**
-   * The filter expression to convert to SQL.
-   *
    * @generated from field: rill.runtime.v1.Expression expression = 2;
    */
   expression?: Expression;

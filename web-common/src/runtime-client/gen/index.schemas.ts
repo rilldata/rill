@@ -405,7 +405,9 @@ export interface V1CanvasItem {
 /**
  * Filter expressions as key-value pairs for the canvas.
  */
-export type V1CanvasPresetFilterExpr = { [key: string]: V1Expression };
+export type V1CanvasPresetFilterExpr = {
+  [key: string]: V1DefaultMetricsSQLFilter;
+};
 
 export interface V1CanvasPreset {
   /** Time range for the explore.
@@ -791,6 +793,11 @@ export interface V1CreateTriggerResponse {
 export interface V1DatabaseSchemaInfo {
   database?: string;
   databaseSchema?: string;
+}
+
+export interface V1DefaultMetricsSQLFilter {
+  sql?: string;
+  expression?: V1Expression;
 }
 
 export interface V1DeleteFileResponse {

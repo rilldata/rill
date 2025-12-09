@@ -29,13 +29,26 @@ import { DimensionFilterMode } from "../../dashboards/filters/dimension-filters/
 import type { MeasureFilterItem } from "../../dashboards/state-managers/selectors/measure-filters";
 import type { DimensionThresholdFilter } from "../../dashboards/stores/explore-state";
 import { convertExpressionToFilterParam } from "../../dashboards/url-state/filters/converters";
-import {
-  FilterManager,
-  initFilterBase,
-  type ParsedFilters,
-  type UIFilters,
-} from "./filter-manager";
+import { FilterManager, type UIFilters } from "./filter-manager";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
+
+export type ParsedFilters = ReturnType<typeof initFilterBase>;
+
+export function initFilterBase(metricsViewName: string) {
+  return {
+    where: createAndExpression([]),
+    dimensionFilter: createAndExpression([]),
+    urlFormat: undefined as string | undefined,
+    metricsViewName,
+    dimensionsWithInListFilter: <string[]>[],
+    dimensionThresholdFilters: <DimensionThresholdFilter[]>[],
+    measureFilters: new Map<string, MeasureFilterItem>(),
+    dimensionFilters: new Map<string, DimensionFilterItem>(),
+    complexFilters: [] as V1Expression[],
+    hasFilters: false,
+    hasClearableFilters: false,
+  };
+}
 
 export class FilterState {
   parsed: Writable<ParsedFilters>;
@@ -45,6 +58,7 @@ export class FilterState {
   constructor(
     private metricsViewName: string,
     private manager: FilterManager,
+    public instanceId: string,
   ) {
     this.parsed = writable(initFilterBase(this.metricsViewName));
     this.parsedDefaultFilters = writable(initFilterBase(this.metricsViewName));
@@ -55,38 +69,36 @@ export class FilterState {
     keys.add(key);
     this.temporaryFilterKeys.set(keys);
 
+    this.reprocessExistingFilters();
+  };
+
+  reprocessExistingFilters = () => {
     const parsed = get(this.parsed);
 
     this.parsed.set(
-      this.parseFilterExpression(
-        parsed.where,
-        parsed.dimensionsWithInlistFilter,
-      ),
+      this.parseFilter({
+        expr: parsed.where,
+        dimensionsWithInListFilter: parsed.dimensionsWithInListFilter,
+      }),
     );
   };
 
   onFilterStringChange(filterString: string) {
-    // const { string } = get(this.parsed);
-    // if (string === filterString) return;
+    const { urlFormat } = get(this.parsed);
+    if (urlFormat === filterString) return;
 
     this.parsed.set(this.parseFilterString(filterString));
   }
 
-  onDefaultFilterStringChange(filterString: string | undefined) {
-    // const { string } = get(this.parsedDefaultFilters);
-    // if (string === filterString) return;
-
-    this.parsedDefaultFilters.set(this.parseFilterString(filterString));
-  }
-
-  onDefaultExpressionChange(expr: V1Expression | undefined) {
-    // const { string } = get(this.parsedDefaultFilters);
-    // if (string === filterString) return;
-
+  onDefaultExpressionChange = (expr: V1Expression | undefined) => {
     if (!expr) return;
 
-    this.parsedDefaultFilters.set(this.parseFilterExpression(expr, []));
-  }
+    this.parsedDefaultFilters.set(
+      this.parseFilter({
+        expr,
+      }),
+    );
+  };
 
   clearAllFilters = () => {
     this.parsed.set(this.parseFilterString(""));
@@ -94,26 +106,41 @@ export class FilterState {
     return "";
   };
 
-  parseFilterExpression(
-    expr: V1Expression,
-    dimensionsWithInlistFilter: string[],
-    filterString?: string,
-  ): ParsedFilters {
+  parseFilter({
+    expr,
+    filterString,
+    dimensionsWithInListFilter,
+  }: {
+    expr: V1Expression;
+    filterString?: string;
+    dimensionsWithInListFilter?: string[];
+  }): ParsedFilters {
+    const where = structuredClone(expr);
     const { dimensionThresholdFilters, dimensionFilters } =
       splitWhereFilter(expr);
 
     const isComplexFilter = isExpressionUnsupported(expr);
 
-    filterString = filterString ?? "";
+    filterString =
+      filterString ||
+      getFilterParam(
+        expr,
+        dimensionThresholdFilters,
+        dimensionsWithInListFilter ?? [],
+      ) ||
+      "";
+
+    dimensionsWithInListFilter =
+      dimensionsWithInListFilter ??
+      getFiltersFromText(filterString).dimensionsWithInlistFilter;
 
     if (isComplexFilter) {
       return {
-        string: filterString,
-        where: expr,
-        metricsSQL: "",
+        urlFormat: filterString,
+        where: where,
         dimensionFilter: dimensionFilters,
         metricsViewName: this.metricsViewName,
-        dimensionsWithInlistFilter,
+        dimensionsWithInListFilter,
         dimensionThresholdFilters,
         dimensionFilters: new Map(),
         measureFilters: new Map(),
@@ -135,36 +162,35 @@ export class FilterState {
       measureMap,
       dimensionMap,
       metricsViewName: this.metricsViewName,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
       dimensionThresholdFilters,
       temporaryFilterKeys: get(this.temporaryFilterKeys),
     });
 
     return {
-      string: filterString,
-      where: expr,
-      metricsSQL: "",
+      urlFormat: filterString,
+      where: where,
       dimensionFilter: dimensionFilters,
       metricsViewName: this.metricsViewName,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
       dimensionThresholdFilters,
       ...processed,
       complexFilters: [],
     };
   }
 
-  parseFilterString(filterString: string = ""): ParsedFilters {
-    const { expr, dimensionsWithInlistFilter } =
-      getFiltersFromText(filterString);
+  parseFilterString = (filterString: string | undefined) => {
+    const { expr, dimensionsWithInlistFilter: dimensionsWithInListFilter } =
+      getFiltersFromText(filterString ?? "");
 
-    return this.parseFilterExpression(expr, dimensionsWithInlistFilter);
-  }
+    return this.parseFilter({ expr, filterString, dimensionsWithInListFilter });
+  };
 
   removeDimensionFilter = (dimensionName: string) => {
     const {
       where: wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     } = get(this.parsed);
     const exprIdx = wf.cond?.exprs?.findIndex(
       (e) => e.cond?.exprs?.[0].ident === dimensionName,
@@ -176,7 +202,7 @@ export class FilterState {
     return getFilterParam(
       wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     );
   };
 
@@ -184,7 +210,7 @@ export class FilterState {
     const {
       where: wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     } = get(this.parsed);
 
     const exprIndex = wf.cond?.exprs?.findIndex(
@@ -209,13 +235,13 @@ export class FilterState {
     return getFilterParam(
       wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     );
   };
 
   toggleDimensionFilterMode = (dimensionName: string) => {
     const {
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
       where: wf,
       dimensionThresholdFilters,
     } = get(this.parsed);
@@ -230,7 +256,7 @@ export class FilterState {
     return getFilterParam(
       wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     );
   };
 
@@ -243,7 +269,7 @@ export class FilterState {
   ) => {
     const {
       dimensionFilter: wf,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
       dimensionThresholdFilters,
     } = get(this.parsed);
 
@@ -262,9 +288,9 @@ export class FilterState {
       exprIndex = wf.cond!.exprs!.length - 1;
     }
 
-    const wasInListFilter = dimensionsWithInlistFilter.includes(dimensionName);
+    const wasInListFilter = dimensionsWithInListFilter.includes(dimensionName);
     if (wasInListFilter) {
-      dimensionsWithInlistFilter.filter((d) => d !== dimensionName);
+      dimensionsWithInListFilter.filter((d) => d !== dimensionName);
     }
 
     dimensionValues.forEach((dimensionValue) => {
@@ -282,7 +308,7 @@ export class FilterState {
     return getFilterParam(
       wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     );
   };
 
@@ -290,13 +316,13 @@ export class FilterState {
     const {
       where: wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     } = get(this.parsed);
     const isExclude = false;
 
     const expr = createInExpression(dimensionName, values, isExclude);
 
-    dimensionsWithInlistFilter.push(dimensionName);
+    dimensionsWithInListFilter.push(dimensionName);
 
     const exprIndex =
       wf.cond?.exprs?.findIndex(
@@ -311,7 +337,7 @@ export class FilterState {
     return getFilterParam(
       wf,
       dimensionThresholdFilters,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
     );
   };
 
@@ -322,7 +348,7 @@ export class FilterState {
   ) => {
     const {
       dimensionThresholdFilters: dtfs,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
       dimensionFilter,
     } = get(this.parsed);
 
@@ -354,12 +380,12 @@ export class FilterState {
       dimThresholdFilter.filters.splice(exprIdx, 1, filter);
     }
 
-    return getFilterParam(dimensionFilter, dtfs, dimensionsWithInlistFilter);
+    return getFilterParam(dimensionFilter, dtfs, dimensionsWithInListFilter);
   };
   removeMeasureFilter = (dimensionName: string, measureName: string) => {
     const {
       dimensionThresholdFilters: dtfs,
-      dimensionsWithInlistFilter,
+      dimensionsWithInListFilter,
       dimensionFilter,
     } = get(this.parsed);
 
@@ -377,7 +403,7 @@ export class FilterState {
       }
     }
 
-    return getFilterParam(dimensionFilter, dtfs, dimensionsWithInlistFilter);
+    return getFilterParam(dimensionFilter, dtfs, dimensionsWithInListFilter);
   };
 }
 
@@ -386,7 +412,7 @@ function processExpression({
   dimensionMap,
   measureMap,
   metricsViewName,
-  dimensionsWithInlistFilter,
+  dimensionsWithInListFilter,
   dimensionThresholdFilters,
   temporaryFilterKeys,
 }: {
@@ -394,7 +420,7 @@ function processExpression({
   measureMap: Map<string, MetricsViewSpecMeasure>;
   dimensionMap: Map<string, MetricsViewSpecDimension>;
   metricsViewName: string;
-  dimensionsWithInlistFilter: string[];
+  dimensionsWithInListFilter: string[];
   dimensionThresholdFilters: DimensionThresholdFilter[];
   temporaryFilterKeys: Set<string>;
 }): UIFilters {
@@ -402,7 +428,7 @@ function processExpression({
   const dimensionFilters = getDimensionFilterItemsMap(
     dimensionMap,
     expr,
-    dimensionsWithInlistFilter,
+    dimensionsWithInListFilter,
     metricsViewName,
   );
   const measureFilters = getCanvasMeasureFiltersMap(

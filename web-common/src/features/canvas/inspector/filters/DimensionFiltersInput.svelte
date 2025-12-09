@@ -45,13 +45,13 @@
   $: ({
     dimensionFilters,
     where,
-    string,
+    urlFormat,
     measureFilters,
     complexFilters,
     hasFilters,
   } = $parsed);
 
-  $: localFiltersEnabled = string.length > 0 || localFiltersEnabledOverride;
+  $: localFiltersEnabled = !!urlFormat?.length || localFiltersEnabledOverride;
 
   $: allDimensions = $_scopedDimensions.get(metricsView)!;
   $: allSimpleMeasures = $_scopedMeasures.get(metricsView)!;

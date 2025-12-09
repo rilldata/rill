@@ -10,19 +10,21 @@ import { normalizeWeekday } from "../../dashboards/time-controls/new-time-contro
 import { type CanvasResponse } from "../selector";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
-import { type MinMax, TimeState } from "./time-state";
+import { TimeState, type MinMax } from "./time-state";
 
 export class TimeManager {
+  minMaxTimeStamps: Readable<MinMax | undefined>;
   largestMinTimeGrain: Readable<V1TimeGrain>;
-  minMaxTimeStamps = maybeWritable<MinMax>();
+
+  hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
+  minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
+  hasTimeSeries: Readable<boolean>;
+
   defaultTimeRangeStore = maybeWritable<string>();
   defaultComparisonRangeStore = maybeWritable<string>();
   timeRangeOptionsStore = writable<V1ExploreTimeRange[]>([]);
   availableTimeZonesStore = writable<string[]>([]);
   allowCustomRangeStore = writable<boolean>(true);
-  hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
-  minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
-  hasTimeSeries: Readable<boolean>;
   specInitialized = false;
   state: TimeState;
 
@@ -50,13 +52,22 @@ export class TimeManager {
     );
 
     this.state = new TimeState(this.searchParamsStore, this.parent, this);
+
+    this.minMaxTimeStamps = this.state.minMaxTimeStamps;
   }
 
   createLocalTimeState = (
     componentName: string,
     searchParamsStore: SearchParamsStore,
+    mericsViewName: string,
   ) => {
-    return new TimeState(searchParamsStore, this.parent, this, componentName);
+    return new TimeState(
+      searchParamsStore,
+      this.parent,
+      this,
+      componentName,
+      mericsViewName,
+    );
   };
 
   onSpecChange = (spec: CanvasResponse) => {

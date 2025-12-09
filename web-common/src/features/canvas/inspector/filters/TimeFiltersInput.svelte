@@ -22,10 +22,9 @@
       timeManager: {
         defaultTimeRangeStore,
         timeRangeOptionsStore,
-        minMaxTimeStamps,
         minTimeGrainMap,
         availableTimeZonesStore,
-        state: { rangeStore: globalRangeStore },
+        state: { rangeStore: globalRangeStore, minMaxTimeStamps },
       },
     },
   } = getCanvasStore(canvasName, instanceId));

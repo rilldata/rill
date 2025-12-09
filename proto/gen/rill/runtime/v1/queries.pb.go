@@ -4938,8 +4938,7 @@ type ResolveMetricsViewFilterExpressionRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	// The filter expression to convert to SQL.
+	InstanceId string      `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	Expression *Expression `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
 }
 

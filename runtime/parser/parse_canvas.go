@@ -232,8 +232,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
-		
-		var FilterExpr, err = parseFilterExpressions(tmp.Defaults.Filters)
+		FilterExpr, err := parseFilterExpressions(tmp.Defaults.Filters)
 		if err != nil {
 			return fmt.Errorf("invalid filter expression in defaults: %w", err)
 		}
@@ -379,18 +378,22 @@ func pointerIfNotEmpty(v string) *string {
 	return &v
 }
 
+func parseFilterExpressions(filterMap map[string]string) (map[string]*runtimev1.DefaultMetricsSQLFilter, error) {
+	result := make(map[string]*runtimev1.DefaultMetricsSQLFilter)
 
-func parseFilterExpressions(filterMap map[string]string) (map[string]*runtimev1.Expression, error) {
-	result := make(map[string]*runtimev1.Expression)
 	for key, filterStr := range filterMap {
 		expr, err := metricssql.ParseFilter(filterStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid filter expression for key %q: %w", key, err)
 		}
-		// convert to runtimev1.Expression
-		converted := metricsview.ExpressionToProto(expr)
-		result[key] = converted
 
+		converted := metricsview.ExpressionToProto(expr)
+
+		result[key] = &runtimev1.DefaultMetricsSQLFilter{
+			Expression: converted,
+			Sql:        filterStr,
+		}
 	}
+
 	return result, nil
 }

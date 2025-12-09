@@ -1543,7 +1543,6 @@ paths:
             properties:
               expression:
                 $ref: '#/definitions/v1Expression'
-                description: The filter expression to convert to SQL.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -3862,7 +3861,7 @@ definitions:
       filterExpr:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1Expression'
+          $ref: '#/definitions/v1DefaultMetricsSQLFilter'
         description: Filter expressions as key-value pairs for the canvas.
   v1CanvasRow:
     type: object
@@ -4544,6 +4543,13 @@ definitions:
         type: string
       databaseSchema:
         type: string
+  v1DefaultMetricsSQLFilter:
+    type: object
+    properties:
+      sql:
+        type: string
+      expression:
+        $ref: '#/definitions/v1Expression'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile

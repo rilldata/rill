@@ -75,7 +75,7 @@
   $: ({
     dimensionThresholdFilters,
     dimensionFilter,
-    dimensionsWithInlistFilter,
+    dimensionsWithInListFilter,
   } = $parsed);
 
   $: displayTimeRange = {
@@ -97,7 +97,7 @@
       dimensions={$dimensions}
       measures={$measures}
       {dimensionThresholdFilters}
-      {dimensionsWithInlistFilter}
+      dimensionsWithInlistFilter={dimensionsWithInListFilter}
       filters={dimensionFilter}
       {displayComparisonTimeRange}
       displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}

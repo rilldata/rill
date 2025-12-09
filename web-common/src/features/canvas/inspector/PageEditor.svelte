@@ -41,7 +41,7 @@
   export let canvasName: string;
 
   $: ({
-    canvasEntity: { _filtersEnabled, _embeddedTheme },
+    canvasEntity: { filtersEnabledStore, _embeddedTheme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ instanceId } = $runtime);
@@ -92,7 +92,7 @@
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
-  $: showFilterBar = $_filtersEnabled;
+  $: showFilterBar = $filtersEnabledStore;
   $: embeddedTheme = $_embeddedTheme;
   $: theme = !rawTheme
     ? undefined

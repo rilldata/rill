@@ -11,6 +11,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
+  import { Tooltip } from "bits-ui";
+  import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -26,11 +28,11 @@
   $: ({
     canvasEntity: {
       filterManager: {
-        _allDimensions,
-        _allMeasures,
-        _activeUIFilters,
-        _filterMap,
-        _temporaryFilterKeys,
+        allDimensionsStore,
+        allMeasuresStore,
+        activeUIFiltersStore,
+        filterMapStore,
+        temporaryFilterKeysStore,
         actions: {
           toggleDimensionValueSelections,
           toggleDimensionFilterMode,
@@ -57,8 +59,9 @@
           grainStore,
           comparisonRangeStore,
           interval: intervalStore,
+          minMaxTimeStamps,
         },
-        minMaxTimeStamps,
+
         largestMinTimeGrain,
         defaultTimeRangeStore,
         timeRangeOptionsStore,
@@ -82,7 +85,7 @@
   $: showTimeComparison = $showTimeComparisonStore;
 
   $: activeTimeZone = $timeZoneStore;
-  $: temporaryFilterKeys = $_temporaryFilterKeys;
+  $: temporaryFilterKeys = $temporaryFilterKeysStore;
   $: comparisonInterval = $comparisonIntervalStore;
   $: comparisonRange = $comparisonRangeStore;
 
@@ -98,7 +101,7 @@
     measureFilters,
     complexFilters,
     hasClearableFilters,
-  } = $_activeUIFilters);
+  } = $activeUIFiltersStore);
 
   $: canPan = $canPanStore;
 
@@ -129,8 +132,19 @@
 >
   <div class="p-2 flex justify-between size-full py-0">
     <div class="flex items-center size-full">
-      <div class="flex-none h-full pt-1.5">
-        <Calendar size="16px" />
+      <div class="flex-none h-full pt-1.5 pointer-events-auto">
+        <Tooltip.Root openDelay={0}>
+          <Tooltip.Trigger class="cursor-default">
+            <Calendar size="16px" />
+          </Tooltip.Trigger>
+          <Tooltip.Content side="bottom" sideOffset={10} class="z-50">
+            <Metadata
+              timeZone={activeTimeZone}
+              timeStart={minDate?.toJSDate()}
+              timeEnd={maxDate?.toJSDate()}
+            />
+          </Tooltip.Content>
+        </Tooltip.Root>
       </div>
       <div
         class="flex flex-wrap gap-x-2 gap-y-1.5 pl-2 pointer-events-auto size-full pr-2"
@@ -218,7 +232,7 @@
           {timeEnd}
           openOnMount={temporaryFilterKeys.get(id)}
           timeControlsReady={!!interval}
-          expressionMap={$_filterMap}
+          expressionMap={$filterMapStore}
           {removeDimensionFilter}
           {toggleDimensionFilterMode}
           {toggleDimensionValueSelections}
@@ -252,8 +266,8 @@
 
       {#if !readOnly}
         <CanvasFilterButton
-          allDimensions={$_allDimensions}
-          filteredSimpleMeasures={$_allMeasures}
+          allDimensions={$allDimensionsStore}
+          filteredSimpleMeasures={$allMeasuresStore}
           dimensionHasFilter={(name) => dimensionFilters.has(name)}
           measureHasFilter={(name) => measureFilters.has(name)}
           setTemporaryFilterName={addTemporaryFilter}

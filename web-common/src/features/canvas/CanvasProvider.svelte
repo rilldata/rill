@@ -15,7 +15,6 @@
   import { writable } from "svelte/store";
   import DelayedSpinner from "../entity-management/DelayedSpinner.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-
   import {
     createQueryServiceResolveCanvas,
     type V1MetricsView,
@@ -41,16 +40,12 @@
 
   $: existingStore = getCanvasStoreUnguarded(canvasName, instanceId);
 
-  $: resourceQuery = useResource(instanceId, canvasName, ResourceKind.Canvas, {
-    refetchInterval: (query) => {
-      // const resource = query?.state?.data?.resource;
-      // if (!resource) return false;
-      // if (isCanvasReconcilingForFirstTime(resource))
-      //   return PollIntervalWhenDashboardFirstReconciling;
-      // if (isCanvasErrored(resource)) return PollIntervalWhenDashboardErrored;
-      // return false;
-    },
-  });
+  $: resourceQuery = useResource(
+    instanceId,
+    canvasName,
+    ResourceKind.Canvas,
+    {},
+  );
 
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
@@ -74,19 +69,20 @@
       )
     : undefined;
 
+  $: isLoading = fetchedCanvasQuery ? $fetchedCanvasQuery?.isLoading : false;
+
   $: fetchedCanvas = fetchedCanvasQuery ? $fetchedCanvasQuery?.data : undefined;
 
   $: validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
   $: reconcileError = fetchedCanvas?.canvas?.meta?.reconcileError;
 
-  $: isReconciling = !existingStore && !validSpec && !reconcileError;
+  $: isReconciling =
+    !existingStore && !validSpec && !reconcileError && !isLoading;
 
   $: resource = resourceQuery ? $resourceQuery?.data : undefined;
 
   $: errorMessage =
     !validSpec && (reconcileError || resource?.meta?.reconcileError);
-
-  $: console.log($fetchedCanvasQuery);
 
   $: if (fetchedCanvas && !isReconciling) {
     const metricsViews: Record<string, V1MetricsView | undefined> = {};
@@ -120,7 +116,7 @@
   $: title = resolvedStore?.canvasEntity.titleStore || writable("");
   $: canvasTitle = $title;
 
-  $: bannerStore = resolvedStore?.canvasEntity._banner || writable("");
+  $: bannerStore = resolvedStore?.canvasEntity.bannerStore || writable("");
   $: banner = $bannerStore;
 
   $: hasBanner = !!banner;
@@ -180,6 +176,8 @@
     />
   {:else if isReconciling}
     <DashboardBuilding />
+  {:else if isLoading}
+    <DelayedSpinner isLoading={true} size="48px" />
   {:else}
     <header
       role="presentation"

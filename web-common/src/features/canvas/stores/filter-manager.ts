@@ -2,8 +2,6 @@ import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/fi
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { type DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   MetricsViewSpecDimension,
   V1CanvasPresetFilterExpr,
@@ -23,6 +21,8 @@ import { goto } from "$app/navigation";
 import { FilterState } from "./metrics-view-filter";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
 
+import type { ParsedFilters } from "./metrics-view-filter";
+
 export type UIFilters = {
   dimensionFilters: Map<string, DimensionFilterItem>;
   measureFilters: Map<string, MeasureFilterItem>;
@@ -39,25 +39,6 @@ type Lookup<T> = Map<MetricsViewName, Map<DimensionName | MeasureName, T>>;
 
 export type DimensionLookup = Lookup<MetricsViewSpecDimension>;
 export type MeasureLookup = Lookup<MetricsViewSpecMeasure>;
-
-export type ParsedFilters = ReturnType<typeof initFilterBase>;
-
-export function initFilterBase(metricsViewName: string) {
-  return {
-    where: createAndExpression([]),
-    dimensionFilter: createAndExpression([]),
-    string: "",
-    metricsSQL: "",
-    metricsViewName,
-    dimensionsWithInlistFilter: <string[]>[],
-    dimensionThresholdFilters: <DimensionThresholdFilter[]>[],
-    measureFilters: new Map<string, MeasureFilterItem>(),
-    dimensionFilters: new Map<string, DimensionFilterItem>(),
-    complexFilters: [] as V1Expression[],
-    hasFilters: false,
-    hasClearableFilters: false,
-  };
-}
 
 // wip - bgh
 function mergeFilters<T>(
@@ -117,13 +98,13 @@ export class FilterManager {
   metricsViewFilters = new StoreOfStores<FilterState>();
   _pinnedFilterKeys = writable<Set<string>>(new Set());
   _defaultPinnedFilterKeys = writable<Set<string>>(new Set());
-  _temporaryFilterKeys = writable<Map<string, boolean>>(new Map());
-  _allDimensions = writable<DimensionLookup>(new Map());
-  _allMeasures = writable<MeasureLookup>(new Map());
+  temporaryFilterKeysStore = writable<Map<string, boolean>>(new Map());
+  allDimensionsStore = writable<DimensionLookup>(new Map());
+  allMeasuresStore = writable<MeasureLookup>(new Map());
   _dimensionFilterKeys: Readable<string[]>;
   defaultUIFiltersStore: Readable<UIFilters>;
   _defaultExpression: Readable<V1Expression>;
-  _activeUIFilters: Readable<UIFilters>;
+  activeUIFiltersStore: Readable<UIFilters>;
   _activeExpression: Readable<V1Expression>;
   metricsViewNameDimensionMap: Map<
     MetricsViewName,
@@ -133,12 +114,13 @@ export class FilterManager {
     MetricsViewName,
     Map<MeasureName, MetricsViewSpecMeasure>
   > = new Map();
-  _filterMap: Readable<Map<string, V1Expression>>;
+  filterMapStore: Readable<Map<string, V1Expression>>;
   _scopedDimensions = writable<Map<string, DimensionLookup>>(new Map());
   _scopedMeasures = writable<Map<string, MeasureLookup>>(new Map());
 
   constructor(
     metricsViews: Record<string, V1MetricsView | undefined>,
+    public instanceId: string,
     pinnedFilters?: string[],
     defaultFilters?: V1CanvasPresetFilterExpr,
   ) {
@@ -163,7 +145,7 @@ export class FilterManager {
       },
     );
 
-    this._activeUIFilters = derived(
+    this.activeUIFiltersStore = derived(
       [this.metricsViewFilters],
       ([metricsViewFilters], set) => {
         const stores = Array.from(metricsViewFilters.values()).map(
@@ -171,7 +153,7 @@ export class FilterManager {
         );
 
         derived(
-          [this._pinnedFilterKeys, this._temporaryFilterKeys, ...stores],
+          [this._pinnedFilterKeys, this.temporaryFilterKeysStore, ...stores],
           ([pinnedFilters, temporaryFilterKeys, ...filters]) => {
             return this.convertToUIFilters(
               filters,
@@ -183,7 +165,7 @@ export class FilterManager {
       },
     );
 
-    this._filterMap = derived(
+    this.filterMapStore = derived(
       [this.metricsViewFilters],
       ([metricsViewFilters], set) => {
         const stores = Array.from(metricsViewFilters.values()).map(
@@ -203,7 +185,7 @@ export class FilterManager {
   }
 
   createLocalFilterStore = (metricsViewName: string) => {
-    return new FilterState(metricsViewName, this);
+    return new FilterState(metricsViewName, this, this.instanceId);
   };
 
   onUrlChange = (searchParams: URLSearchParams) => {
@@ -217,11 +199,11 @@ export class FilterManager {
     });
   };
 
-  updateConfig(
+  updateConfig = (
     metricsViews: Record<string, V1MetricsView | undefined>,
     pinnedFilters?: string[],
     defaultFilters?: V1CanvasPresetFilterExpr,
-  ) {
+  ) => {
     const dimensionNameToMetricsViewNames: Map<
       DimensionName,
       MetricsViewName[]
@@ -282,13 +264,18 @@ export class FilterManager {
         let existingFilterStore = this.metricsViewFilters.get(metricsViewName);
 
         if (!existingFilterStore) {
-          existingFilterStore = new FilterState(metricsViewName, this);
+          existingFilterStore = new FilterState(
+            metricsViewName,
+            this,
+            this.instanceId,
+          );
           this.metricsViewFilters.set(metricsViewName, existingFilterStore);
         }
 
-        existingFilterStore.onDefaultExpressionChange(
-          defaultFilters?.[metricsViewName],
-        );
+        const filter = defaultFilters?.[metricsViewName];
+
+        if (!filter) return;
+        existingFilterStore.onDefaultExpressionChange(filter.expression);
       }
     });
 
@@ -304,9 +291,9 @@ export class FilterManager {
       "all",
     );
 
-    this._allMeasures.set(mergedMeasures);
+    this.allMeasuresStore.set(mergedMeasures);
 
-    this._allDimensions.set(mergedDimensions);
+    this.allDimensionsStore.set(mergedDimensions);
 
     this._scopedDimensions.set(dimensionLookups);
     this._scopedMeasures.set(measureLookups);
@@ -340,9 +327,9 @@ export class FilterManager {
       this._pinnedFilterKeys.set(new Set(keys));
       this._defaultPinnedFilterKeys.set(new Set(keys));
     }
-  }
+  };
 
-  getUIFiltersFromString = (filterString: string): UIFilters => {
+  getUIFiltersFromString = (filterString: string) => {
     const searchParams = new URLSearchParams(filterString);
 
     const parsedFilters: ParsedFilters[] = [];
@@ -382,10 +369,12 @@ export class FilterManager {
       hasClearableFilters: false,
     };
 
-    const allMeasures = get(this._allMeasures);
-    const allDimensions = get(this._allDimensions);
+    const allMeasures = get(this.allMeasuresStore);
+    const allDimensions = get(this.allDimensionsStore);
 
-    const fullFilterString = parsedFilters.map((p) => p.string).join(" AND ");
+    const fullFilterString = parsedFilters
+      .map((p) => p.urlFormat)
+      .join(" AND ");
 
     allMeasures.forEach((measures, key) => {
       const filters: MeasureFilterItem[] = [];
@@ -571,7 +560,7 @@ export class FilterManager {
       await this.applyFiltersToUrl(map, true);
     },
     addTemporaryFilter: (measureOrDimensionKey: string) => {
-      this._temporaryFilterKeys.update((tempFilters) => {
+      this.temporaryFilterKeysStore.update((tempFilters) => {
         tempFilters.set(measureOrDimensionKey, true);
         return tempFilters;
       });
@@ -579,7 +568,7 @@ export class FilterManager {
       // Boolean controls whether the filter pill should open the dropdown automatically
       // This removes the flag after 200ms
       setTimeout(() => {
-        this._temporaryFilterKeys.update((tempFilters) => {
+        this.temporaryFilterKeysStore.update((tempFilters) => {
           tempFilters.set(measureOrDimensionKey, false);
           return tempFilters;
         });
@@ -715,7 +704,7 @@ export class FilterManager {
           pinned.add(key);
         }
 
-        this._temporaryFilterKeys.update((tempFilters) => {
+        this.temporaryFilterKeysStore.update((tempFilters) => {
           if (deleted) {
             tempFilters.set(key, false);
           } else {
@@ -735,18 +724,18 @@ export class FilterManager {
   ) => {
     const key =
       metricsViewNames.sort().join("//") + "::" + measureOrDimensionName;
-    const tempFilters = get(this._temporaryFilterKeys);
+    const tempFilters = get(this.temporaryFilterKeysStore);
 
     const test = tempFilters.delete(key);
     if (test) {
-      this._temporaryFilterKeys.set(tempFilters);
+      this.temporaryFilterKeysStore.set(tempFilters);
     }
   };
 
   // Unclear on what this actually should do - bgh
   // Go to defaults or truly clear all filters?
   clearAllFilters = async () => {
-    this._temporaryFilterKeys.set(new Map());
+    this.temporaryFilterKeysStore.set(new Map());
     const existingParams = new URLSearchParams(window.location.search);
     const filterParamsToDelete = Array.from(existingParams.keys()).filter(
       (key) => key.startsWith(ExploreStateURLParams.Filters),
