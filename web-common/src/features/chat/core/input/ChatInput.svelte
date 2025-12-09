@@ -90,6 +90,7 @@
     });
 
     const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
+      console.log(prompt);
       editor.commands.setContent(prompt);
       editor.commands.focus();
     });
@@ -157,7 +158,7 @@
     margin: 0;
   }
 
-  :global(.tiptap) {
+  :global(.chat-input-container .tiptap) {
     @apply p-2 min-h-16 outline-none;
     @apply text-sm leading-relaxed;
   }

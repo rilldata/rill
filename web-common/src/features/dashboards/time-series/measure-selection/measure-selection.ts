@@ -14,6 +14,8 @@ export class MeasureSelection {
   public readonly measure = writable<string | null>(null);
   public readonly start = writable<Date | null>(null);
   public readonly end = writable<Date | null>(null);
+  // Calculated x,y coordinates of the measure selection point.
+  // This uses GraphicScale and SimpleDataGraphicConfiguration that is not available outside `SimpleDataGraphic`.
   public readonly x = writable<number | null>(null);
   public readonly y = writable<number | null>(null);
 
@@ -29,6 +31,17 @@ export class MeasureSelection {
     this.end.set(end);
   }
 
+  /**
+   * Calculate the point on the graph where the measure selection should be drawn.
+   * scaler and config are only available within the `MeasureSelection` wrapped in `SimpleDataGraphic`.
+   * But it is used in `ExplainButton` that is outside the `SimpleDataGraphic` wrapper to avoid click issues.
+   * That is why this updates the x & y stores directly.
+   *
+   * @param start
+   * @param end
+   * @param scaler
+   * @param config
+   */
   public calculatePoint(
     start: Date,
     end: Date | null,
@@ -50,6 +63,7 @@ export class MeasureSelection {
     this.start.set(null);
     this.end.set(null);
     this.x.set(null);
+    this.y.set(null);
   }
 
   public hasSelection() {

@@ -2,35 +2,40 @@
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
-  import { convertPromptWithInlineContextToComponents } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
-  import InlineContext from "@rilldata/web-common/features/chat/core/context/InlineContext.svelte";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { onMount } from "svelte";
+  import { Editor } from "@tiptap/core";
 
   export let message: V1Message;
 
+  let element: HTMLDivElement;
+  let editor: Editor;
+
   // Message content
   $: content = extractMessageText(message);
-  $: linesOfTextOrComponents =
-    convertPromptWithInlineContextToComponents(content);
+  $: editor?.commands.setContent(content);
+
+  // Use a readable editor instance to render the inline context component for us.
+  onMount(() => {
+    editor = new Editor({
+      element,
+      editable: false,
+      extensions: getEditorPlugins({
+        enableMention: true,
+        placeholder: "",
+        onSubmit: () => {},
+      }),
+      content,
+      onTransaction: () => {
+        // force re-render so `editor.isActive` works as expected
+        editor = editor;
+      },
+    });
+  });
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content">
-    {#each linesOfTextOrComponents as textOrComponents, i (i)}
-      {#each textOrComponents as textOrComponent, i (i)}
-        {#if textOrComponent.type === "text"}
-          <span>{textOrComponent.text}</span>
-        {:else if textOrComponent.type === "context"}
-          <InlineContext
-            selectedChatContext={textOrComponent.context}
-            props={{ mode: "readonly" }}
-          />
-        {/if}
-      {/each}
-      {#if i < linesOfTextOrComponents.length - 1}
-        <br />
-      {/if}
-    {/each}
-  </div>
+  <div class="chat-message-content" bind:this={element}></div>
 </div>
 
 <style lang="postcss">
@@ -42,5 +47,10 @@
     @apply px-4 py-2 rounded-2xl;
     @apply text-sm leading-relaxed break-words;
     @apply bg-muted text-foreground rounded-br-lg;
+  }
+
+  :global(.chat-message-content .tiptap) {
+    @apply p-0 min-h-4 outline-none;
+    @apply text-sm leading-relaxed;
   }
 </style>

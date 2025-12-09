@@ -183,22 +183,24 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
           selectedChatContext: normalizeInlineContext(
             node.attrs as InlineContext,
           ),
-          props: {
-            mode: "editable",
-            onSelect: (selectedChatContext) => {
-              const pos = getPos();
-              if (!pos) return;
+          props: editor.options.editable
+            ? {
+                mode: "editable",
+                onSelect: (selectedChatContext) => {
+                  const pos = getPos();
+                  if (!pos) return;
 
-              // Dispatch a transaction to update the node attributes with the new context.
-              view.dispatch(
-                getTransactionForContext(selectedChatContext, view, pos),
-              );
-              editor.commands.focus();
-            },
-            onDropdownToggle: (isOpen) =>
-              sharedEditorStore.dropdownToggled(comp, isOpen),
-            focusEditor: () => editor.commands.focus(),
-          },
+                  // Dispatch a transaction to update the node attributes with the new context.
+                  view.dispatch(
+                    getTransactionForContext(selectedChatContext, view, pos),
+                  );
+                  editor.commands.focus();
+                },
+                onDropdownToggle: (isOpen) =>
+                  sharedEditorStore.dropdownToggled(comp, isOpen),
+                focusEditor: () => editor.commands.focus(),
+              }
+            : { mode: "readonly" },
         },
       });
       sharedEditorStore.componentAdded(comp);

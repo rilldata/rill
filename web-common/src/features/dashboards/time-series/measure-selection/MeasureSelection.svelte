@@ -13,7 +13,6 @@
 
   export let data;
   export let measureName: string;
-  export let metricsViewName: string;
   export let xAccessor: string;
   export let yAccessor: string;
   export let internalXMin;

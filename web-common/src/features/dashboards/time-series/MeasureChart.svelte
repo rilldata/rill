@@ -435,7 +435,6 @@
       <MeasureSelection
         {data}
         measureName={measure.name ?? ""}
-        metricsViewName={$metricsViewName}
         {xAccessor}
         {yAccessor}
         {internalXMin}
