@@ -624,6 +624,29 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 	})
 }
 
+// createNamedCollections drops and re create the named collection since there is no Create or Replace.
+func (c *Connection) createNamedCollections(ctx context.Context, name string, creds map[string]string) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+	}
+	safeName := safeSQLName(name)
+	drop := fmt.Sprintf("DROP NAMED COLLECTION IF EXISTS %s %s", safeName, onClusterClause)
+	if err := c.Exec(ctx, &drivers.Statement{Query: drop, Priority: 100}); err != nil {
+		return fmt.Errorf("failed to DROP named collection %q: %w", name, err)
+	}
+
+	var props []string
+	for k, v := range creds {
+		props = append(props, fmt.Sprintf("%s = %s", k, safeSQLString(v)))
+	}
+	sqlCreate := fmt.Sprintf("CREATE NAMED COLLECTION %s %s AS %s", safeName, onClusterClause, strings.Join(props, ", "))
+	if err := c.Exec(ctx, &drivers.Statement{Query: sqlCreate, Priority: 100}); err != nil {
+		return fmt.Errorf("failed to CREATE named collection %q: %w", name, err)
+	}
+	return nil
+}
+
 func (c *Connection) columnClause(ctx context.Context, table string) (string, error) {
 	var columnClause strings.Builder
 	args := []any{c.config.Database, table}

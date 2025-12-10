@@ -7,7 +7,7 @@ project_files:
     materialize: true
     connector: clickhouse
     output: clickhouse
-    sql: "SELECT * FROM s3('s3://integration-test.rilldata.com/csv_test/all_datatypes.csv', '{{.env.connector.s3.aws_access_key_id}}', '{{.env.connector.s3.aws_secret_access_key}}', 'CSVWithNames')"
+    sql: "SELECT * FROM s3(s3, url='s3://integration-test.rilldata.com/csv_test/all_datatypes.csv', format='CSVWithNames')"
   clickhouse_all_datatypes_glob.yaml:
     type: model
     materialize: true
