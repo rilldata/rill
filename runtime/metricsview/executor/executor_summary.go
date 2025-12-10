@@ -61,7 +61,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	if e.metricsView.TimeDimension != "" {
 		var found bool
 		for _, dim := range timeDimensions {
-			if dim.Name == e.metricsView.TimeDimension {
+			if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 				found = true
 				break
 			}
@@ -106,7 +106,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			summary.MaxValue = timeRange.Max
 		}
 		summaries = append(summaries, summary)
-		if dim.Name == e.metricsView.TimeDimension {
+		if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 			defaultTimeDimensionSummary = summary
 		}
 	}
@@ -140,7 +140,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	// Determine the default time dimension expression
 	var timeDimExpr string
 	for _, dim := range timeDimensions {
-		if dim.Name == e.metricsView.TimeDimension {
+		if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
 			if err == nil {
 				timeDimExpr = expr
