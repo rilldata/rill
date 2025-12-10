@@ -104,8 +104,20 @@ export class TimeControls {
     });
 
     const listener = derived(
-      [specStore, this.allTimeRange, this.searchParamsStore, this.minTimeGrain],
-      async ([spec, allTimeRange, searchParams, minTimeGrain]) => {
+      [
+        specStore,
+        this.allTimeRange,
+        this.searchParamsStore,
+        this.minTimeGrain,
+        this.hasTimeSeries,
+      ],
+      async ([
+        spec,
+        allTimeRange,
+        searchParams,
+        minTimeGrain,
+        hasTimeSeries,
+      ]) => {
         if (!spec?.data || !allTimeRange) {
           return undefined;
         }
@@ -125,14 +137,22 @@ export class TimeControls {
         // Component does not have local time range
         if (this.isWidgetInstance && !timeRange) return;
 
+        const metricsViews = spec.data.metricsViews;
+
         // TODO: figure out a better way of handling this property
         // when it's not consistent across all metrics views - bgh
-        const firstMetricsViewName = Object.keys(spec.data.metricsViews)?.[0];
-        const firstDayOfWeekOfFirstMetricsView =
-          spec.data.metricsViews[firstMetricsViewName]?.state?.validSpec
-            ?.firstDayOfWeek;
+        const firstMetricsViewNameWithTimeSeries = Object.keys(
+          metricsViews,
+        ).find((metricView) => {
+          const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+          return Boolean(metricsViewSpec?.timeDimension);
+        });
 
-        if (!firstMetricsViewName) return;
+        if (!firstMetricsViewNameWithTimeSeries) return;
+
+        const firstDayOfWeekOfFirstMetricsView =
+          spec.data.metricsViews[firstMetricsViewNameWithTimeSeries]?.state
+            ?.validSpec?.firstDayOfWeek;
 
         Settings.defaultWeekSettings = {
           firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
@@ -142,57 +162,59 @@ export class TimeControls {
 
         const { defaultPreset, timeRanges } = spec.data?.canvas || {};
 
-        const finalRange: string =
-          timeRange ||
-          defaultPreset?.timeRange ||
-          (timeRanges?.[0] as string | undefined) ||
-          "PT24H";
+        if (hasTimeSeries) {
+          const finalRange: string =
+            timeRange ||
+            defaultPreset?.timeRange ||
+            (timeRanges?.[0] as string | undefined) ||
+            "PT24H";
 
-        const result = await deriveInterval(
-          finalRange,
-          firstMetricsViewName,
-          timeZone,
-        );
+          const result = await deriveInterval(
+            finalRange,
+            firstMetricsViewNameWithTimeSeries,
+            timeZone,
+          );
 
-        if (result.error || !result.interval.start || !result.interval.end)
-          return;
+          if (result.error || !result.interval.start || !result.interval.end)
+            return;
 
-        const selectedTimeRange: DashboardTimeControls = {
-          name: finalRange,
-          start: result.interval.start?.toJSDate() ?? new Date(),
-          end: result.interval.end?.toJSDate() ?? new Date(),
-          interval: result.grain,
-        };
+          const selectedTimeRange: DashboardTimeControls = {
+            name: finalRange,
+            start: result.interval.start?.toJSDate() ?? new Date(),
+            end: result.interval.end?.toJSDate() ?? new Date(),
+            interval: result.grain,
+          };
 
-        this.interval.set(result.interval);
+          this.interval.set(result.interval);
 
-        this.selectedTimezone.set(timeZone);
+          this.selectedTimezone.set(timeZone);
 
-        if (selectedComparisonTimeRange) {
-          this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+          if (selectedComparisonTimeRange) {
+            this.selectedComparisonTimeRange.set(selectedComparisonTimeRange);
+          }
+
+          this.showTimeComparison.set(showTimeComparison);
+
+          const defaultTimeRange = isoDurationToFullTimeRange(
+            defaultPreset?.timeRange,
+            allTimeRange.start,
+            allTimeRange.end,
+            timeZone,
+          );
+
+          const timeRangeState = calculateTimeRangePartial(
+            allTimeRange,
+            selectedTimeRange,
+            undefined, // scrub not present in canvas yet
+            timeZone,
+            defaultTimeRange,
+            minTimeGrain,
+          );
+
+          if (!timeRangeState) return undefined;
+
+          this.timeRangeStateStore.set(timeRangeState);
         }
-
-        this.showTimeComparison.set(showTimeComparison);
-
-        const defaultTimeRange = isoDurationToFullTimeRange(
-          defaultPreset?.timeRange,
-          allTimeRange.start,
-          allTimeRange.end,
-          timeZone,
-        );
-
-        const timeRangeState = calculateTimeRangePartial(
-          allTimeRange,
-          selectedTimeRange,
-          undefined, // scrub not present in canvas yet
-          timeZone,
-          defaultTimeRange,
-          minTimeGrain,
-        );
-
-        if (!timeRangeState) return undefined;
-
-        this.timeRangeStateStore.set(timeRangeState);
       },
     );
 
