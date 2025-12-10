@@ -1,6 +1,6 @@
 ---
 title: User group Permissions
-sidebar_label: User Group Management 
+sidebar_label: User Groups 
 sidebar_position: 24
 ---
 
@@ -75,15 +75,3 @@ Once added, you can confirm the user group by running the following command:
 ```
 rill user list --group <group_name>
 ```
-
-
-## Reference: Walking through access levels
-
-In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
-
-<img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
-
-### Key things to note
-1. There are **three** kinds of access: organization, project, and group.
-2. User groups can _only exist_ within an organization.
-    - In the case of adding a user who is not part of the organization to a user group, you will prompted to add them first.

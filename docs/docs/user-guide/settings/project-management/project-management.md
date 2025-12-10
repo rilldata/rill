@@ -1,7 +1,6 @@
 ---
 title: "Managing Projects in Rill Cloud"
 description: Basic managment from projects 
-sidebar_label: "Project Management"
 sidebar_position: 20
 ---
 
