@@ -663,7 +663,7 @@ func (s *Server) ResolveMetricsViewFilterExpression(ctx context.Context, req *ru
 	}
 
 	expr := metricsview.NewExpressionFromProto(req.Expression)
-	sql, err := metricsview.ExpressionToSQL(expr, metricsview.DialectDuckDB)
+	sql, err := metricsview.ExpressionToSQL(expr)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
