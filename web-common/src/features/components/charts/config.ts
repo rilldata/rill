@@ -1,5 +1,6 @@
 import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
+import DotPlot from "@rilldata/web-common/components/icons/DotPlot.svelte";
 import Funnel from "@rilldata/web-common/components/icons/Funnel.svelte";
 import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
@@ -28,6 +29,8 @@ import { FunnelChartProvider } from "./funnel/FunnelChartProvider";
 import { generateVLFunnelChartSpec } from "./funnel/spec";
 import { HeatmapChartProvider } from "./heatmap/HeatmapChartProvider";
 import { generateVLHeatmapSpec } from "./heatmap/spec";
+import { DotPlotChartProvider } from "./dot-plot/DotPlotChartProvider";
+import { generateVLDotPlotSpec } from "./dot-plot/spec";
 import type {
   ChartDataResult,
   ChartProvider,
@@ -142,6 +145,12 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     icon: MultiChart,
     provider: ComboChartProvider,
     generateSpec: generateVLComboChartSpec,
+  },
+  dot_plot: {
+    title: "Dot Plot",
+    icon: DotPlot,
+    provider: DotPlotChartProvider,
+    generateSpec: generateVLDotPlotSpec,
   },
 };
 

@@ -33,6 +33,12 @@ export type {
   HeatmapChartSpec,
 } from "./heatmap/HeatmapChartProvider";
 
+export { DotPlotChartProvider } from "./dot-plot/DotPlotChartProvider";
+export type {
+  DotPlotChartDefaultOptions,
+  DotPlotChartSpec,
+} from "./dot-plot/DotPlotChartProvider";
+
 // Types
 export type {
   ChartDataResult,

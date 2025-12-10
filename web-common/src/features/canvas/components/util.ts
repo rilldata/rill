@@ -81,6 +81,7 @@ const CHART_TYPES = [
   "heatmap",
   "funnel_chart",
   "combo_chart",
+  "dot_plot",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",
@@ -155,14 +156,14 @@ export function createComponent(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
-): BaseCanvasComponent<any> {
+): BaseCanvasComponent<ComponentSpec> {
   const type = resource.component?.spec?.renderer as CanvasComponentType;
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
-    return new ComponentClass(resource, parent, path);
+    return new ComponentClass(resource, parent, path) as BaseCanvasComponent<ComponentSpec>;
   }
-  return new CartesianChartComponent(resource, parent, path);
+  return new CartesianChartComponent(resource, parent, path) as BaseCanvasComponent<ComponentSpec>;
 }
 
 export function isCanvasComponentType(
