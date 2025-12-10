@@ -22,27 +22,23 @@ type ScheduleYAML struct {
 }
 
 func (p *Parser) parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
-	s := &runtimev1.Schedule{
-		RefUpdate: true, // By default, refresh on updates to refs
-	}
-
+	// When there's no refresh schedule, default to refreshing on updates to refs.
 	if raw == nil {
-		return s, nil
+		return &runtimev1.Schedule{RefUpdate: true}, nil
 	}
 
+	// Ignore other settings when "disabled: true"
 	if raw.Disable {
-		s.RefUpdate = false
-		s.Disable = true
-		return s, nil
+		return &runtimev1.Schedule{Disable: true}, nil
 	}
 
-	// Enforce run_in_dev only for scheduled refreshes. We always honor ref_update even in dev.
+	// In dev, unless explicitly enabled, we skip cron/ticker schedules (note that this instead makes ref_update default to true).
 	skipScheduledRefresh := !raw.RunInDev && p.isDev()
 
-	if raw.RefUpdate != nil {
-		s.RefUpdate = *raw.RefUpdate
-	}
+	// Prepare the schedule
+	s := &runtimev1.Schedule{}
 
+	// Parse cron
 	if !skipScheduledRefresh && raw.Cron != "" {
 		_, err := cron.ParseStandard(raw.Cron)
 		if err != nil {
@@ -51,6 +47,8 @@ func (p *Parser) parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, erro
 		s.Cron = raw.Cron
 	}
 
+	// Parse ticker.
+	// NOTE: It probably doesn't make sense to provide both cron and ticker, but we don't enforce that for backwards compatibility.
 	if !skipScheduledRefresh && raw.Every != "" {
 		d, err := parseDuration(raw.Every)
 		if err != nil {
@@ -59,12 +57,21 @@ func (p *Parser) parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, erro
 		s.TickerSeconds = uint32(d.Seconds())
 	}
 
+	// Parse time zone
 	if raw.TimeZone != "" {
 		_, err := time.LoadLocation(raw.TimeZone)
 		if err != nil {
 			return nil, fmt.Errorf("invalid time zone: %w", err)
 		}
 		s.TimeZone = raw.TimeZone
+	}
+
+	// Handle ref update.
+	// If not explicit set, it default to true iff no cron or ticker is specified.
+	if raw.RefUpdate != nil {
+		s.RefUpdate = *raw.RefUpdate
+	} else {
+		s.RefUpdate = s.Cron == "" && s.TickerSeconds == 0
 	}
 
 	return s, nil
