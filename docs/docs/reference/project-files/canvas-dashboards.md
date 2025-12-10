@@ -218,6 +218,16 @@ _[object]_ - Defines [security rules and access control policies](/developer/bui
 
     - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
 
+### `variables`
+
+_[array of object]_ - Variables that can be used in the canvas 
+
+  - **`name`** - _[string]_ - Unique identifier for the variable _(required)_
+
+  - **`type`** - _[string]_ - Data type of the variable (e.g., string, number, boolean) _(required)_
+
+  - **`value`** - _[string, number, boolean, object, array]_ - Default value for the variable. Can be any valid JSON value type 
+
 ## Common Properties
 
 ### `name`
