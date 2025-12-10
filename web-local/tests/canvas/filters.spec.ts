@@ -71,6 +71,9 @@ test.describe("canvas time filters", () => {
     await page.getByRole("menuitem", { name: "Domain" }).click();
 
     await page.getByLabel("domain results").getByText("facebook.com").click();
+
+    await page.waitForTimeout(100);
+
     await page
       .getByLabel("domain results")
       .getByText("google.com", { exact: true })
@@ -82,8 +85,6 @@ test.describe("canvas time filters", () => {
       .getByRole("button", { name: "Open domain filter" })
       .first()
       .click();
-
-    await page.waitForTimeout(100);
 
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
