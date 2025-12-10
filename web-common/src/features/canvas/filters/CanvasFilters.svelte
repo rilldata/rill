@@ -220,7 +220,6 @@
       {/if}
 
       {#each complexFilters as filter, i (i)}
-        hello
         <AdvancedFilter advancedFilter={filter} />
       {/each}
 
@@ -230,7 +229,7 @@
           {filterData}
           {timeStart}
           {timeEnd}
-          openOnMount={temporaryFilterKeys.get(id)}
+          openOnMount={!!temporaryFilterKeys.get(id)}
           timeControlsReady={!!interval}
           expressionMap={$filterMapStore}
           {removeDimensionFilter}

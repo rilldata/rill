@@ -14,7 +14,6 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { string, object, mixed } from "yup";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import PinButton from "../PinButton.svelte";
 
   export let dimensionName: string;
@@ -30,9 +29,7 @@
   export let allDimensions: MetricsViewSpecDimension[];
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let pinned = false;
-  export let toggleFilterPin:
-    | FilterManager["actions"]["toggleFilterPin"]
-    | undefined = undefined;
+  export let showPinControl = false;
 
   const initialValues = {
     dimension: dimensionName,
@@ -129,13 +126,18 @@
   strategy="fixed"
   id="measure-filter-popover"
 >
-  {#if toggleFilterPin}
+  {#if showPinControl}
     <div
       class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
     >
       <b>{label}</b>
 
-      <PinButton {pinned} onTogglePin={() => toggleFilterPin(name, [])} />
+      <PinButton
+        pinned={!!pinned}
+        onTogglePin={() => {
+          pinned = !pinned;
+        }}
+      />
     </div>
   {/if}
   <form

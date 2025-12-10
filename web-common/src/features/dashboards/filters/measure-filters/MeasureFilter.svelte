@@ -26,14 +26,23 @@
     filter: MeasureFilterEntry;
   }) => void;
 
+  let open = openOnMount && !filterData.filter;
+  let curPinned = filterData.pinned;
+
   $: ({ filter, pinned, label, measures, dimensionName, name } = filterData);
 
   $: metricsViewNames = measures ? Array.from(measures.keys()) : [];
-
-  let open = openOnMount && !filterData.filter;
 </script>
 
-<Popover.Root bind:open preventScroll>
+<Popover.Root
+  bind:open
+  preventScroll
+  onOpenChange={() => {
+    if (open && pinned !== curPinned) {
+      toggleFilterPin?.(name, metricsViewNames);
+    }
+  }}
+>
   <Popover.Trigger asChild let:builder>
     <Tooltip
       activeDelay={60}
@@ -50,7 +59,7 @@
         gray={!filter}
         theme
         {onRemove}
-        removable={!pinned}
+        removable={!curPinned}
         removeTooltipText="Remove {label}"
       >
         <MeasureFilterBody
@@ -83,11 +92,14 @@
       {label}
       {dimensionName}
       {allDimensions}
-      {onApply}
-      {pinned}
-      toggleFilterPin={toggleFilterPin
-        ? () => toggleFilterPin(name, metricsViewNames)
-        : undefined}
+      onApply={(params) => {
+        if (pinned !== curPinned) {
+          toggleFilterPin?.(name, metricsViewNames);
+        }
+        onApply(params);
+      }}
+      bind:pinned={curPinned}
+      showPinControl={!!toggleFilterPin}
       {side}
     />
   {/if}

@@ -50,6 +50,7 @@ export function initFilterBase(metricsViewName: string) {
   };
 }
 
+// Exists at the global and widget level on Canvas
 export class FilterState {
   parsed: Writable<ParsedFilters>;
   parsedDefaultFilters: Writable<ParsedFilters>;

@@ -64,6 +64,7 @@
     filterData.mode === DimensionFilterMode.InList
       ? (filterData.selectedValues ?? [])
       : [];
+  let curPinned = filterData.pinned;
 
   $: ({ instanceId } = $runtime);
 
@@ -260,6 +261,10 @@
           ? mergeDimensionSearchValues(selectedValues)
           : (sanitisedSearchText ?? "");
     } else {
+      if (pinned !== curPinned) {
+        toggleFilterPin?.(name, metricsViewNames);
+      }
+
       // Apply proxy changes for Select mode when dropdown closes
       if (curMode === DimensionFilterMode.Select) {
         await applySelectModeChanges();
@@ -411,7 +416,7 @@
         label={`${name} filter`}
         theme
         onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-        removable={!readOnly && !pinned}
+        removable={!readOnly && !curPinned}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
         1
@@ -460,10 +465,9 @@
           <b>{label}</b>
 
           <PinButton
-            pinned={!!pinned}
-            onTogglePin={async () => {
-              await onApply(false);
-              toggleFilterPin(name, metricsViewNames);
+            pinned={!!curPinned}
+            onTogglePin={() => {
+              curPinned = !curPinned;
             }}
           />
         </div>

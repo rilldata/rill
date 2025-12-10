@@ -547,7 +547,8 @@ export class FilterManager {
       pinnedFilters.size > 0 ||
       temporaryFilterKeys.size > 0;
 
-    // Temporary to get sorting to work, will revisit later - bgh
+    // Sorting to ensure that pills don't jump around unnecessarily in the UI
+    // Can be optimized - bgh
     const sortedDimensionMap = new Map(
       Array.from(merged.dimensionFilters.entries()).sort((a, b) => {
         return sortMeasuresOrDimensions(
@@ -604,6 +605,7 @@ export class FilterManager {
       metricsViewNames: string[],
     ) => {
       this.checkTemporaryFilter(dimensionName, metricsViewNames);
+      this.checkPinnedFilter(dimensionName, metricsViewNames);
 
       const map = new Map<string, string | null>();
 
@@ -734,6 +736,7 @@ export class FilterManager {
       metricsViewNames: string[],
     ) => {
       this.checkTemporaryFilter(measureName, metricsViewNames);
+      this.checkPinnedFilter(measureName, metricsViewNames);
 
       const newFilters = new Map<string, string | null>();
 
@@ -783,9 +786,23 @@ export class FilterManager {
       metricsViewNames.sort().join("//") + "::" + measureOrDimensionName;
     const tempFilters = get(this.temporaryFilterKeysStore);
 
-    const test = tempFilters.delete(key);
-    if (test) {
+    const deleted = tempFilters.delete(key);
+    if (deleted) {
       this.temporaryFilterKeysStore.set(tempFilters);
+    }
+  };
+
+  checkPinnedFilter = (
+    measureOrDimensionName: string,
+    metricsViewNames: string[],
+  ) => {
+    const key =
+      metricsViewNames.sort().join("//") + "::" + measureOrDimensionName;
+    const pinnedFilters = get(this.pinnedFilterKeysStore);
+
+    const deleted = pinnedFilters.delete(key);
+    if (deleted) {
+      this.pinnedFilterKeysStore.set(pinnedFilters);
     }
   };
 
