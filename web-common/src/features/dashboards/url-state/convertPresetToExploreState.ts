@@ -294,6 +294,13 @@ function fromExploreUrlParams(
       preset.exploreLeaderboardMeasures;
   }
 
+  if (
+    preset.exploreLeaderboardShowContextForAllMeasures !== undefined
+  ) {
+    partialExploreState.leaderboardShowContextForAllMeasures =
+      preset.exploreLeaderboardShowContextForAllMeasures;
+  }
+
   if (preset.exploreExpandedDimension !== undefined) {
     if (preset.exploreExpandedDimension === "") {
       partialExploreState.selectedDimensionName = "";

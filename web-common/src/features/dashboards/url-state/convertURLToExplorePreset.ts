@@ -182,6 +182,30 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (
+    searchParams.has(
+      ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+    )
+  ) {
+    const rawValue = searchParams.get(
+      ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+    );
+    const normalized = rawValue?.toLowerCase();
+    if (normalized === "true" || normalized === "1") {
+      preset.exploreLeaderboardShowContextForAllMeasures = true;
+    } else if (
+      normalized === "false" ||
+      normalized === "0" ||
+      normalized === ""
+    ) {
+      preset.exploreLeaderboardShowContextForAllMeasures = false;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard context toggle", rawValue ?? ""),
+      );
+    }
+  }
+
   return { preset, errors };
 }
 

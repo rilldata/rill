@@ -55,6 +55,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   setLeaderboardMeasureNames,
   setLeaderboardSortByMeasureName,
+  toggleLeaderboardShowContextForAllMeasures,
 } from "../../state-managers/actions/leaderboard";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
@@ -271,6 +272,11 @@ export const AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS: TestDashboardMutat
       AD_BIDS_BID_PRICE_MEASURE,
       AD_BIDS_IMPRESSIONS_MEASURE,
     ]);
+  };
+
+export const AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES: TestDashboardMutation =
+  (mut) => {
+    toggleLeaderboardShowContextForAllMeasures(mut);
   };
 
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {

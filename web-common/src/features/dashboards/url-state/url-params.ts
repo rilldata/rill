@@ -22,6 +22,7 @@ export enum ExploreStateURLParams {
   SortDirection = "sort_dir",
 
   LeaderboardMeasures = "leaderboard_measures",
+  LeaderboardShowContextForAllMeasures = "lb_ctx",
   ExpandedMeasure = "measure",
   ChartType = "chart_type",
   Pin = "pin",
@@ -47,4 +48,6 @@ export const ExploreStateKeyToURLParamMap: Partial<
   dashboardSortType: ExploreStateURLParams.SortType,
   sortDirection: ExploreStateURLParams.SortDirection,
   leaderboardMeasureNames: ExploreStateURLParams.LeaderboardMeasures,
+  leaderboardShowContextForAllMeasures:
+    ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
 };
