@@ -45,7 +45,7 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 	var objects []drivers.ObjectStoreEntry
 	var nextToken string
 	if req.Glob != "" {
-		objects, err = os.ListObjectsForGlob(ctx, req.Bucket, req.Glob, req.PageSize, req.PageToken)
+		objects, nextToken, err = os.ListObjectsForGlob(ctx, req.Bucket, req.Glob, req.PageSize, req.PageToken)
 		if err != nil {
 			return nil, err
 		}

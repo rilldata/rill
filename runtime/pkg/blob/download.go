@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -72,11 +73,14 @@ func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (res drive
 		return nil, err
 	}
 
-	entries, err := b.ListObjectsForGlob(ctx, opts.Glob)
+	entries, err := pagination.CollectAll(ctx,
+		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
+			return b.ListObjectsForGlob(ctx, opts.Glob, pz, tk)
+		},
+		drivers.DefaultPageSize)
 	if err != nil {
 		return nil, err
 	}
-
 	ctx, cancel := context.WithCancel(ctx)
 
 	it := &blobIterator{
