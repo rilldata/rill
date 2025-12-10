@@ -837,7 +837,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
 	if conf.Host != "" && conf.Port != 0 {
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
-		conn, err := net.DialTimeout("tcp", target, 25*time.Second)
+		conn, err := net.DialTimeout("tcp", target, 10*time.Second)
 		if err != nil {
 			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
 		}
