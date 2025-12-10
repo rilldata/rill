@@ -30,6 +30,7 @@ export type TransformerArgs<R extends TransformerProperties> = {
   timeRangeSummary: V1TimeRangeSummary;
   executionTime?: string;
   exploreProtoState?: string;
+  ignoreFilters?: boolean;
   forceOpenPivot: boolean;
 };
 

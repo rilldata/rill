@@ -1,6 +1,12 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks.ts";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
+import {
+  createAndExpression,
+  createBinaryExpression,
+  createInExpression,
+  createSubQueryExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
 import {
@@ -10,6 +16,7 @@ import {
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_NAME,
+  AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
@@ -22,6 +29,7 @@ import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import {
   type V1MetricsViewAggregationRequest,
+  V1Operation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -269,6 +277,7 @@ describe("getDashboardFromAggregationRequest", () => {
         await runTest({
           aggregationRequest,
           expectedAdditionalExploreState: expectedNonPivotState,
+          ignoreFilters: false,
           forceOpenPivot: false,
         });
       });
@@ -277,10 +286,43 @@ describe("getDashboardFromAggregationRequest", () => {
         await runTest({
           aggregationRequest,
           expectedAdditionalExploreState: expectedPivotState,
+          ignoreFilters: false,
           forceOpenPivot: true,
         });
       });
     }
+  });
+
+  it("Ignore filters", async () => {
+    await runTest({
+      aggregationRequest: {
+        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+        measures: [{ name: AD_BIDS_BID_PRICE_MEASURE }],
+        sort: [{ desc: true, name: AD_BIDS_BID_PRICE_MEASURE }],
+        where: createAndExpression([
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo", "Google"]),
+          createSubQueryExpression(
+            AD_BIDS_DOMAIN_DIMENSION,
+            [AD_BIDS_BID_PRICE_MEASURE],
+            createBinaryExpression(
+              "AD_BIDS_BID_PRICE_MEASURE",
+              V1Operation.OPERATION_GT,
+              1000,
+            ),
+          ),
+        ]),
+      },
+      expectedAdditionalExploreState: {
+        activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+        allMeasuresVisible: false,
+        visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+        selectedDimensionName: AD_BIDS_DOMAIN_DIMENSION,
+        leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        // No filters added
+      },
+      ignoreFilters: true,
+      forceOpenPivot: false,
+    });
   });
 
   // TODO: add more extensive tests for other parts
@@ -289,10 +331,12 @@ describe("getDashboardFromAggregationRequest", () => {
 async function runTest({
   aggregationRequest,
   expectedAdditionalExploreState,
+  ignoreFilters,
   forceOpenPivot,
 }: {
   aggregationRequest: V1MetricsViewAggregationRequest;
   expectedAdditionalExploreState: Partial<ExploreState>;
+  ignoreFilters: boolean;
   forceOpenPivot: boolean;
 }) {
   const mapQueryStore = mapQueryToDashboard(
@@ -306,6 +350,7 @@ async function runTest({
       executionTime: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!.max!,
     },
     {
+      ignoreFilters,
       forceOpenPivot,
     },
   );

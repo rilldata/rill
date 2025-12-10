@@ -182,6 +182,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			allowedOrigins = append(allowedOrigins, localURL)
 
+			ch.Interactive = false // Disable interactive mode for the app server
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Ch:             ch,
 				Verbose:        verbose,

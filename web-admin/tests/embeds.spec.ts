@@ -301,6 +301,16 @@ test.describe("Embeds", () => {
         exact: true,
       })
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_explore","to":"auction_explore"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Time range is still the default
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
@@ -310,6 +320,16 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"auction_explore","to":"bids_canvas"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Time range is still the default
     await expect(frame.getByText("Last 24 hours")).toBeVisible();
 
@@ -328,6 +348,16 @@ test.describe("Embeds", () => {
     await frame
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Old selection has persisted
     await expect(frame.getByText("Last 14 days")).toBeVisible();
 
@@ -338,11 +368,30 @@ test.describe("Embeds", () => {
       .first()
       .click();
 
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_explore","to":"bids_canvas"}}`,
+        ),
+      ),
+    ).toBeTruthy();
+
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_canvas","to":"dashboardListing"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Check that the dashboards are listed
     await expect(
       frame.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
@@ -353,16 +402,44 @@ test.describe("Embeds", () => {
 
     // Go to `Programmatic Ads Auction` using the links on home
     await frame.getByRole("link", { name: "Programmatic Ads Bids" }).click();
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"dashboardListing","to":"bids_explore"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Old selection has persisted
     await expect(frame.getByText("Last 14 Days")).toBeVisible();
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_explore","to":"dashboardListing"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Go to `Bids Canvas Dashboard` using the links on home
     await frame
       .getByRole("link", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"dashboardListing","to":"bids_canvas"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
   });

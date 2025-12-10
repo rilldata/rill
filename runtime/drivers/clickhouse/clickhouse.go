@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"strings"
 	"time"
@@ -84,7 +85,7 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
-			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Hint:        "Default ClickHouse ports: 9000 (native TCP), 8123 (HTTP). Secure/common alternatives: 9440 (native TCP + TLS) and 8443 (HTTPS, often used in ClickHouse Cloud/managed setups).",
 			Default:     "9000",
 		},
 		{
@@ -319,7 +320,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
-
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := db.QueryRow(`
         WITH
@@ -327,7 +327,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
             toInt32(parts[1]) AS major,
             toInt32(parts[2]) AS minor
         SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
-`)
+	`)
+
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {
 		return nil, err
@@ -336,20 +337,46 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
+	supportSettings := true
+	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
+			supportSettings = false
+		}
+	}
+
+	// Compute OLAP queue size
+	var olapSemSize int
+	if conf.MaxOpenConns < 1 {
+		// MaxOpenConns <= 0 means unlimited connections
+		olapSemSize = math.MaxInt
+	} else if conf.MaxOpenConns > 1 {
+		// Leave one connection for meta queries. All others can be used for OLAP.
+		olapSemSize = conf.MaxOpenConns - 1
+	} else {
+		// If there is only one connection, both meta and olap queries need to share it.
+		// There will be contention at the database/sql layer, but it will work.
+		olapSemSize = 1
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
-		readDB:     db,
-		writeDB:    writeDB,
-		config:     conf,
-		logger:     logger,
-		activity:   ac,
-		instanceID: instanceID,
-		ctx:        ctx,
-		cancel:     cancel,
-		metaSem:    semaphore.NewWeighted(1),
-		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
-		opts:       opts,
-		embed:      embed,
+		readDB:          db,
+		writeDB:         writeDB,
+		config:          conf,
+		logger:          logger,
+		activity:        ac,
+		instanceID:      instanceID,
+		supportSettings: supportSettings,
+		ctx:             ctx,
+		cancel:          cancel,
+		metaSem:         semaphore.NewWeighted(1),
+		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
+		opts:            opts,
+		embed:           embed,
 	}
 
 	c.used()
@@ -371,12 +398,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	readDB     *sqlx.DB
-	writeDB    *sqlx.DB
-	config     *configProperties
-	logger     *zap.Logger
-	activity   *activity.Client
-	instanceID string
+	readDB          *sqlx.DB
+	writeDB         *sqlx.DB
+	config          *configProperties
+	logger          *zap.Logger
+	activity        *activity.Client
+	instanceID      string
+	supportSettings bool
 
 	// context that is cancelled when the connection is closed
 	ctx    context.Context
@@ -809,7 +837,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
 	if conf.Host != "" && conf.Port != 0 {
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
-		conn, err := net.DialTimeout("tcp", target, 25*time.Second)
+		conn, err := net.DialTimeout("tcp", target, 10*time.Second)
 		if err != nil {
 			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
 		}

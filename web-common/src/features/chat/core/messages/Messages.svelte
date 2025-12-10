@@ -3,12 +3,13 @@
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { MessageType, ToolName } from "../types";
+  import { type ChatConfig, MessageType, ToolName } from "../types";
   import Error from "./Error.svelte";
   import Message from "./Message.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
+  export let config: ChatConfig;
 
   let messagesContainer: HTMLDivElement;
 
@@ -28,7 +29,7 @@
   $: hasStreamError = !!$streamErrorStore;
 
   // Data
-  $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
+  $: messages = $getConversationQuery.data?.messages ?? [];
 
   // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
   $: resultMessagesByParentId = new Map(
@@ -80,7 +81,9 @@
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
       <div class="chat-empty-title">How can I help you today?</div>
-      <div class="chat-empty-subtitle">Happy to help explore your data</div>
+      <div class="chat-empty-subtitle">
+        {config.emptyChatLabel}
+      </div>
     </div>
   {:else}
     {#each displayMessages as msg (msg.id)}

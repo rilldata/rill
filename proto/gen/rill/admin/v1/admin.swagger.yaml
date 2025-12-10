@@ -790,6 +790,27 @@ paths:
                 type: boolean
       x-visibility: public
   /v1/orgs/{org}/members/{email}:
+    get:
+      summary: GetOrganizationMemberUser gets the member details
+      operationId: AdminService_GetOrganizationMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveOrganizationMemberUser removes member from the organization
       operationId: AdminService_RemoveOrganizationMemberUser
@@ -843,6 +864,36 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+  /v1/orgs/{org}/members/{email}/attributes:
+    put:
+      summary: UpdateOrganizationMemberUserAttributes updates the attributes for a member
+      operationId: AdminService_UpdateOrganizationMemberUserAttributes
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateOrganizationMemberUserAttributesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              attributes:
+                type: object
   /v1/orgs/{org}/members/current:
     delete:
       summary: LeaveOrganization removes the current user from the organization
@@ -888,6 +939,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -3364,6 +3420,82 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          description: If set and the caller is a superuser, force access regardless of project permissions.
+          in: query
+          required: false
+          type: boolean
+  /v1/projects/{projectId}/repo/virtual/file:
+    get:
+      summary: GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+      operationId: AdminService_GetVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to get the virtual file for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            The environment to get the virtual file for.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: The path of the virtual file to get.
+          in: query
+          required: false
+          type: string
+        - name: superuserForceAccess
+          description: If set and the caller is a superuser, force access regardless of project permissions.
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: DeleteVirtualFile deletes a virtual file from a project's virtual repo
+      operationId: AdminService_DeleteVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to delete the virtual file from.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            The environment to delete the virtual file from.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: The path of the virtual file to delete.
+          in: query
+          required: false
+          type: string
+        - name: superuserForceAccess
+          description: If set and the caller is a superuser, force access regardless of project permissions.
+          in: query
+          required: false
+          type: boolean
   /v1/projects/{projectId}/reports/meta:
     post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -3833,7 +3965,9 @@ paths:
           type: boolean
   /v1/users/-/tokens/representing/{email}:
     delete:
-      summary: "RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. \nThis is primarily used for \"unassume\" flows."
+      summary: |-
+        RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
+        This is primarily used for "unassume" flows.
       operationId: AdminService_RevokeRepresentativeAuthTokens
       responses:
         "200":
@@ -3903,6 +4037,38 @@ paths:
           description: Page token for pagination. If set, the first page of results will be returned.
           in: query
           required: false
+          type: string
+        - name: superuserForceAccess
+          description: Flag for superusers to override normal access checks.
+          in: query
+          required: false
+          type: boolean
+        - name: refresh
+          description: Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: |-
+        RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+        You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+      operationId: AdminService_RevokeAllUserAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeAllUserAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          description: |-
+            User ID to revoke all tokens for.
+            Set to "current" to revoke all tokens for the current user.
+          in: path
+          required: true
           type: string
         - name: superuserForceAccess
           description: Flag for superusers to override normal access checks.
@@ -4610,6 +4776,8 @@ definitions:
     type: object
   v1DeleteUsergroupResponse:
     type: object
+  v1DeleteVirtualFileResponse:
+    type: object
   v1DenyProjectAccessResponse:
     type: object
   v1Deployment:
@@ -4644,9 +4812,13 @@ definitions:
     enum:
       - DEPLOYMENT_STATUS_UNSPECIFIED
       - DEPLOYMENT_STATUS_PENDING
-      - DEPLOYMENT_STATUS_OK
-      - DEPLOYMENT_STATUS_ERROR
+      - DEPLOYMENT_STATUS_RUNNING
+      - DEPLOYMENT_STATUS_ERRORED
       - DEPLOYMENT_STATUS_STOPPED
+      - DEPLOYMENT_STATUS_UPDATING
+      - DEPLOYMENT_STATUS_STOPPING
+      - DEPLOYMENT_STATUS_DELETING
+      - DEPLOYMENT_STATUS_DELETED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1EditAlertResponse:
     type: object
@@ -4838,6 +5010,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationMemberUserResponse:
+    type: object
+    properties:
+      member:
+        $ref: '#/definitions/v1OrganizationMemberUser'
   v1GetOrganizationNameForDomainResponse:
     type: object
     properties:
@@ -4969,6 +5146,12 @@ definitions:
         $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1GetVirtualFileResponse:
+    type: object
+    properties:
+      file:
+        $ref: '#/definitions/v1VirtualFile'
+        description: The virtual file.
   v1GithubPermission:
     type: string
     enum:
@@ -5428,6 +5611,8 @@ definitions:
       usergroupsCount:
         type: integer
         format: int64
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time
@@ -5853,6 +6038,13 @@ definitions:
         type: string
       name:
         type: string
+  v1RevokeAllUserAuthTokensResponse:
+    type: object
+    properties:
+      tokensRevoked:
+        type: integer
+        format: int32
+        description: Number of tokens revoked.
   v1RevokeCurrentAuthTokenResponse:
     type: object
   v1RevokeMagicAuthTokenResponse:
@@ -6127,12 +6319,21 @@ definitions:
       name:
         type: string
         title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
       inputSchema:
         type: string
         title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
     title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
@@ -6202,6 +6403,8 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateOrganizationMemberUserAttributesResponse:
+    type: object
   v1UpdateOrganizationResponse:
     type: object
     properties:
@@ -6270,6 +6473,10 @@ definitions:
         type: string
       prefix:
         type: string
+      attributes:
+        type: object
+      refresh:
+        type: boolean
       createdOn:
         type: string
         format: date-time

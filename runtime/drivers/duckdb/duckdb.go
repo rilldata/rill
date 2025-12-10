@@ -159,6 +159,19 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		olapSemSize = 1
 	}
 
+	// Open remote bucket for backups if configured
+	var remote *blob.Bucket
+	if cfg.EnableBackups {
+		b, ok, err := st.OpenBucket(context.Background())
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			remote = b
+		}
+	}
+
+	// Create the handle
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
 		instanceID:     instanceID,
@@ -166,6 +179,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		logger:         logger,
 		activity:       ac,
 		storage:        st,
+		remote:         remote,
 		metaSem:        semaphore.NewWeighted(1),
 		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
 		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
@@ -175,13 +189,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
-	}
-	remote, ok, err := st.OpenBucket(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	if ok {
-		c.remote = remote
 	}
 
 	// register a callback to add a gauge on number of connections in use per db

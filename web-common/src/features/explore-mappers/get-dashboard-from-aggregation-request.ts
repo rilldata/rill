@@ -59,6 +59,7 @@ export async function getDashboardFromAggregationRequest({
   metricsView,
   explore,
   exploreProtoState,
+  ignoreFilters,
   forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
@@ -83,16 +84,23 @@ export async function getDashboardFromAggregationRequest({
     executionTime,
   );
 
-  if (req.where) {
+  const shouldParseWhereFilter = Boolean(!ignoreFilters && req.where);
+  if (shouldParseWhereFilter) {
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
       req.where,
     );
     dashboard.whereFilter = dimensionFilters;
     dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
   }
-  if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
-    const dimension = req.dimensions[0].name;
-    if (exprHasComparison(req.having)) {
+
+  const shouldParseHavingFilter = Boolean(
+    !ignoreFilters &&
+      req.having?.cond?.exprs?.length &&
+      req.dimensions?.[0]?.name,
+  );
+  if (shouldParseHavingFilter) {
+    const dimension = req.dimensions![0].name!;
+    if (exprHasComparison(req.having!)) {
       // We do not support comparison based dimension threshold filter in dashboards right now.
       // So convert it to a toplist and add `in` filter.
       const expr = await convertQueryFilterToToplistQuery(
@@ -107,7 +115,7 @@ export async function getDashboardFromAggregationRequest({
           createAndExpression([expr]),
         ) ?? createAndExpression([]);
     } else if (
-      req.having.cond.exprs.length > 1 ||
+      req.having!.cond!.exprs!.length > 1 ||
       dashboard.dimensionThresholdFilters.length > 0
     ) {
       // If there are dimension threshold and having filter we just add a subquery in where filter.
@@ -131,7 +139,7 @@ export async function getDashboardFromAggregationRequest({
         {
           name: dimension,
           filters:
-            req.having.cond?.exprs
+            req.having?.cond?.exprs
               ?.map(mapExprToMeasureFilter)
               .filter((f): f is NonNullable<typeof f> => f != null) ?? [],
         },

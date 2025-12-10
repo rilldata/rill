@@ -40,6 +40,7 @@ import type {
   AdminServiceCreateServiceBody,
   AdminServiceCreateUsergroupBodyBody,
   AdminServiceDeleteUserParams,
+  AdminServiceDeleteVirtualFileParams,
   AdminServiceEditUsergroupBody,
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingSubscriptionParams,
@@ -55,6 +56,7 @@ import type {
   AdminServiceGetReportMetaBody,
   AdminServiceGetUserParams,
   AdminServiceGetUsergroupParams,
+  AdminServiceGetVirtualFileParams,
   AdminServiceHibernateProjectParams,
   AdminServiceIssueMagicAuthTokenBody,
   AdminServiceIssueUserAuthTokenBody,
@@ -79,6 +81,7 @@ import type {
   AdminServiceProvisionBody,
   AdminServicePullVirtualRepoParams,
   AdminServiceRedeployProjectParams,
+  AdminServiceRevokeAllUserAuthTokensParams,
   AdminServiceRevokeUserAuthTokenParams,
   AdminServiceSearchProjectNamesParams,
   AdminServiceSearchProjectUsersParams,
@@ -91,6 +94,7 @@ import type {
   AdminServiceUnsubscribeAlertBodyBody,
   AdminServiceUpdateBillingSubscriptionBodyBody,
   AdminServiceUpdateOrganizationBody,
+  AdminServiceUpdateOrganizationMemberUserAttributesBody,
   AdminServiceUpdateProjectBody,
   AdminServiceUpdateProjectVariablesBody,
   AdminServiceUpdateServiceBody,
@@ -127,6 +131,7 @@ import type {
   V1DeleteServiceResponse,
   V1DeleteUserResponse,
   V1DeleteUsergroupResponse,
+  V1DeleteVirtualFileResponse,
   V1DenyProjectAccessResponse,
   V1EditAlertResponse,
   V1EditReportResponse,
@@ -147,6 +152,7 @@ import type {
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
+  V1GetOrganizationMemberUserResponse,
   V1GetOrganizationNameForDomainResponse,
   V1GetOrganizationResponse,
   V1GetPaymentsPortalURLResponse,
@@ -159,6 +165,7 @@ import type {
   V1GetServiceResponse,
   V1GetUserResponse,
   V1GetUsergroupResponse,
+  V1GetVirtualFileResponse,
   V1HibernateProjectResponse,
   V1IssueMagicAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
@@ -212,6 +219,7 @@ import type {
   V1RenameUsergroupResponse,
   V1RenewBillingSubscriptionResponse,
   V1RequestProjectAccessResponse,
+  V1RevokeAllUserAuthTokensResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1RevokeMagicAuthTokenResponse,
   V1RevokeRepresentativeAuthTokensResponse,
@@ -258,6 +266,7 @@ import type {
   V1UpdateBillingSubscriptionResponse,
   V1UpdateBookmarkRequest,
   V1UpdateBookmarkResponse,
+  V1UpdateOrganizationMemberUserAttributesResponse,
   V1UpdateOrganizationResponse,
   V1UpdateProjectResponse,
   V1UpdateProjectVariablesResponse,
@@ -3392,6 +3401,110 @@ export const createAdminServiceAddOrganizationMemberUser = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary GetOrganizationMemberUser gets the member details
+ */
+export const adminServiceGetOrganizationMemberUser = (
+  org: string,
+  email: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetOrganizationMemberUserResponse>({
+    url: `/v1/orgs/${org}/members/${email}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetOrganizationMemberUserQueryKey = (
+  org: string,
+  email: string,
+) => {
+  return [`/v1/orgs/${org}/members/${email}`] as const;
+};
+
+export const getAdminServiceGetOrganizationMemberUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  email: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationMemberUserQueryKey(org, email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>
+  > = ({ signal }) => adminServiceGetOrganizationMemberUser(org, email, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && email),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetOrganizationMemberUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>
+>;
+export type AdminServiceGetOrganizationMemberUserQueryError = RpcStatus;
+
+/**
+ * @summary GetOrganizationMemberUser gets the member details
+ */
+
+export function createAdminServiceGetOrganizationMemberUser<
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  email: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetOrganizationMemberUserQueryOptions(
+    org,
+    email,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary RemoveOrganizationMemberUser removes member from the organization
  */
 export const adminServiceRemoveOrganizationMemberUser = (
@@ -3580,6 +3693,131 @@ export const createAdminServiceSetOrganizationMemberUserRole = <
 > => {
   const mutationOptions =
     getAdminServiceSetOrganizationMemberUserRoleMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary UpdateOrganizationMemberUserAttributes updates the attributes for a member
+ */
+export const adminServiceUpdateOrganizationMemberUserAttributes = (
+  org: string,
+  email: string,
+  adminServiceUpdateOrganizationMemberUserAttributesBody: AdminServiceUpdateOrganizationMemberUserAttributesBody,
+) => {
+  return httpClient<V1UpdateOrganizationMemberUserAttributesResponse>({
+    url: `/v1/orgs/${org}/members/${email}/attributes`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateOrganizationMemberUserAttributesBody,
+  });
+};
+
+export const getAdminServiceUpdateOrganizationMemberUserAttributesMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+      >,
+      TError,
+      {
+        org: string;
+        email: string;
+        data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+    >,
+    TError,
+    {
+      org: string;
+      email: string;
+      data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+    },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceUpdateOrganizationMemberUserAttributes"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+      >,
+      {
+        org: string;
+        email: string;
+        data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+      }
+    > = (props) => {
+      const { org, email, data } = props ?? {};
+
+      return adminServiceUpdateOrganizationMemberUserAttributes(
+        org,
+        email,
+        data,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceUpdateOrganizationMemberUserAttributesMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+    >
+  >;
+export type AdminServiceUpdateOrganizationMemberUserAttributesMutationBody =
+  AdminServiceUpdateOrganizationMemberUserAttributesBody;
+export type AdminServiceUpdateOrganizationMemberUserAttributesMutationError =
+  RpcStatus;
+
+/**
+ * @summary UpdateOrganizationMemberUserAttributes updates the attributes for a member
+ */
+export const createAdminServiceUpdateOrganizationMemberUserAttributes = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+      >,
+      TError,
+      {
+        org: string;
+        email: string;
+        data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<
+    ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+  >,
+  TError,
+  {
+    org: string;
+    email: string;
+    data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceUpdateOrganizationMemberUserAttributesMutationOptions(
+      options,
+    );
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -12081,6 +12319,198 @@ export function createAdminServicePullVirtualRepo<
 }
 
 /**
+ * @summary GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+ */
+export const adminServiceGetVirtualFile = (
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetVirtualFileResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual/file`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetVirtualFileQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+) => {
+  return [
+    `/v1/projects/${projectId}/repo/virtual/file`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetVirtualFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetVirtualFileQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetVirtualFile>>
+  > = ({ signal }) => adminServiceGetVirtualFile(projectId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetVirtualFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetVirtualFile>>
+>;
+export type AdminServiceGetVirtualFileQueryError = RpcStatus;
+
+/**
+ * @summary GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+ */
+
+export function createAdminServiceGetVirtualFile<
+  TData = Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetVirtualFileQueryOptions(
+    projectId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary DeleteVirtualFile deletes a virtual file from a project's virtual repo
+ */
+export const adminServiceDeleteVirtualFile = (
+  projectId: string,
+  params?: AdminServiceDeleteVirtualFileParams,
+) => {
+  return httpClient<V1DeleteVirtualFileResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual/file`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceDeleteVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+    TError,
+    { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+  TError,
+  { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+    { projectId: string; params?: AdminServiceDeleteVirtualFileParams }
+  > = (props) => {
+    const { projectId, params } = props ?? {};
+
+    return adminServiceDeleteVirtualFile(projectId, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>
+>;
+
+export type AdminServiceDeleteVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary DeleteVirtualFile deletes a virtual file from a project's virtual repo
+ */
+export const createAdminServiceDeleteVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+      TError,
+      { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+  TError,
+  { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
  */
 export const adminServiceGetReportMeta = (
@@ -13981,7 +14411,7 @@ export const createAdminServiceRevokeUserAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+ * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
 This is primarily used for "unassume" flows.
  */
 export const adminServiceRevokeRepresentativeAuthTokens = (email: string) => {
@@ -14036,7 +14466,7 @@ export type AdminServiceRevokeRepresentativeAuthTokensMutationResult =
 export type AdminServiceRevokeRepresentativeAuthTokensMutationError = RpcStatus;
 
 /**
- * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+ * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
 This is primarily used for "unassume" flows.
  */
 export const createAdminServiceRevokeRepresentativeAuthTokens = <
@@ -14253,6 +14683,92 @@ export function createAdminServiceListUserAuthTokens<
   return query;
 }
 
+/**
+ * @summary RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+ */
+export const adminServiceRevokeAllUserAuthTokens = (
+  userId: string,
+  params?: AdminServiceRevokeAllUserAuthTokensParams,
+) => {
+  return httpClient<V1RevokeAllUserAuthTokensResponse>({
+    url: `/v1/users/${userId}/tokens`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceRevokeAllUserAuthTokensMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+    TError,
+    { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+  TError,
+  { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+  TContext
+> => {
+  const mutationKey = ["adminServiceRevokeAllUserAuthTokens"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+    { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams }
+  > = (props) => {
+    const { userId, params } = props ?? {};
+
+    return adminServiceRevokeAllUserAuthTokens(userId, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceRevokeAllUserAuthTokensMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>
+>;
+
+export type AdminServiceRevokeAllUserAuthTokensMutationError = RpcStatus;
+
+/**
+ * @summary RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+ */
+export const createAdminServiceRevokeAllUserAuthTokens = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+      TError,
+      { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+  TError,
+  { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceRevokeAllUserAuthTokensMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary IssueUserAuthToken issues an access token for the current user.
 You can optionally pass "current" instead of the user ID to issue a token for the current user.

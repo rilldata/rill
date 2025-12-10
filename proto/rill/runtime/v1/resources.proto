@@ -128,8 +128,12 @@ message ModelSpec {
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
   repeated ModelTest tests = 25;
+  // trigger indicates a normal refresh (incremental or full depending on the model type).
   bool trigger = 9;
+  // trigger_full indicates a full refresh regardless of the model type.
   bool trigger_full = 22;
+  // trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
+  bool trigger_partitions = 30;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
   bool defined_as_source = 23;
   reserved 2, 3, 6, 7, 8;
@@ -907,7 +911,7 @@ message ConnectorV2 {
 
 message ConnectorSpec {
   string driver = 1;
-  map<string, string> properties = 2;
+  google.protobuf.Struct properties = 7;
   repeated string templated_properties = 4;
   bool provision = 5;
   google.protobuf.Struct provision_args = 6;

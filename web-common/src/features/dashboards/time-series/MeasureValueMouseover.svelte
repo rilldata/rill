@@ -8,12 +8,16 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { fade } from "svelte/transition";
+
   export let point;
   export let xAccessor;
   export let yAccessor;
   export let showComparison = false;
   export let mouseoverFormat;
   export let numberKind: NumberKind;
+  export let colorClass = "stroke-gray-400";
+  export let strokeWidth = 2;
+
   $: comparisonYAccessor = `comparison.${yAccessor}`;
 
   $: x = point?.[xAccessor];
@@ -106,8 +110,6 @@
 </script>
 
 <WithGraphicContexts let:xScale let:yScale>
-  {@const strokeWidth = showComparison ? 2 : 4}
-  {@const colorClass = "stroke-gray-400"}
   <WithTween
     tweenProps={{ duration: 25 }}
     value={xScale(x)}
@@ -211,8 +213,8 @@
           x2={xArrow}
           y1={yScale(0)}
           y2={output.y}
-          stroke-width="4"
-          class="stroke-theme-300"
+          stroke-width={strokeWidth}
+          class={colorClass}
         />
       {/if}
     </WithTween>

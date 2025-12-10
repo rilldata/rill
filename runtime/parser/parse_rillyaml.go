@@ -34,7 +34,7 @@ type RillYAML struct {
 type ConnectorDef struct {
 	Type     string
 	Name     string
-	Defaults map[string]string
+	Defaults map[string]any
 }
 
 // VariableDef is a subtype of RillYAML, defining defaults for project variables
@@ -65,9 +65,9 @@ type rillYAML struct {
 	OLAPConnector string `yaml:"olap_connector"`
 	// Connectors required by the project
 	Connectors []struct {
-		Type     string            `yaml:"type"`
-		Name     string            `yaml:"name"`
-		Defaults map[string]string `yaml:"defaults"`
+		Type     string         `yaml:"type"`
+		Name     string         `yaml:"name"`
+		Defaults map[string]any `yaml:"defaults"`
 	} `yaml:"connectors"`
 	// Default values for project variables.
 	// For backwards compatibility, "dev" and "prod" keys with nested values will populate "environment_overrides".
@@ -87,7 +87,7 @@ type rillYAML struct {
 	// Default YAML values for metric views
 	MetricsViews yaml.Node `yaml:"metrics_views"`
 	// Default YAML values for metric views.
-	// Deprecated: Use "metrics_views" instead
+	// Deprecated: Use "metrics_views" instead.
 	MetricsViewsLegacy yaml.Node `yaml:"dashboards"`
 	// Default YAML values for explores
 	Explores yaml.Node `yaml:"explores"`

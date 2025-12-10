@@ -362,7 +362,7 @@
           </div>
         {/if}
 
-        {#if !lockTimeZone && dateTimeAnchor}
+        {#if !lockTimeZone}
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
 
@@ -402,7 +402,9 @@
                   {context}
                   {availableTimeZones}
                   activeTimeZone={zone}
-                  watermark={dateTimeAnchor}
+                  referencePoint={dateTimeAnchor ??
+                    interval.end ??
+                    DateTime.now()}
                   onSelectTimeZone={(z) => {
                     onSelectTimeZone(z);
                     closeMenu();

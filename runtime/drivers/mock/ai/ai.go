@@ -4,6 +4,7 @@ import (
 	"context"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -185,7 +186,7 @@ func (c *connection) handleToolCalling() *aiv1.CompletionMessage {
 				BlockType: &aiv1.ContentBlock_ToolCall{
 					ToolCall: &aiv1.ToolCall{
 						Id:    "tool_call_123",
-						Name:  "list_metrics_views",
+						Name:  ai.ListMetricsViewsName,
 						Input: inputStruct,
 					},
 				},

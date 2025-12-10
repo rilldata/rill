@@ -10,10 +10,11 @@
     refetchInterval: (query) => {
       switch (query.state.data?.prodDeployment?.status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
           return PollTimeWhenProjectDeploymentError;
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_OK:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
           return PollTimeWhenProjectDeploymentOk;
         default:
           return false;
@@ -120,6 +121,12 @@
     $mockedUserDeploymentCredentialsQuery);
 
   $: ({ data: projectData, error: projectError } = $projectQuery);
+  // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
+  $: isProjectAvailable =
+    projectData?.prodDeployment?.status ===
+      V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
+    projectData?.prodDeployment?.status ===
+      V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
   $: error = projectError as HTTPError;
 
@@ -143,7 +150,7 @@
   }
 </script>
 
-{#if onProjectPage && projectData?.prodDeployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
+{#if onProjectPage && projectData?.prodDeployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
     projectPermissions={projectData.projectPermissions}
     {organization}
@@ -164,7 +171,7 @@
     <RedeployProjectCta {organization} {project} />
   {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
     <ProjectBuilding />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}
+  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
     <ErrorPage
       statusCode={500}
       header="Deployment Error"
@@ -172,7 +179,7 @@
         ? projectData.prodDeployment.statusMessage
         : "There was an error deploying your project. Please contact support."}
     />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
+  {:else if isProjectAvailable}
     <RuntimeProvider
       instanceId={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.instanceId

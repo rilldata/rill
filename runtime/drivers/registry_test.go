@@ -8,7 +8,9 @@ import (
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
@@ -22,17 +24,17 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": "."},
+				Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": "."})),
 			},
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"dsn": ":memory:"},
+				Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 			},
 			{
 				Type:   "sqlite",
 				Name:   "catalog",
-				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+				Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})),
 			},
 		},
 	}

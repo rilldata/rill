@@ -7,9 +7,9 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -66,21 +66,30 @@
       ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
       : 0;
 
-  $: measures.forEach(({ name, label, formatter }) => {
-    if (!$measureLengths.has(name)) {
-      const estimatedWidth = calculateMeasureWidth(
-        name,
-        label,
-        formatter,
-        totalsRow,
-        dataRows,
-      );
+  $: {
+    // Get the longest column dimension header to ensure proper width calculation
+    const maxColumnDimensionHeader = getMaxColumnDimensionHeader(
+      hasColumnDimension,
+      headerGroups,
+    );
 
-      measureLengths.update((measureLengths) => {
-        return measureLengths.set(name, estimatedWidth);
-      });
-    }
-  });
+    measures.forEach(({ name, label, formatter }) => {
+      if (!$measureLengths.has(name)) {
+        const estimatedWidth = calculateMeasureWidth(
+          name,
+          label,
+          formatter,
+          totalsRow,
+          dataRows,
+          hasColumnDimension ? maxColumnDimensionHeader : undefined,
+        );
+
+        measureLengths.update((measureLengths) => {
+          return measureLengths.set(name, estimatedWidth);
+        });
+      }
+    });
+  }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
     containerRefElement.scrollTo({
@@ -157,6 +166,25 @@
     let offset = 0;
     if (!hasRowDimension) offset = 1;
     return (index + offset) % measureCount === 0 && index > 0;
+  }
+
+  function getMaxColumnDimensionHeader(
+    hasColumnDimension: boolean,
+    headerGroups: HeaderGroup<PivotDataRow>[],
+  ): string {
+    if (!hasColumnDimension || headerGroups.length === 0) return "";
+
+    // Get the second-to-last header group which contains column dimension values
+    const colDimensionHeaderGroup =
+      headerGroups.length >= 2
+        ? headerGroups[headerGroups.length - 2]
+        : undefined;
+    if (!colDimensionHeaderGroup?.headers) return "";
+
+    return colDimensionHeaderGroup.headers.reduce((longest, header) => {
+      const headerText = String(header.column?.columnDef?.header ?? "");
+      return headerText.length > longest.length ? headerText : longest;
+    }, "");
   }
 
   function shouldShowRightBorder(index: number): boolean {

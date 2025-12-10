@@ -998,14 +998,25 @@ export class ModelSpec extends Message<ModelSpec> {
   tests: ModelTest[] = [];
 
   /**
+   * trigger indicates a normal refresh (incremental or full depending on the model type).
+   *
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
 
   /**
+   * trigger_full indicates a full refresh regardless of the model type.
+   *
    * @generated from field: bool trigger_full = 22;
    */
   triggerFull = false;
+
+  /**
+   * trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
+   *
+   * @generated from field: bool trigger_partitions = 30;
+   */
+  triggerPartitions = false;
 
   /**
    * defined_as_source is true if it was defined by user as a source but converted internally to a model.
@@ -1045,6 +1056,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 30, name: "trigger_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -5520,9 +5532,9 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   driver = "";
 
   /**
-   * @generated from field: map<string, string> properties = 2;
+   * @generated from field: google.protobuf.Struct properties = 7;
    */
-  properties: { [key: string]: string } = {};
+  properties?: Struct;
 
   /**
    * @generated from field: repeated string templated_properties = 4;
@@ -5548,7 +5560,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   static readonly typeName = "rill.runtime.v1.ConnectorSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "properties", kind: "message", T: Struct },
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },

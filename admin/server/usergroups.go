@@ -248,7 +248,7 @@ func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}

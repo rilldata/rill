@@ -656,6 +656,7 @@ func newResourceIfModified(def *parserpkg.Resource, existing *runtimev1.Resource
 		if existing != nil { // Copy over the ephemeral trigger properties from the existing resource.
 			def.ModelSpec.Trigger = existing.GetModel().Spec.Trigger
 			def.ModelSpec.TriggerFull = existing.GetModel().Spec.TriggerFull
+			def.ModelSpec.TriggerPartitions = existing.GetModel().Spec.TriggerPartitions
 		}
 		if existing == nil || !proto.Equal(existing.GetModel().Spec, def.ModelSpec) {
 			return &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.Model{Spec: def.ModelSpec}}}

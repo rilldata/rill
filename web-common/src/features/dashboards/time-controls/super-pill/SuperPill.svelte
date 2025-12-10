@@ -27,10 +27,10 @@
   export let timeRanges: V1ExploreTimeRange[];
   export let showDefaultItem: boolean;
   export let activeTimeGrain: V1TimeGrain | undefined;
-  export let canPanLeft: boolean;
-  export let canPanRight: boolean;
   export let interval: Interval;
-  export let showPan = false;
+  export let hidePan = false;
+  export let canPanLeft: boolean = !hidePan;
+  export let canPanRight: boolean = !hidePan;
   export let lockTimeZone = false;
   export let allowCustomTimeRange = true;
   export let showFullRange = true;
@@ -61,7 +61,7 @@
 </script>
 
 <div class="wrapper">
-  {#if showPan}
+  {#if !hidePan}
     <Elements.Nudge {canPanLeft} {canPanRight} {onPan} direction="left" />
     <Elements.Nudge {canPanLeft} {canPanRight} {onPan} direction="right" />
   {/if}

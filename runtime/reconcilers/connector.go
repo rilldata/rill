@@ -7,12 +7,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -115,15 +113,9 @@ func (r *ConnectorReconciler) ResolveTransitiveAccess(ctx context.Context, claim
 }
 
 func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.ConnectorSpec) (string, error) {
-	instance, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return "", err
-	}
-	vars := instance.ResolveVariables(false)
-
 	hash := md5.New()
 
-	_, err = hash.Write([]byte(spec.Driver))
+	_, err := hash.Write([]byte(spec.Driver))
 	if err != nil {
 		return "", err
 	}
@@ -139,31 +131,20 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 			return "", err
 		}
 	}
-
-	// write properties to hash
-	props, err := runtime.ResolveConnectorProperties(instance.Environment, vars, &runtimev1.Connector{
-		Type:                spec.Driver,
-		Config:              spec.Properties,
-		TemplatedProperties: spec.TemplatedProperties,
-		Provision:           spec.Provision,
-		ProvisionArgs:       spec.ProvisionArgs,
-	})
-	if err != nil {
-		return "", err
-	}
-	keys := maps.Keys(props)
-	slices.Sort(keys)
-	for _, k := range keys {
-		_, err = hash.Write([]byte(k))
+	if spec.Properties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.Properties), hash)
 		if err != nil {
 			return "", err
 		}
-		_, err = hash.Write([]byte(props[k]))
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.Properties.AsMap())
+		if err != nil {
+			return "", err
+		}
+		err = hashWriteMapOrdered(hash, res)
 		if err != nil {
 			return "", err
 		}
 	}
-
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 

@@ -47,6 +47,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Widget specific time filters
   localTimeControls: TimeControls;
 
+  visible = writable(false);
+
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering
   abstract component: ComponentType<SvelteComponent>;

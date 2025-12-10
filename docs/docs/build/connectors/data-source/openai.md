@@ -6,7 +6,7 @@ sidebar_position: 42
 ---
 
 
-[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
+[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features. 
 
 ## API Key
 
@@ -55,7 +55,7 @@ If your project has already been deployed to Rill Cloud with configured credenti
 
 Once configured, OpenAI integration enables various AI-powered features in Rill:
 
-- **Natural Language Queries**: Ask questions about your data in plain English on the dashboard or project level.
+- **Natural Language Queries**: Ask questions about your data using everyday conversational language on the dashboard or project level.
 - **Data Insights**: Get AI-generated insights and recommendations
 - **Intelligent Suggestions**: Receive suggestions for dashboard improvements and data exploration
 

@@ -400,6 +400,19 @@ service AdminService {
     };
   }
 
+  // GetOrganizationMemberUser gets the member details
+  rpc GetOrganizationMemberUser(GetOrganizationMemberUserRequest) returns (GetOrganizationMemberUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
+  }
+
+  // UpdateOrganizationMemberUserAttributes updates the attributes for a member
+  rpc UpdateOrganizationMemberUserAttributes(UpdateOrganizationMemberUserAttributesRequest) returns (UpdateOrganizationMemberUserAttributesResponse) {
+    option (google.api.http) = {
+      put: "/v1/orgs/{org}/members/{email}/attributes",
+      body: "*"
+    };
+  }
+
   // ListProjectMemberUsers lists all the project members
   rpc ListProjectMemberUsers(ListProjectMemberUsersRequest) returns (ListProjectMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members"};
@@ -580,7 +593,13 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
   }
 
-  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+  // RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+  // You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+  rpc RevokeAllUserAuthTokens(RevokeAllUserAuthTokensRequest) returns (RevokeAllUserAuthTokensResponse) {
+    option (google.api.http) = {delete: "/v1/users/{user_id}/tokens"};
+  }
+
+  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
   // This is primarily used for "unassume" flows.
   rpc RevokeRepresentativeAuthTokens(RevokeRepresentativeAuthTokensRequest) returns (RevokeRepresentativeAuthTokensResponse) {
     option (google.api.http) = {
@@ -946,6 +965,16 @@ service AdminService {
   // PullVirtualRepo fetches files from a project's virtual repo
   rpc PullVirtualRepo(PullVirtualRepoRequest) returns (PullVirtualRepoResponse) {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual"};
+  }
+
+	// GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+  rpc GetVirtualFile(GetVirtualFileRequest) returns (GetVirtualFileResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual/file"};
+  }
+
+  // DeleteVirtualFile deletes a virtual file from a project's virtual repo
+  rpc DeleteVirtualFile(DeleteVirtualFileRequest) returns (DeleteVirtualFileResponse) {
+    option (google.api.http) = {delete: "/v1/projects/{project_id}/repo/virtual/file"};
   }
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -1762,6 +1791,23 @@ message SetOrganizationMemberUserRoleRequest {
 
 message SetOrganizationMemberUserRoleResponse {}
 
+message GetOrganizationMemberUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+}
+
+message GetOrganizationMemberUserResponse {
+  OrganizationMemberUser member = 1;
+}
+
+message UpdateOrganizationMemberUserAttributesRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  google.protobuf.Struct attributes = 3;
+}
+
+message UpdateOrganizationMemberUserAttributesResponse {}
+
 message ListSuperusersRequest {}
 
 message ListSuperusersResponse {
@@ -1997,6 +2043,7 @@ message ListProjectMemberUsergroupsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string role = 5; // Optionally filter by role
+  bool include_counts = 6; // Optionally include counts
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
@@ -2133,6 +2180,8 @@ message ListUserAuthTokensRequest {
   string page_token = 3;
   // Flag for superusers to override normal access checks.
   bool superuser_force_access = 4;
+  // Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+  optional bool refresh = 5;
 }
 
 message ListUserAuthTokensResponse {
@@ -2173,6 +2222,19 @@ message RevokeUserAuthTokenRequest {
 }
 
 message RevokeUserAuthTokenResponse {
+}
+
+message RevokeAllUserAuthTokensRequest {
+  // User ID to revoke all tokens for.
+  // Set to "current" to revoke all tokens for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 2;
+}
+
+message RevokeAllUserAuthTokensResponse {
+  // Number of tokens revoked.
+  int32 tokens_revoked = 1;
 }
 
 message RevokeRepresentativeAuthTokensRequest {
@@ -2511,6 +2573,8 @@ message PullVirtualRepoRequest {
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   // Page token for pagination.
   string page_token = 4;
+  // If set and the caller is a superuser, force access regardless of project permissions.
+  bool superuser_force_access = 6;
   reserved 2;
 }
 
@@ -2520,6 +2584,37 @@ message PullVirtualRepoResponse {
   // Next page token for pagination.
   string next_page_token = 2;
 }
+
+message GetVirtualFileRequest {
+  // The project ID to get the virtual file for.
+  string project_id = 1;
+  // The environment to get the virtual file for.
+  // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+  string environment = 4;
+  // The path of the virtual file to get.
+  string path = 2;
+  // If set and the caller is a superuser, force access regardless of project permissions.
+  bool superuser_force_access = 3;
+}
+
+message GetVirtualFileResponse {
+  // The virtual file.
+  VirtualFile file = 1;
+}
+
+message DeleteVirtualFileRequest {
+  // The project ID to delete the virtual file from.
+  string project_id = 1;
+  // The environment to delete the virtual file from.
+  // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+  string environment = 2;
+  // The path of the virtual file to delete.
+  string path = 3;
+  // If set and the caller is a superuser, force access regardless of project permissions.
+  bool superuser_force_access = 4;
+}
+
+message DeleteVirtualFileResponse {}
 
 message GetReportMetaRequest {
   string project_id = 1;
@@ -2925,9 +3020,13 @@ message Project {
 enum DeploymentStatus {
   DEPLOYMENT_STATUS_UNSPECIFIED = 0;
   DEPLOYMENT_STATUS_PENDING = 1;
-  DEPLOYMENT_STATUS_OK = 2;
-  DEPLOYMENT_STATUS_ERROR = 4;
+  DEPLOYMENT_STATUS_RUNNING = 2;
+  DEPLOYMENT_STATUS_ERRORED = 4;
   DEPLOYMENT_STATUS_STOPPED = 5;
+  DEPLOYMENT_STATUS_UPDATING = 6;
+  DEPLOYMENT_STATUS_STOPPING = 7;
+  DEPLOYMENT_STATUS_DELETING = 8;
+  DEPLOYMENT_STATUS_DELETED = 9;
 }
 
 message Deployment {
@@ -3011,6 +3110,7 @@ message OrganizationMemberUser {
   string role_name = 4;
   uint32 projects_count = 8;
   uint32 usergroups_count = 9;
+  google.protobuf.Struct attributes = 10;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -3083,6 +3183,8 @@ message UserAuthToken {
   string auth_client_display_name = 4;
   string representing_user_id = 5;
   string prefix = 9;
+  google.protobuf.Struct attributes = 10;
+  bool refresh = 11;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

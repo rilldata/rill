@@ -229,6 +229,10 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts, props)
 	require.NoError(t, err)
 
+	// Force merge/deduplication in ReplacingMergeTree
+	err = c.optimizeTable(context.Background(), "merge_tbl")
+	require.NoError(t, err)
+
 	var result []struct {
 		ID    int
 		Value string
@@ -404,12 +408,15 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 }
 
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
-		Typ:                      "DICTIONARY",
-		PrimaryKey:               "id",
-		DictionarySourceUser:     "clickhouse",
-		DictionarySourcePassword: "clickhouse",
-	})
+	props := &ModelOutputProperties{
+		Typ:        "DICTIONARY",
+		PrimaryKey: "id",
+	}
+	if c.config.Cluster == "" {
+		props.DictionarySourceUser = "default"
+		props.DictionarySourcePassword = "default"
+	}
+	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", props)
 	require.NoError(t, err)
 
 	err = c.renameEntity(context.Background(), "dict", "dict1")
@@ -460,12 +467,26 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	tempTableName := "optimize_basic_test"
 
+	// Determine table names based on cluster mode
+	var localTableName, distTableName string
+	if c.config.Cluster != "" {
+		localTableName = tempTableName + "_local"
+		distTableName = tempTableName
+	} else {
+		localTableName = tempTableName
+		distTableName = tempTableName
+	}
+
 	// Create table with MergeTree engine - handle cluster mode
 	var err error
 	if c.config.Cluster != "" {
-		localTableName := tempTableName + "_local"
 		localCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", localTableName, c.config.Cluster)
 		err = olap.Exec(ctx, &drivers.Statement{Query: localCreateQuery})
+		require.NoError(t, err)
+
+		// Create distributed table
+		distCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s AS %s ENGINE=Distributed(%s, currentDatabase(), %s, rand())", distTableName, c.config.Cluster, localTableName, c.config.Cluster, localTableName)
+		err = olap.Exec(ctx, &drivers.Statement{Query: distCreateQuery})
 		require.NoError(t, err)
 	} else {
 		createQuery := fmt.Sprintf("CREATE TABLE %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", tempTableName)
@@ -473,19 +494,18 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 		require.NoError(t, err)
 	}
 
-	// Insert test data
+	// Insert test data via distributed table
 	err = olap.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("INSERT INTO %s VALUES (1, 'test1'), (2, 'test2'), (3, 'test3')", tempTableName),
+		Query: fmt.Sprintf("INSERT INTO %s VALUES (1, 'test1'), (2, 'test2'), (3, 'test3')", distTableName),
 	})
 	require.NoError(t, err)
 
-	// Run OPTIMIZE
 	err = c.optimizeTable(ctx, tempTableName)
 	require.NoError(t, err)
 
-	// Verify data integrity after optimization
+	// Verify data integrity after optimization via distributed table
 	res, err := olap.Query(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("SELECT id, value FROM %s ORDER BY id", tempTableName),
+		Query: fmt.Sprintf("SELECT id, value FROM %s ORDER BY id", distTableName),
 	})
 	require.NoError(t, err)
 

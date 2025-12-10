@@ -71,6 +71,7 @@ export class TimeControls {
   timeRangeStateStore: Writable<TimeRangeState | undefined> =
     writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+  _canPan: Readable<{ left: boolean; right: boolean }>;
 
   constructor(
     private specStore: CanvasSpecResponseStore,
@@ -234,6 +235,21 @@ export class TimeControls {
         this.processSpec(spec.data);
       });
     }
+
+    this._canPan = derived(
+      [this.interval, this.allTimeRange],
+      ([interval, allTimeRange]) => {
+        if (!interval || !interval.start || !interval.end)
+          return { left: false, right: false };
+
+        const canPanLeft =
+          interval?.start > DateTime.fromJSDate(allTimeRange.start);
+        const canPanRight =
+          interval?.end < DateTime.fromJSDate(allTimeRange.end);
+
+        return { left: canPanLeft, right: canPanRight };
+      },
+    );
   }
 
   processSpec = (spec: CanvasResponse) => {

@@ -51,6 +51,7 @@
       spec,
       metricsView: { allDimensions, allSimpleMeasures },
       timeControls: {
+        _canPan,
         allTimeRange,
         timeRangeStateStore,
         comparisonRangeStateStore,
@@ -84,6 +85,8 @@
   $: allDimensionFilters = $allDimensionFilterItems;
 
   $: allMeasureFilters = $allMeasureFilterItems;
+
+  $: canPan = $_canPan;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
@@ -143,11 +146,10 @@
       {timeEnd}
       {activeTimeGrain}
       {activeTimeZone}
+      canPanLeft={canPan.left}
+      canPanRight={canPan.right}
       watermark={undefined}
       allowCustomTimeRange={$spec?.allowCustomTimeRange}
-      canPanLeft
-      canPanRight
-      showPan
       {showDefaultItem}
       applyRange={(timeRange) => {
         const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;

@@ -1147,7 +1147,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	}
 
 	// Add the user to the project.
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -1500,7 +1500,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		}
 	} else {
 		// Add the user as a project member.
-		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1740,7 +1740,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 
 	for _, user := range newUsers {
 		// Add the user to the project.
-		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID)
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -2089,12 +2089,20 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
 	case database.DeploymentStatusPending:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
-	case database.DeploymentStatusOK:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
-	case database.DeploymentStatusError:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
+	case database.DeploymentStatusUpdating:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING
+	case database.DeploymentStatusRunning:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING
+	case database.DeploymentStatusErrored:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED
+	case database.DeploymentStatusStopping:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING
 	case database.DeploymentStatusStopped:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
+	case database.DeploymentStatusDeleting:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING
+	case database.DeploymentStatusDeleted:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED
 	default:
 		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
 	}

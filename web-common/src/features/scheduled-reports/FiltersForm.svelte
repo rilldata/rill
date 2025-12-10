@@ -256,8 +256,7 @@
         {onSelectRange}
         {onTimeGrainSelect}
         {onSelectTimeZone}
-        canPanLeft={false}
-        canPanRight={false}
+        hidePan
         onPan={() => {}}
         {minTimeGrain}
         {side}

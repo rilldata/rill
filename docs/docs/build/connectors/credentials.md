@@ -24,7 +24,7 @@ While Rill **can** infer credentials from your local environment (AWS CLI, Azure
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
 2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/build/connectors/templating) for more details)
-3. **Credentials configured via CLI** - For [AWS](/build/connectors/data-source/s3#local-aws-credentials-local-development-only) / [Azure](/build/connectors/data-source/azure#azure-cli-authentication-local-development-only) / [Google Cloud](/build/connectors/data-source/gcs#local-google-cloud-cli-credentials-local-development-only) - **NOT RECOMMENDED for production use**
+3. **Credentials configured via CLI** - For [AWS](/build/connectors/data-source/s3#local-aws-credentials-local-development-only) / [Azure](/build/connectors/data-source/azure#azure-cli-authentication-local-development-only) / [Google Cloud](/build/connectors/data-source/gcs#method-3-local-google-cloud-cli-credentials) - **NOT RECOMMENDED for production use**
 
 For more details, please refer to the corresponding [connector](/build/connectors) or [OLAP engine](/build/connectors/olap) page.
 
@@ -81,7 +81,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 If you have configured your credentials via the `.env` file this will be deployed with your project. 
 
-If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
+If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials).
 
 ## Cloning an Existing Project from Rill Cloud
 

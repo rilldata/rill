@@ -10,6 +10,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const (
+	authorizationCodeGrantType = "authorization_code"
+	refreshTokenGrantType      = "refresh_token"
+	deviceCodeGrantType        = "urn:ietf:params:oauth:grant-type:device_code"
+	longLivedAccessTokenScope  = "long_lived_access_token" // nolint:gosec // custom scope to indicate long-lived access token
+)
+
 // AuthenticatorOptions provides options for Authenticator
 type AuthenticatorOptions struct {
 	AuthDomain       string

@@ -381,7 +381,6 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
-          showPan
           {showDefaultItem}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
