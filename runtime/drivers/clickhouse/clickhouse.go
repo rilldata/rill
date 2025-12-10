@@ -85,7 +85,7 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
-			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Hint:        "Default ClickHouse ports: 9000 (native TCP), 8123 (HTTP). Secure/common alternatives: 9440 (native TCP + TLS) and 8443 (HTTPS, often used in ClickHouse Cloud/managed setups).",
 			Default:     "9000",
 		},
 		{
