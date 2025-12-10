@@ -217,12 +217,6 @@ export function getDimensionFilters(
   dimensionsWithInlistFilter: string[],
   metricsViewName: string | undefined,
 ) {
-  console.log({
-    dimensionIdMap,
-    filter,
-    dimensionsWithInlistFilter,
-    metricsViewName,
-  });
   return Array.from(
     getDimensionFiltersMap(
       dimensionIdMap,

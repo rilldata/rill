@@ -37,7 +37,7 @@ import {
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager } from "./filter-manager";
+import { FilterManager, flattenExpression } from "./filter-manager";
 import { getFilterParam } from "./metrics-view-filter";
 import { Grid } from "./grid";
 import { getComparisonTypeFromRangeString } from "./time-state";
@@ -90,7 +90,7 @@ export class CanvasEntity {
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
-  _defaultUrlParams = writable<URLSearchParams>(new URLSearchParams());
+  defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
   viewingDefaultsStore: Readable<boolean>;
   filtersEnabledStore = writable<boolean>(true);
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
@@ -175,7 +175,7 @@ export class CanvasEntity {
     this.viewingDefaultsStore = derived(
       [
         this.searchParams,
-        this._defaultUrlParams,
+        this.defaultUrlParamsStore,
         this.filterManager.pinnedFilterKeysStore,
         this.filterManager.defaultPinnedFilterKeysStore,
       ],
@@ -193,6 +193,7 @@ export class CanvasEntity {
         if ($defaultUrlParams.size === 0) {
           return false;
         }
+
         for (const [key, value] of $defaultUrlParams.entries()) {
           if ($searchParams.get(key) !== value) {
             // Ignore time range if not set
@@ -200,7 +201,7 @@ export class CanvasEntity {
               $searchParams.get(key) === null &&
               key === ExploreStateURLParams.TimeRange
             ) {
-              return true;
+              continue;
             }
             return false;
           }
@@ -232,9 +233,9 @@ export class CanvasEntity {
 
   checkAndSetDefaultParams = (defaultPreset: V1CanvasPreset) => {
     const defaultSearchParams = getDefaults(defaultPreset);
-    const currentDefaultParams = get(this._defaultUrlParams);
+    const currentDefaultParams = get(this.defaultUrlParamsStore);
     if (defaultSearchParams.toString() !== currentDefaultParams.toString()) {
-      this._defaultUrlParams.set(defaultSearchParams);
+      this.defaultUrlParamsStore.set(defaultSearchParams);
     }
   };
 
@@ -419,6 +420,17 @@ export class CanvasEntity {
     const newContent = yaml.toString();
 
     this.fileArtifact?.updateEditorContent(newContent, false, true);
+
+    // Navigate to new URL after update
+    let firstUpdate = true;
+    const unsub = this.defaultUrlParamsStore.subscribe((newParam) => {
+      if (firstUpdate) {
+        firstUpdate = false;
+        return;
+      }
+      goto(`?${newParam.toString()}`).catch(console.error);
+      unsub();
+    });
   };
 
   clearDefaultFilters = () => {
@@ -538,7 +550,7 @@ export class CanvasEntity {
       }
 
       // Third priority
-      const defaultParamsString = get(this._defaultUrlParams).toString();
+      const defaultParamsString = get(this.defaultUrlParamsStore).toString();
 
       if (defaultParamsString) {
         await goto(`?${defaultParamsString}`, {
@@ -779,7 +791,8 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
   Object.entries(defaultPreset?.filterExpr ?? {}).forEach(
     ([metricsViewName, { expression }]) => {
       if (expression) {
-        const urlFormat = getFilterParam(expression, [], []);
+        const flattened = flattenExpression(expression);
+        const urlFormat = getFilterParam(flattened, [], []);
 
         if (urlFormat) {
           defaultSearchParams.set(

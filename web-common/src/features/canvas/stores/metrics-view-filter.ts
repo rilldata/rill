@@ -91,7 +91,7 @@ export class FilterState {
   }
 
   onDefaultExpressionChange = (expr: V1Expression | undefined) => {
-    if (!expr) return;
+    expr = expr ?? createAndExpression([]);
 
     this.parsedDefaultFilters.set(
       this.parseFilter({
@@ -119,7 +119,7 @@ export class FilterState {
     const { dimensionThresholdFilters, dimensionFilters } =
       splitWhereFilter(expr);
 
-    const isComplexFilter = isExpressionUnsupported(expr);
+    const isComplexFilter = false;
 
     filterString =
       filterString ||
@@ -188,19 +188,19 @@ export class FilterState {
 
   removeDimensionFilter = (dimensionName: string) => {
     const {
-      where: wf,
+      dimensionFilter: df,
       dimensionThresholdFilters,
       dimensionsWithInListFilter,
     } = get(this.parsed);
-    const exprIdx = wf.cond?.exprs?.findIndex(
+    const exprIdx = df.cond?.exprs?.findIndex(
       (e) => e.cond?.exprs?.[0].ident === dimensionName,
     );
     if (!(exprIdx === undefined || exprIdx === -1)) {
-      wf.cond?.exprs?.splice(exprIdx, 1);
+      df.cond?.exprs?.splice(exprIdx, 1);
     }
 
     return getFilterParam(
-      wf,
+      df,
       dimensionThresholdFilters,
       dimensionsWithInListFilter,
     );
@@ -208,7 +208,7 @@ export class FilterState {
 
   applyDimensionContainsMode = (dimensionName: string, searchText: string) => {
     const {
-      where: wf,
+      dimensionFilter: wf,
       dimensionThresholdFilters,
       dimensionsWithInListFilter,
     } = get(this.parsed);
@@ -242,7 +242,7 @@ export class FilterState {
   toggleDimensionFilterMode = (dimensionName: string) => {
     const {
       dimensionsWithInListFilter,
-      where: wf,
+      dimensionFilter: wf,
       dimensionThresholdFilters,
     } = get(this.parsed);
 
@@ -315,7 +315,7 @@ export class FilterState {
 
   applyDimensionInListMode = (dimensionName: string, values: string[]) => {
     const {
-      where: wf,
+      dimensionFilter: wf,
       dimensionThresholdFilters,
       dimensionsWithInListFilter,
     } = get(this.parsed);
