@@ -19,16 +19,24 @@ export enum InlineContextType {
   Measure = "measure",
   Dimension = "dimension",
   DimensionValues = "dimensionValues",
+  Table = "table",
+  Column = "column",
+  Files = "files", // Top level category
+  File = "file",
 }
 
 export type InlineContext = {
   type: InlineContextType;
   label?: string;
+  value: string; // Main value for this context.
   metricsView?: string;
   measure?: string;
   dimension?: string;
   timeRange?: string;
   values?: string[];
+  table?: string;
+  column?: string;
+  filePath?: string;
 };
 
 export function inlineContextsAreEqual(
@@ -40,7 +48,10 @@ export function inlineContextsAreEqual(
     ctx1.metricsView === ctx2.metricsView &&
     ctx1.measure === ctx2.measure &&
     ctx1.dimension === ctx2.dimension &&
-    ctx1.timeRange === ctx2.timeRange;
+    ctx1.timeRange === ctx2.timeRange &&
+    ctx1.table === ctx2.table &&
+    ctx1.column === ctx2.column &&
+    ctx1.filePath === ctx2.filePath;
   if (!nonValuesAreEqual) return false;
   if (!ctx1.values && !ctx2.values) return true;
   else if (!ctx1.values || !ctx2.values) return false;
@@ -49,6 +60,20 @@ export function inlineContextsAreEqual(
     ctx1.values.length === ctx2.values.length &&
     ctx1.values.every((value, index) => value === ctx2.values![index])
   );
+}
+
+export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
+  switch (src.type) {
+    case InlineContextType.MetricsView:
+      return src.metricsView === tar.metricsView;
+    case InlineContextType.Table:
+      return src.table === tar.table;
+    case InlineContextType.Files:
+      return tar.type === InlineContextType.File;
+    case InlineContextType.File:
+      return src.filePath === tar.filePath;
+  }
+  return false;
 }
 
 export function normalizeInlineContext(ctx: InlineContext) {
@@ -65,6 +90,7 @@ export type MetricsViewMetadata = {
 };
 
 type ContextConfigPerType = {
+  editable: boolean;
   getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
 };
 
@@ -72,11 +98,13 @@ export const InlineContextConfig: Partial<
   Record<InlineContextType, ContextConfigPerType>
 > = {
   [InlineContextType.MetricsView]: {
+    editable: true,
     getLabel: (ctx, meta) =>
       meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
   },
 
   [InlineContextType.TimeRange]: {
+    editable: false,
     getLabel: (ctx) => {
       if (!ctx.timeRange) return "";
       const [start, end] = ctx.timeRange.split(" to ");
@@ -88,6 +116,7 @@ export const InlineContextConfig: Partial<
   },
 
   [InlineContextType.Measure]: {
+    editable: true,
     getLabel: (ctx, meta) => {
       const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
       return getMeasureDisplayName(mes) || ctx.measure!;
@@ -95,6 +124,7 @@ export const InlineContextConfig: Partial<
   },
 
   [InlineContextType.Dimension]: {
+    editable: true,
     getLabel: (ctx, meta) => {
       const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
       return getDimensionDisplayName(dim) || ctx.dimension!;
@@ -102,10 +132,16 @@ export const InlineContextConfig: Partial<
   },
 
   [InlineContextType.DimensionValues]: {
+    editable: true,
     getLabel: (ctx, meta) => {
       const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
       const dimLabel = getDimensionDisplayName(dim) || ctx.dimension!;
       return dimLabel + ": " + (ctx.values ?? []).join(", ");
     },
+  },
+
+  [InlineContextType.File]: {
+    editable: true,
+    getLabel: (ctx) => ctx.filePath ?? "",
   },
 };

@@ -1,30 +1,27 @@
-import {
-  InlineContextType,
-  type InlineContext,
-} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import type { MetricsViewContextOption } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
-import { inlineContextsAreEqual } from "web-common/src/features/chat/core/context/inline-context.ts";
+import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import { inlineContextsAreEqual } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { writable } from "svelte/store";
+import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import { ParentPickerTypes } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
 
-export class InlineContextHighlightManager {
+export class PickerOptionsHighlightManager {
   public highlightedContext = writable<InlineContext | null>(null);
 
   private highlightableContexts: InlineContext[] = [];
   private highlightedIndex = -1;
 
-  public filterOptionsUpdated(filteredOptions: MetricsViewContextOption[]) {
+  public filterOptionsUpdated(filteredOptions: InlineContextPickerOption[]) {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
     this.highlightableContexts = filteredOptions.flatMap((option) => [
-      option.metricsViewContext,
-      ...option.measures,
-      ...option.dimensions,
+      option.context,
+      ...(option.childContextCategories?.flat() ?? []),
     ]);
 
-    // Prefer non-metrics context if available for the 1st metrics view.
-    const nonMetricsViewAvailable =
+    // Prefer non-parent context if available for the parent option.
+    const nonParentAvailable =
       this.highlightableContexts.length > 1 &&
-      this.highlightableContexts[1].type !== InlineContextType.MetricsView;
-    this.highlightedIndex = nonMetricsViewAvailable ? 1 : 0;
+      ParentPickerTypes.has(this.highlightableContexts[1].type);
+    this.highlightedIndex = nonParentAvailable ? 1 : 0;
     this.updateHighlightedContext();
   }
 

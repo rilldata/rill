@@ -1,10 +1,13 @@
 import {
   createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
+  getRuntimeServiceListFilesQueryOptions,
   runtimeServiceListFiles,
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { derived } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
 export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
   return createRuntimeServiceListFiles(
@@ -181,4 +184,10 @@ export function useDirectoryNamesInDirectorySelector(
     });
 
   return directoryNames;
+}
+
+export function getStableListFilesQueryOptions() {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListFilesQueryOptions(instanceId),
+  );
 }

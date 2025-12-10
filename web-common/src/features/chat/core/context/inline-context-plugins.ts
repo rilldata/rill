@@ -1,6 +1,6 @@
 import Mention, { type MentionOptions } from "@tiptap/extension-mention";
 import { Extension } from "@tiptap/core";
-import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
+import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/picker/InlineContextPicker.svelte";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import InlineContextComponent from "@rilldata/web-common/features/chat/core/context/InlineContext.svelte";
 import {
@@ -139,6 +139,7 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       measure: createAttributeEntry(null, "measure"),
       dimension: createAttributeEntry(null, "dimension"),
       timeRange: createAttributeEntry(null, "timeRange"),
+      filePath: createAttributeEntry(null, "filePath"),
     };
   },
 
@@ -249,7 +250,6 @@ export function configureInlineContextTipTapExtension(
           comp = new InlineContextPicker({
             target: document.body,
             props: {
-              conversationManager: manager,
               left,
               bottom,
               onSelect: (item) => {
@@ -324,14 +324,11 @@ function getTransactionForContext(
   pos: number,
 ) {
   let tr = view.state.tr.setNodeAttribute(pos, "type", inlineChatContext.type);
-  if (inlineChatContext.metricsView)
-    tr = tr.setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView);
-  if (inlineChatContext.measure)
-    tr = tr.setNodeAttribute(pos, "measure", inlineChatContext.measure);
-  if (inlineChatContext.dimension)
-    tr = tr.setNodeAttribute(pos, "dimension", inlineChatContext.dimension);
-  if (inlineChatContext.timeRange)
-    tr = tr.setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange);
+  tr = tr.setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView);
+  tr = tr.setNodeAttribute(pos, "measure", inlineChatContext.measure);
+  tr = tr.setNodeAttribute(pos, "dimension", inlineChatContext.dimension);
+  tr = tr.setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange);
+  tr = tr.setNodeAttribute(pos, "file", inlineChatContext.filePath);
   return tr;
 }
 

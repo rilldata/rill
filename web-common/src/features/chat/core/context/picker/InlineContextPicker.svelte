@@ -1,15 +1,11 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
-  import {
-    getInlineChatContextFilteredOptions,
-    type MetricsViewContextOption,
-  } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
   import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-  import MetricsViewGroup from "@rilldata/web-common/features/chat/core/context/MetricsViewGroup.svelte";
-  import { InlineContextHighlightManager } from "@rilldata/web-common/features/chat/core/context/inline-context-highlight-manager.ts";
+  import PickerGroup from "@rilldata/web-common/features/chat/core/context/picker/PickerGroup.svelte";
+  import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
+  import { getFilterPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
+  import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 
-  export let conversationManager: ConversationManager;
   export let left: number;
   export let bottom: number;
   export let selectedChatContext: InlineContext | null = null;
@@ -20,15 +16,15 @@
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
-  const filteredOptions = getInlineChatContextFilteredOptions(
+  const filteredOptions = getFilterPickerOptions(
+    { metricViews: true, files: true },
     searchTextStore,
-    conversationManager,
   );
 
-  const highlightManager = new InlineContextHighlightManager();
+  const highlightManager = new PickerOptionsHighlightManager();
   const highlightedContext = highlightManager.highlightedContext;
   function handleMetricsViewOptionsChanged(
-    filteredOptions: MetricsViewContextOption[],
+    filteredOptions: InlineContextPickerOption[],
   ) {
     highlightManager.filterOptionsUpdated(filteredOptions);
     // Auto highlight the currently selected context if it is present.
@@ -65,9 +61,9 @@
   class="inline-chat-context-dropdown block"
   style="left: {left}px; bottom: {bottom}px;"
 >
-  {#each $filteredOptions as metricsViewContextOption (metricsViewContextOption.metricsViewContext.metricsView)}
-    <MetricsViewGroup
-      {metricsViewContextOption}
+  {#each $filteredOptions as parentOption, i (i)}
+    <PickerGroup
+      {parentOption}
       {selectedChatContext}
       highlightedContext={$highlightedContext}
       {searchTextStore}

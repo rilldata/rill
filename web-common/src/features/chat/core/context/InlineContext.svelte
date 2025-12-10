@@ -9,7 +9,7 @@
     type InlineContext,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
-  import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
+  import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/picker/InlineContextPicker.svelte";
 
   export let conversationManager: ConversationManager;
   export let selectedChatContext: InlineContext;
@@ -41,10 +41,7 @@
       )
     : "";
 
-  $: supportsEditing =
-    selectedChatContext.type === InlineContextType.MetricsView ||
-    selectedChatContext.type === InlineContextType.Measure ||
-    selectedChatContext.type === InlineContextType.Dimension;
+  $: supportsEditing = !!typeData?.editable;
 
   function toggleDropdown() {
     const rect = chatElement.getBoundingClientRect();

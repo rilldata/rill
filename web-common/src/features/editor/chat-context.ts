@@ -11,7 +11,7 @@ export const developerChatConfig = <ChatConfig>{
   additionalContextStoreGetter: () => getActiveFileContext(),
   emptyChatLabel: "Happy to assist you make changes to the project",
   placeholder: "What change can I help you make...",
-  enableMention: false,
+  enableMention: true,
 };
 
 /**
