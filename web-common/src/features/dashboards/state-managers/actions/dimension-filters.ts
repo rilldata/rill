@@ -3,7 +3,6 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   createInExpression,
   createLikeExpression,
-  getValueIndexInExpression,
   getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
