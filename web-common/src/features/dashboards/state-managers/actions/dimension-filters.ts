@@ -276,29 +276,25 @@ export function toggleDimensionFilterValue(
 ) {
   if (!expr.cond?.exprs) return -1;
 
-  const values = new Set(getValuesInExpression(expr));
-
-  const deleted = values.delete(dimensionValue);
-
   const ident = expr.cond.exprs[0];
+  const values = getValuesInExpression(expr);
 
-  if (!deleted) {
+  const inIdx = values.findIndex((v) => v === dimensionValue);
+
+  if (inIdx === -1) {
     if (isExclusiveFilter) {
-      expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
-        val: dimensionValue,
-      });
-      return;
+      expr.cond.exprs = [ident, { val: dimensionValue }];
+      return -1;
     } else {
-      values.add(dimensionValue);
+      values.push(dimensionValue);
     }
+  } else {
+    values.splice(inIdx, 1);
   }
 
-  expr.cond.exprs = [
-    ident,
-    ...Array.from(values).map((v) => {
-      return { val: v };
-    }),
-  ];
+  expr.cond.exprs = [ident, ...values.map((v) => ({ val: v }))];
+
+  return inIdx;
 }
 
 export const dimensionFilterActions = {

@@ -83,6 +83,8 @@ test.describe("canvas time filters", () => {
       .first()
       .click();
 
+    await page.waitForTimeout(100);
+
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
     await page.getByRole("button", { name: "Filters", exact: true }).click();
