@@ -297,78 +297,6 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		}
 	}
 
-	// If RillYAML is missing, don't reconcile anything
-	if parser.RillYAML == nil {
-		// Set an error without returning to mark if there are parse errors
-		var parseErrsErr error
-		if len(parser.Errors) > 0 {
-			parseErrsErr = ErrParserHasParseErrors
-		}
-		err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
-		if err != nil {
-			return err
-		}
-		return parseErrsErr
-	}
-
-	// Check if theme referenced theme changed
-	themeChanged := false
-	if parser.RillYAML.Theme != "" && diff != nil {
-		referencedTheme := parserpkg.ResourceName{Kind: parserpkg.ResourceKindTheme, Name: parser.RillYAML.Theme}
-		for _, n := range diff.Added {
-			if n.Normalized() == referencedTheme.Normalized() {
-				themeChanged = true
-				break
-			}
-		}
-		if !themeChanged {
-			for _, n := range diff.Modified {
-				if n.Normalized() == referencedTheme.Normalized() {
-					themeChanged = true
-					break
-				}
-			}
-		}
-		if !themeChanged {
-			for _, n := range diff.Deleted {
-				if n.Normalized() == referencedTheme.Normalized() {
-					themeChanged = true
-					break
-				}
-			}
-		}
-	}
-
-	// not setting restartController=true when diff is actually nil prevents infinite restarts
-	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded || themeChanged
-	if updateConfig {
-		restartController := diff != nil
-		err := r.reconcileProjectConfig(ctx, parser, restartController)
-		if err != nil {
-			// Check if this error already exists to avoid duplicates
-			errMsg := err.Error()
-			alreadyExists := false
-			for _, e := range parser.Errors {
-				if e.FilePath == "/rill.yaml" && e.Message == errMsg {
-					alreadyExists = true
-					break
-				}
-			}
-			if !alreadyExists {
-				parser.Errors = append(parser.Errors, &runtimev1.ParseError{
-					FilePath: "/rill.yaml",
-					Message:  errMsg,
-				})
-				pp.State.ParseErrors = parser.Errors
-				if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
-					return err
-				}
-			}
-		} else if restartController {
-			return nil
-		}
-	}
-
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
 	var parseErrsErr error
 	if len(parser.Errors) > 0 {
@@ -377,6 +305,24 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
 		return err
+	}
+
+	// If RillYAML is missing, don't reconcile anything
+	if parser.RillYAML == nil {
+		return parseErrsErr
+	}
+
+	// not setting restartController=true when diff is actually nil prevents infinite restarts
+	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded
+	if updateConfig {
+		restartController := diff != nil
+		err := r.reconcileProjectConfig(ctx, parser, restartController)
+		if err != nil {
+			return err
+		}
+		if restartController {
+			return nil
+		}
 	}
 
 	// Reconcile resources.
