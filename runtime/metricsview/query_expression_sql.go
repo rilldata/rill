@@ -1,32 +1,17 @@
 package metricsview
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/pkg/sqlstring"
 )
 
-// ExpressionDialect controls the output format of ExpressionToSQL.
-type ExpressionDialect int
-
-const (
-	// DialectJSON uses JSON-style formatting (double quotes for strings, square brackets for arrays).
-	// This is the default for backwards compatibility.
-	DialectJSON ExpressionDialect = iota
-	// DialectDuckDB uses DuckDB SQL syntax (single quotes for strings, parentheses for IN lists).
-	DialectDuckDB
-)
-
-// ExpressionToSQL converts an expression to a SQL string.
-// The dialect parameter controls the output format. If not provided, defaults to DialectJSON for backwards compatibility.
-func ExpressionToSQL(e *Expression, dialect ...ExpressionDialect) (string, error) {
-	d := DialectJSON
-	if len(dialect) > 0 {
-		d = dialect[0]
-	}
-	b := exprSQLBuilder{Builder: &strings.Builder{}, dialect: d}
+func ExpressionToSQL(e *Expression) (string, error) {
+	b := exprSQLBuilder{Builder: &strings.Builder{}}
 	err := b.writeExpression(e)
 	if err != nil {
 		return "", err
@@ -36,7 +21,6 @@ func ExpressionToSQL(e *Expression, dialect ...ExpressionDialect) (string, error
 
 type exprSQLBuilder struct {
 	*strings.Builder
-	dialect ExpressionDialect
 }
 
 func (b exprSQLBuilder) writeExpression(e *Expression) error {
@@ -59,83 +43,17 @@ func (b exprSQLBuilder) writeExpression(e *Expression) error {
 }
 
 func (b exprSQLBuilder) writeName(name string) error {
-	if strings.Contains(name, `"`) {
-		_, err := strings.NewReplacer(`"`, `""`).WriteString(b.Builder, name)
-		return err
+	escaped := name
+	if !safeSQLIdentifierRegexp.MatchString(name) {
+		escaped = fmt.Sprintf(`"%s"`, strings.ReplaceAll(name, `"`, `""`)) // nolint:gocritic
 	}
-	b.writeString(name)
+	b.writeString(escaped)
 	return nil
 }
 
 func (b exprSQLBuilder) writeValue(val any) error {
-	if b.dialect == DialectDuckDB {
-		return b.writeSQLValue(val)
-	}
-	// Default: JSON format
-	res, err := json.Marshal(val)
-	if err != nil {
-		return err
-	}
-	if len(res) > 0 && res[len(res)-1] == '\n' {
-		res = res[:len(res)-1]
-	}
-	_, err = b.WriteString(string(res))
+	_, err := b.WriteString(sqlstring.ToLiteral(val))
 	return err
-}
-
-func (b exprSQLBuilder) writeSQLValue(val any) error {
-	if val == nil {
-		b.writeString("NULL")
-		return nil
-	}
-
-	switch v := val.(type) {
-	case string:
-		// Escape single quotes by doubling them
-		escaped := strings.ReplaceAll(v, "'", "''")
-		b.writeByte('\'')
-		b.writeString(escaped)
-		b.writeByte('\'')
-		return nil
-	case bool:
-		if v {
-			b.writeString("TRUE")
-		} else {
-			b.writeString("FALSE")
-		}
-		return nil
-	case []any:
-		b.writeByte('(')
-		for i, item := range v {
-			if i > 0 {
-				b.writeString(", ")
-			}
-			if err := b.writeSQLValue(item); err != nil {
-				return err
-			}
-		}
-		b.writeByte(')')
-		return nil
-	default:
-		// For numbers and other types, use reflection to handle slices
-		rv := reflect.ValueOf(val)
-		if rv.Kind() == reflect.Slice {
-			b.writeByte('(')
-			for i := 0; i < rv.Len(); i++ {
-				if i > 0 {
-					b.writeString(", ")
-				}
-				if err := b.writeSQLValue(rv.Index(i).Interface()); err != nil {
-					return err
-				}
-			}
-			b.writeByte(')')
-			return nil
-		}
-		// For numbers and other primitives, use fmt
-		_, err := fmt.Fprintf(b.Builder, "%v", val)
-		return err
-	}
 }
 
 func (b exprSQLBuilder) writeSubquery(s *Subquery) error {
@@ -315,3 +233,6 @@ func (b exprSQLBuilder) writeString(s string) {
 func hasNilValue(expr *Expression) bool {
 	return expr != nil && expr.Value == nil && expr.Condition == nil && expr.Subquery == nil
 }
+
+// safeSQLIdentifierRegexp matches SQL identifiers that don't need to be escaped (alphanumeric and underscores, not starting with a digit).
+var safeSQLIdentifierRegexp = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
