@@ -53,6 +53,20 @@
     values: string[],
   ) => boolean = () => false;
 
+  let open =
+    openOnMount && !filterData.selectedValues?.length && !filterData.inputText;
+  let curMode = filterData.mode;
+  let curSearchText = filterData.inputText ?? "";
+  let curExcludeMode = filterData.isInclude === false;
+  let inListTooLong = false;
+  let selectedValuesProxy: string[] = filterData.selectedValues ?? [];
+  let searchedBulkValues: string[] =
+    filterData.mode === DimensionFilterMode.InList
+      ? (filterData.selectedValues ?? [])
+      : [];
+
+  $: ({ instanceId } = $runtime);
+
   $: ({
     name,
     label,
@@ -64,32 +78,18 @@
     pinned,
   } = filterData);
 
+  // Sync proxy when selectedValues changes (for Select mode)
+  $: if (!open && mode === DimensionFilterMode.Select) {
+    selectedValuesProxy = structuredClone(filterData.selectedValues) ?? [];
+  }
+
   $: metricsViewNames = Array.from(dimensions.keys());
 
   $: excludeMode = isInclude === false;
 
-  let open =
-    openOnMount && !filterData.selectedValues?.length && !filterData.inputText;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
-  let curMode = mode;
-  let curSearchText = "";
-  let curExcludeMode = excludeMode;
-  let inListTooLong = false;
-  let selectedValuesProxy: string[] = [];
-
-  $: ({ instanceId } = $runtime);
-
-  $: resetFilterSettings(mode, sanitisedSearchText);
-
-  // Sync proxy when selectedValues changes (for Select mode)
-  $: if (curMode === DimensionFilterMode.Select) {
-    selectedValuesProxy = [...selectedValues];
-  }
 
   $: checkSearchText(curSearchText);
-
-  let searchedBulkValues: string[] =
-    mode === DimensionFilterMode.InList ? selectedValues : [];
 
   $: enableSearchQuery =
     Boolean(timeControlsReady && open) &&
@@ -240,6 +240,7 @@
   }
 
   function handleModeChange(newMode: DimensionFilterMode) {
+    curSearchText = "";
     if (newMode !== DimensionFilterMode.InList) {
       searchedBulkValues = [];
       // Reset proxy when switching to/from Select mode
@@ -303,7 +304,7 @@
           name,
           [dimensionValue],
           metricsViewNames,
-        );
+        ).catch(console.error);
       });
     }
   }
