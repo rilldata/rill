@@ -14,6 +14,7 @@
     localFilters,
     localTimeControls,
     parent: { name: canvasName },
+    timeAndFilterStore,
   } = component);
 
   $: localParamValues = $specStore;
@@ -32,20 +33,24 @@
     AllKeys<ComponentSpec>,
     FilterInputParam,
   ][];
+
+  $: ({ hasTimeSeries } = $timeAndFilterStore);
 </script>
 
 <div>
   {#each entries as [key, config] (key)}
     <div class="component-param">
       {#if config.type === "time_filters"}
-        <TimeFiltersInput
-          {canvasName}
-          id={key}
-          {metricsView}
-          {localTimeControls}
-          showComparison={config?.meta?.hasComparison}
-          showGrain={config?.meta?.hasGrain}
-        />
+        {#if hasTimeSeries}
+          <TimeFiltersInput
+            {canvasName}
+            id={key}
+            {metricsView}
+            {localTimeControls}
+            showComparison={config?.meta?.hasComparison}
+            showGrain={config?.meta?.hasGrain}
+          />
+        {/if}
       {:else if config.type == "dimension_filters" && metricsView}
         <DimensionFiltersInput
           {localFilters}

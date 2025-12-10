@@ -74,8 +74,8 @@ export class TimeState {
         this.manager.defaultTimeRangeStore,
         this.manager.largestMinTimeGrain,
         this.manager.timeRangeOptionsStore,
-        this.manager.minTimeGrainMap,
         this.urlInitialized,
+        this.manager.hasTimeSeriesMap,
       ],
       ([
         urlRange,
@@ -83,8 +83,14 @@ export class TimeState {
         minTimeGrain,
         timeRangeOptions,
         urlInitialized,
+        hasTimeSeriesMap,
       ]) => {
-        if (!urlInitialized || !this.manager.specInitialized) return undefined;
+        const hasTimeSeries = this.metricsViewName
+          ? hasTimeSeriesMap.get(this.metricsViewName)
+          : Array.from(hasTimeSeriesMap.values()).some((v) => v);
+
+        if (!hasTimeSeries || !urlInitialized || !this.manager.specInitialized)
+          return undefined;
 
         if (urlRange) return urlRange;
 
@@ -124,21 +130,33 @@ export class TimeState {
         typeof this.rangeStore,
         typeof this.parent._metricsViews,
         typeof this.timeZoneStore,
+        typeof this.manager.hasTimeSeriesMap,
       ],
       Interval<true> | undefined
     >(
-      [this.rangeStore, this.parent._metricsViews, this.timeZoneStore],
-      ([range, allMetricsViews, timeZone], set) => {
+      [
+        this.rangeStore,
+        this.parent._metricsViews,
+        this.timeZoneStore,
+        this.manager.hasTimeSeriesMap,
+      ],
+      ([range, allMetricsViews, timeZone, hasTimeSeriesMap], set) => {
         const allMetricsViewNames = this.metricsViewName
           ? [this.metricsViewName]
           : Object.keys(allMetricsViews || {});
 
-        if (!allMetricsViewNames.length || !range || !timeZone) {
+        const metricsViewsWithTimeSeries = allMetricsViewNames.filter(
+          (mvName) => {
+            return hasTimeSeriesMap.get(mvName);
+          },
+        );
+
+        if (!metricsViewsWithTimeSeries.length || !range || !timeZone) {
           set(undefined);
           return;
         }
 
-        const promises = allMetricsViewNames.map((mvName) => {
+        const promises = metricsViewsWithTimeSeries.map((mvName) => {
           return deriveInterval(range, mvName, timeZone);
         });
 

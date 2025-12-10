@@ -61,7 +61,7 @@
           interval: intervalStore,
           minMaxTimeStamps,
         },
-
+        hasTimeSeriesStore,
         largestMinTimeGrain,
         defaultTimeRangeStore,
         timeRangeOptionsStore,
@@ -79,6 +79,8 @@
   $: timeEnd = interval?.end.toISO();
 
   $: minMax = $minMaxTimeStamps;
+
+  $: hasTimeSeries = $hasTimeSeriesStore;
 
   $: minDate = minMax?.min;
   $: maxDate = minMax?.max;
@@ -130,79 +132,81 @@
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
 >
-  <div class="p-2 flex justify-between size-full py-0">
-    <div class="flex items-center size-full">
-      <div class="flex-none h-full pt-1.5 pointer-events-auto">
-        <Tooltip.Root openDelay={0}>
-          <Tooltip.Trigger class="cursor-default">
-            <Calendar size="16px" />
-          </Tooltip.Trigger>
-          <Tooltip.Content side="bottom" sideOffset={10} class="z-50">
-            <Metadata
-              timeZone={activeTimeZone}
-              timeStart={minDate?.toJSDate()}
-              timeEnd={maxDate?.toJSDate()}
-            />
-          </Tooltip.Content>
-        </Tooltip.Root>
-      </div>
-      <div
-        class="flex flex-wrap gap-x-2 gap-y-1.5 pl-2 pointer-events-auto size-full pr-2"
-      >
-        <SuperPill
-          context={canvasName}
-          {minDate}
-          {maxDate}
-          selectedRangeAlias={selectedRange}
-          showPivot={false}
-          {minTimeGrain}
-          {defaultTimeRange}
-          {availableTimeZones}
-          {timeRanges}
-          complete={false}
-          {interval}
-          {timeStart}
-          {timeEnd}
-          {activeTimeGrain}
-          {activeTimeZone}
-          canPanLeft={canPan.left}
-          canPanRight={canPan.right}
-          watermark={undefined}
-          {allowCustomTimeRange}
-          {showDefaultItem}
-          applyRange={(timeRange) => {
-            const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
-            set.range(string);
-          }}
-          onSelectRange={set.range}
-          onTimeGrainSelect={set.grain}
-          onSelectTimeZone={set.zone}
-          {onPan}
-        />
-        <CanvasComparisonPill
-          {minDate}
-          {maxDate}
-          {comparisonInterval}
-          {comparisonRange}
-          {interval}
-          {selectedRange}
-          {activeTimeGrain}
-          {activeTimeZone}
-          {minTimeGrain}
-          {showTimeComparison}
-          onDisplayTimeComparison={set.comparison}
-          onSetSelectedComparisonRange={(range) => {
-            if (range.name === "CUSTOM_COMPARISON_RANGE") {
-              const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-              set.comparison(stringRange);
-            } else if (range.name) {
-              set.comparison(range.name);
-            }
-          }}
-        />
+  {#if hasTimeSeries}
+    <div class="p-2 flex justify-between size-full py-0">
+      <div class="flex items-center size-full">
+        <div class="flex-none h-full pt-1.5 pointer-events-auto">
+          <Tooltip.Root openDelay={0}>
+            <Tooltip.Trigger class="cursor-default">
+              <Calendar size="16px" />
+            </Tooltip.Trigger>
+            <Tooltip.Content side="bottom" sideOffset={10} class="z-50">
+              <Metadata
+                timeZone={activeTimeZone}
+                timeStart={minDate?.toJSDate()}
+                timeEnd={maxDate?.toJSDate()}
+              />
+            </Tooltip.Content>
+          </Tooltip.Root>
+        </div>
+        <div
+          class="flex flex-wrap gap-x-2 gap-y-1.5 pl-2 pointer-events-auto size-full pr-2"
+        >
+          <SuperPill
+            context={canvasName}
+            {minDate}
+            {maxDate}
+            selectedRangeAlias={selectedRange}
+            showPivot={false}
+            {minTimeGrain}
+            {defaultTimeRange}
+            {availableTimeZones}
+            {timeRanges}
+            complete={false}
+            {interval}
+            {timeStart}
+            {timeEnd}
+            {activeTimeGrain}
+            {activeTimeZone}
+            canPanLeft={canPan.left}
+            canPanRight={canPan.right}
+            watermark={undefined}
+            {allowCustomTimeRange}
+            {showDefaultItem}
+            applyRange={(timeRange) => {
+              const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
+              set.range(string);
+            }}
+            onSelectRange={set.range}
+            onTimeGrainSelect={set.grain}
+            onSelectTimeZone={set.zone}
+            {onPan}
+          />
+          <CanvasComparisonPill
+            {minDate}
+            {maxDate}
+            {comparisonInterval}
+            {comparisonRange}
+            {interval}
+            {selectedRange}
+            {activeTimeGrain}
+            {activeTimeZone}
+            {minTimeGrain}
+            {showTimeComparison}
+            onDisplayTimeComparison={set.comparison}
+            onSetSelectedComparisonRange={(range) => {
+              if (range.name === "CUSTOM_COMPARISON_RANGE") {
+                const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
+                set.comparison(stringRange);
+              } else if (range.name) {
+                set.comparison(range.name);
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />

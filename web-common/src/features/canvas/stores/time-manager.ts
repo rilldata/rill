@@ -18,7 +18,7 @@ export class TimeManager {
 
   hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
   minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
-  hasTimeSeries: Readable<boolean>;
+  hasTimeSeriesStore: Readable<boolean>;
 
   defaultTimeRangeStore = maybeWritable<string>();
   defaultComparisonRangeStore = maybeWritable<string>();
@@ -43,10 +43,11 @@ export class TimeManager {
       return largest;
     });
 
-    this.hasTimeSeries = derived(
+    this.hasTimeSeriesStore = derived(
       [this.hasTimeSeriesMap],
       ([$hasTimeSeriesMap]) => {
         const values = Array.from($hasTimeSeriesMap.values());
+
         return values.some((v) => v);
       },
     );

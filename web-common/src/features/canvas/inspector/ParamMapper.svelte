@@ -44,6 +44,8 @@
     AllKeys<ComponentSpec>,
     ComponentInputParam,
   ][];
+
+  $: console.log({ entries });
 </script>
 
 {#if component instanceof BaseChart}
@@ -86,7 +88,7 @@
 
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
-          <SingleFieldInput
+          <!-- <SingleFieldInput
             {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
@@ -96,11 +98,11 @@
             onSelect={(field) => {
               component.updateProperty(key, field);
             }}
-          />
+          /> -->
 
           <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION / MULTIPLE FIELDS -->
         {:else if metricsView && config.type === "multi_fields"}
-          <MultiFieldInput
+          <!-- <MultiFieldInput
             {canvasName}
             label={config.label ?? key}
             metricName={metricsView}
@@ -110,7 +112,7 @@
             onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
-          />
+          /> -->
 
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
