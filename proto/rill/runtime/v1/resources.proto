@@ -213,6 +213,7 @@ message MetricsViewSpec {
     TimeGrain smallest_time_grain = 13;
     // The data type of the dimension. Only populated in ValidSpec.
     Type data_type = 12;
+    repeated string tags = 16;
   }
   enum DimensionType {
     DIMENSION_TYPE_UNSPECIFIED = 0;
@@ -259,6 +260,7 @@ message MetricsViewSpec {
     string treat_nulls_as = 14;
     // The data type of the measure. Only populated in ValidSpec.
     Type data_type = 15;
+    repeated string tags = 16;
   }
   // name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
   string parent = 30;
