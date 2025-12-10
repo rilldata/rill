@@ -2,15 +2,22 @@
   Renders tool invocations with their results in a collapsible interface.
   
   Architecture: Tool calls and results are rendered together in one component,
-  with results correlated via parent_id. Charts are rendered separately below.
+  with results correlated via parent_id. Charts and file diffs are rendered separately.
 -->
 <script lang="ts">
   import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
   import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
   import type { V1Message } from "../../../../runtime-client";
-  import { isHiddenAgentTool, MessageContentType, ToolName } from "../types";
+  import {
+    isHiddenAgentTool,
+    MessageContentType,
+    ToolName,
+    type WriteFileCallData,
+    type WriteFileResultData,
+  } from "../types";
   import { parseChartData } from "../utils";
   import ChartBlock from "./ChartBlock.svelte";
+  import FileDiffBlock from "./FileDiffBlock.svelte";
 
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;
@@ -31,6 +38,12 @@
   $: isChart = isChartCall(message);
   $: chartData = isChart
     ? parseChartData({ input: message.contentData })
+    : null;
+
+  // Write file detection and parsing
+  $: isWriteFile = message.tool === ToolName.WRITE_FILE;
+  $: writeFileData = isWriteFile
+    ? parseWriteFileData(message, resultMessage)
     : null;
 
   function toggleExpanded() {
@@ -64,45 +77,84 @@
   function isChartCall(message: V1Message): boolean {
     return message.tool === ToolName.CREATE_CHART;
   }
+
+  function parseWriteFileData(
+    callMsg: V1Message,
+    resultMsg: V1Message | undefined,
+  ): { filePath: string; diff: string; isNewFile: boolean } | null {
+    try {
+      const callData: WriteFileCallData = JSON.parse(
+        callMsg.contentData || "{}",
+      );
+      const filePath = callData.path || "";
+
+      if (!filePath) return null;
+
+      // Parse result if available
+      let diff = "";
+      let isNewFile = false;
+      if (resultMsg && resultMsg.contentType !== MessageContentType.ERROR) {
+        const resultData: WriteFileResultData = JSON.parse(
+          resultMsg.contentData || "{}",
+        );
+        diff = resultData.diff || "";
+        isNewFile = resultData.is_new_file || false;
+      }
+
+      return { filePath, diff, isNewFile };
+    } catch {
+      return null;
+    }
+  }
 </script>
 
 {#if !isHidden}
-  <div class="tool-container">
-    <button class="tool-header" on:click={toggleExpanded}>
-      <div class="tool-icon">
-        {#if isExpanded}
-          <CaretDownIcon size="16" />
-        {:else}
-          <ChevronRight size="16" />
-        {/if}
-      </div>
-      <div class="tool-name">
-        {toolName}
-      </div>
-    </button>
-
-    {#if isExpanded}
-      <div class="tool-content">
-        <div class="tool-section">
-          <div class="tool-section-title">Request</div>
-          <div class="tool-section-content">
-            <pre class="tool-json">{toolInput}</pre>
-          </div>
+  {#if isWriteFile && writeFileData && hasResult && !isError}
+    <!-- File diff visualization for write_file tool -->
+    <FileDiffBlock
+      filePath={writeFileData.filePath}
+      diff={writeFileData.diff}
+      isNewFile={writeFileData.isNewFile}
+    />
+  {:else}
+    <!-- Generic tool display -->
+    <div class="tool-container">
+      <button class="tool-header" on:click={toggleExpanded}>
+        <div class="tool-icon">
+          {#if isExpanded}
+            <CaretDownIcon size="16" />
+          {:else}
+            <ChevronRight size="16" />
+          {/if}
         </div>
+        <div class="tool-name">
+          {toolName}
+        </div>
+      </button>
 
-        {#if hasResult}
+      {#if isExpanded}
+        <div class="tool-content">
           <div class="tool-section">
-            <div class="tool-section-title">
-              {isError ? "Error" : "Response"}
-            </div>
+            <div class="tool-section-title">Request</div>
             <div class="tool-section-content">
-              <pre class="tool-json">{resultContent}</pre>
+              <pre class="tool-json">{toolInput}</pre>
             </div>
           </div>
-        {/if}
-      </div>
-    {/if}
-  </div>
+
+          {#if hasResult}
+            <div class="tool-section">
+              <div class="tool-section-title">
+                {isError ? "Error" : "Response"}
+              </div>
+              <div class="tool-section-content">
+                <pre class="tool-json">{resultContent}</pre>
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   {#if isChart && chartData && hasResult && !isError}
     <!-- Chart visualization (shown below the collapsible tool details) -->

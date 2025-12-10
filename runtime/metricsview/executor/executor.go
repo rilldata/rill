@@ -192,27 +192,15 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		return nil, runtime.ErrForbidden
 	}
 
-	// Build a query that selects all dimensions and measures
+	// Build a query that selects all dimensions and measures.
+	//
+	// NOTE: We don't give special treatment to time dimensions here because:
+	// 1. if we use TimeFloor on a time idmension, it might its actual type (e.g. from DATE to TIMESTAMP or vice versa),
+	// 2. we may not know all the time dimensions yet (that inference happens later based on the result from this query).
 	qry := &metricsview.Query{}
-
-	if e.metricsView.TimeDimension != "" {
-		qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{
-			Name: e.metricsView.TimeDimension,
-			Compute: &metricsview.DimensionCompute{
-				TimeFloor: &metricsview.DimensionComputeTimeFloor{
-					Dimension: e.metricsView.TimeDimension,
-					Grain:     metricsview.TimeGrainDay,
-				},
-			},
-		})
-	}
 
 	for _, d := range e.metricsView.Dimensions {
 		if e.security.CanAccessField(d.Name) {
-			if strings.EqualFold(e.metricsView.TimeDimension, d.Name) {
-				// Skip the time dimension if it is already added
-				continue
-			}
 			qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: d.Name})
 		}
 	}
