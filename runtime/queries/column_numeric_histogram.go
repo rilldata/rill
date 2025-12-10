@@ -194,8 +194,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 
 	// StarRocks: "values" is a reserved keyword, use alias
-	var valuesAlias string
-	valuesAlias = "vals"
+	valuesAlias := "vals"
 	histogramSQL := fmt.Sprintf(
 		`
           WITH data_table AS (
@@ -333,9 +332,8 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 
 	// StarRocks: "values" and "range" are reserved keywords, use aliases
-	var valuesAlias, rangeAlias string
-	valuesAlias = "vals"
-	rangeAlias = "valRange"
+	valuesAlias := "vals"
+	rangeAlias := "valRange"
 
 	selectColumn := fmt.Sprintf("%s%s", sanitizedColumnName, castDouble)
 	histogramSQL := fmt.Sprintf(

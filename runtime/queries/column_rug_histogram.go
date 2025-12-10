@@ -97,9 +97,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	// StarRocks: "values" is a reserved keyword, use alias
-	var valuesAlias string
-	valuesAlias = "vals"
-
+	valuesAlias := "vals"
 
 	// StarRocks doesn't support referencing SELECT column aliases in WHERE clause
 	var whereClause string

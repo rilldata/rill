@@ -56,7 +56,6 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	
 	db := c.db
 
 	if c.configProp.LogQueries {
@@ -95,7 +94,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 // QuerySchema implements drivers.OLAPStore.
 func (c *connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	
 	db := c.db
 
 	// Use LIMIT 0 to get schema without data

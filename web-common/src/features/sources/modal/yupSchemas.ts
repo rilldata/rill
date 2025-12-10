@@ -231,7 +231,10 @@ export const getYupSchema = {
       .default("9030"),
     username: yup.string().required("Username is required"),
     password: yup.string(),
-    catalog: yup.string().required("Catalog is required").default("default_catalog"),
+    catalog: yup
+      .string()
+      .required("Catalog is required")
+      .default("default_catalog"),
     database: yup.string().optional(),
     ssl: yup.boolean(),
     name: yup.string(),

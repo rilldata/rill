@@ -293,11 +293,15 @@
     starrocksParamsValues: $starrocksParamsForm,
     starrocksDsnValues: $starrocksDsnForm,
   });
-  $: isCustomForm = connector.name === "clickhouse" || connector.name === "starrocks";
+  $: isCustomForm =
+    connector.name === "clickhouse" || connector.name === "starrocks";
   $: shouldShowSaveAnywayButton =
-    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway || starrocksShowSaveAnyway);
+    isConnectorForm &&
+    (showSaveAnyway || clickhouseShowSaveAnyway || starrocksShowSaveAnyway);
   $: saveAnywayLoading = isCustomForm
-    ? (connector.name === "clickhouse" ? clickhouseSubmitting : starrocksSubmitting) && saveAnyway
+    ? (connector.name === "clickhouse"
+        ? clickhouseSubmitting
+        : starrocksSubmitting) && saveAnyway
     : submitting && saveAnyway;
 
   handleOnUpdate = formManager.makeOnUpdate({
@@ -509,7 +513,8 @@
             : connector.name === "starrocks"
               ? starrocksSubmitting
               : submitting}
-          loadingCopy={connector.name === "clickhouse" || connector.name === "starrocks"
+          loadingCopy={connector.name === "clickhouse" ||
+          connector.name === "starrocks"
             ? "Connecting..."
             : "Testing connection..."}
           form={connector.name === "clickhouse"

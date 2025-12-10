@@ -21,14 +21,11 @@ const connectorErrorMap = {
       "Connection to StarRocks server timed out. Please check your network connection and server status.",
     "Unknown database":
       "Database not found. Please check the catalog and database name in your connector configuration.",
-    "Access denied":
-      "Access denied. Please check your username and password.",
-    "catalog": {
-      "does not exist": "Catalog not found. Please verify the catalog name exists in StarRocks.",
-    },
-    "database": {
-      "does not exist": "Database not found in the specified catalog. Please verify the database name exists.",
-    },
+    "Access denied": "Access denied. Please check your username and password.",
+    "catalog does not exist":
+      "Catalog not found. Please verify the catalog name exists in StarRocks.",
+    "database does not exist":
+      "Database not found in the specified catalog. Please verify the database name exists.",
   },
   // AWS errors (ref: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html)
   s3: {

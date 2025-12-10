@@ -391,7 +391,7 @@ func (i *informationSchemaImpl) GetTable(ctx context.Context, database, database
 		return nil, err
 	}
 
-	if len(schema) > 0 {
+	if len(schema) == 0 {
 		return nil, fmt.Errorf("table not found")
 	}
 

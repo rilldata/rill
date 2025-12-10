@@ -45,7 +45,10 @@
   // Props
   export let connector: V1ConnectorDriver;
   export let onClose: () => void;
-  export let setError: (error: string | null, details?: string) => void = () => {};
+  export let setError: (
+    error: string | null,
+    details?: string,
+  ) => void = () => {};
 
   // Exported state
   export let formId: string = "";
@@ -62,14 +65,19 @@
   const dsnFormId = `add-${CONNECTOR_NAME}-data-${connector.name}-dsn-form`;
 
   // Derived properties
-  $: dsnProperties = connector.configProperties?.filter((p) => p.key === "dsn") ?? [];
+  $: dsnProperties =
+    connector.configProperties?.filter((p) => p.key === "dsn") ?? [];
   $: hasDsnProperty = dsnProperties.length > 0;
-  $: nonDsnProperties = (connector.configProperties ?? []).filter((p) => p.key !== "dsn");
+  $: nonDsnProperties = (connector.configProperties ?? []).filter(
+    (p) => p.key !== "dsn",
+  );
   $: filteredProperties = nonDsnProperties.filter((p) => !p.noPrompt);
 
   // Parameters form setup
   const starrocksSchema = yup(getYupSchema[CONNECTOR_NAME]);
-  const initialFormValues = getInitialFormValuesFromProperties(connector.configProperties ?? []);
+  const initialFormValues = getInitialFormValuesFromProperties(
+    connector.configProperties ?? [],
+  );
 
   const {
     form: paramsForm,
@@ -109,7 +117,8 @@
   };
 
   // Reactive bindings
-  $: isSubmitting = connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
+  $: isSubmitting =
+    connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
   $: formId = connectionTab === "parameters" ? paramsFormId : dsnFormId;
 
   // Clear errors when form is modified
@@ -128,14 +137,15 @@
 
   // Compute disabled state
   $: isSubmitDisabled = (() => {
-    const properties = connectionTab === "dsn" ? dsnProperties : filteredProperties;
+    const properties =
+      connectionTab === "dsn" ? dsnProperties : filteredProperties;
     const form = connectionTab === "dsn" ? $dsnForm : $paramsForm;
     const errors = connectionTab === "dsn" ? $dsnErrors : $paramsErrors;
 
     for (const property of properties) {
       if (property.required) {
         const key = String(property.key);
-        if (isEmpty(form[key]) || errors[key]?.length) {
+        if (isEmpty(form[key]) || errors[key]?._errors?.length) {
           return true;
         }
       }
@@ -149,17 +159,23 @@
     const originalMessage =
       e instanceof Error
         ? e.message
-        : apiError?.response?.data?.message ?? apiError?.message;
+        : (apiError?.response?.data?.message ?? apiError?.message);
 
     if (!originalMessage) {
       return { error: "Unknown error" };
     }
 
-    const humanReadable = humanReadableErrorMessage(
+    const errorCode = apiError?.response?.data?.code;
+    const numericCode = typeof errorCode === "string" ? undefined : errorCode;
+    const humanReadableResult = humanReadableErrorMessage(
       connector.name,
-      apiError?.response?.data?.code,
+      numericCode,
       originalMessage,
     );
+    const humanReadable =
+      typeof humanReadableResult === "string"
+        ? humanReadableResult
+        : originalMessage;
 
     const details =
       humanReadable !== originalMessage
@@ -181,14 +197,18 @@
     setError(null, undefined);
   }
 
-  function handleOnUpdate({ form }: { form: SuperValidated<unknown> }) {
+  function handleOnUpdate({
+    form,
+  }: {
+    form: SuperValidated<Record<string, unknown>>;
+  }) {
     showSaveAnyway = true;
     if (form.valid) {
       handleSubmit(form.data);
     }
   }
 
-  async function handleSubmit(values: unknown) {
+  async function handleSubmit(values: Record<string, unknown>) {
     clearAllErrors();
 
     try {

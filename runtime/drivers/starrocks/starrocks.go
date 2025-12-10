@@ -329,10 +329,7 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 // initDB initializes the database connection.
 // Called during drivers.Open to establish connection upfront.
 func (c *connection) initDB() error {
-	dsn, err := c.buildDSN()
-	if err != nil {
-		return fmt.Errorf("failed to build DSN: %w", err)
-	}
+	dsn := c.buildDSN()
 
 	db, err := sqlx.Open("mysql", dsn)
 	if err != nil {
@@ -398,10 +395,10 @@ func (c *connection) initDB() error {
 }
 
 // buildDSN constructs the MySQL DSN from configuration.
-func (c *connection) buildDSN() (string, error) {
+func (c *connection) buildDSN() string {
 	// If DSN is provided, use it as-is (MySQL format expected)
 	if c.configProp.DSN != "" {
-		return c.configProp.DSN, nil
+		return c.configProp.DSN
 	}
 
 	// Build DSN from individual fields
@@ -428,5 +425,5 @@ func (c *connection) buildDSN() (string, error) {
 		cfg.TLSConfig = "true"
 	}
 
-	return cfg.FormatDSN(), nil
+	return cfg.FormatDSN()
 }

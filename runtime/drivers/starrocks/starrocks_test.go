@@ -57,7 +57,6 @@ func TestBuildDSN(t *testing.T) {
 	tests := []struct {
 		name     string
 		cfg      *ConfigProperties
-		wantErr  bool
 		contains string // substring that should be in the result
 	}{
 		{
@@ -92,12 +91,7 @@ func TestBuildDSN(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &connection{configProp: tt.cfg}
-			result, err := c.buildDSN()
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
+			result := c.buildDSN()
 			require.Contains(t, result, tt.contains)
 		})
 	}
@@ -133,7 +127,6 @@ func TestSafeSQLName(t *testing.T) {
 		})
 	}
 }
-
 
 func TestDatabaseTypeToRuntimeType(t *testing.T) {
 	c := &connection{}
