@@ -70,9 +70,9 @@ test.describe("canvas time filters", () => {
     await page.getByRole("button", { name: "Add filter button" }).click();
     await page.getByRole("menuitem", { name: "Domain" }).click();
 
-    await page.getByLabel("domain results").getByText("facebook.com").click();
+    await page.waitForTimeout(200);
 
-    await page.waitForTimeout(100);
+    await page.getByLabel("domain results").getByText("facebook.com").click();
 
     await page
       .getByLabel("domain results")
