@@ -1,10 +1,11 @@
 <script lang="ts">
+  import ConnectorIcon from "@rilldata/web-common/components/icons/ConnectorIcon.svelte";
+  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { connectorIconMapping } from "@rilldata/web-common/features/connectors/connector-icon-mapping";
   import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ConnectorIcon from "@rilldata/web-common/components/icons/ConnectorIcon.svelte";
+  import InfoRow from "./InfoRow.svelte";
 
   $: ({ instanceId } = $runtime);
 
@@ -53,54 +54,29 @@
   }
 </script>
 
-<div class="config-row">
-  <div class="config-label">OLAP Engine</div>
-  <div class="config-value">
-    {#if isLoading}
-      <Spinner status={EntityStatus.Running} size="14px" />
-    {:else if error}
-      <span class="text-red-600 text-sm">Error loading OLAP connector</span>
-    {:else}
-      <div class="olap-content">
-        {#if isUserConfigured}
-          {#if IconComponent}
-            <svelte:component this={IconComponent} size="16px" />
-          {:else}
-            <ConnectorIcon size="16px" />
-          {/if}
+<InfoRow label="OLAP Engine">
+  {#if isLoading}
+    <Spinner status={EntityStatus.Running} size="14px" />
+  {:else if error}
+    <span class="text-red-600 text-sm">Error loading OLAP connector</span>
+  {:else}
+    <div class="olap-content">
+      {#if isUserConfigured}
+        {#if IconComponent}
+          <svelte:component this={IconComponent} size="16px" />
+        {:else}
+          <ConnectorIcon size="16px" />
         {/if}
-        <span class="connector-name">
-          {#if !isUserConfigured}Rill-managed
-          {/if}{displayName}
-        </span>
-      </div>
-    {/if}
-  </div>
-</div>
+      {/if}
+      <span class="connector-name">
+        {#if !isUserConfigured}Rill-managed
+        {/if}{displayName}
+      </span>
+    </div>
+  {/if}
+</InfoRow>
 
 <style lang="postcss">
-  .config-row {
-    @apply flex items-center border-b border-slate-200;
-    @apply min-h-[44px];
-  }
-
-  .config-row:last-child {
-    @apply border-b-0;
-  }
-
-  .config-label {
-    @apply w-[140px] flex-shrink-0 px-4 py-3;
-    @apply text-sm font-medium text-gray-600;
-    @apply bg-slate-50;
-    @apply border-r border-slate-200;
-    @apply whitespace-nowrap;
-  }
-
-  .config-value {
-    @apply flex-1 px-4 py-3;
-    @apply text-sm;
-  }
-
   .olap-content {
     @apply flex items-center gap-x-2;
   }
