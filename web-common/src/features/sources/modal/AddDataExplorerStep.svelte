@@ -5,10 +5,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import {
-    createSqlModelFromTable,
-    createYamlModelFromTable,
-  } from "../../connectors/code-utils";
+  import { createModelFromExplorerSelection } from "./model-creation-utils";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../../connectors/selectors";
 
   export let connector: V1ConnectorDriver;
@@ -34,21 +31,16 @@
     if (!selectedConnector || !selectedTable) return;
     try {
       creatingModel = true;
-      const [newModelPath] = isModelingSupportedForSelected
-        ? await createSqlModelFromTable(
-            queryClient,
-            selectedConnector,
-            selectedDatabase,
-            selectedSchema,
-            selectedTable,
-          )
-        : await createYamlModelFromTable(
-            queryClient,
-            selectedConnector,
-            selectedDatabase,
-            selectedSchema,
-            selectedTable,
-          );
+      const [newModelPath] = await createModelFromExplorerSelection(
+        queryClient,
+        {
+          connector: selectedConnector,
+          database: selectedDatabase,
+          schema: selectedSchema,
+          table: selectedTable,
+          isModelingSupported: isModelingSupportedForSelected,
+        },
+      );
       await onModelCreated(newModelPath);
     } finally {
       creatingModel = false;
