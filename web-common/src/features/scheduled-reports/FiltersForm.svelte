@@ -26,7 +26,6 @@
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
-
   import { fly } from "svelte/transition";
 
   export let filters: Filters;

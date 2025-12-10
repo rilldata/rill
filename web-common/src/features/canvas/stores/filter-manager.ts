@@ -96,16 +96,13 @@ class StoreOfStores<T> {
 
 export class FilterManager {
   metricsViewFilters = new StoreOfStores<FilterState>();
-  _pinnedFilterKeys = writable<Set<string>>(new Set());
-  _defaultPinnedFilterKeys = writable<Set<string>>(new Set());
+  pinnedFilterKeysStore = writable<Set<string>>(new Set());
+  defaultPinnedFilterKeysStore = writable<Set<string>>(new Set());
   temporaryFilterKeysStore = writable<Map<string, boolean>>(new Map());
   allDimensionsStore = writable<DimensionLookup>(new Map());
   allMeasuresStore = writable<MeasureLookup>(new Map());
-  _dimensionFilterKeys: Readable<string[]>;
   defaultUIFiltersStore: Readable<UIFilters>;
-  _defaultExpression: Readable<V1Expression>;
   activeUIFiltersStore: Readable<UIFilters>;
-  _activeExpression: Readable<V1Expression>;
   metricsViewNameDimensionMap: Map<
     MetricsViewName,
     Map<DimensionName, MetricsViewSpecDimension>
@@ -115,8 +112,8 @@ export class FilterManager {
     Map<MeasureName, MetricsViewSpecMeasure>
   > = new Map();
   filterMapStore: Readable<Map<string, V1Expression>>;
-  _scopedDimensions = writable<Map<string, DimensionLookup>>(new Map());
-  _scopedMeasures = writable<Map<string, MeasureLookup>>(new Map());
+  scopedDimensionsStore = writable<Map<string, DimensionLookup>>(new Map());
+  scopedMeasuresStore = writable<Map<string, MeasureLookup>>(new Map());
 
   constructor(
     metricsViews: Record<string, V1MetricsView | undefined>,
@@ -133,7 +130,7 @@ export class FilterManager {
           (f) => f.parsedDefaultFilters,
         );
         derived(
-          [this._defaultPinnedFilterKeys, ...stores],
+          [this.defaultPinnedFilterKeysStore, ...stores],
           ([defaultPinnedFilterKeys, ...filters]) => {
             return this.convertToUIFilters(
               filters,
@@ -153,7 +150,11 @@ export class FilterManager {
         );
 
         derived(
-          [this._pinnedFilterKeys, this.temporaryFilterKeysStore, ...stores],
+          [
+            this.pinnedFilterKeysStore,
+            this.temporaryFilterKeysStore,
+            ...stores,
+          ],
           ([pinnedFilters, temporaryFilterKeys, ...filters]) => {
             return this.convertToUIFilters(
               filters,
@@ -295,8 +296,8 @@ export class FilterManager {
 
     this.allDimensionsStore.set(mergedDimensions);
 
-    this._scopedDimensions.set(dimensionLookups);
-    this._scopedMeasures.set(measureLookups);
+    this.scopedDimensionsStore.set(dimensionLookups);
+    this.scopedMeasuresStore.set(measureLookups);
 
     if (pinnedFilters) {
       const keys = new Set<string>();
@@ -324,8 +325,8 @@ export class FilterManager {
         keys.add(filterKey);
       });
 
-      this._pinnedFilterKeys.set(new Set(keys));
-      this._defaultPinnedFilterKeys.set(new Set(keys));
+      this.pinnedFilterKeysStore.set(new Set(keys));
+      this.defaultPinnedFilterKeysStore.set(new Set(keys));
     }
   };
 
@@ -346,7 +347,7 @@ export class FilterManager {
     return this.convertToUIFilters(
       parsedFilters,
       new Map(),
-      get(this._pinnedFilterKeys),
+      get(this.pinnedFilterKeysStore),
     );
   };
 
@@ -696,7 +697,7 @@ export class FilterManager {
       await this.applyFiltersToUrl(newFilters, true);
     },
     toggleFilterPin: (name: string, metricsViewNames: string[]) => {
-      this._pinnedFilterKeys.update((pinned) => {
+      this.pinnedFilterKeysStore.update((pinned) => {
         const key = metricsViewNames.sort().join("//") + "::" + name;
         const deleted = pinned.delete(key);
 

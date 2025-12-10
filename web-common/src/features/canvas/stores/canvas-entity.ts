@@ -176,8 +176,8 @@ export class CanvasEntity {
       [
         this.searchParams,
         this._defaultUrlParams,
-        this.filterManager._pinnedFilterKeys,
-        this.filterManager._defaultPinnedFilterKeys,
+        this.filterManager.pinnedFilterKeysStore,
+        this.filterManager.defaultPinnedFilterKeysStore,
       ],
       ([
         $searchParams,
@@ -335,7 +335,7 @@ export class CanvasEntity {
     const yaml = get(this.parsedContent);
     const filterMap = new YAMLMap();
 
-    const pinnedFilters = get(this.filterManager._pinnedFilterKeys);
+    const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
 
     const genericPinnedKeys = Array.from(pinnedFilters).map(
       (f) => f.split("::")[1],

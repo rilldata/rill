@@ -24,7 +24,7 @@
 
   $: ({
     canvasEntity: {
-      filterManager: { _scopedDimensions, _scopedMeasures },
+      filterManager: { scopedDimensionsStore, scopedMeasuresStore },
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -53,8 +53,8 @@
 
   $: localFiltersEnabled = !!urlFormat?.length || localFiltersEnabledOverride;
 
-  $: allDimensions = $_scopedDimensions.get(metricsView)!;
-  $: allSimpleMeasures = $_scopedMeasures.get(metricsView)!;
+  $: allDimensions = $scopedDimensionsStore.get(metricsView)!;
+  $: allSimpleMeasures = $scopedMeasuresStore.get(metricsView)!;
 
   $: dimensionArray = Array.from(allDimensions.values()).map(
     (d) => d.get(metricsView) as MetricsViewSpecDimension,
