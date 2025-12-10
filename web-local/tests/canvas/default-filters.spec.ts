@@ -44,7 +44,7 @@ test.describe("canvas time filters", () => {
       .textContent();
 
     expect(text).toEqual(
-      ' 5212345678910111213141516171819202122232425262728293031323334353637383940414243444546474849505152# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboardstype: exploretitle: \"Adbids dashboard\"metrics_view: AdBids_metricsdimensions:  - timestamp  - publisher  - domainmeasures:  - total_records  - bid_price_sumtime_ranges:  - PT6H  - PT24H  - P7D  - P14D  - P4W  - P12M  - rill-TD  - rill-WTD  - rill-MTD  - rill-QTD  - rill-YTD  - rill-PDC  - rill-PWC  - rill-PMC  - rill-PQC  - rill-PYC  - inftime_zones:  - UTC  - America/Los_Angeles  - America/Chicago  - America/New_York  - Europe/London  - Europe/Paris  - Asia/Jerusalem  - Europe/Moscow  - Asia/Kolkata  - Asia/Shanghai  - Asia/Tokyo  - Australia/Sydneytheme:  light:    primary: hsl(180, 100%, 50%)    secondary: lightgreen',
+      ` 68123456789101112131415161718192021222324252627282930313233343536# Explore YAML# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboardstype: canvasdisplay_name: "Adbids Canvas Dashboard"defaults:  time_range: PT24H  comparison_mode: time  filters:    AdBids_metrics: (domain IN ('facebook.com', 'google.com', 'msn.com'))rows:  - items:      - kpi_grid:          metrics_view: AdBids_metrics          measures:            - total_records            - bid_price_sum          comparison:            - delta            - percent_change        width: 12    height: 128px  - items:      - stacked_bar:          metrics_view: AdBids_metrics          x:            type: temporal            field: timestamp            sort: -y            limit: 20          y:            type: quantitative            field: total_records            zeroBasedOrigin: true          color: hsl(240,100%,67%)        width: 12`,
     );
   });
 
@@ -85,5 +85,24 @@ test.describe("canvas time filters", () => {
     expect(page.url()).toContain(
       "?tr=PT24H&compare_tr=rill-PP&f.AdBids_metrics=domain+IN+%28%5B%27facebook.com%27%2C%27google.com%27%2C%27msn.com%27%5D%29",
     );
+  });
+
+  test("legacy filters without prefix still work", async ({ page }) => {
+    await page.getByLabel("/dashboards").click();
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
+    const currentUrl = new URL(page.url());
+
+    // Clear search params from current url
+    currentUrl.search = "";
+
+    await page.goto(
+      `${currentUrl}?tr=PT24H&compare_tr=rill-PP&f=domain+IN+%28%5B%27facebook.com%27%2C%27google.com%27%2C%27msn.com%27%5D%29`,
+    );
+
+    // check that a filter pill exists with the correct text
+    await expect(page.getByText("Domain facebook.com +2 others")).toBeVisible();
+
+    // check that filters are applied
+    await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
   });
 });
