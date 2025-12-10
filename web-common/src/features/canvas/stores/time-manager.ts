@@ -94,12 +94,17 @@ export class TimeManager {
   checkAndSetFirstDayOfWeek(response: CanvasResponse) {
     // TODO: figure out a better way of handling this property
     // when it's not consistent across all metrics views - bgh
-    const firstMetricsViewName = Object.keys(response.metricsViews)?.[0];
+    const firstMetricsViewWithTimeSeries = Object.entries(
+      response.metricsViews || {},
+    ).find(([, mv]) => Boolean(mv?.state?.validSpec?.timeDimension))?.[0];
+
+    if (!firstMetricsViewWithTimeSeries) return;
+
+    const firstMetricsViewName = firstMetricsViewWithTimeSeries;
+
     const firstDayOfWeekOfFirstMetricsView =
       response.metricsViews[firstMetricsViewName]?.state?.validSpec
         ?.firstDayOfWeek;
-
-    if (!firstMetricsViewName) return;
 
     Settings.defaultWeekSettings = {
       firstDay: normalizeWeekday(firstDayOfWeekOfFirstMetricsView),
