@@ -8,6 +8,7 @@ import AthenaIcon from "../../components/icons/connectors/AthenaIcon.svelte";
 import PostgresIcon from "../../components/icons/connectors/PostgresIcon.svelte";
 import MySqlIcon from "../../components/icons/connectors/MySqlIcon.svelte";
 import MotherDuckIcon from "../../components/icons/connectors/MotherDuckIcon.svelte";
+import OpenAIIcon from "../../components/icons/connectors/OpenAIIcon.svelte";
 import RedshiftIcon from "../../components/icons/connectors/RedshiftIcon.svelte";
 import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
@@ -21,6 +22,7 @@ export const connectorIconMapping = {
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
   mysql: MySqlIcon,
+  openai: OpenAIIcon,
   pinot: ApachePinotIcon,
   postgres: PostgresIcon,
   redshift: RedshiftIcon,

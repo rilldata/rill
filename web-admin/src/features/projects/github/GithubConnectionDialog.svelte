@@ -25,6 +25,7 @@
   export let open = false;
   export let organization: string;
   export let project: string;
+  export let hideTrigger = false;
 
   const FORM_ID = "github-connect-form";
 
@@ -159,18 +160,20 @@
     }
   }}
 >
-  <Dialog.Trigger asChild let:builder>
-    <Button
-      builders={[builder]}
-      type="primary"
-      class="w-fit mt-1"
-      loading={$userStatus.isFetching}
-      onClick={() => void githubAccessManager.ensureGithubAccess()}
-    >
-      <Github className="w-4 h-4" />
-      Connect to GitHub
-    </Button>
-  </Dialog.Trigger>
+  {#if !hideTrigger}
+    <Dialog.Trigger asChild let:builder>
+      <Button
+        builders={[builder]}
+        type="primary"
+        class="w-fit mt-1"
+        loading={$userStatus.isFetching}
+        onClick={() => void githubAccessManager.ensureGithubAccess()}
+      >
+        <Github className="w-4 h-4" />
+        Connect to GitHub
+      </Button>
+    </Dialog.Trigger>
+  {/if}
   <Dialog.Content class="translate-y-[-200px]">
     <Dialog.Header>
       <div class="flex flex-row gap-x-2 items-center">
