@@ -1,26 +1,24 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user add
+title: rill usergroup set-resources
 ---
-## rill user add
+## rill usergroup set-resources
 
-Add user to a project, organization or group
+Set a user group's project resources and restriction flag (overwrites existing list)
 
 ```
-rill user add [flags]
+rill usergroup set-resources [flags]
 ```
 
 ### Flags
 
 ```
       --canvas stringArray    Canvas resource to restrict to (repeat for multiple)
-      --email string          Email of the user
       --explore stringArray   Explore resource to restrict to (repeat for multiple)
-      --group string          User group
+      --group string          User group (required)
       --org string            Organization
-      --project string        Project
-      --restrict-resources    Restrict the user to the provided resources (defaults to true when resources are provided)
-      --role string           Role of the user (options: admin, editor, viewer, guest)
+      --project string        Project (required)
+      --restrict-resources    Whether to restrict the group to the provided resources (defaults to true when resources are provided)
 ```
 
 ### Global flags
@@ -34,5 +32,5 @@ rill user add [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill usergroup](usergroup.md)	 - Manage user groups
 
