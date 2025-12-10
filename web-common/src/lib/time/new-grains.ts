@@ -335,10 +335,10 @@ export function getSmallestGrainFromISODuration(
 }
 
 export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "60m as of latest/m+1m",
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "60m as of latest/m+1m",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "60m as of latest/m+1m",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "60m as of latest/m+1m",
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "24h as of latest/h+1h",
   [V1TimeGrain.TIME_GRAIN_HOUR]: "24h as of latest/h",
   [V1TimeGrain.TIME_GRAIN_DAY]: "7d as of latest/d",
   [V1TimeGrain.TIME_GRAIN_WEEK]: "4w as of latest/w",
