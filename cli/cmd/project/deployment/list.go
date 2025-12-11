@@ -50,7 +50,6 @@ func DeploymentsListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.PrintDeployments(resp.Deployments)
-
 			return nil
 		},
 	}

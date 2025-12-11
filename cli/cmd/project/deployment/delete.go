@@ -45,41 +45,28 @@ func DeploymentDeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			resp, err := client.ListDeployments(cmd.Context(), &adminv1.ListDeploymentsRequest{
 				Org:     ch.Org,
 				Project: project,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
 			}
 
-			// Find deployments matching the branch
-			var matchingDeployments []*adminv1.Deployment
-			for _, depl := range resp.Deployments {
-				if depl.Branch == branch {
-					matchingDeployments = append(matchingDeployments, depl)
-				}
-			}
-
-			if len(matchingDeployments) == 0 {
+			if len(resp.Deployments) == 0 {
 				return fmt.Errorf("no deployment found for branch %q in project %q", branch, project)
 			}
 
-			if len(matchingDeployments) > 1 {
-				// should not happen in normal circumstances
-				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed", branch, project)
+			for _, d := range resp.Deployments {
+				// usually there should be only one deployment per branch
+				ch.PrintfBold("Deleting deployment for branch %q (ID: %s)...\n", branch, d.Id)
+				_, err = client.DeleteDeployment(cmd.Context(), &adminv1.DeleteDeploymentRequest{
+					DeploymentId: d.Id,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfSuccess("Deployment deleted successfully!\n")
 			}
-
-			deployment := matchingDeployments[0]
-
-			ch.PrintfBold("Deleting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
-
-			_, err = client.DeleteDeployment(cmd.Context(), &adminv1.DeleteDeploymentRequest{
-				DeploymentId: deployment.Id,
-			})
-			if err != nil {
-				return err
-			}
-
-			ch.PrintfSuccess("Deployment deleted successfully!\n")
-
 			return nil
 		},
 	}

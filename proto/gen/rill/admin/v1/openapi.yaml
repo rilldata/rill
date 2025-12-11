@@ -4077,6 +4077,10 @@ paths:
                   schema:
                     type: string
                 - in: query
+                  name: branch
+                  schema:
+                    type: string
+                - in: query
                   name: userId
                   schema:
                     type: string

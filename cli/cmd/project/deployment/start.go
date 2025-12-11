@@ -45,29 +45,22 @@ func DeploymentStartCmd(ch *cmdutil.Helper) *cobra.Command {
 			resp, err := client.ListDeployments(cmd.Context(), &adminv1.ListDeploymentsRequest{
 				Org:     ch.Org,
 				Project: project,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
 			}
 
-			// Find deployments matching the branch
-			var matchingDeployments []*adminv1.Deployment
-			for _, depl := range resp.Deployments {
-				if depl.Branch == branch {
-					matchingDeployments = append(matchingDeployments, depl)
-				}
-			}
-
-			if len(matchingDeployments) == 0 {
+			if len(resp.Deployments) == 0 {
 				return fmt.Errorf("no deployment found for branch %q in project %q", branch, project)
 			}
 
-			if len(matchingDeployments) > 1 {
+			if len(resp.Deployments) > 1 {
 				// should not happen in normal circumstances
-				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed", branch, project)
+				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed. Delete existing deployments first", branch, project)
 			}
 
-			deployment := matchingDeployments[0]
+			deployment := resp.Deployments[0]
 
 			ch.PrintfBold("Starting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
 
@@ -82,10 +75,6 @@ func DeploymentStartCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Printf("Deployment ID: %s\n", startResp.Deployment.Id)
 			ch.Printf("Branch: %s\n", startResp.Deployment.Branch)
 			ch.Printf("Status: %s\n", startResp.Deployment.Status.String())
-			if startResp.Deployment.RuntimeHost != "" {
-				ch.Printf("Runtime Host: %s\n", startResp.Deployment.RuntimeHost)
-			}
-
 			return nil
 		},
 	}

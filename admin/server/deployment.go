@@ -103,6 +103,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		attribute.String("args.organization_name", req.Org),
 		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
+		attribute.String("args.branch", req.Branch),
 		attribute.String("args.user_id", req.UserId),
 	)
 
@@ -118,7 +119,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, "")
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, req.Branch)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
