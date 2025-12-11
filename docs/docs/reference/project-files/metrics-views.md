@@ -18,7 +18,7 @@ _[string]_ - Refers to the resource type and must be `metrics_view`
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information 
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/developer/build/connectors/olap) for more information 
 
 ### `display_name`
 
@@ -30,7 +30,7 @@ _[string]_ - Refers to the description for the metrics view
 
 ### `ai_instructions`
 
-_[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
+_[string]_ - Extra instructions for [AI agents](/user-guide/ai/mcp). Used to guide natural language question answering and routing. 
 
 ### `parent`
 
@@ -110,7 +110,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`expression`** - _[string]_ - a combination of operators and functions for aggregations _(required)_
 
-  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation. 
+  - **`window`** - _[anyOf]_ - A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developer/build/metrics-view/measures/windows) documentation. 
 
     - **option 1** - _[string]_ - Shorthand: `time` or `true` means time-partitioned, `all` means non-partitioned.
 
@@ -148,7 +148,7 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
         - **`time_grain`** - _[string]_ - Time grain for time-based dimensions. 
 
-  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information. 
+  - **`requires`** - _[oneOf]_ - using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/developer/build/metrics-view/measures/referencing) for more information. 
 
     - **option 1** - _[string]_ - Simple field name as a string.
 
@@ -256,7 +256,7 @@ _[array of object]_ - Used to define annotations that can be displayed on charts
 
 ### `security`
 
-_[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for resources 
+_[object]_ - Defines [security rules and access control policies](/developer/build/metrics-view/security) for resources 
 
   - **`access`** - _[oneOf]_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to false and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. 
 
@@ -322,9 +322,25 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
       - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
 
-        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
 
-        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`light`** - _[object]_ - Light theme color configuration 
+
+        - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+
+      - **`dark`** - _[object]_ - Dark theme color configuration 
+
+        - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
 
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'. 
 
