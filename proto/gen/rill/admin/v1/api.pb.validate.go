@@ -1985,6 +1985,8 @@ func (m *ListDeploymentsRequest) validate(all bool) error {
 
 	// no validation rules for Environment
 
+	// no validation rules for Branch
+
 	// no validation rules for UserId
 
 	if len(errors) > 0 {

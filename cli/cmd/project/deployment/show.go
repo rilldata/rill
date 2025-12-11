@@ -45,30 +45,17 @@ func DeploymentShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			resp, err := client.ListDeployments(cmd.Context(), &adminv1.ListDeploymentsRequest{
 				Org:     ch.Org,
 				Project: project,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
 			}
 
-			// Find deployments matching the branch
-			var matchingDeployments []*adminv1.Deployment
-			for _, depl := range resp.Deployments {
-				if depl.Branch == branch {
-					matchingDeployments = append(matchingDeployments, depl)
-				}
-			}
-
-			if len(matchingDeployments) == 0 {
+			if len(resp.Deployments) == 0 {
 				return fmt.Errorf("no deployment found for branch %q in project %q", branch, project)
 			}
 
-			if len(matchingDeployments) > 1 {
-				// should not happen in normal circumstances
-				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed", branch, project)
-			}
-
-			ch.PrintDeployments([]*adminv1.Deployment{matchingDeployments[0]})
-
+			ch.PrintDeployments(resp.Deployments)
 			return nil
 		},
 	}
