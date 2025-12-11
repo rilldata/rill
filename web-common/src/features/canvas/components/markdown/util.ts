@@ -13,6 +13,7 @@ import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived } from "svelte/store";
 import type { ParsedFilters } from "../../stores/filter-state";
+import type { Readable } from "svelte/motion";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
   if (!alignment) alignment = defaultMarkdownAlignment;
@@ -127,7 +128,9 @@ function buildRequestBody(params: {
 
 export function getResolveTemplatedStringQueryOptions(
   component: MarkdownCanvasComponent,
-) {
+): Readable<
+  ReturnType<typeof getQueryServiceResolveTemplatedStringQueryOptions>
+> {
   return derived(
     [component.parent.filterManager.metricsViewFilters],
     ([metricsViewFilters], set) => {
