@@ -1,5 +1,23 @@
 import { defaultMarkdownAlignment } from "@rilldata/web-common/features/canvas/components/markdown";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+import type { MarkdownCanvasComponent } from "@rilldata/web-common/features/canvas/components/markdown";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import {
+  buildValidMetricsViewFilter,
+  createAndExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
+  V1Expression,
+  V1MetricsView,
+  V1TimeRange,
+  QueryServiceResolveTemplatedStringBody,
+} from "@rilldata/web-common/runtime-client";
+import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { derived } from "svelte/store";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
   if (!alignment) alignment = defaultMarkdownAlignment;
@@ -28,4 +46,194 @@ export function getPositionClasses(alignment: ComponentAlignment | undefined) {
   }
 
   return classString;
+}
+
+export function hasTemplatingSyntax(content: string): boolean {
+  return /\{\{[\s\S]*?\}\}/.test(content);
+}
+
+export function formatResolvedContent(
+  text: string,
+  metricsViews: Record<string, V1MetricsView | undefined>,
+): string {
+  if (!text) return text;
+
+  const formatPattern = /__RILL__FORMAT__\(([^)]+)\)/g;
+
+  return text.replace(formatPattern, (fullMatch, tokenContent: string) => {
+    try {
+      const trimmed = tokenContent.trim();
+      const {
+        metrics_view,
+        field,
+        value,
+      }: {
+        metrics_view: string;
+        field: string;
+        value: number | string | null;
+      } = JSON.parse(trimmed) as {
+        metrics_view: string;
+        field: string;
+        value: number | string | null;
+      };
+
+      const metricsView = metricsViews[metrics_view];
+      const metricsViewSpec = metricsView?.state?.validSpec;
+      if (!metricsViewSpec) return fullMatch;
+
+      const measure = metricsViewSpec.measures?.find(
+        (m: MetricsViewSpecMeasure) => m.name === field,
+      );
+      if (!measure) return fullMatch;
+
+      if (value === null) {
+        const formatter = createMeasureValueFormatter<null>(measure);
+        const formatted = formatter(null);
+        return formatted ?? "";
+      }
+
+      const numericValue =
+        typeof value === "number" ? value : parseFloat(String(value));
+      if (isNaN(numericValue)) return fullMatch;
+
+      const formatter = createMeasureValueFormatter(measure);
+      return formatter(numericValue);
+    } catch {
+      return fullMatch;
+    }
+  });
+}
+
+function buildRequestBody(params: {
+  content: string;
+  applyFormatting: boolean;
+  timeRange: V1TimeRange | undefined;
+  globalWhereFilter: V1Expression | undefined;
+  globalDimensionThresholdFilters: DimensionThresholdFilter[];
+  metricsViews: Record<string, V1MetricsView | undefined>;
+}): QueryServiceResolveTemplatedStringBody | null {
+  const {
+    content,
+    applyFormatting,
+    timeRange,
+    globalWhereFilter,
+    globalDimensionThresholdFilters,
+    metricsViews,
+  } = params;
+
+  if (!timeRange?.start || !timeRange?.end) return null;
+
+  const additionalWhereByMetricsView: Record<string, V1Expression> = {};
+  const metricsViewNames = Object.keys(metricsViews);
+
+  if (
+    metricsViewNames.length > 0 &&
+    (globalWhereFilter || globalDimensionThresholdFilters.length > 0)
+  ) {
+    for (const metricsViewName of metricsViewNames) {
+      const metricsView = metricsViews[metricsViewName];
+      const metricsViewSpec = metricsView?.state?.validSpec;
+      const dimensions: MetricsViewSpecDimension[] =
+        metricsViewSpec?.dimensions ?? [];
+      const measures: MetricsViewSpecMeasure[] =
+        metricsViewSpec?.measures ?? [];
+
+      const whereFilter = buildValidMetricsViewFilter(
+        globalWhereFilter || createAndExpression([]),
+        globalDimensionThresholdFilters,
+        dimensions,
+        measures,
+      );
+
+      if (
+        whereFilter &&
+        whereFilter.cond?.exprs &&
+        whereFilter.cond.exprs.length > 0
+      ) {
+        additionalWhereByMetricsView[metricsViewName] = whereFilter;
+      } else if (
+        !whereFilter &&
+        globalWhereFilter &&
+        globalWhereFilter.cond?.exprs &&
+        globalWhereFilter.cond.exprs.length > 0
+      ) {
+        additionalWhereByMetricsView[metricsViewName] = globalWhereFilter;
+      }
+    }
+  }
+
+  return {
+    body: content,
+    useFormatTokens: applyFormatting,
+    additionalTimeRange: timeRange,
+    ...(Object.keys(additionalWhereByMetricsView).length > 0 && {
+      additionalWhereByMetricsView,
+    }),
+  };
+}
+
+export function getResolveTemplatedStringQueryOptions(
+  component: MarkdownCanvasComponent,
+) {
+  return derived(
+    [
+      component.specStore,
+      component.timeAndFilterStore,
+      component.parent?.filters?.whereFilter ?? null,
+      component.parent?.filters?.dimensionThresholdFilters ?? null,
+      component.parent?.specStore ?? null,
+      runtime,
+    ],
+    ([
+      spec,
+      timeAndFilters,
+      parentWhereFilter,
+      parentDimensionThresholdFilters,
+      parentSpec,
+      runtimeState,
+    ]) => {
+      const content = spec?.content ?? "";
+      const applyFormatting = spec?.apply_formatting === true;
+      const needsTemplating = hasTemplatingSyntax(content);
+      const instanceId = runtimeState?.instanceId ?? "";
+
+      const globalWhereFilter = parentWhereFilter ?? undefined;
+      const globalDimensionThresholdFilters =
+        parentDimensionThresholdFilters ?? [];
+      const metricsViews = parentSpec?.data?.metricsViews ?? {};
+
+      const requestBody = buildRequestBody({
+        content,
+        applyFormatting,
+        timeRange: timeAndFilters?.timeRange,
+        globalWhereFilter,
+        globalDimensionThresholdFilters,
+        metricsViews,
+      });
+
+      const enabled =
+        !!needsTemplating &&
+        !!content &&
+        !!instanceId &&
+        !!requestBody &&
+        !!requestBody.additionalTimeRange;
+
+      const body: QueryServiceResolveTemplatedStringBody =
+        !enabled || !requestBody
+          ? { body: content, useFormatTokens: applyFormatting }
+          : requestBody;
+
+      const queryEnabled = enabled && !!requestBody;
+
+      return getQueryServiceResolveTemplatedStringQueryOptions(
+        instanceId,
+        body,
+        {
+          query: {
+            enabled: queryEnabled,
+          },
+        },
+      );
+    },
+  );
 }

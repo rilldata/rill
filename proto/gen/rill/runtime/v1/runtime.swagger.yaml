@@ -3278,6 +3278,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       column:
         type: string
       expression:
@@ -3330,6 +3334,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       expression:
         type: string
       type:
@@ -5808,6 +5816,13 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      queryAttributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+          Keys and values are stored as templates and will be resolved at query time.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:

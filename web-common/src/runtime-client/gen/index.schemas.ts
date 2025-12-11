@@ -53,6 +53,7 @@ export interface MetricsViewSpecDimension {
   type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
+  tags?: string[];
   column?: string;
   expression?: string;
   unnest?: boolean;
@@ -87,6 +88,7 @@ export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
+  tags?: string[];
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
@@ -1521,6 +1523,12 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+/**
+ * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+Keys and values are stored as templates and will be resolved at query time.
+ */
+export type V1MetricsViewSpecQueryAttributes = { [key: string]: string };
+
 export interface V1MetricsViewSpec {
   /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
   parent?: string;
@@ -1552,6 +1560,9 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+Keys and values are stored as templates and will be resolved at query time. */
+  queryAttributes?: V1MetricsViewSpecQueryAttributes;
 }
 
 /**

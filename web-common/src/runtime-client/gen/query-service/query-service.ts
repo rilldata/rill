@@ -2414,78 +2414,106 @@ export const queryServiceResolveTemplatedString = (
   });
 };
 
-export const getQueryServiceResolveTemplatedStringMutationOptions = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
-    TError,
-    { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
-  TError,
-  { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
-  TContext
-> => {
-  const mutationKey = ["queryServiceResolveTemplatedString"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
-    { instanceId: string; data: QueryServiceResolveTemplatedStringBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return queryServiceResolveTemplatedString(instanceId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getQueryServiceResolveTemplatedStringQueryKey = (
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+) => {
+  return [
+    `/v1/instances/${instanceId}/queries/resolve-templated-string`,
+    queryServiceResolveTemplatedStringBody,
+  ] as const;
 };
 
-export type QueryServiceResolveTemplatedStringMutationResult = NonNullable<
+export const getQueryServiceResolveTemplatedStringQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveTemplatedStringQueryKey(
+      instanceId,
+      queryServiceResolveTemplatedStringBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
+  > = ({ signal }) =>
+    queryServiceResolveTemplatedString(
+      instanceId,
+      queryServiceResolveTemplatedStringBody,
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QueryServiceResolveTemplatedStringQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
 >;
-export type QueryServiceResolveTemplatedStringMutationBody =
-  QueryServiceResolveTemplatedStringBody;
-export type QueryServiceResolveTemplatedStringMutationError =
-  ErrorType<RpcStatus>;
+export type QueryServiceResolveTemplatedStringQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ResolveTemplatedString resolves a templated strings.
  */
-export const createQueryServiceResolveTemplatedString = <
+
+export function createQueryServiceResolveTemplatedString<
+  TData = Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
   TError = ErrorType<RpcStatus>,
-  TContext = unknown,
 >(
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
   options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
-      TError,
-      { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
-      TContext
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+        TError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
-  TError,
-  { instanceId: string; data: QueryServiceResolveTemplatedStringBody },
-  TContext
-> => {
-  const mutationOptions =
-    getQueryServiceResolveTemplatedStringMutationOptions(options);
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQueryServiceResolveTemplatedStringQueryOptions(
+    instanceId,
+    queryServiceResolveTemplatedStringBody,
+    options,
+  );
 
-  return createMutation(mutationOptions, queryClient);
-};
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
  */

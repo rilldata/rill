@@ -77,7 +77,6 @@
       extensions: getEditorPlugins({
         enableMention,
         placeholder,
-        conversationManager,
         onSubmit: () => void sendMessage(),
       }),
       content: "",
@@ -164,13 +163,12 @@
   }
 
   .chat-input-container {
-    @apply w-full;
+    @apply w-full max-h-32 overflow-auto;
   }
 
   .chat-input-container.fixed-height {
     min-height: unset;
     max-height: unset;
-    @apply overflow-auto;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
