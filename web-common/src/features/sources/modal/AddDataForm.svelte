@@ -506,6 +506,9 @@
           ? "Model preview"
           : "Connector preview"}
       yaml={yamlPreview}
+      showAdditionalInfo={connector.displayName === "DuckDB" ||
+        connector.displayName === "SQLite"}
+      {connector}
     />
 
     <NeedHelpText {connector} />
