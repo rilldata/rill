@@ -1519,13 +1519,13 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/filter-expression/resolve:
     post:
-      summary: ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
-      operationId: QueryService_ResolveMetricsViewFilterExpression
+      summary: ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+      operationId: QueryService_ConvertExpressionToMetricsSQL
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ResolveMetricsViewFilterExpressionResponse'
+            $ref: '#/definitions/v1ConvertExpressionToMetricsSQLResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4503,6 +4503,12 @@ definitions:
           $ref: '#/definitions/v1Message'
         description: 'NOTE: Deprecated.'
     title: Conversation metadata and messages
+  v1ConvertExpressionToMetricsSQLResponse:
+    type: object
+    properties:
+      sql:
+        type: string
+        description: The SQL filter string representation of the expression.
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -4557,8 +4563,6 @@ definitions:
   v1DefaultMetricsSQLFilter:
     type: object
     properties:
-      sql:
-        type: string
       expression:
         $ref: '#/definitions/v1Expression'
   v1DeleteFileResponse:
@@ -6783,12 +6787,6 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
-  v1ResolveMetricsViewFilterExpressionResponse:
-    type: object
-    properties:
-      sql:
-        type: string
-        description: The SQL filter string representation of the expression.
   v1ResolveTemplatedStringResponse:
     type: object
     properties:

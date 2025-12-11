@@ -10651,24 +10651,23 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewAnnotationsResponseValidationError{}
 
-// Validate checks the field values on
-// ResolveMetricsViewFilterExpressionRequest with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ResolveMetricsViewFilterExpressionRequest) Validate() error {
+// Validate checks the field values on ConvertExpressionToMetricsSQLRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ConvertExpressionToMetricsSQLRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on
-// ResolveMetricsViewFilterExpressionRequest with the rules defined in the
-// proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in
-// ResolveMetricsViewFilterExpressionRequestMultiError, or nil if none found.
-func (m *ResolveMetricsViewFilterExpressionRequest) ValidateAll() error {
+// ValidateAll checks the field values on ConvertExpressionToMetricsSQLRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ConvertExpressionToMetricsSQLRequestMultiError, or nil if none found.
+func (m *ConvertExpressionToMetricsSQLRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ResolveMetricsViewFilterExpressionRequest) validate(all bool) error {
+func (m *ConvertExpressionToMetricsSQLRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -10681,7 +10680,7 @@ func (m *ResolveMetricsViewFilterExpressionRequest) validate(all bool) error {
 		switch v := interface{}(m.GetExpression()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ResolveMetricsViewFilterExpressionRequestValidationError{
+				errors = append(errors, ConvertExpressionToMetricsSQLRequestValidationError{
 					field:  "Expression",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -10689,7 +10688,7 @@ func (m *ResolveMetricsViewFilterExpressionRequest) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ResolveMetricsViewFilterExpressionRequestValidationError{
+				errors = append(errors, ConvertExpressionToMetricsSQLRequestValidationError{
 					field:  "Expression",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -10698,7 +10697,7 @@ func (m *ResolveMetricsViewFilterExpressionRequest) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetExpression()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ResolveMetricsViewFilterExpressionRequestValidationError{
+			return ConvertExpressionToMetricsSQLRequestValidationError{
 				field:  "Expression",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -10707,20 +10706,20 @@ func (m *ResolveMetricsViewFilterExpressionRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ResolveMetricsViewFilterExpressionRequestMultiError(errors)
+		return ConvertExpressionToMetricsSQLRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ResolveMetricsViewFilterExpressionRequestMultiError is an error wrapping
-// multiple validation errors returned by
-// ResolveMetricsViewFilterExpressionRequest.ValidateAll() if the designated
+// ConvertExpressionToMetricsSQLRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// ConvertExpressionToMetricsSQLRequest.ValidateAll() if the designated
 // constraints aren't met.
-type ResolveMetricsViewFilterExpressionRequestMultiError []error
+type ConvertExpressionToMetricsSQLRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ResolveMetricsViewFilterExpressionRequestMultiError) Error() string {
+func (m ConvertExpressionToMetricsSQLRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -10729,12 +10728,12 @@ func (m ResolveMetricsViewFilterExpressionRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ResolveMetricsViewFilterExpressionRequestMultiError) AllErrors() []error { return m }
+func (m ConvertExpressionToMetricsSQLRequestMultiError) AllErrors() []error { return m }
 
-// ResolveMetricsViewFilterExpressionRequestValidationError is the validation
-// error returned by ResolveMetricsViewFilterExpressionRequest.Validate if the
-// designated constraints aren't met.
-type ResolveMetricsViewFilterExpressionRequestValidationError struct {
+// ConvertExpressionToMetricsSQLRequestValidationError is the validation error
+// returned by ConvertExpressionToMetricsSQLRequest.Validate if the designated
+// constraints aren't met.
+type ConvertExpressionToMetricsSQLRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -10742,24 +10741,24 @@ type ResolveMetricsViewFilterExpressionRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ResolveMetricsViewFilterExpressionRequestValidationError) Field() string { return e.field }
+func (e ConvertExpressionToMetricsSQLRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ResolveMetricsViewFilterExpressionRequestValidationError) Reason() string { return e.reason }
+func (e ConvertExpressionToMetricsSQLRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ResolveMetricsViewFilterExpressionRequestValidationError) Cause() error { return e.cause }
+func (e ConvertExpressionToMetricsSQLRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ResolveMetricsViewFilterExpressionRequestValidationError) Key() bool { return e.key }
+func (e ConvertExpressionToMetricsSQLRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ResolveMetricsViewFilterExpressionRequestValidationError) ErrorName() string {
-	return "ResolveMetricsViewFilterExpressionRequestValidationError"
+func (e ConvertExpressionToMetricsSQLRequestValidationError) ErrorName() string {
+	return "ConvertExpressionToMetricsSQLRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ResolveMetricsViewFilterExpressionRequestValidationError) Error() string {
+func (e ConvertExpressionToMetricsSQLRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -10771,14 +10770,14 @@ func (e ResolveMetricsViewFilterExpressionRequestValidationError) Error() string
 	}
 
 	return fmt.Sprintf(
-		"invalid %sResolveMetricsViewFilterExpressionRequest.%s: %s%s",
+		"invalid %sConvertExpressionToMetricsSQLRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ResolveMetricsViewFilterExpressionRequestValidationError{}
+var _ error = ConvertExpressionToMetricsSQLRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -10786,26 +10785,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ResolveMetricsViewFilterExpressionRequestValidationError{}
+} = ConvertExpressionToMetricsSQLRequestValidationError{}
 
-// Validate checks the field values on
-// ResolveMetricsViewFilterExpressionResponse with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ResolveMetricsViewFilterExpressionResponse) Validate() error {
+// Validate checks the field values on ConvertExpressionToMetricsSQLResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *ConvertExpressionToMetricsSQLResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on
-// ResolveMetricsViewFilterExpressionResponse with the rules defined in the
-// proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in
-// ResolveMetricsViewFilterExpressionResponseMultiError, or nil if none found.
-func (m *ResolveMetricsViewFilterExpressionResponse) ValidateAll() error {
+// ValidateAll checks the field values on ConvertExpressionToMetricsSQLResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ConvertExpressionToMetricsSQLResponseMultiError, or nil if none found.
+func (m *ConvertExpressionToMetricsSQLResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ResolveMetricsViewFilterExpressionResponse) validate(all bool) error {
+func (m *ConvertExpressionToMetricsSQLResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -10815,20 +10813,20 @@ func (m *ResolveMetricsViewFilterExpressionResponse) validate(all bool) error {
 	// no validation rules for Sql
 
 	if len(errors) > 0 {
-		return ResolveMetricsViewFilterExpressionResponseMultiError(errors)
+		return ConvertExpressionToMetricsSQLResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ResolveMetricsViewFilterExpressionResponseMultiError is an error wrapping
+// ConvertExpressionToMetricsSQLResponseMultiError is an error wrapping
 // multiple validation errors returned by
-// ResolveMetricsViewFilterExpressionResponse.ValidateAll() if the designated
+// ConvertExpressionToMetricsSQLResponse.ValidateAll() if the designated
 // constraints aren't met.
-type ResolveMetricsViewFilterExpressionResponseMultiError []error
+type ConvertExpressionToMetricsSQLResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ResolveMetricsViewFilterExpressionResponseMultiError) Error() string {
+func (m ConvertExpressionToMetricsSQLResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -10837,12 +10835,12 @@ func (m ResolveMetricsViewFilterExpressionResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ResolveMetricsViewFilterExpressionResponseMultiError) AllErrors() []error { return m }
+func (m ConvertExpressionToMetricsSQLResponseMultiError) AllErrors() []error { return m }
 
-// ResolveMetricsViewFilterExpressionResponseValidationError is the validation
-// error returned by ResolveMetricsViewFilterExpressionResponse.Validate if
-// the designated constraints aren't met.
-type ResolveMetricsViewFilterExpressionResponseValidationError struct {
+// ConvertExpressionToMetricsSQLResponseValidationError is the validation error
+// returned by ConvertExpressionToMetricsSQLResponse.Validate if the
+// designated constraints aren't met.
+type ConvertExpressionToMetricsSQLResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -10850,24 +10848,24 @@ type ResolveMetricsViewFilterExpressionResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ResolveMetricsViewFilterExpressionResponseValidationError) Field() string { return e.field }
+func (e ConvertExpressionToMetricsSQLResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ResolveMetricsViewFilterExpressionResponseValidationError) Reason() string { return e.reason }
+func (e ConvertExpressionToMetricsSQLResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ResolveMetricsViewFilterExpressionResponseValidationError) Cause() error { return e.cause }
+func (e ConvertExpressionToMetricsSQLResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ResolveMetricsViewFilterExpressionResponseValidationError) Key() bool { return e.key }
+func (e ConvertExpressionToMetricsSQLResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ResolveMetricsViewFilterExpressionResponseValidationError) ErrorName() string {
-	return "ResolveMetricsViewFilterExpressionResponseValidationError"
+func (e ConvertExpressionToMetricsSQLResponseValidationError) ErrorName() string {
+	return "ConvertExpressionToMetricsSQLResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ResolveMetricsViewFilterExpressionResponseValidationError) Error() string {
+func (e ConvertExpressionToMetricsSQLResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -10879,14 +10877,14 @@ func (e ResolveMetricsViewFilterExpressionResponseValidationError) Error() strin
 	}
 
 	return fmt.Sprintf(
-		"invalid %sResolveMetricsViewFilterExpressionResponse.%s: %s%s",
+		"invalid %sConvertExpressionToMetricsSQLResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ResolveMetricsViewFilterExpressionResponseValidationError{}
+var _ error = ConvertExpressionToMetricsSQLResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -10894,7 +10892,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ResolveMetricsViewFilterExpressionResponseValidationError{}
+} = ConvertExpressionToMetricsSQLResponseValidationError{}
 
 // Validate checks the field values on ResolveCanvasRequest with the rules
 // defined in the proto definition for this message. If any rules are

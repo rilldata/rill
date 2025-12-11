@@ -3949,9 +3949,9 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
 }
 
 /**
- * @generated from message rill.runtime.v1.ResolveMetricsViewFilterExpressionRequest
+ * @generated from message rill.runtime.v1.ConvertExpressionToMetricsSQLRequest
  */
-export class ResolveMetricsViewFilterExpressionRequest extends Message<ResolveMetricsViewFilterExpressionRequest> {
+export class ConvertExpressionToMetricsSQLRequest extends Message<ConvertExpressionToMetricsSQLRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3962,39 +3962,39 @@ export class ResolveMetricsViewFilterExpressionRequest extends Message<ResolveMe
    */
   expression?: Expression;
 
-  constructor(data?: PartialMessage<ResolveMetricsViewFilterExpressionRequest>) {
+  constructor(data?: PartialMessage<ConvertExpressionToMetricsSQLRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ResolveMetricsViewFilterExpressionRequest";
+  static readonly typeName = "rill.runtime.v1.ConvertExpressionToMetricsSQLRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "expression", kind: "message", T: Expression },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveMetricsViewFilterExpressionRequest {
-    return new ResolveMetricsViewFilterExpressionRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConvertExpressionToMetricsSQLRequest {
+    return new ConvertExpressionToMetricsSQLRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionRequest {
-    return new ResolveMetricsViewFilterExpressionRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLRequest {
+    return new ConvertExpressionToMetricsSQLRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionRequest {
-    return new ResolveMetricsViewFilterExpressionRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLRequest {
+    return new ConvertExpressionToMetricsSQLRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ResolveMetricsViewFilterExpressionRequest | PlainMessage<ResolveMetricsViewFilterExpressionRequest> | undefined, b: ResolveMetricsViewFilterExpressionRequest | PlainMessage<ResolveMetricsViewFilterExpressionRequest> | undefined): boolean {
-    return proto3.util.equals(ResolveMetricsViewFilterExpressionRequest, a, b);
+  static equals(a: ConvertExpressionToMetricsSQLRequest | PlainMessage<ConvertExpressionToMetricsSQLRequest> | undefined, b: ConvertExpressionToMetricsSQLRequest | PlainMessage<ConvertExpressionToMetricsSQLRequest> | undefined): boolean {
+    return proto3.util.equals(ConvertExpressionToMetricsSQLRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.ResolveMetricsViewFilterExpressionResponse
+ * @generated from message rill.runtime.v1.ConvertExpressionToMetricsSQLResponse
  */
-export class ResolveMetricsViewFilterExpressionResponse extends Message<ResolveMetricsViewFilterExpressionResponse> {
+export class ConvertExpressionToMetricsSQLResponse extends Message<ConvertExpressionToMetricsSQLResponse> {
   /**
    * The SQL filter string representation of the expression.
    *
@@ -4002,31 +4002,31 @@ export class ResolveMetricsViewFilterExpressionResponse extends Message<ResolveM
    */
   sql = "";
 
-  constructor(data?: PartialMessage<ResolveMetricsViewFilterExpressionResponse>) {
+  constructor(data?: PartialMessage<ConvertExpressionToMetricsSQLResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ResolveMetricsViewFilterExpressionResponse";
+  static readonly typeName = "rill.runtime.v1.ConvertExpressionToMetricsSQLResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveMetricsViewFilterExpressionResponse {
-    return new ResolveMetricsViewFilterExpressionResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConvertExpressionToMetricsSQLResponse {
+    return new ConvertExpressionToMetricsSQLResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionResponse {
-    return new ResolveMetricsViewFilterExpressionResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLResponse {
+    return new ConvertExpressionToMetricsSQLResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveMetricsViewFilterExpressionResponse {
-    return new ResolveMetricsViewFilterExpressionResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLResponse {
+    return new ConvertExpressionToMetricsSQLResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ResolveMetricsViewFilterExpressionResponse | PlainMessage<ResolveMetricsViewFilterExpressionResponse> | undefined, b: ResolveMetricsViewFilterExpressionResponse | PlainMessage<ResolveMetricsViewFilterExpressionResponse> | undefined): boolean {
-    return proto3.util.equals(ResolveMetricsViewFilterExpressionResponse, a, b);
+  static equals(a: ConvertExpressionToMetricsSQLResponse | PlainMessage<ConvertExpressionToMetricsSQLResponse> | undefined, b: ConvertExpressionToMetricsSQLResponse | PlainMessage<ConvertExpressionToMetricsSQLResponse> | undefined): boolean {
+    return proto3.util.equals(ConvertExpressionToMetricsSQLResponse, a, b);
   }
 }
 

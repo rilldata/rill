@@ -10986,8 +10986,6 @@ func (m *DefaultMetricsSQLFilter) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Sql
-
 	if all {
 		switch v := interface{}(m.GetExpression()).(type) {
 		case interface{ ValidateAll() error }:

@@ -5086,12 +5086,7 @@ export class CanvasPreset extends Message<CanvasPreset> {
  */
 export class DefaultMetricsSQLFilter extends Message<DefaultMetricsSQLFilter> {
   /**
-   * @generated from field: string sql = 1;
-   */
-  sql = "";
-
-  /**
-   * @generated from field: rill.runtime.v1.Expression expression = 2;
+   * @generated from field: rill.runtime.v1.Expression expression = 1;
    */
   expression?: Expression;
 
@@ -5103,8 +5098,7 @@ export class DefaultMetricsSQLFilter extends Message<DefaultMetricsSQLFilter> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.DefaultMetricsSQLFilter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "expression", kind: "message", T: Expression },
+    { no: 1, name: "expression", kind: "message", T: Expression },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DefaultMetricsSQLFilter {

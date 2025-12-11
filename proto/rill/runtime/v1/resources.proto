@@ -863,8 +863,7 @@ message CanvasPreset {
 }
 
 message DefaultMetricsSQLFilter {
-  string sql = 1;
-  Expression expression = 2;
+  Expression expression = 1;
 }
 
 // API defines a custom operation for querying data stored in Rill.

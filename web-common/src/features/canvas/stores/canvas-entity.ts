@@ -7,7 +7,7 @@ import {
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  queryServiceResolveMetricsViewFilterExpression,
+  queryServiceConvertExpressionToMetricsSQL,
   V1ExploreComparisonMode,
   type V1CanvasPreset,
   type V1CanvasSpec,
@@ -392,7 +392,7 @@ export class CanvasEntity {
             parsed.where,
           ],
           queryFn: () =>
-            queryServiceResolveMetricsViewFilterExpression(this.instanceId, {
+            queryServiceConvertExpressionToMetricsSQL(this.instanceId, {
               expression: parsed.where,
             }),
         });

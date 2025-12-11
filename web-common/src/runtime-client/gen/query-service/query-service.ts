@@ -28,6 +28,7 @@ import type {
   QueryServiceColumnTimeRangeParams,
   QueryServiceColumnTimeSeriesBody,
   QueryServiceColumnTopKBody,
+  QueryServiceConvertExpressionToMetricsSQLBody,
   QueryServiceExportBody,
   QueryServiceExportReportBody,
   QueryServiceMetricsViewAggregationBody,
@@ -46,7 +47,6 @@ import type {
   QueryServiceQueryBody,
   QueryServiceResolveCanvasBody,
   QueryServiceResolveComponentBody,
-  QueryServiceResolveMetricsViewFilterExpressionBody,
   QueryServiceResolveTemplatedStringBody,
   QueryServiceTableCardinalityParams,
   QueryServiceTableColumnsParams,
@@ -62,6 +62,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1ColumnTimeSeriesResponse,
   V1ColumnTopKResponse,
+  V1ConvertExpressionToMetricsSQLResponse,
   V1ExportReportResponse,
   V1ExportResponse,
   V1MetricsViewAggregationResponse,
@@ -78,7 +79,6 @@ import type {
   V1QueryResponse,
   V1ResolveCanvasResponse,
   V1ResolveComponentResponse,
-  V1ResolveMetricsViewFilterExpressionResponse,
   V1ResolveTemplatedStringResponse,
   V1TableCardinalityResponse,
   V1TableColumnsResponse,
@@ -779,111 +779,95 @@ export const createQueryServiceExport = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
+ * @summary ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
  */
-export const queryServiceResolveMetricsViewFilterExpression = (
+export const queryServiceConvertExpressionToMetricsSQL = (
   instanceId: string,
-  queryServiceResolveMetricsViewFilterExpressionBody: QueryServiceResolveMetricsViewFilterExpressionBody,
+  queryServiceConvertExpressionToMetricsSQLBody: QueryServiceConvertExpressionToMetricsSQLBody,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ResolveMetricsViewFilterExpressionResponse>({
+  return httpClient<V1ConvertExpressionToMetricsSQLResponse>({
     url: `/v1/instances/${instanceId}/queries/filter-expression/resolve`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceResolveMetricsViewFilterExpressionBody,
+    data: queryServiceConvertExpressionToMetricsSQLBody,
     signal,
   });
 };
 
-export const getQueryServiceResolveMetricsViewFilterExpressionMutationOptions =
-  <TError = ErrorType<RpcStatus>, TContext = unknown>(options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<
-        ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>
-      >,
-      TError,
-      {
-        instanceId: string;
-        data: QueryServiceResolveMetricsViewFilterExpressionBody;
-      },
-      TContext
-    >;
-  }): CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>>,
+export const getQueryServiceConvertExpressionToMetricsSQLMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
     TError,
-    {
-      instanceId: string;
-      data: QueryServiceResolveMetricsViewFilterExpressionBody;
-    },
+    { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody },
     TContext
-  > => {
-    const mutationKey = ["queryServiceResolveMetricsViewFilterExpression"];
-    const { mutation: mutationOptions } = options
-      ? options.mutation &&
-        "mutationKey" in options.mutation &&
-        options.mutation.mutationKey
-        ? options
-        : { ...options, mutation: { ...options.mutation, mutationKey } }
-      : { mutation: { mutationKey } };
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+  TError,
+  { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody },
+  TContext
+> => {
+  const mutationKey = ["queryServiceConvertExpressionToMetricsSQL"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
 
-    const mutationFn: MutationFunction<
-      Awaited<
-        ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>
-      >,
-      {
-        instanceId: string;
-        data: QueryServiceResolveMetricsViewFilterExpressionBody;
-      }
-    > = (props) => {
-      const { instanceId, data } = props ?? {};
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+    { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
 
-      return queryServiceResolveMetricsViewFilterExpression(instanceId, data);
-    };
-
-    return { mutationFn, ...mutationOptions };
+    return queryServiceConvertExpressionToMetricsSQL(instanceId, data);
   };
 
-export type QueryServiceResolveMetricsViewFilterExpressionMutationResult =
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceConvertExpressionToMetricsSQLMutationResult =
   NonNullable<
-    Awaited<ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>>
+    Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>
   >;
-export type QueryServiceResolveMetricsViewFilterExpressionMutationBody =
-  QueryServiceResolveMetricsViewFilterExpressionBody;
-export type QueryServiceResolveMetricsViewFilterExpressionMutationError =
+export type QueryServiceConvertExpressionToMetricsSQLMutationBody =
+  QueryServiceConvertExpressionToMetricsSQLBody;
+export type QueryServiceConvertExpressionToMetricsSQLMutationError =
   ErrorType<RpcStatus>;
 
 /**
- * @summary ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
+ * @summary ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
  */
-export const createQueryServiceResolveMetricsViewFilterExpression = <
+export const createQueryServiceConvertExpressionToMetricsSQL = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<
-        ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>
-      >,
+      Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
       TError,
       {
         instanceId: string;
-        data: QueryServiceResolveMetricsViewFilterExpressionBody;
+        data: QueryServiceConvertExpressionToMetricsSQLBody;
       },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof queryServiceResolveMetricsViewFilterExpression>>,
+  Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
   TError,
-  {
-    instanceId: string;
-    data: QueryServiceResolveMetricsViewFilterExpressionBody;
-  },
+  { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody },
   TContext
 > => {
   const mutationOptions =
-    getQueryServiceResolveMetricsViewFilterExpressionMutationOptions(options);
+    getQueryServiceConvertExpressionToMetricsSQLMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

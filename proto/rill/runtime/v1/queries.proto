@@ -170,8 +170,8 @@ service QueryService {
     };
   }
 
-  // ResolveMetricsViewFilterExpression converts a filter expression to a SQL filter string.
-  rpc ResolveMetricsViewFilterExpression(ResolveMetricsViewFilterExpressionRequest) returns (ResolveMetricsViewFilterExpressionResponse) {
+  // ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+  rpc ConvertExpressionToMetricsSQL(ConvertExpressionToMetricsSQLRequest) returns (ConvertExpressionToMetricsSQLResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/filter-expression/resolve",
       body: "*"
@@ -924,12 +924,12 @@ message MetricsViewAnnotationsResponse {
   repeated Annotation rows = 1;
 }
 
-message ResolveMetricsViewFilterExpressionRequest {
+message ConvertExpressionToMetricsSQLRequest {
   string instance_id = 1;
   Expression expression = 2;
 }
 
-message ResolveMetricsViewFilterExpressionResponse {
+message ConvertExpressionToMetricsSQLResponse {
   // The SQL filter string representation of the expression.
   string sql = 1;
 }

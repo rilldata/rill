@@ -755,6 +755,11 @@ export interface V1Conversation {
   messages?: V1Message[];
 }
 
+export interface V1ConvertExpressionToMetricsSQLResponse {
+  /** The SQL filter string representation of the expression. */
+  sql?: string;
+}
+
 export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
@@ -794,7 +799,6 @@ export interface V1DatabaseSchemaInfo {
 }
 
 export interface V1DefaultMetricsSQLFilter {
-  sql?: string;
   expression?: V1Expression;
 }
 
@@ -2142,11 +2146,6 @@ export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
-export interface V1ResolveMetricsViewFilterExpressionResponse {
-  /** The SQL filter string representation of the expression. */
-  sql?: string;
-}
-
 export interface V1ResolveTemplatedStringResponse {
   body?: string;
 }
@@ -2830,7 +2829,7 @@ Only used if include_header is true. */
   executionTime?: string;
 };
 
-export type QueryServiceResolveMetricsViewFilterExpressionBody = {
+export type QueryServiceConvertExpressionToMetricsSQLBody = {
   expression?: V1Expression;
 };
 

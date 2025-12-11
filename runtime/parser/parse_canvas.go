@@ -49,7 +49,6 @@ type CanvasYAML struct {
 		} `yaml:"items"`
 	}
 	Security   *SecurityPolicyYAML `yaml:"security"`
-
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -391,7 +390,6 @@ func parseFilterExpressions(filterMap map[string]string) (map[string]*runtimev1.
 
 		result[key] = &runtimev1.DefaultMetricsSQLFilter{
 			Expression: converted,
-			Sql:        filterStr,
 		}
 	}
 

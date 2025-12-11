@@ -649,8 +649,8 @@ type annotation struct {
 	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
-// ResolveMetricsViewFilterExpression implements QueryService.
-func (s *Server) ResolveMetricsViewFilterExpression(ctx context.Context, req *runtimev1.ResolveMetricsViewFilterExpressionRequest) (*runtimev1.ResolveMetricsViewFilterExpressionResponse, error) {
+// ConvertExpressionToMetricsSQL implements QueryService.
+func (s *Server) ConvertExpressionToMetricsSQL(ctx context.Context, req *runtimev1.ConvertExpressionToMetricsSQLRequest) (*runtimev1.ConvertExpressionToMetricsSQLResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
@@ -668,7 +668,7 @@ func (s *Server) ResolveMetricsViewFilterExpression(ctx context.Context, req *ru
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.ResolveMetricsViewFilterExpressionResponse{
+	return &runtimev1.ConvertExpressionToMetricsSQLResponse{
 		Sql: sql,
 	}, nil
 }
