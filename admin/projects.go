@@ -395,7 +395,6 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		err2 := s.TeardownDeployment(ctx, newDepl)
 		return nil, multierr.Combine(err, err2)
 	}
-<<<<<<< HEAD
 	// Delete old prod deployment if exists
 	if prevDepl != nil {
 		err := s.TeardownDeployment(ctx, prevDepl)
@@ -403,8 +402,6 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
-=======
->>>>>>> cf3774736 (feat: Custom branch and editable flags for dev deployments)
 
 	return proj, nil
 }
