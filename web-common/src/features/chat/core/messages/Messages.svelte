@@ -46,16 +46,35 @@
   $: isConversationEmpty =
     ($getConversationQuery.data?.messages?.length ?? 0) === 0;
 
-  // Auto-scroll to bottom when messages change or loading state changes
+  // Track previous block count to detect new content
+  let previousBlockCount = 0;
+
+  // Check if user is near the bottom of a scroll container
+  function isNearBottom(element: Element, threshold = 100): boolean {
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    return scrollHeight - scrollTop - clientHeight <= threshold;
+  }
+
+  function scrollToBottom(element: Element) {
+    element.scrollTop = element.scrollHeight;
+  }
+
+  // Auto-scroll behavior:
+  // - Always scroll when new blocks are added (new message sent or response started)
+  // - Only scroll during streaming if user is near the bottom (respect scroll position)
   afterUpdate(() => {
+    const currentBlockCount = blocks.length;
+    const hasNewBlocks = currentBlockCount > previousBlockCount;
+    previousBlockCount = currentBlockCount;
+
     if (messagesContainer && layout === "sidebar") {
-      // For sidebar layout, scroll the messages container
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      if (hasNewBlocks || isNearBottom(messagesContainer)) {
+        scrollToBottom(messagesContainer);
+      }
     } else if (layout === "fullpage") {
-      // For fullpage layout, scroll the parent wrapper
       const parentWrapper = messagesContainer.closest(".chat-messages-wrapper");
-      if (parentWrapper) {
-        parentWrapper.scrollTop = parentWrapper.scrollHeight;
+      if (parentWrapper && (hasNewBlocks || isNearBottom(parentWrapper))) {
+        scrollToBottom(parentWrapper);
       }
     }
   });
