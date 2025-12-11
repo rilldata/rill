@@ -294,9 +294,7 @@ function fromExploreUrlParams(
       preset.exploreLeaderboardMeasures;
   }
 
-  if (
-    preset.exploreLeaderboardShowContextForAllMeasures !== undefined
-  ) {
+  if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
     partialExploreState.leaderboardShowContextForAllMeasures =
       preset.exploreLeaderboardShowContextForAllMeasures;
   }

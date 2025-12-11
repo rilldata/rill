@@ -183,9 +183,7 @@ export function convertURLToExplorePreset(
   }
 
   if (
-    searchParams.has(
-      ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
-    )
+    searchParams.has(ExploreStateURLParams.LeaderboardShowContextForAllMeasures)
   ) {
     const rawValue = searchParams.get(
       ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
