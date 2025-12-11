@@ -338,6 +338,46 @@ export function getSmallestGrainFromISODuration(
   });
 }
 
+export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "7d as of latest/d",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "4w as of latest/w",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "3M as of latest/M",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "4Q as of latest/Q",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "5y as of latest/Y",
+};
+
+export function getRangePrecision(rillTime: RillTime) {
+  const asOfSnap = rillTime.asOfLabel?.snap;
+
+  const asOfSnapV1Grain = GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
+  const rangeV1Grain = rillTime.rangeGrain;
+  const intervalV1Grain = rillTime.interval.getGrain();
+
+  return getSmallestGrain([asOfSnapV1Grain, rangeV1Grain, intervalV1Grain]);
+}
+
+export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
+  if (grains.length === 0) {
+    return undefined;
+  }
+
+  return grains.reduce(
+    (smallest, current) => {
+      if (!current) return smallest;
+      if (!smallest) return current;
+      return V1TimeGrainToOrder[current] < V1TimeGrainToOrder[smallest]
+        ? current
+        : smallest;
+    },
+    undefined as V1TimeGrain | undefined,
+  );
+}
+
 export function getAggregationGrain(rillTime: RillTime | undefined) {
   if (!rillTime) return undefined;
 
@@ -367,21 +407,4 @@ export function getTruncationGrain(rillTime: RillTime | undefined) {
   }
 
   return undefined;
-}
-
-export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
-  if (grains.length === 0) {
-    return undefined;
-  }
-
-  return grains.reduce(
-    (smallest, current) => {
-      if (!current) return smallest;
-      if (!smallest) return current;
-      return V1TimeGrainToOrder[current] < V1TimeGrainToOrder[smallest]
-        ? current
-        : smallest;
-    },
-    undefined as V1TimeGrain | undefined,
-  );
 }

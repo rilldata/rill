@@ -45,13 +45,13 @@
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
-  export let minDate: DateTime;
-  export let maxDate: DateTime;
+  export let minDate: DateTime<true> | undefined;
+  export let maxDate: DateTime<true> | undefined;
   export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
@@ -99,7 +99,7 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
+  $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
 
   $: smallestTimeGrainOrder = getGrainOrder(
     smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
@@ -182,6 +182,7 @@
     asOf: string | undefined,
     zone: string,
   ): DateTime | undefined {
+    if (!maxDate) return DateTime.now().setZone(zone);
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
@@ -253,7 +254,9 @@
       </Tooltip.Trigger>
 
       <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <PrimaryRangeTooltip {timeString} {interval} />
+        {#if interval}
+          <PrimaryRangeTooltip {timeString} {interval} />
+        {/if}
       </Tooltip.Content>
     </Tooltip.Root>
   </Popover.Trigger>
@@ -403,7 +406,7 @@
                   {availableTimeZones}
                   activeTimeZone={zone}
                   referencePoint={dateTimeAnchor ??
-                    interval.end ??
+                    interval?.end ??
                     DateTime.now()}
                   onSelectTimeZone={(z) => {
                     onSelectTimeZone(z);

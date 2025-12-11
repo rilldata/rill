@@ -13,7 +13,6 @@ import {
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import { getLastUsedMetricsViewNameStore } from "@rilldata/web-common/features/chat/core/context/get-last-used-metrics-view.ts";
-import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 
 /**
@@ -121,11 +120,9 @@ export function getInlineChatContextOptions() {
  */
 export function getInlineChatContextFilteredOptions(
   searchTextStore: Readable<string>,
-  conversationManager: ConversationManager,
 ) {
   const optionsStore = getInlineChatContextOptions();
-  const lastUsedMetricsViewStore =
-    getLastUsedMetricsViewNameStore(conversationManager);
+  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
   const activeMetricsViewStore = getActiveMetricsViewNameStore();
 
   return derived(
