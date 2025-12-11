@@ -9,7 +9,6 @@
   import type { FilterState } from "../../stores/filter-state";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
-  import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
 
   export let id: string;
   export let canvasName: string;
@@ -24,7 +23,7 @@
 
   $: ({
     canvasEntity: {
-      filterManager: { scopedDimensionsStore, scopedMeasuresStore },
+      filterManager: { dimensionsForMetricsView, measuresForMetricsView },
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -53,11 +52,21 @@
 
   $: localFiltersEnabled = !!urlFormat?.length || localFiltersEnabledOverride;
 
-  $: allDimensions = $scopedDimensionsStore.get(metricsView)!;
-  $: allSimpleMeasures = $scopedMeasuresStore.get(metricsView)!;
+  $: allDimensions = $dimensionsForMetricsView.get(metricsView);
+  $: allSimpleMeasures = $measuresForMetricsView.get(metricsView);
 
-  $: dimensionArray = Array.from(allDimensions.values()).map(
-    (d) => d.get(metricsView) as MetricsViewSpecDimension,
+  $: dimensionArray = Array.from(allDimensions?.values() ?? []);
+
+  $: remappedDimensions = new Map(
+    Array.from(allDimensions?.entries() ?? []).map(([id, dim]) => {
+      return [id, new Map([[metricsView, dim]])];
+    }),
+  );
+
+  $: remappedMeasures = new Map(
+    Array.from(allSimpleMeasures?.entries() ?? []).map(([id, measure]) => {
+      return [id, new Map([[metricsView, measure]])];
+    }),
   );
 
   function dimensionHasFilter(dimensionName: string): boolean {
@@ -105,8 +114,8 @@
       <InputLabel small label="Filters" {id} />
 
       <CanvasFilterButton
-        {allDimensions}
-        filteredSimpleMeasures={allSimpleMeasures}
+        allDimensions={remappedDimensions}
+        filteredSimpleMeasures={remappedMeasures}
         addBorder={false}
         {dimensionHasFilter}
         {measureHasFilter}

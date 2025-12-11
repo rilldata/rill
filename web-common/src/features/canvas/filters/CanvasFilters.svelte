@@ -46,7 +46,7 @@
         },
         clearAllFilters,
       },
-      metricsView: { allDimensions },
+
       timeManager: {
         state: {
           comparisonIntervalStore,
@@ -251,7 +251,7 @@
 
         <MeasureFilter
           {filterData}
-          allDimensions={filterData.dimensions || $allDimensions}
+          allDimensions={filterData.dimensions ?? []}
           openOnMount={temporaryFilterKeys.has(id)}
           onRemove={async () => {
             await removeMeasureFilter(

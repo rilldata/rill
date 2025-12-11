@@ -152,10 +152,10 @@ export class FilterState {
     }
 
     const dimensionMap =
-      this.manager.metricsViewNameDimensionMap.get(this.metricsViewName) ??
+      get(this.manager.dimensionsForMetricsView).get(this.metricsViewName) ??
       new Map<string, MetricsViewSpecDimension>();
     const measureMap =
-      this.manager.metricsViewNameMeasureMap.get(this.metricsViewName) ??
+      get(this.manager.measuresForMetricsView).get(this.metricsViewName) ??
       new Map<string, MetricsViewSpecMeasure>();
 
     const processed = processExpression({
@@ -433,6 +433,8 @@ function processExpression({
     measureMap,
     dimensionThresholdFilters,
   );
+
+  const allDimensions = Array.from(dimensionMap.values());
   temporaryFilterKeys.forEach((key) => {
     if (dimensionFilters.has(key)) {
       temporaryFilterKeys.delete(key);
@@ -459,7 +461,7 @@ function processExpression({
     if (measure) {
       measureFilters.set(key, {
         dimensionName: "",
-        dimensions: undefined,
+        dimensions: allDimensions,
         name: key,
         label: measure.displayName ?? "",
         pinned: false,

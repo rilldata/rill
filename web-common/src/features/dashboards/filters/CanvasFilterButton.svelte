@@ -9,13 +9,20 @@
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "./getDisplayName";
+  import type { MetricsViewName } from "../../canvas/stores/filter-manager";
   import type {
-    DimensionLookup,
-    MeasureLookup,
-  } from "../../canvas/stores/filter-manager";
+    MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
+  } from "@rilldata/web-common/runtime-client";
 
-  export let allDimensions: DimensionLookup;
-  export let filteredSimpleMeasures: MeasureLookup;
+  export let allDimensions: Map<
+    string,
+    Map<MetricsViewName, MetricsViewSpecDimension>
+  >;
+  export let filteredSimpleMeasures: Map<
+    string,
+    Map<MetricsViewName, MetricsViewSpecMeasure>
+  >;
   export let addBorder = true;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let dimensionHasFilter: (dimensionName: string) => boolean;
