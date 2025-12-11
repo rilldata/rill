@@ -91,11 +91,10 @@ export class CircularChartProvider {
     const topNColorQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const instanceId = $runtime.instanceId;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!colorDimensionName &&
           config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort);
@@ -127,11 +126,10 @@ export class CircularChartProvider {
     const totalQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           !!showTotal &&
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.measure?.field;
 
         const totalWhere = getFilterWithNullHandling(where, config.color);
@@ -158,11 +156,10 @@ export class CircularChartProvider {
     const queryOptionsStore = derived(
       [runtime, timeAndFilterStore, topNColorQuery, totalQuery],
       ([$runtime, $timeAndFilterStore, $topNColorQuery, $totalQuery]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort)
