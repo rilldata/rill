@@ -1,4 +1,4 @@
-package project
+package deployment
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentStartCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeploymentShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
-	startCmd := &cobra.Command{
-		Use:   "start [<project>] <branch>",
+	showCmd := &cobra.Command{
+		Use:   "show [<project>] <branch>",
 		Args:  cobra.RangeArgs(1, 2),
-		Short: "Start a deployment by branch",
+		Short: "Show deployment details by branch",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var branch string
 			if len(args) == 1 {
@@ -67,31 +67,14 @@ func DeploymentStartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed", branch, project)
 			}
 
-			deployment := matchingDeployments[0]
-
-			ch.PrintfBold("Starting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
-
-			startResp, err := client.StartDeployment(cmd.Context(), &adminv1.StartDeploymentRequest{
-				DeploymentId: deployment.Id,
-			})
-			if err != nil {
-				return err
-			}
-
-			ch.PrintfSuccess("Deployment started successfully!\n\n")
-			ch.Printf("Deployment ID: %s\n", startResp.Deployment.Id)
-			ch.Printf("Branch: %s\n", startResp.Deployment.Branch)
-			ch.Printf("Status: %s\n", startResp.Deployment.Status.String())
-			if startResp.Deployment.RuntimeHost != "" {
-				ch.Printf("Runtime Host: %s\n", startResp.Deployment.RuntimeHost)
-			}
+			ch.PrintDeployments([]*adminv1.Deployment{matchingDeployments[0]})
 
 			return nil
 		},
 	}
 
-	startCmd.Flags().StringVar(&project, "project", "", "Project name")
-	startCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	showCmd.Flags().StringVar(&project, "project", "", "Project name")
+	showCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
-	return startCmd
+	return showCmd
 }

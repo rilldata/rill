@@ -1,4 +1,4 @@
-package project
+package deployment
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 func DeploymentsListCmd(ch *cmdutil.Helper) *cobra.Command {
-	var project, path string
+	var project, path, environment string
 
 	listCmd := &cobra.Command{
 		Use:   "list [<project>]",
@@ -37,10 +37,14 @@ func DeploymentsListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("project name is required")
 			}
 
-			resp, err := client.ListDeployments(cmd.Context(), &adminv1.ListDeploymentsRequest{
+			req := &adminv1.ListDeploymentsRequest{
 				Org:     ch.Org,
 				Project: project,
-			})
+			}
+			if environment != "" {
+				req.Environment = environment
+			}
+			resp, err := client.ListDeployments(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
@@ -53,6 +57,7 @@ func DeploymentsListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd.Flags().StringVar(&project, "project", "", "Project name")
 	listCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	listCmd.Flags().StringVar(&environment, "environment", "", "Filter deployments by environment (prod/dev)")
 
 	return listCmd
 }

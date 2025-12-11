@@ -1,4 +1,4 @@
-package project
+package deployment
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func DeploymentCreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create [<project>] <branch>",
 		Args:  cobra.RangeArgs(1, 2),
-		Short: "Create a new dev deployment for a specific branch",
+		Short: "Create a new deployment for a specific branch",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var branch string
 			if len(args) == 1 {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rilldata/rill/cli/cmd/project/deployment"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(GitPushCmd(ch))
 	projectCmd.AddCommand(DeployCmd(ch))
 	projectCmd.AddCommand(TablesCmd(ch))
-	projectCmd.AddCommand(DeploymentsCmd(ch))
+	projectCmd.AddCommand(deployment.DeploymentsCmd(ch))
 
 	return projectCmd
 }
