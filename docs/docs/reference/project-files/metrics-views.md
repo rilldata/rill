@@ -82,6 +82,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`description`** - _[string]_ - a freeform text description of the dimension 
 
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty) 
+
   - **`column`** - _[string]_ - a categorical column 
 
   - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
@@ -101,6 +103,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
 
   - **`description`** - _[string]_ - a freeform text description of the measure 
+
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the measure (defaults to empty) 
 
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 

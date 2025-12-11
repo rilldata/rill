@@ -49,6 +49,7 @@ type MetricsViewYAML struct {
 		LookupValueColumn       string `yaml:"lookup_value_column"`
 		LookupDefaultExpression string `yaml:"lookup_default_expression"`
 		SmallestTimeGrain       string `yaml:"smallest_time_grain"`
+		Tags                    []string
 	}
 	Measures []*struct {
 		Name                string
@@ -66,6 +67,7 @@ type MetricsViewYAML struct {
 		Ignore              bool           `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 		TreatNullsAs        string         `yaml:"treat_nulls_as"`
+		Tags                []string
 	}
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
 	ParentMeasures   *FieldSelectorYAML `yaml:"parent_measures"`   // used when Parent is set
@@ -411,6 +413,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			LookupValueColumn:       dim.LookupValueColumn,
 			LookupDefaultExpression: dim.LookupDefaultExpression,
 			SmallestTimeGrain:       smallestTimeGrain,
+			Tags:                    dim.Tags,
 		})
 	}
 
@@ -574,6 +577,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			FormatD3Locale:      formatD3Locale,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 			TreatNullsAs:        measure.TreatNullsAs,
+			Tags:                measure.Tags,
 		})
 	}
 	if len(measures) == 0 && tmp.Parent == "" {
