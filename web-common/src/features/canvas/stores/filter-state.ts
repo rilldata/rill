@@ -301,10 +301,6 @@ export class FilterState {
 
     if (expr?.cond?.exprs?.length === 1) {
       wf.cond?.exprs?.splice(exprIndex, 1);
-
-      if (keepPillVisible) {
-        // this.setTemporaryFilterName(dimensionName);
-      }
     }
 
     return getFilterParam(

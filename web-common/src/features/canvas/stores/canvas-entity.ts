@@ -38,7 +38,7 @@ import {
   isTableComponentType,
 } from "../components/util";
 import { FilterManager, flattenExpression } from "./filter-manager";
-import { getFilterParam } from "./metrics-view-filter";
+import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
 import { getComparisonTypeFromRangeString } from "./time-state";
 import { TimeManager } from "./time-manager";

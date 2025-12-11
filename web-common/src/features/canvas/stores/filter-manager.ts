@@ -21,9 +21,9 @@ import {
 } from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { goto } from "$app/navigation";
-import { FilterState } from "./metrics-view-filter";
+import { FilterState } from "./filter-state";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
-import type { ParsedFilters } from "./metrics-view-filter";
+import type { ParsedFilters } from "./filter-state";
 import { createAndExpression } from "../../dashboards/stores/filter-utils";
 
 // This should be deprecated eventually in favor of better support for variously formatted expressions

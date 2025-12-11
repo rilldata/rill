@@ -32,7 +32,7 @@ import type {
   SearchParamsStore,
 } from "../stores/canvas-entity";
 import { TimeState } from "../stores/time-state";
-import type { FilterState } from "../stores/metrics-view-filter";
+import type { FilterState } from "../stores/filter-state";
 import type { Readable } from "svelte/motion";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
@@ -195,16 +195,48 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
         const mvFilters = metricsViewFilters.get(this.metricsViewName);
 
+        let timeGrain = globalGrainStore;
+
+        let timeRange: V1TimeRange = {
+          start: globalInterval?.start.toISO(),
+          end: globalInterval?.end.toISO(),
+          timeZone,
+        };
+
+        let timeRangeState: TimeRangeState | undefined = {
+          timeStart: globalInterval?.start.toISO(),
+          timeEnd: globalInterval?.end.toISO(),
+        };
+
+        let comparisonTimeRange: V1TimeRange | undefined = {
+          start: globalComparisonInterval?.start.toISO(),
+          end: globalComparisonInterval?.end.toISO(),
+          timeZone,
+        };
+
+        let showTimeComparison = globalShowTimeComparison;
+
+        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+          globalComparisonInterval && {
+            comparisonTimeStart: globalComparisonInterval.start.toISO(),
+            comparisonTimeEnd: globalComparisonInterval.end.toISO(),
+            selectedComparisonTimeRange: {
+              start: globalComparisonInterval.start.toJSDate(),
+              end: globalComparisonInterval.end.toJSDate(),
+              name: globalComparisonRange,
+            },
+          };
+
         if (!mvFilters) {
           set({
-            timeRange: { start: "", end: "", timeZone: "UTC" },
+            timeRange: timeRange,
             where: undefined,
-            timeGrain: undefined,
-            hasTimeSeries: false,
-            comparisonTimeRange: undefined,
-            timeRangeState: undefined,
-            comparisonTimeRangeState: undefined,
-            showTimeComparison: false,
+            timeGrain: timeGrain,
+            hasTimeSeries: hasTimeSeries,
+            comparisonTimeRange: comparisonTimeRange,
+            timeRangeState: timeRangeState,
+            comparisonTimeRangeState: comparisonTimeRangeState,
+            showTimeComparison: showTimeComparison,
           });
           return;
         }
@@ -214,37 +246,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           const metricsView = canvasData.data?.metricsViews?.[metricsViewName];
           const dimensions = metricsView?.state?.validSpec?.dimensions ?? [];
           const measures = metricsView?.state?.validSpec?.measures ?? [];
-
-          let timeRange: V1TimeRange = {
-            start: globalInterval?.start.toISO(),
-            end: globalInterval?.end.toISO(),
-            timeZone,
-          };
-
-          let timeGrain = globalGrainStore;
-
-          let showTimeComparison = globalShowTimeComparison;
-
-          let comparisonTimeRange: V1TimeRange | undefined = {
-            start: globalComparisonInterval?.start.toISO(),
-            end: globalComparisonInterval?.end.toISO(),
-            timeZone,
-          };
-
-          let timeRangeState: TimeRangeState | undefined = {
-            timeStart: globalInterval?.start.toISO(),
-            timeEnd: globalInterval?.end.toISO(),
-          };
-          let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-            globalComparisonInterval && {
-              comparisonTimeStart: globalComparisonInterval.start.toISO(),
-              comparisonTimeEnd: globalComparisonInterval.end.toISO(),
-              selectedComparisonTimeRange: {
-                start: globalComparisonInterval.start.toJSDate(),
-                end: globalComparisonInterval.end.toJSDate(),
-                name: globalComparisonRange,
-              },
-            };
 
           if (componentSpec?.["time_filters"]) {
             timeRange = {
