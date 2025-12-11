@@ -143,11 +143,17 @@ function getLegacyISOTestCases(): TestCase[] {
 
 function getLegacyDAXTestCases(): TestCase[] {
   return [
-    ["rill-TD", "Today", false, undefined, undefined],
-    ["rill-WTD", "Week to Date", false, undefined, undefined],
-    ["rill-QTD", "Quarter to Date", false, undefined, undefined],
-    ["rill-MTD", "Month to Date", false, undefined, undefined],
-    ["rill-YTD", "Year to Date", false, undefined, undefined],
+    ["rill-TD", "Today", false, V1TimeGrain.TIME_GRAIN_HOUR, undefined],
+    ["rill-WTD", "Week to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    [
+      "rill-QTD",
+      "Quarter to Date",
+      false,
+      V1TimeGrain.TIME_GRAIN_WEEK,
+      undefined,
+    ],
+    ["rill-MTD", "Month to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    ["rill-YTD", "Year to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
 
     ["rill-PDC", "Yesterday", false, undefined, undefined],
     ["rill-PWC", "Previous week", false, undefined, undefined],
@@ -192,7 +198,7 @@ describe("rill time", () => {
         `2025-02-20T01:23:45Z,2025-07-15T02:34:50Z`,
         `Custom`,
         false,
-        undefined,
+        V1TimeGrain.TIME_GRAIN_SECOND,
         undefined,
       ],
 
