@@ -53,6 +53,7 @@ export interface MetricsViewSpecDimension {
   type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
+  tags?: string[];
   column?: string;
   expression?: string;
   unnest?: boolean;
@@ -87,6 +88,7 @@ export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
+  tags?: string[];
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
@@ -402,9 +404,6 @@ export interface V1CanvasItem {
   widthUnit?: string;
 }
 
-/**
- * Filter expressions as key-value pairs for the canvas.
- */
 export type V1CanvasPresetFilterExpr = {
   [key: string]: V1DefaultMetricsSQLFilter;
 };
@@ -417,7 +416,6 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonMode?: V1ExploreComparisonMode;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
-  /** Filter expressions as key-value pairs for the canvas. */
   filterExpr?: V1CanvasPresetFilterExpr;
 }
 

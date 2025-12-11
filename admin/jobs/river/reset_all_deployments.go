@@ -51,7 +51,7 @@ func (w *ResetAllDeploymentsWorker) Work(ctx context.Context, job *river.Job[Res
 }
 
 func (w *ResetAllDeploymentsWorker) resetAllDeploymentsForProject(ctx context.Context, proj *database.Project) error {
-	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", "")
 	if err != nil {
 		return err
 	}

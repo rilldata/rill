@@ -3306,6 +3306,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       column:
         type: string
       expression:
@@ -3358,6 +3362,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       expression:
         type: string
       type:
@@ -3862,7 +3870,10 @@ definitions:
         type: object
         additionalProperties:
           $ref: '#/definitions/v1DefaultMetricsSQLFilter'
-        description: Filter expressions as key-value pairs for the canvas.
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Valid Metrics SQL expression
   v1CanvasRow:
     type: object
     properties:
