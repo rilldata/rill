@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
+	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/publicurl"
@@ -117,6 +118,7 @@ func RootCmd(ch *cmdutil.Helper) *cobra.Command {
 		start.StartCmd(ch),
 		deploy.DeployCmd(ch),
 		project.ProjectCmd(ch),
+		initialize.InitCmd(ch),
 		chat.ChatCmd(ch),
 		query.QueryCmd(ch),
 		publicurl.PublicURLCmd(ch),
