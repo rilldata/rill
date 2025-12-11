@@ -811,7 +811,7 @@ message CanvasSpec {
   repeated CanvasRow rows = 18;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
-  // Pinned filters
+  // Array of dimension or measure names
   repeated string pinned_filters = 16;
 }
 
