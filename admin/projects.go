@@ -174,18 +174,18 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
-func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	impactsDeployments := (proj.ProdVersion != opts.ProdVersion) ||
-		(proj.ProdSlots != opts.ProdSlots) ||
-		(proj.Name != opts.Name) ||
-		(proj.Subpath != opts.Subpath) ||
-		(proj.ProdBranch != opts.ProdBranch) ||
-		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
-		!reflect.DeepEqual(proj.GitRemote, opts.GitRemote) ||
-		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID)
+func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
+	impactsDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
+		(oldProj.ProdSlots != opts.ProdSlots) ||
+		(oldProj.Name != opts.Name) ||
+		(oldProj.Subpath != opts.Subpath) ||
+		(oldProj.ProdBranch != opts.ProdBranch) ||
+		!reflect.DeepEqual(oldProj.Annotations, opts.Annotations) ||
+		!reflect.DeepEqual(oldProj.GitRemote, opts.GitRemote) ||
+		!reflect.DeepEqual(oldProj.GithubInstallationID, opts.GithubInstallationID) ||
+		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID)
 
-	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
+	proj, err := s.DB.UpdateProject(ctx, oldProj.ID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -195,6 +195,47 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	}
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
+
+	if oldProj.ProdBranch != opts.ProdBranch {
+		// check if there is an existing deployment for the new prod branch
+		depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID, "", opts.ProdBranch)
+		if err != nil {
+			return nil, err
+		}
+		if len(depls) > 0 {
+			for _, d := range depls {
+				if d.Environment != "prod" {
+					// dev deployments are deleted later in the UpdateDeploymentsForProject call
+					continue
+				}
+				// to avoid reconciling changes for the new prod branch directly update project to point to existing deployment
+				proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+					Name:                 proj.Name,
+					Description:          proj.Description,
+					Public:               proj.Public,
+					DirectoryName:        proj.DirectoryName,
+					Provisioner:          proj.Provisioner,
+					ArchiveAssetID:       proj.ArchiveAssetID,
+					GitRemote:            proj.GitRemote,
+					GithubInstallationID: proj.GithubInstallationID,
+					GithubRepoID:         proj.GithubRepoID,
+					ManagedGitRepoID:     proj.ManagedGitRepoID,
+					ProdVersion:          proj.ProdVersion,
+					ProdBranch:           proj.ProdBranch,
+					Subpath:              proj.Subpath,
+					ProdDeploymentID:     &d.ID,
+					ProdSlots:            proj.ProdSlots,
+					ProdTTLSeconds:       proj.ProdTTLSeconds,
+					DevSlots:             proj.DevSlots,
+					DevTTLSeconds:        proj.DevTTLSeconds,
+					Annotations:          proj.Annotations,
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
 
 	// TODO: changing prod related fields like slots, branch etc should only impact prod deployments, but for now we update all deployments
 	// NOTE: there is no way to change dev-slots right now

@@ -152,6 +152,14 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 				branch = p.ProdBranch
 			}
 
+			// delete any dev deployments for the prod branch to maintain one branch - one dev deployment mapping
+			if p.ProdBranch == d.Branch && d.Environment == "dev" {
+				err := s.TeardownDeployment(ctx, d)
+				if err != nil {
+					s.Logger.Warn("failed to teardown dev deployment for prod branch", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+				}
+				return nil
+			}
 			err := s.UpdateDeployment(ctx, d, branch)
 			if err != nil {
 				if ctx.Err() != nil {
