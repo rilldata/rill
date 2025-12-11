@@ -34,12 +34,12 @@ type Executor struct {
 	security    *runtime.ResolvedSecurity
 	priority    int
 
-	olap        drivers.OLAPStore
-	olapRelease func()
-	instanceCfg drivers.InstanceConfig
-
-	timestamps      map[string]metricsview.TimestampsResult
+	olap            drivers.OLAPStore
+	olapRelease     func()
+	instanceCfg     drivers.InstanceConfig
 	queryAttributes map[string]string
+
+	timestamps map[string]metricsview.TimestampsResult
 }
 
 // New creates a new Executor for the provided metrics view.
@@ -49,7 +49,12 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
 	}
 
-	instanceCfg, err := rt.InstanceConfig(ctx, instanceID)
+	inst, err := rt.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	instanceCfg, err := inst.Config()
 	if err != nil {
 		return nil, err
 	}
@@ -57,16 +62,11 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 	// Resolve query attributes once during initialization
 	var queryAttrs map[string]string
 	if len(mv.QueryAttributes) > 0 {
-		// Get instance for template data
-		inst, err := rt.Instance(ctx, instanceID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get instance for query attributes: %w", err)
-		}
-
+		// Prepare template data
 		td := parser.TemplateData{
 			Environment: inst.Environment,
-			Variables:   inst.ResolveVariables(false),
 			User:        userAttrs,
+			Variables:   inst.ResolveVariables(false),
 		}
 
 		// Resolve templates
@@ -74,7 +74,7 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		for key, template := range mv.QueryAttributes {
 			val, err := parser.ResolveTemplate(template, td, false)
 			if err != nil {
-				return nil, fmt.Errorf("failed to resolve query attribute %q: %w", key, err)
+				return nil, fmt.Errorf("failed to resolve templating in query attribute %q: %w", key, err)
 			}
 			queryAttrs[key] = val
 		}
@@ -90,8 +90,8 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 		olap:            olap,
 		olapRelease:     release,
 		instanceCfg:     instanceCfg,
-		timestamps:      make(map[string]metricsview.TimestampsResult),
 		queryAttributes: queryAttrs,
+		timestamps:      make(map[string]metricsview.TimestampsResult),
 	}, nil
 }
 
@@ -390,6 +390,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 			Query:            fmt.Sprintf("SELECT * FROM '%s'", path),
 			Priority:         e.priority,
 			ExecutionTimeout: defaultInteractiveTimeout,
+			QueryAttributes:  e.queryAttributes,
 		})
 		if err != nil {
 			_ = os.Remove(path)
@@ -867,9 +868,10 @@ END) as __rill_time_grain`)
 	}
 
 	res, err := olap.Query(ctx, &drivers.Statement{
-		Query:    b.String(),
-		Args:     args,
-		Priority: 0,
+		Query:           b.String(),
+		Args:            args,
+		Priority:        0,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return nil, err

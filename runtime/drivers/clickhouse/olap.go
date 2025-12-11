@@ -136,21 +136,35 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	if c.supportSettings {
-		if c.config.QuerySettingsOverride != "" {
-			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
-		} else {
-			stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
-			if c.config.QuerySettings != "" {
-				stmt.Query += ", " + c.config.QuerySettings
-			}
+		// Default settings
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"insert_distributed_sync":   1,
+			"prefer_global_in_and_join": 1,
+			"session_timezone":          "UTC",
+			"join_use_nulls":            1,
 		}
 
-		settings := make(map[string]any)
+		// Settings string to append to the query
+		var sqlSettings string
+		if c.config.QuerySettingsOverride != "" {
+			sqlSettings = c.config.QuerySettingsOverride
+			settings = map[string]any{} // Clear default settings if override is set
+		} else {
+			sqlSettings = c.config.QuerySettings
+		}
+		if sqlSettings != "" {
+			stmt.Query += "\n SETTINGS " + sqlSettings
+		}
+
+		// Add query attributes as settings
 		if len(stmt.QueryAttributes) > 0 {
 			for k, v := range stmt.QueryAttributes {
 				settings[k] = v
 			}
 		}
+
+		// Add settings to context
 		if len(settings) > 0 {
 			ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 		}

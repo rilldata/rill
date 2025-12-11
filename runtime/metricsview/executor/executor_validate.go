@@ -405,8 +405,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 		)
 	}
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:  query,
-		DryRun: true,
+		Query:           query,
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate dims and metrics: %w", err)
@@ -629,8 +630,9 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 
 	// Validate with a query if it's an expression
 	err = e.olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
-		DryRun: true,
+		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate expression for dimension %q: %w", d.Name, err)
@@ -641,8 +643,9 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 // validateMeasure validates a metrics view measure.
 func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m *runtimev1.MetricsViewSpec_Measure) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-		DryRun: true,
+		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	return err
 }

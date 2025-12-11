@@ -38,7 +38,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
-	t.Run("QueryAttributesSETTINGSInjection", func(t *testing.T) { testQueryAttributesSETTINGSInjection(t, olap) })
+	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -871,17 +871,16 @@ func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPSt
 	require.Equal(t, "added", results[1].Status)
 }
 
-func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) {
+func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 
 	t.Run("SingleQueryAttribute", func(t *testing.T) {
-		stmt := &drivers.Statement{
+		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT getSetting('max_threads') as max_threads",
 			QueryAttributes: map[string]string{
 				"max_threads": "1",
 			},
-		}
-		res, err := olap.Query(ctx, stmt)
+		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.True(t, res.Next())
@@ -893,15 +892,14 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 	})
 
 	t.Run("MultipleQueryAttributes", func(t *testing.T) {
-		stmt := &drivers.Statement{
+		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory, getSetting('max_execution_time') as max_exec_time",
 			QueryAttributes: map[string]string{
 				"max_threads":        "1",
 				"max_memory_usage":   "1000000",
 				"max_execution_time": "10",
 			},
-		}
-		res, err := olap.Query(ctx, stmt)
+		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.True(t, res.Next())
@@ -917,40 +915,35 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 	})
 
 	t.Run("EmptyQueryAttributes", func(t *testing.T) {
-		stmt := &drivers.Statement{
+		res, err := olap.Query(ctx, &drivers.Statement{
 			Query:           "SELECT 1",
 			QueryAttributes: map[string]string{},
-		}
-		res, err := olap.Query(ctx, stmt)
+		})
 		require.NoError(t, err)
-		// Ensure no custom settings are added beyond defaults
 		require.NotNil(t, res)
 		err = res.Close()
 		require.NoError(t, err)
 	})
 
 	t.Run("NilQueryAttributes", func(t *testing.T) {
-		stmt := &drivers.Statement{
+		res, err := olap.Query(ctx, &drivers.Statement{
 			Query:           "SELECT 1",
 			QueryAttributes: nil,
-		}
-		res, err := olap.Query(ctx, stmt)
+		})
 		require.NoError(t, err)
-		// Ensure no custom settings are added beyond defaults
 		require.NotNil(t, res)
 		err = res.Close()
 		require.NoError(t, err)
 	})
 
 	t.Run("QueryAttributeWithExistingPrefix", func(t *testing.T) {
-		stmt := &drivers.Statement{
+		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory",
 			QueryAttributes: map[string]string{
 				"max_threads":      "1",
 				"max_memory_usage": "1000000",
 			},
-		}
-		res, err := olap.Query(ctx, stmt)
+		})
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.True(t, res.Next())
@@ -963,14 +956,30 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		require.NoError(t, err)
 	})
 
-	t.Run("QueryAttributeWithoutPrefix", func(t *testing.T) {
-		stmt := &drivers.Statement{
-			Query: "SELECT id, value FROM test_attrs",
+	t.Run("CustomWithPrefix", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('test_custom')",
 			QueryAttributes: map[string]string{
-				"other_setting": "value",
+				"test_custom": "value", // The testclickhouse has `test_` configured as a valid custom setting prefix
 			},
-		}
-		_, err := olap.Query(ctx, stmt)
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var customSetting string
+		require.NoError(t, res.Scan(&customSetting))
+		require.Equal(t, "value", customSetting)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("CustomWithoutPrefix", func(t *testing.T) {
+		_, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('custom')",
+			QueryAttributes: map[string]string{
+				"custom": "value",
+			},
+		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "Unknown setting")
 	})

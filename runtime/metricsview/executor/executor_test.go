@@ -13,14 +13,16 @@ import (
 // TestResolveQueryAttributesTemplate verifies template expressions
 func TestResolveQueryAttributesTemplate(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"clickhouse"},
 		Files: map[string]string{
-			"rill.yaml": "olap_connector: duckdb",
+			"rill.yaml": "olap_connector: clickhouse",
 			"model.sql": `
-SELECT now() AS timestamp, 'publisher1' AS publisher
+SELECT CURRENT_TIMESTAMP AS timestamp, 'publisher1' AS publisher
 `,
 			"metrics.yaml": `
 type: metrics_view
 model: model
+timeseries: timestamp
 dimensions:
   - column: publisher
 measures:

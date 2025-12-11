@@ -3,7 +3,8 @@
   <access_control_improvements>
     <select_from_information_schema_requires_grant>true</select_from_information_schema_requires_grant>
   </access_control_improvements>
-  <!-- Enable custom settings with SQL_ prefix for testing -->
-  <custom_settings_prefixes>test_</custom_settings_prefixes>
   <allow_no_password>1</allow_no_password>
+
+  <!-- Used for testing custom query attributes in metrics views -->
+  <custom_settings_prefixes>test_</custom_settings_prefixes>
 </clickhouse>
