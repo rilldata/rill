@@ -331,7 +331,6 @@ export function fromTimeRangesParams(
   }
 
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
-    console.log("tg present");
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
 
     if (tg in FromURLParamTimeGrainMap) {
@@ -339,18 +338,6 @@ export function fromTimeRangesParams(
     } else {
       errors.push(getSingleFieldError("time grain", tg));
     }
-  } else {
-    // try {
-    //   const parsed = parseRillTime(preset.timeRange ?? "");
-    //   const grain = getAggregationGrain(parsed);
-    //   if (grain && grain in ToURLParamTimeGrainMapMap) {
-    //     preset.timeGrain = ToURLParamTimeGrainMapMap[grain];
-    //   } else {
-    //     errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
-    //   }
-    // } catch {
-    //   // ignore
-    // }
   }
 
   if (searchParams.has(ExploreStateURLParams.ComparisonDimension)) {
