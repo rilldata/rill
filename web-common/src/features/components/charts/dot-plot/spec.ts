@@ -21,7 +21,9 @@ export function generateVLDotPlotSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   if (!config.y?.field || !config.x?.field) {
-    throw new Error("Dot plot requires both y (dimension) and x (measure) fields");
+    throw new Error(
+      "Dot plot requires both y (dimension) and x (measure) fields",
+    );
   }
 
   const spec = createMultiLayerBaseSpec();
@@ -227,4 +229,3 @@ export function generateVLDotPlotSpec(
 
   return spec;
 }
-

@@ -128,20 +128,25 @@ export class DotPlotChartComponent extends BaseChart<DotPlotCanvasChartSpec> {
       (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
     );
 
-    const randomMeasure = measures.length > 0
-      ? measures[Math.floor(Math.random() * measures.length)]?.name
-      : undefined;
+    const randomMeasure =
+      measures.length > 0
+        ? measures[Math.floor(Math.random() * measures.length)]?.name
+        : undefined;
 
-    const randomYDimension = dimensions.length > 0
-      ? dimensions[Math.floor(Math.random() * dimensions.length)]?.name
-      : undefined;
+    const randomYDimension =
+      dimensions.length > 0
+        ? dimensions[Math.floor(Math.random() * dimensions.length)]?.name
+        : undefined;
 
     const remainingDimensions = dimensions.filter(
       (d) => d.name !== randomYDimension,
     );
-    const randomDetailDimension = remainingDimensions.length > 0
-      ? remainingDimensions[Math.floor(Math.random() * remainingDimensions.length)]?.name
-      : undefined;
+    const randomDetailDimension =
+      remainingDimensions.length > 0
+        ? remainingDimensions[
+            Math.floor(Math.random() * remainingDimensions.length)
+          ]?.name
+        : undefined;
 
     return {
       metrics_view: metricsViewName,
@@ -178,4 +183,3 @@ export class DotPlotChartComponent extends BaseChart<DotPlotCanvasChartSpec> {
     return this.provider.getChartDomainValues();
   }
 }
-

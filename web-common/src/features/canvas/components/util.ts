@@ -161,9 +161,17 @@ export function createComponent(
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
-    return new ComponentClass(resource, parent, path) as BaseCanvasComponent<ComponentSpec>;
+    return new ComponentClass(
+      resource,
+      parent,
+      path,
+    ) as BaseCanvasComponent<ComponentSpec>;
   }
-  return new CartesianChartComponent(resource, parent, path) as BaseCanvasComponent<ComponentSpec>;
+  return new CartesianChartComponent(
+    resource,
+    parent,
+    path,
+  ) as BaseCanvasComponent<ComponentSpec>;
 }
 
 export function isCanvasComponentType(

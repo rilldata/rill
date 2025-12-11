@@ -329,4 +329,3 @@ export class DotPlotChartProvider {
     }
   }
 }
-
