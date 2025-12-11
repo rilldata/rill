@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/chcol"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse"
@@ -96,6 +96,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return ToValue(map[any]any(v), t)
 	case *chcol.JSON:
 		return ToValue(v.NestedMap(), t)
+	case chcol.JSON:
+		return ToValue(v.NestedMap(), t)
+	case *chcol.Variant:
+		return ToValue(v.Any(), t)
 	case chcol.Variant:
 		return ToValue(v.Any(), t)
 	case map[any]any:

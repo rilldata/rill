@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -68,10 +69,10 @@ explore:
 	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
 	require.NoError(t, err)
 	expectedTools := []string{
-		"list_metrics_views",
-		"get_metrics_view",
-		"query_metrics_view",
-		"query_metrics_view_summary",
+		ai.ListMetricsViewsName,
+		ai.GetMetricsViewName,
+		ai.QueryMetricsViewName,
+		ai.QueryMetricsViewSummaryName,
 	}
 	require.Len(t, tools.Tools, len(expectedTools))
 	for _, tool := range tools.Tools {
@@ -82,7 +83,7 @@ explore:
 	}
 
 	// Test metrics view listing
-	mvs, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: "list_metrics_views"})
+	mvs, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
 	require.NoError(t, err)
 	require.False(t, mvs.IsError)
 	mvsText := mvs.Content[0].(*mcp.TextContent).Text
@@ -90,6 +91,6 @@ explore:
 	require.Contains(t, mvsText, "mv2")
 
 	// Test that it handles missing parameters
-	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: "get_metrics_view"})
+	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.GetMetricsViewName})
 	require.ErrorContains(t, err, "missing properties")
 }

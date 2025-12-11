@@ -162,11 +162,26 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	// Validate or infer the smallest time grains for the default time dimension and for any additional time dimensions.
 	// We require the smallest time grain to be at least at second grain.
 	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
-	if e.metricsView.TimeDimension != "" {
+	if e.metricsView.TimeDimension != "" && res.TimeDimensionErr == nil {
 		// Find the smallest possible grain
 		var smallestPossibleGrain runtimev1.TimeGrain
+		var typeCode runtimev1.Type_Code
 		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
-		if ok && col.Type.Code != runtimev1.Type_CODE_DATE {
+		if ok {
+			typeCode = col.Type.Code
+		} else {
+			// Time dimension not found in the column list, find it in the defined dimension list
+			for _, d := range mv.Dimensions {
+				if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+					if d.DataType == nil {
+						break // data type discovery must have failed
+					}
+					typeCode = d.DataType.Code
+					break
+				}
+			}
+		}
+		if typeCode != runtimev1.Type_CODE_DATE {
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
 		} else {
 			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
@@ -644,12 +659,12 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 	}
 	types := make(map[string]*runtimev1.Type, len(schema.Fields))
 	for _, f := range schema.Fields {
-		types[f.Name] = f.Type
+		types[strings.ToLower(f.Name)] = f.Type
 	}
 
 	// Check that the measures are not strings
 	for i, m := range e.metricsView.Measures {
-		typ, ok := types[m.Name]
+		typ, ok := types[strings.ToLower(m.Name)]
 		if !ok {
 			// Don't error: schemas are not always reliable
 			continue
@@ -667,13 +682,34 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 
 	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
-		if typ, ok := types[d.Name]; ok {
+		// Find the dimension's data type, and infer the dimension type
+		var code runtimev1.Type_Code
+		typ, ok := types[strings.ToLower(d.Name)]
+		if ok {
+			code = typ.Code
 			d.DataType = typ
-		} // ignore dimensions that don't have a type in the schema
-		switch d.DataType.GetCode() {
-		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+		}
+
+		// Don't infer the dimension type if it's already set
+		if d.Type != runtimev1.MetricsViewSpec_DIMENSION_TYPE_UNSPECIFIED {
+			continue
+		}
+
+		// Infer the dimension type
+		switch code {
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME:
+			// TIMESTAMP and TIME types always default to the TIME dimension type
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case runtimev1.Type_CODE_UNSPECIFIED, runtimev1.Type_CODE_DATE:
+			// Unspecified types (e.g. if type detection failed) or DATE types only default to the TIME dimension type if they are the default time dimension.
+			// Otherwise they default to CATEGORICAL.
+			if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+			} else {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+			}
 		default:
+			// All other types default to CATEGORICAL
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 		}
 	}

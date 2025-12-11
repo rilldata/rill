@@ -99,12 +99,18 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	if cfg.MetricsNullFillingImplementation == "pushdown" && qry.TimeRange != nil && !qry.TimeRange.Start.IsZero() && !qry.TimeRange.End.IsZero() {
-		qry.Spine = &metricsview.Spine{
-			TimeRange: &metricsview.TimeSpine{
-				Start: qry.TimeRange.Start,
-				End:   qry.TimeRange.End,
-			},
+	nullImpl := cfg.MetricsNullFillingImplementation
+
+	if nullImpl == "pushdown" {
+		if qry.TimeRange != nil && !qry.TimeRange.Start.IsZero() && !qry.TimeRange.End.IsZero() {
+			qry.Spine = &metricsview.Spine{
+				TimeRange: &metricsview.TimeSpine{
+					Start: qry.TimeRange.Start,
+					End:   qry.TimeRange.End,
+				},
+			}
+		} else {
+			nullImpl = "" // cannot be pushed down so use legacy method
 		}
 	}
 
@@ -125,7 +131,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer res.Close()
 
-	return q.populateResult(res, timeDim, mv.ValidSpec, cfg.MetricsNullFillingImplementation)
+	return q.populateResult(res, timeDim, mv.ValidSpec, nullImpl)
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

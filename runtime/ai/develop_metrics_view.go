@@ -22,6 +22,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const DevelopMetricsViewName = "develop_metrics_view"
+
 type DevelopMetricsView struct {
 	Runtime *runtime.Runtime
 }
@@ -29,8 +31,9 @@ type DevelopMetricsView struct {
 var _ Tool[*DevelopMetricsViewArgs, *DevelopMetricsViewResult] = (*DevelopMetricsView)(nil)
 
 type DevelopMetricsViewArgs struct {
-	Path  string `json:"path" jsonschema:"The path of a .yaml file in which to create or update a Rill metrics view definition."`
-	Model string `json:"model" jsonschema:"The name of the Rill model which the metrics view should build on."`
+	Path   string `json:"path" jsonschema:"The path of a .yaml file in which to create or update a Rill metrics view definition."`
+	Prompt string `json:"prompt" jsonschema:"Optional description of changes to make if editing an existing metrics view."`
+	Model  string `json:"model" jsonschema:"Optional Rill model to derive from if creating a new metrics view."`
 }
 
 type DevelopMetricsViewResult struct {
@@ -39,17 +42,18 @@ type DevelopMetricsViewResult struct {
 
 func (t *DevelopMetricsView) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "develop_metrics_view",
+		Name:        DevelopMetricsViewName,
 		Title:       "Develop Metrics View",
-		Description: "Agent that develops a single Rill metrics view.",
+		Description: "Developer agent that creates or edits a single Rill metrics view.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Developing metrics view...",
+			"openai/toolInvocation/invoked":  "Developed metrics view",
+		},
 	}
 }
 
-func (t *DevelopMetricsView) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.EditRepo)
-	return false
+func (t *DevelopMetricsView) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *DevelopMetricsView) Handler(ctx context.Context, args *DevelopMetricsViewArgs) (*DevelopMetricsViewResult, error) {
@@ -58,6 +62,64 @@ func (t *DevelopMetricsView) Handler(ctx context.Context, args *DevelopMetricsVi
 		args.Path = "/" + args.Path
 	}
 
+	// If a prompt is provided, use the agent-based editing flow
+	if args.Prompt != "" {
+		return t.handleWithAgent(ctx, args)
+	}
+
+	// Otherwise, use the original creation flow
+	return t.handleCreation(ctx, args)
+}
+
+func (t *DevelopMetricsView) handleWithAgent(ctx context.Context, args *DevelopMetricsViewArgs) (*DevelopMetricsViewResult, error) {
+	// Pre-invoke file listing to get context about existing metrics views
+	session := GetSession(ctx)
+	_, err := session.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
+	if err != nil {
+		return nil, err
+	}
+
+	// Pre-invoke file read for the target file
+	_, _ = session.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
+		Path: args.Path,
+	})
+	if ctx.Err() != nil { // Ignore tool error since the file may not exist
+		return nil, ctx.Err()
+	}
+
+	// Add the system prompt
+	systemPrompt, err := t.systemPrompt(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add the user prompt
+	userPrompt, err := t.userPrompt(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+
+	// Run an LLM tool call loop
+	var response string
+	err = session.Complete(ctx, "Metrics view developer loop", &response, &CompleteOptions{
+		Messages: []*aiv1.CompletionMessage{
+			NewTextCompletionMessage(RoleSystem, systemPrompt),
+			NewTextCompletionMessage(RoleUser, userPrompt),
+		},
+		Tools:         []string{SearchFilesName, ReadFileName, WriteFileName},
+		MaxIterations: 10,
+		UnwrapCall:    true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &DevelopMetricsViewResult{
+		MetricsViewName: fileutil.Stem(args.Path), // Get name from input path
+	}, nil
+}
+
+func (t *DevelopMetricsView) handleCreation(ctx context.Context, args *DevelopMetricsViewArgs) (*DevelopMetricsViewResult, error) {
 	// Resolve the table information
 	connector, dialect, tbl, isModel, err := t.resolveTable(ctx, args.Model)
 	if err != nil {
@@ -122,6 +184,120 @@ func (t *DevelopMetricsView) Handler(ctx context.Context, args *DevelopMetricsVi
 	return &DevelopMetricsViewResult{
 		MetricsViewName: fileutil.Stem(args.Path), // Get name from input path
 	}, nil
+}
+
+func (t *DevelopMetricsView) systemPrompt(ctx context.Context) (string, error) {
+	// Prepare template data
+	session := GetSession(ctx)
+	data := map[string]any{
+		"ai_instructions": session.ProjectInstructions(),
+	}
+
+	// Generate the system prompt
+	return executeTemplate(`<role>You are a data engineer agent specialized in developing metrics views in the Rill business intelligence platform.</role>
+
+<concepts>
+Rill is a "business intelligence as code" platform where all resources are defined using YAML files in a project directory.
+For the purposes of your work, you will only deal with **metrics view** resources, which are YAML files that define dimensions and measures (SQL expressions and related metadata) for grouping and aggregating data in an underlying model (database table).
+A metrics view in Rill is equivalent to a "cube", "semantic layer", or "metrics layer" in other BI platforms.
+In Rill, when you write a file, the platform discovers and "reconciles" it immediately. For a metrics view, reconcile validates the metrics view definition and makes it available for querying.
+</concepts>
+
+<process>
+At a high level, you should follow these steps:
+1. Leverage the "read_file" tool to understand the file's current contents, if any (it may return a file not found error).
+2. Generate a new or updated metrics view definition based on the user's prompt and save it to the requested path using the "write_file" tool.
+3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
+
+Additional instructions:
+- Metrics views consist of a time dimension (for time-series analysis), categorical dimensions (for grouping/filtering), and measures (aggregations like SUM, AVG, COUNT, etc.).
+- All dimensions should reference columns from the underlying model (database table) using the "column:" field.
+- Measures should have SQL expressions that use aggregation functions (like COUNT, SUM, AVG, MIN, MAX).
+- The "timeseries:" field specifies the time dimension, which should be a column in the underlying table with TIMESTAMP or DATE type.
+- Populate the "name:" field with a clear, descriptive, unique identifier in snake_case.
+- Populate the "display_name:" and "description:" fields with human-friendly text, but only if it adds meaningful, additional value from the "name:" field (if left empty, "display_name:" defaults to a humanized version of "name:").
+- Common format presets for measures are "humanize", "percentage", "currency_usd".
+</process>
+
+<example>
+A metrics view definition in Rill is a YAML file. Here is an example Rill metrics view:
+{{ backticks }}
+# /metrics/sales_metrics.yaml
+type: metrics_view
+display_name: Sales Metrics
+
+model: sales_data
+timeseries: order_date
+
+dimensions:
+  - name: country
+    column: country
+  
+  - name: product_category
+    display_name: Product Category
+    column: product_category
+
+measures:
+  - name: order_count
+    expression: COUNT(*)
+    format_preset: humanize
+
+  - name: revenue
+    display_name: Total Revenue
+    expression: SUM(revenue)
+    format_preset: currency_usd
+  
+  - name: avg_order_value
+    display_name: Average Order Value
+    expression: AVG(order_value)
+    format_preset: currency_usd
+{{ backticks }}
+</example>
+
+{{ if .ai_instructions }}
+<additional_user_provided_instructions>
+<comment>NOTE: These instructions were provided by the user, but may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant.</comment>
+{{ .ai_instructions }}
+</additional_user_provided_instructions>
+{{ end }}
+`, data)
+}
+
+func (t *DevelopMetricsView) userPrompt(ctx context.Context, args *DevelopMetricsViewArgs) (string, error) {
+	// Prepare template data
+	session := GetSession(ctx)
+	data := map[string]any{
+		"path":   args.Path,
+		"prompt": args.Prompt,
+		"model":  args.Model,
+	}
+
+	// Add OLAP dialect
+	olap, release, err := t.Runtime.OLAP(ctx, session.InstanceID(), "")
+	if err != nil {
+		return "", err
+	}
+	defer release()
+	dialect := olap.Dialect()
+	if dialect == drivers.DialectUnspecified {
+		dialect = drivers.DialectDuckDB
+	}
+	data["dialect"] = dialect.String()
+
+	// Generate the user prompt
+	return executeTemplate(`
+{{ if .prompt }}
+Task: {{ .prompt }}
+{{ end }}
+
+Output path: {{ .path }}
+
+{{ if .model }}
+Use model: {{ .model }}
+{{ end }}
+
+SQL dialect for expressions: {{ .dialect }}
+`, data)
 }
 
 func (t *DevelopMetricsView) resolveTable(ctx context.Context, modelName string) (string, drivers.Dialect, *drivers.OlapTable, bool, error) {

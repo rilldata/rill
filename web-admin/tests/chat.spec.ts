@@ -12,9 +12,7 @@ test.describe("Chat", () => {
     // Send a message (with timestamp for uniqueness)
     const timestamp = Date.now();
     const testMessage = `What happened recently? (test-${timestamp})`;
-    await adminPage
-      .getByPlaceholder("Ask about your data...")
-      .fill(testMessage);
+    await adminPage.getByRole("textbox").pressSequentially(testMessage);
     await adminPage.getByRole("button", { name: "Send" }).click();
 
     // Assert the response appears in the main chat area

@@ -118,7 +118,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, "")
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -130,9 +130,6 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 			continue
 		}
 		if d.Environment == "dev" && !permissions.ReadDev {
-			continue
-		}
-		if req.Environment != "" && req.Environment != d.Environment {
 			continue
 		}
 		if req.UserId != "" && d.OwnerUserID != nil && req.UserId != *d.OwnerUserID {
@@ -309,16 +306,34 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 	var slots int
 	switch req.Environment {
 	case "prod":
+		if req.Branch != "" {
+			return nil, status.Error(codes.InvalidArgument, "branch cannot be specified for prod deployments")
+		}
+		if req.Editable {
+			return nil, status.Error(codes.InvalidArgument, "editable cannot be set for prod deployments")
+		}
 		branch = ""
 		slots = proj.ProdSlots
 	case "dev":
-		// Generate a random branch name for dev deployments
-		b := make([]byte, 8)
-		_, err := rand.Read(b)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+		if req.Branch != "" {
+			branch = req.Branch
+			// only one deployment per branch allowed
+			depl, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", branch)
+			if err != nil {
+				return nil, err
+			}
+			if len(depl) > 0 {
+				return nil, status.Errorf(codes.InvalidArgument, "another deployment for the specified branch %q already exists", req.Branch)
+			}
+		} else {
+			// Generate a random branch name for dev deployments
+			b := make([]byte, 8)
+			_, err := rand.Read(b)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		}
-		branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		slots = proj.DevSlots
 	default:
 		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod' or 'dev'")
@@ -351,21 +366,12 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		ownerUserID = &id
 	}
 
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, req.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
 	depl, err := s.admin.CreateDeployment(ctx, &admin.CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: ownerUserID,
 		Environment: req.Environment,
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
 		Branch:      branch,
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
+		Editable:    req.Editable,
 	})
 	if err != nil {
 		return nil, err
@@ -432,33 +438,7 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 		}
 	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid environment, must be 'prod' or 'dev'")
-	}
-
-	vars, err := s.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
-	if err != nil {
-		return nil, err
-	}
-
-	depl, err = s.admin.StartDeployment(ctx, depl, &admin.StartDeploymentOptions{
-		Annotations: s.admin.NewDeploymentAnnotations(org, proj),
-		Provisioner: proj.Provisioner,
-		Slots:       slots,
-		Version:     proj.ProdVersion,
-		Variables:   vars,
-	})
+	depl, err = s.admin.StartDeployment(ctx, depl)
 	if err != nil {
 		return nil, err
 	}

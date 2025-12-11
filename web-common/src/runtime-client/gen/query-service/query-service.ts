@@ -46,6 +46,7 @@ import type {
   QueryServiceQueryBody,
   QueryServiceResolveCanvasBody,
   QueryServiceResolveComponentBody,
+  QueryServiceResolveTemplatedStringBody,
   QueryServiceTableCardinalityParams,
   QueryServiceTableColumnsParams,
   QueryServiceTableRowsParams,
@@ -76,6 +77,7 @@ import type {
   V1QueryResponse,
   V1ResolveCanvasResponse,
   V1ResolveComponentResponse,
+  V1ResolveTemplatedStringResponse,
   V1TableCardinalityResponse,
   V1TableColumnsResponse,
   V1TableRowsResponse,
@@ -2382,6 +2384,123 @@ export function createQueryServiceColumnNumericHistogram<
     instanceId,
     tableName,
     params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ResolveTemplatedString resolves a templated strings.
+ */
+export const queryServiceResolveTemplatedString = (
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveTemplatedStringResponse>({
+    url: `/v1/instances/${instanceId}/queries/resolve-templated-string`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveTemplatedStringBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveTemplatedStringQueryKey = (
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+) => {
+  return [
+    `/v1/instances/${instanceId}/queries/resolve-templated-string`,
+    queryServiceResolveTemplatedStringBody,
+  ] as const;
+};
+
+export const getQueryServiceResolveTemplatedStringQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveTemplatedStringQueryKey(
+      instanceId,
+      queryServiceResolveTemplatedStringBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
+  > = ({ signal }) =>
+    queryServiceResolveTemplatedString(
+      instanceId,
+      queryServiceResolveTemplatedStringBody,
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QueryServiceResolveTemplatedStringQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
+>;
+export type QueryServiceResolveTemplatedStringQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ResolveTemplatedString resolves a templated strings.
+ */
+
+export function createQueryServiceResolveTemplatedString<
+  TData = Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQueryServiceResolveTemplatedStringQueryOptions(
+    instanceId,
+    queryServiceResolveTemplatedStringBody,
     options,
   );
 

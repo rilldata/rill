@@ -382,6 +382,10 @@ export interface V1DeleteUsergroupResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteVirtualFileResponse {
+  [key: string]: unknown;
+}
+
 export interface V1DenyProjectAccessResponse {
   [key: string]: unknown;
 }
@@ -392,6 +396,7 @@ export interface V1Deployment {
   ownerUserId?: string;
   environment?: string;
   branch?: string;
+  editable?: boolean;
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
@@ -407,9 +412,13 @@ export type V1DeploymentStatus =
 export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
-  DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
-  DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_RUNNING: "DEPLOYMENT_STATUS_RUNNING",
+  DEPLOYMENT_STATUS_ERRORED: "DEPLOYMENT_STATUS_ERRORED",
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
+  DEPLOYMENT_STATUS_UPDATING: "DEPLOYMENT_STATUS_UPDATING",
+  DEPLOYMENT_STATUS_STOPPING: "DEPLOYMENT_STATUS_STOPPING",
+  DEPLOYMENT_STATUS_DELETING: "DEPLOYMENT_STATUS_DELETING",
+  DEPLOYMENT_STATUS_DELETED: "DEPLOYMENT_STATUS_DELETED",
 } as const;
 
 export interface V1EditAlertResponse {
@@ -654,6 +663,10 @@ export interface V1GetUserResponse {
 export interface V1GetUsergroupResponse {
   usergroup?: V1Usergroup;
   nextPageToken?: string;
+}
+
+export interface V1GetVirtualFileResponse {
+  file?: V1VirtualFile;
 }
 
 export type V1GithubPermission =
@@ -1400,10 +1413,15 @@ export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
 
+export type V1ToolMeta = { [key: string]: unknown };
+
 export interface V1Tool {
   name?: string;
+  displayName?: string;
   description?: string;
+  meta?: V1ToolMeta;
   inputSchema?: string;
+  outputSchema?: string;
 }
 
 export type V1ToolCallInput = { [key: string]: unknown };
@@ -1816,6 +1834,13 @@ export type AdminServiceListDeploymentsParams = {
 
 export type AdminServiceCreateDeploymentBody = {
   environment?: string;
+  /** Branch to deploy from. 
+Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+Optional for `dev` deployments. */
+  branch?: string;
+  /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
+Can't be set for `prod` deployments. */
+  editable?: boolean;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -2039,6 +2064,42 @@ It is optional. If the call is made with a deployment access token, it defaults 
    * Page token for pagination.
    */
   pageToken?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetVirtualFileParams = {
+  /**
+ * The environment to get the virtual file for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to get.
+   */
+  path?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteVirtualFileParams = {
+  /**
+ * The environment to delete the virtual file from.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to delete.
+   */
+  path?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetReportMetaBody = {

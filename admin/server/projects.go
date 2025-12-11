@@ -2089,12 +2089,20 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
 	case database.DeploymentStatusPending:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
-	case database.DeploymentStatusOK:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
-	case database.DeploymentStatusError:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
+	case database.DeploymentStatusUpdating:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING
+	case database.DeploymentStatusRunning:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING
+	case database.DeploymentStatusErrored:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED
+	case database.DeploymentStatusStopping:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING
 	case database.DeploymentStatusStopped:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
+	case database.DeploymentStatusDeleting:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING
+	case database.DeploymentStatusDeleted:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED
 	default:
 		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
 	}
@@ -2105,6 +2113,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		OwnerUserId:       safeStr(d.OwnerUserID),
 		Environment:       d.Environment,
 		Branch:            d.Branch,
+		Editable:          d.Editable,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,
 		Status:            s,

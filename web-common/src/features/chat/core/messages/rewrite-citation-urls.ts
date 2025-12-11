@@ -17,25 +17,31 @@ const CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
  * @param mapper
  */
 export function getCitationUrlRewriter(
-  mapper: MetricsResolverQueryToUrlParamsMapper,
+  mapper: MetricsResolverQueryToUrlParamsMapper | undefined,
 ) {
   return (text: string): string | Promise<string> => {
     marked.use({
       renderer: {
         link: (tokens) => {
-          const url = new URL(tokens.href);
+          const url = URL.parse(tokens.href);
           // If the url is not a citation url, do not change the link.
-          if (!CITATION_URL_PATHNAME_REGEX.test(url.pathname)) return false;
+          if (!url || !CITATION_URL_PATHNAME_REGEX.test(url.pathname))
+            return false;
+
+          // If mapper was not provided, remove citation urls.
+          // This happens when something went wrong getting the mapper in an explore chat.
+          // Non-explore chat will not go throught his code path at all.
+          if (!mapper) return "";
 
           const queryJSON = url.searchParams.get("query");
           // If the url does not have a query arg, do not change the link.
           if (!queryJSON) return false;
 
           const [isValid, urlParams] = mapper(queryJSON);
-          // Mapping failed for some reason, do not change the link.
-          if (!isValid) return false;
+          // Mapping failed for some reason, remove the link since it is probably invalid.
+          if (!isValid) return "";
 
-          return `<a href="?${urlParams.toString()}">${tokens.text}</a>`;
+          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}">${tokens.text}</a>`;
         },
       },
     });

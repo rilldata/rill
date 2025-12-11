@@ -25,6 +25,15 @@ class EventBus {
     return unsubscribe;
   }
 
+  once<Event extends T>(event: Event, callback: Listener<Event>) {
+    const unsubscribe = this.on(event, (payload) => {
+      callback(payload);
+      unsubscribe();
+    });
+
+    return unsubscribe;
+  }
+
   emit<Event extends T>(event: Event, payload: Events[Event]) {
     const listeners = this.listeners.get(event);
 
@@ -63,6 +72,8 @@ export interface Events {
   click: null;
   "shift-command-click": null;
   "page-content-resized": PageContentResized;
+  "start-chat": string;
+  "rill-yaml-updated": null;
 }
 
 type T = keyof Events;

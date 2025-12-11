@@ -1,7 +1,7 @@
 ---
 title: How to Install Rill Developer
 sidebar_label: Install Rill Developer
-sidebar_position: 01
+sidebar_position: 02
 ---
 
 ## Quick Install
@@ -12,17 +12,16 @@ You can install `rill` using our installation script on both macOS and Linux:
 curl https://rill.sh | sh
 ```
 
+:::tip Why am I installing locally?
+Installing Rill Developer locally is required to create a new project, or [clone a project](/guides/clone-a-project) from Rill Cloud. For key differences between Rill Cloud and Rill Developer, see [Rill Cloud vs. Rill Developer](/deploy/cloud-vs-developer).
+:::
+
+
 To verify that the installation succeeded, run the following command. You will see a list of various commands that you can run via the CLI.
 ```bash
 rill --help
 ```
 
-:::tip Sharing dashboards in Rill Cloud? Clone your Git repo first
-
-If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/get-started/install#quick-install) in your cloned location locally to make deployment easier.
-
-More details on deploying Rill via Git are in our [Deploy section](../deploy/deploy-dashboard).
-:::
 
 :::warning macOS users
 

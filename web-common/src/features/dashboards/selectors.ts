@@ -12,9 +12,12 @@ import {
   getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  createRuntimeServiceListResources,
   getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -22,7 +25,7 @@ import {
   type V1MetricsViewTimeRangeResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   createQuery,
   type CreateQueryOptions,
@@ -30,10 +33,8 @@ import {
   type QueryClient,
 } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import type { ErrorType } from "../../runtime-client/http-client";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { ErrorType } from "../../runtime-client/http-client";
 
 export function useMetricsView(
   instanceId: string,
@@ -52,11 +53,47 @@ export function useMetricsView(
   );
 }
 
+export function getValidMetricsViewsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      {
+        kind: ResourceKind.MetricsView,
+      },
+      {
+        query: {
+          select: (data) =>
+            data?.resources?.filter(
+              (res) => !!res.metricsView?.state?.validSpec,
+            ),
+        },
+      },
+    );
+  });
+}
+
 export function useValidExplores(instanceId: string) {
   // This is used in cloud as well so do not use "useClientFilteredResources"
   return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
     data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
+}
+
+export function getValidDashboardsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      {
+        kind: ResourceKind.Explore,
+      },
+      {
+        query: {
+          select: (data) =>
+            data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
+        },
+      },
+    );
+  });
 }
 
 export function useValidCanvases(instanceId: string) {
@@ -137,6 +174,7 @@ export function getMetricsViewTimeRangeFromExploreQueryOptions(
 ) {
   const validSpecQuery = createQuery(
     getExploreValidSpecQueryOptions(exploreNameStore),
+    queryClient,
   );
 
   return derived(

@@ -3,6 +3,7 @@ import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   type RpcStatus,
+  type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
@@ -16,8 +17,12 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import {
+  getOptimisticMessageId,
+  invalidateConversationsList,
+  NEW_CONVERSATION_ID,
+} from "./utils";
 import { MessageContentType, MessageType, ToolName } from "./types";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
 /**
  * Individual conversation state management.
@@ -38,11 +43,18 @@ export class Conversation {
   constructor(
     private readonly instanceId: string,
     public conversationId: string,
-    private readonly options?: {
+    private readonly options: {
+      agent?: string;
       onStreamStart?: () => void;
       onConversationCreated?: (conversationId: string) => void;
+    } = {
+      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
     },
-  ) {}
+  ) {
+    if (this.options) {
+      this.options.agent ??= ToolName.ANALYST_AGENT;
+    }
+  }
 
   // ===== PUBLIC API =====
 
@@ -82,14 +94,18 @@ export class Conversation {
   /**
    * Send a message and handle streaming response
    *
+   * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(options?: {
-    onStreamStart?: () => void;
-    onMessage?: (message: V1Message) => void;
-    onStreamComplete?: (conversationId: string) => void;
-    onError?: (error: string) => void;
-  }): Promise<void> {
+  public async sendMessage(
+    context: RuntimeServiceCompleteBody,
+    options?: {
+      onStreamStart?: () => void;
+      onMessage?: (message: V1Message) => void;
+      onStreamComplete?: (conversationId: string) => void;
+      onError?: (error: string) => void;
+    },
+  ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -108,14 +124,22 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
+      options?.onStreamStart?.();
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt);
+      const streamPromise = this.startStreaming(
+        prompt,
+        context,
+        options?.onMessage,
+      );
 
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
       options?.onStreamComplete?.(this.conversationId);
+
+      // Temporary fix to make sure the title of the conversation is updated.
+      void invalidateConversationsList(this.instanceId);
     } catch (error) {
       // Transport errors can occur at two different stages:
       // 1. Before streaming starts: message not persisted, needs rollback
@@ -169,7 +193,11 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    * Returns a Promise that resolves when streaming completes
    */
-  private async startStreaming(prompt: string): Promise<void> {
+  private async startStreaming(
+    prompt: string,
+    context: RuntimeServiceCompleteBody | undefined,
+    onMessage: ((message: V1Message) => void) | undefined,
+  ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
       this.sseClient = new SSEFetchClient();
@@ -193,6 +221,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
+          if (response.message) onMessage?.(response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");
@@ -230,6 +259,8 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      agent: this.options?.agent,
+      ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)

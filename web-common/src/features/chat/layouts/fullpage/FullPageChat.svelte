@@ -6,10 +6,11 @@
     cleanupConversationManager,
     getConversationManager,
   } from "../../core/conversation-manager";
-  import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
+
+  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
 
@@ -60,7 +61,11 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <Messages {conversationManager} layout="fullpage" />
+        <Messages
+          {conversationManager}
+          layout="fullpage"
+          config={dashboardChatConfig}
+        />
       </div>
     </div>
 
@@ -70,8 +75,8 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
+          config={dashboardChatConfig}
         />
-        <ChatFooter />
       </div>
     </div>
   </div>

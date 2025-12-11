@@ -100,13 +100,17 @@ type DB interface {
 
 	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
-	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
+	FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
-	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
+	UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus DeploymentStatus) (*Deployment, error)
+	// UpdateDeploymentUnsafe updates deployment fields that must only be called from the `reconcile_deployment` background job.
+	UpdateDeploymentUnsafe(ctx context.Context, id string, opts *UpdateDeploymentUnsafeOptions) (*Deployment, error)
+	// UpdateDeploymentSafe updates deployment fields that are safe to be called from anywhere. Any call to this should subsequently trigger a reconcile_deployment job.
+	UpdateDeploymentSafe(ctx context.Context, id string, opts *UpdateDeploymentSafeOptions) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 
 	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
@@ -212,7 +216,7 @@ type DB interface {
 	DeleteAuthorizationCode(ctx context.Context, code string) error
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
-	InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*AuthClient, error)
+	InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes, redirectURIs []string) (*AuthClient, error)
 	FindAuthClient(ctx context.Context, id string) (*AuthClient, error)
 	UpdateAuthClientUsedOn(ctx context.Context, ids []string) error
 
@@ -550,21 +554,33 @@ type DeploymentStatus int
 const (
 	DeploymentStatusUnspecified DeploymentStatus = 0
 	DeploymentStatusPending     DeploymentStatus = 1
-	DeploymentStatusOK          DeploymentStatus = 2
-	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusRunning     DeploymentStatus = 2
+	DeploymentStatusErrored     DeploymentStatus = 4
 	DeploymentStatusStopped     DeploymentStatus = 5
+	DeploymentStatusUpdating    DeploymentStatus = 6
+	DeploymentStatusStopping    DeploymentStatus = 7
+	DeploymentStatusDeleting    DeploymentStatus = 8
+	DeploymentStatusDeleted     DeploymentStatus = 9
 )
 
 func (d DeploymentStatus) String() string {
 	switch d {
 	case DeploymentStatusPending:
 		return "Pending"
-	case DeploymentStatusOK:
-		return "OK"
-	case DeploymentStatusError:
-		return "Error"
+	case DeploymentStatusRunning:
+		return "Running"
+	case DeploymentStatusErrored:
+		return "Errored"
 	case DeploymentStatusStopped:
 		return "Stopped"
+	case DeploymentStatusUpdating:
+		return "Updating"
+	case DeploymentStatusStopping:
+		return "Stopping"
+	case DeploymentStatusDeleting:
+		return "Deleting"
+	case DeploymentStatusDeleted:
+		return "Deleted"
 	default:
 		return "Unspecified"
 	}
@@ -573,19 +589,22 @@ func (d DeploymentStatus) String() string {
 // Deployment is a single deployment of a git branch.
 // Deployments belong to a project.
 type Deployment struct {
-	ID                string           `db:"id"`
-	ProjectID         string           `db:"project_id"`
-	OwnerUserID       *string          `db:"owner_user_id"`
-	Environment       string           `db:"environment"`
-	Branch            string           `db:"branch"`
-	RuntimeHost       string           `db:"runtime_host"`
-	RuntimeInstanceID string           `db:"runtime_instance_id"`
-	RuntimeAudience   string           `db:"runtime_audience"`
-	Status            DeploymentStatus `db:"status"`
-	StatusMessage     string           `db:"status_message"`
-	CreatedOn         time.Time        `db:"created_on"`
-	UpdatedOn         time.Time        `db:"updated_on"`
-	UsedOn            time.Time        `db:"used_on"`
+	ID                     string           `db:"id"`
+	ProjectID              string           `db:"project_id"`
+	OwnerUserID            *string          `db:"owner_user_id"`
+	Environment            string           `db:"environment"`
+	Branch                 string           `db:"branch"`
+	Editable               bool             `db:"editable"`
+	RuntimeHost            string           `db:"runtime_host"`
+	RuntimeInstanceID      string           `db:"runtime_instance_id"`
+	RuntimeAudience        string           `db:"runtime_audience"`
+	Status                 DeploymentStatus `db:"status"`
+	DesiredStatus          DeploymentStatus `db:"desired_status"`
+	StatusMessage          string           `db:"status_message"`
+	CreatedOn              time.Time        `db:"created_on"`
+	UpdatedOn              time.Time        `db:"updated_on"`
+	UsedOn                 time.Time        `db:"used_on"`
+	DesiredStatusUpdatedOn time.Time        `db:"desired_status_updated_on"`
 }
 
 // InsertDeploymentOptions defines options for inserting a new Deployment.
@@ -594,6 +613,16 @@ type InsertDeploymentOptions struct {
 	OwnerUserID       *string
 	Environment       string
 	Branch            string
+	Editable          bool
+	RuntimeHost       string
+	RuntimeInstanceID string
+	RuntimeAudience   string
+	Status            DeploymentStatus
+	StatusMessage     string
+	DesiredStatus     DeploymentStatus
+}
+
+type UpdateDeploymentUnsafeOptions struct {
 	RuntimeHost       string
 	RuntimeInstanceID string
 	RuntimeAudience   string
@@ -601,14 +630,9 @@ type InsertDeploymentOptions struct {
 	StatusMessage     string
 }
 
-// UpdateDeploymentOptions defines options for updating a Deployment.
-type UpdateDeploymentOptions struct {
-	Branch            string
-	RuntimeHost       string
-	RuntimeInstanceID string
-	RuntimeAudience   string
-	Status            DeploymentStatus
-	StatusMessage     string
+type UpdateDeploymentSafeOptions struct {
+	DesiredStatus DeploymentStatus
+	Branch        string
 }
 
 // StaticRuntimeSlotsUsed is the number of slots currently assigned to a runtime host.
@@ -850,13 +874,14 @@ type InsertNotificationTokenOptions struct {
 
 // AuthClient is a client that requests and consumes auth tokens.
 type AuthClient struct {
-	ID          string
-	DisplayName string    `db:"display_name"`
-	Scope       string    `db:"scope"`
-	GrantTypes  []string  `db:"grant_types"`
-	UsedOn      time.Time `db:"used_on"`
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
+	ID           string
+	DisplayName  string    `db:"display_name"`
+	Scope        string    `db:"scope"`
+	GrantTypes   []string  `db:"grant_types"`
+	RedirectURIs []string  `db:"redirect_uris"`
+	UsedOn       time.Time `db:"used_on"`
+	CreatedOn    time.Time `db:"created_on"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
 // Hard-coded auth client IDs (created in the migrations).
@@ -1015,7 +1040,7 @@ type OrganizationInvite struct {
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
 	UsergroupIDs    []string  `db:"usergroup_ids"`
-	InvitedByUserID string    `db:"invited_by_user_id"`
+	InvitedByUserID *string   `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
 
@@ -1023,8 +1048,8 @@ type OrganizationInvite struct {
 type OrganizationInviteWithRole struct {
 	ID        string
 	Email     string
-	RoleName  string `db:"role_name"`
-	InvitedBy string `db:"invited_by"`
+	RoleName  string  `db:"role_name"`
+	InvitedBy *string `db:"invited_by"`
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
@@ -1035,7 +1060,7 @@ type ProjectInvite struct {
 	OrgInviteID     string    `db:"org_invite_id"`
 	ProjectID       string    `db:"project_id"`
 	ProjectRoleID   string    `db:"project_role_id"`
-	InvitedByUserID string    `db:"invited_by_user_id"`
+	InvitedByUserID *string   `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
 
@@ -1043,9 +1068,9 @@ type ProjectInvite struct {
 type ProjectInviteWithRole struct {
 	ID          string
 	Email       string
-	RoleName    string `db:"role_name"`
-	OrgRoleName string `db:"org_role_name"`
-	InvitedBy   string `db:"invited_by"`
+	RoleName    string  `db:"role_name"`
+	OrgRoleName string  `db:"org_role_name"`
+	InvitedBy   *string `db:"invited_by"`
 }
 
 type ProjectsQuotaUsage struct {

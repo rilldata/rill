@@ -192,3 +192,54 @@ func (i *Instance) Config() (InstanceConfig, error) {
 
 	return res, nil
 }
+
+func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
+	var res []*runtimev1.Connector
+	res = append(res, i.Connectors...)
+	res = append(res, i.ProjectConnectors...)
+	// implicit connectors
+	vars := i.ResolveVariables(true)
+
+	existing := make(map[string]bool)
+	for _, c := range res {
+		existing[c.Name] = true
+	}
+
+	for k := range vars {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		if !existing[name] {
+			res = append(res, &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			})
+			existing[name] = true
+		}
+	}
+
+	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
+	// NOTE: only object stores are handled here.
+	if vars["aws_access_key_id"] != "" && !existing["s3"] {
+		res = append(res, &runtimev1.Connector{Type: "s3", Name: "s3"})
+	}
+	if (vars["azure_storage_account"] != "" ||
+		vars["azure_storage_key"] != "" ||
+		vars["azure_storage_sas_token"] != "" ||
+		vars["azure_storage_connection_string"] != "") &&
+		!existing["azure"] {
+		res = append(res, &runtimev1.Connector{Type: "azure", Name: "azure"})
+	}
+	if vars["google_application_credentials"] != "" && !existing["gcs"] {
+		res = append(res, &runtimev1.Connector{Type: "gcs", Name: "gcs"})
+	}
+	return res
+}
