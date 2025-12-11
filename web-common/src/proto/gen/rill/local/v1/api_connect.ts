@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateOrganizationRequest, CreateOrganizationResponse, DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { CheckoutBranchRequest, CheckoutBranchResponse, CreateBranchRequest, CreateBranchResponse, CreateOrganizationRequest, CreateOrganizationResponse, CreatePreviewDeploymentRequest, CreatePreviewDeploymentResponse, DeleteBranchRequest, DeleteBranchResponse, DeletePreviewDeploymentRequest, DeletePreviewDeploymentResponse, DeployProjectRequest, DeployProjectResponse, DiscardChangesRequest, DiscardChangesResponse, GetCommitHistoryRequest, GetCommitHistoryResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetProjectRequest, GetProjectResponse, GetVersionRequest, GetVersionResponse, GitCommitRequest, GitCommitResponse, GithubRepoStatusRequest, GithubRepoStatusResponse, GitMergeRequest, GitMergeResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitStatusRequest, GitStatusResponse, ListBranchesRequest, ListBranchesResponse, ListMatchingProjectsRequest, ListMatchingProjectsResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, ListPreviewDeploymentsRequest, ListPreviewDeploymentsResponse, ListProjectsForOrgRequest, ListProjectsForOrgResponse, PingRequest, PingResponse, PublishBranchRequest, PublishBranchResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -202,6 +202,138 @@ export const LocalService = {
       name: "GetProject",
       I: GetProjectRequest,
       O: GetProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListBranches returns all local and remote branches in the git repo.
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListBranches
+     */
+    listBranches: {
+      name: "ListBranches",
+      I: ListBranchesRequest,
+      O: ListBranchesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CheckoutBranch switches to a different branch.
+     *
+     * @generated from rpc rill.local.v1.LocalService.CheckoutBranch
+     */
+    checkoutBranch: {
+      name: "CheckoutBranch",
+      I: CheckoutBranchRequest,
+      O: CheckoutBranchResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreateBranch creates a new branch from the current HEAD.
+     *
+     * @generated from rpc rill.local.v1.LocalService.CreateBranch
+     */
+    createBranch: {
+      name: "CreateBranch",
+      I: CreateBranchRequest,
+      O: CreateBranchResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeleteBranch deletes a local branch.
+     *
+     * @generated from rpc rill.local.v1.LocalService.DeleteBranch
+     */
+    deleteBranch: {
+      name: "DeleteBranch",
+      I: DeleteBranchRequest,
+      O: DeleteBranchResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GitMerge merges a source branch into the current branch.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GitMerge
+     */
+    gitMerge: {
+      name: "GitMerge",
+      I: GitMergeRequest,
+      O: GitMergeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetCommitHistory returns the commit history for the current branch.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetCommitHistory
+     */
+    getCommitHistory: {
+      name: "GetCommitHistory",
+      I: GetCommitHistoryRequest,
+      O: GetCommitHistoryResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GitCommit creates a new commit with all current changes.
+     *
+     * @generated from rpc rill.local.v1.LocalService.GitCommit
+     */
+    gitCommit: {
+      name: "GitCommit",
+      I: GitCommitRequest,
+      O: GitCommitResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * PublishBranch pushes a local-only branch to the remote repository for the first time.
+     *
+     * @generated from rpc rill.local.v1.LocalService.PublishBranch
+     */
+    publishBranch: {
+      name: "PublishBranch",
+      I: PublishBranchRequest,
+      O: PublishBranchResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DiscardChanges discards all uncommitted changes in the working directory.
+     *
+     * @generated from rpc rill.local.v1.LocalService.DiscardChanges
+     */
+    discardChanges: {
+      name: "DiscardChanges",
+      I: DiscardChangesRequest,
+      O: DiscardChangesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreatePreviewDeployment creates a preview deployment for the current branch.
+     *
+     * @generated from rpc rill.local.v1.LocalService.CreatePreviewDeployment
+     */
+    createPreviewDeployment: {
+      name: "CreatePreviewDeployment",
+      I: CreatePreviewDeploymentRequest,
+      O: CreatePreviewDeploymentResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListPreviewDeployments lists all preview deployments for the project.
+     *
+     * @generated from rpc rill.local.v1.LocalService.ListPreviewDeployments
+     */
+    listPreviewDeployments: {
+      name: "ListPreviewDeployments",
+      I: ListPreviewDeploymentsRequest,
+      O: ListPreviewDeploymentsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeletePreviewDeployment deletes a preview deployment.
+     *
+     * @generated from rpc rill.local.v1.LocalService.DeletePreviewDeployment
+     */
+    deletePreviewDeployment: {
+      name: "DeletePreviewDeployment",
+      I: DeletePreviewDeploymentRequest,
+      O: DeletePreviewDeploymentResponse,
       kind: MethodKind.Unary,
     },
   }

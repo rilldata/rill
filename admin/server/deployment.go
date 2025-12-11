@@ -132,6 +132,10 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		if d.Environment == "dev" && !permissions.ReadDev {
 			continue
 		}
+		// Preview deployments are only visible to admins (ManageProd permission)
+		if d.Environment == "preview" && !permissions.ManageProd {
+			continue
+		}
 		if req.Environment != "" && req.Environment != d.Environment {
 			continue
 		}
@@ -293,6 +297,11 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		if !permissions.ManageDev {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
 		}
+	} else if req.Environment == "preview" {
+		// Preview deployments require admin (ManageProd) permission
+		if !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "admin permission required for preview deployments")
+		}
 	} else {
 		if !permissions.ManageProd {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
@@ -320,8 +329,15 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		}
 		branch = fmt.Sprintf("rill/%s", hex.EncodeToString(b))
 		slots = proj.DevSlots
+	case "preview":
+		// Preview deployments require an explicit branch name
+		if req.Branch == "" {
+			return nil, status.Error(codes.InvalidArgument, "branch is required for preview deployments")
+		}
+		branch = req.Branch
+		slots = proj.DevSlots
 	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod' or 'dev'")
+		return nil, status.Error(codes.InvalidArgument, "invalid environment specified, must be 'prod', 'dev', or 'preview'")
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -493,6 +509,11 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *adminv1.DeleteDeploy
 	if depl.Environment == "dev" {
 		if !permissions.ManageDev {
 			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+		}
+	} else if depl.Environment == "preview" {
+		// Preview deployments require admin (ManageProd) permission to delete
+		if !permissions.ManageProd {
+			return nil, status.Error(codes.PermissionDenied, "admin permission required to delete preview deployments")
 		}
 	} else {
 		if !permissions.ManageProd {

@@ -19,9 +19,11 @@ var errDetachedHead = errors.New("detached HEAD state detected, please checkout 
 type GitStatus struct {
 	Branch        string
 	RemoteURL     string
-	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
-	LocalCommits  int32
-	RemoteCommits int32
+	LocalChanges  bool  // true if there are local changes (staged, unstaged, or untracked)
+	LocalCommits  int32 // commits ahead of remote
+	RemoteCommits int32 // commits behind remote
+	HasUpstream   bool  // true if the branch has a remote tracking branch
+	RemoteName    string
 }
 
 func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
@@ -44,7 +46,9 @@ func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 	// # branch.upstream origin/mgd_repo_poc
 	// # branch.ab +0 -0
 	// lines describing the status of the working tree
-	status := GitStatus{}
+	status := GitStatus{
+		RemoteName: remoteName,
+	}
 	lines := strings.SplitSeq(strings.TrimSpace(string(data)), "\n")
 	for line := range lines {
 		line = strings.TrimSpace(line)
@@ -57,6 +61,8 @@ func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 			}
 			status.Branch = strings.TrimPrefix(line, "# branch.head ")
 		case strings.HasPrefix(line, "# branch.upstream "):
+			// If upstream is present, the branch has a remote tracking branch
+			status.HasUpstream = true
 		case strings.HasPrefix(line, "# branch.ab "):
 			// do not use this as the remote tracking branch may not be set/may be set to a different remote
 		default:
@@ -65,13 +71,31 @@ func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 		}
 	}
 
-	localCommits, err := countCommitsAhead(path, subpath, fmt.Sprintf("%s/%s", remoteName, status.Branch), status.Branch)
-	if err == nil {
-		status.LocalCommits = localCommits
+	// Check if the remote tracking branch exists even if upstream is not set
+	// This handles cases where user created branch locally but remote has same branch
+	if !status.HasUpstream && remoteName != "" {
+		_, err := exec.Command("git", "-C", path, "rev-parse", "--verify", fmt.Sprintf("%s/%s", remoteName, status.Branch)).Output()
+		if err == nil {
+			status.HasUpstream = true
+		}
 	}
-	remoteCommits, err := countCommitsAhead(path, subpath, status.Branch, fmt.Sprintf("%s/%s", remoteName, status.Branch))
-	if err == nil {
-		status.RemoteCommits = remoteCommits
+
+	// Only count commits if branch has upstream
+	if status.HasUpstream {
+		localCommits, err := countCommitsAhead(path, subpath, fmt.Sprintf("%s/%s", remoteName, status.Branch), status.Branch)
+		if err == nil {
+			status.LocalCommits = localCommits
+		}
+		remoteCommits, err := countCommitsAhead(path, subpath, status.Branch, fmt.Sprintf("%s/%s", remoteName, status.Branch))
+		if err == nil {
+			status.RemoteCommits = remoteCommits
+		}
+	} else {
+		// For local-only branches, count all commits on the branch
+		localCommits, err := countTotalCommits(path, status.Branch)
+		if err == nil {
+			status.LocalCommits = localCommits
+		}
 	}
 
 	// get the remote URL
@@ -80,6 +104,20 @@ func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 		status.RemoteURL = strings.TrimSpace(string(data))
 	}
 	return status, nil
+}
+
+// countTotalCommits counts all commits on a branch
+func countTotalCommits(path, branch string) (int32, error) {
+	cmd := exec.Command("git", "-C", path, "rev-list", "--count", branch)
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("failed to count commits: %s(%w)", data, err)
+	}
+	count, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse commit count: %w", err)
+	}
+	return int32(count), nil
 }
 
 func RunGitFetch(ctx context.Context, path, remote string) error {
@@ -179,6 +217,72 @@ func RunGitPush(ctx context.Context, path, remoteName, branchName string) error 
 			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
 		}
 		return fmt.Errorf("git push failed: %s(%w)", string(out), err)
+	}
+	return nil
+}
+
+// PublishBranch pushes a local branch to remote and sets up tracking
+func PublishBranch(ctx context.Context, path, remoteName, branchName string) error {
+	// Push with -u to set upstream tracking
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", "-u", remoteName, branchName)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git push failed: %s(%w)", string(out), err)
+	}
+	return nil
+}
+
+// DiscardAllChanges discards all uncommitted changes in the working directory
+func DiscardAllChanges(ctx context.Context, path string) error {
+	// Reset staged changes
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "reset", "HEAD")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git reset failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+	}
+
+	// Discard changes in tracked files
+	cmd = exec.CommandContext(ctx, "git", "-C", path, "checkout", "--", ".")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git checkout failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git checkout failed: %s(%w)", string(out), err)
+	}
+
+	// Remove untracked files
+	cmd = exec.CommandContext(ctx, "git", "-C", path, "clean", "-fd")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git clean failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git clean failed: %s(%w)", string(out), err)
+	}
+
+	return nil
+}
+
+// DiscardChangesInPaths discards changes in specific paths
+func DiscardChangesInPaths(ctx context.Context, path string, paths []string) error {
+	if len(paths) == 0 {
+		return DiscardAllChanges(ctx, path)
+	}
+
+	args := append([]string{"-C", path, "checkout", "--"}, paths...)
+	cmd := exec.CommandContext(ctx, "git", args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git checkout failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git checkout failed: %s(%w)", string(out), err)
 	}
 	return nil
 }

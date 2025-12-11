@@ -36,6 +36,18 @@ const (
 	LocalService_ListMatchingProjects_FullMethodName                = "/rill.local.v1.LocalService/ListMatchingProjects"
 	LocalService_ListProjectsForOrg_FullMethodName                  = "/rill.local.v1.LocalService/ListProjectsForOrg"
 	LocalService_GetProject_FullMethodName                          = "/rill.local.v1.LocalService/GetProject"
+	LocalService_ListBranches_FullMethodName                        = "/rill.local.v1.LocalService/ListBranches"
+	LocalService_CheckoutBranch_FullMethodName                      = "/rill.local.v1.LocalService/CheckoutBranch"
+	LocalService_CreateBranch_FullMethodName                        = "/rill.local.v1.LocalService/CreateBranch"
+	LocalService_DeleteBranch_FullMethodName                        = "/rill.local.v1.LocalService/DeleteBranch"
+	LocalService_GitMerge_FullMethodName                            = "/rill.local.v1.LocalService/GitMerge"
+	LocalService_GetCommitHistory_FullMethodName                    = "/rill.local.v1.LocalService/GetCommitHistory"
+	LocalService_GitCommit_FullMethodName                           = "/rill.local.v1.LocalService/GitCommit"
+	LocalService_PublishBranch_FullMethodName                       = "/rill.local.v1.LocalService/PublishBranch"
+	LocalService_DiscardChanges_FullMethodName                      = "/rill.local.v1.LocalService/DiscardChanges"
+	LocalService_CreatePreviewDeployment_FullMethodName             = "/rill.local.v1.LocalService/CreatePreviewDeployment"
+	LocalService_ListPreviewDeployments_FullMethodName              = "/rill.local.v1.LocalService/ListPreviewDeployments"
+	LocalService_DeletePreviewDeployment_FullMethodName             = "/rill.local.v1.LocalService/DeletePreviewDeployment"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -81,6 +93,30 @@ type LocalServiceClient interface {
 	ListProjectsForOrg(ctx context.Context, in *ListProjectsForOrgRequest, opts ...grpc.CallOption) (*ListProjectsForOrgResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// ListBranches returns all local and remote branches in the git repo.
+	ListBranches(ctx context.Context, in *ListBranchesRequest, opts ...grpc.CallOption) (*ListBranchesResponse, error)
+	// CheckoutBranch switches to a different branch.
+	CheckoutBranch(ctx context.Context, in *CheckoutBranchRequest, opts ...grpc.CallOption) (*CheckoutBranchResponse, error)
+	// CreateBranch creates a new branch from the current HEAD.
+	CreateBranch(ctx context.Context, in *CreateBranchRequest, opts ...grpc.CallOption) (*CreateBranchResponse, error)
+	// DeleteBranch deletes a local branch.
+	DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*DeleteBranchResponse, error)
+	// GitMerge merges a source branch into the current branch.
+	GitMerge(ctx context.Context, in *GitMergeRequest, opts ...grpc.CallOption) (*GitMergeResponse, error)
+	// GetCommitHistory returns the commit history for the current branch.
+	GetCommitHistory(ctx context.Context, in *GetCommitHistoryRequest, opts ...grpc.CallOption) (*GetCommitHistoryResponse, error)
+	// GitCommit creates a new commit with all current changes.
+	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
+	// PublishBranch pushes a local-only branch to the remote repository for the first time.
+	PublishBranch(ctx context.Context, in *PublishBranchRequest, opts ...grpc.CallOption) (*PublishBranchResponse, error)
+	// DiscardChanges discards all uncommitted changes in the working directory.
+	DiscardChanges(ctx context.Context, in *DiscardChangesRequest, opts ...grpc.CallOption) (*DiscardChangesResponse, error)
+	// CreatePreviewDeployment creates a preview deployment for the current branch.
+	CreatePreviewDeployment(ctx context.Context, in *CreatePreviewDeploymentRequest, opts ...grpc.CallOption) (*CreatePreviewDeploymentResponse, error)
+	// ListPreviewDeployments lists all preview deployments for the project.
+	ListPreviewDeployments(ctx context.Context, in *ListPreviewDeploymentsRequest, opts ...grpc.CallOption) (*ListPreviewDeploymentsResponse, error)
+	// DeletePreviewDeployment deletes a preview deployment.
+	DeletePreviewDeployment(ctx context.Context, in *DeletePreviewDeploymentRequest, opts ...grpc.CallOption) (*DeletePreviewDeploymentResponse, error)
 }
 
 type localServiceClient struct {
@@ -261,6 +297,126 @@ func (c *localServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 	return out, nil
 }
 
+func (c *localServiceClient) ListBranches(ctx context.Context, in *ListBranchesRequest, opts ...grpc.CallOption) (*ListBranchesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListBranchesResponse)
+	err := c.cc.Invoke(ctx, LocalService_ListBranches_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) CheckoutBranch(ctx context.Context, in *CheckoutBranchRequest, opts ...grpc.CallOption) (*CheckoutBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckoutBranchResponse)
+	err := c.cc.Invoke(ctx, LocalService_CheckoutBranch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) CreateBranch(ctx context.Context, in *CreateBranchRequest, opts ...grpc.CallOption) (*CreateBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateBranchResponse)
+	err := c.cc.Invoke(ctx, LocalService_CreateBranch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*DeleteBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteBranchResponse)
+	err := c.cc.Invoke(ctx, LocalService_DeleteBranch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GitMerge(ctx context.Context, in *GitMergeRequest, opts ...grpc.CallOption) (*GitMergeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitMergeResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitMerge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GetCommitHistory(ctx context.Context, in *GetCommitHistoryRequest, opts ...grpc.CallOption) (*GetCommitHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCommitHistoryResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetCommitHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitCommitResponse)
+	err := c.cc.Invoke(ctx, LocalService_GitCommit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) PublishBranch(ctx context.Context, in *PublishBranchRequest, opts ...grpc.CallOption) (*PublishBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PublishBranchResponse)
+	err := c.cc.Invoke(ctx, LocalService_PublishBranch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) DiscardChanges(ctx context.Context, in *DiscardChangesRequest, opts ...grpc.CallOption) (*DiscardChangesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DiscardChangesResponse)
+	err := c.cc.Invoke(ctx, LocalService_DiscardChanges_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) CreatePreviewDeployment(ctx context.Context, in *CreatePreviewDeploymentRequest, opts ...grpc.CallOption) (*CreatePreviewDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePreviewDeploymentResponse)
+	err := c.cc.Invoke(ctx, LocalService_CreatePreviewDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) ListPreviewDeployments(ctx context.Context, in *ListPreviewDeploymentsRequest, opts ...grpc.CallOption) (*ListPreviewDeploymentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPreviewDeploymentsResponse)
+	err := c.cc.Invoke(ctx, LocalService_ListPreviewDeployments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) DeletePreviewDeployment(ctx context.Context, in *DeletePreviewDeploymentRequest, opts ...grpc.CallOption) (*DeletePreviewDeploymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePreviewDeploymentResponse)
+	err := c.cc.Invoke(ctx, LocalService_DeletePreviewDeployment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility.
@@ -304,6 +460,30 @@ type LocalServiceServer interface {
 	ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// ListBranches returns all local and remote branches in the git repo.
+	ListBranches(context.Context, *ListBranchesRequest) (*ListBranchesResponse, error)
+	// CheckoutBranch switches to a different branch.
+	CheckoutBranch(context.Context, *CheckoutBranchRequest) (*CheckoutBranchResponse, error)
+	// CreateBranch creates a new branch from the current HEAD.
+	CreateBranch(context.Context, *CreateBranchRequest) (*CreateBranchResponse, error)
+	// DeleteBranch deletes a local branch.
+	DeleteBranch(context.Context, *DeleteBranchRequest) (*DeleteBranchResponse, error)
+	// GitMerge merges a source branch into the current branch.
+	GitMerge(context.Context, *GitMergeRequest) (*GitMergeResponse, error)
+	// GetCommitHistory returns the commit history for the current branch.
+	GetCommitHistory(context.Context, *GetCommitHistoryRequest) (*GetCommitHistoryResponse, error)
+	// GitCommit creates a new commit with all current changes.
+	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
+	// PublishBranch pushes a local-only branch to the remote repository for the first time.
+	PublishBranch(context.Context, *PublishBranchRequest) (*PublishBranchResponse, error)
+	// DiscardChanges discards all uncommitted changes in the working directory.
+	DiscardChanges(context.Context, *DiscardChangesRequest) (*DiscardChangesResponse, error)
+	// CreatePreviewDeployment creates a preview deployment for the current branch.
+	CreatePreviewDeployment(context.Context, *CreatePreviewDeploymentRequest) (*CreatePreviewDeploymentResponse, error)
+	// ListPreviewDeployments lists all preview deployments for the project.
+	ListPreviewDeployments(context.Context, *ListPreviewDeploymentsRequest) (*ListPreviewDeploymentsResponse, error)
+	// DeletePreviewDeployment deletes a preview deployment.
+	DeletePreviewDeployment(context.Context, *DeletePreviewDeploymentRequest) (*DeletePreviewDeploymentResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -364,6 +544,42 @@ func (UnimplementedLocalServiceServer) ListProjectsForOrg(context.Context, *List
 }
 func (UnimplementedLocalServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedLocalServiceServer) ListBranches(context.Context, *ListBranchesRequest) (*ListBranchesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListBranches not implemented")
+}
+func (UnimplementedLocalServiceServer) CheckoutBranch(context.Context, *CheckoutBranchRequest) (*CheckoutBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckoutBranch not implemented")
+}
+func (UnimplementedLocalServiceServer) CreateBranch(context.Context, *CreateBranchRequest) (*CreateBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateBranch not implemented")
+}
+func (UnimplementedLocalServiceServer) DeleteBranch(context.Context, *DeleteBranchRequest) (*DeleteBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteBranch not implemented")
+}
+func (UnimplementedLocalServiceServer) GitMerge(context.Context, *GitMergeRequest) (*GitMergeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitMerge not implemented")
+}
+func (UnimplementedLocalServiceServer) GetCommitHistory(context.Context, *GetCommitHistoryRequest) (*GetCommitHistoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCommitHistory not implemented")
+}
+func (UnimplementedLocalServiceServer) GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitCommit not implemented")
+}
+func (UnimplementedLocalServiceServer) PublishBranch(context.Context, *PublishBranchRequest) (*PublishBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PublishBranch not implemented")
+}
+func (UnimplementedLocalServiceServer) DiscardChanges(context.Context, *DiscardChangesRequest) (*DiscardChangesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DiscardChanges not implemented")
+}
+func (UnimplementedLocalServiceServer) CreatePreviewDeployment(context.Context, *CreatePreviewDeploymentRequest) (*CreatePreviewDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePreviewDeployment not implemented")
+}
+func (UnimplementedLocalServiceServer) ListPreviewDeployments(context.Context, *ListPreviewDeploymentsRequest) (*ListPreviewDeploymentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListPreviewDeployments not implemented")
+}
+func (UnimplementedLocalServiceServer) DeletePreviewDeployment(context.Context, *DeletePreviewDeploymentRequest) (*DeletePreviewDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePreviewDeployment not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 func (UnimplementedLocalServiceServer) testEmbeddedByValue()                      {}
@@ -692,6 +908,222 @@ func _LocalService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_ListBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBranchesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).ListBranches(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_ListBranches_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).ListBranches(ctx, req.(*ListBranchesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_CheckoutBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckoutBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).CheckoutBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_CheckoutBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).CheckoutBranch(ctx, req.(*CheckoutBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_CreateBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).CreateBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_CreateBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).CreateBranch(ctx, req.(*CreateBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_DeleteBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).DeleteBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_DeleteBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).DeleteBranch(ctx, req.(*DeleteBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GitMerge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitMergeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitMerge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitMerge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitMerge(ctx, req.(*GitMergeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GetCommitHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCommitHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetCommitHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetCommitHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetCommitHistory(ctx, req.(*GetCommitHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GitCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitCommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GitCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GitCommit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GitCommit(ctx, req.(*GitCommitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_PublishBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublishBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).PublishBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_PublishBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).PublishBranch(ctx, req.(*PublishBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_DiscardChanges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DiscardChangesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).DiscardChanges(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_DiscardChanges_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).DiscardChanges(ctx, req.(*DiscardChangesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_CreatePreviewDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePreviewDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).CreatePreviewDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_CreatePreviewDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).CreatePreviewDeployment(ctx, req.(*CreatePreviewDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_ListPreviewDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPreviewDeploymentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).ListPreviewDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_ListPreviewDeployments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).ListPreviewDeployments(ctx, req.(*ListPreviewDeploymentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_DeletePreviewDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePreviewDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).DeletePreviewDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_DeletePreviewDeployment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).DeletePreviewDeployment(ctx, req.(*DeletePreviewDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -766,6 +1198,54 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProject",
 			Handler:    _LocalService_GetProject_Handler,
+		},
+		{
+			MethodName: "ListBranches",
+			Handler:    _LocalService_ListBranches_Handler,
+		},
+		{
+			MethodName: "CheckoutBranch",
+			Handler:    _LocalService_CheckoutBranch_Handler,
+		},
+		{
+			MethodName: "CreateBranch",
+			Handler:    _LocalService_CreateBranch_Handler,
+		},
+		{
+			MethodName: "DeleteBranch",
+			Handler:    _LocalService_DeleteBranch_Handler,
+		},
+		{
+			MethodName: "GitMerge",
+			Handler:    _LocalService_GitMerge_Handler,
+		},
+		{
+			MethodName: "GetCommitHistory",
+			Handler:    _LocalService_GetCommitHistory_Handler,
+		},
+		{
+			MethodName: "GitCommit",
+			Handler:    _LocalService_GitCommit_Handler,
+		},
+		{
+			MethodName: "PublishBranch",
+			Handler:    _LocalService_PublishBranch_Handler,
+		},
+		{
+			MethodName: "DiscardChanges",
+			Handler:    _LocalService_DiscardChanges_Handler,
+		},
+		{
+			MethodName: "CreatePreviewDeployment",
+			Handler:    _LocalService_CreatePreviewDeployment_Handler,
+		},
+		{
+			MethodName: "ListPreviewDeployments",
+			Handler:    _LocalService_ListPreviewDeployments_Handler,
+		},
+		{
+			MethodName: "DeletePreviewDeployment",
+			Handler:    _LocalService_DeletePreviewDeployment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

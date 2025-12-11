@@ -661,6 +661,15 @@ func (c *connection) FindDeploymentByInstanceID(ctx context.Context, instanceID 
 	return res, nil
 }
 
+func (c *connection) FindDeploymentByProjectAndBranch(ctx context.Context, projectID, branch string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM deployments d WHERE d.project_id=$1 AND d.branch=$2 AND d.environment='preview'", projectID, branch).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

@@ -61,6 +61,42 @@ service LocalService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {}
+
+  // ListBranches returns all local and remote branches in the git repo.
+  rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse) {}
+
+  // CheckoutBranch switches to a different branch.
+  rpc CheckoutBranch(CheckoutBranchRequest) returns (CheckoutBranchResponse) {}
+
+  // CreateBranch creates a new branch from the current HEAD.
+  rpc CreateBranch(CreateBranchRequest) returns (CreateBranchResponse) {}
+
+  // DeleteBranch deletes a local branch.
+  rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse) {}
+
+  // GitMerge merges a source branch into the current branch.
+  rpc GitMerge(GitMergeRequest) returns (GitMergeResponse) {}
+
+  // GetCommitHistory returns the commit history for the current branch.
+  rpc GetCommitHistory(GetCommitHistoryRequest) returns (GetCommitHistoryResponse) {}
+
+  // GitCommit creates a new commit with all current changes.
+  rpc GitCommit(GitCommitRequest) returns (GitCommitResponse) {}
+
+  // PublishBranch pushes a local-only branch to the remote repository for the first time.
+  rpc PublishBranch(PublishBranchRequest) returns (PublishBranchResponse) {}
+
+  // DiscardChanges discards all uncommitted changes in the working directory.
+  rpc DiscardChanges(DiscardChangesRequest) returns (DiscardChangesResponse) {}
+
+  // CreatePreviewDeployment creates a preview deployment for the current branch.
+  rpc CreatePreviewDeployment(CreatePreviewDeploymentRequest) returns (CreatePreviewDeploymentResponse) {}
+
+  // ListPreviewDeployments lists all preview deployments for the project.
+  rpc ListPreviewDeployments(ListPreviewDeploymentsRequest) returns (ListPreviewDeploymentsResponse) {}
+
+  // DeletePreviewDeployment deletes a preview deployment.
+  rpc DeletePreviewDeployment(DeletePreviewDeploymentRequest) returns (DeletePreviewDeploymentResponse) {}
 }
 
 message PingRequest {}
@@ -111,6 +147,8 @@ message GitStatusResponse {
   int32 local_commits = 5;
   // remote_commits returns number of remote commits not pulled yet.
   int32 remote_commits = 6;
+  // has_upstream returns true if the current branch has a remote tracking branch.
+  bool has_upstream = 8;
 }
 
 message GithubRepoStatusRequest {
@@ -238,4 +276,197 @@ message GetProjectRequest {
 message GetProjectResponse {
   admin.v1.Project project = 1;
   admin.v1.ProjectPermissions project_permissions = 4;
+}
+
+// Branch information with sync status and deployment mapping
+message BranchInfo {
+  // Name of the branch
+  string name = 1;
+  // Whether the branch exists locally
+  bool is_local = 2;
+  // Whether the branch exists on remote
+  bool is_remote = 3;
+  // Whether this is the currently checked out branch
+  bool is_current = 4;
+  // Short hash of the last commit on this branch
+  string last_commit_hash = 5;
+  // Message of the last commit
+  string last_commit_message = 6;
+  // Timestamp of the last commit
+  google.protobuf.Timestamp last_commit_time = 7;
+  // Number of commits ahead of remote
+  int32 ahead = 8;
+  // Number of commits behind remote
+  int32 behind = 9;
+}
+
+message ListBranchesRequest {}
+
+message ListBranchesResponse {
+  // All branches (local and remote)
+  repeated BranchInfo branches = 1;
+  // Name of the current branch
+  string current_branch = 2;
+  // Whether the repo has uncommitted changes
+  bool has_uncommitted_changes = 3;
+}
+
+message CheckoutBranchRequest {
+  // Name of the branch to checkout
+  string branch = 1 [(validate.rules).string.min_len = 1];
+  // Force checkout even if there are uncommitted changes (will discard them)
+  bool force = 2;
+}
+
+message CheckoutBranchResponse {}
+
+message CreateBranchRequest {
+  // Name of the new branch
+  string name = 1 [(validate.rules).string.min_len = 1];
+  // Whether to checkout the new branch after creating it
+  bool checkout = 2;
+}
+
+message CreateBranchResponse {
+  // The created branch info
+  BranchInfo branch = 1;
+}
+
+message DeleteBranchRequest {
+  // Name of the branch to delete
+  string name = 1 [(validate.rules).string.min_len = 1];
+  // Force delete even if the branch is not fully merged
+  bool force = 2;
+}
+
+message DeleteBranchResponse {}
+
+message GitMergeRequest {
+  // The branch to merge into the current branch
+  string source_branch = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GitMergeResponse {
+  // Whether the merge was successful
+  bool success = 1;
+  // Whether there were conflicts
+  bool has_conflicts = 2;
+  // List of files with conflicts
+  repeated string conflicting_files = 3;
+  // URL to create a pull request (if conflicts exist and remote is GitHub)
+  string pull_request_url = 4;
+}
+
+// Commit information for history display
+message CommitInfo {
+  // Full commit hash
+  string hash = 1;
+  // Short commit hash (first 7 characters)
+  string short_hash = 2;
+  // Commit message
+  string message = 3;
+  // Author name
+  string author_name = 4;
+  // Author email
+  string author_email = 5;
+  // Commit timestamp
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+message GetCommitHistoryRequest {
+  // Branch to get history for (defaults to current branch if empty)
+  string branch = 1;
+  // Maximum number of commits to return (defaults to 50)
+  int32 limit = 2;
+  // Offset for pagination
+  int32 offset = 3;
+}
+
+message GetCommitHistoryResponse {
+  // List of commits
+  repeated CommitInfo commits = 1;
+  // Total number of commits on the branch
+  int32 total_count = 2;
+}
+
+message GitCommitRequest {
+  // Commit message (required)
+  string message = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GitCommitResponse {
+  // The created commit info
+  CommitInfo commit = 1;
+}
+
+message PublishBranchRequest {}
+
+message PublishBranchResponse {
+  // The branch that was published
+  string branch = 1;
+  // The remote URL where the branch was published
+  string remote_url = 2;
+}
+
+message DiscardChangesRequest {
+  // If true, only discard specific files. If empty, discard all changes.
+  repeated string paths = 1;
+}
+
+message DiscardChangesResponse {}
+
+// Preview deployment messages
+message CreatePreviewDeploymentRequest {
+  // Organization name (required)
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Project name (required)
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message CreatePreviewDeploymentResponse {
+  // The deployment ID
+  string deployment_id = 1;
+  // The frontend URL for the preview
+  string frontend_url = 2;
+  // The branch that was deployed
+  string branch = 3;
+}
+
+message ListPreviewDeploymentsRequest {
+  // Organization name (required)
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Project name (required)
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message PreviewDeploymentInfo {
+  // The deployment ID
+  string id = 1;
+  // The branch name
+  string branch = 2;
+  // The deployment status
+  string status = 3;
+  // The frontend URL
+  string frontend_url = 4;
+  // When the deployment was created
+  google.protobuf.Timestamp created_on = 5;
+}
+
+message ListPreviewDeploymentsResponse {
+  // List of preview deployments
+  repeated PreviewDeploymentInfo deployments = 1;
+}
+
+message DeletePreviewDeploymentRequest {
+  // Organization name (required)
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Project name (required)
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // Deployment ID to delete
+  string deployment_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message DeletePreviewDeploymentResponse {
+  // The deleted deployment ID
+  string deployment_id = 1;
 }

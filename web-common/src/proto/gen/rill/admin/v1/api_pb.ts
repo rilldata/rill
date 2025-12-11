@@ -972,6 +972,13 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
    */
   environment = "";
 
+  /**
+   * Branch is required for preview deployments, optional for others
+   *
+   * @generated from field: string branch = 4;
+   */
+  branch = "";
+
   constructor(data?: PartialMessage<CreateDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -983,6 +990,7 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDeploymentRequest {

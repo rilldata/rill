@@ -14,6 +14,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -109,6 +110,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	err = os.MkdirAll(dbDirPath, os.ModePerm) // Create project dir and db dir if it doesn't exist
 	if err != nil {
 		return nil, err
+	}
+
+	// Ensure project is backed by git (local git if no remote)
+	gitInitialized, err := gitutil.EnsureGitRepo(projectPath)
+	if err != nil {
+		sugarLogger.Warnf("Failed to initialize git repository: %v", err)
+	} else if gitInitialized {
+		sugarLogger.Info("Initialized git repository for project")
 	}
 
 	// old behaviour when data was stored in a stage.db file in the project directory.

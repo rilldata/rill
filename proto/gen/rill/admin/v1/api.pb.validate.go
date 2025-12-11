@@ -2258,6 +2258,8 @@ func (m *CreateDeploymentRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Branch
+
 	if len(errors) > 0 {
 		return CreateDeploymentRequestMultiError(errors)
 	}

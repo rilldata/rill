@@ -1247,6 +1247,8 @@ message CreateDeploymentRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3 [(validate.rules).string.min_len = 1];
+  // Branch is required for preview deployments, optional for others
+  string branch = 4;
 }
 
 message CreateDeploymentResponse {

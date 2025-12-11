@@ -191,9 +191,12 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		slots = proj.ProdSlots
 	case "dev":
 		slots = proj.DevSlots
+	case "preview":
+		// Preview deployments use dev slot allocation
+		slots = proj.DevSlots
 	default:
 		// Invalid environment
-		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
+		return errors.New("Invalid environment, must be 'prod', 'dev', or 'preview'")
 	}
 
 	// Provision the runtime

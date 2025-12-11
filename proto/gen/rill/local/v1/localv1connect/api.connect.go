@@ -78,6 +78,40 @@ const (
 	LocalServiceListProjectsForOrgProcedure = "/rill.local.v1.LocalService/ListProjectsForOrg"
 	// LocalServiceGetProjectProcedure is the fully-qualified name of the LocalService's GetProject RPC.
 	LocalServiceGetProjectProcedure = "/rill.local.v1.LocalService/GetProject"
+	// LocalServiceListBranchesProcedure is the fully-qualified name of the LocalService's ListBranches
+	// RPC.
+	LocalServiceListBranchesProcedure = "/rill.local.v1.LocalService/ListBranches"
+	// LocalServiceCheckoutBranchProcedure is the fully-qualified name of the LocalService's
+	// CheckoutBranch RPC.
+	LocalServiceCheckoutBranchProcedure = "/rill.local.v1.LocalService/CheckoutBranch"
+	// LocalServiceCreateBranchProcedure is the fully-qualified name of the LocalService's CreateBranch
+	// RPC.
+	LocalServiceCreateBranchProcedure = "/rill.local.v1.LocalService/CreateBranch"
+	// LocalServiceDeleteBranchProcedure is the fully-qualified name of the LocalService's DeleteBranch
+	// RPC.
+	LocalServiceDeleteBranchProcedure = "/rill.local.v1.LocalService/DeleteBranch"
+	// LocalServiceGitMergeProcedure is the fully-qualified name of the LocalService's GitMerge RPC.
+	LocalServiceGitMergeProcedure = "/rill.local.v1.LocalService/GitMerge"
+	// LocalServiceGetCommitHistoryProcedure is the fully-qualified name of the LocalService's
+	// GetCommitHistory RPC.
+	LocalServiceGetCommitHistoryProcedure = "/rill.local.v1.LocalService/GetCommitHistory"
+	// LocalServiceGitCommitProcedure is the fully-qualified name of the LocalService's GitCommit RPC.
+	LocalServiceGitCommitProcedure = "/rill.local.v1.LocalService/GitCommit"
+	// LocalServicePublishBranchProcedure is the fully-qualified name of the LocalService's
+	// PublishBranch RPC.
+	LocalServicePublishBranchProcedure = "/rill.local.v1.LocalService/PublishBranch"
+	// LocalServiceDiscardChangesProcedure is the fully-qualified name of the LocalService's
+	// DiscardChanges RPC.
+	LocalServiceDiscardChangesProcedure = "/rill.local.v1.LocalService/DiscardChanges"
+	// LocalServiceCreatePreviewDeploymentProcedure is the fully-qualified name of the LocalService's
+	// CreatePreviewDeployment RPC.
+	LocalServiceCreatePreviewDeploymentProcedure = "/rill.local.v1.LocalService/CreatePreviewDeployment"
+	// LocalServiceListPreviewDeploymentsProcedure is the fully-qualified name of the LocalService's
+	// ListPreviewDeployments RPC.
+	LocalServiceListPreviewDeploymentsProcedure = "/rill.local.v1.LocalService/ListPreviewDeployments"
+	// LocalServiceDeletePreviewDeploymentProcedure is the fully-qualified name of the LocalService's
+	// DeletePreviewDeployment RPC.
+	LocalServiceDeletePreviewDeploymentProcedure = "/rill.local.v1.LocalService/DeletePreviewDeployment"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -100,6 +134,18 @@ var (
 	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
 	localServiceListProjectsForOrgMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("ListProjectsForOrg")
 	localServiceGetProjectMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetProject")
+	localServiceListBranchesMethodDescriptor                        = localServiceServiceDescriptor.Methods().ByName("ListBranches")
+	localServiceCheckoutBranchMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("CheckoutBranch")
+	localServiceCreateBranchMethodDescriptor                        = localServiceServiceDescriptor.Methods().ByName("CreateBranch")
+	localServiceDeleteBranchMethodDescriptor                        = localServiceServiceDescriptor.Methods().ByName("DeleteBranch")
+	localServiceGitMergeMethodDescriptor                            = localServiceServiceDescriptor.Methods().ByName("GitMerge")
+	localServiceGetCommitHistoryMethodDescriptor                    = localServiceServiceDescriptor.Methods().ByName("GetCommitHistory")
+	localServiceGitCommitMethodDescriptor                           = localServiceServiceDescriptor.Methods().ByName("GitCommit")
+	localServicePublishBranchMethodDescriptor                       = localServiceServiceDescriptor.Methods().ByName("PublishBranch")
+	localServiceDiscardChangesMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("DiscardChanges")
+	localServiceCreatePreviewDeploymentMethodDescriptor             = localServiceServiceDescriptor.Methods().ByName("CreatePreviewDeployment")
+	localServiceListPreviewDeploymentsMethodDescriptor              = localServiceServiceDescriptor.Methods().ByName("ListPreviewDeployments")
+	localServiceDeletePreviewDeploymentMethodDescriptor             = localServiceServiceDescriptor.Methods().ByName("DeletePreviewDeployment")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -143,6 +189,30 @@ type LocalServiceClient interface {
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
+	// ListBranches returns all local and remote branches in the git repo.
+	ListBranches(context.Context, *connect.Request[v1.ListBranchesRequest]) (*connect.Response[v1.ListBranchesResponse], error)
+	// CheckoutBranch switches to a different branch.
+	CheckoutBranch(context.Context, *connect.Request[v1.CheckoutBranchRequest]) (*connect.Response[v1.CheckoutBranchResponse], error)
+	// CreateBranch creates a new branch from the current HEAD.
+	CreateBranch(context.Context, *connect.Request[v1.CreateBranchRequest]) (*connect.Response[v1.CreateBranchResponse], error)
+	// DeleteBranch deletes a local branch.
+	DeleteBranch(context.Context, *connect.Request[v1.DeleteBranchRequest]) (*connect.Response[v1.DeleteBranchResponse], error)
+	// GitMerge merges a source branch into the current branch.
+	GitMerge(context.Context, *connect.Request[v1.GitMergeRequest]) (*connect.Response[v1.GitMergeResponse], error)
+	// GetCommitHistory returns the commit history for the current branch.
+	GetCommitHistory(context.Context, *connect.Request[v1.GetCommitHistoryRequest]) (*connect.Response[v1.GetCommitHistoryResponse], error)
+	// GitCommit creates a new commit with all current changes.
+	GitCommit(context.Context, *connect.Request[v1.GitCommitRequest]) (*connect.Response[v1.GitCommitResponse], error)
+	// PublishBranch pushes a local-only branch to the remote repository for the first time.
+	PublishBranch(context.Context, *connect.Request[v1.PublishBranchRequest]) (*connect.Response[v1.PublishBranchResponse], error)
+	// DiscardChanges discards all uncommitted changes in the working directory.
+	DiscardChanges(context.Context, *connect.Request[v1.DiscardChangesRequest]) (*connect.Response[v1.DiscardChangesResponse], error)
+	// CreatePreviewDeployment creates a preview deployment for the current branch.
+	CreatePreviewDeployment(context.Context, *connect.Request[v1.CreatePreviewDeploymentRequest]) (*connect.Response[v1.CreatePreviewDeploymentResponse], error)
+	// ListPreviewDeployments lists all preview deployments for the project.
+	ListPreviewDeployments(context.Context, *connect.Request[v1.ListPreviewDeploymentsRequest]) (*connect.Response[v1.ListPreviewDeploymentsResponse], error)
+	// DeletePreviewDeployment deletes a preview deployment.
+	DeletePreviewDeployment(context.Context, *connect.Request[v1.DeletePreviewDeploymentRequest]) (*connect.Response[v1.DeletePreviewDeploymentResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -257,6 +327,78 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetProjectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		listBranches: connect.NewClient[v1.ListBranchesRequest, v1.ListBranchesResponse](
+			httpClient,
+			baseURL+LocalServiceListBranchesProcedure,
+			connect.WithSchema(localServiceListBranchesMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		checkoutBranch: connect.NewClient[v1.CheckoutBranchRequest, v1.CheckoutBranchResponse](
+			httpClient,
+			baseURL+LocalServiceCheckoutBranchProcedure,
+			connect.WithSchema(localServiceCheckoutBranchMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		createBranch: connect.NewClient[v1.CreateBranchRequest, v1.CreateBranchResponse](
+			httpClient,
+			baseURL+LocalServiceCreateBranchProcedure,
+			connect.WithSchema(localServiceCreateBranchMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		deleteBranch: connect.NewClient[v1.DeleteBranchRequest, v1.DeleteBranchResponse](
+			httpClient,
+			baseURL+LocalServiceDeleteBranchProcedure,
+			connect.WithSchema(localServiceDeleteBranchMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		gitMerge: connect.NewClient[v1.GitMergeRequest, v1.GitMergeResponse](
+			httpClient,
+			baseURL+LocalServiceGitMergeProcedure,
+			connect.WithSchema(localServiceGitMergeMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		getCommitHistory: connect.NewClient[v1.GetCommitHistoryRequest, v1.GetCommitHistoryResponse](
+			httpClient,
+			baseURL+LocalServiceGetCommitHistoryProcedure,
+			connect.WithSchema(localServiceGetCommitHistoryMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		gitCommit: connect.NewClient[v1.GitCommitRequest, v1.GitCommitResponse](
+			httpClient,
+			baseURL+LocalServiceGitCommitProcedure,
+			connect.WithSchema(localServiceGitCommitMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		publishBranch: connect.NewClient[v1.PublishBranchRequest, v1.PublishBranchResponse](
+			httpClient,
+			baseURL+LocalServicePublishBranchProcedure,
+			connect.WithSchema(localServicePublishBranchMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		discardChanges: connect.NewClient[v1.DiscardChangesRequest, v1.DiscardChangesResponse](
+			httpClient,
+			baseURL+LocalServiceDiscardChangesProcedure,
+			connect.WithSchema(localServiceDiscardChangesMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		createPreviewDeployment: connect.NewClient[v1.CreatePreviewDeploymentRequest, v1.CreatePreviewDeploymentResponse](
+			httpClient,
+			baseURL+LocalServiceCreatePreviewDeploymentProcedure,
+			connect.WithSchema(localServiceCreatePreviewDeploymentMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		listPreviewDeployments: connect.NewClient[v1.ListPreviewDeploymentsRequest, v1.ListPreviewDeploymentsResponse](
+			httpClient,
+			baseURL+LocalServiceListPreviewDeploymentsProcedure,
+			connect.WithSchema(localServiceListPreviewDeploymentsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		deletePreviewDeployment: connect.NewClient[v1.DeletePreviewDeploymentRequest, v1.DeletePreviewDeploymentResponse](
+			httpClient,
+			baseURL+LocalServiceDeletePreviewDeploymentProcedure,
+			connect.WithSchema(localServiceDeletePreviewDeploymentMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -279,6 +421,18 @@ type localServiceClient struct {
 	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
 	listProjectsForOrg                  *connect.Client[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse]
 	getProject                          *connect.Client[v1.GetProjectRequest, v1.GetProjectResponse]
+	listBranches                        *connect.Client[v1.ListBranchesRequest, v1.ListBranchesResponse]
+	checkoutBranch                      *connect.Client[v1.CheckoutBranchRequest, v1.CheckoutBranchResponse]
+	createBranch                        *connect.Client[v1.CreateBranchRequest, v1.CreateBranchResponse]
+	deleteBranch                        *connect.Client[v1.DeleteBranchRequest, v1.DeleteBranchResponse]
+	gitMerge                            *connect.Client[v1.GitMergeRequest, v1.GitMergeResponse]
+	getCommitHistory                    *connect.Client[v1.GetCommitHistoryRequest, v1.GetCommitHistoryResponse]
+	gitCommit                           *connect.Client[v1.GitCommitRequest, v1.GitCommitResponse]
+	publishBranch                       *connect.Client[v1.PublishBranchRequest, v1.PublishBranchResponse]
+	discardChanges                      *connect.Client[v1.DiscardChangesRequest, v1.DiscardChangesResponse]
+	createPreviewDeployment             *connect.Client[v1.CreatePreviewDeploymentRequest, v1.CreatePreviewDeploymentResponse]
+	listPreviewDeployments              *connect.Client[v1.ListPreviewDeploymentsRequest, v1.ListPreviewDeploymentsResponse]
+	deletePreviewDeployment             *connect.Client[v1.DeletePreviewDeploymentRequest, v1.DeletePreviewDeploymentResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -367,6 +521,66 @@ func (c *localServiceClient) GetProject(ctx context.Context, req *connect.Reques
 	return c.getProject.CallUnary(ctx, req)
 }
 
+// ListBranches calls rill.local.v1.LocalService.ListBranches.
+func (c *localServiceClient) ListBranches(ctx context.Context, req *connect.Request[v1.ListBranchesRequest]) (*connect.Response[v1.ListBranchesResponse], error) {
+	return c.listBranches.CallUnary(ctx, req)
+}
+
+// CheckoutBranch calls rill.local.v1.LocalService.CheckoutBranch.
+func (c *localServiceClient) CheckoutBranch(ctx context.Context, req *connect.Request[v1.CheckoutBranchRequest]) (*connect.Response[v1.CheckoutBranchResponse], error) {
+	return c.checkoutBranch.CallUnary(ctx, req)
+}
+
+// CreateBranch calls rill.local.v1.LocalService.CreateBranch.
+func (c *localServiceClient) CreateBranch(ctx context.Context, req *connect.Request[v1.CreateBranchRequest]) (*connect.Response[v1.CreateBranchResponse], error) {
+	return c.createBranch.CallUnary(ctx, req)
+}
+
+// DeleteBranch calls rill.local.v1.LocalService.DeleteBranch.
+func (c *localServiceClient) DeleteBranch(ctx context.Context, req *connect.Request[v1.DeleteBranchRequest]) (*connect.Response[v1.DeleteBranchResponse], error) {
+	return c.deleteBranch.CallUnary(ctx, req)
+}
+
+// GitMerge calls rill.local.v1.LocalService.GitMerge.
+func (c *localServiceClient) GitMerge(ctx context.Context, req *connect.Request[v1.GitMergeRequest]) (*connect.Response[v1.GitMergeResponse], error) {
+	return c.gitMerge.CallUnary(ctx, req)
+}
+
+// GetCommitHistory calls rill.local.v1.LocalService.GetCommitHistory.
+func (c *localServiceClient) GetCommitHistory(ctx context.Context, req *connect.Request[v1.GetCommitHistoryRequest]) (*connect.Response[v1.GetCommitHistoryResponse], error) {
+	return c.getCommitHistory.CallUnary(ctx, req)
+}
+
+// GitCommit calls rill.local.v1.LocalService.GitCommit.
+func (c *localServiceClient) GitCommit(ctx context.Context, req *connect.Request[v1.GitCommitRequest]) (*connect.Response[v1.GitCommitResponse], error) {
+	return c.gitCommit.CallUnary(ctx, req)
+}
+
+// PublishBranch calls rill.local.v1.LocalService.PublishBranch.
+func (c *localServiceClient) PublishBranch(ctx context.Context, req *connect.Request[v1.PublishBranchRequest]) (*connect.Response[v1.PublishBranchResponse], error) {
+	return c.publishBranch.CallUnary(ctx, req)
+}
+
+// DiscardChanges calls rill.local.v1.LocalService.DiscardChanges.
+func (c *localServiceClient) DiscardChanges(ctx context.Context, req *connect.Request[v1.DiscardChangesRequest]) (*connect.Response[v1.DiscardChangesResponse], error) {
+	return c.discardChanges.CallUnary(ctx, req)
+}
+
+// CreatePreviewDeployment calls rill.local.v1.LocalService.CreatePreviewDeployment.
+func (c *localServiceClient) CreatePreviewDeployment(ctx context.Context, req *connect.Request[v1.CreatePreviewDeploymentRequest]) (*connect.Response[v1.CreatePreviewDeploymentResponse], error) {
+	return c.createPreviewDeployment.CallUnary(ctx, req)
+}
+
+// ListPreviewDeployments calls rill.local.v1.LocalService.ListPreviewDeployments.
+func (c *localServiceClient) ListPreviewDeployments(ctx context.Context, req *connect.Request[v1.ListPreviewDeploymentsRequest]) (*connect.Response[v1.ListPreviewDeploymentsResponse], error) {
+	return c.listPreviewDeployments.CallUnary(ctx, req)
+}
+
+// DeletePreviewDeployment calls rill.local.v1.LocalService.DeletePreviewDeployment.
+func (c *localServiceClient) DeletePreviewDeployment(ctx context.Context, req *connect.Request[v1.DeletePreviewDeploymentRequest]) (*connect.Response[v1.DeletePreviewDeploymentResponse], error) {
+	return c.deletePreviewDeployment.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -408,6 +622,30 @@ type LocalServiceHandler interface {
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
+	// ListBranches returns all local and remote branches in the git repo.
+	ListBranches(context.Context, *connect.Request[v1.ListBranchesRequest]) (*connect.Response[v1.ListBranchesResponse], error)
+	// CheckoutBranch switches to a different branch.
+	CheckoutBranch(context.Context, *connect.Request[v1.CheckoutBranchRequest]) (*connect.Response[v1.CheckoutBranchResponse], error)
+	// CreateBranch creates a new branch from the current HEAD.
+	CreateBranch(context.Context, *connect.Request[v1.CreateBranchRequest]) (*connect.Response[v1.CreateBranchResponse], error)
+	// DeleteBranch deletes a local branch.
+	DeleteBranch(context.Context, *connect.Request[v1.DeleteBranchRequest]) (*connect.Response[v1.DeleteBranchResponse], error)
+	// GitMerge merges a source branch into the current branch.
+	GitMerge(context.Context, *connect.Request[v1.GitMergeRequest]) (*connect.Response[v1.GitMergeResponse], error)
+	// GetCommitHistory returns the commit history for the current branch.
+	GetCommitHistory(context.Context, *connect.Request[v1.GetCommitHistoryRequest]) (*connect.Response[v1.GetCommitHistoryResponse], error)
+	// GitCommit creates a new commit with all current changes.
+	GitCommit(context.Context, *connect.Request[v1.GitCommitRequest]) (*connect.Response[v1.GitCommitResponse], error)
+	// PublishBranch pushes a local-only branch to the remote repository for the first time.
+	PublishBranch(context.Context, *connect.Request[v1.PublishBranchRequest]) (*connect.Response[v1.PublishBranchResponse], error)
+	// DiscardChanges discards all uncommitted changes in the working directory.
+	DiscardChanges(context.Context, *connect.Request[v1.DiscardChangesRequest]) (*connect.Response[v1.DiscardChangesResponse], error)
+	// CreatePreviewDeployment creates a preview deployment for the current branch.
+	CreatePreviewDeployment(context.Context, *connect.Request[v1.CreatePreviewDeploymentRequest]) (*connect.Response[v1.CreatePreviewDeploymentResponse], error)
+	// ListPreviewDeployments lists all preview deployments for the project.
+	ListPreviewDeployments(context.Context, *connect.Request[v1.ListPreviewDeploymentsRequest]) (*connect.Response[v1.ListPreviewDeploymentsResponse], error)
+	// DeletePreviewDeployment deletes a preview deployment.
+	DeletePreviewDeployment(context.Context, *connect.Request[v1.DeletePreviewDeploymentRequest]) (*connect.Response[v1.DeletePreviewDeploymentResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -518,6 +756,78 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetProjectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceListBranchesHandler := connect.NewUnaryHandler(
+		LocalServiceListBranchesProcedure,
+		svc.ListBranches,
+		connect.WithSchema(localServiceListBranchesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceCheckoutBranchHandler := connect.NewUnaryHandler(
+		LocalServiceCheckoutBranchProcedure,
+		svc.CheckoutBranch,
+		connect.WithSchema(localServiceCheckoutBranchMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceCreateBranchHandler := connect.NewUnaryHandler(
+		LocalServiceCreateBranchProcedure,
+		svc.CreateBranch,
+		connect.WithSchema(localServiceCreateBranchMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceDeleteBranchHandler := connect.NewUnaryHandler(
+		LocalServiceDeleteBranchProcedure,
+		svc.DeleteBranch,
+		connect.WithSchema(localServiceDeleteBranchMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGitMergeHandler := connect.NewUnaryHandler(
+		LocalServiceGitMergeProcedure,
+		svc.GitMerge,
+		connect.WithSchema(localServiceGitMergeMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGetCommitHistoryHandler := connect.NewUnaryHandler(
+		LocalServiceGetCommitHistoryProcedure,
+		svc.GetCommitHistory,
+		connect.WithSchema(localServiceGetCommitHistoryMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceGitCommitHandler := connect.NewUnaryHandler(
+		LocalServiceGitCommitProcedure,
+		svc.GitCommit,
+		connect.WithSchema(localServiceGitCommitMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServicePublishBranchHandler := connect.NewUnaryHandler(
+		LocalServicePublishBranchProcedure,
+		svc.PublishBranch,
+		connect.WithSchema(localServicePublishBranchMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceDiscardChangesHandler := connect.NewUnaryHandler(
+		LocalServiceDiscardChangesProcedure,
+		svc.DiscardChanges,
+		connect.WithSchema(localServiceDiscardChangesMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceCreatePreviewDeploymentHandler := connect.NewUnaryHandler(
+		LocalServiceCreatePreviewDeploymentProcedure,
+		svc.CreatePreviewDeployment,
+		connect.WithSchema(localServiceCreatePreviewDeploymentMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceListPreviewDeploymentsHandler := connect.NewUnaryHandler(
+		LocalServiceListPreviewDeploymentsProcedure,
+		svc.ListPreviewDeployments,
+		connect.WithSchema(localServiceListPreviewDeploymentsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceDeletePreviewDeploymentHandler := connect.NewUnaryHandler(
+		LocalServiceDeletePreviewDeploymentProcedure,
+		svc.DeletePreviewDeployment,
+		connect.WithSchema(localServiceDeletePreviewDeploymentMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -554,6 +864,30 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceListProjectsForOrgHandler.ServeHTTP(w, r)
 		case LocalServiceGetProjectProcedure:
 			localServiceGetProjectHandler.ServeHTTP(w, r)
+		case LocalServiceListBranchesProcedure:
+			localServiceListBranchesHandler.ServeHTTP(w, r)
+		case LocalServiceCheckoutBranchProcedure:
+			localServiceCheckoutBranchHandler.ServeHTTP(w, r)
+		case LocalServiceCreateBranchProcedure:
+			localServiceCreateBranchHandler.ServeHTTP(w, r)
+		case LocalServiceDeleteBranchProcedure:
+			localServiceDeleteBranchHandler.ServeHTTP(w, r)
+		case LocalServiceGitMergeProcedure:
+			localServiceGitMergeHandler.ServeHTTP(w, r)
+		case LocalServiceGetCommitHistoryProcedure:
+			localServiceGetCommitHistoryHandler.ServeHTTP(w, r)
+		case LocalServiceGitCommitProcedure:
+			localServiceGitCommitHandler.ServeHTTP(w, r)
+		case LocalServicePublishBranchProcedure:
+			localServicePublishBranchHandler.ServeHTTP(w, r)
+		case LocalServiceDiscardChangesProcedure:
+			localServiceDiscardChangesHandler.ServeHTTP(w, r)
+		case LocalServiceCreatePreviewDeploymentProcedure:
+			localServiceCreatePreviewDeploymentHandler.ServeHTTP(w, r)
+		case LocalServiceListPreviewDeploymentsProcedure:
+			localServiceListPreviewDeploymentsHandler.ServeHTTP(w, r)
+		case LocalServiceDeletePreviewDeploymentProcedure:
+			localServiceDeletePreviewDeploymentHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -629,4 +963,52 @@ func (UnimplementedLocalServiceHandler) ListProjectsForOrg(context.Context, *con
 
 func (UnimplementedLocalServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetProject is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListBranches(context.Context, *connect.Request[v1.ListBranchesRequest]) (*connect.Response[v1.ListBranchesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListBranches is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) CheckoutBranch(context.Context, *connect.Request[v1.CheckoutBranchRequest]) (*connect.Response[v1.CheckoutBranchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.CheckoutBranch is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) CreateBranch(context.Context, *connect.Request[v1.CreateBranchRequest]) (*connect.Response[v1.CreateBranchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.CreateBranch is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) DeleteBranch(context.Context, *connect.Request[v1.DeleteBranchRequest]) (*connect.Response[v1.DeleteBranchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.DeleteBranch is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GitMerge(context.Context, *connect.Request[v1.GitMergeRequest]) (*connect.Response[v1.GitMergeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GitMerge is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GetCommitHistory(context.Context, *connect.Request[v1.GetCommitHistoryRequest]) (*connect.Response[v1.GetCommitHistoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCommitHistory is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GitCommit(context.Context, *connect.Request[v1.GitCommitRequest]) (*connect.Response[v1.GitCommitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GitCommit is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) PublishBranch(context.Context, *connect.Request[v1.PublishBranchRequest]) (*connect.Response[v1.PublishBranchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.PublishBranch is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) DiscardChanges(context.Context, *connect.Request[v1.DiscardChangesRequest]) (*connect.Response[v1.DiscardChangesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.DiscardChanges is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) CreatePreviewDeployment(context.Context, *connect.Request[v1.CreatePreviewDeploymentRequest]) (*connect.Response[v1.CreatePreviewDeploymentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.CreatePreviewDeployment is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) ListPreviewDeployments(context.Context, *connect.Request[v1.ListPreviewDeploymentsRequest]) (*connect.Response[v1.ListPreviewDeploymentsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListPreviewDeployments is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) DeletePreviewDeployment(context.Context, *connect.Request[v1.DeletePreviewDeploymentRequest]) (*connect.Response[v1.DeletePreviewDeploymentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.DeletePreviewDeployment is not implemented"))
 }

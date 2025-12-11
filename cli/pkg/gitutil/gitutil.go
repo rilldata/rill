@@ -365,3 +365,57 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 	}
 	return repoRoot, subPath, nil
 }
+
+// EnsureGitRepo ensures the given path is a git repository.
+// If the path is not a git repository, it initializes one with a default .gitignore and initial commit.
+// Returns true if a new repo was initialized, false if it already existed.
+func EnsureGitRepo(projectPath string) (bool, error) {
+	// Check if already a git repo (including parent directories)
+	if IsGitRepo(projectPath) {
+		return false, nil
+	}
+
+	// Initialize new git repository
+	repo, err := git.PlainInit(projectPath, false)
+	if err != nil {
+		return false, fmt.Errorf("failed to initialize git repository: %w", err)
+	}
+
+	// Create .gitignore with Rill defaults if it doesn't exist
+	gitignorePath := filepath.Join(projectPath, ".gitignore")
+	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+		gitignoreContent := `# Rill Developer
+.env
+*.db
+*.db-journal
+*.db-wal
+tmp/
+`
+		if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0644); err != nil {
+			return true, fmt.Errorf("failed to create .gitignore: %w", err)
+		}
+	}
+
+	// Stage and commit the .gitignore
+	wt, err := repo.Worktree()
+	if err != nil {
+		return true, fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	if _, err := wt.Add(".gitignore"); err != nil {
+		return true, fmt.Errorf("failed to stage .gitignore: %w", err)
+	}
+
+	_, err = wt.Commit("Initial commit by Rill", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Rill",
+			Email: "noreply@rilldata.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return true, fmt.Errorf("failed to create initial commit: %w", err)
+	}
+
+	return true, nil
+}

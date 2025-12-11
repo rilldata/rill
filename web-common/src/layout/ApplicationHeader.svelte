@@ -21,6 +21,10 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import {
+    BranchSelector,
+    GitStatusBar,
+  } from "@rilldata/web-common/features/git";
 
   const { darkMode, deploy, developerChat } = featureFlags;
 
@@ -112,6 +116,7 @@
         onConfirm={submitTitleChange}
         showIndicator={unsavedFileCount > 0}
       />
+      <BranchSelector />
     {/if}
   {/if}
 
@@ -124,6 +129,9 @@
       {/if}
     {:else if $developerChat}
       <ChatToggle />
+    {/if}
+    {#if mode === "Developer"}
+      <GitStatusBar />
     {/if}
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />

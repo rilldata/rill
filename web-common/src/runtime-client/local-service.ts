@@ -19,6 +19,18 @@ import {
   GitPullRequest,
   GitPushRequest,
   GithubRepoStatusRequest,
+  ListBranchesRequest,
+  CheckoutBranchRequest,
+  CreateBranchRequest,
+  DeleteBranchRequest,
+  GitMergeRequest,
+  GetCommitHistoryRequest,
+  GitCommitRequest,
+  PublishBranchRequest,
+  DiscardChangesRequest,
+  CreatePreviewDeploymentRequest,
+  ListPreviewDeploymentsRequest,
+  DeletePreviewDeploymentRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -541,4 +553,354 @@ export function createLocalServiceGetProjectRequest<
       queryOptions?.queryFn ??
       (() => localServiceGetProjectRequest(organizationName, name)),
   });
+}
+
+// ===== Git Branch Operations =====
+
+export function localServiceListBranches() {
+  return getClient().listBranches(new ListBranchesRequest());
+}
+export const getLocalServiceListBranchesQueryKey = () => [
+  `/v1/local/list-branches`,
+];
+export function createLocalServiceListBranches<
+  TData = Awaited<ReturnType<typeof localServiceListBranches>>,
+  TError = ConnectError,
+>(options?: {
+  query?: Partial<
+    CreateQueryOptions<
+      Awaited<ReturnType<typeof localServiceListBranches>>,
+      TError,
+      TData
+    >
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey: queryOptions?.queryKey ?? getLocalServiceListBranchesQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceListBranches,
+  });
+}
+
+export function localServiceCheckoutBranch(
+  args: PartialMessage<CheckoutBranchRequest>,
+) {
+  return getClient().checkoutBranch(new CheckoutBranchRequest(args));
+}
+export function createLocalServiceCheckoutBranch<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceCheckoutBranch>>,
+      TError,
+      PartialMessage<CheckoutBranchRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceCheckoutBranch>>,
+    TError,
+    PartialMessage<CheckoutBranchRequest>,
+    unknown
+  >({ mutationFn: localServiceCheckoutBranch, ...mutationOptions });
+}
+
+export function localServiceCreateBranch(
+  args: PartialMessage<CreateBranchRequest>,
+) {
+  return getClient().createBranch(new CreateBranchRequest(args));
+}
+export function createLocalServiceCreateBranch<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceCreateBranch>>,
+      TError,
+      PartialMessage<CreateBranchRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceCreateBranch>>,
+    TError,
+    PartialMessage<CreateBranchRequest>,
+    unknown
+  >({ mutationFn: localServiceCreateBranch, ...mutationOptions });
+}
+
+export function localServiceDeleteBranch(
+  args: PartialMessage<DeleteBranchRequest>,
+) {
+  return getClient().deleteBranch(new DeleteBranchRequest(args));
+}
+export function createLocalServiceDeleteBranch<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceDeleteBranch>>,
+      TError,
+      PartialMessage<DeleteBranchRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceDeleteBranch>>,
+    TError,
+    PartialMessage<DeleteBranchRequest>,
+    unknown
+  >({ mutationFn: localServiceDeleteBranch, ...mutationOptions });
+}
+
+export function localServiceGitMerge(args: PartialMessage<GitMergeRequest>) {
+  return getClient().gitMerge(new GitMergeRequest(args));
+}
+export function createLocalServiceGitMerge<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceGitMerge>>,
+      TError,
+      PartialMessage<GitMergeRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceGitMerge>>,
+    TError,
+    PartialMessage<GitMergeRequest>,
+    unknown
+  >({ mutationFn: localServiceGitMerge, ...mutationOptions });
+}
+
+export function localServiceGetCommitHistory(
+  args: PartialMessage<GetCommitHistoryRequest>,
+) {
+  return getClient().getCommitHistory(new GetCommitHistoryRequest(args));
+}
+export const getLocalServiceGetCommitHistoryQueryKey = (
+  branch?: string,
+  limit?: number,
+  offset?: number,
+) => [`/v1/local/get-commit-history`, branch, limit, offset];
+export function createLocalServiceGetCommitHistory<
+  TData = Awaited<ReturnType<typeof localServiceGetCommitHistory>>,
+  TError = ConnectError,
+>(
+  args: PartialMessage<GetCommitHistoryRequest>,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceGetCommitHistory>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceGetCommitHistoryQueryKey(
+        args.branch,
+        args.limit,
+        args.offset,
+      ),
+    queryFn:
+      queryOptions?.queryFn ?? (() => localServiceGetCommitHistory(args)),
+  });
+}
+
+// ===== Git Commit Operation =====
+
+export function localServiceGitCommit(args: PartialMessage<GitCommitRequest>) {
+  return getClient().gitCommit(new GitCommitRequest(args));
+}
+export function createLocalServiceGitCommit<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceGitCommit>>,
+      TError,
+      PartialMessage<GitCommitRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceGitCommit>>,
+    TError,
+    PartialMessage<GitCommitRequest>,
+    unknown
+  >({ mutationFn: localServiceGitCommit, ...mutationOptions });
+}
+
+export function localServicePublishBranch() {
+  return getClient().publishBranch(new PublishBranchRequest());
+}
+export function createLocalServicePublishBranch<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServicePublishBranch>>,
+      TError,
+      void,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServicePublishBranch>>,
+    TError,
+    void,
+    unknown
+  >({ mutationFn: localServicePublishBranch, ...mutationOptions });
+}
+
+export function localServiceDiscardChanges(
+  args: PartialMessage<DiscardChangesRequest>,
+) {
+  return getClient().discardChanges(new DiscardChangesRequest(args));
+}
+export function createLocalServiceDiscardChanges<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceDiscardChanges>>,
+      TError,
+      PartialMessage<DiscardChangesRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceDiscardChanges>>,
+    TError,
+    PartialMessage<DiscardChangesRequest>,
+    unknown
+  >({ mutationFn: localServiceDiscardChanges, ...mutationOptions });
+}
+
+// ===== Preview Deployment Operations =====
+
+export function localServiceCreatePreviewDeployment(
+  args: PartialMessage<CreatePreviewDeploymentRequest>,
+) {
+  return getClient().createPreviewDeployment(
+    new CreatePreviewDeploymentRequest(args),
+  );
+}
+export function createLocalServiceCreatePreviewDeployment<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceCreatePreviewDeployment>>,
+      TError,
+      PartialMessage<CreatePreviewDeploymentRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceCreatePreviewDeployment>>,
+    TError,
+    PartialMessage<CreatePreviewDeploymentRequest>,
+    unknown
+  >({ mutationFn: localServiceCreatePreviewDeployment, ...mutationOptions });
+}
+
+export function localServiceListPreviewDeployments(
+  args: PartialMessage<ListPreviewDeploymentsRequest>,
+) {
+  return getClient().listPreviewDeployments(
+    new ListPreviewDeploymentsRequest(args),
+  );
+}
+export const getLocalServiceListPreviewDeploymentsQueryKey = (
+  org?: string,
+  project?: string,
+) => [`/v1/local/list-preview-deployments`, org, project];
+export function createLocalServiceListPreviewDeployments<
+  TData = Awaited<ReturnType<typeof localServiceListPreviewDeployments>>,
+  TError = ConnectError,
+>(
+  args: PartialMessage<ListPreviewDeploymentsRequest>,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof localServiceListPreviewDeployments>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceListPreviewDeploymentsQueryKey(args.org, args.project),
+    queryFn:
+      queryOptions?.queryFn ?? (() => localServiceListPreviewDeployments(args)),
+  });
+}
+
+export function localServiceDeletePreviewDeployment(
+  args: PartialMessage<DeletePreviewDeploymentRequest>,
+) {
+  return getClient().deletePreviewDeployment(
+    new DeletePreviewDeploymentRequest(args),
+  );
+}
+export function createLocalServiceDeletePreviewDeployment<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServiceDeletePreviewDeployment>>,
+      TError,
+      PartialMessage<DeletePreviewDeploymentRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceDeletePreviewDeployment>>,
+    TError,
+    PartialMessage<DeletePreviewDeploymentRequest>,
+    unknown
+  >({ mutationFn: localServiceDeletePreviewDeployment, ...mutationOptions });
 }

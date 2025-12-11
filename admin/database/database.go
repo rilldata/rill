@@ -103,6 +103,7 @@ type DB interface {
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
+	FindDeploymentByProjectAndBranch(ctx context.Context, projectID, branch string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)

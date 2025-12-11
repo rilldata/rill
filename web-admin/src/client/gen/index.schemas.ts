@@ -1833,6 +1833,7 @@ export type AdminServiceListDeploymentsParams = {
 
 export type AdminServiceCreateDeploymentBody = {
   environment?: string;
+  branch?: string;
 };
 
 export type AdminServiceHibernateProjectParams = {

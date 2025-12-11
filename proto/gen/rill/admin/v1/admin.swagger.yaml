@@ -1524,6 +1524,9 @@ paths:
             properties:
               environment:
                 type: string
+              branch:
+                type: string
+                title: Branch is required for preview deployments, optional for others
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
