@@ -101,11 +101,10 @@ export class ComboChartProvider {
     const xAxisQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const instanceId = $runtime.instanceId;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!dimensionName &&
           config?.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
@@ -153,12 +152,12 @@ export class ComboChartProvider {
     const queryOptionsStore = derived(
       [runtime, timeAndFilterStore, xAxisQuery],
       ([$runtime, $timeAndFilterStore, $xAxisQuery]) => {
-        const { timeRange, where, timeGrain } = $timeAndFilterStore;
+        const { timeRange, where, timeGrain, hasTimeSeries } =
+          $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
 
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined

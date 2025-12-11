@@ -21,12 +21,10 @@ import {
 export function getEditorPlugins({
   enableMention,
   placeholder,
-  conversationManager,
   onSubmit,
 }: {
   enableMention: boolean;
   placeholder: string;
-  conversationManager: ConversationManager;
   onSubmit: () => void;
 }) {
   const sharedEditorStore = new SharedEditorStore();
@@ -43,12 +41,7 @@ export function getEditorPlugins({
   ];
 
   if (enableMention) {
-    plugins.push(
-      configureInlineContextTipTapExtension(
-        conversationManager,
-        sharedEditorStore,
-      ),
-    );
+    plugins.push(configureInlineContextTipTapExtension(sharedEditorStore));
   }
 
   return plugins;
@@ -103,7 +96,6 @@ const EditorSubmitExtension = Extension.create(() => {
 });
 
 type InlineContextOptions = MentionOptions<never, InlineContext> & {
-  manager: ConversationManager;
   sharedEditorStore: SharedEditorStore;
 };
 
@@ -189,24 +181,27 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       const comp = new InlineContextComponent({
         target,
         props: {
-          // TODO: fix type so that InlineContextExtension has manager in options
-          conversationManager: this.options.manager,
           selectedChatContext: normalizeInlineContext(
             node.attrs as InlineContext,
           ),
-          onSelect: (selectedChatContext) => {
-            const pos = getPos();
-            if (!pos) return;
+          props: editor.options.editable
+            ? {
+                mode: "editable",
+                onSelect: (selectedChatContext) => {
+                  const pos = getPos();
+                  if (!pos) return;
 
-            // Dispatch a transaction to update the node attributes with the new context.
-            view.dispatch(
-              getTransactionForContext(selectedChatContext, view, pos),
-            );
-            editor.commands.focus();
-          },
-          onDropdownToggle: (isOpen) =>
-            sharedEditorStore.dropdownToggled(comp, isOpen),
-          focusEditor: () => editor.commands.focus(),
+                  // Dispatch a transaction to update the node attributes with the new context.
+                  view.dispatch(
+                    getTransactionForContext(selectedChatContext, view, pos),
+                  );
+                  editor.commands.focus();
+                },
+                onDropdownToggle: (isOpen) =>
+                  sharedEditorStore.dropdownToggled(comp, isOpen),
+                focusEditor: () => editor.commands.focus(),
+              }
+            : { mode: "readonly" },
         },
       });
       sharedEditorStore.componentAdded(comp);
@@ -227,14 +222,12 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
  * Renders the InlineContextPicker svelte component.
  */
 export function configureInlineContextTipTapExtension(
-  manager: ConversationManager,
   sharedEditorStore: SharedEditorStore,
 ) {
   let comp: InlineContextPicker | null = null;
   let selected = false;
 
   return InlineContextExtension.configure({
-    manager,
     sharedEditorStore,
     suggestion: {
       char: "@",
@@ -242,16 +235,13 @@ export function configureInlineContextTipTapExtension(
       items: () => [], // TODO: would it make sense to manage the options here?
       render: () => ({
         onStart: (props) => {
-          const rect = props.clientRect?.();
-          const left = rect?.left ?? 0;
-          const bottom = window.innerHeight - (rect?.bottom ?? 0) + 16;
+          if (!(props.decorationNode instanceof HTMLElement)) return; // type safety, non-html will be in non-dom environment
           selected = false;
 
           comp = new InlineContextPicker({
             target: document.body,
             props: {
-              left,
-              bottom,
+              refNode: props.decorationNode,
               onSelect: (item) => {
                 selected = true;
                 props.command(item);
@@ -263,7 +253,11 @@ export function configureInlineContextTipTapExtension(
         },
 
         onUpdate(props) {
-          comp?.$set({ searchText: props.query });
+          if (!(props.decorationNode instanceof HTMLElement)) return; // type safety, non-html will be in non-dom environment
+          comp?.$set({
+            searchText: props.query,
+            refNode: props.decorationNode,
+          });
         },
 
         onExit: ({ editor, range }) => {
@@ -323,13 +317,13 @@ function getTransactionForContext(
   view: EditorView,
   pos: number,
 ) {
-  let tr = view.state.tr.setNodeAttribute(pos, "type", inlineChatContext.type);
-  tr = tr.setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView);
-  tr = tr.setNodeAttribute(pos, "measure", inlineChatContext.measure);
-  tr = tr.setNodeAttribute(pos, "dimension", inlineChatContext.dimension);
-  tr = tr.setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange);
-  tr = tr.setNodeAttribute(pos, "file", inlineChatContext.filePath);
-  return tr;
+  return view.state.tr
+    .setNodeAttribute(pos, "type", inlineChatContext.type)
+    .setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView)
+    .setNodeAttribute(pos, "measure", inlineChatContext.measure)
+    .setNodeAttribute(pos, "dimension", inlineChatContext.dimension)
+    .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange)
+    .setNodeAttribute(pos, "filePath", inlineChatContext.filePath);
 }
 
 function createAttributeEntry(defaultValue: string | null, key: string) {

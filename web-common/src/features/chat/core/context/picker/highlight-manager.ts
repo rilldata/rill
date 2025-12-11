@@ -40,7 +40,13 @@ export class PickerOptionsHighlightManager {
     this.updateHighlightedContext();
   }
 
-  public highlightContext(context: InlineContext) {
+  public highlightContext(context: InlineContext | null) {
+    if (!context) {
+      this.highlightedIndex = -1;
+      this.updateHighlightedContext();
+      return;
+    }
+
     const newIndex = this.highlightableContexts.findIndex((hc) =>
       inlineContextsAreEqual(context, hc),
     );
@@ -48,6 +54,18 @@ export class PickerOptionsHighlightManager {
       this.highlightedIndex = newIndex;
       this.updateHighlightedContext();
     }
+  }
+
+  public mouseOverHandler(ctx: InlineContext) {
+    return (node: Node) => {
+      const onMouseEnter = () => this.highlightContext(ctx);
+      node.addEventListener("mouseenter", onMouseEnter);
+      return {
+        destroy() {
+          node.removeEventListener("mouseenter", onMouseEnter);
+        },
+      };
+    };
   }
 
   private updateHighlightedContext() {
