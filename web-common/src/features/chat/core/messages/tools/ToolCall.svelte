@@ -2,7 +2,7 @@
   Renders a tool invocation with collapsible request/response details.
   
   Used in two contexts:
-  - "inline": Within ThinkingBlock for tool calls (may be pending, has sticky header)
+  - "inline": Within ThinkingBlock for tool calls (may be pending)
   - "block": Before output blocks like ChartBlock/FileDiffBlock (always complete)
 -->
 <script lang="ts">
@@ -21,10 +21,8 @@
 
   /**
    * Rendering context:
-   * - "inline": For thinking block (adds sticky positioning for scrolling)
+   * - "inline": For thinking block
    * - "block": For output blocks (adds bottom margin before the output)
-   *
-   * Both variants have the same visual appearance.
    */
   export let variant: "inline" | "block" = "inline";
 
@@ -159,13 +157,6 @@
     @apply text-gray-600;
   }
 
-  /* Inline variant: sticky header for scrolling in thinking block */
-  .tool-call.inline .tool-button {
-    @apply sticky top-0;
-    background: var(--surface);
-    z-index: 2;
-  }
-
   .tool-icon {
     @apply flex items-center;
   }
@@ -181,13 +172,6 @@
 
   .tool-tabs {
     @apply flex gap-1 pb-2;
-  }
-
-  /* Inline variant: sticky tabs for scrolling */
-  .tool-call.inline .tool-tabs {
-    @apply sticky top-6;
-    background: var(--surface);
-    z-index: 1;
   }
 
   .tool-tab {
