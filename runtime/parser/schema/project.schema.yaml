@@ -1842,6 +1842,11 @@ definitions:
                 description:
                   type: string
                   description: a freeform text description of the dimension
+                tags:
+                  type: array
+                  description: optional list of tags for categorizing the dimension (defaults to empty)
+                  items:
+                    type: string
                 column:
                   type: string
                   description: a categorical column
@@ -1879,6 +1884,11 @@ definitions:
                 description:
                   type: string
                   description: a freeform text description of the measure
+                tags:
+                  type: array
+                  description: optional list of tags for categorizing the measure (defaults to empty)
+                  items:
+                    type: string
                 type:
                   type: string
                   description: 'Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.'
