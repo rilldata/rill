@@ -49,7 +49,7 @@ type CanvasYAML struct {
 		} `yaml:"items"`
 	}
 	Security   *SecurityPolicyYAML `yaml:"security"`
-	FilterExpr map[string]string   `yaml:"filter_expr"`
+
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
