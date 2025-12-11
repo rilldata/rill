@@ -65,7 +65,7 @@ This ensures **trustworthy, governed analytics** while empowering users to **sel
 
 To use the Rill MCP server, you'll need:
 
-- An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](/user-guide/ai/mcp#edit-claude-desktop-configuration))
+- An **MCP client** 
 - A **running Rill project** (locally or hosted on Rill Cloud)
 
 ## Connect using OAuth (Recommended)
@@ -147,7 +147,7 @@ rill token issue
 ```
 
 :::tip Learn more about user tokens
-For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/user-guide/manage/user-tokens).
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/user-guide/users/user-tokens).
 :::
 
 ### Configure Claude Desktop

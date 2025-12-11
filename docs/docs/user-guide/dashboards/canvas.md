@@ -5,7 +5,7 @@ sidebar_position: 20
 ---
 
 
-After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/user-guide/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
+After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/user-guide/settings/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
 
 <div style={{ 
@@ -55,7 +55,7 @@ Similar to our [Explore dashboards](/user-guide/dashboards/dashboard-101), Canva
  If your dimensions or measures have the same name in your metrics view, filters will apply to all components, regardless if it's in a different metrics view.
  :::
 
-<!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/user-guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/user-guide/dashboards/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/user-guide/manage/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/user-guide/dashboards/public-url.md)) . -->
+<!-- - _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/user-guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/user-guide/dashboards/bookmarks.md), or share the dashboard ([internally by clicking the `Share` button](/user-guide/users/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/user-guide/dashboards/public-url.md)) . -->
 
 ## Component Navigation
 <img src = '/img/explore/canvas/canvas-navigaton.png' class='rounded-gif' />

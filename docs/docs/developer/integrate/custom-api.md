@@ -105,9 +105,9 @@ rill service create my-api \
 
 :::tip Token Documentation
 For comprehensive guidance on token types, roles, custom attributes, and management:
-- **[User Tokens](/user-guide/manage/user-tokens)** - Personal access tokens for development
-- **[Service Tokens](/user-guide/manage/service-tokens)** - Long-lived tokens for production systems
-- **[Roles and Permissions](/user-guide/manage/roles-permissions)** - Understand access levels
+- **[User Tokens](/user-guide/users/user-tokens)** - Personal access tokens for development
+- **[Service Tokens](/user-guide/settings/service-tokens)** - Long-lived tokens for production systems
+- **[Roles and Permissions](/user-guide/users/roles-permissions)** - Understand access levels
 
 :::
 

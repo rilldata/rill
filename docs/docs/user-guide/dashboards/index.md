@@ -8,7 +8,7 @@ sidebar_position: 0
 
 Rill Cloud is a fully-managed platform for deploying, sharing, and collaborating on your Rill dashboards. While [Rill Developer](/developer/get-started/install) is perfect for local development and exploration, Rill Cloud enables you to share your work with your team and stakeholders, manage access controls, and set up automated reports and alerts. For a more detailed comparison, see [Rill Cloud vs Rill Developer](/developer/deploy/cloud-vs-developer).
 
-After logging into [Rill Cloud](https://ui.rilldata.com), you'll see all projects within your [organization](/user-guide/manage/organization-management#organization) that are available and have been granted permissions to your user profile. Within each project, you can access the corresponding dashboards, manage alerts and reports, chat with your data using AI, and configure project settings.
+After logging into [Rill Cloud](https://ui.rilldata.com), you'll see all projects within your [organization](/user-guide/settings/organization-management#organization) that are available and have been granted permissions to your user profile. Within each project, you can access the corresponding dashboards, manage alerts and reports, chat with your data using AI, and configure project settings.
 
 <img src = '/img/manage/project-management/rill-org.png' class='rounded-gif' />
 <br />
@@ -17,9 +17,9 @@ After logging into [Rill Cloud](https://ui.rilldata.com), you'll see all project
 
 Rill Cloud is organized hierarchically to help you manage access and resources efficiently:
 
-- **[Organizations](/user-guide/manage/organization-management)** - The top-level container for your team. Organizations contain projects, users, groups, and billing settings.
-- **[Projects](/user-guide/manage/project-management)** - Individual Rill projects within an organization. Each project has its own data sources, models, metrics views, and dashboards.
-- **[Users & Groups](/user-guide/manage/user-management)** - Team members and their access permissions can be managed at the organization or project level using [roles and permissions](/user-guide/manage/roles-permissions).
+- **[Organizations](/user-guide/settings/organization-management)** - The top-level container for your team. Organizations contain projects, users, groups, and billing settings.
+- **[Projects](/user-guide/settings/project-management)** - Individual Rill projects within an organization. Each project has its own data sources, models, metrics views, and dashboards.
+- **[Users & Groups](/user-guide/users/user-management)** - Team members and their access permissions can be managed at the organization or project level using [roles and permissions](/user-guide/users/roles-permissions).
 - **Settings** - Configure organization-wide settings like billing, branding (logo and favicon), and general preferences.
 
 :::tip Quick Start
@@ -74,6 +74,6 @@ The Status page helps you quickly identify and troubleshoot any issues with your
 ### Settings
 Configure your project with credentials, variables, and access controls:
 
-- **[Variables & Credentials](/user-guide/manage/project-management/variables-and-credentials)** - Store sensitive credentials and configure environment-specific variables securely.
-- **[User Management](/user-guide/manage/user-management)** - Invite team members and configure their access at the project level.
-- [**Project Details**](/user-guide/manage/project-management#managing-project-settings) - Edit project name, description, and other metadata.
+- **[Variables & Credentials](/user-guide/settings/project-management/variables-and-credentials)** - Store sensitive credentials and configure environment-specific variables securely.
+- **[User Management](/user-guide/users/user-management)** - Invite team members and configure their access at the project level.
+- [**Project Details**](/user-guide/settings/project-management#managing-project-settings) - Edit project name, description, and other metadata.

@@ -8,7 +8,7 @@ sidebar_position: 25
 When you deploy to Rill Cloud, projects can encounter errors—from missing credentials to data type mismatches. This guide focuses on managing errors in deployed projects and setting up automated alerts.
 
 :::info General Troubleshooting
-For general troubleshooting guidance, error message explanations, and debugging techniques, see the [Debugging Rill Projects](/build/debugging) documentation.
+For general troubleshooting guidance, error message explanations, and debugging techniques, see the [Debugging Rill Projects](/developer/build/debugging) documentation.
 :::
 
 ## How Rill Handles Errors
@@ -20,19 +20,19 @@ Rill's error management approach ensures visibility and isolation:
 - **Fallback:** Rill attempts to serve from the most recent valid state when possible
 
 :::tip Check upstream dependencies
-The surfaced error might not be the root cause. A dashboard error could stem from an underlying model timeout. Always check the [project status page](/user-guide/manage/project-management#checking-deployment-status) to trace errors to their source.
+The surfaced error might not be the root cause. A dashboard error could stem from an underlying model timeout. Always check the [project status page](/user-guide/settings/project-management#checking-deployment-status) to trace errors to their source.
 :::
 
 ## Deployment-Specific Error Scenarios
 
 Most errors will surface during local development in Rill Developer. However, after deploying to Rill Cloud, you may encounter additional issues:
 
-1. **Production configuration missing** - Your YAML files reference `prod:` parameters that have been defined incorrectly. Verify your [dev/prod setup](/build/connectors/templating).
+1. **Production configuration missing** - Your YAML files reference `prod:` parameters that have been defined incorrectly. Verify your [dev/prod setup](/developer/build/connectors/templating).
 2. **Timeouts, OOM** - Production data volumes may be larger than local development data, leading to timeouts and out-of-memory issues. [Contact us](/contact) if you see any related error messages.
 
 To troubleshoot deployment errors:
 
-1. **Check the resource status** in the [project status page](/manage/project-management#checking-deployment-status)
+1. **Check the resource status** in the [project status page](/user-guide/settings/project-management#checking-deployment-status)
 2. **Review project logs** using `rill project logs` or the Rill Cloud UI
 3. **Compare with local behavior** - If it worked locally, check production-specific configuration differences
 
@@ -65,7 +65,7 @@ notify:
     recipients: [john@example.com]
 ```
 
-This will give you a good idea of what object has an issue, and you can browse the [status page](/user-guide/manage/project-management#checking-deployment-status) for more information.
+This will give you a good idea of what object has an issue, and you can browse the [status page](/user-guide/settings/project-management#checking-deployment-status) for more information.
 
 After making these changes, you should commit and [push these changes](/developer/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 

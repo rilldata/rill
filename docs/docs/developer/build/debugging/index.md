@@ -130,7 +130,7 @@ INFO    Reconciled resource     {"name": "orders_customers_explore", "type": "Ex
 
 #### Advanced: Partitioned Models
 
-The main takeaway for partitioned models is that you'll be able to see the number of partitions that Rill will start ingesting. This is especially important when creating [dev/prod](/build/connectors/templating) environments and you're trying to avoid ingesting large amounts of data locally.
+The main takeaway for partitioned models is that you'll be able to see the number of partitions that Rill will start ingesting. This is especially important when creating [dev/prod](/developer/build/connectors/templating) environments and you're trying to avoid ingesting large amounts of data locally.
 
 ```bash
 Resolved model partitions       {"model": "staging_to_CH", "partitions": 16}
@@ -145,7 +145,7 @@ When debugging errors, start by checking the project logs and understanding the 
 
 Model errors typically occur when there are issues with credentials, data processing, SQL syntax, or data type mismatches. Common error messages and their solutions:
 
-- **`Failed to connect to ...`**: Issue with your connector. Check your credentials and [firewall settings](/build/connectors/data-source#externally-hosted-services) if using externally hosted services
+- **`Failed to connect to ...`**: Issue with your connector. Check your credentials and [firewall settings](/developer/build/connectors/data-source#externally-hosted-services) if using externally hosted services
 - **`Table with name ... does not exist!`**: Verify the table exists by running `rill query --sql "select * from {table_name} limit 1"` or checking your data source
 - **`IO Error: No files found that match the pattern...`**: Check that your cloud storage folder path is correct and files exist
 - **`some partitions have errors`**: Run `rill project refresh --model {model_name} --errored-partitions` to refresh errored partitions
@@ -155,7 +155,7 @@ Model errors typically occur when there are issues with credentials, data proces
 
 Metrics view and dashboard errors often stem from issues with the underlying models or configuration problems:
 
-- **Model Dependencies:** Dashboards failing because their underlying models have errors. Check the [dependency errors](#dependency-errors) section above
+- **Model Dependencies:** Dashboards failing because their underlying models have errors. Check the [dependency errors](/developer/build/debugging#model-errors) section above
 - **Missing Dimensions/Measures:** References to fields that don't exist in the underlying model. Verify that measures and dimensions in your metrics YAML match existing columns in your data
 - **Type Mismatches:** Measures must be numeric types. Check that timestamp fields aren't being used as measures
 
@@ -260,7 +260,7 @@ This command shows:
 
 ### Trace Viewer
 
-For complex debugging scenarios involving multiple resources and dependencies, use the [Trace Viewer](/build/debugging/trace-viewer) to visualize resource reconciliation and trace execution paths across your project. The Trace Viewer helps you:
+For complex debugging scenarios involving multiple resources and dependencies, use the [Trace Viewer](/developer/build/debugging/trace-viewer) to visualize resource reconciliation and trace execution paths across your project. The Trace Viewer helps you:
 
 - Understand resource dependency chains
 - Identify bottlenecks in reconciliation
