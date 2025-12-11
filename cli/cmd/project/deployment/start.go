@@ -1,4 +1,4 @@
-package project
+package deployment
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentDeleteCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeploymentStartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
-	deleteCmd := &cobra.Command{
-		Use:   "delete [<project>] <branch>",
+	startCmd := &cobra.Command{
+		Use:   "start [<project>] <branch>",
 		Args:  cobra.RangeArgs(1, 2),
-		Short: "Delete a deployment by branch",
+		Short: "Start a deployment by branch",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var branch string
 			if len(args) == 1 {
@@ -69,23 +69,29 @@ func DeploymentDeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			deployment := matchingDeployments[0]
 
-			ch.PrintfBold("Deleting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
+			ch.PrintfBold("Starting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
 
-			_, err = client.DeleteDeployment(cmd.Context(), &adminv1.DeleteDeploymentRequest{
+			startResp, err := client.StartDeployment(cmd.Context(), &adminv1.StartDeploymentRequest{
 				DeploymentId: deployment.Id,
 			})
 			if err != nil {
 				return err
 			}
 
-			ch.PrintfSuccess("Deployment deleted successfully!\n")
+			ch.PrintfSuccess("Deployment started successfully!\n\n")
+			ch.Printf("Deployment ID: %s\n", startResp.Deployment.Id)
+			ch.Printf("Branch: %s\n", startResp.Deployment.Branch)
+			ch.Printf("Status: %s\n", startResp.Deployment.Status.String())
+			if startResp.Deployment.RuntimeHost != "" {
+				ch.Printf("Runtime Host: %s\n", startResp.Deployment.RuntimeHost)
+			}
 
 			return nil
 		},
 	}
 
-	deleteCmd.Flags().StringVar(&project, "project", "", "Project name")
-	deleteCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	startCmd.Flags().StringVar(&project, "project", "", "Project name")
+	startCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
-	return deleteCmd
+	return startCmd
 }
