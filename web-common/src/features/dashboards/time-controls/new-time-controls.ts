@@ -739,7 +739,7 @@ const units: DateTimeUnit[] = [
 
 export function maximumPrecisionForInterval(
   interval: Interval<true>,
-  minTimeGrain: V1TimeGrain,
+  minTimeGrain?: V1TimeGrain,
 ): V1TimeGrain {
   for (const grain of units) {
     const bucketCount = interval.length(grain);
@@ -747,11 +747,15 @@ export function maximumPrecisionForInterval(
     if (bucketCount <= MAX_BUCKETS) {
       const maxGrain = DateTimeUnitToV1TimeGrain[grain];
 
-      if (maxGrain && isGrainAllowed(maxGrain, minTimeGrain)) {
-        return maxGrain;
+      if (maxGrain) {
+        return minTimeGrain
+          ? isGrainAllowed(maxGrain, minTimeGrain)
+            ? maxGrain
+            : minTimeGrain
+          : maxGrain;
       }
     }
   }
 
-  return minTimeGrain;
+  return V1TimeGrain.TIME_GRAIN_HOUR;
 }
