@@ -79,6 +79,28 @@ export function generateVLScatterPlotSpec(
     xEncoding.axis = { grid: true };
   }
 
+  if (xEncoding.scale) {
+    xEncoding.scale = {
+      ...xEncoding.scale,
+      nice: true,
+    };
+  } else {
+    xEncoding.scale = {
+      nice: true,
+    };
+  }
+
+  if (yEncoding.scale) {
+    yEncoding.scale = {
+      ...yEncoding.scale,
+      nice: true,
+    };
+  } else {
+    yEncoding.scale = {
+      nice: true,
+    };
+  }
+
   spec.encoding = {
     x: xEncoding,
     y: yEncoding,
@@ -89,6 +111,7 @@ export function generateVLScatterPlotSpec(
         type: "quantitative",
         scale: {
           zero: false,
+          range: [40, 400], // Set minimum size to 40 (increased from default ~30)
         },
         legend: {
           orient: legendOrientation,
@@ -98,6 +121,13 @@ export function generateVLScatterPlotSpec(
     color: createColorEncoding(config.color, data),
     tooltip: [...tooltip, ...colorTooltip],
   };
+
+  if (!config.size && spec.mark && typeof spec.mark === "object") {
+    spec.mark = {
+      ...spec.mark,
+      size: 40,
+    } as typeof spec.mark;
+  }
 
   return {
     ...spec,
