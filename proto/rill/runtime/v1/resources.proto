@@ -332,6 +332,9 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
+  // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+  // Keys and values are stored as templates and will be resolved at query time.
+  map<string, string> query_attributes = 33;
 }
 
 message SecurityRule {
