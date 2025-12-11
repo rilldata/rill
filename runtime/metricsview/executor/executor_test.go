@@ -1,56 +1,56 @@
 package executor_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
-// TestResolveQueryAttributesTemplate verifies template expressions
 func TestResolveQueryAttributesTemplate(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		TestConnectors: []string{"clickhouse"},
 		Files: map[string]string{
 			"rill.yaml": "olap_connector: clickhouse",
-			"model.sql": `
-SELECT CURRENT_TIMESTAMP AS timestamp, 'publisher1' AS publisher
+			"m1.sql": `
+SELECT 1
 `,
-			"metrics.yaml": `
+			"mv1.yaml": `
 type: metrics_view
-model: model
-timeseries: timestamp
+model: m1
 dimensions:
-  - column: publisher
+  - name: dim1
+    expression: getSettingOrDefault('custom_attr', 'x')
 measures:
   - expression: count(*)
 query_attributes:
-  test_compound_attr: '{{ .user.org_id }}_{{ .user.tenant_id }}'
-  test_conditional_attr: '{{ if .user.is_premium }}premium{{ else }}standard{{ end }}'
+  custom_attr: '{{ .user.org_id }}_{{ .user.tenant_id }}'
 `,
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
-	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
-	spec := mv.GetMetricsView().Spec
-
-	// Create user attributes
-	userAttrs := map[string]any{
-		"org_id":     "org123",
-		"tenant_id":  "tenant456",
-		"is_premium": true,
-	}
-
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, userAttrs)
+	res, err := rt.Resolve(t.Context(), &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics",
+		ResolverProperties: map[string]any{
+			"metrics_view": "mv1",
+			"dimensions":   []map[string]any{{"name": "dim1"}},
+		},
+		Claims: &runtime.SecurityClaims{
+			UserAttributes: map[string]any{
+				"org_id":    "org123",
+				"tenant_id": "tenant456",
+			},
+			Permissions: runtime.AllPermissions,
+		},
+	})
 	require.NoError(t, err)
-	defer e.Close()
-
-	// Verify cache key is computed successfully with complex templates
-	cacheKey, _, err := e.CacheKey(context.Background())
+	defer res.Close()
+	row, err := res.Next()
 	require.NoError(t, err)
-	require.NotNil(t, cacheKey)
+	require.Equal(t, "org123_tenant456", row["dim1"])
 }

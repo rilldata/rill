@@ -66,6 +66,7 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
+	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
@@ -958,9 +959,9 @@ func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 
 	t.Run("CustomWithPrefix", func(t *testing.T) {
 		res, err := olap.Query(ctx, &drivers.Statement{
-			Query: "SELECT getSetting('test_custom')",
+			Query: "SELECT getSetting('custom_test')",
 			QueryAttributes: map[string]string{
-				"test_custom": "value", // The testclickhouse has `test_` configured as a valid custom setting prefix
+				"custom_test": "value", // The testclickhouse has `custom_` configured as a valid custom setting prefix
 			},
 		})
 		require.NoError(t, err)
@@ -975,12 +976,12 @@ func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 
 	t.Run("CustomWithoutPrefix", func(t *testing.T) {
 		_, err := olap.Query(ctx, &drivers.Statement{
-			Query: "SELECT getSetting('custom')",
+			Query: "SELECT getSetting('foo')",
 			QueryAttributes: map[string]string{
-				"custom": "value",
+				"foo": "value",
 			},
 		})
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "Unknown setting")
+		require.Contains(t, err.Error(), "neither a builtin setting nor")
 	})
 }
