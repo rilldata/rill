@@ -56,6 +56,7 @@
     niceMeasureExtents,
   } from "./utils";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import ExplainButton from "@rilldata/web-common/features/dashboards/time-series/measure-selection/ExplainButton.svelte";
 
   export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
@@ -216,13 +217,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    const shouldUpdateSelectedRange =
-      $dashboardChat &&
-      !isScrubbing &&
-      measureSelection.hasSelection() &&
-      // Type safety
-      measure.name &&
-      TIME_GRAIN[timeGrain];
+    const shouldUpdateSelectedRange = $dashboardChat && !isScrubbing;
     if (shouldUpdateSelectedRange) {
       measureSelection.setRange(measure.name!, start, end);
     }
@@ -440,7 +435,6 @@
       <MeasureSelection
         {data}
         measureName={measure.name ?? ""}
-        metricsViewName={$metricsViewName}
         {xAccessor}
         {yAccessor}
         {internalXMin}
@@ -454,4 +448,11 @@
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
   <AnnotationGroupPopover {annotationsStore} />
+
+  {#if $dashboardChat}
+    <ExplainButton
+      measureName={measure.name ?? ""}
+      metricsViewName={$metricsViewName}
+    />
+  {/if}
 </div>
