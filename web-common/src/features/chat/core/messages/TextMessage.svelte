@@ -10,6 +10,7 @@
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let message: V1Message;
 
@@ -31,9 +32,17 @@
     : undefined;
 
   function handleClick(e: MouseEvent) {
-    if (!e.target || !(e.target instanceof HTMLElement)) return;
+    if (!e.target || !(e.target instanceof HTMLElement)) return; // typesafety
+    if (e.metaKey || e.ctrlKey) {
+      if (EmbedStore.isEmbedded()) {
+        // Prevent cmd/ctrl+click in embedded context. The iframe url used for embedding cannot be opened as is.
+        e.preventDefault();
+      }
+      return;
+    }
     const urlParams = e.target.getAttribute("data-url-params");
     if (!urlParams) return;
+    e.preventDefault();
     void goto("?" + urlParams);
   }
 </script>

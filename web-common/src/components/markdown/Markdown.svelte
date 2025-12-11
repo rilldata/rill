@@ -131,13 +131,11 @@
     padding: 0;
   }
 
-  :global(.chat-markdown a),
-  :global(.chat-markdown .link-button) {
+  :global(.chat-markdown a) {
     @apply text-blue-600 underline;
   }
 
-  :global(.chat-markdown a:hover),
-  :global(.chat-markdown .link-button:hover) {
+  :global(.chat-markdown a:hover) {
     @apply text-blue-800;
   }
 
