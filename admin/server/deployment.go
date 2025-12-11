@@ -752,6 +752,13 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["theme"] = req.Theme
 	}
 
+	if req.ThemeMode != "" {
+		if req.ThemeMode != "light" && req.ThemeMode != "dark" && req.ThemeMode != "system" {
+			return nil, status.Error(codes.InvalidArgument, "theme_mode must be one of: light, dark, system")
+		}
+		iframeQuery["theme_mode"] = req.ThemeMode
+	}
+
 	if req.Navigation {
 		iframeQuery["navigation"] = "true"
 	}

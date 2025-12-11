@@ -1881,6 +1881,8 @@ export type AdminServiceGetIFrameBody = {
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
+  /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
+  themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */

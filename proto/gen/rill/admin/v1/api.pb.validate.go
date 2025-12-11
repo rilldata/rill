@@ -6547,6 +6547,8 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Theme
 
+	// no validation rules for ThemeMode
+
 	// no validation rules for Navigation
 
 	// no validation rules for State

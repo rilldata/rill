@@ -4189,6 +4189,9 @@ paths:
                                 theme:
                                     description: Theme to use for the embedded resource.
                                     type: string
+                                themeMode:
+                                    description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
+                                    type: string
                                 ttlSeconds:
                                     description: TTL for the iframe's access token. If not set, defaults to 24 hours.
                                     format: int64
