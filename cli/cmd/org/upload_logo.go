@@ -19,9 +19,9 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 	var dark bool
 
 	cmd := &cobra.Command{
-		Use:   "upload-logo <org-name> <path-to-image>",
+		Use:   "upload-logo [<org-name> [<path-to-image>]]",
 		Args:  cobra.MaximumNArgs(2),
-		Short: "Upload a custom logo (use --dark for dark-mode variant; omit path only with --remove)",
+		Short: "Upload a custom logo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
