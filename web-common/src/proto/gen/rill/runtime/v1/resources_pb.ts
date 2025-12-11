@@ -4797,6 +4797,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Array of dimension or measure names
+   *
+   * @generated from field: repeated string pinned_filters = 16;
+   */
+  pinnedFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4820,6 +4827,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -5033,6 +5041,15 @@ export class CanvasPreset extends Message<CanvasPreset> {
    */
   comparisonDimension?: string;
 
+  /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Valid Metrics SQL expression
+   *
+   * @generated from field: map<string, rill.runtime.v1.DefaultMetricsSQLFilter> filter_expr = 19;
+   */
+  filterExpr: { [key: string]: DefaultMetricsSQLFilter } = {};
+
   constructor(data?: PartialMessage<CanvasPreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5044,6 +5061,7 @@ export class CanvasPreset extends Message<CanvasPreset> {
     { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "filter_expr", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: DefaultMetricsSQLFilter} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
@@ -5060,6 +5078,43 @@ export class CanvasPreset extends Message<CanvasPreset> {
 
   static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
     return proto3.util.equals(CanvasPreset, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DefaultMetricsSQLFilter
+ */
+export class DefaultMetricsSQLFilter extends Message<DefaultMetricsSQLFilter> {
+  /**
+   * @generated from field: rill.runtime.v1.Expression expression = 1;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<DefaultMetricsSQLFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DefaultMetricsSQLFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined, b: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined): boolean {
+    return proto3.util.equals(DefaultMetricsSQLFilter, a, b);
   }
 }
 
