@@ -876,6 +876,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  logoDarkUrl?: string;
   faviconUrl?: string;
   thumbnailUrl?: string;
   customDomain?: string;
@@ -1661,6 +1662,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  logoDarkAssetId?: string;
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;

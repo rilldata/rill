@@ -1216,6 +1216,7 @@ message UpdateOrganizationRequest {
   optional string new_name = 3;
   optional string display_name = 5;
   optional string logo_asset_id = 6;
+  optional string logo_dark_asset_id = 18;
   optional string favicon_asset_id = 7;
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
@@ -2957,6 +2958,7 @@ message Organization {
   string display_name = 11;
   string description = 3;
   string logo_url = 12;
+  string logo_dark_url = 18;
   string favicon_url = 13;
   string thumbnail_url = 17;
   string custom_domain = 10;

@@ -16,11 +16,12 @@ import (
 func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 	var path string
 	var remove bool
+	var dark bool
 
 	cmd := &cobra.Command{
-		Use:   "upload-logo [<org-name> [<path-to-image>]]",
+		Use:   "upload-logo <org-name> <path-to-image>",
 		Args:  cobra.MaximumNArgs(2),
-		Short: "Upload a custom logo",
+		Short: "Upload a custom logo (use --dark for dark-mode variant; omit path only with --remove)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
@@ -38,6 +39,11 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("an organization name is required")
 			}
 
+			// Require a path unless removing
+			if !remove && path == "" {
+				return fmt.Errorf("a path to the image is required (pass as arg or --path)")
+			}
+
 			// Handle --remove
 			if remove {
 				if path != "" {
@@ -45,20 +51,31 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// Confirmation prompt
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom logo for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+				label := "logo"
+				if dark {
+					label = "dark-mode logo"
+				}
+				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
 					return err
 				}
 
 				empty := ""
-				_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-					Org:         ch.Org,
-					LogoAssetId: &empty,
-				})
+				updateReq := &adminv1.UpdateOrganizationRequest{Org: ch.Org}
+				if dark {
+					updateReq.LogoDarkAssetId = &empty
+				} else {
+					updateReq.LogoAssetId = &empty
+				}
+				_, err = client.UpdateOrganization(cmd.Context(), updateReq)
 				if err != nil {
 					return err
 				}
 
-				ch.PrintfSuccess("Removed logo from organization %q\n", ch.Org)
+				if dark {
+					ch.PrintfSuccess("Removed dark-mode logo from organization %q\n", ch.Org)
+				} else {
+					ch.PrintfSuccess("Removed logo from organization %q\n", ch.Org)
+				}
 				return nil
 			}
 
@@ -88,15 +105,23 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer f.Close()
 
 			// Confirmation prompt
-			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom logo for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+			label := "logo"
+			if dark {
+				label = "dark-mode logo"
+			}
+			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom %s for %q. Continue?", label, ch.Org), "", false); err != nil || !ok {
 				return err
 			}
 
 			// Generate the asset upload URL
+			assetName := "logo"
+			if dark {
+				assetName = "logo-dark"
+			}
 			asset, err := client.CreateAsset(cmd.Context(), &adminv1.CreateAssetRequest{
 				Org:                ch.Org,
 				Type:               "image",
-				Name:               "logo",
+				Name:               assetName,
 				Extension:          ext,
 				Public:             true,
 				EstimatedSizeBytes: fi.Size(),
@@ -124,16 +149,23 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Update the logo
-			_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-				Org:         ch.Org,
-				LogoAssetId: &asset.AssetId,
-			})
+			updateReq := &adminv1.UpdateOrganizationRequest{Org: ch.Org}
+			if dark {
+				updateReq.LogoDarkAssetId = &asset.AssetId
+			} else {
+				updateReq.LogoAssetId = &asset.AssetId
+			}
+			_, err = client.UpdateOrganization(cmd.Context(), updateReq)
 			if err != nil {
 				return fmt.Errorf("failed to update: %w", err)
 			}
 
 			// Print confirmation message
-			ch.PrintfSuccess("Updated the logo for %q\n", ch.Org)
+			if dark {
+				ch.PrintfSuccess("Updated the dark-mode logo for %q\n", ch.Org)
+			} else {
+				ch.PrintfSuccess("Updated the logo for %q\n", ch.Org)
+			}
 			return nil
 		},
 	}
@@ -141,6 +173,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization name")
 	cmd.Flags().StringVar(&path, "path", "", "Path to image file (PNG or JPEG)")
 	cmd.Flags().BoolVar(&remove, "remove", false, "Remove the current logo")
+	cmd.Flags().BoolVar(&dark, "dark", false, "Target the dark-mode logo variant")
 
 	return cmd
 }
