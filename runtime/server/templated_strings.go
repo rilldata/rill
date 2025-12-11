@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -51,6 +53,113 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
+	// Cache and getter function for metrics view measures.
+	//
+	// NOTE: We skip enforcing field access security policies here because those are already enforced in the metrics SQL resolver.
+	// So any field that we lookup here is already allowed to be accessed by the user.
+	measuresCache := make(map[string]map[string]bool)
+	isMeasure := func(metricsView, field string) (bool, error) {
+		if metricsView == "" {
+			return false, nil
+		}
+		measures, ok := measuresCache[metricsView]
+		if !ok {
+			var err error
+			measures, err = s.metricsViewMeasures(ctx, req.InstanceId, metricsView)
+			if err != nil {
+				return false, err
+			}
+			measuresCache[metricsView] = measures
+		}
+		_, ok = measures[field]
+		return ok, nil
+	}
+
+	// Utility function for resolving metrics SQL and handling req.UseFormatTokens.
+	// If unary is true, it expects the query to return exactly one row with one column.
+	resolveMetricsSQL := func(sql string, unary bool) ([]map[string]any, error) {
+		// Run metrics SQL resolver
+		resolveRes, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID: req.InstanceId,
+			Resolver:   "metrics_sql",
+			ResolverProperties: map[string]any{
+				"sql":                              sql,
+				"time_zone":                        timeZone,
+				"additional_where_by_metrics_view": additionalWhereByMetricsView,
+				"additional_time_range":            additionalTimeRange,
+			},
+			Args:   nil,
+			Claims: claims,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolveRes.Close()
+
+		// Read all rows (or just one if unary)
+		var rows []map[string]any
+		for {
+			row, err := resolveRes.Next()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				return nil, fmt.Errorf("failed to get result: %w", err)
+			}
+			if len(rows) > 0 && unary {
+				return nil, fmt.Errorf("metrics_sql in templating must return one row, but the query returned multiple")
+			}
+			rows = append(rows, row)
+		}
+
+		// If unary, validate we got exactly one row with one column
+		if unary {
+			if len(rows) != 1 {
+				return nil, fmt.Errorf("metrics_sql in templating must return one row, got none")
+			}
+			if len(rows[0]) != 1 {
+				return nil, fmt.Errorf("metrics_sql in templating only allows one result field, got %d", len(rows[0]))
+			}
+		}
+
+		// When using format tokens, wrap each measure value with a format token (only measures, not dimensions).
+		if req.UseFormatTokens {
+			// The "metrics" resolver returns the metrics view in the metadata.
+			// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
+			var mv string
+			if meta := resolveRes.Meta(); meta != nil {
+				mv, _ = meta["metrics_view"].(string)
+			}
+
+			for _, row := range rows {
+				for field, val := range row {
+					// Skip if it's not a measure
+					ok, err := isMeasure(mv, field)
+					if err != nil {
+						return nil, err
+					}
+					if !ok {
+						continue
+					}
+
+					// Wrap in format token
+					data, err := json.Marshal(resolveTemplatedStringFormatToken{MetricsView: mv, Field: field, Value: val})
+					if err != nil {
+						return nil, fmt.Errorf("failed to marshal measure value %v as JSON: %w", val, err)
+					}
+					row[field] = fmt.Sprintf("__RILL__FORMAT__(%s)", string(data))
+				}
+			}
+		}
+
+		// Return the rows
+		return rows, nil
+	}
+
+	// Prepare template data.
+	// We add two extra functions:
+	// - metrics_sql: executes a metrics SQL query and returns the first field of the first row as a string.
+	// - metrics_sql_rows: executes a metrics SQL query and returns all rows as a []map[string]any.
 	templateData := parser.TemplateData{
 		User:      claims.UserAttributes,
 		Variables: inst.ResolveVariables(false),
@@ -60,59 +169,27 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		},
 		ExtraFuncs: map[string]any{
 			"metrics_sql": func(sql string) (string, error) {
-				// Run metrics SQL resolver
-				resolveRes, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-					InstanceID: req.InstanceId,
-					Resolver:   "metrics_sql",
-					ResolverProperties: map[string]any{
-						"sql":                              sql,
-						"time_zone":                        timeZone,
-						"additional_where_by_metrics_view": additionalWhereByMetricsView,
-						"additional_time_range":            additionalTimeRange,
-					},
-					Args:   nil,
-					Claims: claims,
-				})
+				// Resolve with unary=true
+				rows, err := resolveMetricsSQL(sql, true)
 				if err != nil {
 					return "", err
 				}
-				defer resolveRes.Close()
 
-				// Get only column in the only row
-				row, err := resolveRes.Next()
-				if err != nil {
-					return "", fmt.Errorf("failed to get result: %w", err)
-				}
-				if len(row) != 1 {
-					return "", fmt.Errorf("metrics_sql in templating only allows one result field, got %d", len(row))
-				}
-				_, err = resolveRes.Next()
-				if err == nil {
-					return "", fmt.Errorf("metrics_sql in templating must return one row, but the query returned multiple")
-				}
-				var field string
-				var val any
-				for k, v := range row {
-					field = k
-					val = v
-				}
-
-				// Return value wrapped in a format token if requested
-				if req.UseFormatTokens {
-					// The "metrics" resolver returns the metrics view in the metadata.
-					// (This is a bit of a hacky way to pass this info along, but it avoids turning format tokens into a deeper concept.)
-					var mv string
-					if meta := resolveRes.Meta(); meta != nil {
-						mv, _ = meta["metrics_view"].(string)
+				// Guaranteed to have one row with one column.
+				if len(rows) > 0 {
+					for _, val := range rows[0] {
+						if val, ok := val.(string); ok {
+							return val, nil
+						}
+						return fmt.Sprintf("%v", val), nil
 					}
-					if mv != "" {
-						return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, mv, field, val), nil
-					}
-					// Fallthrough to raw value if we can't find the metrics view
 				}
-
-				// Return stringified raw value
-				return fmt.Sprintf("%v", val), nil
+				return "", fmt.Errorf("unreachable: no value in single-column single-row result")
+			},
+			"metrics_sql_rows": func(sql string) (any, error) {
+				// Resolve with unary=false.
+				// We can return the rows as-is.
+				return resolveMetricsSQL(sql, false)
 			},
 		},
 	}
@@ -129,4 +206,30 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	return &runtimev1.ResolveTemplatedStringResponse{
 		Body: body,
 	}, nil
+}
+
+// metricsViewMeasures retrieves the measure names for a metrics view.
+func (s *Server) metricsViewMeasures(ctx context.Context, instanceID, metricsView string) (map[string]bool, error) {
+	if metricsView == "" {
+		return nil, nil
+	}
+
+	_, mv, err := lookupMetricsView(ctx, s.runtime, instanceID, metricsView)
+	if err != nil {
+		return nil, err
+	}
+
+	measures := make(map[string]bool)
+	for _, d := range mv.ValidSpec.Measures {
+		measures[d.Name] = true
+	}
+
+	return measures, nil
+}
+
+// resolveTemplatedStringFormatToken is the payload inside a __RILL__FORMAT__(...) token generated by ResolveTemplatedString.
+type resolveTemplatedStringFormatToken struct {
+	MetricsView string `json:"metrics_view"`
+	Field       string `json:"field"`
+	Value       any    `json:"value"`
 }
