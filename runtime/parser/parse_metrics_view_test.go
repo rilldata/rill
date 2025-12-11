@@ -322,3 +322,170 @@ measures:
 	require.Nil(t, mv.MetricsViewSpec.Measures[1].Tags)
 	require.Equal(t, []string{}, mv.MetricsViewSpec.Measures[2].Tags)
 }
+
+func TestValidateQueryAttributes(t *testing.T) {
+	tests := []struct {
+		name    string
+		attrs   map[string]string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "valid simple attributes",
+			attrs:   map[string]string{"partner_id": "acme_corp", "region": "us-west"},
+			wantErr: false,
+		},
+		{
+			name:    "valid with underscores and hyphens",
+			attrs:   map[string]string{"partner_id": "value1", "user-role": "admin", "app.env": "prod"},
+			wantErr: false,
+		},
+		{
+			name:    "valid with dots in key",
+			attrs:   map[string]string{"app.environment": "production"},
+			wantErr: false,
+		},
+		{
+			name:    "valid with template",
+			attrs:   map[string]string{"partner_id": "{{ .user.partner_id }}"},
+			wantErr: false,
+		},
+		{
+			name:    "empty attributes map",
+			attrs:   map[string]string{},
+			wantErr: false,
+		},
+		{
+			name:    "nil attributes map",
+			attrs:   nil,
+			wantErr: false,
+		},
+		{
+			name:    "empty key",
+			attrs:   map[string]string{"": "value"},
+			wantErr: true,
+		},
+		{
+			name:    "invalid key with spaces",
+			attrs:   map[string]string{"partner id": "value"},
+			wantErr: true,
+			errMsg:  "contains invalid characters",
+		},
+		{
+			name:    "invalid key with special chars",
+			attrs:   map[string]string{"partner@id": "value"},
+			wantErr: true,
+			errMsg:  "contains invalid characters",
+		},
+		{
+			name:    "invalid key with SQL injection",
+			attrs:   map[string]string{"partner'; DROP TABLE users--": "value"},
+			wantErr: true,
+			errMsg:  "contains invalid characters",
+		},
+		{
+			name:    "template with dangerous pattern should pass",
+			attrs:   map[string]string{"query": "{{ .user.custom_query }}"},
+			wantErr: false,
+		},
+		{
+			name:    "mixed safe and template values",
+			attrs:   map[string]string{"env": "production", "partner_id": "{{ .user.partner_id }}"},
+			wantErr: false,
+		},
+		{
+			name:    "valid uppercase key",
+			attrs:   map[string]string{"PARTNER_ID": "value"},
+			wantErr: false,
+		},
+		{
+			name:    "valid numeric in key",
+			attrs:   map[string]string{"partner_id_123": "value"},
+			wantErr: false,
+		},
+		{
+			name:    "simple alphanumeric",
+			attrs:   map[string]string{"partner_id": ""},
+			wantErr: false,
+		},
+		{
+			name:    "with hyphen",
+			attrs:   map[string]string{"partner-id": ""},
+			wantErr: false,
+		},
+		{
+			name:    "with dot",
+			attrs:   map[string]string{"app.environment": ""},
+			wantErr: false,
+		},
+		{
+			name:    "with numbers",
+			attrs:   map[string]string{"key123": ""},
+			wantErr: false,
+		},
+		{
+			name:    "uppercase",
+			attrs:   map[string]string{"PARTNER_ID": ""},
+			wantErr: false,
+		},
+		{
+			name:    "mixed case",
+			attrs:   map[string]string{"PartnerId": ""},
+			wantErr: false,
+		},
+		{
+			name:    "empty string",
+			attrs:   map[string]string{"": ""},
+			wantErr: true,
+		},
+		{
+			name:    "with space",
+			attrs:   map[string]string{"partner id": ""},
+			wantErr: true,
+		},
+		{
+			name:    "with special char",
+			attrs:   map[string]string{"partner@id": ""},
+			wantErr: true,
+		},
+		{
+			name:    "with slash",
+			attrs:   map[string]string{"partner/id": ""},
+			wantErr: true,
+		},
+		{
+			name:    "with quotes",
+			attrs:   map[string]string{"partner'id": ""},
+			wantErr: true,
+		},
+		{
+			name:    "with semicolon",
+			attrs:   map[string]string{"partner;id": ""},
+			wantErr: true,
+		},
+		{
+			name:    "unicode",
+			attrs:   map[string]string{"партнер": ""},
+			wantErr: true,
+		},
+		{
+			name:    "emoji",
+			attrs:   map[string]string{"partner🎉": ""},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateQueryAttributes(tt.attrs)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					require.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

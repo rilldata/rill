@@ -57,5 +57,5 @@
         <shard>02</shard>
         <replica>01</replica>
     </macros>
-    <custom_settings_prefixes>custom</custom_settings_prefixes>
+    <custom_settings_prefixes>custom_</custom_settings_prefixes>
 </clickhouse>

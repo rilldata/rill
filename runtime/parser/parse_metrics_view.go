@@ -1122,21 +1122,11 @@ func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName
 // validateQueryAttributes validates query attribute keys
 func validateQueryAttributes(attrs map[string]string) error {
 	for key := range attrs {
-		if key == "" {
-			return errors.New("query attribute key cannot be empty")
-		}
-
-		if !isValidQueryAttributeKey(key) {
+		if !queryAttributeKeyRegex.MatchString(key) {
 			return fmt.Errorf("query attribute key %q contains invalid characters (must be alphanumeric with underscores, hyphens, or dots only)", key)
 		}
 	}
-
 	return nil
 }
 
 var queryAttributeKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
-
-// isValidQueryAttributeKey checks if a key contains only safe characters
-func isValidQueryAttributeKey(key string) bool {
-	return queryAttributeKeyRegex.MatchString(key)
-}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -157,23 +156,19 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		}
 
 		// Add query attributes as settings
-		if len(stmt.QueryAttributes) > 0 {
-			for k, v := range stmt.QueryAttributes {
-				// NOTE: Ideally, we could just handle custom attributes with: settings[k] = v
-				// However, Clickhouse currently doesn't accept custom settings this way, so we fall back to appending to the query.
-				if sqlSettings != "" {
-					sqlSettings += ", "
-				}
-				sqlSettings += fmt.Sprintf("%s = %s", k, sqlstring.ToLiteral(v))
+		for k, v := range stmt.QueryAttributes {
+			// NOTE: Ideally, we could just handle custom attributes with `settings[k] = v`
+			// However, Clickhouse currently doesn't accept custom settings this way, so we fall back to appending to the query.
+			if sqlSettings != "" {
+				sqlSettings += ", "
 			}
+			sqlSettings += fmt.Sprintf("%s = %s", k, sqlstring.ToLiteral(v))
 		}
 
 		// Add settings to query and context (depending on type)
 		if sqlSettings != "" {
 			stmt.Query += "\n SETTINGS " + sqlSettings
 		}
-
-		// Add settings to context
 		if len(settings) > 0 {
 			ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 		}
@@ -228,23 +223,12 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	rows2, err := conn.QueryxContext(ctx, "SELECT 1")
-	if err != nil {
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-		_ = release()
-		return nil, fmt.Errorf("unexpected: %w", err)
-	}
-	rows2.Close()
-
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
 		_ = release()
-		log.Printf("ERROR FRO HERRE: %v (%v): %s", err, stmt.QueryAttributes, stmt.Query)
 		return nil, err
 	}
 
