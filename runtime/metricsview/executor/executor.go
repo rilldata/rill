@@ -158,6 +158,8 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.
 		res, err = e.resolvePinot(ctx, timeExpr)
 	case drivers.DialectDruid:
 		res, err = e.resolveDruid(ctx, timeExpr)
+	case drivers.DialectStarRocks:
+		res, err = e.resolveStarRocks(ctx, timeExpr)
 	default:
 		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
