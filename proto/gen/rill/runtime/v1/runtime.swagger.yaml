@@ -3278,6 +3278,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       column:
         type: string
       expression:
@@ -3301,10 +3305,6 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the dimension. Only populated in ValidSpec.
-      tags:
-        type: array
-        items:
-          type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object
@@ -3334,6 +3334,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       expression:
         type: string
       type:
@@ -3367,10 +3371,6 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
-      tags:
-        type: array
-        items:
-          type: string
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -4668,6 +4668,9 @@ definitions:
         type: boolean
       pivotTableMode:
         type: string
+      pivotRowLimit:
+        type: integer
+        format: int32
   v1ExploreSortType:
     type: string
     enum:

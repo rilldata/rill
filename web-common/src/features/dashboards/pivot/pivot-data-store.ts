@@ -242,12 +242,21 @@ export function createPivotDataStore(
 
     const measureBody = measureNames.map((m) => ({ name: m }));
 
+    // Apply row limit to column dimension query
+    const colLimitToApply =
+      config.pivot.rowLimit !== undefined
+        ? config.pivot.rowLimit.toString()
+        : "100";
+
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       config,
       colDimensionNames,
       measureBody,
       config.whereFilter,
+      [],
+      undefined,
+      colLimitToApply,
     );
 
     return derived(
@@ -297,6 +306,12 @@ export function createPivotDataStore(
           readable(null);
 
         if (!isFlat) {
+          // Determine limit to apply: use rowLimit if set, otherwise use pagination limit
+          let limitToApply = NUM_ROWS_PER_PAGE.toString();
+          if (config.pivot.rowLimit !== undefined) {
+            limitToApply = config.pivot.rowLimit.toString();
+          }
+
           // Get sort order for the anchor dimension
           rowDimensionAxisQuery = getAxisForDimensions(
             ctx,
@@ -306,7 +321,7 @@ export function createPivotDataStore(
             whereFilter,
             sortPivotBy,
             timeRange,
-            NUM_ROWS_PER_PAGE.toString(),
+            limitToApply,
             rowOffset.toString(),
           );
         }
@@ -456,13 +471,21 @@ export function createPivotDataStore(
                 totalsRowData,
               );
 
+              // Determine limit for table cell query
+              let tableCellLimit = "5000";
+              if (isFlat) {
+                tableCellLimit = NUM_ROWS_PER_PAGE.toString();
+              } else if (config.pivot.rowLimit !== undefined) {
+                tableCellLimit = config.pivot.rowLimit.toString();
+              }
+
               tableCellQuery = createTableCellQuery(
                 ctx,
                 config,
                 columnDimensionAxes?.data,
                 totalsRowData,
                 rowDimensionValues,
-                isFlat ? NUM_ROWS_PER_PAGE.toString() : "5000",
+                tableCellLimit,
                 isFlat ? rowOffset.toString() : "0",
               );
             } else {

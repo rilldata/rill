@@ -544,6 +544,18 @@ const metricsViewReducers = {
       };
     });
   },
+
+  setPivotRowLimit(name: string, limit: number | undefined) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        rowLimit: limit,
+        rowPage: 1,
+        expanded: {},
+        activeCell: null,
+      };
+    });
+  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &

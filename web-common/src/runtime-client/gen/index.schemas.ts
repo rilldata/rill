@@ -53,6 +53,7 @@ export interface MetricsViewSpecDimension {
   type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
+  tags?: string[];
   column?: string;
   expression?: string;
   unnest?: boolean;
@@ -63,7 +64,6 @@ export interface MetricsViewSpecDimension {
   lookupDefaultExpression?: string;
   smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
-  tags?: string[];
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -88,6 +88,7 @@ export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
+  tags?: string[];
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
@@ -100,7 +101,6 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
-  tags?: string[];
 }
 
 export type MetricsViewSpecMeasureType =
@@ -886,6 +886,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
+  pivotRowLimit?: number;
 }
 
 export type V1ExploreSortType =

@@ -102,6 +102,8 @@
             rows,
             columns,
           )}
+        setRowLimit={(limit) =>
+          metricsExplorerStore.setPivotRowLimit($exploreName, limit)}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
         {isFetching}

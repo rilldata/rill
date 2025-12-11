@@ -1623,6 +1623,11 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   description = "";
 
   /**
+   * @generated from field: repeated string tags = 16;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: string column = 2;
    */
   column = "";
@@ -1678,11 +1683,6 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   dataType?: Type;
 
-  /**
-   * @generated from field: repeated string tags = 16;
-   */
-  tags: string[] = [];
-
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1695,6 +1695,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 14, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DimensionType) },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1705,7 +1706,6 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
-    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {
@@ -1859,6 +1859,11 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   description = "";
 
   /**
+   * @generated from field: repeated string tags = 16;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: string expression = 2;
    */
   expression = "";
@@ -1920,11 +1925,6 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   dataType?: Type;
 
-  /**
-   * @generated from field: repeated string tags = 16;
-   */
-  tags: string[] = [];
-
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1936,6 +1936,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_MeasureType) },
     { no: 9, name: "window", kind: "message", T: MetricsViewSpec_MeasureWindow },
@@ -1948,7 +1949,6 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
-    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -3004,6 +3004,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotTableMode?: string;
 
+  /**
+   * @generated from field: optional int32 pivot_row_limit = 33;
+   */
+  pivotRowLimit?: number;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3041,6 +3046,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {

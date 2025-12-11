@@ -5541,6 +5541,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotTableMode
 	}
 
+	if m.PivotRowLimit != nil {
+		// no validation rules for PivotRowLimit
+	}
+
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)
 	}

@@ -372,6 +372,14 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
   const tableModeParam = partialExploreState.pivot?.tableMode ?? "nest";
   searchParams.set(ExploreStateURLParams.PivotTableMode, tableModeParam);
 
+  // Only encode rowLimit if it's defined (not undefined = unlimited)
+  if (partialExploreState.pivot?.rowLimit !== undefined) {
+    searchParams.set(
+      ExploreStateURLParams.PivotRowLimit,
+      partialExploreState.pivot.rowLimit.toString(),
+    );
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;
 }

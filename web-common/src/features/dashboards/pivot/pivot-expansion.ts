@@ -278,6 +278,12 @@ export function queryExpandedRowMeasureValues(
         mergeFilters(filterForRowDimensionAxes, config.whereFilter) ??
         createAndExpression([]);
 
+      // Use rowLimit if set, otherwise default to 100
+      const expandLimitToApply =
+        config.pivot.rowLimit !== undefined
+          ? config.pivot.rowLimit.toString()
+          : "100";
+
       return derived(
         [
           writable(expandIndex),
@@ -289,6 +295,7 @@ export function queryExpandedRowMeasureValues(
             subTableMergedFilters,
             sortPivotBy,
             timeRange,
+            expandLimitToApply,
           ),
         ],
         ([expandIndex, subRowDimensions], axisSet) => {

@@ -522,6 +522,7 @@ message ExplorePreset {
   optional string pivot_sort_by = 26;
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
+  optional int32 pivot_row_limit = 33;
 }
 
 enum ExploreComparisonMode {

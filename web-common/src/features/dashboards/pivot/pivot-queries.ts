@@ -241,6 +241,12 @@ export function getAxisQueryForMeasureTotals(
       mergedFilter = mergeFilters(otherFilters, sortedRowFilters);
     }
 
+    // Use rowLimit if set, otherwise default to 100
+    const limitToApply =
+      config.pivot.rowLimit !== undefined
+        ? config.pivot.rowLimit.toString()
+        : "100";
+
     rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
@@ -249,6 +255,7 @@ export function getAxisQueryForMeasureTotals(
       mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
+      limitToApply,
     );
   }
 

@@ -564,6 +564,16 @@ function fromPivotUrlParams(
     preset.pivotTableMode = tableMode;
   }
 
+  if (searchParams.has(ExploreStateURLParams.PivotRowLimit)) {
+    const rowLimitStr = searchParams.get(
+      ExploreStateURLParams.PivotRowLimit,
+    ) as string;
+    const rowLimit = parseInt(rowLimitStr, 10);
+    if (!isNaN(rowLimit) && rowLimit > 0) {
+      preset.pivotRowLimit = rowLimit;
+    }
+  }
+
   // TODO: other fields like expanded state and pin are not supported right now
   return { preset, errors };
 }
