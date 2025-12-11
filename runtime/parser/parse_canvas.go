@@ -232,7 +232,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
-		FilterExpr, err := parseFilterExpressions(tmp.Defaults.Filters)
+		filterExpr, err := parseFilterExpressions(tmp.Defaults.Filters)
 		if err != nil {
 			return fmt.Errorf("invalid filter expression in defaults: %w", err)
 		}
@@ -241,7 +241,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
-			FilterExpr:          FilterExpr,
+			FilterExpr:          filterExpr,
 		}
 	}
 
