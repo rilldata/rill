@@ -78,6 +78,7 @@ export class MeasureSelection {
       type: InlineContextType.Measure,
       metricsView,
       measure,
+      value: measure,
     });
 
     const start = get(this.start)?.toISOString();

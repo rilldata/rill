@@ -68,11 +68,12 @@ export function inlineContextsAreEqual(
 }
 
 export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
+  if (src.type === tar.type) return false;
   switch (src.type) {
     case InlineContextType.MetricsView:
       return src.metricsView === tar.metricsView;
     case InlineContextType.Model:
-      return tar.model === src.model;
+      return src.model === tar.model;
   }
   return false;
 }

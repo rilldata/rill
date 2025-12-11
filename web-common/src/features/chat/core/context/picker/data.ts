@@ -21,6 +21,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import { getLastUsedMetricsViewNameStore } from "@rilldata/web-common/features/chat/core/context/picker/get-last-used-metrics-view.ts";
+import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view.
@@ -32,49 +34,56 @@ function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
     getValidMetricsViewsQueryOptions(),
     queryClient,
   );
+  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
+  const activeMetricsViewStore = getActiveMetricsViewNameStore();
 
-  return derived(metricsViewsQuery, (metricsViewsResp) => {
-    const metricsViews = metricsViewsResp.data ?? [];
-    return metricsViews.map((mv) => {
-      const mvName = mv.meta?.name?.name ?? "";
-      const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
-      const mvDisplayName = metricsViewSpec?.displayName || mvName;
+  return derived(
+    [metricsViewsQuery, lastUsedMetricsViewStore, activeMetricsViewStore],
+    ([metricsViewsResp, lastUsedMv, activeMv]) => {
+      const metricsViews = metricsViewsResp.data ?? [];
+      return metricsViews.map((mv) => {
+        const mvName = mv.meta?.name?.name ?? "";
+        const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
+        const mvDisplayName = metricsViewSpec?.displayName || mvName;
 
-      const measures =
-        metricsViewSpec?.measures?.map(
-          (m) =>
-            ({
-              type: InlineContextType.Measure,
-              label: getMeasureDisplayName(m),
-              value: m.name!,
-              metricsView: mvName,
-              measure: m.name!,
-            }) satisfies InlineContext,
-        ) ?? [];
+        const measures =
+          metricsViewSpec?.measures?.map(
+            (m) =>
+              ({
+                type: InlineContextType.Measure,
+                label: getMeasureDisplayName(m),
+                value: m.name!,
+                metricsView: mvName,
+                measure: m.name!,
+              }) satisfies InlineContext,
+          ) ?? [];
 
-      const dimensions =
-        metricsViewSpec?.dimensions?.map(
-          (d) =>
-            ({
-              type: InlineContextType.Dimension,
-              label: getDimensionDisplayName(d),
-              value: d.name!,
-              metricsView: mvName,
-              dimension: d.name!,
-            }) satisfies InlineContext,
-        ) ?? [];
+        const dimensions =
+          metricsViewSpec?.dimensions?.map(
+            (d) =>
+              ({
+                type: InlineContextType.Dimension,
+                label: getDimensionDisplayName(d),
+                value: d.name!,
+                metricsView: mvName,
+                dimension: d.name!,
+              }) satisfies InlineContext,
+          ) ?? [];
 
-      return {
-        context: {
-          type: InlineContextType.MetricsView,
-          metricsView: mvName,
-          label: mvDisplayName,
-          value: mvName,
-        },
-        children: [measures, dimensions],
-      } satisfies InlineContextPickerOption;
-    });
-  });
+        return {
+          context: {
+            type: InlineContextType.MetricsView,
+            metricsView: mvName,
+            label: mvDisplayName,
+            value: mvName,
+          },
+          recentlyUsed: mvName === lastUsedMv,
+          currentlyActive: mvName === activeMv,
+          children: [measures, dimensions],
+        } satisfies InlineContextPickerOption;
+      });
+    },
+  );
 }
 
 /**
@@ -105,7 +114,11 @@ function getFilesPickerOptions() {
             value: fileName,
             label: fileName,
           },
-          childrenQueryOptions: getModelColumnsQueryOptions(instanceId, r),
+          childrenQueryOptions: getModelColumnsQueryOptions(
+            instanceId,
+            r,
+            fileName,
+          ),
         } satisfies InlineContextPickerOption;
       });
     },
@@ -115,10 +128,10 @@ function getFilesPickerOptions() {
 function getModelColumnsQueryOptions(
   instanceId: string,
   modelRes: V1Resource | undefined,
+  fileName: string,
 ) {
   const connector = modelRes?.model?.spec?.outputConnector ?? "";
   const table = modelRes?.model?.state?.resultTable ?? "";
-  const modelName = modelRes?.meta?.name?.name ?? "";
   return getQueryServiceTableColumnsQueryOptions(
     instanceId,
     table,
@@ -137,7 +150,7 @@ function getModelColumnsQueryOptions(
                 value: col.name!,
                 column: col.name,
                 columnType: col.type,
-                model: modelName,
+                model: fileName,
               }) satisfies InlineContext,
           ) ?? [],
         ],
@@ -181,29 +194,39 @@ export function getFilterPickerOptions(
         label.toLowerCase().includes(searchText.toLowerCase()) ||
         value.toLowerCase().includes(searchText.toLowerCase());
 
-      return options
-        .map((option) => {
-          const children =
-            option.children
-              ?.map((cc) =>
-                cc.filter((c) => filterFunction(c.label ?? "", c.value)),
-              )
-              .filter((cc) => cc.length > 0) ?? [];
+      let recentlyUsed: InlineContextPickerOption | null = null;
+      let currentlyActive: InlineContextPickerOption | null = null;
 
-          const parentMatches = filterFunction(
-            option.context.label ?? "",
-            option.context.value,
-          );
+      const filteredOptions = options.map((option) => {
+        const children =
+          option.children
+            ?.map((cc) =>
+              cc.filter((c) => filterFunction(c.label ?? "", c.value)),
+            )
+            .filter((cc) => cc.length > 0) ?? [];
 
-          if (!parentMatches && children.length === 0) return null;
+        const parentMatches = filterFunction(
+          option.context.label ?? "",
+          option.context.value,
+        );
 
-          return {
-            context: option.context,
-            children,
-            childrenQueryOptions: option.childrenQueryOptions,
-          } satisfies InlineContextPickerOption;
-        })
-        .filter(Boolean) as InlineContextPickerOption[];
+        if (!parentMatches && children.length === 0) return null;
+
+        if (option.recentlyUsed) recentlyUsed = option;
+        if (option.currentlyActive) currentlyActive = option;
+        if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
+
+        return {
+          ...option,
+          children,
+        } satisfies InlineContextPickerOption;
+      });
+
+      if (recentlyUsed === currentlyActive) currentlyActive = null;
+
+      return [recentlyUsed, currentlyActive, ...filteredOptions].filter(
+        Boolean,
+      ) as InlineContextPickerOption[];
     },
   );
 }

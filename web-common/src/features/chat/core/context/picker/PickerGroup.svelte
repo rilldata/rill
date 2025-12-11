@@ -53,14 +53,16 @@
     inlineContextsAreEqual(context, highlightedContext);
   $: withinParentOptionHighlighted =
     highlightedContext !== null &&
-    !parentOptionHighlighted &&
     inlineContextIsWithin(context, highlightedContext);
 
   $: parentIcon = InlineContextConfig[context.type]?.getIcon?.(context);
 
   $: mouseContextHighlightHandler = highlightManager.mouseOverHandler(context);
 
-  let open = withinParentOptionSelected || recentlyUsed || currentlyActive;
+  let open =
+    withinParentOptionSelected ||
+    parentOption.recentlyUsed ||
+    parentOption.currentlyActive;
   $: shouldForceOpen =
     withinParentOptionHighlighted || $searchTextStore.length > 0;
   $: if (shouldForceOpen) {
@@ -117,9 +119,9 @@
         ↑/↓
       </div>
       {#if recentlyUsed}
-        <span class="metrics-view-context-label">Recently asked</span>
+        <span class="parent-context-label">Recently asked</span>
       {:else if currentlyActive}
-        <span class="metrics-view-context-label">Current</span>
+        <span class="parent-context-label">Current</span>
       {/if}
     </button>
   </Collapsible.Trigger>
@@ -152,7 +154,9 @@
             {/if}
           </div>
           {#if icon}
-            <svelte:component this={icon} size="14px" />
+            <div class="text-gray-500">
+              <svelte:component this={icon} size="14px" />
+            </div>
           {:else}
             <div class="context-item-icon"></div>
           {/if}
