@@ -634,9 +634,26 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 	return res, nil
 }
 
-func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID string) ([]*database.Deployment, error) {
-	var res []*database.Deployment
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM deployments d WHERE d.project_id=$1", projectID)
+func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID, environment, branch string) ([]*database.Deployment, error) {
+	var (
+		res   []*database.Deployment
+		query strings.Builder
+		args  []any
+	)
+
+	query.WriteString("SELECT * FROM deployments d WHERE d.project_id=$1")
+	args = append(args, projectID)
+
+	if environment != "" {
+		query.WriteString(fmt.Sprintf(" AND d.environment=$%d", len(args)+1))
+		args = append(args, environment)
+	}
+	if branch != "" {
+		query.WriteString(fmt.Sprintf(" AND d.branch=$%d", len(args)+1))
+		args = append(args, branch)
+	}
+
+	err := c.getDB(ctx).SelectContext(ctx, &res, query.String(), args...)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}
@@ -668,9 +685,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()) RETURNING *`,
-		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
+		INSERT INTO deployments (project_id, owner_user_id, environment, branch, editable, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now()) RETURNING *`,
+		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.Editable, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -681,20 +698,6 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployments WHERE id=$1", id)
 	return checkDeleteRow("deployment", res, err)
-}
-
-func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE deployments
-		SET branch=$1, runtime_host=$2, runtime_instance_id=$3, runtime_audience=$4, status=$5, status_message=$6, updated_on=now()
-		WHERE id=$7 RETURNING *`,
-		opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
-	).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployment", err)
-	}
-	return res, nil
 }
 
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
@@ -709,6 +712,34 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 func (c *connection) UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus database.DeploymentStatus) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET desired_status=$1, desired_status_updated_on=now(), updated_on=now() WHERE id=$2 RETURNING *", desiredStatus, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentUnsafe(ctx context.Context, id string, opts *database.UpdateDeploymentUnsafeOptions) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE deployments
+		SET runtime_host=$1, runtime_instance_id=$2, runtime_audience=$3, status=$4, status_message=$5, updated_on=now()
+		WHERE id=$6 RETURNING *`,
+		opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentSafe(ctx context.Context, id string, opts *database.UpdateDeploymentSafeOptions) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE deployments
+		SET desired_status=$1, branch=$2, desired_status_updated_on=now(), updated_on=now()
+		WHERE id=$3 RETURNING *`,
+		opts.DesiredStatus, opts.Branch, id,
+	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}

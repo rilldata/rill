@@ -200,6 +200,7 @@ message MetricsViewSpec {
     DimensionType type = 14;
     string display_name = 3;
     string description = 4;
+    repeated string tags = 16;
     string column = 2;
     string expression = 6;
     bool unnest = 5;
@@ -246,6 +247,7 @@ message MetricsViewSpec {
     string name = 1;
     string display_name = 3;
     string description = 4;
+    repeated string tags = 16;
     string expression = 2;
     MeasureType type = 8;
     MeasureWindow window = 9;

@@ -58,9 +58,12 @@
         selectedTimezone,
         minTimeGrain,
         set,
+        hasTimeSeries: hasTimeSeriesStore,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: hasTimeSeries = $hasTimeSeriesStore;
 
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
 
@@ -127,58 +130,60 @@
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
 >
-  <div
-    class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
-  >
-    <Calendar size="16px" />
-    <SuperPill
-      context={canvasName}
-      allTimeRange={$allTimeRange}
-      {selectedRangeAlias}
-      showPivot={false}
-      minTimeGrain={$minTimeGrain}
-      {defaultTimeRange}
-      {availableTimeZones}
-      {timeRanges}
-      complete={false}
-      {interval}
-      {timeStart}
-      {timeEnd}
-      {activeTimeGrain}
-      {activeTimeZone}
-      canPanLeft={canPan.left}
-      canPanRight={canPan.right}
-      watermark={undefined}
-      allowCustomTimeRange={$spec?.allowCustomTimeRange}
-      {showDefaultItem}
-      applyRange={(timeRange) => {
-        const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
-        set.range(string);
-      }}
-      onSelectRange={set.range}
-      onTimeGrainSelect={set.grain}
-      onSelectTimeZone={set.zone}
-      {onPan}
-    />
-    <CanvasComparisonPill
-      allTimeRange={$allTimeRange}
-      {selectedTimeRange}
-      {selectedComparisonTimeRange}
-      {activeTimeZone}
-      minTimeGrain={$minTimeGrain}
-      showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-        false}
-      onDisplayTimeComparison={set.comparison}
-      onSetSelectedComparisonRange={(range) => {
-        if (range.name === "CUSTOM_COMPARISON_RANGE") {
-          const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-          set.comparison(stringRange);
-        } else if (range.name) {
-          set.comparison(range.name);
-        }
-      }}
-    />
-  </div>
+  {#if hasTimeSeries}
+    <div
+      class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
+    >
+      <Calendar size="16px" />
+      <SuperPill
+        context={canvasName}
+        allTimeRange={$allTimeRange}
+        {selectedRangeAlias}
+        showPivot={false}
+        minTimeGrain={$minTimeGrain}
+        {defaultTimeRange}
+        {availableTimeZones}
+        {timeRanges}
+        complete={false}
+        {interval}
+        {timeStart}
+        {timeEnd}
+        {activeTimeGrain}
+        {activeTimeZone}
+        canPanLeft={canPan.left}
+        canPanRight={canPan.right}
+        watermark={undefined}
+        allowCustomTimeRange={$spec?.allowCustomTimeRange}
+        {showDefaultItem}
+        applyRange={(timeRange) => {
+          const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
+          set.range(string);
+        }}
+        onSelectRange={set.range}
+        onTimeGrainSelect={set.grain}
+        onSelectTimeZone={set.zone}
+        {onPan}
+      />
+      <CanvasComparisonPill
+        allTimeRange={$allTimeRange}
+        {selectedTimeRange}
+        {selectedComparisonTimeRange}
+        {activeTimeZone}
+        minTimeGrain={$minTimeGrain}
+        showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+          false}
+        onDisplayTimeComparison={set.comparison}
+        onSetSelectedComparisonRange={(range) => {
+          if (range.name === "CUSTOM_COMPARISON_RANGE") {
+            const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
+            set.comparison(stringRange);
+          } else if (range.name) {
+            set.comparison(range.name);
+          }
+        }}
+      />
+    </div>
+  {/if}
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />

@@ -63,6 +63,7 @@ export interface MetricsViewSpecDimension {
   lookupDefaultExpression?: string;
   smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
+  tags?: string[];
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -99,6 +100,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  tags?: string[];
 }
 
 export type MetricsViewSpecMeasureType =

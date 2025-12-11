@@ -82,11 +82,10 @@ export class HeatmapChartProvider {
     const xAxisQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const instanceId = $runtime.instanceId;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.x?.field &&
           config?.x?.type !== "temporal" &&
           !Array.isArray(config.x?.sort);
@@ -128,10 +127,9 @@ export class HeatmapChartProvider {
     const yAxisQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!config.y?.field &&
           config?.y?.type !== "temporal" &&
           !Array.isArray(config.y?.sort);
@@ -175,13 +173,13 @@ export class HeatmapChartProvider {
     const queryOptionsStore = derived(
       [runtime, timeAndFilterStore, xAxisQuery, yAxisQuery],
       ([$runtime, $timeAndFilterStore, $xAxisQuery, $yAxisQuery]) => {
-        const { timeRange, where, timeGrain } = $timeAndFilterStore;
+        const { timeRange, where, timeGrain, hasTimeSeries } =
+          $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
         const yTopNData = $yAxisQuery?.data?.data;
 
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
             : true) &&
