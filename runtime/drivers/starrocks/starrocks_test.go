@@ -20,7 +20,7 @@ func TestConfigPropertiesValidate(t *testing.T) {
 		{
 			name: "dsn only",
 			cfg: &ConfigProperties{
-				DSN: "starrocks://user:pass@host:9030/db",
+				DSN: "user:pass@tcp(host:9030)/db",
 			},
 			wantErr: false,
 		},
@@ -34,10 +34,10 @@ func TestConfigPropertiesValidate(t *testing.T) {
 		{
 			name: "both dsn and host",
 			cfg: &ConfigProperties{
-				DSN:  "starrocks://user:pass@host:9030/db",
+				DSN:  "user:pass@tcp(host:9030)/db",
 				Host: "localhost",
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 
