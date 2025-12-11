@@ -234,7 +234,7 @@ export class AddDataFormManager {
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig(get(this.params.form) as Record<string, unknown>);
+    setConnectorConfig({});
     setStep("source");
   }
 
@@ -330,11 +330,19 @@ export class AddDataFormManager {
       >;
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
     }) => {
-      if (!event.form.valid) return;
-
       const values = event.form.data;
       const selectedAuthMethod = getSelectedAuthMethod?.();
       const stepState = get(connectorStepStore) as ConnectorStepState;
+
+      // When in the source step of a multi-step flow, the superform still uses
+      // the connector schema, so it can appear invalid because connector fields
+      // were intentionally skipped. Allow submission in that case and rely on
+      // the UI-level required checks for source fields.
+      if (
+        !event.form.valid &&
+        !(isMultiStepConnector && stepState.step === "source")
+      )
+        return;
 
       if (
         typeof setShowSaveAnyway === "function" &&
