@@ -95,7 +95,7 @@
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
             <button
-              class="w-full text-left text-sm px-4 py-3 h-[40px] text-sm font-medium text-foreground rounded-[10px] border transition-colors flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+              class="w-full text-left text-sm px-4 py-3 h-[40px] font-medium text-foreground rounded-[10px] border transition-colors flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
               class:border-gray-200={selectedConnectorName !== c.name}
               class:border-indigo-500={selectedConnectorName === c.name}
               class:bg-indigo-50={selectedConnectorName === c.name}
