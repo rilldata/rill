@@ -649,6 +649,30 @@ type annotation struct {
 	AdditionalFields map[string]any `mapstructure:",remain"`
 }
 
+// ConvertExpressionToMetricsSQL implements QueryService.
+func (s *Server) ConvertExpressionToMetricsSQL(ctx context.Context, req *runtimev1.ConvertExpressionToMetricsSQLRequest) (*runtimev1.ConvertExpressionToMetricsSQLResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	expr := metricsview.NewExpressionFromProto(req.Expression)
+	sql, err := metricsview.ExpressionToSQL(expr)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.ConvertExpressionToMetricsSQLResponse{
+		Sql: sql,
+	}, nil
+}
+
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {

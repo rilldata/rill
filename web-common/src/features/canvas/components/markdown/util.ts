@@ -1,14 +1,8 @@
 import { defaultMarkdownAlignment } from "@rilldata/web-common/features/canvas/components/markdown";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 import type { MarkdownCanvasComponent } from "@rilldata/web-common/features/canvas/components/markdown";
-import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import {
-  buildValidMetricsViewFilter,
-  createAndExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import type {
-  MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsView,
@@ -18,6 +12,8 @@ import type {
 import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived } from "svelte/store";
+import type { ParsedFilters } from "../../stores/filter-state";
+import type { Readable } from "svelte/motion";
 
 export function getPositionClasses(alignment: ComponentAlignment | undefined) {
   if (!alignment) alignment = defaultMarkdownAlignment;
@@ -108,59 +104,17 @@ function buildRequestBody(params: {
   content: string;
   applyFormatting: boolean;
   timeRange: V1TimeRange | undefined;
-  globalWhereFilter: V1Expression | undefined;
-  globalDimensionThresholdFilters: DimensionThresholdFilter[];
+  parsedMetricsViewFilters: ParsedFilters[];
   metricsViews: Record<string, V1MetricsView | undefined>;
 }): QueryServiceResolveTemplatedStringBody | null {
-  const {
-    content,
-    applyFormatting,
-    timeRange,
-    globalWhereFilter,
-    globalDimensionThresholdFilters,
-    metricsViews,
-  } = params;
-
-  if (!timeRange?.start || !timeRange?.end) return null;
+  const { content, applyFormatting, timeRange, parsedMetricsViewFilters } =
+    params;
 
   const additionalWhereByMetricsView: Record<string, V1Expression> = {};
-  const metricsViewNames = Object.keys(metricsViews);
 
-  if (
-    metricsViewNames.length > 0 &&
-    (globalWhereFilter || globalDimensionThresholdFilters.length > 0)
-  ) {
-    for (const metricsViewName of metricsViewNames) {
-      const metricsView = metricsViews[metricsViewName];
-      const metricsViewSpec = metricsView?.state?.validSpec;
-      const dimensions: MetricsViewSpecDimension[] =
-        metricsViewSpec?.dimensions ?? [];
-      const measures: MetricsViewSpecMeasure[] =
-        metricsViewSpec?.measures ?? [];
-
-      const whereFilter = buildValidMetricsViewFilter(
-        globalWhereFilter || createAndExpression([]),
-        globalDimensionThresholdFilters,
-        dimensions,
-        measures,
-      );
-
-      if (
-        whereFilter &&
-        whereFilter.cond?.exprs &&
-        whereFilter.cond.exprs.length > 0
-      ) {
-        additionalWhereByMetricsView[metricsViewName] = whereFilter;
-      } else if (
-        !whereFilter &&
-        globalWhereFilter &&
-        globalWhereFilter.cond?.exprs &&
-        globalWhereFilter.cond.exprs.length > 0
-      ) {
-        additionalWhereByMetricsView[metricsViewName] = globalWhereFilter;
-      }
-    }
-  }
+  parsedMetricsViewFilters.forEach((f) => {
+    additionalWhereByMetricsView[f.metricsViewName] = f.where;
+  });
 
   return {
     body: content,
@@ -174,66 +128,69 @@ function buildRequestBody(params: {
 
 export function getResolveTemplatedStringQueryOptions(
   component: MarkdownCanvasComponent,
-) {
+): Readable<
+  ReturnType<typeof getQueryServiceResolveTemplatedStringQueryOptions>
+> {
   return derived(
-    [
-      component.specStore,
-      component.timeAndFilterStore,
-      component.parent?.filters?.whereFilter ?? null,
-      component.parent?.filters?.dimensionThresholdFilters ?? null,
-      component.parent?.specStore ?? null,
-      runtime,
-    ],
-    ([
-      spec,
-      timeAndFilters,
-      parentWhereFilter,
-      parentDimensionThresholdFilters,
-      parentSpec,
-      runtimeState,
-    ]) => {
-      const content = spec?.content ?? "";
-      const applyFormatting = spec?.apply_formatting === true;
-      const needsTemplating = hasTemplatingSyntax(content);
-      const instanceId = runtimeState?.instanceId ?? "";
+    [component.parent.filterManager.metricsViewFilters],
+    ([metricsViewFilters], set) => {
+      derived(
+        [
+          component.specStore,
+          component.timeAndFilterStore,
+          component.parent?.specStore ?? null,
+          runtime,
+          component.parent.timeManager.hasTimeSeriesStore,
+          ...Array.from(metricsViewFilters.values()).map((f) => f.parsed),
+        ],
+        ([
+          spec,
+          timeAndFilters,
+          parentSpec,
+          runtimeState,
+          hasTimeSeries,
+          ...parsedMetricsViewFilters
+        ]) => {
+          const content = spec?.content ?? "";
+          const applyFormatting = spec?.apply_formatting === true;
+          const needsTemplating = hasTemplatingSyntax(content);
+          const instanceId = runtimeState?.instanceId ?? "";
 
-      const globalWhereFilter = parentWhereFilter ?? undefined;
-      const globalDimensionThresholdFilters =
-        parentDimensionThresholdFilters ?? [];
-      const metricsViews = parentSpec?.data?.metricsViews ?? {};
+          const metricsViews = parentSpec?.data?.metricsViews ?? {};
 
-      const requestBody = buildRequestBody({
-        content,
-        applyFormatting,
-        timeRange: timeAndFilters?.timeRange,
-        globalWhereFilter,
-        globalDimensionThresholdFilters,
-        metricsViews,
-      });
+          const requestBody = buildRequestBody({
+            content,
+            applyFormatting,
+            timeRange: timeAndFilters?.timeRange,
+            parsedMetricsViewFilters,
+            metricsViews,
+          });
 
-      const enabled =
-        !!needsTemplating &&
-        !!content &&
-        !!instanceId &&
-        !!requestBody &&
-        !!requestBody.additionalTimeRange;
+          const enabled =
+            !!needsTemplating &&
+            !!content &&
+            !!instanceId &&
+            !!requestBody &&
+            (!hasTimeSeries || !!timeAndFilters?.timeRange);
 
-      const body: QueryServiceResolveTemplatedStringBody =
-        !enabled || !requestBody
-          ? { body: content, useFormatTokens: applyFormatting }
-          : requestBody;
+          const body: QueryServiceResolveTemplatedStringBody =
+            !enabled || !requestBody
+              ? { body: content, useFormatTokens: applyFormatting }
+              : requestBody;
 
-      const queryEnabled = enabled && !!requestBody;
+          const queryEnabled = enabled && !!requestBody;
 
-      return getQueryServiceResolveTemplatedStringQueryOptions(
-        instanceId,
-        body,
-        {
-          query: {
-            enabled: queryEnabled,
-          },
+          return getQueryServiceResolveTemplatedStringQueryOptions(
+            instanceId,
+            body,
+            {
+              query: {
+                enabled: queryEnabled,
+              },
+            },
+          );
         },
-      );
+      ).subscribe(set);
     },
   );
 }

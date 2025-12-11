@@ -15,11 +15,13 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { selectedComponent, components },
+    canvasEntity: { selectedComponent, components, _rows },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
+
+  $: rows = $_rows;
 
   $: parsedDocument = parseDocument($editorContent ?? "");
   $: component = components.get($selectedComponent ?? "");
@@ -60,10 +62,12 @@
   }
 </script>
 
-<Inspector minWidth={320} filePath={path}>
-  {#if component}
-    <ComponentsEditor {component} />
-  {:else}
-    <PageEditor {canvasName} {fileArtifact} {updateProperties} />
-  {/if}
-</Inspector>
+{#key rows}
+  <Inspector minWidth={320} filePath={path}>
+    {#if component}
+      <ComponentsEditor {component} />
+    {:else}
+      <PageEditor {canvasName} {fileArtifact} {updateProperties} />
+    {/if}
+  </Inspector>
+{/key}

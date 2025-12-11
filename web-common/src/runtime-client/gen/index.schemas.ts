@@ -404,6 +404,10 @@ export interface V1CanvasItem {
   widthUnit?: string;
 }
 
+export type V1CanvasPresetFilterExpr = {
+  [key: string]: V1DefaultMetricsSQLFilter;
+};
+
 export interface V1CanvasPreset {
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -412,6 +416,7 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonMode?: V1ExploreComparisonMode;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
+  filterExpr?: V1CanvasPresetFilterExpr;
 }
 
 export interface V1CanvasRow {
@@ -454,6 +459,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  pinnedFilters?: string[];
 }
 
 export interface V1CanvasState {
@@ -749,6 +755,11 @@ export interface V1Conversation {
   messages?: V1Message[];
 }
 
+export interface V1ConvertExpressionToMetricsSQLResponse {
+  /** The SQL filter string representation of the expression. */
+  sql?: string;
+}
+
 export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
@@ -785,6 +796,10 @@ export interface V1CreateTriggerResponse {
 export interface V1DatabaseSchemaInfo {
   database?: string;
   databaseSchema?: string;
+}
+
+export interface V1DefaultMetricsSQLFilter {
+  expression?: V1Expression;
 }
 
 export interface V1DeleteFileResponse {
@@ -2812,6 +2827,10 @@ Only used if include_header is true. */
   originUrl?: string;
   /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
   executionTime?: string;
+};
+
+export type QueryServiceConvertExpressionToMetricsSQLBody = {
+  expression?: V1Expression;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
