@@ -33,6 +33,9 @@ export type {
   HeatmapChartSpec,
 } from "./heatmap/HeatmapChartProvider";
 
+export { ScatterPlotChartProvider } from "./scatter/ScatterPlotChartProvider";
+export type { ScatterPlotChartSpec } from "./scatter/ScatterPlotChartProvider";
+
 // Types
 export type {
   ChartDataResult,

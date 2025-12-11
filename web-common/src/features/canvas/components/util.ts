@@ -81,6 +81,7 @@ const CHART_TYPES = [
   "heatmap",
   "funnel_chart",
   "combo_chart",
+  "scatter_plot",
 ] as const;
 const NON_CHART_TYPES = [
   "markdown",

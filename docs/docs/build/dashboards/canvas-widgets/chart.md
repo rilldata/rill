@@ -239,3 +239,40 @@ Combo charts combine different chart types (like bars and lines) in a single vis
   codeLanguage="yaml"
 />
 
+## Scatter Plot
+
+Scatter plots visualize the relationship between two measures, with each point representing a data value. Points can be colored by a dimension and optionally sized by a measure. Scatter plots support interactive zooming and panning.
+
+**Interactive Controls:**
+- **Shift + Drag**: Pan the plot
+- **Scroll Wheel**: Zoom in/out
+- **Double-click**: Reset zoom and pan to default view
+
+<ImageCodeToggle
+  image="/img/build/dashboard/canvas/components/scatter-plot.png"
+  imageAlt="Scatter plot showing relationship between two measures"
+  code={`- scatter_plot:
+      metrics_view: bids_metrics
+      x:
+        field: total_bids
+        type: quantitative
+        zeroBasedOrigin: false
+      y:
+        field: total_clicks
+        type: quantitative
+        zeroBasedOrigin: false
+      dimension:
+        field: advertiser_name
+        limit: 10
+        type: nominal
+      size:
+        field: total_impressions
+        type: quantitative
+      color:
+        field: device_os
+        limit: 5
+        type: nominal
+        legendOrientation: top`}
+  codeLanguage="yaml"
+/>
+

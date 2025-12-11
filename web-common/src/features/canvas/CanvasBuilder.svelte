@@ -478,6 +478,7 @@
       }}
       onComponentMouseDown={({ event, id }) => {
         if (event.button !== 0) return;
+        if (event.shiftKey) return;
         const component = components.get(id);
         if (!component) return;
 
