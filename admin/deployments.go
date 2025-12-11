@@ -94,7 +94,15 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, branch string) error {
 	// Update the deployment with the new branch (or existing branch) and set desired status to running
-	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
+	var err error
+	if branch != depl.Branch {
+		_, err = s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
+			DesiredStatus: database.DeploymentStatusRunning,
+			Branch:        branch,
+		})
+	} else {
+		_, err = s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
+	}
 	if err != nil {
 		return err
 	}

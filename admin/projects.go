@@ -284,14 +284,6 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 // RedeployProject de-provisions and re-provisions a project's deployment.
 // If prevDepl is nil, it provisions a new prod deployment based on prodBranch.
 func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
-	// Delete old prod deployment if exists
-	if prevDepl != nil {
-		err := s.TeardownDeployment(ctx, prevDepl)
-		if err != nil {
-			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		}
-	}
-
 	// Provision new deployment
 	var branch, environment string
 	var editable bool
@@ -315,6 +307,13 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	}
 
 	if environment != "prod" || branch != proj.ProdBranch {
+		// Delete old prod deployment if exists
+		if prevDepl != nil {
+			err := s.TeardownDeployment(ctx, prevDepl)
+			if err != nil {
+				s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
 		return proj, nil
 	}
 
@@ -343,6 +342,13 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	if err != nil {
 		err2 := s.TeardownDeployment(ctx, newDepl)
 		return nil, multierr.Combine(err, err2)
+	}
+	// Delete old prod deployment if exists
+	if prevDepl != nil {
+		err := s.TeardownDeployment(ctx, prevDepl)
+		if err != nil {
+			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 
 	return proj, nil
