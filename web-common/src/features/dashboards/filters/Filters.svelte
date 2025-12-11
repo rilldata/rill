@@ -17,9 +17,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
@@ -35,6 +35,7 @@
   import {
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
+    maximumPrecisionForInterval,
   } from "../time-controls/new-time-controls";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
@@ -48,6 +49,7 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { isGrainAllowed } from "@rilldata/web-common/lib/time/new-grains";
 
   const { rillTime } = featureFlags;
 
@@ -251,9 +253,13 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-
       metricsViewName,
       activeTimeZone,
+    );
+
+    const maxPrecision = maximumPrecisionForInterval(
+      interval,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
     );
 
     if (interval.isValid) {
@@ -264,7 +270,10 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(
+        baseTimeRange,
+        isGrainAllowed(grain, maxPrecision) ? grain : maxPrecision,
+      );
     }
   }
 

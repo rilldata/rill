@@ -314,8 +314,10 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
+  DateTimeUnitToV1TimeGrain,
   getAllowedGrains,
   GrainAliasToV1TimeGrain,
+  isGrainAllowed,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -722,4 +724,34 @@ export function constructNewString({
   overrideRillTimeRef(rillTime, newAsOfString);
 
   return rillTime.toString();
+}
+const MAX_BUCKETS = 500;
+
+const units: DateTimeUnit[] = [
+  "minute",
+  "hour",
+  "day",
+  "week",
+  "month",
+  "quarter",
+  "year",
+];
+
+export function maximumPrecisionForInterval(
+  interval: Interval<true>,
+  minTimeGrain: V1TimeGrain,
+): V1TimeGrain {
+  for (const grain of units) {
+    const bucketCount = interval.length(grain);
+
+    if (bucketCount <= MAX_BUCKETS) {
+      const maxGrain = DateTimeUnitToV1TimeGrain[grain];
+
+      if (maxGrain && isGrainAllowed(maxGrain, minTimeGrain)) {
+        return maxGrain;
+      }
+    }
+  }
+
+  return minTimeGrain;
 }

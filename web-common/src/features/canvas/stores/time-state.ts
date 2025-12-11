@@ -8,6 +8,7 @@ import { derived, get, writable, type Readable } from "svelte/store";
 import {
   ALL_TIME_RANGE_ALIAS,
   deriveInterval,
+  maximumPrecisionForInterval,
 } from "../../dashboards/time-controls/new-time-controls";
 
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
@@ -238,20 +239,31 @@ export class TimeState {
     );
 
     this.grainStore = derived(
-      [this.urlGrainStore, this.manager.largestMinTimeGrain, this.parsedRange],
-      ([urlGrain, minTimeGrain, parsedRange]) => {
-        if (urlGrain && isGrainAllowed(urlGrain, minTimeGrain)) {
+      [
+        this.urlGrainStore,
+        this.manager.largestMinTimeGrain,
+        this.parsedRange,
+        this.interval,
+      ],
+      ([urlGrain, minTimeGrain, parsedRange, interval]) => {
+        if (!interval) return undefined;
+
+        const maxGrainPrecision = maximumPrecisionForInterval(
+          interval,
+          minTimeGrain,
+        );
+
+        if (urlGrain && isGrainAllowed(urlGrain, maxGrainPrecision)) {
           return urlGrain;
         } else if (parsedRange) {
           const parsedRangePrecision = getRangePrecision(parsedRange);
-
-          if (isGrainAllowed(parsedRangePrecision, minTimeGrain)) {
+          if (isGrainAllowed(parsedRangePrecision, maxGrainPrecision)) {
             return parsedRangePrecision;
           } else {
-            return minTimeGrain;
+            return maxGrainPrecision;
           }
         } else {
-          return minTimeGrain;
+          return maxGrainPrecision;
         }
       },
     );
