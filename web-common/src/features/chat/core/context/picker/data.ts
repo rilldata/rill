@@ -11,8 +11,16 @@ import {
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
-import { getStableListFilesQueryOptions } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
-import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+import {
+  getClientFilteredResourcesQueryOptions,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import {
+  getQueryServiceTableColumnsQueryOptions,
+  type V1Resource,
+} from "@rilldata/web-common/runtime-client";
+import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view.
@@ -63,44 +71,79 @@ function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
           label: mvDisplayName,
           value: mvName,
         },
-        childContextCategories: [measures, dimensions],
+        children: [measures, dimensions],
       } satisfies InlineContextPickerOption;
     });
   });
 }
 
 /**
- * Creates a store that contains a 2-level list of resource files.
- * 1st level: section for files
- * 2nd level: all the resource files in the projects.
+ * Creates a store that contains a 2-level list of sources/model resources.
+ * 1st level: section for sources/models.
+ * 2nd level: all the columns in the source/model resource.
+ * NOTE: this only lists resources that are parsed as sources/models. Any parse errors will exlcude the file.
  */
 function getFilesPickerOptions() {
-  const filesQuery = createQuery(getStableListFilesQueryOptions(), queryClient);
+  const modelResourcesQuery = createQuery(
+    getClientFilteredResourcesQueryOptions(ResourceKind.Model),
+    queryClient,
+  );
 
-  return derived(filesQuery, (filesResp) => {
-    const files = filesResp.data?.files ?? [];
-    const options = files
-      .map((file) => {
-        const filePath = file.path ?? "";
-        if (file.isDir || !fileArtifacts.hasFileArtifact(filePath)) return null;
+  return derived(
+    [runtime, modelResourcesQuery],
+    ([{ instanceId }, modelResourcesResp]) => {
+      const models = modelResourcesResp.data ?? [];
+      return models.map((r) => {
+        const [, fileName] = splitFolderAndFileName(
+          r.meta?.filePaths?.[0] ?? "",
+        );
 
         return {
-          type: InlineContextType.File,
-          filePath,
-          value: filePath,
-          label: filePath.split("/").pop() ?? "",
-        } satisfies InlineContext;
-      })
-      .filter(Boolean) as InlineContext[];
-    return {
-      context: {
-        type: InlineContextType.Files,
-        label: "Files",
-        value: "files",
+          context: {
+            type: InlineContextType.Model,
+            model: fileName,
+            value: fileName,
+            label: fileName,
+          },
+          childrenQueryOptions: getModelColumnsQueryOptions(instanceId, r),
+        } satisfies InlineContextPickerOption;
+      });
+    },
+  );
+}
+
+function getModelColumnsQueryOptions(
+  instanceId: string,
+  modelRes: V1Resource | undefined,
+) {
+  const connector = modelRes?.model?.spec?.outputConnector ?? "";
+  const table = modelRes?.model?.state?.resultTable ?? "";
+  const modelName = modelRes?.meta?.name?.name ?? "";
+  return getQueryServiceTableColumnsQueryOptions(
+    instanceId,
+    table,
+    {
+      connector,
+    },
+    {
+      query: {
+        enabled: Boolean(table),
+        select: (data) => [
+          data.profileColumns?.map(
+            (col) =>
+              ({
+                type: InlineContextType.Column,
+                label: col.name,
+                value: col.name!,
+                column: col.name,
+                columnType: col.type,
+                model: modelName,
+              }) satisfies InlineContext,
+          ) ?? [],
+        ],
       },
-      childContextCategories: [options],
-    } satisfies InlineContextPickerOption;
-  });
+    },
+  );
 }
 
 export type PickerArgs = {
@@ -109,7 +152,7 @@ export type PickerArgs = {
 };
 export const ParentPickerTypes = new Set([
   InlineContextType.MetricsView,
-  InlineContextType.Files,
+  InlineContextType.Model,
 ]);
 
 function getPickerOptions({ metricViews, files }: PickerArgs) {
@@ -140,8 +183,8 @@ export function getFilterPickerOptions(
 
       return options
         .map((option) => {
-          const childOptions =
-            option.childContextCategories
+          const children =
+            option.children
               ?.map((cc) =>
                 cc.filter((c) => filterFunction(c.label ?? "", c.value)),
               )
@@ -152,11 +195,12 @@ export function getFilterPickerOptions(
             option.context.value,
           );
 
-          if (!parentMatches && childOptions.length === 0) return null;
+          if (!parentMatches && children.length === 0) return null;
 
           return {
             context: option.context,
-            childContextCategories: childOptions,
+            children,
+            childrenQueryOptions: option.childrenQueryOptions,
           } satisfies InlineContextPickerOption;
         })
         .filter(Boolean) as InlineContextPickerOption[];

@@ -14,7 +14,7 @@ export class PickerOptionsHighlightManager {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
     this.highlightableContexts = filteredOptions.flatMap((option) => [
       option.context,
-      ...(option.childContextCategories?.flat() ?? []),
+      ...(option.children?.flat() ?? []),
     ]);
 
     // Prefer non-parent context if available for the parent option.
@@ -22,6 +22,21 @@ export class PickerOptionsHighlightManager {
       this.highlightableContexts.length > 1 &&
       ParentPickerTypes.has(this.highlightableContexts[1].type);
     this.highlightedIndex = nonParentAvailable ? 1 : 0;
+    this.updateHighlightedContext();
+  }
+
+  public childrenUpdated(parent: InlineContext, children: InlineContext[][]) {
+    const parentIndex = this.highlightableContexts.findIndex((hc) =>
+      inlineContextsAreEqual(parent, hc),
+    );
+    if (parentIndex === -1) return;
+
+    const flatChildren = children.flat();
+    this.highlightableContexts.splice(parentIndex + 1, 0, ...flatChildren);
+    if (this.highlightedIndex >= parentIndex + 1) {
+      this.highlightedIndex += flatChildren.length;
+    }
+
     this.updateHighlightedContext();
   }
 

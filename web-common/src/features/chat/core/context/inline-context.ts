@@ -8,6 +8,11 @@ import type {
   MetricsViewSpecMeasure,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import Measure from "@rilldata/web-common/features/chat/core/context/icons/Measure.svelte";
+import Dimension from "@rilldata/web-common/features/chat/core/context/icons/Dimension.svelte";
+import { fieldTypeToSymbol } from "@rilldata/web-common/lib/duckdb-data-types.ts";
 
 export const INLINE_CHAT_CONTEXT_TAG = "chat-reference";
 
@@ -19,10 +24,8 @@ export enum InlineContextType {
   Measure = "measure",
   Dimension = "dimension",
   DimensionValues = "dimensionValues",
-  Table = "table",
+  Model = "model",
   Column = "column",
-  Files = "files", // Top level category
-  File = "file",
 }
 
 export type InlineContext = {
@@ -34,8 +37,9 @@ export type InlineContext = {
   dimension?: string;
   timeRange?: string;
   values?: string[];
-  table?: string;
+  model?: string;
   column?: string;
+  columnType?: string; // TODO: is this needed here?
   filePath?: string;
 };
 
@@ -49,8 +53,9 @@ export function inlineContextsAreEqual(
     ctx1.measure === ctx2.measure &&
     ctx1.dimension === ctx2.dimension &&
     ctx1.timeRange === ctx2.timeRange &&
-    ctx1.table === ctx2.table &&
+    ctx1.model === ctx2.model &&
     ctx1.column === ctx2.column &&
+    ctx1.columnType === ctx2.columnType &&
     ctx1.filePath === ctx2.filePath;
   if (!nonValuesAreEqual) return false;
   if (!ctx1.values && !ctx2.values) return true;
@@ -66,12 +71,8 @@ export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
   switch (src.type) {
     case InlineContextType.MetricsView:
       return src.metricsView === tar.metricsView;
-    case InlineContextType.Table:
-      return src.table === tar.table;
-    case InlineContextType.Files:
-      return tar.type === InlineContextType.File;
-    case InlineContextType.File:
-      return src.filePath === tar.filePath;
+    case InlineContextType.Model:
+      return tar.model === src.model;
   }
   return false;
 }
@@ -92,6 +93,7 @@ export type MetricsViewMetadata = {
 type ContextConfigPerType = {
   editable: boolean;
   getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
+  getIcon?: (ctx: InlineContext) => any | undefined;
 };
 
 export const InlineContextConfig: Partial<
@@ -101,6 +103,7 @@ export const InlineContextConfig: Partial<
     editable: true,
     getLabel: (ctx, meta) =>
       meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
+    getIcon: () => resourceIconMapping[ResourceKind.MetricsView],
   },
 
   [InlineContextType.TimeRange]: {
@@ -121,6 +124,7 @@ export const InlineContextConfig: Partial<
       const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
       return getMeasureDisplayName(mes) || ctx.measure!;
     },
+    getIcon: () => Measure,
   },
 
   [InlineContextType.Dimension]: {
@@ -129,6 +133,7 @@ export const InlineContextConfig: Partial<
       const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
       return getDimensionDisplayName(dim) || ctx.dimension!;
     },
+    getIcon: () => Dimension,
   },
 
   [InlineContextType.DimensionValues]: {
@@ -140,8 +145,15 @@ export const InlineContextConfig: Partial<
     },
   },
 
-  [InlineContextType.File]: {
+  [InlineContextType.Model]: {
     editable: true,
-    getLabel: (ctx) => ctx.filePath ?? "",
+    getLabel: (ctx) => ctx.model ?? "",
+    getIcon: () => resourceIconMapping[ResourceKind.Model],
+  },
+
+  [InlineContextType.Column]: {
+    editable: true,
+    getLabel: (ctx) => ctx.column ?? "",
+    getIcon: (ctx) => fieldTypeToSymbol(ctx.columnType ?? ""),
   },
 };

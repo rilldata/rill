@@ -3,6 +3,7 @@
   import { getAttrs, builderActions } from "bits-ui";
   import {
     type InlineContext,
+    InlineContextConfig,
     inlineContextIsWithin,
     inlineContextsAreEqual,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -10,6 +11,8 @@
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   export let parentOption: InlineContextPickerOption;
   export let selectedChatContext: InlineContext | null = null;
@@ -18,8 +21,23 @@
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
-  $: ({ context, recentlyUsed, currentlyActive, childContextCategories } =
-    parentOption);
+  $: ({
+    context,
+    recentlyUsed,
+    currentlyActive,
+    children,
+    childrenQueryOptions,
+  } = parentOption);
+  let childrenQuery: ReturnType<typeof createQuery> | undefined;
+  $: if (childrenQueryOptions)
+    childrenQuery = createQuery(childrenQueryOptions, queryClient);
+  $: resolvedChildren =
+    (childrenQuery
+      ? ($childrenQuery?.data as InlineContextPickerOption["children"])
+      : children) ?? [];
+  $: if (childrenQuery)
+    highlightManager.childrenUpdated(context, $childrenQuery?.data ?? []);
+
   const highlightedContextStore = highlightManager.highlightedContext;
   $: highlightedContext = $highlightedContextStore;
 
@@ -35,14 +53,14 @@
     inlineContextsAreEqual(context, highlightedContext);
   $: withinParentOptionHighlighted =
     highlightedContext !== null &&
+    !parentOptionHighlighted &&
     inlineContextIsWithin(context, highlightedContext);
+
+  $: parentIcon = InlineContextConfig[context.type]?.getIcon?.(context);
 
   $: mouseContextHighlightHandler = highlightManager.mouseOverHandler(context);
 
-  let open =
-    withinParentOptionSelected ||
-    parentOption.recentlyUsed ||
-    parentOption.currentlyActive;
+  let open = withinParentOptionSelected || recentlyUsed || currentlyActive;
   $: shouldForceOpen =
     withinParentOptionHighlighted || $searchTextStore.length > 0;
   $: if (shouldForceOpen) {
@@ -63,87 +81,93 @@
   }
 </script>
 
-{#if childContextCategories}
-  <Collapsible.Root bind:open class="border-b last:border-b-0">
-    <Collapsible.Trigger asChild let:builder>
-      <button
-        class="context-item parent-context-item"
-        class:highlight={parentOptionHighlighted}
-        type="button"
-        {...getAttrs([builder])}
-        use:builderActions={{ builders: [builder] }}
-        use:ensureInView={parentOptionHighlighted}
-        use:mouseContextHighlightHandler
-        on:click={focusEditor}
-      >
-        <div class="min-w-3.5">
-          {#if open}
-            <ChevronDownIcon size="12px" strokeWidth={4} />
-          {:else}
-            <ChevronRightIcon size="12px" strokeWidth={4} />
-          {/if}
-        </div>
-        <input
-          type="radio"
-          checked={parentOptionSelected}
-          on:click|stopPropagation={() => onSelect(context)}
-          class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
-        />
-        <span class="context-item-label">{context.label}</span>
-        <div
-          class="context-item-keyboard-shortcut"
-          class:hidden={!parentOptionHighlighted}
-        >
-          ↑/↓
-        </div>
-        {#if recentlyUsed}
-          <span class="metrics-view-context-label">Recently asked</span>
-        {:else if currentlyActive}
-          <span class="metrics-view-context-label">Current</span>
+<Collapsible.Root bind:open class="border-b last:border-b-0">
+  <Collapsible.Trigger asChild let:builder>
+    <button
+      class="context-item parent-context-item"
+      class:highlight={parentOptionHighlighted}
+      type="button"
+      {...getAttrs([builder])}
+      use:builderActions={{ builders: [builder] }}
+      use:ensureInView={parentOptionHighlighted}
+      use:mouseContextHighlightHandler
+      on:click={focusEditor}
+    >
+      <input
+        type="radio"
+        checked={parentOptionSelected}
+        on:click|stopPropagation={() => onSelect(context)}
+        class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+      />
+      <div class="min-w-3.5">
+        {#if open}
+          <ChevronDownIcon size="12px" strokeWidth={4} />
+        {:else if parentIcon}
+          <!-- On hover show chevron right icon -->
+          <svelte:component this={parentIcon} size="12px" />
+        {:else}
+          <ChevronRightIcon size="12px" strokeWidth={4} />
         {/if}
-      </button>
-    </Collapsible.Trigger>
-    <Collapsible.Content class="flex flex-col ml-0.5 gap-y-0.5">
-      {#each childContextCategories as childContextCategory, i}
-        {#if i !== 0}<div class="content-separator"></div>{/if}
+      </div>
+      <span class="context-item-label">{context.label}</span>
+      <div
+        class="context-item-keyboard-shortcut"
+        class:hidden={!parentOptionHighlighted}
+      >
+        ↑/↓
+      </div>
+      {#if recentlyUsed}
+        <span class="metrics-view-context-label">Recently asked</span>
+      {:else if currentlyActive}
+        <span class="metrics-view-context-label">Current</span>
+      {/if}
+    </button>
+  </Collapsible.Trigger>
+  <Collapsible.Content class="flex flex-col ml-0.5 gap-y-0.5">
+    {#each resolvedChildren as childCategory, i}
+      {#if i !== 0}<div class="content-separator"></div>{/if}
 
-        {#each childContextCategory as ctx}
-          {@const selected =
-            selectedChatContext !== null &&
-            inlineContextsAreEqual(ctx, selectedChatContext)}
-          {@const highlighted =
-            highlightedContext !== null &&
-            inlineContextsAreEqual(ctx, highlightedContext)}
-          {@const mouseContextHighlightHandler =
-            highlightManager.mouseOverHandler(ctx)}
+      {#each childCategory as child}
+        {@const selected =
+          selectedChatContext !== null &&
+          inlineContextsAreEqual(child, selectedChatContext)}
+        {@const highlighted =
+          highlightedContext !== null &&
+          inlineContextsAreEqual(child, highlightedContext)}
+        {@const mouseContextHighlightHandler =
+          highlightManager.mouseOverHandler(child)}
+        {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
 
-          <button
-            class="context-item"
-            class:highlight={highlighted}
-            type="button"
-            on:click={() => onSelect(ctx)}
-            use:ensureInView={highlighted}
-            use:mouseContextHighlightHandler
+        <button
+          class="context-item"
+          class:highlight={highlighted}
+          type="button"
+          on:click={() => onSelect(child)}
+          use:ensureInView={highlighted}
+          use:mouseContextHighlightHandler
+        >
+          <div class="context-item-checkbox">
+            {#if selected}
+              <CheckIcon size="12px" />
+            {/if}
+          </div>
+          {#if icon}
+            <svelte:component this={icon} size="14px" />
+          {:else}
+            <div class="context-item-icon"></div>
+          {/if}
+          <span class="context-item-label">{child.label}</span>
+          <div
+            class="context-item-keyboard-shortcut"
+            class:hidden={!highlighted}
           >
-            <div class="context-item-checkbox">
-              {#if selected}
-                <CheckIcon size="12px" />
-              {/if}
-            </div>
-            <div class="square"></div>
-            <span class="context-item-label">{ctx.label}</span>
-            <div
-              class="context-item-keyboard-shortcut"
-              class:hidden={!highlighted}
-            >
-              ↑/↓
-            </div>
-          </button>
-        {/each}
+            ↑/↓
+          </div>
+        </button>
       {/each}
-    </Collapsible.Content>
-  </Collapsible.Root>
-{/if}
+    {/each}
+  </Collapsible.Content>
+</Collapsible.Root>
 
 <style lang="postcss">
   .parent-context-item {
@@ -179,11 +203,8 @@
     @apply min-w-9 text-accent-foreground/60;
   }
 
-  .square {
-    @apply min-w-2 h-2 bg-theme-secondary-600/50;
-  }
-  .circle {
-    @apply min-w-2 h-2 rounded-full bg-theme-500/50;
+  .context-item-icon {
+    @apply min-w-3.5 h-2;
   }
 
   .contents-empty {

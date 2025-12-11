@@ -30,7 +30,7 @@
 
   const highlightManager = new PickerOptionsHighlightManager();
   const highlightedContext = highlightManager.highlightedContext;
-  function handleMetricsViewOptionsChanged(
+  function handleFilterOptionsChanged(
     filteredOptions: InlineContextPickerOption[],
   ) {
     highlightManager.filterOptionsUpdated(filteredOptions);
@@ -39,7 +39,7 @@
       highlightManager.highlightContext(selectedChatContext);
     }
   }
-  $: handleMetricsViewOptionsChanged($filteredOptions);
+  $: handleFilterOptionsChanged($filteredOptions);
 
   function handleKeyDown(event: KeyboardEvent) {
     switch (event.key) {

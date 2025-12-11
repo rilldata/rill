@@ -132,6 +132,9 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       dimension: createAttributeEntry(null, "dimension"),
       timeRange: createAttributeEntry(null, "timeRange"),
       filePath: createAttributeEntry(null, "filePath"),
+      model: createAttributeEntry(null, "model"),
+      column: createAttributeEntry(null, "column"),
+      columnType: createAttributeEntry(null, "columnType"),
     };
   },
 
@@ -323,7 +326,10 @@ function getTransactionForContext(
     .setNodeAttribute(pos, "measure", inlineChatContext.measure)
     .setNodeAttribute(pos, "dimension", inlineChatContext.dimension)
     .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange)
-    .setNodeAttribute(pos, "filePath", inlineChatContext.filePath);
+    .setNodeAttribute(pos, "filePath", inlineChatContext.filePath)
+    .setNodeAttribute(pos, "model", inlineChatContext.model)
+    .setNodeAttribute(pos, "column", inlineChatContext.column)
+    .setNodeAttribute(pos, "columnType", inlineChatContext.columnType);
 }
 
 function createAttributeEntry(defaultValue: string | null, key: string) {
