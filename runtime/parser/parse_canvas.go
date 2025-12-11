@@ -48,7 +48,7 @@ type CanvasYAML struct {
 			InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
-	Security   *SecurityPolicyYAML `yaml:"security"`
+	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
