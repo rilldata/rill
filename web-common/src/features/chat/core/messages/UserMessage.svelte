@@ -31,6 +31,10 @@
         editor = editor;
       },
     });
+
+    return () => {
+      editor.destroy();
+    };
   });
 </script>
 

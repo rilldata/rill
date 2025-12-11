@@ -90,7 +90,6 @@
     });
 
     const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
-      console.log(prompt);
       editor.commands.setContent(prompt);
       editor.commands.focus();
     });
