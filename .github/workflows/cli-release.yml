@@ -33,8 +33,6 @@ jobs:
             platform: linux_amd64
           - os: ubuntu-22.04-arm
             platform: linux_arm64
-          - os: macos-13
-            platform: darwin_amd64
           - os: macos-14
             platform: darwin_arm64
       fail-fast: false
