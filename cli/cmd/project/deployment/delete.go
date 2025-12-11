@@ -1,4 +1,4 @@
-package project
+package deployment
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentShowCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeploymentDeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
-	showCmd := &cobra.Command{
-		Use:   "show [<project>] <branch>",
+	deleteCmd := &cobra.Command{
+		Use:   "delete [<project>] <branch>",
 		Args:  cobra.RangeArgs(1, 2),
-		Short: "Show deployment details by branch",
+		Short: "Delete a deployment by branch",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var branch string
 			if len(args) == 1 {
@@ -67,14 +67,25 @@ func DeploymentShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed", branch, project)
 			}
 
-			ch.PrintDeployments([]*adminv1.Deployment{matchingDeployments[0]})
+			deployment := matchingDeployments[0]
+
+			ch.PrintfBold("Deleting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
+
+			_, err = client.DeleteDeployment(cmd.Context(), &adminv1.DeleteDeploymentRequest{
+				DeploymentId: deployment.Id,
+			})
+			if err != nil {
+				return err
+			}
+
+			ch.PrintfSuccess("Deployment deleted successfully!\n")
 
 			return nil
 		},
 	}
 
-	showCmd.Flags().StringVar(&project, "project", "", "Project name")
-	showCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	deleteCmd.Flags().StringVar(&project, "project", "", "Project name")
+	deleteCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
-	return showCmd
+	return deleteCmd
 }
