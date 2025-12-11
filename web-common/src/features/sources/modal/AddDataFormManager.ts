@@ -159,6 +159,7 @@ export class AddDataFormManager {
       validators: paramsAdapter,
       onUpdate: onParamsUpdate,
       resetForm: false,
+      validationMethod: "onsubmit",
     });
 
     // Superforms: dsn
@@ -170,6 +171,7 @@ export class AddDataFormManager {
       validators: dsnAdapter,
       onUpdate: onDsnUpdate,
       resetForm: false,
+      validationMethod: "onsubmit",
     });
   }
 
