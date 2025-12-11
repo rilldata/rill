@@ -32,7 +32,6 @@
 
   .dots {
     @apply inline-block;
-    width: 1em;
-    text-align: left;
+    @apply w-[1em] text-left;
   }
 </style>

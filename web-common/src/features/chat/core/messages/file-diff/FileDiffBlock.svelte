@@ -6,20 +6,17 @@
   import { html } from "diff2html";
   import "diff2html/bundles/css/diff2html.min.css";
   import DOMPurify from "dompurify";
-  import type { V1Message, V1Tool } from "../../../../../runtime-client";
+  import type { V1Tool } from "../../../../../runtime-client";
   import ToolCall from "../tools/ToolCall.svelte";
+  import type { FileDiffBlock } from "./file-diff-block";
 
-  export let message: V1Message;
-  export let resultMessage: V1Message;
-  export let filePath: string;
-  export let diff: string = "";
-  export let isNewFile: boolean = false;
+  export let block: FileDiffBlock;
   export let tools: V1Tool[] | undefined = undefined;
 
   // Generate and sanitize diff HTML
-  $: diffHtml = diff
+  $: diffHtml = block.diff
     ? DOMPurify.sanitize(
-        html(diff, {
+        html(block.diff, {
           drawFileList: false,
           outputFormat: "line-by-line",
           matching: "lines",
@@ -29,14 +26,19 @@
 </script>
 
 <div class="file-diff-block">
-  <ToolCall {message} {resultMessage} {tools} variant="block" />
+  <ToolCall
+    message={block.message}
+    resultMessage={block.resultMessage}
+    {tools}
+    variant="block"
+  />
 
   <div class="diff-container">
     <div class="diff-header">
-      <a href="/files{filePath}" class="file-path-link">
-        {filePath}
+      <a href="/files{block.filePath}" class="file-path-link">
+        {block.filePath}
       </a>
-      {#if isNewFile}
+      {#if block.isNewFile}
         <span class="new-badge">new</span>
       {/if}
     </div>

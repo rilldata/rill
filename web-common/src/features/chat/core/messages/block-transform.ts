@@ -137,7 +137,7 @@ type BlockRoute =
  * - progress messages → thinking
  * - tool calls → consult registry (inline/block/hidden)
  */
-export function getBlockRoute(msg: V1Message): BlockRoute {
+function getBlockRoute(msg: V1Message): BlockRoute {
   // Router agent produces the main conversation text
   if (msg.tool === ToolName.ROUTER_AGENT) {
     return { route: "text" };

@@ -6,22 +6,20 @@
   import Brain from "../../../../../components/icons/Brain.svelte";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
-  import type { V1Message, V1Tool } from "../../../../../runtime-client";
+  import type { V1Tool } from "../../../../../runtime-client";
   import { MessageType } from "../../types";
   import AnimatedDots from "../AnimatedDots.svelte";
   import ToolCall from "../tools/ToolCall.svelte";
+  import type { ThinkingBlock } from "./thinking-block";
 
-  export let messages: V1Message[];
-  export let resultMessagesByParentId: Map<string | undefined, V1Message>;
-  export let isComplete: boolean;
-  export let duration: number;
+  export let block: ThinkingBlock;
   export let tools: V1Tool[] | undefined = undefined;
 
   let isExpanded = true;
   let hasUserInteracted = false;
 
   // Auto-collapse when thinking completes, unless user has interacted
-  $: if (isComplete && !hasUserInteracted) {
+  $: if (block.isComplete && !hasUserInteracted) {
     isExpanded = false;
   }
 
@@ -56,8 +54,8 @@
       {/if}
     </div>
     <div class="thinking-title">
-      {#if isComplete}
-        Thought for {formatDuration(duration)}
+      {#if block.isComplete}
+        Thought for {formatDuration(block.duration)}
       {:else}
         <AnimatedDots>Thinking</AnimatedDots>
       {/if}
@@ -66,7 +64,7 @@
 
   {#if isExpanded}
     <div class="thinking-messages">
-      {#each messages as msg (msg.id)}
+      {#each block.messages as msg (msg.id)}
         {#if msg.type === MessageType.PROGRESS}
           {#if msg.contentData}
             <div class="thinking-content">
@@ -76,7 +74,7 @@
         {:else if msg.type === MessageType.CALL}
           <ToolCall
             message={msg}
-            resultMessage={resultMessagesByParentId.get(msg.id)}
+            resultMessage={block.resultMessagesByParentId.get(msg.id)}
             {tools}
             variant="inline"
           />
@@ -111,7 +109,6 @@
 
   .thinking-messages {
     @apply pl-5 flex flex-col gap-0;
-    @apply max-h-96 overflow-y-auto;
   }
 
   .thinking-content {

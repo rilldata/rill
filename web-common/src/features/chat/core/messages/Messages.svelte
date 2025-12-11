@@ -91,32 +91,13 @@
       {:else if block.type === "text" && block.message.role === "assistant"}
         <AssistantMessage message={block.message} />
       {:else if block.type === "thinking"}
-        <ThinkingBlock
-          messages={block.messages}
-          resultMessagesByParentId={block.resultMessagesByParentId}
-          isComplete={block.isComplete}
-          duration={block.duration}
-          {tools}
-        />
+        <ThinkingBlock {block} {tools} />
       {:else if block.type === "working"}
         <WorkingBlock />
       {:else if block.type === "chart"}
-        <ChartBlock
-          message={block.message}
-          resultMessage={block.resultMessage}
-          chartType={block.chartType}
-          chartSpec={block.chartSpec}
-          {tools}
-        />
+        <ChartBlock {block} {tools} />
       {:else if block.type === "file-diff"}
-        <FileDiffBlock
-          message={block.message}
-          resultMessage={block.resultMessage}
-          filePath={block.filePath}
-          diff={block.diff}
-          isNewFile={block.isNewFile}
-          {tools}
-        />
+        <FileDiffBlock {block} {tools} />
       {/if}
     {/each}
   {/if}
