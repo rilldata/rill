@@ -4,7 +4,6 @@
   import PickerGroup from "@rilldata/web-common/features/chat/core/context/picker/PickerGroup.svelte";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
   import { getFilterPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
-  import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import {
     autoUpdate,
     computePosition,
@@ -30,16 +29,10 @@
 
   const highlightManager = new PickerOptionsHighlightManager();
   const highlightedContext = highlightManager.highlightedContext;
-  function handleFilterOptionsChanged(
-    filteredOptions: InlineContextPickerOption[],
-  ) {
-    highlightManager.filterOptionsUpdated(filteredOptions);
-    // Auto highlight the currently selected context if it is present.
-    if (selectedChatContext) {
-      highlightManager.highlightContext(selectedChatContext);
-    }
-  }
-  $: handleFilterOptionsChanged($filteredOptions);
+  $: highlightManager.filterOptionsUpdated(
+    $filteredOptions,
+    selectedChatContext,
+  );
 
   function handleKeyDown(event: KeyboardEvent) {
     switch (event.key) {
@@ -106,7 +99,7 @@
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
 <div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
-  {#each $filteredOptions as parentOption, i (i)}
+  {#each $filteredOptions as parentOption (`${parentOption.context.type}-${parentOption.context.value}`)}
     <PickerGroup
       {parentOption}
       {selectedChatContext}

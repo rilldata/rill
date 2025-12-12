@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, readable, type Readable } from "svelte/store";
+import { derived, readable, writable, type Readable } from "svelte/store";
 import {
   type InlineContext,
   InlineContextType,
@@ -21,6 +21,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import { getActiveFileArtifactStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 import { getLastUsedMetricsViewNameStore } from "@rilldata/web-common/features/chat/core/context/picker/get-last-used-metrics-view.ts";
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 
@@ -34,56 +35,50 @@ function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
     getValidMetricsViewsQueryOptions(),
     queryClient,
   );
-  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
-  const activeMetricsViewStore = getActiveMetricsViewNameStore();
 
-  return derived(
-    [metricsViewsQuery, lastUsedMetricsViewStore, activeMetricsViewStore],
-    ([metricsViewsResp, lastUsedMv, activeMv]) => {
-      const metricsViews = metricsViewsResp.data ?? [];
-      return metricsViews.map((mv) => {
-        const mvName = mv.meta?.name?.name ?? "";
-        const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
-        const mvDisplayName = metricsViewSpec?.displayName || mvName;
+  return derived(metricsViewsQuery, (metricsViewsResp) => {
+    const metricsViews = metricsViewsResp.data ?? [];
+    return metricsViews.map((mv) => {
+      const mvName = mv.meta?.name?.name ?? "";
+      const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
+      const mvDisplayName = metricsViewSpec?.displayName || mvName;
 
-        const measures =
-          metricsViewSpec?.measures?.map(
-            (m) =>
-              ({
-                type: InlineContextType.Measure,
-                label: getMeasureDisplayName(m),
-                value: m.name!,
-                metricsView: mvName,
-                measure: m.name!,
-              }) satisfies InlineContext,
-          ) ?? [];
+      const measures =
+        metricsViewSpec?.measures?.map(
+          (m) =>
+            ({
+              type: InlineContextType.Measure,
+              label: getMeasureDisplayName(m),
+              value: m.name!,
+              metricsView: mvName,
+              measure: m.name!,
+            }) satisfies InlineContext,
+        ) ?? [];
 
-        const dimensions =
-          metricsViewSpec?.dimensions?.map(
-            (d) =>
-              ({
-                type: InlineContextType.Dimension,
-                label: getDimensionDisplayName(d),
-                value: d.name!,
-                metricsView: mvName,
-                dimension: d.name!,
-              }) satisfies InlineContext,
-          ) ?? [];
+      const dimensions =
+        metricsViewSpec?.dimensions?.map(
+          (d) =>
+            ({
+              type: InlineContextType.Dimension,
+              label: getDimensionDisplayName(d),
+              value: d.name!,
+              metricsView: mvName,
+              dimension: d.name!,
+            }) satisfies InlineContext,
+        ) ?? [];
 
-        return {
-          context: {
-            type: InlineContextType.MetricsView,
-            metricsView: mvName,
-            label: mvDisplayName,
-            value: mvName,
-          },
-          recentlyUsed: mvName === lastUsedMv,
-          currentlyActive: mvName === activeMv,
-          children: [measures, dimensions],
-        } satisfies InlineContextPickerOption;
-      });
-    },
-  );
+      return {
+        context: {
+          type: InlineContextType.MetricsView,
+          metricsView: mvName,
+          label: mvDisplayName,
+          value: mvName,
+        },
+        openStore: writable(false),
+        children: [measures, dimensions],
+      } satisfies InlineContextPickerOption;
+    });
+  });
 }
 
 /**
@@ -92,7 +87,7 @@ function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
  * 2nd level: all the columns in the source/model resource.
  * NOTE: this only lists resources that are parsed as sources/models. Any parse errors will exlcude the file.
  */
-function getFilesPickerOptions() {
+function getModelsPickerOptions(): Readable<InlineContextPickerOption[]> {
   const modelResourcesQuery = createQuery(
     getClientFilteredResourcesQueryOptions(ResourceKind.Model),
     queryClient,
@@ -102,22 +97,24 @@ function getFilesPickerOptions() {
     [runtime, modelResourcesQuery],
     ([{ instanceId }, modelResourcesResp]) => {
       const models = modelResourcesResp.data ?? [];
-      return models.map((r) => {
-        const [, fileName] = splitFolderAndFileName(
-          r.meta?.filePaths?.[0] ?? "",
-        );
+      return models.map((res) => {
+        const modelName = res.meta?.name?.name ?? "";
+
+        const openStore = writable(false);
 
         return {
           context: {
             type: InlineContextType.Model,
-            model: fileName,
-            value: fileName,
-            label: fileName,
+            model: modelName,
+            value: modelName,
+            label: modelName,
           },
+          openStore,
           childrenQueryOptions: getModelColumnsQueryOptions(
             instanceId,
-            r,
-            fileName,
+            res,
+            modelName,
+            openStore,
           ),
         } satisfies InlineContextPickerOption;
       });
@@ -128,34 +125,37 @@ function getFilesPickerOptions() {
 function getModelColumnsQueryOptions(
   instanceId: string,
   modelRes: V1Resource | undefined,
-  fileName: string,
+  modelName: string,
+  enabledStore: Readable<boolean>,
 ) {
   const connector = modelRes?.model?.spec?.outputConnector ?? "";
   const table = modelRes?.model?.state?.resultTable ?? "";
-  return getQueryServiceTableColumnsQueryOptions(
-    instanceId,
-    table,
-    {
-      connector,
-    },
-    {
-      query: {
-        enabled: Boolean(table),
-        select: (data) => [
-          data.profileColumns?.map(
-            (col) =>
-              ({
-                type: InlineContextType.Column,
-                label: col.name,
-                value: col.name!,
-                column: col.name,
-                columnType: col.type,
-                model: fileName,
-              }) satisfies InlineContext,
-          ) ?? [],
-        ],
+  return derived(enabledStore, (enabled) =>
+    getQueryServiceTableColumnsQueryOptions(
+      instanceId,
+      table,
+      {
+        connector,
       },
-    },
+      {
+        query: {
+          enabled: enabled && Boolean(table),
+          select: (data) => [
+            data.profileColumns?.map(
+              (col) =>
+                ({
+                  type: InlineContextType.Column,
+                  label: col.name,
+                  value: col.name!,
+                  column: col.name,
+                  columnType: col.type,
+                  model: modelName,
+                }) satisfies InlineContext,
+            ) ?? [],
+          ],
+        },
+      },
+    ),
   );
 }
 
@@ -168,16 +168,74 @@ export const ParentPickerTypes = new Set([
   InlineContextType.Model,
 ]);
 
-function getPickerOptions({ metricViews, files }: PickerArgs) {
+function getPickerOptions({
+  metricViews,
+  files,
+}: PickerArgs): Readable<InlineContextPickerOption[]> {
+  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
+  const activeMetricsViewStore = getActiveMetricsViewNameStore();
+  const activeFileArtifactStore = getActiveFileArtifactStore();
+
   return derived(
     [
       metricViews ? getMetricsViewPickerOptions() : readable(null),
-      files ? getFilesPickerOptions() : readable(null),
+      files ? getModelsPickerOptions() : readable(null),
     ],
-    ([metricsViewOptions, filesOption]) => {
-      return [metricsViewOptions, filesOption]
+    ([metricsViewOptions, filesOption], set) => {
+      const allOptions = [metricsViewOptions, filesOption]
         .filter(Boolean)
         .flat() as InlineContextPickerOption[];
+      const subOptionStores = allOptions.map((o) =>
+        o.childrenQueryOptions
+          ? createQuery(o.childrenQueryOptions, queryClient)
+          : readable(null),
+      );
+
+      const resolvedOptionsStore = derived(
+        [
+          lastUsedMetricsViewStore,
+          activeMetricsViewStore,
+          activeFileArtifactStore,
+          ...subOptionStores,
+        ],
+        ([
+          lastUsedMv,
+          activeMv,
+          activeFileArtifact,
+          ...subOptionStoresResp
+        ]) => {
+          const resolvedOptions = new Array<InlineContextPickerOption>(
+            subOptionStoresResp.length,
+          );
+          subOptionStoresResp.forEach((subOptionStore, i) => {
+            resolvedOptions[i] = {
+              ...allOptions[i],
+              children: subOptionStore?.data ?? allOptions[i].children ?? [],
+            };
+
+            if (
+              resolvedOptions[i].context.type === InlineContextType.MetricsView
+            ) {
+              resolvedOptions[i].recentlyUsed =
+                lastUsedMv === resolvedOptions[i].context.metricsView;
+              resolvedOptions[i].currentlyActive =
+                activeMv === resolvedOptions[i].context.metricsView;
+            } else if (
+              resolvedOptions[i].context.type === InlineContextType.Model
+            ) {
+              resolvedOptions[i].currentlyActive =
+                activeFileArtifact.resource?.kind === ResourceKind.Model &&
+                activeFileArtifact.resource?.name ===
+                  resolvedOptions[i].context.model;
+            }
+          });
+          return resolvedOptions;
+        },
+      );
+
+      return resolvedOptionsStore.subscribe((resolvedOptions) =>
+        set(resolvedOptions),
+      );
     },
   );
 }

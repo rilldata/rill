@@ -11,8 +11,6 @@
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
   export let parentOption: InlineContextPickerOption;
   export let selectedChatContext: InlineContext | null = null;
@@ -21,22 +19,9 @@
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
-  $: ({
-    context,
-    recentlyUsed,
-    currentlyActive,
-    children,
-    childrenQueryOptions,
-  } = parentOption);
-  let childrenQuery: ReturnType<typeof createQuery> | undefined;
-  $: if (childrenQueryOptions)
-    childrenQuery = createQuery(childrenQueryOptions, queryClient);
-  $: resolvedChildren =
-    (childrenQuery
-      ? ($childrenQuery?.data as InlineContextPickerOption["children"])
-      : children) ?? [];
-  $: if (childrenQuery)
-    highlightManager.childrenUpdated(context, $childrenQuery?.data ?? []);
+  $: ({ context, openStore, recentlyUsed, currentlyActive, children } =
+    parentOption);
+  $: resolvedChildren = children ?? [];
 
   const highlightedContextStore = highlightManager.highlightedContext;
   $: highlightedContext = $highlightedContextStore;
@@ -55,18 +40,24 @@
     highlightedContext !== null &&
     inlineContextIsWithin(context, highlightedContext);
 
+  $: console.log(
+    context.value,
+    highlightedContext?.value,
+    withinParentOptionHighlighted,
+  );
+
   $: parentIcon = InlineContextConfig[context.type]?.getIcon?.(context);
 
   $: mouseContextHighlightHandler = highlightManager.mouseOverHandler(context);
 
-  let open =
-    withinParentOptionSelected ||
-    parentOption.recentlyUsed ||
-    parentOption.currentlyActive;
   $: shouldForceOpen =
-    withinParentOptionHighlighted || $searchTextStore.length > 0;
+    withinParentOptionSelected ||
+    withinParentOptionHighlighted ||
+    recentlyUsed ||
+    currentlyActive ||
+    $searchTextStore.length > 0;
   $: if (shouldForceOpen) {
-    open = true;
+    openStore.set(true);
   }
 
   function ensureInView(node: HTMLElement, active: boolean) {
@@ -83,7 +74,7 @@
   }
 </script>
 
-<Collapsible.Root bind:open class="border-b last:border-b-0">
+<Collapsible.Root bind:open={$openStore} class="border-b last:border-b-0">
   <Collapsible.Trigger asChild let:builder>
     <button
       class="context-item parent-context-item"
@@ -102,7 +93,7 @@
         class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
       />
       <div class="min-w-3.5">
-        {#if open}
+        {#if $openStore}
           <ChevronDownIcon size="12px" strokeWidth={4} />
         {:else if parentIcon}
           <!-- On hover show chevron right icon -->
@@ -129,7 +120,7 @@
     {#each resolvedChildren as childCategory, i}
       {#if i !== 0}<div class="content-separator"></div>{/if}
 
-      {#each childCategory as child}
+      {#each childCategory as child (`${child.type}-${child.value}`)}
         {@const selected =
           selectedChatContext !== null &&
           inlineContextsAreEqual(child, selectedChatContext)}
