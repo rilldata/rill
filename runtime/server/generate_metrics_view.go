@@ -141,7 +141,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound, req.Prompt)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err), observability.ZapCtx(ctx))
 		} else {
@@ -198,10 +198,10 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
+func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool, prompt string) (*generateMetricsViewYAMLWithres, error) {
 	// Build messages
 	systemPrompt := metricsViewYAMLSystemPrompt()
-	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)
+	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema, prompt)
 
 	msgs := []*aiv1.CompletionMessage{
 		{
@@ -406,12 +406,15 @@ Your output should only consist of valid YAML in the format below:
 }
 
 // metricsViewYAMLUserPrompt returns the dynamic user prompt for the metrics view generation AI.
-func metricsViewYAMLUserPrompt(dialect, tblName string, schema *runtimev1.StructType) string {
+func metricsViewYAMLUserPrompt(dialect, tblName string, schema *runtimev1.StructType, additionalPrompt string) string {
 	prompt := fmt.Sprintf(`
 Give me up to 10 suggested metrics using the %q SQL dialect based on the table named %q, which has the following schema:
 `, dialect, tblName)
 	for _, field := range schema.Fields {
 		prompt += fmt.Sprintf("- column=%s, type=%s\n", field.Name, field.Type.Code.String())
+	}
+	if additionalPrompt != "" {
+		prompt += "\n Additional instructions: " + additionalPrompt + "\n"
 	}
 	return prompt
 }
