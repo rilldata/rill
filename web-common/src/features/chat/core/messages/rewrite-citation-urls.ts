@@ -41,7 +41,7 @@ export function getCitationUrlRewriter(
           // Mapping failed for some reason, remove the link since it is probably invalid.
           if (!isValid) return "";
 
-          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}">${tokens.text}</a>`;
+          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}" data-url-params="${urlParams.toString()}">${tokens.text}</a>`;
         },
       },
     });
