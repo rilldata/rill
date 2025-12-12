@@ -272,6 +272,13 @@ function toExploreUrlParams(
     (names) => names?.join(","),
   );
 
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "leaderboardShowContextForAllMeasures",
+    (value) => (value ? "true" : "false"),
+  );
+
   return searchParams;
 }
 
