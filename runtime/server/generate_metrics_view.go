@@ -300,57 +300,64 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		columns[f.Name] = struct{}{}
 	}
 
-	// Validate the generated measures (not validating other parts since those are not AI-generated)
-	spec := &runtimev1.MetricsViewSpec{
-		Connector:      connector,
-		Database:       tbl.Database,
-		DatabaseSchema: tbl.DatabaseSchema,
-		Table:          tbl.Name,
-	}
-	for _, measure := range doc.Measures {
-		// Prevent measure name collisions with column names
-		if _, ok := columns[measure.Name]; !ok {
-			measure.Name += "_measure"
+	// Validate the generated measures (not validating other parts since those are not AI-generated).
+	// Since validation is a pipeline that may skip steps when earlier validation fails, we do up to three validation passes to discover all invalid measures.
+	var invalidMeasures int
+	for range 3 {
+		spec := &runtimev1.MetricsViewSpec{
+			Connector:      connector,
+			Database:       tbl.Database,
+			DatabaseSchema: tbl.DatabaseSchema,
+			Table:          tbl.Name,
+		}
+		for _, measure := range doc.Measures {
+			// Prevent measure name collisions with column names
+			if _, ok := columns[measure.Name]; !ok {
+				measure.Name += "_measure"
+			}
+
+			spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_Measure{
+				Name:         measure.Name,
+				DisplayName:  measure.DisplayName,
+				Expression:   measure.Expression,
+				Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+				FormatPreset: measure.FormatPreset,
+			})
 		}
 
-		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_Measure{
-			Name:         measure.Name,
-			DisplayName:  measure.DisplayName,
-			Expression:   measure.Expression,
-			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			FormatPreset: measure.FormatPreset,
-		})
-	}
-
-	e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer e.Close()
-	validateResult, err := e.ValidateAndNormalizeMetricsView(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Remove all invalid measures. We do this in two steps to preserve the indexes returned in MeasureErrs:
-	// First, we set the invalid measures to nil. Second, we remove the nil entries.
-	var valid, invalid int
-	for _, ie := range validateResult.MeasureErrs {
-		doc.Measures[ie.Idx] = nil
-	}
-	for idx := 0; idx < len(doc.Measures); {
-		if doc.Measures[idx] == nil {
-			invalid++
-			doc.Measures = slices.Delete(doc.Measures, idx, idx+1)
-		} else {
-			valid++
-			idx++
+		e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0, nil)
+		if err != nil {
+			return nil, err
 		}
-	}
+		defer e.Close()
+		validateResult, err := e.ValidateAndNormalizeMetricsView(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	// If there are no valid measures left, bail
-	if len(doc.Measures) == 0 {
-		return nil, errors.New("no valid measures were generated")
+		// If there are no invalid measures, we are done
+		if len(validateResult.MeasureErrs) == 0 {
+			break
+		}
+
+		// Remove all invalid measures. We do this in two steps to preserve the indexes returned in MeasureErrs:
+		// First, we set the invalid measures to nil. Second, we remove the nil entries.
+		for _, ie := range validateResult.MeasureErrs {
+			doc.Measures[ie.Idx] = nil
+			invalidMeasures++
+		}
+		for idx := 0; idx < len(doc.Measures); {
+			if doc.Measures[idx] == nil {
+				doc.Measures = slices.Delete(doc.Measures, idx, idx+1)
+			} else {
+				idx++
+			}
+		}
+
+		// If there are no valid measures left, bail
+		if len(doc.Measures) == 0 {
+			return nil, errors.New("no valid measures were generated")
+		}
 	}
 
 	// Render the updated YAML
@@ -361,8 +368,8 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 
 	return &generateMetricsViewYAMLWithres{
 		data:            out,
-		validMeasures:   valid,
-		invalidMeasures: invalid,
+		validMeasures:   len(doc.Measures),
+		invalidMeasures: invalidMeasures,
 	}, nil
 }
 
