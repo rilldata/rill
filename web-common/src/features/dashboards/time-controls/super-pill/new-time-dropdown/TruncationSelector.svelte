@@ -25,7 +25,7 @@
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
   export let zone: string;
-  export let ref: RillTimeLabel | string | undefined;
+  export let ref: RillTimeLabel | undefined;
   export let onSelectAsOfOption: (ref: RillTimeLabel) => void;
   export let onToggleAlignment: (forward: boolean) => void;
   export let onSelectEnding: (
@@ -36,6 +36,7 @@
   let open = false;
   let now = DateTime.now().setZone(zone);
   let interval: ReturnType<typeof setInterval> | undefined = undefined;
+  let disableTooltip = false;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -97,7 +98,7 @@
   }
 
   function humanizeRef(
-    ref: RillTimeLabel | string | undefined,
+    ref: RillTimeLabel | undefined,
     grain: V1TimeGrain | undefined,
   ): string {
     switch (ref) {
@@ -110,12 +111,7 @@
         if (grain) return "current";
         return "now";
       default:
-        try {
-          const dt = DateTime.fromISO(ref as string).setZone(zone);
-          return dt.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
-        } catch {
-          return ref as string;
-        }
+        return "now";
     }
   }
 
@@ -137,8 +133,6 @@
       }) + (inFuture ? " from now" : " ago")
     );
   }
-
-  let disableTooltip = false;
 </script>
 
 <DropdownMenu.Root bind:open disableFocusFirstItem>
