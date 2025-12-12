@@ -95,7 +95,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Parse refresh schedule
-	schedule, err := p.parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh, true)
 	if err != nil {
 		return err
 	}
