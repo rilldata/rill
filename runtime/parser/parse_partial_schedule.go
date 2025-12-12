@@ -21,7 +21,9 @@ type ScheduleYAML struct {
 	RunInDev  bool   `yaml:"run_in_dev" mapstructure:"run_in_dev"`
 }
 
-func (p *Parser) parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
+// parseScheduleYAML parses a ScheduleYAML into a runtimev1.Schedule.
+// The refUpdateDefaultWithCron parameter determines the default value of RefUpdate when a cron schedule is provided but RefUpdate is not explicitly set.
+func (p *Parser) parseScheduleYAML(raw *ScheduleYAML, refUpdateDefaultWithCron bool) (*runtimev1.Schedule, error) {
 	// When there's no refresh schedule, default to refreshing on updates to refs.
 	if raw == nil {
 		return &runtimev1.Schedule{RefUpdate: true}, nil
@@ -67,11 +69,15 @@ func (p *Parser) parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, erro
 	}
 
 	// Handle ref update.
-	// If not explicit set, it default to true iff no cron or ticker is specified.
+	// If not explicitly set, it defaults to true when there is no cron. If there is a cron, the default depends on refUpdateDefaultWithCron.
 	if raw.RefUpdate != nil {
 		s.RefUpdate = *raw.RefUpdate
 	} else {
-		s.RefUpdate = s.Cron == "" && s.TickerSeconds == 0
+		if s.Cron == "" && s.TickerSeconds == 0 {
+			s.RefUpdate = true
+		} else {
+			s.RefUpdate = refUpdateDefaultWithCron
+		}
 	}
 
 	return s, nil
