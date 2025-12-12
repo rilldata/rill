@@ -185,7 +185,7 @@ export function getDimensionFiltersMap(
         selectedValues: getValuesInExpression(e),
         isInclude: e.cond?.op === V1Operation.OPERATION_IN,
         inputText: undefined,
-        pinned: pinnedFilters.has(ident),
+        pinned: pinnedFilters?.has(ident),
 
         dimensions: new Map<string, MetricsViewSpecDimension>([
           [metricsViewName, dim],
@@ -218,7 +218,7 @@ export function getDimensionFilters(
   filter: V1Expression | undefined,
   dimensionsWithInlistFilter: string[],
   metricsViewName: string | undefined,
-  pinnedFilters: Set<string>,
+  pinnedFilters: Set<string> = new Set(),
 ) {
   return Array.from(
     getDimensionFiltersMap(
@@ -260,7 +260,7 @@ export const getAllDimensionFilterItems = (
             dimensionIdMap.get(dashData.dashboard.temporaryFilterName)!,
           ],
         ]),
-        pinned: dashData.dashboard.pinnedFilters.has(
+        pinned: dashData.dashboard.pinnedFilters?.has(
           dashData.dashboard.temporaryFilterName,
         ),
       });

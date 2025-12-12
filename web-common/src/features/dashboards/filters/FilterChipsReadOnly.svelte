@@ -43,6 +43,8 @@ The main feature-set component for dashboard filters
     filters,
     dimensionsWithInlistFilter,
     metricsViewNames[0],
+    // revisit - bgh
+    new Set(),
   );
 
   $: measureIdMap = getMapFromArray(
@@ -52,6 +54,8 @@ The main feature-set component for dashboard filters
   $: measureFilters = getMeasureFilters(
     measureIdMap,
     dimensionThresholdFilters,
+    // revisit - bgh
+    new Set(),
   );
 
   function handleWheel(event: WheelEvent) {

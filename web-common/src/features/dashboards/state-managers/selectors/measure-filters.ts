@@ -116,7 +116,7 @@ export const getAllMeasureFilterItems = (
         label: getMeasureDisplayName(
           measureIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
-        pinned: dashData.dashboard.pinnedFilters.has(
+        pinned: dashData.dashboard.pinnedFilters?.has(
           dashData.dashboard.temporaryFilterName,
         ),
       });
