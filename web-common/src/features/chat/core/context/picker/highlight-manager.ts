@@ -1,30 +1,41 @@
-import {
-  InlineContextType,
-  type InlineContext,
-} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import type { MetricsViewContextOption } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
-import { inlineContextsAreEqual } from "web-common/src/features/chat/core/context/inline-context.ts";
-import { writable } from "svelte/store";
+import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import { inlineContextsAreEqual } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import { get, writable } from "svelte/store";
+import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import { ParentPickerTypes } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
 
-export class InlineContextHighlightManager {
+export class PickerOptionsHighlightManager {
   public highlightedContext = writable<InlineContext | null>(null);
 
   private highlightableContexts: InlineContext[] = [];
   private highlightedIndex = -1;
 
-  public filterOptionsUpdated(filteredOptions: MetricsViewContextOption[]) {
+  public filterOptionsUpdated(
+    filteredOptions: InlineContextPickerOption[],
+    selectedChatContext: InlineContext | null,
+  ) {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
     this.highlightableContexts = filteredOptions.flatMap((option) => [
-      option.metricsViewContext,
-      ...option.measures,
-      ...option.dimensions,
+      option.context,
+      ...(option.children?.flat() ?? []),
     ]);
 
-    // Prefer non-metrics context if available for the 1st metrics view.
-    const nonMetricsViewAvailable =
+    // Prefer selecting already selected context.
+    if (this.highlightContext(get(this.highlightedContext))) {
+      return;
+    }
+
+    // Next prefer the selected context if available.
+    // TODO: only do this for the 1st time perhaps?
+    if (this.highlightContext(selectedChatContext)) {
+      return;
+    }
+
+    // Prefer non-parent context if available for the parent option.
+    const nonParentAvailable =
       this.highlightableContexts.length > 1 &&
-      this.highlightableContexts[1].type !== InlineContextType.MetricsView;
-    this.highlightedIndex = nonMetricsViewAvailable ? 1 : 0;
+      ParentPickerTypes.has(this.highlightableContexts[1].type);
+    this.highlightedIndex = nonParentAvailable ? 1 : 0;
     this.updateHighlightedContext();
   }
 
@@ -47,16 +58,17 @@ export class InlineContextHighlightManager {
     if (!context) {
       this.highlightedIndex = -1;
       this.updateHighlightedContext();
-      return;
+      return false;
     }
 
     const newIndex = this.highlightableContexts.findIndex((hc) =>
       inlineContextsAreEqual(context, hc),
     );
-    if (newIndex !== -1) {
-      this.highlightedIndex = newIndex;
-      this.updateHighlightedContext();
-    }
+    if (newIndex === -1) return false;
+
+    this.highlightedIndex = newIndex;
+    this.updateHighlightedContext();
+    return true;
   }
 
   public mouseOverHandler(ctx: InlineContext) {

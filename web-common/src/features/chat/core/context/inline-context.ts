@@ -1,34 +1,27 @@
-import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { prettyFormatResolvedV1TimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import type {
-  MetricsViewSpecDimension,
-  MetricsViewSpecMeasure,
-  V1MetricsViewSpec,
-} from "@rilldata/web-common/runtime-client";
-
 export const INLINE_CHAT_CONTEXT_TAG = "chat-reference";
 
 export enum InlineContextType {
-  Explore = "explore",
   MetricsView = "metricsView",
   TimeRange = "timeRange",
-  Where = "where",
   Measure = "measure",
   Dimension = "dimension",
   DimensionValues = "dimensionValues",
+  Model = "model",
+  Column = "column",
 }
 
 export type InlineContext = {
   type: InlineContextType;
   label?: string;
+  value: string; // Main value for this context, used as an ID of sorts
   metricsView?: string;
   measure?: string;
   dimension?: string;
   timeRange?: string;
   values?: string[];
+  model?: string;
+  column?: string;
+  columnType?: string; // TODO: is this needed here?
 };
 
 export function inlineContextsAreEqual(
@@ -40,7 +33,10 @@ export function inlineContextsAreEqual(
     ctx1.metricsView === ctx2.metricsView &&
     ctx1.measure === ctx2.measure &&
     ctx1.dimension === ctx2.dimension &&
-    ctx1.timeRange === ctx2.timeRange;
+    ctx1.timeRange === ctx2.timeRange &&
+    ctx1.model === ctx2.model &&
+    ctx1.column === ctx2.column &&
+    ctx1.columnType === ctx2.columnType;
   if (!nonValuesAreEqual) return false;
   if (!ctx1.values && !ctx2.values) return true;
   else if (!ctx1.values || !ctx2.values) return false;
@@ -51,61 +47,91 @@ export function inlineContextsAreEqual(
   );
 }
 
-export function normalizeInlineContext(ctx: InlineContext) {
-  return Object.fromEntries(
-    Object.entries(ctx).filter(([, v]) => v !== null && v !== undefined),
-  ) as InlineContext;
+export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
+  if (src.type === tar.type) return false; // Equal types cannot be within each other, just equal
+  switch (src.type) {
+    case InlineContextType.MetricsView:
+      return src.metricsView === tar.metricsView;
+    case InlineContextType.Model:
+      return src.model === tar.model;
+  }
+  return false;
 }
 
-export type InlineContextMetadata = Record<string, MetricsViewMetadata>;
-export type MetricsViewMetadata = {
-  metricsViewSpec: V1MetricsViewSpec;
-  measures: Record<string, MetricsViewSpecMeasure>;
-  dimensions: Record<string, MetricsViewSpecDimension>;
-};
+export function normalizeInlineContext(ctx: InlineContext) {
+  const normalisedContext = Object.fromEntries(
+    Object.entries(ctx).filter(([, v]) => v !== null && v !== undefined),
+  ) as InlineContext;
 
-type ContextConfigPerType = {
-  getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
-};
+  // Fill in the `value` field based on the type of the context.`
+  switch (normalisedContext.type) {
+    case InlineContextType.MetricsView:
+      normalisedContext.value = normalisedContext.metricsView!;
+      break;
 
-export const InlineContextConfig: Partial<
-  Record<InlineContextType, ContextConfigPerType>
-> = {
-  [InlineContextType.MetricsView]: {
-    getLabel: (ctx, meta) =>
-      meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
-  },
+    case InlineContextType.Measure:
+      normalisedContext.value = normalisedContext.measure!;
+      break;
 
-  [InlineContextType.TimeRange]: {
-    getLabel: (ctx) => {
-      if (!ctx.timeRange) return "";
-      const [start, end] = ctx.timeRange.split(" to ");
-      return prettyFormatResolvedV1TimeRange({
-        start: start,
-        end: end ?? start,
-      });
-    },
-  },
+    case InlineContextType.Dimension:
+      normalisedContext.value = normalisedContext.dimension!;
+      break;
 
-  [InlineContextType.Measure]: {
-    getLabel: (ctx, meta) => {
-      const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
-      return getMeasureDisplayName(mes) || ctx.measure!;
-    },
-  },
+    case InlineContextType.TimeRange:
+      normalisedContext.value = normalisedContext.timeRange!;
+      break;
 
-  [InlineContextType.Dimension]: {
-    getLabel: (ctx, meta) => {
-      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
-      return getDimensionDisplayName(dim) || ctx.dimension!;
-    },
-  },
+    case InlineContextType.Model:
+      normalisedContext.value = normalisedContext.model!;
+      break;
 
-  [InlineContextType.DimensionValues]: {
-    getLabel: (ctx, meta) => {
-      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
-      const dimLabel = getDimensionDisplayName(dim) || ctx.dimension!;
-      return dimLabel + ": " + (ctx.values ?? []).join(", ");
-    },
-  },
-};
+    case InlineContextType.Column:
+      normalisedContext.value = normalisedContext.column!;
+      break;
+  }
+
+  return normalisedContext;
+}
+
+// =============================================================================
+// Utils for converting between different formats
+// =============================================================================
+
+export function convertContextToInlinePrompt(ctx: InlineContext) {
+  const parts: string[] = [];
+
+  for (const key in ctx) {
+    const isComputedKey = key === "value" || key === "label";
+    const isNonStringKey = key === "values";
+    if (isComputedKey || isNonStringKey) continue;
+    if (ctx[key] !== undefined) parts.push(`${key}="${ctx[key]}"`);
+  }
+
+  // TODO: dimension value support
+
+  return `<${INLINE_CHAT_CONTEXT_TAG}>${parts.join(" ")}</${INLINE_CHAT_CONTEXT_TAG}>`;
+}
+
+const PARTS_REGEX = /(\w+?)="([^"]+?)"/g;
+
+export function convertPromptValueToContext(
+  contextValue: string,
+): InlineContext | null {
+  const parts = contextValue.matchAll(PARTS_REGEX);
+
+  const ctx = <InlineContext>{};
+
+  for (const [, key, value] of parts) {
+    ctx[key] = value;
+  }
+
+  if (!ctx.type) return null;
+
+  return normalizeInlineContext(ctx);
+}
+
+export function parseInlineAttr(content: string, key: string) {
+  const match = new RegExp(`${key}="([^"]+?)"`).exec(content);
+  if (!match) return null;
+  return match[1];
+}

@@ -66,5 +66,5 @@ function getLatestConversationQueryOptions() {
 function getMetricsViewInMessage(message: V1Message) {
   if (message.type !== MessageType.CALL) return null;
   const content = message.content?.[0];
-  return content?.toolCall?.input?.metrics_view ?? null;
+  return (content?.toolCall?.input?.metrics_view as string) ?? null;
 }

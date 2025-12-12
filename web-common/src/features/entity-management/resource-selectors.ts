@@ -3,6 +3,7 @@ import {
   createRuntimeServiceListResources,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
@@ -13,6 +14,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import type { ErrorType } from "../../runtime-client/http-client";
+import { derived } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export enum ResourceKind {
@@ -223,6 +226,25 @@ export function useClientFilteredResources(
         ) ?? [],
     },
   });
+}
+
+/**
+ * Query options version of {@link useClientFilteredResources}.
+ */
+export function getClientFilteredResourcesQueryOptions(
+  kind: ResourceKind,
+  filter: (res: V1Resource) => boolean = () => true,
+) {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
+      query: {
+        select: (data) =>
+          data.resources?.filter(
+            (res) => res.meta?.name?.kind === kind && filter(res),
+          ) ?? [],
+      },
+    }),
+  );
 }
 
 export function resourceIsLoading(resource?: V1Resource) {

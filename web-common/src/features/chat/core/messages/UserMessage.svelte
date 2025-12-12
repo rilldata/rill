@@ -2,7 +2,7 @@
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
   import { onMount } from "svelte";
   import { Editor } from "@tiptap/core";
 
