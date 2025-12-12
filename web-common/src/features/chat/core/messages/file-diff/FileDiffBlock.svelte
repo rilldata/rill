@@ -64,8 +64,7 @@
 
   .diff-header {
     @apply flex items-center gap-2 px-3 py-1.5;
-    @apply text-xs border-b border-gray-200;
-    background-color: #f6f8fa;
+    @apply text-xs border-b border-gray-200 bg-gray-100;
   }
 
   .file-path-link {
@@ -132,16 +131,16 @@
 
   .diff-view :global(.d2h-code-linenumber) {
     position: static;
-    color: rgba(31, 35, 40, 0.5);
+    color: var(--color-gray-500);
     text-align: right;
     padding: 0 10px;
     min-width: 40px;
     width: 40px;
-    background-color: #f6f8fa;
+    background-color: var(--color-gray-100);
     user-select: none;
     vertical-align: top;
     white-space: nowrap;
-    border-right: 1px solid #d1d9e0;
+    border-right: 1px solid var(--color-gray-300);
   }
 
   .diff-view :global(.d2h-code-line-prefix) {
@@ -152,7 +151,7 @@
     min-width: 20px;
     text-align: center;
     vertical-align: top;
-    color: rgba(31, 35, 40, 0.5);
+    color: var(--color-gray-500);
   }
 
   .diff-view :global(.d2h-code-line-ctn) {
@@ -161,71 +160,71 @@
     white-space: pre;
     word-wrap: normal;
     vertical-align: top;
-    color: #1f2328;
+    color: var(--color-gray-900);
   }
 
-  /* Addition lines - GitHub green */
+  /* Addition lines - green */
   .diff-view :global(.d2h-ins) {
-    background-color: #d1f8d9;
+    background-color: var(--color-green-100);
   }
 
   .diff-view :global(.d2h-ins .d2h-code-linenumber) {
-    background-color: #b4f1be;
+    background-color: var(--color-green-200);
   }
 
   .diff-view :global(.d2h-ins .d2h-code-line-prefix) {
-    color: #1a7f37;
-    background-color: #d1f8d9;
+    color: var(--color-green-700);
+    background-color: var(--color-green-100);
   }
 
   .diff-view :global(.d2h-ins .d2h-code-line-ctn) {
-    background-color: #d1f8d9;
+    background-color: var(--color-green-100);
   }
 
   .diff-view :global(.d2h-ins ins) {
-    background-color: #7ee787;
+    background-color: var(--color-green-400);
   }
 
-  /* Deletion lines - GitHub red */
+  /* Deletion lines - red */
   .diff-view :global(.d2h-del) {
-    background-color: #ffd7d5;
+    background-color: var(--color-red-100);
   }
 
   .diff-view :global(.d2h-del .d2h-code-linenumber) {
-    background-color: #ffc0be;
+    background-color: var(--color-red-200);
   }
 
   .diff-view :global(.d2h-del .d2h-code-line-prefix) {
-    color: #cf222e;
-    background-color: #ffd7d5;
+    color: var(--color-red-600);
+    background-color: var(--color-red-100);
   }
 
   .diff-view :global(.d2h-del .d2h-code-line-ctn) {
-    background-color: #ffd7d5;
+    background-color: var(--color-red-100);
   }
 
   .diff-view :global(.d2h-del del) {
-    background-color: #ff8182;
+    background-color: var(--color-red-400);
   }
 
   /* Context/unchanged lines */
   .diff-view :global(.d2h-cntx) {
-    background-color: #ffffff;
+    background-color: var(--surface);
   }
 
   .diff-view :global(.d2h-cntx .d2h-code-linenumber) {
-    background-color: #f6f8fa;
+    background-color: var(--color-gray-100);
   }
 
   .diff-view :global(.d2h-cntx .d2h-code-line-prefix),
   .diff-view :global(.d2h-cntx .d2h-code-line-ctn) {
-    background-color: #ffffff;
+    background-color: var(--surface);
   }
 
-  /* Hunk header (@@) - GitHub style */
+  /* Hunk header (@@) */
   .diff-view :global(.d2h-info) {
-    background-color: #ddf4ff;
-    color: rgba(31, 35, 40, 0.7);
+    background-color: var(--color-blue-100);
+    color: var(--color-gray-600);
     padding: 6px 10px;
     font-family:
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
