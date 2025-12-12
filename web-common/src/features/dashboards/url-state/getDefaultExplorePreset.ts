@@ -37,7 +37,7 @@ export function getDefaultExplorePreset(
     view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
     where: createAndExpression([]),
     dimensionsWithInlistFilter: [],
-
+    pinned: [],
     measures: explore.measures,
     dimensions: explore.dimensions,
 

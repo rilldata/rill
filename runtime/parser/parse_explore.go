@@ -7,6 +7,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -32,6 +34,8 @@ type ExploreYAML struct {
 		TimeRange           string             `yaml:"time_range"`
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
+		Filter              string             `yaml:"filter"`
+		Pinned              []string           `yaml:"pinned"`
 	} `yaml:"defaults"`
 	Embeds struct {
 		HidePivot bool `yaml:"hide_pivot"`
@@ -242,6 +246,26 @@ func (p *Parser) parseExplore(node *Node) error {
 		if tmp.Defaults.ComparisonDimension != "" {
 			compareDim = &tmp.Defaults.ComparisonDimension
 		}
+
+		var pinnedMeasuresOrDimensions []string
+		if len(tmp.Defaults.Pinned) > 0 {
+			pinnedMeasuresOrDimensions = tmp.Defaults.Pinned
+		}
+
+		var filter *runtimev1.DefaultMetricsSQLFilter
+		if tmp.Defaults.Filter != "" {
+			expr, err := metricssql.ParseFilter(tmp.Defaults.Filter)
+			if err != nil {
+				return fmt.Errorf("invalid filter expression: %q: %w", tmp.Defaults.Filter, err)
+			}
+
+			converted := metricsview.ExpressionToProto(expr)
+
+			filter = &runtimev1.DefaultMetricsSQLFilter{
+				Expression: converted,
+			}
+		}
+
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
@@ -250,6 +274,8 @@ func (p *Parser) parseExplore(node *Node) error {
 			TimeRange:           tr,
 			ComparisonMode:      mode,
 			ComparisonDimension: compareDim,
+			Filter:              filter,
+			Pinned:              pinnedMeasuresOrDimensions,
 		}
 	}
 
