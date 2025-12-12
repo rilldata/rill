@@ -120,6 +120,7 @@ export function convertURLToExplorePreset(
     searchParams,
     dimensions,
   );
+
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
@@ -326,6 +327,7 @@ export function fromTimeRangesParams(
 
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
+
     if (tg in FromURLParamTimeGrainMap) {
       preset.timeGrain = tg;
     } else {

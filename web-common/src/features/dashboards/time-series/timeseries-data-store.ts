@@ -83,9 +83,7 @@ export function createMetricsViewTimeSeries(
           timeEnd: isComparison
             ? timeControls.comparisonAdjustedEnd
             : timeControls.adjustedEnd,
-          timeGranularity:
-            timeControls.selectedTimeRange?.interval ??
-            timeControls.minTimeGrain,
+          timeGranularity: timeControls.selectedTimeRange?.interval,
           timeZone: dashboardStore.selectedTimezone,
         },
         {

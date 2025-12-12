@@ -25,6 +25,9 @@
   import { page } from "$app/stores";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import { writable, type Writable } from "svelte/store";
+  import { DateTime, Interval } from "luxon";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -94,7 +97,11 @@
     comparisonTimeStart,
     comparisonTimeEnd,
     ready: timeControlsReady = false,
+    selectedTimeRange,
+    minTimeGrain,
   } = $timeControlsStore);
+
+  $: activeTimeZone = $exploreState?.selectedTimezone;
 
   $: timeRange = {
     start,
@@ -116,6 +123,22 @@
   $: urlThemeName.set($page.url.searchParams.get("theme"));
 
   $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
+
+  $: maybeInterval = selectedTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+      )
+    : undefined;
+
+  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+
+  $: timeString =
+    selectedTimeRange?.name === TimeRangePreset.CUSTOM
+      ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
+      : selectedTimeRange?.name;
+
+  $: activeTimeGrain = selectedTimeRange?.interval;
 </script>
 
 <ThemeProvider theme={$theme}>
@@ -169,7 +192,14 @@
           {#key exploreName}
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
+                {interval}
+                {activeTimeGrain}
+                {timeString}
+                minTimeGrain={minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE}
+                {timeControlsReady}
+                {selectedTimeRange}
                 {exploreName}
+                {showTimeComparison}
                 timeSeriesWidth={metricsWidth}
                 workspaceWidth={exploreContainerWidth}
                 hideStartPivotButton={hidePivot}

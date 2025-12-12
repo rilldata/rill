@@ -25,7 +25,7 @@
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
   export let zone: string;
-  export let ref: RillTimeLabel | undefined;
+  export let ref: RillTimeLabel | string | undefined;
   export let onSelectAsOfOption: (ref: RillTimeLabel) => void;
   export let onToggleAlignment: (forward: boolean) => void;
   export let onSelectEnding: (
@@ -97,7 +97,7 @@
   }
 
   function humanizeRef(
-    ref: RillTimeLabel | undefined,
+    ref: RillTimeLabel | string | undefined,
     grain: V1TimeGrain | undefined,
   ): string {
     switch (ref) {
@@ -110,7 +110,12 @@
         if (grain) return "current";
         return "now";
       default:
-        return "now";
+        try {
+          const dt = DateTime.fromISO(ref as string).setZone(zone);
+          return dt.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+        } catch {
+          return ref as string;
+        }
     }
   }
 
@@ -132,60 +137,76 @@
       }) + (inFuture ? " from now" : " ago")
     );
   }
+
+  let disableTooltip = false;
 </script>
 
-<DropdownMenu.Root bind:open disableFocusFirstItem={true}>
+<DropdownMenu.Root bind:open disableFocusFirstItem>
   <DropdownMenu.Trigger asChild let:builder id="truncation-selector-trigger">
-    <Tooltip.Root openDelay={800}>
-      <Tooltip.Trigger
-        asChild
-        let:builder={builder2}
-        id="truncation-selector-trigger"
-      >
-        <button
-          type="button"
-          {...getAttrs([builder, builder2])}
-          use:builderActions={{ builders: [builder, builder2] }}
-          class="flex gap-x-1 items-center flex-none truncate"
-          aria-label="Select reference time and grain"
-          data-state={open ? "open" : "closed"}
-        >
-          <p>
-            as of
-            <b>
-              {humanizedRef}
-              {#if dateTimeUnit}
-                {dateTimeUnit}
+    <button
+      type="button"
+      {...getAttrs([builder])}
+      use:builderActions={{ builders: [builder] }}
+      class="flex gap-x-1 items-center flex-none truncate"
+      aria-label="Select reference time and grain"
+      data-state={open ? "open" : "closed"}
+      on:mouseenter={() => {
+        if (!open) disableTooltip = false;
+      }}
+      on:mouseleave={() => {
+        disableTooltip = true;
+      }}
+    >
+      <Tooltip.Root openDelay={800}>
+        <Tooltip.Trigger asChild id="truncation-selector-trigger" let:builder>
+          <div
+            class:pointer-events-none={disableTooltip}
+            class="flex gap-x-1 items-center flex-none truncate"
+            use:builderActions={{ builders: [builder] }}
+            {...getAttrs([builder])}
+          >
+            <p>
+              as of
+              <b>
+                {humanizedRef}
+                {#if dateTimeUnit}
+                  {dateTimeUnit}
+                {/if}
+              </b>
+              {#if grain}
+                {#if snapToEnd || ref === RillTimeLabel.Watermark}
+                  end
+                {:else}
+                  start
+                {/if}
               {/if}
-            </b>
-            {#if grain}
-              {#if snapToEnd || ref === RillTimeLabel.Watermark}
-                end
-              {:else}
-                start
-              {/if}
-            {/if}
-          </p>
+            </p>
 
-          <span class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </span>
-        </button>
-      </Tooltip.Trigger>
+            <span
+              class="flex-none transition-transform"
+              class:-rotate-180={open}
+            >
+              <CaretDownIcon />
+            </span>
+          </div>
+        </Tooltip.Trigger>
 
-      <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <TooltipContent>
-          <TooltipTitle>
-            <svelte:fragment slot="name">
-              {derivedAnchor.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS)}
-            </svelte:fragment>
-          </TooltipTitle>
-          <TooltipDescription>
-            {getColloquialOffset(derivedAnchor)}
-          </TooltipDescription>
-        </TooltipContent>
-      </Tooltip.Content>
-    </Tooltip.Root>
+        <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
+          <TooltipContent>
+            <TooltipTitle>
+              <svelte:fragment slot="name">
+                {derivedAnchor.toLocaleString(
+                  DateTime.DATETIME_MED_WITH_SECONDS,
+                )}
+              </svelte:fragment>
+            </TooltipTitle>
+            <TooltipDescription>
+              {getColloquialOffset(derivedAnchor)}
+            </TooltipDescription>
+          </TooltipContent>
+        </Tooltip.Content>
+      </Tooltip.Root>
+    </button>
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
@@ -196,20 +217,34 @@
           <DropdownMenu.CheckboxItem
             checkRight
             checked={ref === id}
+            preloadData={false}
             on:click={() => {
               onSelectAsOfOption(id);
             }}
           >
-            <Tooltip.Root>
+            <Tooltip.Root openDelay={800}>
               <Tooltip.Trigger
+                asChild
                 class="size-full flex justify-between"
                 id="{label}-tooltip-trigger"
+                let:builder
               >
-                {label}
+                <div
+                  class="w-full"
+                  {...getAttrs([builder])}
+                  use:builderActions={{ builders: [builder] }}
+                >
+                  {label}
+                </div>
               </Tooltip.Trigger>
 
               {#if timestamp}
-                <Tooltip.Content side="right" sideOffset={40} class="w-65 z-50">
+                <Tooltip.Content
+                  side="right"
+                  sideOffset={40}
+                  class="w-65 z-50"
+                  id="{label}-tooltip-content"
+                >
                   <TooltipContent class="w-60">
                     <div class="flex items-center justify-between">
                       <span
@@ -253,6 +288,10 @@
         >
           {V1TimeGrainToDateTimeUnit[option]}
         </DropdownMenu.CheckboxItem>
+      {:else}
+        <div class="px-2 py-1 text-gray-500 flex justify-center italic">
+          No valid grains available.
+        </div>
       {/each}
     </DropdownMenu.Group>
 

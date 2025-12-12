@@ -19,6 +19,11 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
+import { allowedGrainsForInterval } from "../../time-controls/new-time-controls";
+import { DateTime, Interval } from "luxon";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { getRangePrecision } from "@rilldata/web-common/lib/time/new-grains";
+import { parseRillTime } from "../../url-state/time-ranges/parser";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -76,6 +81,7 @@ export class DashboardStateSync {
         initExploreState.data?.activePage === undefined
       )
         return;
+
       void this.handleExploreInit(initExploreState.data);
     });
 
@@ -132,6 +138,7 @@ export class DashboardStateSync {
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
     );
+
     // Ensure dashboard data is loaded before we proceed.
     if (!rillDefaultExploreURLParams) return;
 
@@ -150,6 +157,49 @@ export class DashboardStateSync {
         ],
         initExploreState.selectedTimezone,
       );
+
+      if (
+        initExploreState.selectedTimeRange?.start &&
+        initExploreState.selectedTimeRange?.end &&
+        initExploreState.selectedTimeRange.name
+      ) {
+        const interval = Interval.fromDateTimes(
+          DateTime.fromJSDate(initExploreState.selectedTimeRange?.start),
+          DateTime.fromJSDate(initExploreState.selectedTimeRange?.end),
+        );
+
+        const minTimeGrain =
+          metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+
+        if (interval.isValid) {
+          const allowedGrains = allowedGrainsForInterval(
+            interval,
+            minTimeGrain,
+          );
+
+          const requestedPrecision =
+            initExploreState.selectedTimeRange.interval;
+
+          try {
+            const parsed = parseRillTime(
+              initExploreState.selectedTimeRange.name,
+            );
+            const rangePrecision = getRangePrecision(parsed);
+
+            const finalGrain =
+              requestedPrecision && allowedGrains.includes(requestedPrecision)
+                ? requestedPrecision
+                : rangePrecision && allowedGrains.includes(rangePrecision)
+                  ? rangePrecision
+                  : allowedGrains[0];
+
+            initExploreState.selectedTimeRange.interval =
+              finalGrain ?? minTimeGrain;
+          } catch {
+            // no-op
+          }
+        }
+      }
     }
 
     // Init the store with state we got from dataLoader
@@ -211,6 +261,7 @@ export class DashboardStateSync {
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
     );
+
     // Type-safety
     if (!rillDefaultExploreURLParams) return;
 
@@ -218,6 +269,7 @@ export class DashboardStateSync {
       urlSearchParams,
       type,
     );
+
     // This can be undefined when one of the queries has not loaded yet.
     // Rest of the code can be indeterminate when queries have not loaded.
     // This shouldn't ideally happen.
@@ -238,6 +290,44 @@ export class DashboardStateSync {
         ],
         partialExplore.selectedTimezone,
       );
+
+      if (
+        partialExplore.selectedTimeRange?.start &&
+        partialExplore.selectedTimeRange?.end &&
+        partialExplore.selectedTimeRange.name
+      ) {
+        const interval = Interval.fromDateTimes(
+          DateTime.fromJSDate(partialExplore.selectedTimeRange?.start),
+          DateTime.fromJSDate(partialExplore.selectedTimeRange?.end),
+        );
+        const minTimeGrain =
+          metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
+
+        if (interval.isValid) {
+          const allowedGrains = allowedGrainsForInterval(
+            interval,
+            minTimeGrain,
+          );
+
+          const requestedPrecision = partialExplore.selectedTimeRange.interval;
+
+          try {
+            const parsed = parseRillTime(partialExplore.selectedTimeRange.name);
+            const rangePrecision = getRangePrecision(parsed);
+
+            const finalGrain =
+              requestedPrecision && allowedGrains.includes(requestedPrecision)
+                ? requestedPrecision
+                : rangePrecision && allowedGrains.includes(rangePrecision)
+                  ? rangePrecision
+                  : allowedGrains[0];
+
+            partialExplore.selectedTimeRange.interval = finalGrain;
+          } catch {
+            // no-op
+          }
+        }
+      }
     }
 
     // Merge the partial state from url into the store
