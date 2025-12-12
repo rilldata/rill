@@ -35,6 +35,7 @@ var supportedTableHeadDialects = map[drivers.Dialect]bool{
 	drivers.DialectRedshift:   true,
 	drivers.DialectMySQL:      true,
 	drivers.DialectPostgres:   true,
+	drivers.DialectStarRocks:  true,
 }
 
 func (q *TableHead) Key() string {
@@ -135,6 +136,10 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 			return err
 		}
 	case drivers.DialectClickHouse:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
+			return err
+		}
+	case drivers.DialectStarRocks:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts); err != nil {
 			return err
 		}
