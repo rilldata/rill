@@ -274,7 +274,7 @@ schema: default
 				OutputConnector:  "duckdb",
 				InputProperties:  must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-				RefreshSchedule:  &runtimev1.Schedule{Cron: "0 0 * * *"},
+				RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 				DefinedAsSource:  true,
 				ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 			},
@@ -1127,7 +1127,7 @@ environment_overrides:
 			OutputConnector:  "duckdb",
 			InputProperties:  must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
 			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
-			RefreshSchedule:  &runtimev1.Schedule{Cron: "0 0 * * *"},
+			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			DefinedAsSource:  true,
 			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
@@ -2032,7 +2032,7 @@ refresh:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/m1.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{Cron: "0 0 * * *"},
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 			OutputConnector: "duckdb",
@@ -2044,7 +2044,7 @@ refresh:
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
 		Paths: []string{"/m2.yaml"},
 		ModelSpec: &runtimev1.ModelSpec{
-			RefreshSchedule: &runtimev1.Schedule{Cron: "0 0 * * *"},
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			InputConnector:  "duckdb",
 			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
 			OutputConnector: "duckdb",
@@ -2058,7 +2058,6 @@ refresh:
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 
 	// Clear the cron refresh only for m1
-	m1.ModelSpec.RefreshSchedule.RefUpdate = true
 	m1.ModelSpec.RefreshSchedule.Cron = ""
 
 	// Parse for dev and check
