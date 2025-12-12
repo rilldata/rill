@@ -2,10 +2,18 @@ import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { derived } from "svelte/store";
-import {
-  type InlineContextMetadata,
-  type MetricsViewMetadata,
-} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
+
+export type InlineContextMetadata = Record<string, MetricsViewMetadata>;
+export type MetricsViewMetadata = {
+  metricsViewSpec: V1MetricsViewSpec;
+  measures: Record<string, MetricsViewSpecMeasure>;
+  dimensions: Record<string, MetricsViewSpecDimension>;
+};
 
 /**
  * Creates a store that contains a map of metrics view names to their metadata.

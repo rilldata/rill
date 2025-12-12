@@ -3,19 +3,17 @@ import { Extension } from "@tiptap/core";
 import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/picker/InlineContextPicker.svelte";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import InlineContextComponent from "@rilldata/web-common/features/chat/core/context/InlineContext.svelte";
-import {
-  convertContextToInlinePrompt,
-  parseInlineAttr,
-} from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 import type { EditorView } from "@tiptap/pm/view";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 import {
+  convertContextToInlinePrompt,
   INLINE_CHAT_CONTEXT_TAG,
   type InlineContext,
   normalizeInlineContext,
+  parseInlineAttr,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function getEditorPlugins({
@@ -326,7 +324,6 @@ function getTransactionForContext(
     .setNodeAttribute(pos, "measure", inlineChatContext.measure)
     .setNodeAttribute(pos, "dimension", inlineChatContext.dimension)
     .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange)
-    .setNodeAttribute(pos, "filePath", inlineChatContext.filePath)
     .setNodeAttribute(pos, "model", inlineChatContext.model)
     .setNodeAttribute(pos, "column", inlineChatContext.column)
     .setNodeAttribute(pos, "columnType", inlineChatContext.columnType);

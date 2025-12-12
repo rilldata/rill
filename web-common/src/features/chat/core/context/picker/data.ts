@@ -19,11 +19,136 @@ import {
   getQueryServiceTableColumnsQueryOptions,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-import { getActiveFileArtifactStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
+import {
+  type ActiveFileArtifact,
+  getActiveFileArtifactStore,
+} from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 import { getLastUsedMetricsViewNameStore } from "@rilldata/web-common/features/chat/core/context/picker/get-last-used-metrics-view.ts";
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+
+/**
+ * Creates a store that contains a 2-level list of options for each valid metrics view and sources/models.
+ * 1. Chooses top level options based on the args provided. Currently, the args has toggle for metrics views and sources/models.
+ * 2. Any asynchronous options for 2nd level lists are fetched based on the open status of the top level option.
+ * 3. Active metrics view and active source/model are tracked separately and filled in the resolved options.
+ */
+function getPickerOptions({
+  metricViews,
+  files,
+}: PickerArgs): Readable<InlineContextPickerOption[]> {
+  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
+  const activeMetricsViewStore = getActiveMetricsViewNameStore();
+  const activeFileArtifactStore = getActiveFileArtifactStore();
+
+  return derived(
+    [
+      metricViews ? getMetricsViewPickerOptions() : readable(null),
+      files ? getModelsPickerOptions() : readable(null),
+    ],
+    ([metricsViewOptions, filesOption], set) => {
+      const allOptions = [metricsViewOptions, filesOption]
+        .filter(Boolean)
+        .flat() as InlineContextPickerOption[];
+      const subOptionStores = allOptions.map((o) =>
+        o.childrenQueryOptions
+          ? createQuery(o.childrenQueryOptions, queryClient)
+          : readable(null),
+      );
+
+      const resolvedOptionsStore = derived(
+        [
+          lastUsedMetricsViewStore,
+          activeMetricsViewStore,
+          activeFileArtifactStore,
+          ...subOptionStores,
+        ],
+        ([
+          lastUsedMv,
+          activeMv,
+          activeFileArtifact,
+          ...subOptionStoresResp
+        ]) => {
+          const resolvedOptions = new Array<InlineContextPickerOption>(
+            subOptionStoresResp.length,
+          );
+          subOptionStoresResp.forEach((subOptionStore, i) => {
+            resolvedOptions[i] = {
+              ...allOptions[i],
+              children: subOptionStore?.data ?? allOptions[i].children ?? [],
+            };
+
+            fillInRecentlyUsedOrActiveStatus(resolvedOptions[i], {
+              lastUsedMv,
+              activeMv,
+              activeFileArtifact,
+            });
+          });
+          return resolvedOptions;
+        },
+      );
+
+      return resolvedOptionsStore.subscribe((resolvedOptions) =>
+        set(resolvedOptions),
+      );
+    },
+  );
+}
+
+/**
+ * Creates a store that contains a list of options that match the search text.
+ * 1. Directly calls {@link getPickerOptions} to get the initial list of options.
+ * 2. Bubbles up the recently used and active top level options to the top of the list.
+ * 3. Removes any top level options that don't match the search text including any 2nd level options within it.
+ */
+export function getFilteredPickerOptions(
+  args: PickerArgs,
+  searchTextStore: Readable<string>,
+) {
+  return derived(
+    [getPickerOptions(args), searchTextStore],
+    ([options, searchText]) => {
+      const filterFunction = (label: string, value: string) =>
+        searchText.length === 0 ||
+        label.toLowerCase().includes(searchText.toLowerCase()) ||
+        value.toLowerCase().includes(searchText.toLowerCase());
+
+      let recentlyUsed: InlineContextPickerOption | null = null;
+      let currentlyActive: InlineContextPickerOption | null = null;
+
+      const filteredOptions = options.map((option) => {
+        const children =
+          option.children
+            ?.map((cc) =>
+              cc.filter((c) => filterFunction(c.label ?? "", c.value)),
+            )
+            .filter((cc) => cc.length > 0) ?? [];
+
+        const parentMatches = filterFunction(
+          option.context.label ?? "",
+          option.context.value,
+        );
+
+        if (!parentMatches && children.length === 0) return null;
+
+        if (option.recentlyUsed) recentlyUsed = option;
+        if (option.currentlyActive) currentlyActive = option;
+        if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
+
+        return {
+          ...option,
+          children,
+        } satisfies InlineContextPickerOption;
+      });
+
+      if (recentlyUsed === currentlyActive) currentlyActive = null;
+
+      return [recentlyUsed, currentlyActive, ...filteredOptions].filter(
+        Boolean,
+      ) as InlineContextPickerOption[];
+    },
+  );
+}
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view.
@@ -168,123 +293,24 @@ export const ParentPickerTypes = new Set([
   InlineContextType.Model,
 ]);
 
-function getPickerOptions({
-  metricViews,
-  files,
-}: PickerArgs): Readable<InlineContextPickerOption[]> {
-  const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
-  const activeMetricsViewStore = getActiveMetricsViewNameStore();
-  const activeFileArtifactStore = getActiveFileArtifactStore();
-
-  return derived(
-    [
-      metricViews ? getMetricsViewPickerOptions() : readable(null),
-      files ? getModelsPickerOptions() : readable(null),
-    ],
-    ([metricsViewOptions, filesOption], set) => {
-      const allOptions = [metricsViewOptions, filesOption]
-        .filter(Boolean)
-        .flat() as InlineContextPickerOption[];
-      const subOptionStores = allOptions.map((o) =>
-        o.childrenQueryOptions
-          ? createQuery(o.childrenQueryOptions, queryClient)
-          : readable(null),
-      );
-
-      const resolvedOptionsStore = derived(
-        [
-          lastUsedMetricsViewStore,
-          activeMetricsViewStore,
-          activeFileArtifactStore,
-          ...subOptionStores,
-        ],
-        ([
-          lastUsedMv,
-          activeMv,
-          activeFileArtifact,
-          ...subOptionStoresResp
-        ]) => {
-          const resolvedOptions = new Array<InlineContextPickerOption>(
-            subOptionStoresResp.length,
-          );
-          subOptionStoresResp.forEach((subOptionStore, i) => {
-            resolvedOptions[i] = {
-              ...allOptions[i],
-              children: subOptionStore?.data ?? allOptions[i].children ?? [],
-            };
-
-            if (
-              resolvedOptions[i].context.type === InlineContextType.MetricsView
-            ) {
-              resolvedOptions[i].recentlyUsed =
-                lastUsedMv === resolvedOptions[i].context.metricsView;
-              resolvedOptions[i].currentlyActive =
-                activeMv === resolvedOptions[i].context.metricsView;
-            } else if (
-              resolvedOptions[i].context.type === InlineContextType.Model
-            ) {
-              resolvedOptions[i].currentlyActive =
-                activeFileArtifact.resource?.kind === ResourceKind.Model &&
-                activeFileArtifact.resource?.name ===
-                  resolvedOptions[i].context.model;
-            }
-          });
-          return resolvedOptions;
-        },
-      );
-
-      return resolvedOptionsStore.subscribe((resolvedOptions) =>
-        set(resolvedOptions),
-      );
-    },
-  );
-}
-
-export function getFilterPickerOptions(
-  args: PickerArgs,
-  searchTextStore: Readable<string>,
+function fillInRecentlyUsedOrActiveStatus(
+  option: InlineContextPickerOption,
+  {
+    lastUsedMv,
+    activeMv,
+    activeFileArtifact,
+  }: {
+    lastUsedMv: string | null;
+    activeMv: string | null;
+    activeFileArtifact: ActiveFileArtifact;
+  },
 ) {
-  return derived(
-    [getPickerOptions(args), searchTextStore],
-    ([options, searchText]) => {
-      const filterFunction = (label: string, value: string) =>
-        searchText.length === 0 ||
-        label.toLowerCase().includes(searchText.toLowerCase()) ||
-        value.toLowerCase().includes(searchText.toLowerCase());
-
-      let recentlyUsed: InlineContextPickerOption | null = null;
-      let currentlyActive: InlineContextPickerOption | null = null;
-
-      const filteredOptions = options.map((option) => {
-        const children =
-          option.children
-            ?.map((cc) =>
-              cc.filter((c) => filterFunction(c.label ?? "", c.value)),
-            )
-            .filter((cc) => cc.length > 0) ?? [];
-
-        const parentMatches = filterFunction(
-          option.context.label ?? "",
-          option.context.value,
-        );
-
-        if (!parentMatches && children.length === 0) return null;
-
-        if (option.recentlyUsed) recentlyUsed = option;
-        if (option.currentlyActive) currentlyActive = option;
-        if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
-
-        return {
-          ...option,
-          children,
-        } satisfies InlineContextPickerOption;
-      });
-
-      if (recentlyUsed === currentlyActive) currentlyActive = null;
-
-      return [recentlyUsed, currentlyActive, ...filteredOptions].filter(
-        Boolean,
-      ) as InlineContextPickerOption[];
-    },
-  );
+  if (option.context.type === InlineContextType.MetricsView) {
+    option.recentlyUsed = lastUsedMv === option.context.metricsView;
+    option.currentlyActive = activeMv === option.context.metricsView;
+  } else if (option.context.type === InlineContextType.Model) {
+    option.currentlyActive =
+      activeFileArtifact.resource?.kind === ResourceKind.Model &&
+      activeFileArtifact.resource?.name === option.context.model;
+  }
 }

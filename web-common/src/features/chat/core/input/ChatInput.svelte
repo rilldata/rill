@@ -6,7 +6,7 @@
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import { Editor } from "@tiptap/core";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";

@@ -1,26 +1,8 @@
-import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { prettyFormatResolvedV1TimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import type {
-  MetricsViewSpecDimension,
-  MetricsViewSpecMeasure,
-  V1MetricsViewSpec,
-} from "@rilldata/web-common/runtime-client";
-import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import Measure from "@rilldata/web-common/features/chat/core/context/icons/Measure.svelte";
-import Dimension from "@rilldata/web-common/features/chat/core/context/icons/Dimension.svelte";
-import { fieldTypeToSymbol } from "@rilldata/web-common/lib/duckdb-data-types.ts";
-
 export const INLINE_CHAT_CONTEXT_TAG = "chat-reference";
 
 export enum InlineContextType {
-  Explore = "explore",
   MetricsView = "metricsView",
   TimeRange = "timeRange",
-  Where = "where",
   Measure = "measure",
   Dimension = "dimension",
   DimensionValues = "dimensionValues",
@@ -31,7 +13,7 @@ export enum InlineContextType {
 export type InlineContext = {
   type: InlineContextType;
   label?: string;
-  value: string; // Main value for this context.
+  value: string; // Main value for this context, used as an ID of sorts
   metricsView?: string;
   measure?: string;
   dimension?: string;
@@ -40,7 +22,6 @@ export type InlineContext = {
   model?: string;
   column?: string;
   columnType?: string; // TODO: is this needed here?
-  filePath?: string;
 };
 
 export function inlineContextsAreEqual(
@@ -55,8 +36,7 @@ export function inlineContextsAreEqual(
     ctx1.timeRange === ctx2.timeRange &&
     ctx1.model === ctx2.model &&
     ctx1.column === ctx2.column &&
-    ctx1.columnType === ctx2.columnType &&
-    ctx1.filePath === ctx2.filePath;
+    ctx1.columnType === ctx2.columnType;
   if (!nonValuesAreEqual) return false;
   if (!ctx1.values && !ctx2.values) return true;
   else if (!ctx1.values || !ctx2.values) return false;
@@ -68,7 +48,7 @@ export function inlineContextsAreEqual(
 }
 
 export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
-  if (src.type === tar.type) return false;
+  if (src.type === tar.type) return false; // Equal types cannot be within each other, just equal
   switch (src.type) {
     case InlineContextType.MetricsView:
       return src.metricsView === tar.metricsView;
@@ -79,82 +59,79 @@ export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
 }
 
 export function normalizeInlineContext(ctx: InlineContext) {
-  return Object.fromEntries(
+  const normalisedContext = Object.fromEntries(
     Object.entries(ctx).filter(([, v]) => v !== null && v !== undefined),
   ) as InlineContext;
+
+  // Fill in the `value` field based on the type of the context.`
+  switch (normalisedContext.type) {
+    case InlineContextType.MetricsView:
+      normalisedContext.value = normalisedContext.metricsView!;
+      break;
+
+    case InlineContextType.Measure:
+      normalisedContext.value = normalisedContext.measure!;
+      break;
+
+    case InlineContextType.Dimension:
+      normalisedContext.value = normalisedContext.dimension!;
+      break;
+
+    case InlineContextType.TimeRange:
+      normalisedContext.value = normalisedContext.timeRange!;
+      break;
+
+    case InlineContextType.Model:
+      normalisedContext.value = normalisedContext.model!;
+      break;
+
+    case InlineContextType.Column:
+      normalisedContext.value = normalisedContext.column!;
+      break;
+  }
+
+  return normalisedContext;
 }
 
-export type InlineContextMetadata = Record<string, MetricsViewMetadata>;
-export type MetricsViewMetadata = {
-  metricsViewSpec: V1MetricsViewSpec;
-  measures: Record<string, MetricsViewSpecMeasure>;
-  dimensions: Record<string, MetricsViewSpecDimension>;
-};
+// =============================================================================
+// Utils for converting between different formats
+// =============================================================================
 
-type ContextConfigPerType = {
-  editable: boolean;
-  getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
-  getIcon?: (ctx: InlineContext) => any | undefined;
-};
+export function convertContextToInlinePrompt(ctx: InlineContext) {
+  const parts: string[] = [];
 
-export const InlineContextConfig: Partial<
-  Record<InlineContextType, ContextConfigPerType>
-> = {
-  [InlineContextType.MetricsView]: {
-    editable: true,
-    getLabel: (ctx, meta) =>
-      meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
-    getIcon: () => resourceIconMapping[ResourceKind.MetricsView],
-  },
+  for (const key in ctx) {
+    const isComputedKey = key === "value" || key === "label";
+    const isNonStringKey = key === "values";
+    if (isComputedKey || isNonStringKey) continue;
+    if (ctx[key] !== undefined) parts.push(`${key}="${ctx[key]}"`);
+  }
 
-  [InlineContextType.TimeRange]: {
-    editable: false,
-    getLabel: (ctx) => {
-      if (!ctx.timeRange) return "";
-      const [start, end] = ctx.timeRange.split(" to ");
-      return prettyFormatResolvedV1TimeRange({
-        start: start,
-        end: end ?? start,
-      });
-    },
-  },
+  // TODO: dimension value support
 
-  [InlineContextType.Measure]: {
-    editable: true,
-    getLabel: (ctx, meta) => {
-      const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
-      return getMeasureDisplayName(mes) || ctx.measure!;
-    },
-    getIcon: () => Measure,
-  },
+  return `<${INLINE_CHAT_CONTEXT_TAG}>${parts.join(" ")}</${INLINE_CHAT_CONTEXT_TAG}>`;
+}
 
-  [InlineContextType.Dimension]: {
-    editable: true,
-    getLabel: (ctx, meta) => {
-      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
-      return getDimensionDisplayName(dim) || ctx.dimension!;
-    },
-    getIcon: () => Dimension,
-  },
+const PARTS_REGEX = /(\w+?)="([^"]+?)"/g;
 
-  [InlineContextType.DimensionValues]: {
-    editable: true,
-    getLabel: (ctx, meta) => {
-      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
-      const dimLabel = getDimensionDisplayName(dim) || ctx.dimension!;
-      return dimLabel + ": " + (ctx.values ?? []).join(", ");
-    },
-  },
+export function convertPromptValueToContext(
+  contextValue: string,
+): InlineContext | null {
+  const parts = contextValue.matchAll(PARTS_REGEX);
 
-  [InlineContextType.Model]: {
-    editable: true,
-    getLabel: (ctx) => ctx.model ?? "",
-    getIcon: () => resourceIconMapping[ResourceKind.Model],
-  },
+  const ctx = <InlineContext>{};
 
-  [InlineContextType.Column]: {
-    editable: true,
-    getLabel: (ctx) => ctx.column ?? "",
-    getIcon: (ctx) => fieldTypeToSymbol(ctx.columnType ?? ""),
-  },
-};
+  for (const [, key, value] of parts) {
+    ctx[key] = value;
+  }
+
+  if (!ctx.type) return null;
+
+  return normalizeInlineContext(ctx);
+}
+
+export function parseInlineAttr(content: string, key: string) {
+  const match = new RegExp(`${key}="([^"]+?)"`).exec(content);
+  if (!match) return null;
+  return match[1];
+}

@@ -3,7 +3,7 @@
   import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import PickerGroup from "@rilldata/web-common/features/chat/core/context/picker/PickerGroup.svelte";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
-  import { getFilterPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
+  import { getFilteredPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
   import {
     autoUpdate,
     computePosition,
@@ -22,7 +22,7 @@
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
-  const filteredOptions = getFilterPickerOptions(
+  const filteredOptions = getFilteredPickerOptions(
     { metricViews: true, files: true },
     searchTextStore,
   );
@@ -115,7 +115,7 @@
 
 <style lang="postcss">
   .inline-chat-context-dropdown {
-    @apply flex flex-col absolute top-0 left-0 p-1.5 z-50 w-[300px] max-h-[500px] overflow-auto;
+    @apply flex flex-col absolute top-0 left-0 p-1.5 z-50 w-[400px] max-h-[500px] overflow-auto;
     @apply border rounded-md bg-popover text-popover-foreground shadow-md;
   }
 

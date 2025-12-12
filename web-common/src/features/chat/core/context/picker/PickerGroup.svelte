@@ -3,7 +3,6 @@
   import { getAttrs, builderActions } from "bits-ui";
   import {
     type InlineContext,
-    InlineContextConfig,
     inlineContextIsWithin,
     inlineContextsAreEqual,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -11,6 +10,7 @@
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
+  import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
 
   export let parentOption: InlineContextPickerOption;
   export let selectedChatContext: InlineContext | null = null;
@@ -21,6 +21,7 @@
 
   $: ({ context, openStore, recentlyUsed, currentlyActive, children } =
     parentOption);
+  $: typeConfig = InlineContextConfig[context.type];
   $: resolvedChildren = children ?? [];
 
   const highlightedContextStore = highlightManager.highlightedContext;
@@ -40,13 +41,8 @@
     highlightedContext !== null &&
     inlineContextIsWithin(context, highlightedContext);
 
-  $: console.log(
-    context.value,
-    highlightedContext?.value,
-    withinParentOptionHighlighted,
-  );
-
-  $: parentIcon = InlineContextConfig[context.type]?.getIcon?.(context);
+  $: parentTypeLabel = typeConfig.typeLabel;
+  $: parentIcon = typeConfig.getIcon?.(context);
 
   $: mouseContextHighlightHandler = highlightManager.mouseOverHandler(context);
 
@@ -102,13 +98,18 @@
           <ChevronRightIcon size="12px" strokeWidth={4} />
         {/if}
       </div>
+
       <span class="context-item-label">{context.label}</span>
-      <div
-        class="context-item-keyboard-shortcut"
-        class:hidden={!parentOptionHighlighted}
-      >
-        ↑/↓
-      </div>
+
+      {#if parentOptionHighlighted}
+        <div class="context-item-keyboard-shortcut">↑/↓</div>
+        {#if parentTypeLabel}
+          <div class="context-item-type-label">
+            {parentTypeLabel}
+          </div>
+        {/if}
+      {/if}
+
       {#if recentlyUsed}
         <span class="parent-context-label">Recently asked</span>
       {:else if currentlyActive}
@@ -151,15 +152,16 @@
           {:else}
             <div class="context-item-icon"></div>
           {/if}
+
           <span class="context-item-label">{child.label}</span>
-          <div
-            class="context-item-keyboard-shortcut"
-            class:hidden={!highlighted}
-          >
-            ↑/↓
-          </div>
+
+          {#if highlighted}
+            <div class="context-item-keyboard-shortcut">↑/↓</div>
+          {/if}
         </button>
       {/each}
+    {:else}
+      <div class="contents-empty">No matches found</div>
     {/each}
   </Collapsible.Content>
 </Collapsible.Root>
@@ -170,7 +172,7 @@
   }
 
   .parent-context-label {
-    @apply text-xs font-normal text-right text-popover-foreground/60;
+    @apply min-w-24 text-xs font-normal text-right text-popover-foreground/60;
   }
 
   .context-item-label {
@@ -200,6 +202,10 @@
 
   .context-item-icon {
     @apply min-w-3.5 h-2;
+  }
+
+  .context-item-type-label {
+    @apply min-w-20 text-xs font-normal text-right text-popover-foreground/60;
   }
 
   .contents-empty {

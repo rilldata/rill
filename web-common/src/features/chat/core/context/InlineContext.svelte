@@ -2,13 +2,10 @@
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
   import { builderActions, getAttrs } from "bits-ui";
   import { ChevronDownIcon } from "lucide-svelte";
-  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
-  import {
-    InlineContextType,
-    InlineContextConfig,
-    type InlineContext,
-  } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/picker/InlineContextPicker.svelte";
+  import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
 
   type InlineContextReadonlyProps = {
     mode: "readonly";
@@ -30,23 +27,18 @@
 
   const contextMetadataStore = getInlineChatContextMetadata();
 
-  $: typeData = selectedChatContext.type
+  $: typeConfig = selectedChatContext.type
     ? InlineContextConfig[selectedChatContext.type]
     : undefined;
   $: label =
-    typeData?.getLabel(selectedChatContext!, $contextMetadataStore) ?? "";
+    typeConfig?.getLabel(selectedChatContext!, $contextMetadataStore) ?? "";
 
-  $: isMetricsViewContext =
-    selectedChatContext.type === InlineContextType.Measure ||
-    selectedChatContext.type === InlineContextType.Dimension;
-  $: metricsViewName = isMetricsViewContext
-    ? InlineContextConfig[InlineContextType.MetricsView]!.getLabel(
-        selectedChatContext,
-        $contextMetadataStore,
-      )
-    : "";
+  $: tooltip = typeConfig?.getTooltip?.(
+    selectedChatContext!,
+    $contextMetadataStore,
+  );
 
-  $: isEditableContextType = !!typeData?.editable;
+  $: isEditableContextType = !!typeConfig?.editable;
   $: isEditable = props.mode === "editable" && isEditableContextType;
 
   function toggleDropdown() {
@@ -91,7 +83,7 @@
     role="button"
     tabindex="-1"
   >
-    {#if metricsViewName}
+    {#if tooltip}
       <Tooltip.Root bind:open={tooltipOpen}>
         <Tooltip.Trigger asChild let:builder>
           <span
@@ -104,7 +96,7 @@
         </Tooltip.Trigger>
         <!-- TODO: we do not have the correct styles for tooltip. Update app wise in a future PR. -->
         <Tooltip.Content class="bg-black text-white">
-          From {metricsViewName}
+          {tooltip}
         </Tooltip.Content>
       </Tooltip.Root>
     {:else}
