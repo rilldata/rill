@@ -20,19 +20,14 @@ import {
   FromURLParamTimeDimensionMap,
   FromURLParamTimeGrainMap,
   FromURLParamViewMap,
-  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import {
-  parseRillTime,
-  validateRillTime,
-} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { getAggregationGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,

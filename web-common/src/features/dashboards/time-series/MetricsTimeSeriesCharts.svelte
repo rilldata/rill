@@ -16,7 +16,6 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
@@ -35,8 +34,12 @@
   import {
     TimeRangePreset,
     type AvailableTimeGrain,
+    type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type MetricsViewSpecMeasure,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -54,16 +57,14 @@
     updateChartInteractionStore,
   } from "./utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import {
-    getAllowedGrains,
-    isGrainAllowed,
-    V1TimeGrainToDateTimeUnit,
-  } from "@rilldata/web-common/lib/time/new-grains";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Tooltip } from "bits-ui";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { allowedGrainsForInterval } from "../time-controls/new-time-controls";
+  import type { Interval } from "luxon";
 
   const { rillTime } = featureFlags;
 
@@ -71,6 +72,13 @@
   export let workspaceWidth: number;
   export let timeSeriesWidth: number;
   export let hideStartPivotButton = false;
+  export let interval: Interval<true> | undefined;
+  export let activeTimeGrain: V1TimeGrain | undefined;
+  export let timeString: string | undefined;
+  export let showTimeComparison: boolean | undefined;
+  export let timeControlsReady: boolean;
+  export let minTimeGrain: V1TimeGrain;
+  export let selectedTimeRange: DashboardTimeControls | undefined;
 
   const {
     selectors: {
@@ -88,15 +96,8 @@
     validSpecStore,
   } = getStateManagers();
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  // const timeControlsStore = useTimeControlStore(getStateManagers());
   const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
-
-  $: ({
-    selectedTimeRange,
-    minTimeGrain,
-    showTimeComparison,
-    ready: timeControlsReady,
-  } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
 
@@ -122,9 +123,6 @@
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
 
-  $: timeString = selectedTimeRange?.name;
-
-  $: activeTimeGrain = selectedTimeRange?.interval ?? minTimeGrain;
   $: isScrubbing = $exploreState?.selectedScrubRange?.isScrubbing;
   $: isAllTime = timeString === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
@@ -271,9 +269,10 @@
     "timeseries",
   );
 
-  $: timeGrainOptions = getAllowedGrains(minTimeGrain);
+  $: timeGrainOptions = allowedGrainsForInterval(interval, minTimeGrain);
 
-  $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
+  $: grainAllowed =
+    activeTimeGrain && timeGrainOptions.includes(activeTimeGrain);
 
   $: annotationsForMeasures = renderedMeasures.map((measure) =>
     getAnnotationsForMeasure({
@@ -283,8 +282,6 @@
       selectedTimeRange,
     }),
   );
-
-  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
@@ -362,7 +359,7 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime && effectiveGrain}
+      {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger asChild let:builder>
             <button
@@ -370,8 +367,9 @@
               use:builder.action
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
-              by <b>
-                {V1TimeGrainToDateTimeUnit[effectiveGrain]}
+              by
+              <b>
+                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
               </b>
 
               <span class:-rotate-90={open} class="transition-transform">
@@ -385,7 +383,7 @@
                   <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
                     <TooltipContent>
                       <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
-                      aggregation not supported on this dashboard. Displaying by
+                      aggregation not supported. Displaying by
                       <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
                     </TooltipContent>
                   </Tooltip.Content>
@@ -555,39 +553,41 @@
               }}
             />
           {:else if formattedData && activeTimeGrain}
-            <MeasureChart
-              bind:mouseoverValue
-              {measure}
-              {showTimeDimensionDetail}
-              {isScrubbing}
-              {scrubStart}
-              {scrubEnd}
-              {exploreName}
-              data={formattedData}
-              {dimensionData}
-              annotations={annotationsForMeasures[i]}
-              zone={$exploreState?.selectedTimezone}
-              xAccessor="ts_position"
-              labelAccessor="ts"
-              timeGrain={activeTimeGrain}
-              yAccessor={measure.name}
-              xMin={startValue}
-              xMax={endValue}
-              {showComparison}
-              validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
-                ? bigNum
-                : null}
-              mouseoverTimeFormat={(value) => {
-                /** format the date according to the time grain */
+            {#key activeTimeGrain}
+              <MeasureChart
+                bind:mouseoverValue
+                {measure}
+                {showTimeDimensionDetail}
+                {isScrubbing}
+                {scrubStart}
+                {scrubEnd}
+                {exploreName}
+                data={formattedData}
+                {dimensionData}
+                annotations={annotationsForMeasures[i]}
+                zone={$exploreState?.selectedTimezone}
+                xAccessor="ts_position"
+                labelAccessor="ts"
+                timeGrain={activeTimeGrain}
+                yAccessor={measure.name}
+                xMin={startValue}
+                xMax={endValue}
+                {showComparison}
+                validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
+                  ? bigNum
+                  : null}
+                mouseoverTimeFormat={(value) => {
+                  /** format the date according to the time grain */
 
-                return activeTimeGrain
-                  ? new Date(value).toLocaleDateString(
-                      undefined,
-                      TIME_GRAIN[activeTimeGrain].formatDate,
-                    )
-                  : value.toString();
-              }}
-            />
+                  return activeTimeGrain
+                    ? new Date(value).toLocaleDateString(
+                        undefined,
+                        TIME_GRAIN[activeTimeGrain].formatDate,
+                      )
+                    : value.toString();
+                }}
+              />
+            {/key}
           {:else}
             <div class="flex items-center justify-center w-24">
               <Spinner status={EntityStatus.Running} />

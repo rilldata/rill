@@ -19,13 +19,10 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { maximumPrecisionForInterval } from "../../time-controls/new-time-controls";
+import { allowedGrainsForInterval } from "../../time-controls/new-time-controls";
 import { DateTime, Interval } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import {
-  getRangePrecision,
-  isGrainAllowed,
-} from "@rilldata/web-common/lib/time/new-grains";
+import { getRangePrecision } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "../../url-state/time-ranges/parser";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
@@ -175,30 +172,30 @@ export class DashboardStateSync {
           metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
 
         if (interval.isValid) {
-          const maxRangePrecision = maximumPrecisionForInterval(interval);
+          const allowedGrains = allowedGrainsForInterval(
+            interval,
+            minTimeGrain,
+          );
 
           const requestedPrecision =
             initExploreState.selectedTimeRange.interval;
 
-          // If the URL has not explicitly asked for a granularity
-          if (!requestedPrecision) {
-            try {
-              const parsed = parseRillTime(
-                initExploreState.selectedTimeRange.name,
-              );
-              const rangePrecision = getRangePrecision(parsed);
+          try {
+            const parsed = parseRillTime(
+              initExploreState.selectedTimeRange.name,
+            );
+            const rangePrecision = getRangePrecision(parsed);
 
-              const finalGrain = isGrainAllowed(
-                rangePrecision ?? minTimeGrain,
-                maxRangePrecision,
-              )
+            const finalGrain =
+              requestedPrecision && allowedGrains.includes(requestedPrecision)
                 ? requestedPrecision
-                : maxRangePrecision;
+                : rangePrecision && allowedGrains.includes(rangePrecision)
+                  ? rangePrecision
+                  : allowedGrains[0];
 
-              initExploreState.selectedTimeRange.interval = finalGrain;
-            } catch {
-              // no-op
-            }
+            initExploreState.selectedTimeRange.interval = finalGrain;
+          } catch {
+            // no-op
           }
         }
       }
@@ -306,29 +303,27 @@ export class DashboardStateSync {
           metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
 
         if (interval.isValid) {
-          const maxRangePrecision = maximumPrecisionForInterval(interval);
+          const allowedGrains = allowedGrainsForInterval(
+            interval,
+            minTimeGrain,
+          );
 
           const requestedPrecision = partialExplore.selectedTimeRange.interval;
 
-          // If there isn't an explicit granularity set
-          if (!requestedPrecision) {
-            try {
-              const parsed = parseRillTime(
-                partialExplore.selectedTimeRange.name,
-              );
-              const rangePrecision = getRangePrecision(parsed);
+          try {
+            const parsed = parseRillTime(partialExplore.selectedTimeRange.name);
+            const rangePrecision = getRangePrecision(parsed);
 
-              const finalGrain = isGrainAllowed(
-                rangePrecision ?? minTimeGrain,
-                maxRangePrecision,
-              )
+            const finalGrain =
+              requestedPrecision && allowedGrains.includes(requestedPrecision)
                 ? requestedPrecision
-                : maxRangePrecision;
+                : rangePrecision && allowedGrains.includes(rangePrecision)
+                  ? rangePrecision
+                  : allowedGrains[0];
 
-              partialExplore.selectedTimeRange.interval = finalGrain;
-            } catch {
-              // no-op
-            }
+            partialExplore.selectedTimeRange.interval = finalGrain;
+          } catch {
+            // no-op
           }
         }
       }

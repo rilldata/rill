@@ -7,8 +7,8 @@ import { DateTime, Interval } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
 import {
   ALL_TIME_RANGE_ALIAS,
+  allowedGrainsForInterval,
   deriveInterval,
-  maximumPrecisionForInterval,
 } from "../../dashboards/time-controls/new-time-controls";
 
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
@@ -21,7 +21,6 @@ import {
 import {
   DateTimeUnitToV1TimeGrain,
   getRangePrecision,
-  isGrainAllowed,
   minTimeGrainToDefaultTimeRange,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
@@ -248,22 +247,22 @@ export class TimeState {
       ([urlGrain, minTimeGrain, parsedRange, interval]) => {
         if (!interval) return undefined;
 
-        const maxGrainPrecision = maximumPrecisionForInterval(
-          interval,
-          minTimeGrain,
-        );
+        const allowedGrains = allowedGrainsForInterval(interval, minTimeGrain);
 
-        if (urlGrain && isGrainAllowed(urlGrain, maxGrainPrecision)) {
+        if (urlGrain && allowedGrains.includes(urlGrain)) {
           return urlGrain;
         } else if (parsedRange) {
           const parsedRangePrecision = getRangePrecision(parsedRange);
-          if (isGrainAllowed(parsedRangePrecision, maxGrainPrecision)) {
+          if (
+            parsedRangePrecision &&
+            allowedGrains.includes(parsedRangePrecision)
+          ) {
             return parsedRangePrecision;
           } else {
-            return maxGrainPrecision;
+            return allowedGrains[0];
           }
         } else {
-          return maxGrainPrecision;
+          return allowedGrains[0];
         }
       },
     );
@@ -274,8 +273,6 @@ export class TimeState {
   };
 
   onUrlChange = (searchParams: URLSearchParams) => {
-    this.urlInitialized.set(true);
-
     const { range, comparisonRange, zone, grain } =
       parseSearchParams(searchParams);
 
@@ -292,6 +289,8 @@ export class TimeState {
     if (comparisonRange) {
       this.comparisonRangeStore.set(comparisonRange);
     }
+
+    this.urlInitialized.set(true);
   };
 
   set = {

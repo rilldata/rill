@@ -66,13 +66,6 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      const timeGrain = isGrainAllowed(
-        timeControls.selectedTimeRange?.interval,
-        timeControls.minTimeGrain,
-      )
-        ? timeControls.selectedTimeRange?.interval
-        : timeControls.minTimeGrain;
-
       return createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricsViewName,
@@ -91,7 +84,7 @@ export function createMetricsViewTimeSeries(
           timeEnd: isComparison
             ? timeControls.comparisonAdjustedEnd
             : timeControls.adjustedEnd,
-          timeGranularity: timeGrain,
+          timeGranularity: timeControls.selectedTimeRange?.interval,
           timeZone: dashboardStore.selectedTimezone,
         },
         {

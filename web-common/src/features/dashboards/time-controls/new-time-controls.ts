@@ -737,25 +737,19 @@ const units: DateTimeUnit[] = [
   "year",
 ];
 
-export function maximumPrecisionForInterval(
-  interval: Interval<true>,
+export function allowedGrainsForInterval(
+  interval: Interval<true> | undefined,
   minTimeGrain?: V1TimeGrain,
-): V1TimeGrain {
-  for (const grain of units) {
-    const bucketCount = interval.length(grain);
+): V1TimeGrain[] {
+  if (!interval) return [];
+  return units
+    .filter((unit) => {
+      const grain = DateTimeUnitToV1TimeGrain[unit];
+      if (!grain) return false;
+      if (minTimeGrain && !isGrainAllowed(grain, minTimeGrain)) return false;
+      const bucketCount = interval.length(unit);
 
-    if (bucketCount <= MAX_BUCKETS) {
-      const maxGrain = DateTimeUnitToV1TimeGrain[grain];
-
-      if (maxGrain) {
-        return minTimeGrain
-          ? isGrainAllowed(maxGrain, minTimeGrain)
-            ? maxGrain
-            : minTimeGrain
-          : maxGrain;
-      }
-    }
-  }
-
-  return V1TimeGrain.TIME_GRAIN_HOUR;
+      return bucketCount <= MAX_BUCKETS && bucketCount >= 1;
+    })
+    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
 }

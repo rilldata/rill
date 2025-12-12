@@ -33,9 +33,9 @@
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
+    allowedGrainsForInterval,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
-    maximumPrecisionForInterval,
   } from "../time-controls/new-time-controls";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
@@ -49,7 +49,6 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { isGrainAllowed } from "@rilldata/web-common/lib/time/new-grains";
 
   const { rillTime } = featureFlags;
 
@@ -257,10 +256,17 @@
       activeTimeZone,
     );
 
-    const maxPrecision = maximumPrecisionForInterval(
+    const allowedGrains = allowedGrainsForInterval(
       interval,
       minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
     );
+
+    const finalGrain =
+      activeTimeGrain && allowedGrains.includes(activeTimeGrain)
+        ? activeTimeGrain
+        : grain && allowedGrains.includes(grain)
+          ? grain
+          : allowedGrains[0];
 
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
@@ -270,10 +276,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(
-        baseTimeRange,
-        isGrainAllowed(grain, maxPrecision) ? grain : maxPrecision,
-      );
+      selectRange(baseTimeRange, finalGrain);
     }
   }
 

@@ -4,10 +4,11 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { Duration } from "luxon";
+import { Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
 import { getTimeWidth } from "../transforms";
 import type { AvailableTimeGrain, TimeGrain } from "../types";
+import { allowedGrainsForInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -50,53 +51,10 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
 
 // Return time grains that are allowed for a given time range.
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
-  const timeRangeDurationMs = getTimeWidth(start, end);
-  if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_MINUTE];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_WEEK.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_MONTH.duration)
-  ) {
-    return [
-      TIME_GRAIN.TIME_GRAIN_HOUR,
-      TIME_GRAIN.TIME_GRAIN_DAY,
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-    ];
-  } else if (
-    timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_QUARTER.duration)
-  ) {
-    return [
-      TIME_GRAIN.TIME_GRAIN_DAY,
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-      TIME_GRAIN.TIME_GRAIN_MONTH,
-    ];
-  } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
-  ) {
-    return [
-      TIME_GRAIN.TIME_GRAIN_DAY,
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-      TIME_GRAIN.TIME_GRAIN_MONTH,
-      TIME_GRAIN.TIME_GRAIN_QUARTER,
-    ];
-  } else {
-    return [
-      TIME_GRAIN.TIME_GRAIN_WEEK,
-      TIME_GRAIN.TIME_GRAIN_MONTH,
-      TIME_GRAIN.TIME_GRAIN_QUARTER,
-      TIME_GRAIN.TIME_GRAIN_YEAR,
-    ];
-  }
+  const interval = Interval.fromDateTimes(start, end);
+  return allowedGrainsForInterval(interval.isValid ? interval : undefined).map(
+    (g) => TIME_GRAIN[g],
+  );
 }
 
 const APITimeGrainOrder: V1TimeGrain[] = [

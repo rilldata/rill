@@ -3,7 +3,6 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
-
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     getAllowedTimeGrains,
