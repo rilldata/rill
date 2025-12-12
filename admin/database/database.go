@@ -368,6 +368,7 @@ type Organization struct {
 	DisplayName                         string `db:"display_name"`
 	Description                         string
 	LogoAssetID                         *string   `db:"logo_asset_id"`
+	LogoDarkAssetID                     *string   `db:"logo_dark_asset_id"`
 	FaviconAssetID                      *string   `db:"favicon_asset_id"`
 	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
@@ -394,6 +395,7 @@ type InsertOrganizationOptions struct {
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
+	LogoDarkAssetID                     *string
 	FaviconAssetID                      *string
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
@@ -416,6 +418,7 @@ type UpdateOrganizationOptions struct {
 	DisplayName                         string
 	Description                         string
 	LogoAssetID                         *string
+	LogoDarkAssetID                     *string
 	FaviconAssetID                      *string
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`

@@ -1517,6 +1517,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for LogoAssetId
 	}
 
+	if m.LogoDarkAssetId != nil {
+		// no validation rules for LogoDarkAssetId
+	}
+
 	if m.FaviconAssetId != nil {
 		// no validation rules for FaviconAssetId
 	}
@@ -41014,6 +41018,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for LogoUrl
+
+	// no validation rules for LogoDarkUrl
 
 	// no validation rules for FaviconUrl
 

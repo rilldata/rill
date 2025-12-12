@@ -465,6 +465,8 @@ paths:
                 type: string
               logoAssetId:
                 type: string
+              logoDarkAssetId:
+                type: string
               faviconAssetId:
                 type: string
               thumbnailAssetId:
@@ -5542,6 +5544,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      logoDarkUrl:
         type: string
       faviconUrl:
         type: string
