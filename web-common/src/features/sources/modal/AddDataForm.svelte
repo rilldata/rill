@@ -26,6 +26,9 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import AddDataExplorerStep from "./AddDataExplorerStep.svelte";
+  import { goto } from "$app/navigation";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -267,7 +270,9 @@
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =
-    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
+    isConnectorForm &&
+    (showSaveAnyway || clickhouseShowSaveAnyway) &&
+    stepState.step !== "explorer";
   $: saveAnywayLoading = isClickhouse
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
@@ -306,103 +311,132 @@
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
-    <div
-      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
-    >
-      {#if connector.name === "clickhouse"}
-        <AddClickHouseForm
-          {connector}
-          {onClose}
-          setError={(error, details) => {
-            clickhouseError = error;
-            clickhouseErrorDetails = details;
-          }}
-          bind:formId={clickhouseFormId}
-          bind:isSubmitting={clickhouseSubmitting}
-          bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:connectorType={clickhouseConnectorType}
-          bind:connectionTab
-          bind:paramsForm={clickhouseParamsForm}
-          bind:dsnForm={clickhouseDsnForm}
-          bind:showSaveAnyway={clickhouseShowSaveAnyway}
-        />
-      {:else if hasDsnFormOption}
-        <Tabs
-          bind:value={connectionTab}
-          options={CONNECTION_TAB_OPTIONS}
-          disableMarginTop
-        >
-          <TabsContent value="parameters">
+    {#if stepState.step === "explorer"}
+      <AddDataExplorerStep
+        {connector}
+        formHeight={formManager.formHeight}
+        onBack={() => formManager.handleBack(onBack)}
+        onModelCreated={async (path) => {
+          await goto(`/files${path}`);
+          onClose();
+        }}
+      />
+    {:else}
+      <div
+        class={cn(
+          "flex flex-col flex-grow overflow-y-auto p-6",
+          formManager.formHeight,
+        )}
+      >
+        {#if connector.name === "clickhouse"}
+          <AddClickHouseForm
+            {connector}
+            {onClose}
+            setError={(error, details) => {
+              clickhouseError = error;
+              clickhouseErrorDetails = details;
+            }}
+            bind:formId={clickhouseFormId}
+            bind:isSubmitting={clickhouseSubmitting}
+            bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
+            bind:connectorType={clickhouseConnectorType}
+            bind:connectionTab
+            bind:paramsForm={clickhouseParamsForm}
+            bind:dsnForm={clickhouseDsnForm}
+            bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          />
+        {:else if hasDsnFormOption}
+          <Tabs
+            bind:value={connectionTab}
+            options={CONNECTION_TAB_OPTIONS}
+            disableMarginTop
+          >
+            <TabsContent value="parameters">
+              <AddDataFormSection
+                id={paramsFormId}
+                enhance={paramsEnhance}
+                onSubmit={paramsSubmit}
+              >
+                <FormRenderer
+                  properties={filteredParamsProperties}
+                  form={paramsForm}
+                  errors={$paramsErrors}
+                  {onStringInputChange}
+                  uploadFile={handleFileUpload}
+                />
+              </AddDataFormSection>
+            </TabsContent>
+            <TabsContent value="dsn">
+              <AddDataFormSection
+                id={dsnFormId}
+                enhance={dsnEnhance}
+                onSubmit={dsnSubmit}
+              >
+                <FormRenderer
+                  properties={filteredDsnProperties}
+                  form={dsnForm}
+                  errors={$dsnErrors}
+                  {onStringInputChange}
+                  uploadFile={handleFileUpload}
+                />
+              </AddDataFormSection>
+            </TabsContent>
+          </Tabs>
+        {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
+          <!-- Connector with only DSN - show DSN form directly -->
+          <AddDataFormSection
+            id={dsnFormId}
+            enhance={dsnEnhance}
+            onSubmit={dsnSubmit}
+          >
+            <FormRenderer
+              properties={filteredDsnProperties}
+              form={dsnForm}
+              errors={$dsnErrors}
+              {onStringInputChange}
+              uploadFile={handleFileUpload}
+            />
+          </AddDataFormSection>
+        {:else if isMultiStepConnector}
+          {#if stepState.step === "connector"}
+            <!-- GCS Step 1: Connector configuration -->
+            <AddDataFormSection
+              id={paramsFormId}
+              enhance={paramsEnhance}
+              onSubmit={paramsSubmit}
+            >
+              <GCSMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            </AddDataFormSection>
+          {:else}
+            <!-- GCS Step 2: Source configuration -->
             <AddDataFormSection
               id={paramsFormId}
               enhance={paramsEnhance}
               onSubmit={paramsSubmit}
             >
               <FormRenderer
-                properties={filteredParamsProperties}
+                properties={stepProperties}
                 form={paramsForm}
                 errors={$paramsErrors}
                 {onStringInputChange}
                 uploadFile={handleFileUpload}
               />
             </AddDataFormSection>
-          </TabsContent>
-          <TabsContent value="dsn">
-            <AddDataFormSection
-              id={dsnFormId}
-              enhance={dsnEnhance}
-              onSubmit={dsnSubmit}
-            >
-              <FormRenderer
-                properties={filteredDsnProperties}
-                form={dsnForm}
-                errors={$dsnErrors}
-                {onStringInputChange}
-                uploadFile={handleFileUpload}
-              />
-            </AddDataFormSection>
-          </TabsContent>
-        </Tabs>
-      {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
-        <!-- Connector with only DSN - show DSN form directly -->
-        <AddDataFormSection
-          id={dsnFormId}
-          enhance={dsnEnhance}
-          onSubmit={dsnSubmit}
-        >
-          <FormRenderer
-            properties={filteredDsnProperties}
-            form={dsnForm}
-            errors={$dsnErrors}
-            {onStringInputChange}
-            uploadFile={handleFileUpload}
-          />
-        </AddDataFormSection>
-      {:else if isMultiStepConnector}
-        {#if stepState.step === "connector"}
-          <!-- GCS Step 1: Connector configuration -->
-          <AddDataFormSection
-            id={paramsFormId}
-            enhance={paramsEnhance}
-            onSubmit={paramsSubmit}
-          >
-            <GCSMultiStepForm
-              properties={filteredParamsProperties}
-              {paramsForm}
-              paramsErrors={$paramsErrors}
-              {onStringInputChange}
-              {handleFileUpload}
-            />
-          </AddDataFormSection>
+          {/if}
         {:else}
-          <!-- GCS Step 2: Source configuration -->
           <AddDataFormSection
             id={paramsFormId}
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
             <FormRenderer
-              properties={stepProperties}
+              properties={filteredParamsProperties}
               form={paramsForm}
               errors={$paramsErrors}
               {onStringInputChange}
@@ -410,104 +444,92 @@
             />
           </AddDataFormSection>
         {/if}
-      {:else}
-        <AddDataFormSection
-          id={paramsFormId}
-          enhance={paramsEnhance}
-          onSubmit={paramsSubmit}
-        >
-          <FormRenderer
-            properties={filteredParamsProperties}
-            form={paramsForm}
-            errors={$paramsErrors}
-            {onStringInputChange}
-            uploadFile={handleFileUpload}
-          />
-        </AddDataFormSection>
-      {/if}
-    </div>
-
-    <!-- LEFT FOOTER -->
-    <div
-      class="w-full bg-surface border-t border-gray-200 p-6 flex justify-between gap-2"
-    >
-      <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
-        >Back</Button
-      >
-
-      <div class="flex gap-2">
-        {#if shouldShowSaveAnywayButton}
-          <Button
-            disabled={false}
-            loading={saveAnywayLoading}
-            loadingCopy="Saving..."
-            onClick={handleSaveAnyway}
-            type="secondary"
-          >
-            Save Anyway
-          </Button>
-        {/if}
-
-        {#if isMultiStepConnector && stepState.step === "connector"}
-          <Button onClick={() => formManager.handleSkip()} type="secondary"
-            >Skip</Button
-          >
-        {/if}
-
-        <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
-          loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting
-            : submitting}
-          loadingCopy={connector.name === "clickhouse"
-            ? "Connecting..."
-            : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm
-          type="primary"
-        >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-          })}
-        </Button>
       </div>
-    </div>
+
+      <!-- LEFT FOOTER -->
+      <div
+        class="w-full bg-surface border-t border-gray-200 p-6 flex justify-between gap-2"
+      >
+        <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
+          >Back</Button
+        >
+
+        <div class="flex gap-2">
+          {#if shouldShowSaveAnywayButton}
+            <Button
+              disabled={false}
+              loading={saveAnywayLoading}
+              loadingCopy="Saving..."
+              onClick={handleSaveAnyway}
+              type="secondary"
+            >
+              Save Anyway
+            </Button>
+          {/if}
+
+          {#if isMultiStepConnector && stepState.step === "connector"}
+            <Button onClick={() => formManager.handleSkip()} type="secondary"
+              >Skip</Button
+            >
+          {/if}
+
+          <Button
+            disabled={connector.name === "clickhouse"
+              ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+              : submitting || isSubmitDisabled}
+            loading={connector.name === "clickhouse"
+              ? clickhouseSubmitting
+              : submitting}
+            loadingCopy={connector.name === "clickhouse"
+              ? "Connecting..."
+              : "Testing connection..."}
+            form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+            submitForm
+            type="primary"
+          >
+            {formManager.getPrimaryButtonLabel({
+              isConnectorForm,
+              step: stepState.step,
+              submitting,
+              clickhouseConnectorType,
+              clickhouseSubmitting,
+            })}
+          </Button>
+        </div>
+      </div>
+    {/if}
   </div>
 
   <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
-  >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (onlyDsn || connectionTab === "dsn"
-            ? dsnErrorDetails
-            : paramsErrorDetails) ??
-          ""}
+  {#if stepState.step !== "explorer"}
+    <div
+      class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
+    >
+      {#if dsnError || paramsError || clickhouseError}
+        <SubmissionError
+          message={clickhouseError ??
+            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+            ""}
+          details={clickhouseErrorDetails ??
+            (onlyDsn || connectionTab === "dsn"
+              ? dsnErrorDetails
+              : paramsErrorDetails) ??
+            ""}
+        />
+      {/if}
+
+      <YamlPreview
+        title={isMultiStepConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
       />
-    {/if}
 
-    <YamlPreview
-      title={isMultiStepConnector
-        ? stepState.step === "connector"
-          ? "Connector preview"
-          : "Model preview"
-        : isSourceForm
-          ? "Model preview"
-          : "Connector preview"}
-      yaml={yamlPreview}
-    />
-
-    <NeedHelpText {connector} />
-  </div>
+      <NeedHelpText {connector} />
+    </div>
+  {/if}
 </div>

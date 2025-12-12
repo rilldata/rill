@@ -29,6 +29,13 @@
 
   $: expandedStore = store.getItem(connector, database, databaseSchema, table);
   $: showSchema = $expandedStore;
+  $: selectedStore = store.isSelected(
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
+  $: isSelected = $selectedStore;
 
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
@@ -62,6 +69,7 @@
   <div
     class:pl-[58px]={database || !allowShowSchema}
     class="table-entry-header pl-10"
+    class:selected={isSelected}
   >
     {#if allowShowSchema}
       <button
@@ -150,6 +158,10 @@
 
   .open {
     @apply bg-slate-100;
+  }
+
+  .selected {
+    @apply bg-indigo-50;
   }
 
   .clickable-text {
