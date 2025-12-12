@@ -123,87 +123,56 @@
 
 <style lang="postcss">
   .conversation-sidebar {
+    @apply flex flex-col shrink-0 min-h-0 overflow-hidden;
+    @apply bg-surface border-r border-border;
+    @apply transition-[width] duration-200 ease-in-out;
     width: 280px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    min-height: 0;
-    transition: width 0.2s ease-in-out;
-    overflow: hidden;
   }
 
   .conversation-sidebar.collapsed {
     width: 56px;
   }
 
-  /* Collapsed state actions */
   .collapsed-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    align-items: center;
+    @apply flex flex-col gap-2 p-3 items-center;
   }
 
-  /* Expanded state header */
   .conversation-sidebar-header {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border);
+    @apply p-3 border-b border-border;
   }
 
   .header-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+    @apply flex gap-2 items-center;
   }
 
-  /* Custom styling for new conversation button */
   :global(.new-conversation-btn) {
     flex: 1 !important;
   }
 
   .conversation-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.25rem;
-    min-height: 0;
+    @apply flex-1 overflow-y-auto p-1 min-h-0;
   }
 
   .conversation-sidebar-footer {
-    flex-shrink: 0;
-    padding: 0.75rem;
-    border-top: 1px solid var(--border);
-    margin-top: auto;
+    @apply shrink-0 p-3 border-t border-border mt-auto;
   }
 
   .loading-conversations {
-    padding: 0.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    @apply p-2 flex justify-center items-center;
   }
 
   .conversation-item {
-    display: block;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.125rem;
-    background: transparent;
-    border: none;
-    border-radius: 0.375rem;
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    text-decoration: none;
+    @apply block w-full py-2 px-3 mb-0.5;
+    @apply bg-transparent border-none rounded-md;
+    @apply text-left cursor-pointer no-underline;
     color: inherit;
     font-family: inherit;
     font-size: inherit;
+    @apply transition-colors duration-200;
   }
 
   .conversation-item:hover {
-    background: var(--muted);
+    @apply bg-muted;
   }
 
   .conversation-item.active {
@@ -211,18 +180,11 @@
   }
 
   .conversation-title {
-    font-size: 0.8rem;
-    color: #374151;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    @apply text-xs text-gray-700 truncate;
   }
 
   .no-conversations {
-    padding: 1.5rem 1rem;
-    text-align: center;
-    color: #6b7280;
-    font-size: 0.8rem;
+    @apply py-6 px-4 text-center text-gray-500 text-xs;
   }
 
   /* Responsive behavior */

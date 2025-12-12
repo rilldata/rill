@@ -13,10 +13,6 @@
 
   import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
 
-  function toggleSidebar() {
-    conversationSidebarCollapsed.update((collapsed) => !collapsed);
-  }
-
   $: ({ instanceId } = $runtime);
 
   $: conversationManager = getConversationManager(instanceId, {
@@ -25,6 +21,14 @@
 
   let chatInputComponent: ChatInput;
 
+  function toggleSidebar() {
+    conversationSidebarCollapsed.update((collapsed) => !collapsed);
+  }
+
+  function onMessageSend() {
+    chatInputComponent?.focusInput();
+  }
+
   // Focus on mount with a small delay for component initialization
   onMount(() => {
     // Give the component tree time to fully initialize
@@ -32,10 +36,6 @@
       chatInputComponent?.focusInput();
     }, 100);
   });
-
-  function onMessageSend() {
-    chatInputComponent?.focusInput();
-  }
 
   // Clean up conversation manager resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
