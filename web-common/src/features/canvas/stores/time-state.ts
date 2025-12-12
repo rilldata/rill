@@ -262,8 +262,6 @@ export class TimeState {
   };
 
   onUrlChange = (searchParams: URLSearchParams) => {
-    this.urlInitialized.set(true);
-
     const { range, comparisonRange, zone, grain } =
       parseSearchParams(searchParams);
 
@@ -280,6 +278,8 @@ export class TimeState {
     if (comparisonRange) {
       this.comparisonRangeStore.set(comparisonRange);
     }
+
+    this.urlInitialized.set(true);
   };
 
   set = {
