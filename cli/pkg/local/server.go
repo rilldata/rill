@@ -556,6 +556,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			config := &gitutil.Config{
 				Remote:        projResp.Project.GitRemote,
 				DefaultBranch: projResp.Project.ProdBranch,
+				Subpath:       projResp.Project.Subpath,
 			}
 			err = s.app.ch.CommitAndSafePush(ctx, reporoot, config, "", author, "1")
 			if err != nil {

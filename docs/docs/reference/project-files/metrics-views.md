@@ -82,6 +82,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`description`** - _[string]_ - a freeform text description of the dimension 
 
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty) 
+
   - **`column`** - _[string]_ - a categorical column 
 
   - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
@@ -101,6 +103,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
 
   - **`description`** - _[string]_ - a freeform text description of the measure 
+
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the measure (defaults to empty) 
 
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 
@@ -318,9 +322,25 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
       - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
 
-        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
 
-        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`light`** - _[object]_ - Light theme color configuration 
+
+        - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+
+      - **`dark`** - _[object]_ - Dark theme color configuration 
+
+        - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
 
   - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'. 
 

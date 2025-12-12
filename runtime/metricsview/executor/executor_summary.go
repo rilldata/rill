@@ -179,6 +179,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		Args:             args,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute dimension summary query: %w", err)

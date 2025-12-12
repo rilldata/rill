@@ -66,6 +66,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 		Args:             args,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultInteractiveTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return err

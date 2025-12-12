@@ -70,6 +70,10 @@ export class MeasureSelection {
     return Boolean(get(this.measure));
   }
 
+  public isRangeSelection() {
+    return Boolean(get(this.end));
+  }
+
   public startAnomalyExplanationChat(metricsView: string) {
     if (!this.hasSelection()) return;
     const measure = get(this.measure)!;
