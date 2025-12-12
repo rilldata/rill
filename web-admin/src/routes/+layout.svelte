@@ -149,7 +149,7 @@
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
         readProjects={organizationPermissions?.readProjects}
         {organizationLogoUrl}
-        organizationLogoDarkUrl={organizationLogoDarkUrl}
+        {organizationLogoDarkUrl}
         {planDisplayName}
       />
 
