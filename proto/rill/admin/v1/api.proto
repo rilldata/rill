@@ -1216,6 +1216,7 @@ message UpdateOrganizationRequest {
   optional string new_name = 3;
   optional string display_name = 5;
   optional string logo_asset_id = 6;
+  optional string logo_dark_asset_id = 18;
   optional string favicon_asset_id = 7;
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
@@ -1492,6 +1493,8 @@ message GetIFrameRequest {
   string resource = 5;
   // Theme to use for the embedded resource.
   string theme = 12;
+  // Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".
+  string theme_mode = 15 [(validate.rules).string = {ignore_empty: true, in: ["light", "dark", "system"]}];
   // Navigation denotes whether navigation between different resources should be enabled in the embed.
   bool navigation = 13;
   // Blob containing UI state for rendering the initial embed. Not currently supported.
@@ -2957,6 +2960,7 @@ message Organization {
   string display_name = 11;
   string description = 3;
   string logo_url = 12;
+  string logo_dark_url = 18;
   string favicon_url = 13;
   string thumbnail_url = 17;
   string custom_domain = 10;

@@ -752,6 +752,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["theme"] = req.Theme
 	}
 
+	if req.ThemeMode != "" {
+		iframeQuery["theme_mode"] = req.ThemeMode
+	}
+
 	if req.Navigation {
 		iframeQuery["navigation"] = "true"
 	}

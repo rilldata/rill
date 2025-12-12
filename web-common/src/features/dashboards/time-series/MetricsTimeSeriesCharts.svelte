@@ -283,6 +283,8 @@
     }),
   );
 
+  let grainDropdownOpen = false;
+
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
@@ -327,10 +329,15 @@
     );
   }
 
-  let open = false;
+  function maybeClearMeasureSelection() {
+    // Range selection should only clear when scrub range is cleared.
+    if (!measureSelection.isRangeSelection()) {
+      measureSelection.clear();
+    }
+  }
 </script>
 
-<svelte:window on:click={() => measureSelection.clear()} />
+<svelte:window on:click={maybeClearMeasureSelection} />
 
 <TimeSeriesChartContainer
   enableFullWidth={showTimeDimensionDetail}
@@ -360,7 +367,7 @@
       />
 
       {#if $rillTime && activeTimeGrain}
-        <DropdownMenu.Root bind:open>
+        <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild let:builder>
             <button
               {...builder}
@@ -371,8 +378,10 @@
               <b>
                 {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
               </b>
-
-              <span class:-rotate-90={open} class="transition-transform">
+              <span
+                class:-rotate-90={grainDropdownOpen}
+                class="transition-transform"
+              >
                 <CaretDownIcon />
               </span>
               {#if !grainAllowed && minTimeGrain && activeTimeGrain}
