@@ -181,7 +181,15 @@
         <div class="flex flex-col gap-y-1">
           <Dialog.Title>Connect to GitHub</Dialog.Title>
           <Dialog.Description>
-            Connect this project to a new repo.
+            Enable version control and collaboration for your project.
+            <a
+              href="https://docs.rilldata.com/deploy/deploy-dashboard/github-101"
+              target="_blank"
+              rel="noreferrer noopener"
+              class="text-primary-600 hover:underline"
+            >
+              Learn more
+            </a>
           </Dialog.Description>
         </div>
       </div>

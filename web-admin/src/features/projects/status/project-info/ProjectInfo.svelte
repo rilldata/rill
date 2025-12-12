@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import InfoRowAi from "./InfoRowAi.svelte";
   import InfoRowDeployment from "./InfoRowDeployment.svelte";
-  import InfoRowGithub from "./InfoRowGithub.svelte";
+  import InfoRowGit from "./InfoRowGit.svelte";
   import InfoRowOlap from "./InfoRowOlap.svelte";
 
   $: organization = $page.params.organization;
@@ -11,7 +11,7 @@
 
 <dl class="info-list">
   <InfoRowDeployment {organization} {project} />
-  <InfoRowGithub {organization} {project} />
+  <InfoRowGit {organization} {project} />
   <InfoRowOlap />
   <InfoRowAi />
 </dl>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { GithubAccessManager } from "@rilldata/web-admin/features/projects/github/GithubAccessManager";
   import GithubConnectionDialog from "@rilldata/web-admin/features/projects/github/GithubConnectionDialog.svelte";
   import { useGithubLastSynced } from "@rilldata/web-admin/features/projects/selectors";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
@@ -18,8 +17,6 @@
   export let project: string;
 
   let dialogOpen = false;
-
-  const githubAccessManager = new GithubAccessManager();
 
   $: ({ instanceId } = $runtime);
 
@@ -53,7 +50,7 @@
   }
 </script>
 
-<InfoRow label="GitHub">
+<InfoRow label="Git">
   {#if isLoading}
     <Spinner status={EntityStatus.Running} size="14px" />
   {:else if error}
@@ -81,18 +78,14 @@
       {/if}
     </div>
   {:else}
-    <div class="not-connected-content">
-      <span class="not-connected-text">Not connected</span>
-      <button
-        class="connect-link"
-        on:click={() => {
-          void githubAccessManager.ensureGithubAccess();
-          dialogOpen = true;
-        }}
-      >
-        Connect →
-      </button>
-    </div>
+    <button
+      class="connect-link"
+      on:click={() => {
+        dialogOpen = true;
+      }}
+    >
+      Connect →
+    </button>
   {/if}
 </InfoRow>
 
@@ -130,19 +123,11 @@
     @apply text-gray-500 text-xs;
   }
 
-  .not-connected-content {
-    @apply flex items-center gap-x-2;
-  }
-
-  .not-connected-text {
-    @apply text-gray-600;
-  }
-
   .connect-link {
-    @apply text-primary-600;
-    @apply cursor-pointer;
     @apply bg-transparent border-none p-0;
     @apply text-sm font-medium;
+    @apply text-primary-600;
+    @apply cursor-pointer;
   }
 
   .connect-link:hover {
