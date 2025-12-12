@@ -1,6 +1,7 @@
 import { humanReadableErrorMessage } from "../errors/errors";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
+import type { MultiStepFormConfig } from "./types";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.
@@ -81,6 +82,45 @@ export function hasOnlyDsn(
   const hasDsn = props.some((p) => p.key === "dsn");
   const hasOthers = props.some((p) => p.key !== "dsn");
   return hasDsn && !hasOthers;
+}
+
+/**
+ * Returns true when the active multi-step auth method has missing or invalid
+ * required fields. Falls back to configured default/first auth method.
+ */
+export function isMultiStepConnectorDisabled(
+  config: MultiStepFormConfig | null,
+  selectedMethod: string,
+  paramsFormValue: Record<string, unknown>,
+  paramsFormErrors: Record<string, unknown>,
+) {
+  if (!config) return true;
+
+  const options = config.authOptions ?? [];
+  const hasValidSelection = options.some((opt) => opt.value === selectedMethod);
+  const method =
+    (hasValidSelection && selectedMethod) ||
+    config.defaultAuthMethod ||
+    options[0]?.value;
+
+  if (!method) return true;
+
+  // Selecting "public" should always enable the button for multi-step auth flows.
+  if (method === "public") return false;
+
+  const fields = config.authFieldGroups?.[method] || [];
+  // Unknown auth methods or ones without fields stay disabled.
+  if (!fields.length) return true;
+
+  return !fields.every((field) => {
+    if (field.optional ?? false) return true;
+
+    const value = paramsFormValue[field.id];
+    const errorsForField = paramsFormErrors[field.id] as any;
+    const hasErrors = Boolean(errorsForField?.length);
+
+    return !isEmpty(value) && !hasErrors;
+  });
 }
 
 /**

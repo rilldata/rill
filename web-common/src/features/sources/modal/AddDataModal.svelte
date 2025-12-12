@@ -121,7 +121,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
-    selectedConnector?.name === "gcs" ||
+    selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
