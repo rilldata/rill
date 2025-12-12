@@ -3,6 +3,8 @@
   Messages are displayed in the exact order they were received.
 -->
 <script lang="ts">
+  import { builderActions, getAttrs } from "bits-ui";
+  import * as Collapsible from "../../../../../components/collapsible";
   import Brain from "../../../../../components/icons/Brain.svelte";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
@@ -18,9 +20,14 @@
   let isExpanded = true;
   let hasUserInteracted = false;
 
-  // Auto-collapse when thinking completes, unless user has interacted
-  $: if (block.isComplete && !hasUserInteracted) {
-    isExpanded = false;
+  // Track completion state to detect transition
+  let wasComplete = false;
+  $: {
+    // Auto-collapse only on the transition to complete, not continuously
+    if (block.isComplete && !wasComplete && !hasUserInteracted) {
+      isExpanded = false;
+    }
+    wasComplete = block.isComplete;
   }
 
   function formatDuration(seconds: number): string {
@@ -38,57 +45,57 @@
     return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ${remainingSeconds} ${remainingSeconds === 1 ? "second" : "seconds"}`;
   }
 
-  function toggleExpanded() {
+  function onUserInteraction() {
     hasUserInteracted = true;
-    isExpanded = !isExpanded;
   }
 </script>
 
-<div class="thinking-block">
-  <button class="thinking-header" on:click={toggleExpanded}>
-    <div class="thinking-icon">
-      {#if isExpanded}
-        <CaretDownIcon size="14" color="currentColor" />
-      {:else}
-        <Brain />
-      {/if}
-    </div>
-    <div class="thinking-title">
-      {#if block.isComplete}
-        Thought for {formatDuration(block.duration)}
-      {:else}
-        <AnimatedDots>Thinking</AnimatedDots>
-      {/if}
-    </div>
-  </button>
-
-  {#if isExpanded}
-    <div class="thinking-messages">
-      {#each block.messages as msg (msg.id)}
-        {#if msg.type === MessageType.PROGRESS}
-          {#if msg.contentData}
-            <div class="thinking-content">
-              <Markdown content={msg.contentData} />
-            </div>
-          {/if}
-        {:else if msg.type === MessageType.CALL}
-          <ToolCall
-            message={msg}
-            resultMessage={block.resultMessagesByParentId.get(msg.id)}
-            {tools}
-            variant="inline"
-          />
+<Collapsible.Root bind:open={isExpanded} class="w-full max-w-full self-start">
+  <Collapsible.Trigger asChild let:builder>
+    <button
+      class="thinking-header"
+      {...getAttrs([builder])}
+      use:builderActions={{ builders: [builder] }}
+      on:click={onUserInteraction}
+    >
+      <div class="thinking-icon">
+        {#if isExpanded}
+          <CaretDownIcon size="14" color="currentColor" />
+        {:else}
+          <Brain />
         {/if}
-      {/each}
-    </div>
-  {/if}
-</div>
+      </div>
+      <div class="thinking-title">
+        {#if block.isComplete}
+          Thought for {formatDuration(block.duration)}
+        {:else}
+          <AnimatedDots>Thinking</AnimatedDots>
+        {/if}
+      </div>
+    </button>
+  </Collapsible.Trigger>
+
+  <Collapsible.Content transition={undefined} class="pl-5 flex flex-col gap-0">
+    {#each block.messages as msg (msg.id)}
+      {#if msg.type === MessageType.PROGRESS}
+        {#if msg.contentData}
+          <div class="thinking-content">
+            <Markdown content={msg.contentData} />
+          </div>
+        {/if}
+      {:else if msg.type === MessageType.CALL}
+        <ToolCall
+          message={msg}
+          resultMessage={block.resultMessagesByParentId.get(msg.id)}
+          {tools}
+          variant="inline"
+        />
+      {/if}
+    {/each}
+  </Collapsible.Content>
+</Collapsible.Root>
 
 <style lang="postcss">
-  .thinking-block {
-    @apply w-full max-w-full self-start;
-  }
-
   .thinking-header {
     @apply w-full flex items-center gap-1.5 py-1;
     @apply bg-transparent border-none cursor-pointer;
@@ -105,10 +112,6 @@
 
   .thinking-title {
     @apply flex-1 text-left font-normal;
-  }
-
-  .thinking-messages {
-    @apply pl-5 flex flex-col gap-0;
   }
 
   .thinking-content {

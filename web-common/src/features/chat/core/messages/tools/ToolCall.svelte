@@ -6,7 +6,9 @@
   - "block": Before output blocks like ChartBlock/FileDiffBlock (always complete)
 -->
 <script lang="ts">
+  import { builderActions, getAttrs } from "bits-ui";
   import CodeBlock from "../../../../../components/code-block/CodeBlock.svelte";
+  import * as Collapsible from "../../../../../components/collapsible";
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import LoadingSpinner from "../../../../../components/icons/LoadingSpinner.svelte";
   import type { V1Message, V1Tool } from "../../../../../runtime-client";
@@ -50,10 +52,6 @@
   $: requestContent = formatContent(message);
   $: responseContent = resultMessage ? formatContent(resultMessage) : "";
 
-  function toggleExpanded() {
-    isExpanded = !isExpanded;
-  }
-
   function formatContent(msg: V1Message): string {
     const rawContent = msg.contentData || "";
 
@@ -73,77 +71,77 @@
 </script>
 
 {#if !isHidden}
-  <div
-    class="tool-call"
-    class:inline={variant === "inline"}
-    class:block={variant === "block"}
+  <Collapsible.Root
+    bind:open={isExpanded}
+    class="tool-call {variant === 'block' ? 'block' : 'inline'}"
   >
-    <button class="tool-button" on:click={toggleExpanded}>
-      <div class="tool-icon">
-        {#if !hasResult && !isExpanded}
-          <LoadingSpinner size="14px" />
-        {:else if isExpanded}
-          <CaretDownIcon size="14" />
-        {:else}
-          <svelte:component this={ToolIcon} size="14" />
-        {/if}
-      </div>
-      <div class="tool-name">
-        {toolDisplayName}
-      </div>
-    </button>
-
-    {#if isExpanded}
-      <div class="tool-content">
-        <div class="tool-tabs">
-          <button
-            class="tool-tab"
-            class:active={activeTab === "request"}
-            on:click={() => (activeTab = "request")}
-          >
-            Request
-          </button>
-          <button
-            class="tool-tab"
-            class:active={activeTab === "response"}
-            on:click={() => (activeTab = "response")}
-          >
-            {isError ? "Error" : "Response"}
-          </button>
-        </div>
-
-        <div class="tool-tab-content">
-          {#if activeTab === "request"}
-            <div class="tool-code">
-              <CodeBlock code={requestContent} language="json" showCopyButton />
-            </div>
-          {:else if hasResult}
-            <div class="tool-code">
-              <CodeBlock
-                code={responseContent}
-                language="json"
-                showCopyButton
-              />
-            </div>
+    <Collapsible.Trigger asChild let:builder>
+      <button
+        class="tool-button"
+        {...getAttrs([builder])}
+        use:builderActions={{ builders: [builder] }}
+      >
+        <div class="tool-icon">
+          {#if !hasResult && !isExpanded}
+            <LoadingSpinner size="14px" />
+          {:else if isExpanded}
+            <CaretDownIcon size="14" />
           {:else}
-            <div class="tool-loading">
-              <LoadingSpinner size="0.875rem" />
-              <span>Waiting for response...</span>
-            </div>
+            <svelte:component this={ToolIcon} size="14" />
           {/if}
         </div>
+        <div class="tool-name">
+          {toolDisplayName}
+        </div>
+      </button>
+    </Collapsible.Trigger>
+
+    <Collapsible.Content transition={undefined} class="tool-content">
+      <div class="tool-tabs">
+        <button
+          class="tool-tab"
+          class:active={activeTab === "request"}
+          on:click={() => (activeTab = "request")}
+        >
+          Request
+        </button>
+        <button
+          class="tool-tab"
+          class:active={activeTab === "response"}
+          on:click={() => (activeTab = "response")}
+        >
+          {isError ? "Error" : "Response"}
+        </button>
       </div>
-    {/if}
-  </div>
+
+      <div class="tool-tab-content">
+        {#if activeTab === "request"}
+          <div class="tool-code">
+            <CodeBlock code={requestContent} language="json" showCopyButton />
+          </div>
+        {:else if hasResult}
+          <div class="tool-code">
+            <CodeBlock code={responseContent} language="json" showCopyButton />
+          </div>
+        {:else}
+          <div class="tool-loading">
+            <LoadingSpinner size="0.875rem" />
+            <span>Waiting for response...</span>
+          </div>
+        {/if}
+      </div>
+    </Collapsible.Content>
+  </Collapsible.Root>
 {/if}
 
 <style lang="postcss">
-  .tool-call {
+  /* Styles for Collapsible.Root - needs :global since it's a child component */
+  :global(.tool-call) {
     @apply w-full max-w-full self-start;
   }
 
   /* Block variant: spacing before the output that follows */
-  .tool-call.block {
+  :global(.tool-call.block) {
     @apply mb-2;
   }
 
@@ -165,8 +163,8 @@
     @apply font-normal flex-1 text-left;
   }
 
-  /* Expanded content - same visual treatment for both variants */
-  .tool-content {
+  /* Styles for Collapsible.Content - needs :global since it's a child component */
+  :global(.tool-content) {
     @apply pt-1 ml-5;
   }
 
