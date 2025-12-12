@@ -193,7 +193,8 @@ export class DashboardStateSync {
                   ? rangePrecision
                   : allowedGrains[0];
 
-            initExploreState.selectedTimeRange.interval = finalGrain;
+            initExploreState.selectedTimeRange.interval =
+              finalGrain ?? minTimeGrain;
           } catch {
             // no-op
           }

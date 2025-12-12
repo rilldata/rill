@@ -28,7 +28,6 @@ import {
   type DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
-import { isGrainAllowed } from "@rilldata/web-common/lib/time/new-grains";
 
 export interface TimeSeriesDatum {
   ts?: Date;

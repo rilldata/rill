@@ -725,9 +725,9 @@ export function constructNewString({
 
   return rillTime.toString();
 }
-const MAX_BUCKETS = 500;
+const MAX_BUCKETS = 731;
 
-const units: DateTimeUnit[] = [
+const ALLOWABLE_AGGREGATION_GRAINS: DateTimeUnit[] = [
   "minute",
   "hour",
   "day",
@@ -741,15 +741,29 @@ export function allowedGrainsForInterval(
   interval: Interval<true> | undefined,
   minTimeGrain?: V1TimeGrain,
 ): V1TimeGrain[] {
+  minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
   if (!interval) return [];
-  return units
+
+  const validGrains = ALLOWABLE_AGGREGATION_GRAINS.filter((unit) => {
+    return isGrainAllowed(unit, minTimeGrain);
+  });
+
+  const allowedGrains = validGrains
     .filter((unit) => {
       const grain = DateTimeUnitToV1TimeGrain[unit];
       if (!grain) return false;
-      if (minTimeGrain && !isGrainAllowed(grain, minTimeGrain)) return false;
       const bucketCount = interval.length(unit);
 
-      return bucketCount <= MAX_BUCKETS && bucketCount >= 1;
+      return (
+        (bucketCount <= MAX_BUCKETS || (bucketCount >= 1 && unit === "year")) &&
+        bucketCount >= 1
+      );
     })
     .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
+
+  if (allowedGrains.length) {
+    return allowedGrains;
+  } else {
+    return [minTimeGrain];
+  }
 }
