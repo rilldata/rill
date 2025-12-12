@@ -133,15 +133,6 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	require.Greater(t, rNew.Meta.SpecVersion, rPrev.Meta.SpecVersion)
 }
 
-func WaitUntilIdle(t testing.TB, rt *runtime.Runtime, id string) {
-	ctx := t.Context()
-	ctrl, err := rt.Controller(ctx, id)
-	require.NoError(t, err)
-
-	err = ctrl.WaitUntilIdle(ctx, false)
-	require.NoError(t, err)
-}
-
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
 	ctx := t.Context()
 	ctrl, err := rt.Controller(ctx, id)
