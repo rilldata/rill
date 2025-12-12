@@ -71,7 +71,7 @@
         <Search bind:value={searchValue} autofocus={false} />
       </div>
       <div class="max-h-64 overflow-y-auto">
-        {#if type == "dimension" && includeTime && $timeDimension}
+        {#if includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"
             on:click={() => {

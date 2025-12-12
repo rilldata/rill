@@ -43,7 +43,9 @@ export function generateVLScatterPlotSpec(
       field: sanitizeValueForVega(config.x.field),
       title: data.fields[config.x.field]?.displayName || config.x.field,
       type: config.x.type,
-      formatType: sanitizeFieldName(config.x.field),
+      ...(config.x.type === "quantitative" && {
+        formatType: sanitizeFieldName(config.x.field),
+      }),
     });
   }
 
@@ -52,7 +54,9 @@ export function generateVLScatterPlotSpec(
       field: sanitizeValueForVega(config.y.field),
       title: data.fields[config.y.field]?.displayName || config.y.field,
       type: config.y.type,
-      formatType: sanitizeFieldName(config.y.field),
+      ...(config.y.type === "quantitative" && {
+        formatType: sanitizeFieldName(config.y.field),
+      }),
     });
   }
 

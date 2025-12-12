@@ -27,8 +27,8 @@ import { getFilterWithNullHandling } from "../query-util";
 
 export type ScatterPlotChartSpec = {
   metrics_view: string;
-  x?: FieldConfig<"quantitative">;
-  y?: FieldConfig<"quantitative">;
+  x?: FieldConfig<"quantitative" | "time">;
+  y?: FieldConfig<"quantitative" | "time">;
   dimension?: FieldConfig<"nominal">;
   size?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal"> | string;
@@ -57,12 +57,22 @@ export class ScatterPlotChartProvider {
     const measures: V1MetricsViewAggregationMeasure[] = [];
     const dimensions: V1MetricsViewAggregationDimension[] = [];
 
-    if (config.x?.type === "quantitative" && config.x?.field) {
-      measures.push({ name: config.x.field });
+    if (config.x?.field) {
+      if (config.x.type === "quantitative") {
+        measures.push({ name: config.x.field });
+      } else if (config.x.type === "temporal") {
+        dimensions.push({ name: config.x.field });
+      }
     }
-    if (config.y?.type === "quantitative" && config.y?.field) {
-      measures.push({ name: config.y.field });
+
+    if (config.y?.field) {
+      if (config.y.type === "quantitative") {
+        measures.push({ name: config.y.field });
+      } else if (config.y.type === "temporal") {
+        dimensions.push({ name: config.y.field });
+      }
     }
+
     if (config.size?.type === "quantitative" && config.size?.field) {
       measures.push({ name: config.size.field });
     }
@@ -125,7 +135,7 @@ export class ScatterPlotChartProvider {
     const queryOptionsStore = derived(
       [runtime, timeAndFilterStore, topNColorQuery],
       ([$runtime, $timeAndFilterStore, $topNColorQuery]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, timeGrain } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           !!timeRange?.start &&
@@ -153,6 +163,22 @@ export class ScatterPlotChartProvider {
           combinedWhere = mergeFilters(combinedWhere, filterForTopColorValues);
         }
 
+        let finalDimensions = dimensions;
+        const hasTemporalDimension =
+          config.x?.type === "temporal" || config.y?.type === "temporal";
+
+        if (timeGrain && hasTemporalDimension) {
+          finalDimensions = dimensions.map((d) => {
+            if (
+              (config.x?.type === "temporal" && d.name === config.x.field) ||
+              (config.y?.type === "temporal" && d.name === config.y.field)
+            ) {
+              return { ...d, timeGrain };
+            }
+            return d;
+          });
+        }
+
         this.combinedWhere.set(combinedWhere);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
@@ -160,9 +186,10 @@ export class ScatterPlotChartProvider {
           config.metrics_view,
           {
             measures,
-            dimensions,
+            dimensions: finalDimensions,
             where: combinedWhere,
             timeRange,
+            fillMissing: hasTemporalDimension,
             limit: "9999",
           },
           {
