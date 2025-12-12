@@ -6547,7 +6547,20 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Theme
 
-	// no validation rules for ThemeMode
+	if m.GetThemeMode() != "" {
+
+		if _, ok := _GetIFrameRequest_ThemeMode_InLookup[m.GetThemeMode()]; !ok {
+			err := GetIFrameRequestValidationError{
+				field:  "ThemeMode",
+				reason: "value must be in list [light dark system]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for Navigation
 
@@ -6764,6 +6777,12 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetIFrameRequestValidationError{}
+
+var _GetIFrameRequest_ThemeMode_InLookup = map[string]struct{}{
+	"light":  {},
+	"dark":   {},
+	"system": {},
+}
 
 // Validate checks the field values on GetIFrameResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
