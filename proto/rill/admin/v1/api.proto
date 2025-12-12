@@ -1493,6 +1493,8 @@ message GetIFrameRequest {
   string resource = 5;
   // Theme to use for the embedded resource.
   string theme = 12;
+  // Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".
+  string theme_mode = 15 [(validate.rules).string = {ignore_empty: true, in: ["light", "dark", "system"]}];
   // Navigation denotes whether navigation between different resources should be enabled in the embed.
   bool navigation = 13;
   // Blob containing UI state for rendering the initial embed. Not currently supported.

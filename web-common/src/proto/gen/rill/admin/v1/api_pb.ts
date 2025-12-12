@@ -2658,6 +2658,13 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   theme = "";
 
   /**
+   * Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".
+   *
+   * @generated from field: string theme_mode = 15;
+   */
+  themeMode = "";
+
+  /**
    * Navigation denotes whether navigation between different resources should be enabled in the embed.
    *
    * @generated from field: bool navigation = 13;
@@ -2697,6 +2704,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
