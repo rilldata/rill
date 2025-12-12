@@ -12,11 +12,11 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let organization: string;
-  export let organizationLogoUrl: string | undefined;
+  export let organizationLogoDarkUrl: string | undefined;
 
   const orgUpdater = createAdminServiceUpdateOrganization({
     mutation: {
-      mutationKey: ["updateOrganization", "logo", organization],
+      mutationKey: ["updateOrganization", "logoDark", organization],
     },
   });
   $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
@@ -25,7 +25,7 @@
     await mutateAsync({
       org: organization,
       data: {
-        logoAssetId: assetId,
+        logoDarkAssetId: assetId,
       },
     });
     void queryClient.invalidateQueries({
@@ -38,7 +38,7 @@
     await mutateAsync({
       org: organization,
       data: {
-        logoAssetId: "",
+        logoDarkAssetId: "",
       },
     });
     void queryClient.invalidateQueries({
@@ -48,15 +48,16 @@
   }
 </script>
 
-<SettingsContainer title="Logo" suppressFooter={!organizationLogoUrl}>
+<SettingsContainer title="Dark Logo" suppressFooter={!organizationLogoDarkUrl}>
   <div slot="body" class="flex flex-col gap-y-2">
     <div>
-      Click to upload your logo and customize Rill for your organization.
+      Click to upload your dark-mode logo and customize Rill for your
+      organization.
     </div>
     <UploadImagePopover
-      imageUrl={organizationLogoUrl}
+      imageUrl={organizationLogoDarkUrl}
       accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-      label="favicon"
+      label="dark logo"
       {organization}
       loading={isLoading}
       error={getRpcErrorMessage(error)}
@@ -67,7 +68,7 @@
     </UploadImagePopover>
   </div>
   <svelte:fragment slot="action">
-    {#if organizationLogoUrl}
+    {#if organizationLogoDarkUrl}
       <Button
         type="secondary"
         onClick={onRemove}

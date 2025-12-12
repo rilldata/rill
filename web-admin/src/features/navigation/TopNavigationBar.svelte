@@ -36,6 +36,7 @@
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 
   export let createMagicAuthTokens: boolean;
   export let manageProjectAdmins: boolean;
@@ -44,6 +45,7 @@
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
+  export let organizationLogoDarkUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
@@ -66,6 +68,11 @@
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
+  $: theme = $themeControl;
+  $: logoUrl =
+    theme === "dark" && organizationLogoDarkUrl
+      ? organizationLogoDarkUrl
+      : organizationLogoUrl;
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -196,12 +203,12 @@
   <!-- Left side -->
   <a
     href={rillLogoHref}
-    class="grid place-content-center rounded {organizationLogoUrl
+    class="grid place-content-center rounded {logoUrl
       ? 'pl-2 pr-2'
       : 'p-2'}"
   >
-    {#if organizationLogoUrl}
-      <img src={organizationLogoUrl} alt="logo" class="h-7" />
+    {#if logoUrl}
+      <img src={logoUrl} alt="logo" class="h-7" />
     {:else}
       <Rill />
     {/if}

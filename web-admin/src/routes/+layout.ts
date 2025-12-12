@@ -110,6 +110,7 @@ export const load = async ({ params, url, route, depends }) => {
 
   const organizationPermissions = organizationResp?.permissions ?? {};
   const organizationLogoUrl = organizationResp?.organization?.logoUrl;
+  const organizationLogoDarkUrl = organizationResp?.organization?.logoDarkUrl;
   const organizationFaviconUrl = organizationResp?.organization?.faviconUrl;
   const organizationThumbnailUrl = organizationResp?.organization?.thumbnailUrl;
   const planDisplayName =
@@ -120,6 +121,7 @@ export const load = async ({ params, url, route, depends }) => {
       user,
       organizationPermissions,
       organizationLogoUrl,
+      organizationLogoDarkUrl,
       organizationFaviconUrl,
       organizationThumbnailUrl,
       planDisplayName,
@@ -148,6 +150,7 @@ export const load = async ({ params, url, route, depends }) => {
       user,
       organizationPermissions,
       organizationLogoUrl,
+      organizationLogoDarkUrl,
       organizationFaviconUrl,
       organizationThumbnailUrl,
       planDisplayName,

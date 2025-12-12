@@ -28,6 +28,7 @@
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import "@rilldata/web-common/app.css";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 
   export let data;
 
@@ -35,6 +36,7 @@
     projectPermissions,
     organizationPermissions,
     organizationLogoUrl,
+    organizationLogoDarkUrl,
     organizationFaviconUrl,
     planDisplayName,
   } = data);
@@ -74,6 +76,7 @@
     })
     .catch(console.error);
   initPylonWidget();
+  themeControl.ensure();
 
   onMount(() => {
     return () => removeJavascriptListeners?.();
@@ -146,6 +149,7 @@
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
         readProjects={organizationPermissions?.readProjects}
         {organizationLogoUrl}
+        organizationLogoDarkUrl={organizationLogoDarkUrl}
         {planDisplayName}
       />
 

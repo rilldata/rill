@@ -1,6 +1,5 @@
 import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { featureFlags } from "../feature-flags";
 
 type Theme = "light" | "dark" | "system";
 
@@ -8,23 +7,27 @@ class ThemeControl {
   private current = writable<Theme>("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   private preferenceStore = localStorageStore<Theme>("rill:theme", "light");
+  private initialized = false;
 
   public subscribe = this.current.subscribe;
   public _preference = { subscribe: this.preferenceStore.subscribe };
 
   constructor() {
-    this.init().catch((error) => {
+    try {
+      this.init();
+    } catch (error) {
       console.error("Failed to initialize theme control:", error);
-    });
+    }
   }
 
-  init = async () => {
+  init = () => {
+    if (this.initialized) return;
+    this.initialized = true;
+
     const currentPreference = get(this.preferenceStore);
 
-    await featureFlags.ready;
-
     if (
-      (get(featureFlags.darkMode) && currentPreference === "dark") ||
+      currentPreference === "dark" ||
       (currentPreference === "system" && this.darkQuery.matches)
     ) {
       this.setDark();
@@ -33,7 +36,7 @@ class ThemeControl {
     this.darkQuery.addEventListener("change", ({ matches }) => {
       if (get(this.preferenceStore) !== "system") return;
 
-      if (matches && get(featureFlags.darkMode)) {
+      if (matches) {
         this.setDark();
       } else {
         this.removeDark();
@@ -70,6 +73,10 @@ class ThemeControl {
     this.current.set("light");
     document.documentElement.classList.remove("dark");
   }
+
+  public ensure = () => {
+    void this.init();
+  };
 }
 
 export const themeControl = new ThemeControl();
