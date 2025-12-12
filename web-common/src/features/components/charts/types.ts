@@ -5,6 +5,8 @@ import type {
   CircularChartSpec,
   ComboChartProvider,
   ComboChartSpec,
+  DotPlotChartProvider,
+  DotPlotChartSpec,
   FunnelChartProvider,
   FunnelChartSpec,
   HeatmapChartProvider,
@@ -32,6 +34,7 @@ export type ChartProvider =
   | CartesianChartProvider
   | CircularChartProvider
   | ComboChartProvider
+  | DotPlotChartProvider
   | FunnelChartProvider
   | HeatmapChartProvider;
 
@@ -40,7 +43,8 @@ export type ChartSpecBase =
   | CircularChartSpec
   | FunnelChartSpec
   | HeatmapChartSpec
-  | ComboChartSpec;
+  | ComboChartSpec
+  | DotPlotChartSpec;
 
 export type ChartSpec = ChartSpecBase & {
   vl_config?: string;
@@ -78,7 +82,8 @@ export type ChartType =
   | "pie_chart"
   | "heatmap"
   | "funnel_chart"
-  | "combo_chart";
+  | "combo_chart"
+  | "dot_plot";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
