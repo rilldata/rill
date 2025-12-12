@@ -871,6 +871,8 @@ export interface V1ExplorePreset {
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
+  filter?: V1DefaultMetricsSQLFilter;
+  pinned?: string[];
   where?: V1Expression;
   /** Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future. */
   dimensionsWithInlistFilter?: string[];

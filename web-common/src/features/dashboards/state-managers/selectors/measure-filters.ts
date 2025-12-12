@@ -35,6 +35,7 @@ export const getMeasureFilterItems = (
     return getMeasureFilters(
       measureIdMap,
       dashData.dashboard.dimensionThresholdFilters,
+      dashData.dashboard.pinnedFilters,
     );
   };
 };
@@ -42,6 +43,7 @@ export const getMeasureFilterItems = (
 export function getMeasureFilters(
   measureIdMap: Map<string, MetricsViewSpecMeasure>,
   dimensionThresholdFilters: DimensionThresholdFilter[],
+  pinnedFilters: Set<string>,
 ) {
   const filteredMeasures = new Array<MeasureFilterItem>();
   const addedMeasure = new Set<string>();
@@ -53,6 +55,7 @@ export function getMeasureFilters(
         dtf.filters,
         dtf.name,
         addedMeasure,
+        pinnedFilters.has(dtf.filters[0].measure),
       ),
     );
   }
@@ -65,6 +68,7 @@ export function getMeasureFilterForDimension(
   filters: MeasureFilterEntry[],
   name = "",
   addedMeasure = new Set<string>(),
+  pinned = false,
 ) {
   if (!filters.length) return [];
 
@@ -85,6 +89,7 @@ export function getMeasureFilterForDimension(
       name: filter.measure,
       label: measure.displayName || measure.expression || filter.measure,
       filter,
+      pinned,
     });
   });
 
@@ -110,6 +115,9 @@ export const getAllMeasureFilterItems = (
         name: dashData.dashboard.temporaryFilterName,
         label: getMeasureDisplayName(
           measureIdMap.get(dashData.dashboard.temporaryFilterName),
+        ),
+        pinned: dashData.dashboard.pinnedFilters.has(
+          dashData.dashboard.temporaryFilterName,
         ),
       });
     }

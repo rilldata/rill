@@ -2877,6 +2877,16 @@ export class ExplorePreset extends Message<ExplorePreset> {
   measuresSelector?: FieldSelector;
 
   /**
+   * @generated from field: rill.runtime.v1.DefaultMetricsSQLFilter filter = 33;
+   */
+  filter?: DefaultMetricsSQLFilter;
+
+  /**
+   * @generated from field: repeated string pinned = 34;
+   */
+  pinned: string[] = [];
+
+  /**
    * @generated from field: optional rill.runtime.v1.Expression where = 11;
    */
   where?: Expression;
@@ -3025,6 +3035,8 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
+    { no: 33, name: "filter", kind: "message", T: DefaultMetricsSQLFilter },
+    { no: 34, name: "pinned", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "where", kind: "message", T: Expression, opt: true },
     { no: 29, name: "dimensions_with_inlist_filter", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

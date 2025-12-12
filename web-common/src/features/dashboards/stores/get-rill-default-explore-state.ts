@@ -33,21 +33,32 @@ import {
   V1TimeGrainToAlias,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains";
+import { flattenExpression } from "../../canvas/stores/filter-manager";
+import { splitWhereFilter } from "../filters/measure-filters/measure-filter-utils";
 
 export function getRillDefaultExploreState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
+  const filter = exploreSpec.defaultPreset?.filter?.expression;
+  const flattened = filter
+    ? flattenExpression(filter)
+    : createAndExpression([]);
+
+  const { dimensionThresholdFilters, dimensionFilters } =
+    splitWhereFilter(flattened);
+
+  const pinnedFilters = new Set(exploreSpec.defaultPreset?.pinned ?? []);
+
   return <ExploreState>{
     activePage: DashboardState_ActivePage.DEFAULT,
-
-    whereFilter: createAndExpression([]),
-    dimensionThresholdFilters: [],
+    whereFilter: dimensionFilters,
+    dimensionThresholdFilters: dimensionThresholdFilters,
     dimensionsWithInlistFilter: [],
     dimensionFilterExcludeMode: new Map(),
     temporaryFilterName: null,
-
+    pinnedFilters,
     ...getRillDefaultExploreTimeState(
       metricsViewSpec,
       exploreSpec,

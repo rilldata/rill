@@ -19,7 +19,11 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type { V1Explore } from "@rilldata/web-common/runtime-client";
+  import {
+    queryServiceConvertExpressionToMetricsSQL,
+    type V1Explore,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
@@ -37,6 +41,9 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
+  import type { DimensionThresholdFilter } from "../dashboards/stores/explore-state";
+  import { mergeDimensionAndMeasureFilters } from "../dashboards/filters/measure-filters/measure-filter-utils";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -161,7 +168,39 @@
 
   $: exploreStateStore = useExploreState(exploreName);
 
-  $: exploreState = $exploreStateStore;
+  $: exploreState = $exploreStateStore ?? {};
+
+  let metricsSQLString: string | undefined;
+
+  $: ({
+    whereFilter,
+    dimensionThresholdFilters,
+    pinnedFilters = new Set<string>(),
+  } = exploreState);
+
+  $: deriveString(whereFilter, dimensionThresholdFilters).catch(console.error);
+
+  async function deriveString(
+    whereFilter: V1Expression | undefined,
+    dtf: DimensionThresholdFilter[] | undefined,
+  ) {
+    if (!whereFilter || !dtf) return;
+    const mergedExpression = mergeDimensionAndMeasureFilters(whereFilter, dtf);
+
+    const response = await queryClient.fetchQuery({
+      queryKey: [
+        "resolve-metrics-view-filter-expression",
+        instanceId,
+        mergedExpression,
+      ],
+      queryFn: () =>
+        queryServiceConvertExpressionToMetricsSQL(instanceId, {
+          expression: mergedExpression,
+        }),
+    });
+
+    metricsSQLString = response.sql;
+  }
 
   $: newDefaults = constructDefaultState(
     exploreState?.showTimeComparison,
@@ -169,6 +208,8 @@
     exploreState?.visibleDimensions,
     exploreState?.visibleMeasures,
     exploreState?.selectedTimeRange,
+    metricsSQLString,
+    pinnedFilters,
   );
 
   $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
@@ -241,12 +282,14 @@
   }
 
   type Defaults = {
+    filter?: string | undefined;
     measures?: string[] | undefined;
     dimensions?: string[] | undefined;
     comparison_mode?: "time" | "dimension" | "none" | undefined;
     comparison_dimension?: string | undefined;
     time_comparison?: boolean | undefined;
     time_range?: string | undefined;
+    pinned?: string[] | undefined;
   };
 
   function constructDefaultState(
@@ -255,15 +298,27 @@
     visibleDimensions?: string[],
     visibleMeasures?: string[],
     selectedTimeRange?: DashboardTimeControls | undefined,
+    filter?: string,
+    pinnedFilters?: Set<string>,
   ): Defaults {
     const newDefaults: Defaults = {
+      filter: undefined,
       measures: undefined,
       dimensions: undefined,
       comparison_mode: undefined,
       comparison_dimension: undefined,
       time_comparison: undefined,
       time_range: undefined,
+      pinned: undefined,
     };
+
+    if (filter) {
+      newDefaults.filter = filter;
+    }
+
+    if (pinnedFilters?.size) {
+      newDefaults.pinned = Array.from(pinnedFilters);
+    }
 
     if (showTimeComparison) {
       newDefaults.comparison_mode = "time";
