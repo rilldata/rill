@@ -10,6 +10,10 @@ export const conversationSidebarCollapsed = localStorageStore<boolean>(
   false, // default to expanded
 );
 
+export function toggleConversationSidebar() {
+  conversationSidebarCollapsed.update((collapsed) => !collapsed);
+}
+
 // =============================================================================
 // CONVERSATION ID PERSISTENCE
 // =============================================================================

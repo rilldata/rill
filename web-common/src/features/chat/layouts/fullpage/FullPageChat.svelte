@@ -9,7 +9,10 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
-  import { conversationSidebarCollapsed } from "./fullpage-store";
+  import {
+    conversationSidebarCollapsed,
+    toggleConversationSidebar,
+  } from "./fullpage-store";
 
   import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
 
@@ -20,10 +23,6 @@
   });
 
   let chatInputComponent: ChatInput;
-
-  function toggleSidebar() {
-    conversationSidebarCollapsed.update((collapsed) => !collapsed);
-  }
 
   function onMessageSend() {
     chatInputComponent?.focusInput();
@@ -51,7 +50,7 @@
   <ConversationSidebar
     {conversationManager}
     collapsed={$conversationSidebarCollapsed}
-    onToggle={toggleSidebar}
+    onToggle={toggleConversationSidebar}
     onConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
