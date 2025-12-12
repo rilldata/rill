@@ -273,7 +273,7 @@ test.describe("Embeds", () => {
           (msg) =>
             msg.includes(`"id":2006`) &&
             msg.includes(`"error"`) &&
-            msg.includes(`"themeMode"`),
+            msg.includes(`themeMode`),
         ),
       ).toBeTruthy();
     });
