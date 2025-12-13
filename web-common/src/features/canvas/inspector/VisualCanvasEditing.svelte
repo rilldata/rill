@@ -26,8 +26,6 @@
   $: components = $componentsStore;
   $: component = components.get($selectedComponent ?? "");
 
-  // $: console.log({ components });
-
   async function updateProperties(
     newRecord: Record<string, unknown>,
     removeProperties?: Array<string | string[]>,
