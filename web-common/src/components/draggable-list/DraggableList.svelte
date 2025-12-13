@@ -44,9 +44,17 @@
   );
 
   $: filteredItems = searchValue
-    ? items.filter((item) =>
-        item.id.toLowerCase().includes(searchValue.toLowerCase()),
-      )
+    ? items.filter((item) => {
+        const normalizedSearch = searchValue.trim().toLowerCase();
+        if (normalizedSearch === "") return true;
+        const itemId = item.id.toLowerCase();
+        const itemDisplayName =
+          (item.displayName as string | undefined)?.toLowerCase() ?? "";
+        return (
+          itemId.includes(normalizedSearch) ||
+          itemDisplayName.includes(normalizedSearch)
+        );
+      })
     : items;
 
   function handleMouseDown(e: MouseEvent) {
