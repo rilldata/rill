@@ -5223,6 +5223,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for UseAi
 
+	// no validation rules for Prompt
+
 	if len(errors) > 0 {
 		return GenerateMetricsViewFileRequestMultiError(errors)
 	}

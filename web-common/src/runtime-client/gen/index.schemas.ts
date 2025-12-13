@@ -2675,6 +2675,8 @@ If you set this, do NOT set model. */
   /** If true, the AI will be used to generate the metrics view file.
 Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
+  /** Optional prompt to guide AI generation. */
+  prompt?: string;
 };
 
 export type RuntimeServiceRenameFileBody = {
