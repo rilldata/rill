@@ -7,29 +7,14 @@ class ThemeControl {
   private current = writable<Theme>("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   private preferenceStore = localStorageStore<Theme>("rill:theme", "light");
-  private initialized = false;
 
   public subscribe = this.current.subscribe;
   public _preference = { subscribe: this.preferenceStore.subscribe };
 
   constructor() {
-    try {
-      this.init();
-    } catch (error) {
-      console.error("Failed to initialize theme control:", error);
-    }
-  }
+    const pref = get(this.preferenceStore);
 
-  init = () => {
-    if (this.initialized) return;
-    this.initialized = true;
-
-    const currentPreference = get(this.preferenceStore);
-
-    if (
-      currentPreference === "dark" ||
-      (currentPreference === "system" && this.darkQuery.matches)
-    ) {
+    if (pref === "dark" || (pref === "system" && this.darkQuery.matches)) {
       this.setDark();
     }
 
@@ -42,7 +27,7 @@ class ThemeControl {
         this.removeDark();
       }
     });
-  };
+  }
 
   public set = {
     light: () => {
@@ -73,10 +58,6 @@ class ThemeControl {
     this.current.set("light");
     document.documentElement.classList.remove("dark");
   }
-
-  public ensure = () => {
-    void this.init();
-  };
 }
 
 export const themeControl = new ThemeControl();

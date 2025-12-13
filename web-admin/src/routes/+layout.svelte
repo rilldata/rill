@@ -29,17 +29,26 @@
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import "@rilldata/web-common/app.css";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { organizationData } from "@rilldata/web-common/features/themes/organization-logo";
+  import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
 
   $: ({
     projectPermissions,
     organizationPermissions,
+    organization: organizationObj,
     organizationLogoUrl,
     organizationLogoDarkUrl,
     organizationFaviconUrl,
     planDisplayName,
   } = data);
+
+  $: {
+    const org = organizationObj as V1Organization | undefined;
+    organizationData.set(org);
+  }
+
   $: ({
     params: { organization },
     url: { pathname },
@@ -76,7 +85,6 @@
     })
     .catch(console.error);
   initPylonWidget();
-  themeControl.ensure();
 
   onMount(() => {
     return () => removeJavascriptListeners?.();
@@ -148,8 +156,6 @@
         manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
         readProjects={organizationPermissions?.readProjects}
-        {organizationLogoUrl}
-        {organizationLogoDarkUrl}
         {planDisplayName}
       />
 

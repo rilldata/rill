@@ -36,7 +36,7 @@
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
-  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { organizationLogoUrl } from "@rilldata/web-common/features/themes/organization-logo";
 
   export let createMagicAuthTokens: boolean;
   export let manageProjectAdmins: boolean;
@@ -44,8 +44,6 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
-  export let organizationLogoUrl: string | undefined = undefined;
-  export let organizationLogoDarkUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
@@ -68,11 +66,7 @@
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
-  $: theme = $themeControl;
-  $: logoUrl =
-    theme === "dark" && organizationLogoDarkUrl
-      ? organizationLogoDarkUrl
-      : organizationLogoUrl;
+  $: logoUrl = $organizationLogoUrl;
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
