@@ -24,7 +24,10 @@
   import ThemeProvider from "../ThemeProvider.svelte";
   import { page } from "$app/stores";
   import { createResolvedThemeStore } from "../../themes/selectors";
-  import { writable, type Writable } from "svelte/store";
+  import { writable, get } from "svelte/store";
+  import { getEmbedThemeStoreInstance } from "../../embeds/embed-theme-store";
+  import { resolveEmbedTheme } from "../../embeds/embed-theme-utils";
+  import { onDestroy } from "svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -112,8 +115,41 @@
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
-  const urlThemeName: Writable<string | null> = writable(null);
-  $: urlThemeName.set($page.url.searchParams.get("theme"));
+  const urlThemeName = writable<string | null>(null);
+
+  $: embedThemeStore = isEmbedded ? getEmbedThemeStoreInstance() : null;
+  $: embedThemeValue = embedThemeStore ? get(embedThemeStore) : null;
+
+  $: {
+    if (isEmbedded && embedThemeValue !== undefined) {
+      const resolvedTheme = resolveEmbedTheme(isEmbedded, embedThemeValue);
+      urlThemeName.set(resolvedTheme);
+    } else {
+      urlThemeName.set($page.url.searchParams.get("theme"));
+    }
+  }
+
+  let unsubscribeTheme: (() => void) | null = null;
+  $: if (isEmbedded && embedThemeStore) {
+    // Clean up previous subscription
+    if (unsubscribeTheme) {
+      unsubscribeTheme();
+    }
+    unsubscribeTheme = embedThemeStore.subscribe(() => {
+      const currentValue = get(embedThemeStore);
+      const resolvedTheme = resolveEmbedTheme(isEmbedded, currentValue);
+      urlThemeName.set(resolvedTheme);
+    });
+  } else if (unsubscribeTheme) {
+    unsubscribeTheme();
+    unsubscribeTheme = null;
+  }
+
+  onDestroy(() => {
+    if (unsubscribeTheme) {
+      unsubscribeTheme();
+    }
+  });
 
   $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
 </script>
