@@ -62,10 +62,35 @@ export type SearchParamsStore = {
   ) => boolean;
   clearAll: () => void;
 };
+export function createComponentMap() {
+  const { subscribe, set, update } = writable(
+    new Map<string, BaseCanvasComponent>(),
+  );
+
+  return {
+    subscribe,
+    read: () => get({ subscribe }),
+    getNonReactive: (name: string) => {
+      return get({ subscribe }).get(name);
+    },
+    set: (name: string, component: BaseCanvasComponent) => {
+      update((map) => {
+        map.set(name, component);
+        return map;
+      });
+    },
+    delete: (name: string) => {
+      update((map) => {
+        map.delete(name);
+        return map;
+      });
+    },
+    reset: () => set(new Map()),
+  };
+}
 
 export class CanvasEntity {
-  components = new Map<string, BaseCanvasComponent>();
-
+  componentsStore = createComponentMap();
   _rows: Grid = new Grid(this);
 
   // Time state controls
@@ -572,7 +597,7 @@ export class CanvasEntity {
   };
 
   duplicateItem = (id: string) => {
-    const component = this.components.get(id);
+    const component = this.componentsStore.getNonReactive(id);
     if (!component) return;
     const { pathInYAML, type, resource } = component;
     const [, rowIndex, , columnIndex] = pathInYAML;
@@ -610,7 +635,7 @@ export class CanvasEntity {
   // Once we have stable IDs, this can be simplified
   processRows = (response: Partial<CanvasResponse>) => {
     const newComponents = response.components;
-    const existingKeys = new Set(this.components.keys());
+    const existingKeys = new Set(this.componentsStore.read().keys());
     const rows = response.canvas?.rows;
 
     if (!rows) return;
@@ -637,14 +662,15 @@ export class CanvasEntity {
 
         const newType = newResource.component?.state?.validSpec
           ?.renderer as CanvasComponentType;
-        const existingClass = this.components.get(componentName);
+        const existingClass =
+          this.componentsStore.getNonReactive(componentName);
         const path = constructPath(rowIndex, columnIndex, newType);
 
         if (existingClass && areSameType(newType, existingClass.type)) {
           existingClass.update(newResource, path);
         } else {
           createdNewComponent = true;
-          this.components.set(
+          this.componentsStore.set(
             componentName,
             createComponent(newResource, this, path),
           );
@@ -655,9 +681,9 @@ export class CanvasEntity {
     const didUpdateRowCount = this._rows.updateFromCanvasRows(rows);
 
     existingKeys.difference(set).forEach((componentName) => {
-      const component = this.components.get(componentName);
+      const component = this.componentsStore.getNonReactive(componentName);
       if (component) {
-        this.components.delete(componentName);
+        this.componentsStore.delete(componentName);
       }
     });
 
@@ -667,6 +693,8 @@ export class CanvasEntity {
       this._rows.refresh();
       this.firstLoad.set(false);
     }
+
+    this.selectedComponent.update(($) => $);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {
@@ -719,7 +747,7 @@ export class CanvasEntity {
   };
 
   removeComponent = (componentName: string) => {
-    this.components.delete(componentName);
+    this.componentsStore.delete(componentName);
   };
 }
 

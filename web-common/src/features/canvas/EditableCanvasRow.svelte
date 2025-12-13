@@ -17,7 +17,6 @@
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import type { CanvasEntity } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
 
@@ -27,7 +26,7 @@
   export let heightUnit: string = "px";
   export let rowIndex: number;
   export let columnWidth: number;
-  export let components: CanvasEntity["components"];
+  export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (

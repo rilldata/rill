@@ -13,13 +13,15 @@
 
   $: ({
     canvasEntity: {
-      components,
+      componentsStore,
       _rows,
       firstLoad,
       _maxWidth,
       filtersEnabledStore,
     },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: components = $componentsStore;
 
   $: filtersEnabled = $filtersEnabledStore;
   $: maxWidth = $_maxWidth;
