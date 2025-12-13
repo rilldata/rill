@@ -11,7 +11,7 @@
   export let zIndex = 1;
   export let maxWidth: number;
   export let rowIndex: number;
-  export let components: CanvasEntity["components"];
+  export let components: CanvasEntity["componentsStore"];
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
 
@@ -33,7 +33,7 @@
   gridTemplate={widths.map((w) => `${w}fr`).join(" ")}
 >
   {#each itemIds as id, columnIndex (columnIndex)}
-    {@const component = components.get(id)}
+    {@const component = $components.get(id)}
     <ItemWrapper type={component?.type} zIndex={4 - columnIndex}>
       {#if component}
         <CanvasComponent {component} {navigationEnabled} />

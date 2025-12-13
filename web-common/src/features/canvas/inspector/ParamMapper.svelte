@@ -44,6 +44,8 @@
     AllKeys<ComponentSpec>,
     ComponentInputParam,
   ][];
+
+  // $: console.log({ entries });
 </script>
 
 {#if component instanceof BaseChart}

@@ -15,16 +15,18 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { selectedComponent, components, _rows },
+    canvasEntity: { selectedComponent, componentsStore },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);
 
-  $: rows = $_rows;
-
   $: parsedDocument = parseDocument($editorContent ?? "");
+
+  $: components = $componentsStore;
   $: component = components.get($selectedComponent ?? "");
+
+  // $: console.log({ components });
 
   async function updateProperties(
     newRecord: Record<string, unknown>,
@@ -62,12 +64,10 @@
   }
 </script>
 
-{#key rows}
-  <Inspector minWidth={320} filePath={path}>
-    {#if component}
-      <ComponentsEditor {component} />
-    {:else}
-      <PageEditor {canvasName} {fileArtifact} {updateProperties} />
-    {/if}
-  </Inspector>
-{/key}
+<Inspector minWidth={320} filePath={path}>
+  {#if component}
+    <ComponentsEditor {component} />
+  {:else}
+    <PageEditor {canvasName} {fileArtifact} {updateProperties} />
+  {/if}
+</Inspector>

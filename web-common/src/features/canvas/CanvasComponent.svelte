@@ -22,6 +22,7 @@
   );
 
   onMount(() => {
+    console.log("yup");
     observer.observe(container);
   });
 
