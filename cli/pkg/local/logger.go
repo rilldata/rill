@@ -28,10 +28,13 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	}
 }
 
-func initLogger(isVerbose bool, logFormat LogFormat, logPath string) (logger *zap.Logger, cleanupFn func()) {
+func initLogger(isVerbose, silent bool, logFormat LogFormat, logPath string) (logger *zap.Logger, cleanupFn func()) {
 	logLevel := zapcore.InfoLevel
 	if isVerbose {
 		logLevel = zapcore.DebugLevel
+	}
+	if silent {
+		logLevel = zapcore.PanicLevel
 	}
 
 	// lumberjack.Logger is already safe for concurrent use, so we don't need to
