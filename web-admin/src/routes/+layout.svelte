@@ -28,7 +28,6 @@
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import "@rilldata/web-common/app.css";
-  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { organizationData } from "@rilldata/web-common/features/themes/organization-logo";
   import type { V1Organization } from "@rilldata/web-admin/client";
 
@@ -38,8 +37,6 @@
     projectPermissions,
     organizationPermissions,
     organization: organizationObj,
-    organizationLogoUrl,
-    organizationLogoDarkUrl,
     organizationFaviconUrl,
     planDisplayName,
   } = data);
