@@ -1,6 +1,5 @@
 import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { featureFlags } from "../feature-flags";
 
 type Theme = "light" | "dark" | "system";
 
@@ -13,33 +12,22 @@ class ThemeControl {
   public _preference = { subscribe: this.preferenceStore.subscribe };
 
   constructor() {
-    this.init().catch((error) => {
-      console.error("Failed to initialize theme control:", error);
-    });
-  }
+    const pref = get(this.preferenceStore);
 
-  init = async () => {
-    const currentPreference = get(this.preferenceStore);
-
-    await featureFlags.ready;
-
-    if (
-      (get(featureFlags.darkMode) && currentPreference === "dark") ||
-      (currentPreference === "system" && this.darkQuery.matches)
-    ) {
+    if (pref === "dark" || (pref === "system" && this.darkQuery.matches)) {
       this.setDark();
     }
 
     this.darkQuery.addEventListener("change", ({ matches }) => {
       if (get(this.preferenceStore) !== "system") return;
 
-      if (matches && get(featureFlags.darkMode)) {
+      if (matches) {
         this.setDark();
       } else {
         this.removeDark();
       }
     });
-  };
+  }
 
   public set = {
     light: () => {
