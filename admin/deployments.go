@@ -146,12 +146,19 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	for _, d := range ds {
 		d := d
 		grp.Go(func() error {
+			// delete any dev deployments for the prod branch to maintain one branch - one dev deployment mapping
+			if p.ProdBranch == d.Branch && d.Environment == "dev" {
+				err := s.TeardownDeployment(ctx, d)
+				if err != nil {
+					s.Logger.Warn("failed to teardown dev deployment for prod branch", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+				}
+				return nil
+			}
 			// If this is the default prod deployment and the prod branch has changed, update the deployment branch too.
 			branch := d.Branch
 			if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID && p.ProdBranch != d.Branch {
 				branch = p.ProdBranch
 			}
-
 			err := s.UpdateDeployment(ctx, d, branch)
 			if err != nil {
 				if ctx.Err() != nil {
