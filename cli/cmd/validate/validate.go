@@ -27,7 +27,6 @@ type ValidationResult struct {
 	Summary     ValidationSummary `json:"summary"`
 	ParseErrors []ParseError      `json:"parse_errors,omitempty"`
 	Resources   []ResourceStatus  `json:"resources,omitempty"`
-	Timeout     bool              `json:"timeout,omitempty"`
 }
 
 type ValidationSummary struct {
@@ -49,6 +48,7 @@ type ResourceStatus struct {
 	Status   string `json:"status" header:"status"`
 	Error    string `json:"error,omitempty" header:"error"`
 	FilePath string `json:"file_path,omitempty" header:"file_path"`
+	Timeout  bool   `json:"timeout,omitempty" header:"timeout"`
 }
 
 // ValidateCmd validates and reconciles a project without starting the UI.
@@ -60,7 +60,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var logFormat string
 	var envVars []string
 	var environment string
-	var reconcileTimeout time.Duration
+	var modelTimeoutSeconds uint32
 	var outputFile string
 
 	validateCmd := &cobra.Command{
@@ -106,6 +106,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			envVarsMap["rill.model.timeout_override"] = fmt.Sprintf("%d", modelTimeoutSeconds)
 
 			parseErrors, err := parseProject(cmd.Context(), projectPath, environment)
 			if err != nil {
@@ -143,7 +144,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer app.Close()
 
-			return reconcileAndReport(cmd.Context(), ch, app, reconcileTimeout, outputFormat, outputFile)
+			return reconcileAndReport(cmd.Context(), ch, app, outputFormat, outputFile)
 		},
 	}
 
@@ -155,7 +156,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().BoolVar(&silent, "silent", false, "Suppress all log output by setting log level to panic, overrides verbose flag")
 	validateCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	validateCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
-	validateCmd.Flags().DurationVar(&reconcileTimeout, "reconcile-timeout", 60*time.Second, "Timeout for reconciliation (e.g. 60s, 2m)")
+	validateCmd.Flags().Uint32Var(&modelTimeoutSeconds, "model-timeout-seconds", 60, "Timeout for reconciliation of models, set 0 for no timeout")
 	validateCmd.Flags().StringVarP(&outputFile, "output-file", "o", "", "Output file for validation results (JSON format)")
 
 	return validateCmd
@@ -243,34 +244,21 @@ func parseProject(ctx context.Context, projectPath, environment string) ([]Parse
 	return parseErrors, nil
 }
 
-func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, reconcileTimeout time.Duration, outputFormat printer.Format, outputFile string) error {
+func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, outputFormat printer.Format, outputFile string) error {
 	ctrl, err := app.Runtime.Controller(ctx, app.Instance.ID)
 	if err != nil {
 		return err
 	}
 
-	// Create a context with timeout for reconciliation
-	reconcileCtx, cancel := context.WithTimeout(ctx, reconcileTimeout)
-	defer cancel()
-
-	timedOut := false
 	// Kick off reconciliation and wait for completion
-	if err := ctrl.Reconcile(reconcileCtx, runtime.GlobalProjectParserName); err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			timedOut = true
-		} else {
-			return fmt.Errorf("failed to start reconciliation: %w", err)
-		}
+	if err := ctrl.Reconcile(ctx, runtime.GlobalProjectParserName); err != nil {
+		return fmt.Errorf("failed to start reconciliation: %w", err)
 	}
 
-	if !timedOut {
-		if err := ctrl.WaitUntilIdle(reconcileCtx, true); err != nil {
-			if errors.Is(err, context.DeadlineExceeded) {
-				timedOut = true
-			} else {
-				return fmt.Errorf("failed while waiting for reconciliation to finish: %w", err)
-			}
-		}
+	time.Sleep(3 * time.Second) // brief sleep to allow reconciliation to start
+
+	if err := ctrl.WaitUntilIdle(ctx, true); err != nil {
+		return fmt.Errorf("failed while waiting for reconciliation to finish: %w", err)
 	}
 
 	resources, err := ctrl.List(ctx, "", "", false)
@@ -279,15 +267,14 @@ func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App,
 	}
 
 	// Build validation result
-	result := buildValidationResult(resources, timedOut)
+	result := buildValidationResult(resources)
 
 	// Output the result
 	return outputResult(ch, result, outputFormat, outputFile)
 }
 
-func buildValidationResult(resources []*runtimev1.Resource, timedOut bool) *ValidationResult {
+func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 	result := &ValidationResult{
-		Timeout: timedOut,
 		Summary: ValidationSummary{},
 	}
 
@@ -313,6 +300,10 @@ func buildValidationResult(resources []*runtimev1.Resource, timedOut bool) *Vali
 		if r.Meta.ReconcileError != "" {
 			result.Summary.ReconcileErrors++
 			resourceStatus.Error = r.Meta.ReconcileError
+			// Check if the error is due to context deadline exceeded (timeout)
+			if strings.Contains(r.Meta.ReconcileError, "context deadline exceeded") {
+				resourceStatus.Timeout = true
+			}
 		}
 
 		result.Resources = append(result.Resources, resourceStatus)
@@ -357,9 +348,6 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat pri
 	}
 
 	// Print summary in the end
-	if result.Timeout {
-		return fmt.Errorf("reconciliation timed out. If a model processes full data, consider adding an explicit dev partition or rerun with --reconcile-timeout to allow more time")
-	}
 	if result.Summary.ParseErrors+result.Summary.ReconcileErrors > 0 {
 		return fmt.Errorf("validation failed: %d error(s) (%d parse, %d reconcile)", result.Summary.ParseErrors+result.Summary.ReconcileErrors, result.Summary.ParseErrors, result.Summary.ReconcileErrors)
 	}

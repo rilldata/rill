@@ -90,6 +90,8 @@ type InstanceConfig struct {
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
 	// ModelConcurrentExecutionLimit sets the maximum number of concurrent model executions.
 	ModelConcurrentExecutionLimit uint32 `mapstructure:"rill.models.concurrent_execution_limit"`
+	// ModelTimeoutOverride sets a timeout for model reconciliation in seconds (used in validation mode).
+	ModelTimeoutOverride uint32 `mapstructure:"rill.model.timeout_override"`
 	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
 	// Approximated comparison queries are faster but may not return comparison data points for all values.
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`

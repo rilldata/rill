@@ -87,6 +87,7 @@ type ModelEnv struct {
 	RepoRoot           string
 	StageChanges       bool
 	DefaultMaterialize bool
+	TimeoutSeconds     uint32
 	Connectors         []*runtimev1.Connector
 	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }

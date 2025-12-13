@@ -130,6 +130,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	// Apply per-model timeout override if configured
+	if modelEnv.TimeoutSeconds > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(modelEnv.TimeoutSeconds)*time.Second)
+		defer cancel()
+	}
+
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
 		if prevManager != nil {
@@ -1670,6 +1677,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 		RepoRoot:           repoRoot,
 		StageChanges:       cfg.StageChanges,
 		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		TimeoutSeconds:     cfg.ModelTimeoutOverride,
 		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
