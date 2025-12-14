@@ -1543,8 +1543,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// directly update deployment to running with runtime info especially audience for correct jwt generation
-		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
-			Branch:            "main",
+		_, err = fix.Admin.DB.UpdateDeploymentUnsafe(ctx, depl.Deployment.Id, &database.UpdateDeploymentUnsafeOptions{
 			RuntimeHost:       "rill-example-host",
 			RuntimeInstanceID: "rill-example-instance",
 			RuntimeAudience:   "http://example.org",
@@ -1635,8 +1634,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// directly update deployment to running with runtime info especially audience for correct jwt generation
-		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
-			Branch:            "main",
+		_, err = fix.Admin.DB.UpdateDeploymentUnsafe(ctx, depl.Deployment.Id, &database.UpdateDeploymentUnsafeOptions{
 			RuntimeHost:       "rill-example-host",
 			RuntimeInstanceID: "rill-example-instance",
 			RuntimeAudience:   "http://example.org",
@@ -1757,8 +1755,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// directly update deployment to running with runtime info especially audience for correct jwt generation
-		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
-			Branch:            "main",
+		_, err = fix.Admin.DB.UpdateDeploymentUnsafe(ctx, depl.Deployment.Id, &database.UpdateDeploymentUnsafeOptions{
 			RuntimeHost:       "rill-example-host",
 			RuntimeInstanceID: "rill-example-instance",
 			RuntimeAudience:   "http://example.org",
@@ -1874,8 +1871,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// directly update deployment to running with runtime info especially audience for correct jwt generation
-		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
-			Branch:            "main",
+		_, err = fix.Admin.DB.UpdateDeploymentUnsafe(ctx, depl.Deployment.Id, &database.UpdateDeploymentUnsafeOptions{
 			RuntimeHost:       "rill-example-host",
 			RuntimeInstanceID: "rill-example-instance",
 			RuntimeAudience:   "http://example.org",
@@ -1959,8 +1955,7 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// directly update deployment to running with runtime info especially audience for correct jwt generation
-		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
-			Branch:            "main",
+		_, err = fix.Admin.DB.UpdateDeploymentUnsafe(ctx, depl.Deployment.Id, &database.UpdateDeploymentUnsafeOptions{
 			RuntimeHost:       "rill-example-host",
 			RuntimeInstanceID: "rill-example-instance",
 			RuntimeAudience:   "http://example.org",
