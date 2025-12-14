@@ -438,41 +438,6 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 	}, nil
 }
 
-func securityRulesFromResources(restricted bool, resources []database.ResourceName) []*runtimev1.SecurityRule {
-	if !restricted {
-		// No resource restrictions
-		return nil
-	}
-	if len(resources) == 0 {
-		// No access to any resources
-		return []*runtimev1.SecurityRule{{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Allow: false,
-				},
-			},
-		}}
-	}
-
-	rules := make([]*runtimev1.SecurityRule, 0, len(resources))
-	for _, r := range resources {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_TransitiveAccess{
-				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-					Resource: &runtimev1.ResourceName{
-						Kind: r.Type,
-						Name: r.Name,
-					},
-				},
-			},
-		})
-	}
-	return rules
-}
-
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.pattern", req.NamePattern),
@@ -2306,6 +2271,41 @@ func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable 
 		CreatedOn:       timestamppb.New(v.CreatedOn),
 		UpdatedOn:       timestamppb.New(v.UpdatedOn),
 	}
+}
+
+func securityRulesFromResources(restricted bool, resources []database.ResourceName) []*runtimev1.SecurityRule {
+	if !restricted {
+		// No resource restrictions
+		return nil
+	}
+	if len(resources) == 0 {
+		// No access to any resources
+		return []*runtimev1.SecurityRule{{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
+				},
+			},
+		}}
+	}
+
+	rules := make([]*runtimev1.SecurityRule, 0, len(resources))
+	for _, r := range resources {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+					Resource: &runtimev1.ResourceName{
+						Kind: r.Type,
+						Name: r.Name,
+					},
+				},
+			},
+		})
+	}
+	return rules
 }
 
 func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {

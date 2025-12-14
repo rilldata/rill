@@ -27,30 +27,27 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("email is required")
 			}
 
-			if project == "" {
-				member, err := client.GetOrganizationMemberUser(cmd.Context(), &adminv1.GetOrganizationMemberUserRequest{
-					Org:   ch.Org,
-					Email: email,
-				})
-				if err != nil {
-					return err
-				}
+			member, err := client.GetOrganizationMemberUser(cmd.Context(), &adminv1.GetOrganizationMemberUserRequest{
+				Org:   ch.Org,
+				Email: email,
+			})
+			if err != nil {
+				return err
+			}
 
-				ch.PrintfSuccess("User: %s (%s)\n", member.Member.UserName, member.Member.UserEmail)
-				ch.PrintfSuccess("Role: %s\n", member.Member.RoleName)
-				ch.PrintfSuccess("Projects count: %d\n", member.Member.ProjectsCount)
-				ch.PrintfSuccess("Usergroups count: %d\n", member.Member.UsergroupsCount)
+			ch.PrintfSuccess("User: %s (%s)\n", member.Member.UserName, member.Member.UserEmail)
+			ch.PrintfSuccess("Role: %s\n", member.Member.RoleName)
+			ch.PrintfSuccess("Projects count: %d\n", member.Member.ProjectsCount)
+			ch.PrintfSuccess("Usergroups count: %d\n", member.Member.UsergroupsCount)
 
-				attrs := member.Member.Attributes.AsMap()
-				if len(attrs) > 0 {
-					ch.PrintfSuccess("Attributes:\n")
-					for key, value := range attrs {
-						ch.PrintfSuccess("  %s: %v\n", key, value)
-					}
-				} else {
-					ch.PrintfSuccess("No custom attributes set\n")
+			attrs := member.Member.Attributes.AsMap()
+			if len(attrs) > 0 {
+				ch.PrintfSuccess("Attributes:\n")
+				for key, value := range attrs {
+					ch.PrintfSuccess("  %s: %v\n", key, value)
 				}
-				return nil
+			} else {
+				ch.PrintfSuccess("No custom attributes set\n")
 			}
 
 			projMember, err := client.GetProjectMemberUser(cmd.Context(), &adminv1.GetProjectMemberUserRequest{

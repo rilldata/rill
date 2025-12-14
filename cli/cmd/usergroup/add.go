@@ -57,17 +57,21 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 				ch.PrintfSuccess("Role %q added to user group %q in project %q\n", role, groupName, projectName)
-			} else {
-				_, err = client.AddOrganizationMemberUsergroup(cmd.Context(), &adminv1.AddOrganizationMemberUsergroupRequest{
-					Org:       ch.Org,
-					Usergroup: groupName,
-					Role:      role,
-				})
-				if err != nil {
-					return err
-				}
-				ch.PrintfSuccess("Role %q added to user group %q in organization %q\n", role, groupName, ch.Org)
+				return nil
 			}
+
+			if len(explores) > 0 || len(canvases) > 0 || restrictResources {
+				return fmt.Errorf("resource restrictions can only be set when adding a user group to a project")
+			}
+			_, err = client.AddOrganizationMemberUsergroup(cmd.Context(), &adminv1.AddOrganizationMemberUsergroupRequest{
+				Org:       ch.Org,
+				Usergroup: groupName,
+				Role:      role,
+			})
+			if err != nil {
+				return err
+			}
+			ch.PrintfSuccess("Role %q added to user group %q in organization %q\n", role, groupName, ch.Org)
 
 			return nil
 		},

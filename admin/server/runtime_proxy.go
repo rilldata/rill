@@ -89,7 +89,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
-			restrictResources, resources, err := s.GetResourceRestrictionsForUser(r.Context(), proj.ID, claims.OwnerID())
+			restrictResources, resources, err := s.getResourceRestrictionsForUser(r.Context(), proj.ID, claims.OwnerID())
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}

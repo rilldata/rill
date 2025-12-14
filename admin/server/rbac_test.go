@@ -1522,8 +1522,8 @@ func TestRBAC(t *testing.T) {
 	})
 
 	t.Run("Project member role updates preserve resource restrictions when omitted", func(t *testing.T) {
-		_, admin := fix.NewUser(t)
-		user, _ := fix.NewUser(t)
+		_, admin := fix.NewUser(t) // ignore first user as it will be superuser
+		user, userClient := fix.NewUser(t)
 
 		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -1532,6 +1532,24 @@ func TestRBAC(t *testing.T) {
 			Project:    "proj-scope",
 			ProdSlots:  1,
 			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+
+		depl, err := admin.CreateDeployment(ctx, &adminv1.CreateDeploymentRequest{
+			Org:         org.Organization.Name,
+			Project:     project.Project.Name,
+			Environment: "prod",
+		})
+		require.NoError(t, err)
+
+		// directly update deployment to running with runtime info especially audience for correct jwt generation
+		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
+			Branch:            "main",
+			RuntimeHost:       "rill-example-host",
+			RuntimeInstanceID: "rill-example-instance",
+			RuntimeAudience:   "http://example.org",
+			Status:            database.DeploymentStatusRunning,
+			StatusMessage:     "Running",
 		})
 		require.NoError(t, err)
 
@@ -1577,11 +1595,27 @@ func TestRBAC(t *testing.T) {
 		require.NotEmpty(t, member.Member.Resources)
 		require.Equal(t, "rill.runtime.v1.Explore", member.Member.Resources[0].Type)
 		require.Equal(t, "explore", member.Member.Resources[0].Name)
+
+		proj, err := userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err := fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules := claims.Claims("").AdditionalRules
+		require.Len(t, rules, 1)
+		require.NotNil(t, rules[0].GetTransitiveAccess())
+		require.Equal(t, "rill.runtime.v1.Explore", rules[0].GetTransitiveAccess().Resource.Kind)
+		require.Equal(t, "explore", rules[0].GetTransitiveAccess().Resource.Name)
 	})
 
 	t.Run("Project usergroup role updates preserve resource restrictions when omitted", func(t *testing.T) {
-		_, admin := fix.NewUser(t)
-		user, _ := fix.NewUser(t)
+		_, admin := fix.NewUser(t) // ignore first user as it will be superuser
+		user, userClient := fix.NewUser(t)
 
 		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -1592,6 +1626,25 @@ func TestRBAC(t *testing.T) {
 			SkipDeploy: true,
 		})
 		require.NoError(t, err)
+
+		depl, err := admin.CreateDeployment(ctx, &adminv1.CreateDeploymentRequest{
+			Org:         org.Organization.Name,
+			Project:     project.Project.Name,
+			Environment: "prod",
+		})
+		require.NoError(t, err)
+
+		// directly update deployment to running with runtime info especially audience for correct jwt generation
+		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
+			Branch:            "main",
+			RuntimeHost:       "rill-example-host",
+			RuntimeInstanceID: "rill-example-instance",
+			RuntimeAudience:   "http://example.org",
+			Status:            database.DeploymentStatusRunning,
+			StatusMessage:     "Running",
+		})
+		require.NoError(t, err)
+
 		group, err := admin.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
 			Org:  org.Organization.Name,
 			Name: "group-scope",
@@ -1665,11 +1718,26 @@ func TestRBAC(t *testing.T) {
 			}
 		}
 		require.True(t, found)
+
+		proj, err := userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err := fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules := claims.Claims("").AdditionalRules
+		require.Len(t, rules, 1)
+		require.NotNil(t, rules[0].GetAccess())
+		require.Equal(t, false, rules[0].GetAccess().Allow)
 	})
 
 	t.Run("Project member restrictions can be added then cleared", func(t *testing.T) {
-		_, admin := fix.NewUser(t)
-		user, _ := fix.NewUser(t)
+		_, admin := fix.NewUser(t) // ignore first user as it will be superuser
+		user, userClient := fix.NewUser(t)
 
 		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -1678,6 +1746,24 @@ func TestRBAC(t *testing.T) {
 			Project:    "proj-member-add-remove",
 			ProdSlots:  1,
 			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+
+		depl, err := admin.CreateDeployment(ctx, &adminv1.CreateDeploymentRequest{
+			Org:         org.Organization.Name,
+			Project:     project.Project.Name,
+			Environment: "prod",
+		})
+		require.NoError(t, err)
+
+		// directly update deployment to running with runtime info especially audience for correct jwt generation
+		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
+			Branch:            "main",
+			RuntimeHost:       "rill-example-host",
+			RuntimeInstanceID: "rill-example-instance",
+			RuntimeAudience:   "http://example.org",
+			Status:            database.DeploymentStatusRunning,
+			StatusMessage:     "Running",
 		})
 		require.NoError(t, err)
 
@@ -1698,12 +1784,14 @@ func TestRBAC(t *testing.T) {
 		require.False(t, member.Member.RestrictResources)
 		require.Empty(t, member.Member.Resources)
 
-		userRecord, err := fix.Admin.DB.FindUserByEmail(ctx, user.Email)
-		require.NoError(t, err)
-		role, err := fix.Admin.DB.FindProjectRole(ctx, database.ProjectRoleNameEditor)
-		require.NoError(t, err)
-		resources := []database.ResourceName{{Type: "rill.runtime.v1.Explore", Name: "orders"}}
-		err = fix.Admin.DB.UpdateProjectMemberUserRole(ctx, project.Project.Id, userRecord.ID, role.ID, true, resources)
+		restrictParam := true
+		_, err = admin.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
+			Org:               org.Organization.Name,
+			Project:           project.Project.Name,
+			Email:             user.Email,
+			RestrictResources: &restrictParam,
+			Resources:         []*adminv1.ResourceName{{Type: "rill.runtime.v1.Explore", Name: "orders"}},
+		})
 		require.NoError(t, err)
 
 		member, err = admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
@@ -1715,7 +1803,31 @@ func TestRBAC(t *testing.T) {
 		require.True(t, member.Member.RestrictResources)
 		require.Len(t, member.Member.Resources, 1)
 
-		err = fix.Admin.DB.UpdateProjectMemberUserRole(ctx, project.Project.Id, userRecord.ID, role.ID, false, nil)
+		proj, err := userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err := fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules := claims.Claims("").AdditionalRules
+		require.Len(t, rules, 1)
+		require.NotNil(t, rules[0].GetTransitiveAccess())
+		require.Equal(t, "rill.runtime.v1.Explore", rules[0].GetTransitiveAccess().Resource.Kind)
+		require.Equal(t, "orders", rules[0].GetTransitiveAccess().Resource.Name)
+
+		restrictParam = false
+		_, err = admin.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
+			Org:               org.Organization.Name,
+			Project:           project.Project.Name,
+			Email:             user.Email,
+			RestrictResources: &restrictParam,
+			Resources:         nil,
+		})
+		require.NoError(t, err)
 		require.NoError(t, err)
 
 		member, err = admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
@@ -1726,11 +1838,24 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, member.Member.RestrictResources)
 		require.Empty(t, member.Member.Resources)
+
+		proj, err = userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err = fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules = claims.Claims("").AdditionalRules
+		require.Len(t, rules, 0)
 	})
 
 	t.Run("Resource restrictions flag behaviour", func(t *testing.T) {
-		_, admin := fix.NewUser(t)
-		user, _ := fix.NewUser(t)
+		_, admin := fix.NewUser(t) // ignore first user as it will be superuser
+		user, userClient := fix.NewUser(t)
 
 		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -1739,6 +1864,23 @@ func TestRBAC(t *testing.T) {
 			Project:    "proj",
 			ProdSlots:  1,
 			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+		depl, err := admin.CreateDeployment(ctx, &adminv1.CreateDeploymentRequest{
+			Org:         org.Organization.Name,
+			Project:     project.Project.Name,
+			Environment: "prod",
+		})
+		require.NoError(t, err)
+
+		// directly update deployment to running with runtime info especially audience for correct jwt generation
+		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
+			Branch:            "main",
+			RuntimeHost:       "rill-example-host",
+			RuntimeInstanceID: "rill-example-instance",
+			RuntimeAudience:   "http://example.org",
+			Status:            database.DeploymentStatusRunning,
+			StatusMessage:     "Running",
 		})
 		require.NoError(t, err)
 
@@ -1757,7 +1899,7 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// now don't restrict the user but add resources, just to document behavior
+		// now don't restrict the user but add resources
 		restrictFlag := false
 		_, err = admin.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
 			Org:               org.Organization.Name,
@@ -1768,16 +1910,36 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		restrict, res, err := fix.Server.GetResourceRestrictionsForUser(ctx, project.Project.Id, user.ID)
+		memResp, err := admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
 		require.NoError(t, err)
-		require.True(t, restrict) // restricted flag ignored when resources list not empty in the request
-		require.Len(t, res, 1)
-		require.Equal(t, database.ResourceName{Type: "metrics_view", Name: "mv1"}, res[0])
+		require.True(t, memResp.Member.RestrictResources) // restricted flag ignored when resources list not empty in the request
+		require.Len(t, memResp.Member.Resources, 1)
+		require.Equal(t, &adminv1.ResourceName{Type: "metrics_view", Name: "mv1"}, memResp.Member.Resources[0])
+
+		proj, err := userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err := fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules := claims.Claims("").AdditionalRules
+		require.Len(t, rules, 1)
+		require.NotNil(t, rules[0].GetTransitiveAccess())
+		require.Equal(t, "metrics_view", rules[0].GetTransitiveAccess().Resource.Kind)
+		require.Equal(t, "mv1", rules[0].GetTransitiveAccess().Resource.Name)
 	})
 
 	t.Run("User and usergroup should all be restricted to take affect", func(t *testing.T) {
-		_, admin := fix.NewUser(t)
-		user, _ := fix.NewUser(t)
+		_, admin := fix.NewUser(t) // ignore first user as it will be superuser
+		user, userClient := fix.NewUser(t)
 
 		org, err := admin.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
 		require.NoError(t, err)
@@ -1788,6 +1950,25 @@ func TestRBAC(t *testing.T) {
 			SkipDeploy: true,
 		})
 		require.NoError(t, err)
+
+		depl, err := admin.CreateDeployment(ctx, &adminv1.CreateDeploymentRequest{
+			Org:         org.Organization.Name,
+			Project:     project.Project.Name,
+			Environment: "prod",
+		})
+		require.NoError(t, err)
+
+		// directly update deployment to running with runtime info especially audience for correct jwt generation
+		_, err = fix.Admin.DB.UpdateDeployment(ctx, depl.Deployment.Id, &database.UpdateDeploymentOptions{
+			Branch:            "main",
+			RuntimeHost:       "rill-example-host",
+			RuntimeInstanceID: "rill-example-instance",
+			RuntimeAudience:   "http://example.org",
+			Status:            database.DeploymentStatusRunning,
+			StatusMessage:     "Running",
+		})
+		require.NoError(t, err)
+
 		group, err := admin.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
 			Org:  org.Organization.Name,
 			Name: "group-inherit",
@@ -1813,6 +1994,7 @@ func TestRBAC(t *testing.T) {
 			Role:    database.ProjectRoleNameEditor,
 		})
 		require.NoError(t, err)
+		// restrict resources through usergroup
 		_, err = admin.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
 			Org:       org.Organization.Name,
 			Project:   project.Project.Name,
@@ -1822,11 +2004,38 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		restrict, res, err := fix.Server.GetResourceRestrictionsForUser(ctx, project.Project.Id, user.ID)
+		// just to check usergroup restriction applied
+		ugResp, err := admin.ListUsergroupsForProjectAndUser(ctx, &adminv1.ListUsergroupsForProjectAndUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
 		require.NoError(t, err)
-		require.False(t, restrict) // User has a full-access member role
-		require.Len(t, res, 1)
-		require.Equal(t, database.ResourceName{Type: "metrics_view", Name: "mv1"}, res[0])
+		var memUg *adminv1.MemberUsergroup
+		for _, g := range ugResp.Usergroups {
+			if g.GroupName == group.Usergroup.GroupName {
+				require.True(t, g.RestrictResources)
+				require.Len(t, g.Resources, 1)
+				require.Equal(t, &adminv1.ResourceName{Type: "metrics_view", Name: "mv1"}, g.Resources[0])
+				memUg = g
+				break
+			}
+		}
+		require.NotNil(t, memUg)
+
+		// initially user should have full access since user itself is not restricted
+		proj, err := userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err := fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules := claims.Claims("").AdditionalRules
+		require.Len(t, rules, 0) // since user has a full access role
 
 		// Now also restrict the user directly
 		_, err = admin.SetProjectMemberUserRole(ctx, &adminv1.SetProjectMemberUserRoleRequest{
@@ -1837,12 +2046,40 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		restrict, res, err = fix.Server.GetResourceRestrictionsForUser(ctx, project.Project.Id, user.ID)
+		// check both user restrictions are also in place
+		memResp, err := admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+			Email:   user.Email,
+		})
 		require.NoError(t, err)
-		require.True(t, restrict)
-		require.Len(t, res, 2)
-		require.Equal(t, database.ResourceName{Type: "metrics_view", Name: "mv2"}, res[0])
-		require.Equal(t, database.ResourceName{Type: "metrics_view", Name: "mv1"}, res[1])
+		require.True(t, memResp.Member.RestrictResources)
+		require.True(t, memUg.RestrictResources)
+		require.Len(t, memResp.Member.Resources, 1)
+		require.Len(t, memUg.Resources, 1)
+		require.Equal(t, &adminv1.ResourceName{Type: "metrics_view", Name: "mv2"}, memResp.Member.Resources[0])
+
+		// now user should see both restrictions applied
+		proj, err = userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err = fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules = claims.Claims("").AdditionalRules
+		require.Len(t, rules, 2)
+		resourceSet := map[string]bool{}
+		for _, r := range rules {
+			require.NotNil(t, r.GetTransitiveAccess())
+			resourceSet[r.GetTransitiveAccess().Resource.Name] = true
+		}
+		require.Len(t, resourceSet, 2)
+		require.Contains(t, resourceSet, "mv1")
+		require.Contains(t, resourceSet, "mv2")
 
 		// Now clear restrictions from user and usergroup
 		restrictFlag := false
@@ -1862,10 +2099,18 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Now user should have full access again and all resources cleared
-		restrict, res, err = fix.Server.GetResourceRestrictionsForUser(ctx, project.Project.Id, user.ID)
+		proj, err = userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
 		require.NoError(t, err)
-		require.False(t, restrict)
-		require.Empty(t, res)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err = fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules = claims.Claims("").AdditionalRules
+		require.Len(t, rules, 0)
 
 		// check role remains intact
 		member, err := admin.GetProjectMemberUser(ctx, &adminv1.GetProjectMemberUserRequest{
@@ -1906,10 +2151,18 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		restrict, res, err = fix.Server.GetResourceRestrictionsForUser(ctx, project.Project.Id, user.ID)
+		proj, err = userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
 		require.NoError(t, err)
-		require.False(t, restrict) // since user is still in a usergroup with no restrictions
-		require.Empty(t, res)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err = fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules = claims.Claims("").AdditionalRules
+		require.Len(t, rules, 0) // since user is still part of usergroup with no resource restrictions
 
 		// remove user from usergroup to see restriction take effect
 		_, err = admin.RemoveUsergroupMemberUser(ctx, &adminv1.RemoveUsergroupMemberUserRequest{
@@ -1919,10 +2172,21 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		restrict, res, err = fix.Server.GetResourceRestrictionsForUser(ctx, project.Project.Id, user.ID)
+		// deny all since user has restriction but no resources
+		proj, err = userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
 		require.NoError(t, err)
-		require.True(t, restrict) // now user restriction takes effect
-		require.Empty(t, res)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err = fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules = claims.Claims("").AdditionalRules
+		require.Len(t, rules, 1)
+		require.NotNil(t, rules[0].GetAccess())
+		require.Equal(t, false, rules[0].GetAccess().Allow)
 	})
 
 	t.Run("Project invites keep and update resource restrictions", func(t *testing.T) {

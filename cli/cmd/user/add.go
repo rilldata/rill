@@ -71,6 +71,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
+			if projectName == "" && (len(explores) > 0 || len(canvases) > 0 || restrictResources) {
+				return fmt.Errorf("resource restrictions can only be set when adding a user to a project")
+			}
+
 			// Handle adding the user to a project.
 			if projectName != "" {
 				resources, err := cmdutil.ParseResourceStrings(explores, canvases)

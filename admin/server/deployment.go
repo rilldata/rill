@@ -190,7 +190,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 			if err != nil {
 				return nil, err
 			}
-			restrictResources, resources, err = s.GetResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -561,7 +561,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 			if err != nil {
 				return nil, err
 			}
-			restrictResources, resources, err = s.GetResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -676,7 +676,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			if err != nil {
 				return nil, err
 			}
-			restrictResources, resources, err = s.GetResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
@@ -806,8 +806,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}, nil
 }
 
-// GetResourceRestrictionsForUser returns resource restrictions for a given user and project.
-func (s *Server) GetResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
+// getResourceRestrictionsForUser returns resource restrictions for a given user and project.
+func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
 	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return false, nil, err
@@ -863,7 +863,7 @@ func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context
 	}
 
 	// Determine resource restrictions from project member and usergroups
-	restrictResources, resources, err := s.GetResourceRestrictionsForUser(ctx, projID, userID)
+	restrictResources, resources, err := s.getResourceRestrictionsForUser(ctx, projID, userID)
 	if err != nil {
 		return nil, false, nil, err
 	}
