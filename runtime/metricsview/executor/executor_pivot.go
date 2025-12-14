@@ -153,8 +153,9 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 			return fmt.Errorf("failed to generate random alias: %w", err)
 		}
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
-			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s)", alias, underlyingSQL),
-			Args:  args,
+			Query:           fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s)", alias, underlyingSQL),
+			Args:            args,
+			QueryAttributes: e.queryAttributes,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to stage underlying data for pivot: %w", err)
@@ -163,7 +164,8 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST,
 		// Defer cleanup of the temporary table
 		defer func() {
 			err = olap.Exec(ensuredCtx, &drivers.Statement{
-				Query: fmt.Sprintf("DROP TABLE %s", alias),
+				Query:           fmt.Sprintf("DROP TABLE %s", alias),
+				QueryAttributes: e.queryAttributes,
 			})
 			if err != nil {
 				l, err2 := e.rt.InstanceLogger(ctx, e.instanceID)

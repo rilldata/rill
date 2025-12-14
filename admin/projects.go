@@ -95,6 +95,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		OwnerUserID: nil,
 		Environment: "prod",
 		Branch:      proj.ProdBranch,
+		Editable:    false,
 	})
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 // TeardownProject tears down a project and all its deployments.
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 	if err != nil {
 		return err
 	}
@@ -154,7 +155,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 		case <-time.After(2 * time.Second):
 			// Ready to check again.
 		}
-		depls, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+		depls, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 		if err != nil {
 			return err
 		}
@@ -195,6 +196,8 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
 
+	// TODO: changing prod related fields like slots, branch etc should only impact prod deployments, but for now we update all deployments
+	// NOTE: there is no way to change dev-slots right now
 	err = s.UpdateDeploymentsForProject(ctx, proj)
 	if err != nil {
 		return nil, err
@@ -278,17 +281,40 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 	return nil
 }
 
-// RedeployProject de-provisions and re-provisions a project's prod deployment.
+// RedeployProject de-provisions and re-provisions a project's deployment.
+// If prevDepl is nil, it provisions a new prod deployment based on prodBranch.
 func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
 	// Provision new deployment
+	var branch, environment string
+	var editable bool
+	if prevDepl != nil {
+		branch = prevDepl.Branch
+		environment = prevDepl.Environment
+		editable = prevDepl.Editable
+	} else {
+		branch = proj.ProdBranch
+		environment = "prod"
+	}
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
-		Environment: "prod",
-		Branch:      proj.ProdBranch,
+		Environment: environment,
+		Branch:      branch,
+		Editable:    editable,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if environment != "prod" || branch != proj.ProdBranch {
+		// Delete old prod deployment if exists
+		if prevDepl != nil {
+			err := s.TeardownDeployment(ctx, prevDepl)
+			if err != nil {
+				s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+		return proj, nil
 	}
 
 	// Update prod deployment on project
@@ -317,10 +343,9 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		err2 := s.TeardownDeployment(ctx, newDepl)
 		return nil, multierr.Combine(err, err2)
 	}
-
 	// Delete old prod deployment if exists
 	if prevDepl != nil {
-		err = s.TeardownDeployment(ctx, prevDepl)
+		err := s.TeardownDeployment(ctx, prevDepl)
 		if err != nil {
 			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
@@ -331,7 +356,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 
 // HibernateProject hibernates a project by tearing down its deployment.
 func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
-	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID, "", "")
 	if err != nil {
 		return nil, err
 	}

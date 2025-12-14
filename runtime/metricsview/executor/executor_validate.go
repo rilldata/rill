@@ -405,8 +405,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 		)
 	}
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:  query,
-		DryRun: true,
+		Query:           query,
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate dims and metrics: %w", err)
@@ -629,8 +630,9 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 
 	// Validate with a query if it's an expression
 	err = e.olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
-		DryRun: true,
+		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate expression for dimension %q: %w", d.Name, err)
@@ -641,8 +643,9 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 // validateMeasure validates a metrics view measure.
 func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m *runtimev1.MetricsViewSpec_Measure) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-		DryRun: true,
+		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	return err
 }
@@ -659,12 +662,12 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 	}
 	types := make(map[string]*runtimev1.Type, len(schema.Fields))
 	for _, f := range schema.Fields {
-		types[f.Name] = f.Type
+		types[strings.ToLower(f.Name)] = f.Type
 	}
 
 	// Check that the measures are not strings
 	for i, m := range e.metricsView.Measures {
-		typ, ok := types[m.Name]
+		typ, ok := types[strings.ToLower(m.Name)]
 		if !ok {
 			// Don't error: schemas are not always reliable
 			continue
@@ -682,16 +685,34 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 
 	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
-		typ, ok := types[d.Name]
-		if !ok {
-			// ignore dimensions that don't have a type in the schema
+		// Find the dimension's data type, and infer the dimension type
+		var code runtimev1.Type_Code
+		typ, ok := types[strings.ToLower(d.Name)]
+		if ok {
+			code = typ.Code
+			d.DataType = typ
+		}
+
+		// Don't infer the dimension type if it's already set
+		if d.Type != runtimev1.MetricsViewSpec_DIMENSION_TYPE_UNSPECIFIED {
 			continue
 		}
-		d.DataType = typ
-		switch d.DataType.GetCode() {
-		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+
+		// Infer the dimension type
+		switch code {
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME:
+			// TIMESTAMP and TIME types always default to the TIME dimension type
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case runtimev1.Type_CODE_UNSPECIFIED, runtimev1.Type_CODE_DATE:
+			// Unspecified types (e.g. if type detection failed) or DATE types only default to the TIME dimension type if they are the default time dimension.
+			// Otherwise they default to CATEGORICAL.
+			if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+			} else {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+			}
 		default:
+			// All other types default to CATEGORICAL
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 		}
 	}

@@ -502,6 +502,8 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                editable:
+                    type: boolean
                 environment:
                     type: string
                 id:
@@ -1244,6 +1246,8 @@ components:
                 faviconUrl:
                     type: string
                 id:
+                    type: string
+                logoDarkUrl:
                     type: string
                 logoUrl:
                     type: string
@@ -2268,7 +2272,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.76.2
+    version: v0.77.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -2827,6 +2831,8 @@ paths:
                                 faviconAssetId:
                                     type: string
                                 logoAssetId:
+                                    type: string
+                                logoDarkAssetId:
                                     type: string
                                 newName:
                                     type: string
@@ -4106,6 +4112,14 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                branch:
+                                    description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+                                    type: string
+                                editable:
+                                    description: |-
+                                        Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                                        Can't be set for `prod` deployments.
+                                    type: boolean
                                 environment:
                                     type: string
                             type: object
@@ -4204,6 +4218,9 @@ paths:
                                     type: string
                                 theme:
                                     description: Theme to use for the embedded resource.
+                                    type: string
+                                themeMode:
+                                    description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
                                     type: string
                                 ttlSeconds:
                                     description: TTL for the iframe's access token. If not set, defaults to 24 hours.

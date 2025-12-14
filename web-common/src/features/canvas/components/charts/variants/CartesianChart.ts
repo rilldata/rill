@@ -149,10 +149,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     return inputParams;
   }
 
-  updateProperty(
+  updateProperty = (
     key: keyof CartesianCanvasChartSpec,
     value: CartesianCanvasChartSpec[keyof CartesianCanvasChartSpec],
-  ) {
+  ) => {
     const currentSpec = get(this.specStore);
 
     if (key === "y") {
@@ -187,7 +187,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     }
 
     super.updateProperty(key, value);
-  }
+  };
 
   createChartDataQuery(
     ctx: CanvasStore,

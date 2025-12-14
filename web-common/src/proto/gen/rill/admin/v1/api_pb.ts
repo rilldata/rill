@@ -720,6 +720,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   logoAssetId?: string;
 
   /**
+   * @generated from field: optional string logo_dark_asset_id = 18;
+   */
+  logoDarkAssetId?: string;
+
+  /**
    * @generated from field: optional string favicon_asset_id = 7;
    */
   faviconAssetId?: string;
@@ -752,6 +757,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "logo_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "logo_dark_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -972,6 +978,23 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
    */
   environment = "";
 
+  /**
+   * Branch to deploy from. 
+   * Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+   * Optional for `dev` deployments.
+   *
+   * @generated from field: string branch = 4;
+   */
+  branch = "";
+
+  /**
+   * Whether the deployment is editable and the edited changes are persisted back to the git repo.
+   * Can't be set for `prod` deployments.
+   *
+   * @generated from field: bool editable = 5;
+   */
+  editable = false;
+
   constructor(data?: PartialMessage<CreateDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -983,6 +1006,8 @@ export class CreateDeploymentRequest extends Message<CreateDeploymentRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateDeploymentRequest {
@@ -2633,6 +2658,13 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   theme = "";
 
   /**
+   * Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".
+   *
+   * @generated from field: string theme_mode = 15;
+   */
+  themeMode = "";
+
+  /**
    * Navigation denotes whether navigation between different resources should be enabled in the embed.
    *
    * @generated from field: bool navigation = 13;
@@ -2672,6 +2704,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -15104,6 +15137,11 @@ export class Organization extends Message<Organization> {
   logoUrl = "";
 
   /**
+   * @generated from field: string logo_dark_url = 18;
+   */
+  logoDarkUrl = "";
+
+  /**
    * @generated from field: string favicon_url = 13;
    */
   faviconUrl = "";
@@ -15176,6 +15214,7 @@ export class Organization extends Message<Organization> {
     { no: 11, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "logo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "logo_dark_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "favicon_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -15595,6 +15634,11 @@ export class Deployment extends Message<Deployment> {
   branch = "";
 
   /**
+   * @generated from field: bool editable = 13;
+   */
+  editable = false;
+
+  /**
    * @generated from field: string runtime_host = 5;
    */
   runtimeHost = "";
@@ -15637,6 +15681,7 @@ export class Deployment extends Message<Deployment> {
     { no: 12, name: "owner_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },

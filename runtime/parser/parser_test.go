@@ -1804,6 +1804,7 @@ rows:
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+					FilterExpr:     map[string]*runtimev1.DefaultMetricsSQLFilter{},
 				},
 				Rows: []*runtimev1.CanvasRow{
 					{
@@ -2076,7 +2077,8 @@ func TestConnector(t *testing.T) {
 		`connectors/clickhouse.yaml`: `
 type: connector
 driver: clickhouse
-`})
+`,
+	})
 	r := &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2093,7 +2095,8 @@ driver: clickhouse
 type: connector
 driver: clickhouse
 managed: true
-`})
+`,
+	})
 	r = &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2113,7 +2116,8 @@ driver: clickhouse
 managed:
   hello: world
 time_zone: America/Los_Angeles
-`})
+`,
+	})
 	r = &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2133,7 +2137,8 @@ time_zone: America/Los_Angeles
 type: connector
 driver: clickhouse
 managed: 10
-`})
+`,
+	})
 	p, err = Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{

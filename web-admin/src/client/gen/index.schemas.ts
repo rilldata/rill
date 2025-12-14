@@ -396,6 +396,7 @@ export interface V1Deployment {
   ownerUserId?: string;
   environment?: string;
   branch?: string;
+  editable?: boolean;
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
@@ -885,6 +886,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  logoDarkUrl?: string;
   faviconUrl?: string;
   thumbnailUrl?: string;
   customDomain?: string;
@@ -1680,6 +1682,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  logoDarkAssetId?: string;
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
@@ -1853,6 +1856,13 @@ export type AdminServiceListDeploymentsParams = {
 
 export type AdminServiceCreateDeploymentBody = {
   environment?: string;
+  /** Branch to deploy from. 
+Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+Optional for `dev` deployments. */
+  branch?: string;
+  /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
+Can't be set for `prod` deployments. */
+  editable?: boolean;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -1891,6 +1901,8 @@ export type AdminServiceGetIFrameBody = {
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
+  /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
+  themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */

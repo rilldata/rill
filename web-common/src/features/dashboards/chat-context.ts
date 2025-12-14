@@ -16,7 +16,8 @@ export const dashboardChatConfig = <ChatConfig>{
   agent: ToolName.ANALYST_AGENT,
   additionalContextStoreGetter: () => getActiveExploreContext(), // TODO: add canvas context as well
   emptyChatLabel: "Happy to help explore your data",
-  placeholder: "Ask about your data...",
+  placeholder:
+    "Type a question, or press @ to insert a metric, dimension, or measure.",
   enableMention: true,
 };
 

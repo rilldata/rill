@@ -2252,6 +2252,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		OwnerUserId:       safeStr(d.OwnerUserID),
 		Environment:       d.Environment,
 		Branch:            d.Branch,
+		Editable:          d.Editable,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,
 		Status:            s,

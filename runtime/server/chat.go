@@ -34,7 +34,10 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 		return nil, ErrForbidden
 	}
 
-	if claims.UserID == "" {
+	if claims.UserID == "" && !claims.SkipChecks {
+		// This case matches anonymous users on runtimes with auth enabled (i.e. on Rill Cloud).
+		// This prevents anonymous users from seeing previous/other anonymous users' conversations.
+		// (In Rill Developer, auth is disabled so SkipChecks is true for anonymous users.)
 		return &runtimev1.ListConversationsResponse{}, nil
 	}
 
