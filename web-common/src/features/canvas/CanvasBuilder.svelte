@@ -55,7 +55,7 @@
     canvasEntity: {
       setSelectedComponent,
       selectedComponent,
-      components,
+      componentsStore,
       processRows,
       specStore,
       unsubscribe,
@@ -67,6 +67,8 @@
   $: layoutRows = $_rows;
 
   $: ({ instanceId } = $runtime);
+
+  $: components = $componentsStore;
 
   $: canvasData = $specStore.data;
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
@@ -479,7 +481,7 @@
       }}
       onComponentMouseDown={({ event, id }) => {
         if (event.button !== 0) return;
-        const component = components.get(id);
+        const component = componentsStore.getNonReactive(id);
         if (!component) return;
 
         initialMousePosition = $mousePosition;
@@ -594,7 +596,9 @@
             danger
             onClick={() => {
               if (!pendingComponentDelete) return;
-              const component = components.get(pendingComponentDelete);
+              const component = componentsStore.getNonReactive(
+                pendingComponentDelete,
+              );
               if (!component) return;
               deleteComponent(component);
               pendingComponentDelete = undefined;
