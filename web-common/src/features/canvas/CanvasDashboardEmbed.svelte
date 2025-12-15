@@ -10,8 +10,10 @@
   import { EntityStatus } from "../entity-management/types";
   import { derived, get, type Readable, type Writable } from "svelte/store";
   import type { Row } from "./stores/row";
-  import { getEmbedThemeStoreInstance } from "../embeds/embed-theme-store";
-  import { resolveEmbedTheme } from "../embeds/embed-theme-utils";
+  import {
+    getEmbedThemeStoreInstance,
+    resolveEmbedTheme,
+  } from "../embeds/embed-theme";
 
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
@@ -27,7 +29,9 @@
   let themeName: Writable<string | undefined>;
   let rows: Row[] = [];
 
-  // Look up the canvas store without throwing if it doesn't exist yet.
+  // TODO: CanvasProvider should make the store available before rendering this component.
+  // Investigate why we need getCanvasStoreUnguarded here instead of getCanvasStore.
+  // This may be a timing issue during navigation between canvas dashboards.
   $: canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
 
   $: if (canvasStore) {
@@ -48,9 +52,7 @@
   $: rows = canvasStore ? get(_rows) : [];
 
   const embedThemeStore = getEmbedThemeStoreInstance();
-  const embedThemeName = derived([embedThemeStore], ([$embedThemeStore]) =>
-    resolveEmbedTheme($embedThemeStore),
-  );
+  const embedThemeName = derived([embedThemeStore], () => resolveEmbedTheme());
 
   $: if (canvasStore) {
     const name = $embedThemeName;

@@ -112,6 +112,8 @@
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
+  // For non-embedded dashboards, theme can come from URL params.
+  // For embedded dashboards, embedThemeName prop takes precedence.
   const urlThemeName = readable<string | null>(null, (set) => {
     set(null);
     return () => {};

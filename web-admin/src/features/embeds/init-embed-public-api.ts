@@ -9,7 +9,7 @@ import {
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
 import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme-store";
+import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;

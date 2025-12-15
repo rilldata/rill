@@ -6,8 +6,10 @@
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../../components/errors/error-store";
   import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
-  import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme-store";
-  import { resolveEmbedTheme } from "@rilldata/web-common/features/embeds/embed-theme-utils";
+  import {
+    getEmbedThemeStoreInstance,
+    resolveEmbedTheme,
+  } from "@rilldata/web-common/features/embeds/embed-theme";
 
   export let instanceId: string;
   export let exploreName: string;
@@ -26,8 +28,8 @@
   $: metricsViewName = data?.metricsView?.meta?.name?.name;
 
   const embedThemeStore = getEmbedThemeStoreInstance();
-  const embedResolvedTheme = derived([embedThemeStore], ([$embedThemeStore]) =>
-    resolveEmbedTheme($embedThemeStore),
+  const embedResolvedTheme = derived([embedThemeStore], () =>
+    resolveEmbedTheme(),
   );
 
   // If no dashboard is found, show a 404 page
