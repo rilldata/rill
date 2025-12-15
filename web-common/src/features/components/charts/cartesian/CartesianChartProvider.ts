@@ -174,7 +174,7 @@ export class CartesianChartProvider {
             dimensions: [{ name: dimensionName }],
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: topNWhere,
-            timeRange,
+            timeRange: hasTimeSeries ? timeRange : undefined,
             limit: limit?.toString(),
           },
           {

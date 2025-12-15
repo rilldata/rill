@@ -199,6 +199,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		}
 	}
 
+	logoDarkAssetID := org.LogoDarkAssetID
+	if req.LogoDarkAssetId != nil { // Means it should be updated
+		if *req.LogoDarkAssetId == "" { // Means it should be cleared
+			logoDarkAssetID = nil
+		} else {
+			logoDarkAssetID = req.LogoDarkAssetId
+		}
+	}
+
 	faviconAssetID := org.FaviconAssetID
 	if req.FaviconAssetId != nil { // Means it should be updated
 		if *req.FaviconAssetId == "" { // Means it should be cleared
@@ -237,6 +246,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
 		LogoAssetID:                         logoAssetID,
+		LogoDarkAssetID:                     logoDarkAssetID,
 		FaviconAssetID:                      faviconAssetID,
 		ThumbnailAssetID:                    thumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
@@ -945,6 +955,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
@@ -994,6 +1005,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
 		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        req.CustomDomain,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
@@ -1026,6 +1038,11 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		logoURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.LogoAssetID)
 	}
 
+	var logoDarkURL string
+	if o.LogoDarkAssetID != nil {
+		logoDarkURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.LogoDarkAssetID)
+	}
+
 	var faviconURL string
 	if o.FaviconAssetID != nil {
 		faviconURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.FaviconAssetID)
@@ -1047,6 +1064,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		DisplayName:          o.DisplayName,
 		Description:          o.Description,
 		LogoUrl:              logoURL,
+		LogoDarkUrl:          logoDarkURL,
 		FaviconUrl:           faviconURL,
 		ThumbnailUrl:         thumbnailURL,
 		CustomDomain:         o.CustomDomain,

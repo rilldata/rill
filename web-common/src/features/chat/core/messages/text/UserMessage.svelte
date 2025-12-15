@@ -1,10 +1,10 @@
 <!-- Renders user prompt messages. -->
 <script lang="ts">
-  import type { V1Message } from "../../../../runtime-client";
-  import { extractMessageText } from "../utils";
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
-  import { onMount } from "svelte";
   import { Editor } from "@tiptap/core";
+  import { onMount } from "svelte";
+  import type { V1Message } from "../../../../../runtime-client";
+  import { extractMessageText } from "../../utils";
 
   export let message: V1Message;
 

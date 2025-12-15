@@ -876,6 +876,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  logoDarkUrl?: string;
   faviconUrl?: string;
   thumbnailUrl?: string;
   customDomain?: string;
@@ -1661,6 +1662,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  logoDarkAssetId?: string;
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
@@ -1879,6 +1881,8 @@ export type AdminServiceGetIFrameBody = {
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
+  /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
+  themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
