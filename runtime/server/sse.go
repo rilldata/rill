@@ -24,16 +24,25 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const (
+	// sseEventFile is the SSE event type for events from WatchFiles.
+	sseEventFile = "file"
+	// sseEventResource is the SSE event type for events from WatchResources.
+	sseEventResource = "resource"
+	// sseEventLog is the SSE event type for events from WatchLogs.
+	sseEventLog = "log"
+)
+
 // SSEHandler is a shim that exposes a unified SSE endpoint for the Server's streaming gRPC RPCs.
 // This is useful for two reasons:
 // 1. The vanguard library doesn't currently map streaming RPCs to SSE, so we need to manually implement that.
-// 2. We need to provide a unified endpoint that can multiplex multiple streams over a single SSE connection. This is required since browsers currenltly limit unsecured/localhost connections to 6 per origin.
+// 2. We need to provide a unified endpoint that can multiplex multiple streams over a single SSE connection. This helps support multiple open tabs from a single client since browsers limit concurrent unsecured/localhost connections to 6 per origin.
 //
-// The caller can differentiate between the streams using the `event:` field in the SSE messages, which contains the stream name the message belongs to.
+// The caller can differentiate between the event types using the `event:` field in the SSE messages.
 //
 // The handler supports the following query parameters:
-// - streams: comma-separated list of streams to subscribe to. Supported values are: files, resources, logs.
-// - stream: single stream to subscribe to. If used, the `event:` message field is omitted in the response for backwards compatibility. Deprecated: use `streams` instead.
+// - events: comma-separated list of events to subscribe to. Supported values are: file (maps to WatchFiles), resource (maps to WatchResources), log (maps to WatchLogs).
+// - stream: deprecated, use `events` instead. If used, the `event:` message field is omitted in the response for backwards compatibility. Supported values are: files, resources, logs.
 // - files_replay: maps to WatchFilesRequest.Replay
 // - resources_kind: maps to WatchResourcesRequest.Kind
 // - resources_replay: maps to WatchResourcesRequest.Replay
@@ -44,167 +53,169 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// Parse the instance ID
 	instanceID := req.PathValue("instance_id")
 
-	// Parse the stream(s) to subscribe to.
-	var streams []string
+	// Parse the event(s) to subscribe to.
+	var eventTypes []string
 	var omitEventNames bool
 	q := req.URL.Query()
-	if s := q.Get("streams"); s != "" {
-		streams = strings.Split(s, ",")
+	if v := q.Get("events"); v != "" {
+		eventTypes = strings.Split(v, ",")
 	}
-	if s := q.Get("stream"); s != "" { // For backwards compatibility, see function comment.
-		if len(streams) > 0 {
-			http.Error(w, "cannot specify both 'stream' and 'streams' parameters", http.StatusBadRequest)
+	if v := q.Get("stream"); v != "" { // For backwards compatibility, see function comment.
+		if len(eventTypes) > 0 {
+			http.Error(w, "cannot specify both 'stream' and 'events' parameters", http.StatusBadRequest)
 			return
 		}
-		streams = []string{s}
+		v := v[0 : len(v)-1] // Make singular, e.g. "logs" -> "log"
+		eventTypes = []string{v}
 		omitEventNames = true
 	}
+
+	// Deduplicate to prevent starting multiple goroutines for the same event type.
+	slices.Sort(eventTypes)
+	eventTypes = slices.Compact(eventTypes)
 
 	// Add observability attributes
 	observability.AddRequestAttributes(req.Context(),
 		attribute.String("args.instance_id", instanceID),
-		attribute.StringSlice("args.streams", streams),
+		attribute.StringSlice("args.events", eventTypes),
 	)
 
 	// Validation
-	if len(streams) == 0 {
-		http.Error(w, "must specify at least one stream via 'stream' or 'streams' parameter", http.StatusBadRequest)
+	if len(eventTypes) == 0 {
+		http.Error(w, "must specify at least one event type via the 'events' parameter", http.StatusBadRequest)
 		return
 	}
 
-	// Setup SSE handler
+	// Start goroutines for each event type.
 	grp, ctx := errgroup.WithContext(req.Context())
-	sse := SSEHandler{
-		Events: make(chan *SSEEvent),
-	}
-
-	// Start a goroutine with a streaming gRPC call for each requested stream.
-
-	// Files stream
-	if slices.Contains(streams, "files") {
-		grp.Go(func() error {
-			var replay bool
-			if replayStr := req.URL.Query().Get("files_replay"); replayStr != "" {
-				var err error
-				replay, err = strconv.ParseBool(replayStr)
-				if err != nil {
-					return fmt.Errorf("invalid value for 'files_replay': %w", err)
-				}
-			}
-
-			rr := &runtimev1.WatchFilesRequest{
-				InstanceId: instanceID,
-				Replay:     replay,
-			}
-
-			ss := &grpcStreamingShim[*runtimev1.WatchFilesResponse]{
-				ctx: ctx,
-				fn: func(data []byte) error {
-					event := &SSEEvent{Event: "files", Data: data}
-					if omitEventNames {
-						event.Event = ""
+	events := make(chan *sseEvent)
+	for _, eventType := range eventTypes {
+		switch eventType {
+		case sseEventFile:
+			grp.Go(func() error {
+				var replay bool
+				if replayStr := req.URL.Query().Get("files_replay"); replayStr != "" {
+					var err error
+					replay, err = strconv.ParseBool(replayStr)
+					if err != nil {
+						return fmt.Errorf("invalid value for 'files_replay': %w", err)
 					}
-					sse.Events <- event
-					return nil
-				},
-			}
-
-			return s.WatchFiles(rr, ss)
-		})
-	}
-
-	// Resources stream
-	if slices.Contains(streams, "resources") {
-		grp.Go(func() error {
-			kind := req.URL.Query().Get("resources_kind")
-
-			var replay bool
-			if replayStr := req.URL.Query().Get("resources_replay"); replayStr != "" {
-				var err error
-				replay, err = strconv.ParseBool(replayStr)
-				if err != nil {
-					return fmt.Errorf("invalid value for 'resources_replay': %w", err)
 				}
-			}
 
-			rr := &runtimev1.WatchResourcesRequest{
-				InstanceId: instanceID,
-				Kind:       kind,
-				Replay:     replay,
-			}
+				rr := &runtimev1.WatchFilesRequest{
+					InstanceId: instanceID,
+					Replay:     replay,
+				}
 
-			ss := &grpcStreamingShim[*runtimev1.WatchResourcesResponse]{
-				ctx: ctx,
-				fn: func(data []byte) error {
-					event := &SSEEvent{Event: "resources", Data: data}
-					if omitEventNames {
-						event.Event = ""
+				ss := &grpcStreamingShim[*runtimev1.WatchFilesResponse]{
+					ctx: ctx,
+					fn: func(data []byte) error {
+						event := &sseEvent{Event: sseEventFile, Data: data}
+						if omitEventNames {
+							event.Event = ""
+						}
+						events <- event
+						return nil
+					},
+				}
+
+				return s.WatchFiles(rr, ss)
+			})
+
+		case sseEventResource:
+			grp.Go(func() error {
+				kind := req.URL.Query().Get("resources_kind")
+
+				var replay bool
+				if replayStr := req.URL.Query().Get("resources_replay"); replayStr != "" {
+					var err error
+					replay, err = strconv.ParseBool(replayStr)
+					if err != nil {
+						return fmt.Errorf("invalid value for 'resources_replay': %w", err)
 					}
-					sse.Events <- event
-					return nil
-				},
-			}
-
-			return s.WatchResources(rr, ss)
-		})
-	}
-
-	// Logs stream
-	if slices.Contains(streams, "logs") {
-		grp.Go(func() error {
-			var replay bool
-			if replayStr := req.URL.Query().Get("logs_replay"); replayStr != "" {
-				var err error
-				replay, err = strconv.ParseBool(replayStr)
-				if err != nil {
-					return fmt.Errorf("invalid value for 'logs_replay': %w", err)
 				}
-			}
 
-			var replayLimit int64
-			if replayLimitStr := req.URL.Query().Get("logs_replay_limit"); replayLimitStr != "" {
-				var err error
-				replayLimit, err = strconv.ParseInt(replayLimitStr, 10, 32)
-				if err != nil {
-					return fmt.Errorf("invalid value for 'logs_replay_limit': %w", err)
+				rr := &runtimev1.WatchResourcesRequest{
+					InstanceId: instanceID,
+					Kind:       kind,
+					Replay:     replay,
 				}
-			}
 
-			var level runtimev1.LogLevel
-			if levelStr := req.URL.Query().Get("logs_level"); levelStr != "" {
-				level = runtimev1.LogLevel(runtimev1.LogLevel_value[strings.ToUpper(levelStr)])
-			}
+				ss := &grpcStreamingShim[*runtimev1.WatchResourcesResponse]{
+					ctx: ctx,
+					fn: func(data []byte) error {
+						event := &sseEvent{Event: sseEventResource, Data: data}
+						if omitEventNames {
+							event.Event = ""
+						}
+						events <- event
+						return nil
+					},
+				}
 
-			rr := &runtimev1.WatchLogsRequest{
-				InstanceId:  instanceID,
-				Replay:      replay,
-				ReplayLimit: int32(replayLimit),
-				Level:       level,
-			}
+				return s.WatchResources(rr, ss)
+			})
 
-			ss := &grpcStreamingShim[*runtimev1.WatchLogsResponse]{
-				ctx: ctx,
-				fn: func(data []byte) error {
-					event := &SSEEvent{Event: "logs", Data: data}
-					if omitEventNames {
-						event.Event = ""
+		case sseEventLog:
+			grp.Go(func() error {
+				var replay bool
+				if replayStr := req.URL.Query().Get("logs_replay"); replayStr != "" {
+					var err error
+					replay, err = strconv.ParseBool(replayStr)
+					if err != nil {
+						return fmt.Errorf("invalid value for 'logs_replay': %w", err)
 					}
-					sse.Events <- event
-					return nil
-				},
-			}
+				}
 
-			return s.WatchLogs(rr, ss)
-		})
+				var replayLimit int64
+				if replayLimitStr := req.URL.Query().Get("logs_replay_limit"); replayLimitStr != "" {
+					var err error
+					replayLimit, err = strconv.ParseInt(replayLimitStr, 10, 64)
+					if err != nil {
+						return fmt.Errorf("invalid value for 'logs_replay_limit': %w", err)
+					}
+				}
+
+				var level runtimev1.LogLevel
+				if levelStr := req.URL.Query().Get("logs_level"); levelStr != "" {
+					level = runtimev1.LogLevel(runtimev1.LogLevel_value[levelStr])
+				}
+
+				rr := &runtimev1.WatchLogsRequest{
+					InstanceId:  instanceID,
+					Replay:      replay,
+					ReplayLimit: int32(replayLimit),
+					Level:       level,
+				}
+
+				ss := &grpcStreamingShim[*runtimev1.WatchLogsResponse]{
+					ctx: ctx,
+					fn: func(data []byte) error {
+						event := &sseEvent{Event: sseEventLog, Data: data}
+						if omitEventNames {
+							event.Event = ""
+						}
+						events <- event
+						return nil
+					},
+				}
+
+				return s.WatchLogs(rr, ss)
+			})
+
+		default:
+			http.Error(w, fmt.Sprintf("unknown event type: %s", eventType), http.StatusBadRequest)
+			return
+		}
 	}
 
 	// In the background, wait for goroutines to complete and send a final error event if applicable.
 	// Attention must be paid to ctx handling and cancellation here. At a high-level, there are two scenarios:
-	// 1. The request is cancelled. The ctx used by the streams is cancelled, so they return with context.Canceled. The grp.Wait() returns and this goroutine closes sse.Events. The handler returns.
-	// 2. An error occurs in a stream. The errgroup cancels the ctx, so the other streams also returns. The grp.Wait() returns the original error, which this goroutine sends as a final message, then closes sse.Events. The handler returns.
+	// 1. The request is cancelled. The ctx used by the streams is cancelled, so they return with context.Canceled. The grp.Wait() returns, this goroutine closes the events channel, making serveSSEUntilClose return.
+	// 2. An error occurs in a stream. The errgroup cancels the ctx, so the other streams also returns. The grp.Wait() returns the original error, which this goroutine sends as a final message, then closes the events channel, making serveSSEUntilClose return.
 	go func() {
-		// This goroutine must close the events channel to ensure the call to sse.ServeUntilClose returns.
-		defer close(sse.Events)
+		// This goroutine must close the events channel to ensure the call to serveSSEUntilClose returns.
+		defer close(events)
 
 		err := grp.Wait()
 		if err != nil && !errors.Is(err, context.Canceled) {
@@ -224,7 +235,7 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 				s.logger.Error("failed to marshal error as json", zap.Error(err))
 			}
 
-			sse.Events <- &SSEEvent{
+			events <- &sseEvent{
 				Event: "error",
 				Data:  errJSON,
 			}
@@ -232,23 +243,19 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	// Serve the SSE stream.
-	// This will only return when the background goroutine calls close(sse.Events).
-	sse.ServeUntilClose(w)
+	// This will only return when the background goroutine calls close(events).
+	serveSSEUntilClose(w, events)
 }
 
-// SSEEvent represents a Server-Sent Event.
-type SSEEvent struct {
+// sseEvent represents a Server-Sent Event.
+type sseEvent struct {
 	Event string
 	Data  []byte
 }
 
-// ServeHTTP serves an SSE connection.
-// It's implementation was adapted from github.com/r3labs/sse/v2.
-type SSEHandler struct {
-	Events chan *SSEEvent
-}
-
-func (s *SSEHandler) ServeUntilClose(w http.ResponseWriter) {
+// serveSSEUntilClose serves SSE events from the provided channel until it's closed.
+// Its implementation was adapted from github.com/r3labs/sse/v2.
+func serveSSEUntilClose(w http.ResponseWriter, events chan *sseEvent) {
 	// Check we support streaming responses.
 	flusher, err := w.(http.Flusher)
 	if !err {
@@ -266,37 +273,29 @@ func (s *SSEHandler) ServeUntilClose(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
-	// Push events
-	for {
-		select {
-		case ev, ok := <-s.Events:
-			// Exit when the events channel is closed
-			if !ok {
-				return
-			}
-
-			// Skip empty events
-			if ev == nil || len(ev.Data) == 0 {
-				continue
-			}
-
-			// Write the event
-			if ev.Event != "" {
-				_, err := fmt.Fprintf(w, "event: %s\n", ev.Event)
-				if err != nil {
-					return
-				}
-			}
-			_, err := fmt.Fprintf(w, "data: %s\n", ev.Data)
-			if err != nil {
-				return
-			}
-			_, err = fmt.Fprint(w, "\n")
-			if err != nil {
-				return
-			}
-			flusher.Flush()
+	// Consume events from channel and write to response (the loop ends when the channel is closed)
+	for ev := range events {
+		// Skip empty events
+		if ev == nil || len(ev.Data) == 0 {
+			continue
 		}
+
+		// Write the event
+		if ev.Event != "" {
+			_, err := fmt.Fprintf(w, "event: %s\n", ev.Event)
+			if err != nil {
+				return
+			}
+		}
+		_, err := fmt.Fprintf(w, "data: %s\n", ev.Data)
+		if err != nil {
+			return
+		}
+		_, err = fmt.Fprint(w, "\n")
+		if err != nil {
+			return
+		}
+		flusher.Flush()
 	}
 }
 

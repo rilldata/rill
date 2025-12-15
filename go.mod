@@ -81,7 +81,6 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/prometheus/client_golang v1.22.0
-	github.com/r3labs/sse/v2 v2.10.0
 	github.com/redis/go-redis/v9 v9.6.3
 	github.com/riverqueue/river v0.19.0
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.19.0
@@ -426,7 +425,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
-	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
