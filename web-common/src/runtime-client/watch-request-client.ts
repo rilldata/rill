@@ -159,7 +159,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
       this.eventSource = new EventSource(sseUrl.toString());
 
-      console.log("tee hee");
       this.eventSource.onmessage = (event) => {
         console.log("SSE message received:", event.data);
         try {
