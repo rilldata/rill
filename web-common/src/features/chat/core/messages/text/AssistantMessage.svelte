@@ -2,6 +2,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    enhanceCitationLinks,
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
   } from "@rilldata/web-common/features/chat/core/messages/text/rewrite-citation-urls.ts";
@@ -31,7 +32,7 @@
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content">
+  <div class="chat-message-content" use:enhanceCitationLinks>
     <Markdown {content} converter={convertCitationUrls} />
   </div>
 </div>
