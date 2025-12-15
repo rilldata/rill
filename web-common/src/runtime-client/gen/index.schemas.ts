@@ -3160,7 +3160,6 @@ export type RuntimeServiceListResourcesParams = {
 export type RuntimeServiceWatchResourcesParams = {
   kind?: string;
   replay?: boolean;
-  level?: string;
 };
 
 export type RuntimeServiceWatchResources200 = {

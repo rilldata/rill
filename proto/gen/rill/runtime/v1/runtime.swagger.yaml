@@ -3051,10 +3051,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: level
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:
