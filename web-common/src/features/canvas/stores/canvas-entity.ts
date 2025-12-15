@@ -496,10 +496,6 @@ export class CanvasEntity {
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
-    if (this.embedThemeUnsubscriber) {
-      this.embedThemeUnsubscriber();
-      this.embedThemeUnsubscriber = null;
-    }
   };
 
   handleCanvasRedirect = async ({
