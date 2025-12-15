@@ -1,8 +1,8 @@
 <!-- Renders assistant responses from router_agent. -->
 <script lang="ts">
   import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
   import {
+    enhanceCitationLinks,
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
   } from "@rilldata/web-common/features/chat/core/messages/text/rewrite-citation-urls.ts";
@@ -10,7 +10,6 @@
   import Markdown from "../../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../../runtime-client";
   import { extractMessageText } from "../../utils";
-  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let message: V1Message;
 
@@ -30,26 +29,10 @@
   $: convertCitationUrls = renderedInExplore
     ? getCitationUrlRewriter($mapperStore.data)
     : undefined;
-
-  function handleClick(e: MouseEvent) {
-    if (!e.target || !(e.target instanceof HTMLElement)) return; // typesafety
-    if (e.metaKey || e.ctrlKey) {
-      if (EmbedStore.isEmbedded()) {
-        // Prevent cmd/ctrl+click in embedded context. The iframe url used for embedding cannot be opened as is.
-        e.preventDefault();
-      }
-      return;
-    }
-    const urlParams = e.target.getAttribute("data-url-params");
-    if (!urlParams) return;
-    e.preventDefault();
-    void goto("?" + urlParams);
-  }
 </script>
 
 <div class="chat-message">
-  <!-- svelte-ignore a11y-no-static-element-interactions a11y-click-events-have-key-events -->
-  <div class="chat-message-content" on:click={handleClick}>
+  <div class="chat-message-content" use:enhanceCitationLinks>
     <Markdown {content} converter={convertCitationUrls} />
   </div>
 </div>
