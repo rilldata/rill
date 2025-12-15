@@ -48,8 +48,6 @@
     return dashboard?.pivot;
   });
 
-  $: console.log($pivotExploreState);
-
   let showPanels = true;
 
   $: pivotDataStore = usePivotForExplore(stateManagers);

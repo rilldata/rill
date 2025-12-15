@@ -242,12 +242,6 @@ export function createPivotDataStore(
 
     const measureBody = measureNames.map((m) => ({ name: m }));
 
-    // Apply row limit to column dimension query
-    const colLimitToApply =
-      config.pivot.rowLimit !== undefined
-        ? config.pivot.rowLimit.toString()
-        : "100";
-
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       config,
@@ -255,8 +249,6 @@ export function createPivotDataStore(
       measureBody,
       config.whereFilter,
       [],
-      undefined,
-      colLimitToApply,
     );
 
     return derived(
