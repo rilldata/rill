@@ -2,6 +2,7 @@ import type {
   BannerEvent,
   PageContentResized,
   NotificationMessage,
+  StartChat,
 } from "./events";
 
 class EventBus {
@@ -72,7 +73,7 @@ export interface Events {
   click: null;
   "shift-command-click": null;
   "page-content-resized": PageContentResized;
-  "start-chat": string;
+  "start-chat": StartChat;
   "rill-yaml-updated": null;
 }
 

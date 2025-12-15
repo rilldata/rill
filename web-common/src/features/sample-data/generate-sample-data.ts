@@ -17,6 +17,8 @@ import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/Op
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
@@ -25,6 +27,8 @@ export async function generateSampleData(
   instanceId: string,
   userPrompt: string,
 ) {
+  const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
+
   try {
     if (initializeProject) {
       overlay.set({
@@ -48,6 +52,14 @@ export async function generateSampleData(
       });
 
       await projectResetPromise;
+      await featureFlags.ready;
+    }
+
+    const developerChatEnabled = get(featureFlags.dashboardChat);
+    if (developerChatEnabled) {
+      overlay.set(null);
+      sidebarActions.startChat(agentPrompt, true);
+      return;
     }
 
     overlay.set({
@@ -65,7 +77,6 @@ export async function generateSampleData(
     const conversation = new Conversation(instanceId, NEW_CONVERSATION_ID, {
       agent: ToolName.DEVELOPER_AGENT,
     });
-    const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
     conversation.draftMessage.set(agentPrompt);
 
     let created = false;
@@ -100,7 +111,7 @@ export async function generateSampleData(
       switch (msg.tool) {
         // Sometimes AI detects that model is already present.
         case ToolName.READ_FILE: {
-          const callMsg = messages.get(msg.parentId!);
+          const callMsg = messages.get(msg.parentId ?? "");
           if (!callMsg) break;
 
           // Keep a copy of the file that was read.
@@ -110,7 +121,7 @@ export async function generateSampleData(
         }
 
         case ToolName.WRITE_FILE: {
-          const callMsg = messages.get(msg.parentId!);
+          const callMsg = messages.get(msg.parentId ?? "");
           if (!callMsg) break;
 
           const path = parseFile(callMsg, msg);

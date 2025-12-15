@@ -49,3 +49,8 @@ export interface PageContentResized {
   width: number;
   height: number;
 }
+
+export interface StartChat {
+  prompt: string;
+  submit?: boolean;
+}

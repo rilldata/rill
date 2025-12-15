@@ -8,8 +8,9 @@
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+  import { get } from "svelte/store";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -89,10 +90,15 @@
       },
     });
 
-    const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
-      editor.commands.setContent(prompt);
-      editor.commands.focus();
-    });
+    const unsubStartChatEvent = eventBus.on(
+      "start-chat",
+      async ({ prompt, submit }) => {
+        editor.commands.setContent(prompt);
+        if (!submit) editor.commands.focus();
+        await waitUntil(() => get(draftMessageStore) === prompt);
+        void sendMessage();
+      },
+    );
 
     chatMounted.set(true);
 
