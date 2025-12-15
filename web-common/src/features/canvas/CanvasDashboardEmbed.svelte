@@ -1,15 +1,11 @@
 <script lang="ts">
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import {
-    getCanvasStoreUnguarded,
-    type CanvasStore,
-  } from "./state-managers/state-managers";
+  import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
-  import { derived, get, type Readable, type Writable } from "svelte/store";
-  import type { Row } from "./stores/row";
+  import { derived } from "svelte/store";
   import {
     getEmbedThemeStoreInstance,
     resolveEmbedTheme,
@@ -20,41 +16,28 @@
 
   $: ({ instanceId } = $runtime);
 
-  let canvasStore: CanvasStore | undefined;
-  let components: CanvasStore["canvasEntity"]["components"];
-  let _rows: Readable<Row[]>;
-  let firstLoad: Readable<boolean>;
-  let _maxWidth: Readable<number>;
-  let filtersEnabledStore: Readable<boolean | undefined>;
-  let themeName: Writable<string | undefined>;
-  let rows: Row[] = [];
+  $: ({
+    canvasEntity: {
+      componentsStore,
+      _rows,
+      firstLoad,
+      _maxWidth,
+      filtersEnabledStore,
+      themeName,
+    },
+  } = getCanvasStore(canvasName, instanceId));
 
-  // TODO: CanvasProvider should make the store available before rendering this component.
-  // Investigate why we need getCanvasStoreUnguarded here instead of getCanvasStore.
-  // This may be a timing issue during navigation between canvas dashboards.
-  $: canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
+  $: components = $componentsStore;
 
-  $: if (canvasStore) {
-    ({
-      canvasEntity: {
-        components,
-        _rows,
-        firstLoad,
-        _maxWidth,
-        filtersEnabledStore,
-        themeName,
-      },
-    } = canvasStore);
-  }
-
-  $: filtersEnabled = canvasStore ? $filtersEnabledStore : undefined;
-  $: maxWidth = canvasStore ? $_maxWidth : 0;
-  $: rows = canvasStore ? get(_rows) : [];
+  $: filtersEnabled = $filtersEnabledStore;
+  $: maxWidth = $_maxWidth;
+  $: rows = $_rows;
 
   const embedThemeStore = getEmbedThemeStoreInstance();
   const embedThemeName = derived([embedThemeStore], () => resolveEmbedTheme());
 
-  $: if (canvasStore) {
+  // Drive the canvas themeName from the resolved embed theme.
+  $: {
     const name = $embedThemeName;
     if (name !== undefined) {
       themeName.set(name ?? undefined);
@@ -62,7 +45,7 @@
   }
 </script>
 
-{#if canvasName && canvasStore}
+{#if canvasName}
   <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow
