@@ -155,6 +155,12 @@ export class CanvasEntity {
 
     this.timeManager = new TimeManager(searchParamsStore, this);
 
+    // Let the embed layer (CanvasDashboardEmbed) drive themeName;
+    // initialise with no override here so createResolvedThemeStore falls
+    // back to the dashboard's own theme from the spec unless an embed
+    // override is applied.
+    this.themeName.set(undefined);
+
     this.processSpec(this.spec);
 
     this.metricsView = new MetricsViewSelectors(
@@ -483,7 +489,6 @@ export class CanvasEntity {
 
     this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
-    this.themeName.set(searchParams.get("theme") ?? undefined);
     this.saveSnapshot(searchParams.toString());
     this.timeManager.state.onUrlChange(searchParams);
   };
