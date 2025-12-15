@@ -93,14 +93,18 @@
       });
     }
 
-    const processed = {
-      canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
-      components: fetchedCanvas?.resolvedComponents,
-      metricsViews,
-      filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
-    };
+    const validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
 
-    resolvedStore = setCanvasStore(canvasName, instanceId, processed);
+    if (validSpec) {
+      const processed = {
+        canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
+        components: fetchedCanvas?.resolvedComponents,
+        metricsViews,
+        filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
+      };
+
+      resolvedStore = setCanvasStore(canvasName, instanceId, processed);
+    }
   } else if (existingStore) {
     resolvedStore = existingStore;
   }
