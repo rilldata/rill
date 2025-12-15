@@ -73,11 +73,8 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Setup SSE handler
-	ctx, cancel := context.WithCancel(req.Context())
-	defer cancel()
-	grp := errgroup.Group{} // Not using errgroup.WithContext since we want to send an error message before cancelling the SSE connection.
+	grp, ctx := errgroup.WithContext(req.Context())
 	sse := SSEHandler{
-		Ctx:    ctx,
 		Events: make(chan *SSEEvent),
 	}
 
@@ -201,8 +198,14 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
-	// Wait for all goroutines to complete
+	// In the background, wait for goroutines to complete and send a final error event if applicable.
+	// Attention must be paid to ctx handling and cancellation here. At a high-level, there are two scenarios:
+	// 1. The request is cancelled. The ctx used by the streams is cancelled, so they return with context.Canceled. The grp.Wait() returns and this goroutine closes sse.Events. The handler returns.
+	// 2. An error occurs in a stream. The errgroup cancels the ctx, so the other streams also returns. The grp.Wait() returns the original error, which this goroutine sends as a final message, then closes sse.Events. The handler returns.
 	go func() {
+		// This goroutine must close the events channel to ensure the call to sse.ServeUntilClose returns.
+		defer close(sse.Events)
+
 		err := grp.Wait()
 		if err != nil && !errors.Is(err, context.Canceled) {
 			s.logger.Warn("sse stream error", zap.String("instance_id", instanceID), zap.Error(err))
@@ -226,13 +229,11 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 				Data:  errJSON,
 			}
 		}
-
-		cancel()
-		close(sse.Events)
 	}()
 
-	// Serve the SSE stream
-	sse.ServeHTTP(w)
+	// Serve the SSE stream.
+	// This will only return when the background goroutine calls close(sse.Events).
+	sse.ServeUntilClose(w)
 }
 
 // SSEEvent represents a Server-Sent Event.
@@ -244,11 +245,10 @@ type SSEEvent struct {
 // ServeHTTP serves an SSE connection.
 // It's implementation was adapted from github.com/r3labs/sse/v2.
 type SSEHandler struct {
-	Ctx    context.Context
 	Events chan *SSEEvent
 }
 
-func (s *SSEHandler) ServeHTTP(w http.ResponseWriter) {
+func (s *SSEHandler) ServeUntilClose(w http.ResponseWriter) {
 	// Check we support streaming responses.
 	flusher, err := w.(http.Flusher)
 	if !err {
@@ -269,10 +269,8 @@ func (s *SSEHandler) ServeHTTP(w http.ResponseWriter) {
 	// Push events
 	for {
 		select {
-		case <-s.Ctx.Done():
-			return
 		case ev, ok := <-s.Events:
-			// Exit if the events channel is closed
+			// Exit when the events channel is closed
 			if !ok {
 				return
 			}
