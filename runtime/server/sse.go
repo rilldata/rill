@@ -255,7 +255,7 @@ func (s *SSEHandler) ServeHTTP(w http.ResponseWriter) {
 			}
 
 			// Write the event
-			if len(ev.Event) > 0 {
+			if ev.Event != "" {
 				_, err := fmt.Fprintf(w, "event: %s\n", ev.Event)
 				if err != nil {
 					return
