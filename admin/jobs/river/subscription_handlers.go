@@ -66,6 +66,7 @@ func (w *SubscriptionCancellationCheckWorker) Work(ctx context.Context, job *riv
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
 			LogoAssetID:                         org.LogoAssetID,
+			LogoDarkAssetID:                     org.LogoDarkAssetID,
 			FaviconAssetID:                      org.FaviconAssetID,
 			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,

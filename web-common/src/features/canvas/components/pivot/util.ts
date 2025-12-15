@@ -270,7 +270,7 @@ export const usePivotForCanvas = (
   const pivotDashboardContext: PivotDashboardContext = {
     metricsViewName: metricsViewStore,
     queryClient: queryClient,
-    enabled: !!canvas.spec,
+    enabled: !!canvas,
   };
 
   const pivotDataStore = createPivotDataStore(

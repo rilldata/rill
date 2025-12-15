@@ -32,6 +32,10 @@ export class EmbedStore {
     return this._instance;
   }
 
+  public static isEmbedded() {
+    return this._instance !== null;
+  }
+
   private constructor(url: URL) {
     this.instanceId = url.searchParams.get("instance_id") ?? "";
     this.runtimeHost = url.searchParams.get("runtime_host") ?? "";

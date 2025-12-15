@@ -1,8 +1,6 @@
 import {
-  InlineContextConfig,
   INLINE_CHAT_CONTEXT_TAG,
   type InlineContext,
-  type InlineContextMetadata,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function convertContextToInlinePrompt(ctx: InlineContext) {
@@ -48,29 +46,4 @@ export function parseInlineAttr(content: string, key: string) {
   const match = new RegExp(`${key}="([^"]+?)"`).exec(content);
   if (!match) return null;
   return match[1];
-}
-
-const ChatContextRegex = new RegExp(
-  `<${INLINE_CHAT_CONTEXT_TAG}>(.*?)</${INLINE_CHAT_CONTEXT_TAG}>`,
-  "gm",
-);
-export function convertPromptWithInlineContextToHTML(
-  prompt: string,
-  meta: InlineContextMetadata,
-) {
-  const lines = prompt.split("\n");
-  const htmlLines = lines.map((line) =>
-    line.replaceAll(ChatContextRegex, (raw, contextValue: string) => {
-      const entry = convertPromptValueToContext(contextValue);
-      if (!entry) return raw;
-
-      const data = InlineContextConfig[entry.type];
-      if (!data) return raw;
-      const label = data.getLabel(entry, meta);
-
-      // TODO: once we support editing messages, embed other parts of context here.
-      return `<span class="underline">${label}</span>`;
-    }),
-  );
-  return htmlLines.join("<br>");
 }

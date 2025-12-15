@@ -170,6 +170,14 @@ service QueryService {
     };
   }
 
+  // ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+  rpc ConvertExpressionToMetricsSQL(ConvertExpressionToMetricsSQLRequest) returns (ConvertExpressionToMetricsSQLResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/filter-expression/resolve",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -914,6 +922,16 @@ message MetricsViewAnnotationsResponse {
   }
 
   repeated Annotation rows = 1;
+}
+
+message ConvertExpressionToMetricsSQLRequest {
+  string instance_id = 1;
+  Expression expression = 2;
+}
+
+message ConvertExpressionToMetricsSQLResponse {
+  // The SQL filter string representation of the expression.
+  string sql = 1;
 }
 
 // **********
