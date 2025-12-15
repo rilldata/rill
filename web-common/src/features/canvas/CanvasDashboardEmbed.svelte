@@ -8,7 +8,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
-  import { derived, type Readable, type Writable } from "svelte/store";
+  import { derived, get, type Readable, type Writable } from "svelte/store";
+  import type { Row } from "./stores/row";
   import { getEmbedThemeStoreInstance } from "../embeds/embed-theme-store";
   import { resolveEmbedTheme } from "../embeds/embed-theme-utils";
 
@@ -19,11 +20,12 @@
 
   let canvasStore: CanvasStore | undefined;
   let components: CanvasStore["canvasEntity"]["components"];
-  let _rows: Readable<unknown>;
+  let _rows: Readable<Row[]>;
   let firstLoad: Readable<boolean>;
   let _maxWidth: Readable<number>;
   let filtersEnabledStore: Readable<boolean | undefined>;
   let themeName: Writable<string | undefined>;
+  let rows: Row[] = [];
 
   // Look up the canvas store without throwing if it doesn't exist yet.
   $: canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
@@ -43,7 +45,7 @@
 
   $: filtersEnabled = canvasStore ? $filtersEnabledStore : undefined;
   $: maxWidth = canvasStore ? $_maxWidth : 0;
-  $: rows = canvasStore ? $_rows : [];
+  $: rows = canvasStore ? get(_rows) : [];
 
   const embedThemeStore = getEmbedThemeStoreInstance();
   const embedThemeName = derived([embedThemeStore], ([$embedThemeStore]) =>
