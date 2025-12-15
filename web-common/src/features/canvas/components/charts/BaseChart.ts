@@ -186,7 +186,7 @@ export abstract class BaseChart<
       this.pathInYAML,
     );
 
-    this.parent.components.set(newComponent.id, newComponent);
+    this.parent.componentsStore.set(newComponent.id, newComponent);
     this.parent.selectedComponent.set(newComponent.id);
     this.parent._rows.refresh();
 
