@@ -374,6 +374,7 @@ async function runTest({
   const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
     AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
     AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME.smallestTimeGrain,
   );
   const expectedExploreState = {
     ...rillDefaultExploreState,

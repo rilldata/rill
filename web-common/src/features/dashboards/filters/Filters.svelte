@@ -17,9 +17,9 @@
     TimeRangePreset,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import type {
-    V1ExploreTimeRange,
+  import {
     V1TimeGrain,
+    type V1ExploreTimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
@@ -33,6 +33,7 @@
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
+    allowedGrainsForInterval,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
@@ -251,10 +252,21 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-
       metricsViewName,
       activeTimeZone,
     );
+
+    const allowedGrains = allowedGrainsForInterval(
+      interval,
+      minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+
+    const finalGrain =
+      activeTimeGrain && allowedGrains.includes(activeTimeGrain)
+        ? activeTimeGrain
+        : grain && allowedGrains.includes(grain)
+          ? grain
+          : allowedGrains[0];
 
     if (interval.isValid) {
       const validInterval = interval as Interval<true>;
@@ -264,7 +276,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(baseTimeRange, finalGrain);
     }
   }
 
