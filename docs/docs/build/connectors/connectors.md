@@ -198,6 +198,28 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 </div>
 
+## Data Lake Formats
+
+### DuckLake
+### Apache Iceberg
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckLake" className="duckdb-icon"/>}
+    header="DuckLake"
+    content="Query data directly from object storage using DuckDB's data lakehouse capabilities."
+    link="/build/connectors/data-source/ducklake"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<p className="iceberg-icon">🧊</p>}
+    header="Apache Iceberg"
+    content="Connect to Apache Iceberg tables for reliable, scalable data lake management."
+    link="/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+  />
+</div>
+
 ## Other Data Connectors
 ### External DuckDB
 ### Google Sheets
@@ -251,6 +273,16 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 :::tip Missing a connector?
 We're constantly adding new data connectors. If you don't see what you need, [let us know](/contact) and we'll help you get connected.
+:::
+
+## Deployment Options
+
+### Self-Hosting
+
+**[Self-Hosting Rill](/build/connectors/self-hosting)** - Deploy and manage Rill in your own infrastructure for complete control over your data, security, and compliance requirements.
+
+:::info Interested in Self-Hosting?
+Self-hosting Rill is available for enterprise customers. [Contact our team](/contact) to discuss your requirements.
 :::
 
 ## Other Integrations
