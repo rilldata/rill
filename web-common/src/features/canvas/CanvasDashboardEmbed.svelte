@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { type V1Resource } from "@rilldata/web-common/runtime-client";
-  import { DEFAULT_DASHBOARD_WIDTH } from "./layout-util";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
@@ -8,29 +6,28 @@
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
 
-  export let resource: V1Resource;
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
 
   $: ({ instanceId } = $runtime);
 
-  $: canvas = resource?.canvas;
-  $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;
-
   $: ({
-    canvasEntity: { components, _rows, firstLoad },
+    canvasEntity: {
+      components,
+      _rows,
+      firstLoad,
+      _maxWidth,
+      filtersEnabledStore,
+    },
   } = getCanvasStore(canvasName, instanceId));
 
+  $: filtersEnabled = $filtersEnabledStore;
+  $: maxWidth = $_maxWidth;
   $: rows = $_rows;
 </script>
 
 {#if canvasName}
-  <CanvasDashboardWrapper
-    {maxWidth}
-    {canvasName}
-    filtersEnabled={canvas?.spec?.filtersEnabled}
-    embedded
-  >
+  <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow
         {row}

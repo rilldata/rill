@@ -76,7 +76,7 @@
     },
     {
       query: {
-        enabled: isValid && (!hasTimeSeries || (!!start && !!end)) && visible,
+        enabled: isValid && visible && (!hasTimeSeries || (!!start && !!end)),
       },
     },
   );

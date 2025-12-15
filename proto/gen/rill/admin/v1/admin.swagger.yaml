@@ -465,6 +465,8 @@ paths:
                 type: string
               logoAssetId:
                 type: string
+              logoDarkAssetId:
+                type: string
               faviconAssetId:
                 type: string
               thumbnailAssetId:
@@ -1616,6 +1618,9 @@ paths:
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
+              themeMode:
+                type: string
+                description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
@@ -5542,6 +5547,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      logoDarkUrl:
         type: string
       faviconUrl:
         type: string

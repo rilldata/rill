@@ -78,6 +78,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 		Args:             args,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultInteractiveTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return err
