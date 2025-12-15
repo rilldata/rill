@@ -1,42 +1,25 @@
 import { EmbedStore } from "./embed-store";
 import { getEmbedThemeStoreInstance } from "./embed-theme-store";
 import { get } from "svelte/store";
-import { page } from "$app/stores";
 
 /**
- * Resolves the theme name with priority:
- * 1. embedThemeStore (set via API)
- * 2. EmbedStore.theme (from initial URL)
- * 3. URL params
- *
- * @param isEmbedded - Whether the dashboard is embedded
- * @param embedThemeValue - Current value from embedThemeStore (for reactive usage)
- * @param urlSearchParams - Optional URLSearchParams to check (defaults to current page URL)
- * @returns The resolved theme name, or null if no theme is set
+ * Resolves the theme name for embeds with priority:
+ * 1. API value (including explicit null)
+ * 2. Embed theme store value
+ * 3. Initial embed URL theme
  */
 export function resolveEmbedTheme(
-  isEmbedded: boolean,
   embedThemeValue?: string | null,
-  urlSearchParams?: URLSearchParams,
 ): string | null {
-  if (!isEmbedded) {
-    const params = urlSearchParams ?? get(page).url.searchParams;
-    return params.get("theme");
-  }
+  // 1. Explicit API-provided value (including null to clear)
+  if (embedThemeValue !== undefined) return embedThemeValue;
 
+  // 2. Value from the scoped embed theme store, if non-null
   const embedThemeStore = getEmbedThemeStoreInstance();
-  const apiTheme =
-    embedThemeValue !== undefined ? embedThemeValue : get(embedThemeStore);
-  if (apiTheme !== null) {
-    return apiTheme;
-  }
+  const storeValue = get(embedThemeStore);
+  if (storeValue != null) return storeValue;
 
+  // 3. Fallback to initial theme from the embed URL (captured in EmbedStore)
   const embedStore = EmbedStore.getInstance();
-  const initialTheme = embedStore?.theme;
-  if (initialTheme) {
-    return initialTheme;
-  }
-
-  const params = urlSearchParams ?? get(page).url.searchParams;
-  return params.get("theme");
+  return embedStore?.theme ?? null;
 }

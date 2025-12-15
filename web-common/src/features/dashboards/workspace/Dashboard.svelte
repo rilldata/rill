@@ -22,16 +22,13 @@
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import ThemeProvider from "../ThemeProvider.svelte";
-  import { page } from "$app/stores";
   import { createResolvedThemeStore } from "../../themes/selectors";
-  import { writable, get } from "svelte/store";
-  import { getEmbedThemeStoreInstance } from "../../embeds/embed-theme-store";
-  import { resolveEmbedTheme } from "../../embeds/embed-theme-utils";
-  import { onDestroy } from "svelte";
+  import { readable, type Readable } from "svelte/store";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
+  export let embedThemeName: Readable<string | null> | null = null;
 
   const DEFAULT_TIMESERIES_WIDTH = 580;
   const MIN_TIMESERIES_WIDTH = 440;
@@ -115,43 +112,15 @@
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
-  const urlThemeName = writable<string | null>(null);
-
-  $: embedThemeStore = isEmbedded ? getEmbedThemeStoreInstance() : null;
-  $: embedThemeValue = embedThemeStore ? get(embedThemeStore) : null;
-
-  $: {
-    if (isEmbedded && embedThemeValue !== undefined) {
-      const resolvedTheme = resolveEmbedTheme(isEmbedded, embedThemeValue);
-      urlThemeName.set(resolvedTheme);
-    } else {
-      urlThemeName.set($page.url.searchParams.get("theme"));
-    }
-  }
-
-  let unsubscribeTheme: (() => void) | null = null;
-  $: if (isEmbedded && embedThemeStore) {
-    // Clean up previous subscription
-    if (unsubscribeTheme) {
-      unsubscribeTheme();
-    }
-    unsubscribeTheme = embedThemeStore.subscribe(() => {
-      const currentValue = get(embedThemeStore);
-      const resolvedTheme = resolveEmbedTheme(isEmbedded, currentValue);
-      urlThemeName.set(resolvedTheme);
-    });
-  } else if (unsubscribeTheme) {
-    unsubscribeTheme();
-    unsubscribeTheme = null;
-  }
-
-  onDestroy(() => {
-    if (unsubscribeTheme) {
-      unsubscribeTheme();
-    }
+  const urlThemeName = readable<string | null>(null, (set) => {
+    set(null);
+    return () => {};
   });
 
-  $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
+  let themeSource: Readable<string | null> = urlThemeName;
+  $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
+
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
 </script>
 
 <ThemeProvider theme={$theme}>

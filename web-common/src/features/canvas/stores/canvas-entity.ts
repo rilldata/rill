@@ -46,9 +46,6 @@ import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
-import { EmbedStore } from "../../embeds/embed-store";
-import { getEmbedThemeStoreInstance } from "../../embeds/embed-theme-store";
-import { resolveEmbedTheme } from "../../embeds/embed-theme-utils";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -90,7 +87,6 @@ export class CanvasEntity {
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
-  private embedThemeUnsubscriber: Unsubscriber | null = null;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
@@ -159,18 +155,11 @@ export class CanvasEntity {
 
     this.timeManager = new TimeManager(searchParamsStore, this);
 
-    const embedStore = EmbedStore.getInstance();
-    if (embedStore) {
-      const embedThemeStore = getEmbedThemeStoreInstance();
-
-      const initialTheme = resolveEmbedTheme(true);
-      this.themeName.set(initialTheme ?? undefined);
-
-      this.embedThemeUnsubscriber = embedThemeStore.subscribe(() => {
-        const resolvedTheme = resolveEmbedTheme(true);
-        this.themeName.set(resolvedTheme ?? undefined);
-      });
-    }
+    // Let the embed layer (CanvasDashboardEmbed) drive themeName;
+    // initialise with no override here so createResolvedThemeStore falls
+    // back to the dashboard's own theme from the spec unless an embed
+    // override is applied.
+    this.themeName.set(undefined);
 
     this.processSpec(this.spec);
 
@@ -500,15 +489,6 @@ export class CanvasEntity {
 
     this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
-
-    const embedStore = EmbedStore.getInstance();
-    const resolvedTheme = resolveEmbedTheme(
-      !!embedStore,
-      undefined,
-      searchParams,
-    );
-    this.themeName.set(resolvedTheme ?? undefined);
-
     this.saveSnapshot(searchParams.toString());
     this.timeManager.state.onUrlChange(searchParams);
   };

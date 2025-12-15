@@ -9,18 +9,13 @@ import {
   registerRPCMethod,
 } from "@rilldata/web-common/lib/rpc";
 import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-import {
-  getEmbedThemeStoreInstance,
-  clearEmbedThemeStore,
-} from "@rilldata/web-common/features/embeds/embed-theme-store";
+import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme-store";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
 
 export default function initEmbedPublicAPI(): () => void {
-  clearEmbedThemeStore();
-
   const embedThemeStore = getEmbedThemeStoreInstance();
 
   const embedStore = EmbedStore.getInstance();

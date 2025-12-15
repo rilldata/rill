@@ -1,13 +1,25 @@
 import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
+import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
 import { featureFlags } from "../feature-flags";
 
 type Theme = "light" | "dark" | "system";
 
+function isEmbedEnvironment(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.location.pathname.includes("/-/embed");
+  } catch {
+    return false;
+  }
+}
+
 class ThemeControl {
   private current = writable<Theme>("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  private preferenceStore = localStorageStore<Theme>("rill:theme", "light");
+  private preferenceStore = isEmbedEnvironment()
+    ? sessionStorageStore<Theme>("rill:embed:theme-mode", "light")
+    : localStorageStore<Theme>("rill:theme", "light");
 
   public subscribe = this.current.subscribe;
   public preference = { subscribe: this.preferenceStore.subscribe };

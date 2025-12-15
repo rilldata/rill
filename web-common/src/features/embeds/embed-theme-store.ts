@@ -8,7 +8,7 @@ function getEmbedThemeStoreKey(): string {
 }
 
 export function getEmbedThemeStore() {
-  return sessionStorageStore<string | null>(getEmbedThemeStoreKey(), null);
+  return sessionStorageStore<string | null>(getEmbedThemeStoreKey(), undefined);
 }
 
 let _embedThemeStore: ReturnType<
