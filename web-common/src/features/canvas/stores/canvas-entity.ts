@@ -108,6 +108,7 @@ export class CanvasEntity {
     public instanceId: string,
     private spec: CanvasResponse,
   ) {
+    console.log({ spec });
     this.specStore = useCanvas(instanceId, name, {}, queryClient);
 
     // This will be deprecated soon - bgh
