@@ -3,12 +3,15 @@ title: "Getting Started with Rill Cloud"
 description: "Introduction to Rill Cloud, AI features, and management"
 sidebar_label: "Get Started"
 sidebar_position: 0
-slug: "/user-guide/get-started"
 ---
 
 # Getting Started with Rill Cloud
 
 Welcome to Rill Cloud! This guide will help you understand the core concepts and features available in Rill Cloud, from exploring your data with AI to managing your organization and projects.
+
+:::info New to Rill Cloud?
+Learn more about [why Rill Cloud](/user-guide/get-started/why-rill) and how it can help you explore and understand your data.
+:::
 
 ## What is Rill Cloud?
 

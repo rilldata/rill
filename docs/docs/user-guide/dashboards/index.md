@@ -9,14 +9,8 @@ sidebar_position: 0
 
 Rill Cloud provides powerful interactive dashboards for exploring, analyzing, and sharing your data. Dashboards make it easy to slice, dice, and drill down into your metrics to discover insights.
 
-## Getting Started
-
-- **[Dashboard Quickstart](/user-guide/dashboards/dashboard-101)** - Learn the basics of navigating and using Rill dashboards with measures, dimensions, and time series.
-
-## Dashboard Features
-
 ### Exploring Your Data
-
+- **[Dashboard Quickstart](/user-guide/dashboards/dashboard-101)** - Learn the basics of navigating and using Rill dashboards with measures, dimensions, and time series.
 - **[Filters & Comparisons](/user-guide/dashboards/filters)** - Apply powerful filters and time comparisons to focus your analysis on specific data subsets.
 - **[Time Series Analysis](/user-guide/dashboards/time-series)** - Analyze trends over time and compare different time periods.
 - **[Time Dimension Details](/user-guide/dashboards/dashboard-101/tdd)** - Drill down into specific time periods for granular analysis.
