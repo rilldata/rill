@@ -16,31 +16,42 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// SSEHandler TODO.
-// This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
+// SSEHandler is a shim that exposes a unified SSE endpoint for the Server's streaming gRPC RPCs.
+// This is useful for two reasons:
+// 1. The vanguard library doesn't currently map streaming RPCs to SSE, so we need to manually implement that.
+// 2. We need to provide a unified endpoint that can multiplex multiple streams over a single SSE connection. This is required since browsers currenltly limit unsecured/localhost connections to 6 per origin.
+//
+// The caller can differentiate between the streams using the `event:` field in the SSE messages, which contains the stream name the message belongs to.
+//
+// The handler supports the following query parameters:
+// - streams: comma-separated list of streams to subscribe to. Supported values are: files, resources, logs.
+// - stream: single stream to subscribe to. If used, the `event:` message field is omitted in the response for backwards compatibility. Deprecated: use `streams` instead.
+// - files_replay: maps to WatchFilesRequest.Replay
+// - resources_kind: maps to WatchResourcesRequest.Kind
+// - resources_replay: maps to WatchResourcesRequest.Replay
+// - logs_replay: maps to WatchLogsRequest.Replay
+// - logs_replay_limit: maps to WatchLogsRequest.ReplayLimit
+// - logs_level: maps to WatchLogsRequest.Level
 func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// Parse the instance ID
 	instanceID := req.PathValue("instance_id")
 
 	// Parse the stream(s) to subscribe to.
-	// The recommended way is to use the 'streams' parameter, which should be a comma-separated list.
-	// This enables unified serving of multiple streams over one SSE connection.
-	//
-	// For backwards compatibility with event-specific endpoints, it also supports a 'stream' parameter with a single stream name.
-	// When using 'stream', the response will omit the `event:` field in the SSE messages.
 	var streams []string
 	var omitEventNames bool
 	q := req.URL.Query()
 	if s := q.Get("streams"); s != "" {
 		streams = strings.Split(s, ",")
 	}
-	if s := q.Get("stream"); s != "" {
+	if s := q.Get("stream"); s != "" { // For backwards compatibility, see function comment.
 		if len(streams) > 0 {
 			http.Error(w, "cannot specify both 'stream' and 'streams' parameters", http.StatusBadRequest)
 			return
@@ -75,10 +86,13 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// Files stream
 	if slices.Contains(streams, "files") {
 		grp.Go(func() error {
-			replayStr := req.URL.Query().Get("files_replay")
-			replay, err := strconv.ParseBool(replayStr)
-			if err != nil {
-				return fmt.Errorf("invalid value for 'files_replay': %w", err)
+			var replay bool
+			if replayStr := req.URL.Query().Get("files_replay"); replayStr != "" {
+				var err error
+				replay, err = strconv.ParseBool(replayStr)
+				if err != nil {
+					return fmt.Errorf("invalid value for 'files_replay': %w", err)
+				}
 			}
 
 			rr := &runtimev1.WatchFilesRequest{
@@ -107,10 +121,13 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 		grp.Go(func() error {
 			kind := req.URL.Query().Get("resources_kind")
 
-			replayStr := req.URL.Query().Get("resources_replay")
-			replay, err := strconv.ParseBool(replayStr)
-			if err != nil {
-				return fmt.Errorf("invalid value for 'resources_replay': %w", err)
+			var replay bool
+			if replayStr := req.URL.Query().Get("resources_replay"); replayStr != "" {
+				var err error
+				replay, err = strconv.ParseBool(replayStr)
+				if err != nil {
+					return fmt.Errorf("invalid value for 'resources_replay': %w", err)
+				}
 			}
 
 			rr := &runtimev1.WatchResourcesRequest{
@@ -138,14 +155,18 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 	// Logs stream
 	if slices.Contains(streams, "logs") {
 		grp.Go(func() error {
-			replayStr := req.URL.Query().Get("logs_replay")
-			replay, err := strconv.ParseBool(replayStr)
-			if err != nil {
-				return fmt.Errorf("invalid value for 'logs_replay': %w", err)
+			var replay bool
+			if replayStr := req.URL.Query().Get("logs_replay"); replayStr != "" {
+				var err error
+				replay, err = strconv.ParseBool(replayStr)
+				if err != nil {
+					return fmt.Errorf("invalid value for 'logs_replay': %w", err)
+				}
 			}
 
 			var replayLimit int64
 			if replayLimitStr := req.URL.Query().Get("logs_replay_limit"); replayLimitStr != "" {
+				var err error
 				replayLimit, err = strconv.ParseInt(replayLimitStr, 10, 32)
 				if err != nil {
 					return fmt.Errorf("invalid value for 'logs_replay_limit': %w", err)
@@ -188,7 +209,14 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if err != nil {
-			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			code := codes.Unknown
+			msg := err.Error()
+			if s, ok := status.FromError(err); ok {
+				code = s.Code()
+				msg = s.Message()
+			}
+
+			errJSON, err := json.Marshal(map[string]string{"code": code.String(), "error": msg})
 			if err != nil {
 				s.logger.Error("failed to marshal error as json", zap.Error(err))
 			}
