@@ -86,7 +86,14 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  }: { form: any; errors: any; enhance: any; tainted: any; submit: any; submitting: any } = superForm(initialFormValues, {
+  }: {
+    form: any;
+    errors: any;
+    enhance: any;
+    tainted: any;
+    submit: any;
+    submitting: any;
+  } = superForm(initialFormValues, {
     SPA: true,
     validators: starrocksSchema,
     onUpdate: handleOnUpdate,
@@ -103,7 +110,14 @@
     tainted: dsnTainted,
     submit: dsnSubmit,
     submitting: dsnSubmitting,
-  }: { form: any; errors: any; enhance: any; tainted: any; submit: any; submitting: any } = superForm(defaults(dsnYupSchema), {
+  }: {
+    form: any;
+    errors: any;
+    enhance: any;
+    tainted: any;
+    submit: any;
+    submitting: any;
+  } = superForm(defaults(dsnYupSchema), {
     SPA: true,
     validators: dsnYupSchema,
     onUpdate: handleOnUpdate,
