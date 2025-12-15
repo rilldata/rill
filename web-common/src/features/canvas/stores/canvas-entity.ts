@@ -46,6 +46,7 @@ import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
+import { createCustomMapStore } from "@rilldata/web-common/lib/map-utils";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -62,35 +63,9 @@ export type SearchParamsStore = {
   ) => boolean;
   clearAll: () => void;
 };
-export function createComponentMap() {
-  const { subscribe, set, update } = writable(
-    new Map<string, BaseCanvasComponent>(),
-  );
-
-  return {
-    subscribe,
-    read: () => get({ subscribe }),
-    getNonReactive: (name: string) => {
-      return get({ subscribe }).get(name);
-    },
-    set: (name: string, component: BaseCanvasComponent) => {
-      update((map) => {
-        map.set(name, component);
-        return map;
-      });
-    },
-    delete: (name: string) => {
-      update((map) => {
-        map.delete(name);
-        return map;
-      });
-    },
-    reset: () => set(new Map()),
-  };
-}
 
 export class CanvasEntity {
-  componentsStore = createComponentMap();
+  componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
 
   // Time state controls
