@@ -33,7 +33,7 @@
   $: isFlat = tableMode === "flat";
 
   // Row limit options
-  const rowLimitOptions = [
+  const rowLimitOptions: { value: string; label: string }[] = [
     { value: "5", label: "5" },
     { value: "10", label: "10" },
     { value: "25", label: "25" },
@@ -133,23 +133,23 @@
     </Button>
 
     {#if !isFlat}
-      <Tooltip location="bottom" alignment="start" distance={8}>
-        <div class="row-limit-dropdown pointer-events-auto">
-          <span class="row-limit-label">Row limit</span>
-          <Select
-            id="pivot-row-limit"
-            value={rowLimitValue}
-            options={rowLimitOptions}
-            onChange={handleRowLimitChange}
-            size="sm"
-            minWidth={80}
-            placeholder="Row limit"
-          />
-        </div>
-        <TooltipContent slot="tooltip-content">
-          Only up to top N child rows are shown under each dimension
-        </TooltipContent>
-      </Tooltip>
+      <div class="flex items-center gap-x-2 pointer-events-auto">
+        <Tooltip location="bottom" alignment="start" distance={8}>
+          <span class="ui-copy">Row limit</span>
+          <TooltipContent slot="tooltip-content">
+            Only up to top N child rows are shown under each dimension
+          </TooltipContent>
+        </Tooltip>
+        <Select
+          id="pivot-row-limit"
+          value={rowLimitValue}
+          options={rowLimitOptions}
+          onChange={handleRowLimitChange}
+          size="sm"
+          width={80}
+          placeholder="Row limit"
+        />
+      </div>
     {/if}
 
     <slot name="export-menu" />
@@ -159,13 +159,3 @@
     {/if}
   </div>
 </div>
-
-<style lang="postcss">
-  .row-limit-dropdown {
-    @apply flex items-center gap-x-2;
-  }
-
-  .row-limit-label {
-    @apply text-sm text-gray-700;
-  }
-</style>

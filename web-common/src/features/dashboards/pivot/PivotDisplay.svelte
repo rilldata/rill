@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
-  import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
-  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { derived } from "svelte/store";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
   import { getPivotConfig } from "./pivot-data-config";
@@ -47,6 +47,8 @@
   const pivotExploreState = derived(dashboardStore, (dashboard) => {
     return dashboard?.pivot;
   });
+
+  $: console.log($pivotExploreState);
 
   let showPanels = true;
 

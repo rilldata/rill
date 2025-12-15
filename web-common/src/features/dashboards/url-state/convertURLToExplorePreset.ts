@@ -569,7 +569,8 @@ function fromPivotUrlParams(
       ExploreStateURLParams.PivotRowLimit,
     ) as string;
     const rowLimit = parseInt(rowLimitStr, 10);
-    if (!isNaN(rowLimit) && rowLimit > 0) {
+    const allowedValues = [5, 10, 25, 50, 100];
+    if (!isNaN(rowLimit) && rowLimit > 0 && allowedValues.includes(rowLimit)) {
       preset.pivotRowLimit = rowLimit;
     }
   }
