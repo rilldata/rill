@@ -64,7 +64,7 @@
   }
 
   .reconnecting {
-    @apply bg-yellow-600 animate-ping;
+    @apply bg-yellow-600 animate-pulse;
   }
 
   .connected {
