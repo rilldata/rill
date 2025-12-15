@@ -10,7 +10,7 @@ class ThemeControl {
   private preferenceStore = localStorageStore<Theme>("rill:theme", "light");
 
   public subscribe = this.current.subscribe;
-  public _preference = { subscribe: this.preferenceStore.subscribe };
+  public preference = { subscribe: this.preferenceStore.subscribe };
 
   constructor() {
     this.init().catch((error) => {

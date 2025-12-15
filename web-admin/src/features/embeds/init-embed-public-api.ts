@@ -53,7 +53,7 @@ export default function initEmbedPublicAPI(): () => void {
   });
 
   registerRPCMethod("getThemeMode", () => {
-    return { themeMode: get(themeControl._preference) };
+    return { themeMode: get(themeControl.preference) };
   });
 
   registerRPCMethod("setThemeMode", (themeMode: string) => {
