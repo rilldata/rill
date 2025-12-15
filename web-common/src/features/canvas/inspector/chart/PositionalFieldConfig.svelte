@@ -1,6 +1,4 @@
 <script lang="ts">
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
   import ColorRangeSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorRangeSelector.svelte";
@@ -20,6 +18,7 @@
   export let metricsView: string;
   export let fieldConfig: FieldConfig;
   export let canvasName: string;
+  export let otherFieldConfig: FieldConfig | undefined = undefined;
 
   export let onChange: (updatedConfig: FieldConfig | undefined) => void;
 
@@ -40,6 +39,12 @@
   $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length;
 
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
+  $: isTimeSelectedInOtherField =
+    $timeDimension && otherFieldConfig?.field === $timeDimension;
+  $: shouldIncludeTime =
+    !chartFieldInput?.hideTimeDimension &&
+    !isTimeSelectedInOtherField &&
+    !isDimension;
 
   function updateFieldConfig(fieldName: string) {
     const isTime = $timeDimension && fieldName === $timeDimension;
@@ -140,15 +145,6 @@
   <div class="flex justify-between items-center">
     <InputLabel small label={config.label ?? key} id={key} />
     <div class="flex items-center gap-x-1">
-      {#if isSizeField && hasSizeValue}
-        <IconButton
-          size={16}
-          ariaLabel="Clear size measure"
-          on:click={clearSizeField}
-        >
-          <CancelCircle size="16px" />
-        </IconButton>
-      {/if}
       {#key popoverKey}
         {#if hasPopoverContent}
           <FieldConfigPopover
@@ -169,9 +165,11 @@
         metricName={metricsView}
         id={`${key}-field`}
         type={isDimension ? "dimension" : "measure"}
-        includeTime={!chartFieldInput?.hideTimeDimension}
+        includeTime={shouldIncludeTime}
         excludedValues={chartFieldInput?.excludedValues}
         selectedItem={fieldConfig?.field}
+        showClearOption={isSizeField}
+        onClear={isSizeField ? clearSizeField : undefined}
         onSelect={async (field) => {
           updateFieldConfig(field);
         }}

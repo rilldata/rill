@@ -220,12 +220,18 @@
           />
           <!-- POSITIONAL CONFIG -->
         {:else if metricsView && config.type === "positional"}
+          {@const otherFieldKey =
+            key === "x" ? "y" : key === "y" ? "x" : undefined}
+          {@const otherFieldConfig = otherFieldKey
+            ? localParamValues[otherFieldKey]
+            : undefined}
           <PositionalFieldConfig
             {canvasName}
             {key}
             {config}
             {metricsView}
             fieldConfig={localParamValues[key] || {}}
+            {otherFieldConfig}
             onChange={(updatedConfig) => {
               const isEmpty =
                 updatedConfig === undefined ||

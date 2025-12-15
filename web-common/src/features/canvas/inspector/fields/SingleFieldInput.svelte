@@ -2,6 +2,7 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -17,6 +18,8 @@
   export let searchableItems: string[] | undefined = undefined;
   export let excludedValues: string[] | undefined = undefined;
   export let onSelect: (item: string, displayName: string) => void = () => {};
+  export let showClearOption = false;
+  export let onClear: (() => void) | undefined = undefined;
 
   let open = false;
   let searchValue = "";
@@ -71,6 +74,33 @@
         <Search bind:value={searchValue} autofocus={false} />
       </div>
       <div class="max-h-64 overflow-y-auto">
+        {#if selectedItem && showClearOption && onClear && $fieldData.displayMap[selectedItem]}
+          <DropdownMenu.Item
+            class="pl-8 mx-1"
+            on:click={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <div class="flex items-center justify-between w-full">
+              <span
+                >{$fieldData.displayMap[selectedItem]?.label ||
+                  selectedItem}</span
+              >
+              <button
+                class="ml-2 text-gray-500 hover:text-gray-700"
+                aria-label="Clear"
+                on:click|stopPropagation={() => {
+                  onClear();
+                  open = false;
+                }}
+                type="button"
+              >
+                <CancelCircle size="16px" />
+              </button>
+            </div>
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+        {/if}
         {#if includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"
@@ -84,7 +114,6 @@
           <DropdownMenu.Separator />
         {/if}
         {#each $fieldData.filteredItems as item (item)}
-          <!-- Hide item if it's the already selected one -->
           {#if item !== selectedItem}
             <DropdownMenu.Item
               class="pl-8 mx-1"

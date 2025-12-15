@@ -58,7 +58,7 @@
       <span class="text-xs font-medium">{label} Configuration</span>
     </div>
     <div class="px-3.5 pb-1.5">
-      {#if showLegend}
+      {#if showLegend && !isDimension}
         <div class="py-1 flex items-center justify-between">
           <span class="text-xs">Legend orientation</span>
           <Select
