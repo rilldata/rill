@@ -207,15 +207,3 @@ measures:
 - **Component filter** – Focus on specific system components
 - **Margin threshold filter** – Focus on high/low margin segments
 
-### Let's answer some key margin questions!
-
-**Which customers are driving the highest margins?**
-<img src='/img/tutorials/quickstart/customer-margins-1.png' class='rounded-gif'/>
-<br />
-
-
-**Which billing plans have the best profitability?**
-<img src='/img/tutorials/quickstart/customer-margins-2.png' class='rounded-gif'/>
-<br />
-
-These are just some of the insights that you can find within your explore dashboard, but you'll find more hidden gems in your data as you continue to use Rill. Please let us know if you have any other questions!

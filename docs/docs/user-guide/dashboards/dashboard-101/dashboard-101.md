@@ -1,7 +1,7 @@
 ---
 title: "Explore Dashboard Quickstart"
 description: Dashboard Quickstart
-sidebar_label: "Explore Dashboard"
+sidebar_label: "Explore Dashboards"
 sidebar_position: 15
 ---
 

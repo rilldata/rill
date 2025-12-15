@@ -135,7 +135,7 @@ const config = {
 
           },
           {
-            to: "/user-guide",
+            to: "/user-guide/get-started",
             label: "User Guide",
             position: "left",
             className: "navbar-user-guide-link",
