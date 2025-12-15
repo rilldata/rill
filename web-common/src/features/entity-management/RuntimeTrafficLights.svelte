@@ -11,18 +11,22 @@
   const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
     resourceWatcher;
 
-  let state: "connected" | "disconnected" | "reconnecting" = "connected";
+  let state: "connected" | "closed" | "reconnecting" = "connected";
   let showIndicator: boolean = true;
 
-  $: if ($fileAttempts > 0 || $resourceAttempts > 0) {
+  let connectedTimer: ReturnType<typeof setTimeout>;
+
+  $: reconnecting = $fileAttempts > 0 || $resourceAttempts > 0;
+
+  $: closed = $fileWatcherClosed || $resourceWatcherClosed;
+
+  $: if (reconnecting) {
     state = "reconnecting";
-  } else if ($fileWatcherClosed || $resourceWatcherClosed) {
-    state = "disconnected";
+  } else if (closed) {
+    state = "closed";
   } else {
     state = "connected";
   }
-
-  let connectedTimer: ReturnType<typeof setTimeout>;
 
   $: if (state !== "connected") {
     clearTimeout(connectedTimer);
@@ -37,18 +41,15 @@
 {#if showIndicator}
   <Tooltip.Root>
     <Tooltip.Trigger>
-      {$fileAttempts}
-      {$resourceAttempts}
       <div class="{state}  flex-none size-[9px] rounded-full opacity-75"></div>
     </Tooltip.Trigger>
 
     <Tooltip.Content side="right" sideOffset={8}>
       <TooltipContent>
         {#if state === "reconnecting"}
-          Connection is experiencing issues. Please try refreshing the page
-        {:else if state === "disconnected"}
-          Connection closed due to inactivity. Interact with the page to
-          reconnect
+          Attempting to reconnect
+        {:else if state === "closed"}
+          Connection closed due to inactivity
         {:else}
           Connected to Rill engine
         {/if}
@@ -58,12 +59,12 @@
 {/if}
 
 <style lang="postcss">
-  .reconnecting {
+  .closed {
     @apply bg-red-600 animate-pulse;
   }
 
-  .disconnected {
-    @apply bg-yellow-600 animate-pulse;
+  .reconnecting {
+    @apply bg-yellow-600 animate-ping;
   }
 
   .connected {
