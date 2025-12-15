@@ -160,7 +160,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.eventSource = new EventSource(sseUrl.toString());
 
       this.eventSource.onmessage = (event) => {
-        console.log("SSE message received:", event.data);
         try {
           const data = JSON.parse(event.data);
           this.listeners.get("response")?.forEach((cb) => void cb(data));
