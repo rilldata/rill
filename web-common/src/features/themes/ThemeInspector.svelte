@@ -1,19 +1,20 @@
 <script lang="ts">
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
-  import { Field } from "svelte-forms-lib";
   export let filePath: string;
-  export let resource: V1Resource | undefined;
 
   let mode: "light" | "dark" = "light";
 
+  function handleModeChange(_: number, value: string) {
+    mode = value.toLowerCase() as "light" | "dark";
+  }
+
   // Get file content and parse YAML directly
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  $: ({ remoteContent, editorContent, updateEditorContent } = fileArtifact);
+  $: ({ editorContent, updateEditorContent } = fileArtifact);
 
   // Parse YAML document for editing
   $: parsedDocument = $editorContent ? parseDocument($editorContent) : null;
@@ -39,10 +40,10 @@
     if (!parsedDocument) return;
 
     // Get or create the mode section (light/dark)
-    let modeSection = parsedDocument.get(mode);
+    let modeSection = parsedDocument.get(mode) as any;
     if (!modeSection) {
       parsedDocument.set(mode, {});
-      modeSection = parsedDocument.get(mode);
+      modeSection = parsedDocument.get(mode) as any;
     }
 
     // Set the color value
@@ -99,7 +100,7 @@
         small
         fields={["Light", "Dark"]}
         selected={mode === "light" ? 0 : 1}
-        onClick={(_, value) => (mode = value.toLowerCase())}
+        onClick={handleModeChange}
       />
     </div>
 
@@ -116,7 +117,6 @@
               allowLightnessControl={true}
               small={true}
               labelFirst={true}
-              placeholder="not defined"
             />
           </div>
         {/each}
@@ -141,7 +141,6 @@
                   onChange={(newColor) => updateColor(variable, newColor)}
                   allowLightnessControl={true}
                   small={true}
-                  placeholder="not defined"
                 />
               </div>
             {/each}
@@ -157,20 +156,6 @@
     @apply p-4 space-y-6;
   }
 
-  /* Mode Toggle */
-  .mode-toggle {
-    @apply flex gap-1 p-1 bg-gray-100 rounded-md;
-  }
-
-  .mode-button {
-    @apply flex-1 px-3 py-1.5 text-xs font-medium rounded;
-    @apply text-gray-700 hover:bg-gray-200 transition-colors;
-  }
-
-  .mode-button.active {
-    @apply bg-white text-gray-900 shadow-sm;
-  }
-
   /* Section */
   .section {
     @apply space-y-3;
@@ -178,20 +163,6 @@
 
   .section-title {
     @apply text-sm font-semibold text-gray-900;
-  }
-
-  /* Color Swatch */
-  .color-swatch {
-    @apply w-10 h-10 rounded border border-gray-300 flex-shrink-0;
-    @apply flex items-center justify-center;
-  }
-
-  .color-swatch.small {
-    @apply w-8 h-8;
-  }
-
-  .no-color-small {
-    @apply text-gray-400 text-xs;
   }
 
   /* Palette Section */
@@ -207,33 +178,11 @@
     @apply text-xs text-gray-600;
   }
 
-  .palette-help {
-    @apply text-xs text-gray-500 italic;
-  }
-
   .palette-grid {
     @apply grid grid-cols-1 gap-2;
   }
 
   .palette-color-wrapper {
     @apply flex items-center justify-center;
-  }
-
-  /* Help Section */
-  .help-box {
-    @apply p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-900;
-  }
-
-  .help-text {
-    @apply text-xs text-blue-800;
-  }
-
-  /* Documentation Link */
-  .doc-link {
-    @apply block text-center text-sm text-blue-600 hover:text-blue-800 font-medium;
-  }
-
-  code {
-    @apply font-mono;
   }
 </style>
