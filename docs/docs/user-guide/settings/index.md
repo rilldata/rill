@@ -15,8 +15,7 @@ Configure your organization and project settings in Rill Cloud, including organi
 
 ### Project Management Topics
 
-- **[Project Management](/user-guide/settings/project-management)** - Configure project settings and manage project resources.
-- **[Project Management](/user-guide/settings/project-management/project-management)** - Overview of project management features
+- **[Project Management](/user-guide/settings/project-management)** - Overview of project management features
 - **[GitHub Integration](/user-guide/settings/project-management/github-integration)** - Connect and manage GitHub repository integration
 - **[Variables & Credentials](/user-guide/settings/project-management/variables-and-credentials)** - Store sensitive credentials and configure environment-specific variables
 
