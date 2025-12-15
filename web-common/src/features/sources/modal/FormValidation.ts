@@ -1,7 +1,7 @@
 import * as yup from "yup";
 import { dsnSchema, getYupSchema } from "./yupSchemas";
-import { multiStepFormConfigs } from "./multi-step-auth-configs";
-import type { AddDataFormType, AuthField } from "./types";
+import { getMultiStepFormConfig } from "./multi-step-auth-configs";
+import type { AddDataFormType } from "./types";
 
 export { dsnSchema };
 
@@ -51,24 +51,26 @@ function makeAuthOptionValidationSchema(
   connectorName: string,
   getAuthMethod?: () => string | undefined,
 ) {
-  const config =
-    multiStepFormConfigs[connectorName as keyof typeof multiStepFormConfigs];
+  const config = getMultiStepFormConfig(connectorName);
   if (!config) return null;
 
-  // Collect all field definitions across auth methods.
   const fieldValidations: Record<string, yup.StringSchema> = {};
 
-  for (const [method, fields] of Object.entries(config.authFieldGroups || {})) {
-    for (const field of fields as AuthField[]) {
-      // Only validate concrete input/credential fields.
-      const required = !(field.optional ?? false);
-      if (!required) continue;
-      const label = field.type === "input" ? field.label || field.id : field.id;
-      // Only apply requirement when the selected auth method matches.
-      fieldValidations[field.id] = (
-        fieldValidations[field.id] || yup.string()
+  for (const [method, fields] of Object.entries(
+    config.requiredFieldsByMethod || {},
+  )) {
+    for (const fieldId of fields) {
+      const authField = config.authFieldGroups[method]?.find(
+        (f) => f.id === fieldId,
+      );
+      const label =
+        config.fieldLabels[fieldId] ||
+        (authField?.type === "input" ? authField.label : authField?.id) ||
+        fieldId;
+      fieldValidations[fieldId] = (
+        fieldValidations[fieldId] || yup.string()
       ).test(
-        `required-${field.id}-${method}`,
+        `required-${fieldId}-${method}`,
         `${label} is required`,
         (value) => {
           if (!getAuthMethod) return true;

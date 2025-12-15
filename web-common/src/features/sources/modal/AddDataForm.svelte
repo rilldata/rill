@@ -26,7 +26,7 @@
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { multiStepFormConfigs } from "./multi-step-auth-configs";
+  import { getMultiStepFormConfig } from "./multi-step-auth-configs";
   import { get } from "svelte/store";
 
   export let connector: V1ConnectorDriver;
@@ -207,11 +207,10 @@
     }
   })();
 
-  $: activeMultiStepConfig = isMultiStepConnector
-    ? multiStepFormConfigs[
-        connector.name as keyof typeof multiStepFormConfigs
-      ] || null
-    : null;
+  $: activeMultiStepConfig =
+    isMultiStepConnector && connector.name
+      ? getMultiStepFormConfig(connector.name) || null
+      : null;
 
   $: if (isMultiStepConnector && activeMultiStepConfig) {
     const options = activeMultiStepConfig.authOptions ?? [];
