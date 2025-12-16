@@ -18,7 +18,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -107,22 +106,8 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			envVarsMap["rill.model.timeout_override"] = fmt.Sprintf("%d", modelTimeoutSeconds)
-
-			parseErrors, err := parseProject(cmd.Context(), projectPath, environment)
-			if err != nil {
-				return err
-			}
-
-			// If there are parse errors, output them and exit
-			if len(parseErrors) > 0 {
-				result := &ValidationResult{
-					Summary: ValidationSummary{
-						ParseErrors: len(parseErrors),
-					},
-					ParseErrors: parseErrors,
-				}
-				return outputResult(ch, result, outputFormat, outputFile)
-			}
+			// Prevent resource updates when parse errors are present and surface the actual parser output instead of re-parsing here.
+			envVarsMap["rill.parser.skip_updates_if_parse_errors"] = "true"
 
 			ch.Interactive = false
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
@@ -212,38 +197,6 @@ func parseVariables(vals []string) (map[string]string, error) {
 	return res, nil
 }
 
-func parseProject(ctx context.Context, projectPath, environment string) ([]ParseError, error) {
-	repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
-	if err != nil {
-		return nil, err
-	}
-
-	p, err := parser.Parse(ctx, repo, instanceID, environment, "")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse project: %w", err)
-	}
-	if p.RillYAML == nil {
-		return nil, fmt.Errorf("failed to parse project: %w", parser.ErrRillYAMLNotFound)
-	}
-	if len(p.Errors) == 0 {
-		return nil, nil
-	}
-
-	var parseErrors []ParseError
-	for _, e := range p.Errors {
-		parseErr := ParseError{
-			Message:  e.Message,
-			FilePath: e.FilePath,
-		}
-		// Convert start location if available
-		if e.StartLocation != nil {
-			parseErr.StartLine = e.StartLocation.Line
-		}
-		parseErrors = append(parseErrors, parseErr)
-	}
-	return parseErrors, nil
-}
-
 func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, outputFormat printer.Format, outputFile string) error {
 	ctrl, err := app.Runtime.Controller(ctx, app.Instance.ID)
 	if err != nil {
@@ -279,6 +232,13 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 	}
 
 	for _, r := range resources {
+		if r.Meta.Name.Kind == runtime.GlobalProjectParserName.Kind && r.Meta.Name.Name == runtime.GlobalProjectParserName.Name {
+			parseErrors := parseErrorsFromParser(r)
+			if len(parseErrors) > 0 {
+				result.Summary.ParseErrors = len(parseErrors)
+			}
+			continue
+		}
 		if r.Meta.Hidden {
 			continue
 		}
@@ -310,6 +270,28 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 	}
 
 	return result
+}
+
+func parseErrorsFromParser(parserRes *runtimev1.Resource) []ParseError {
+	if parserRes == nil || parserRes.GetProjectParser() == nil {
+		return nil
+	}
+
+	var parseErrors []ParseError
+	for _, e := range parserRes.GetProjectParser().State.ParseErrors {
+		if e == nil {
+			continue
+		}
+		pe := ParseError{
+			Message:  e.Message,
+			FilePath: e.FilePath,
+		}
+		if e.StartLocation != nil {
+			pe.StartLine = e.StartLocation.Line
+		}
+		parseErrors = append(parseErrors, pe)
+	}
+	return parseErrors
 }
 
 func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat printer.Format, outputFile string) error {

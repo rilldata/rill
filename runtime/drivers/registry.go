@@ -111,6 +111,8 @@ type InstanceConfig struct {
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
 	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
+	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
+	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
