@@ -135,7 +135,7 @@
     {#if !isFlat}
       <div class="flex items-center gap-x-2 pointer-events-auto">
         <Tooltip location="bottom" alignment="start" distance={8}>
-          <span class="ui-copy">Row limit</span>
+          <span class="ui-copy pl-2">Row limit</span>
           <TooltipContent slot="tooltip-content">
             Only up to top N child rows are shown under each dimension
           </TooltipContent>
@@ -151,7 +151,6 @@
         />
       </div>
     {/if}
-
     <slot name="export-menu" />
 
     {#if isFetching}
