@@ -23,10 +23,3 @@ export function isDuplicateKey(
     return normalizedExistingKey === normalizedKey;
   });
 }
-
-/**
- * Validate key format
- */
-export function isValidKey(key: string): boolean {
-  return /^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(key);
-}

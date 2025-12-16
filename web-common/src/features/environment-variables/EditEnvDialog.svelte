@@ -64,8 +64,7 @@
     },
   );
 
-  $: hasNewChanges =
-    $form.key !== initialKey || $form.value !== initialValue;
+  $: hasNewChanges = $form.key !== initialKey || $form.value !== initialValue;
 
   function handleKeyChange(event: Event) {
     const target = event.target as HTMLInputElement;
