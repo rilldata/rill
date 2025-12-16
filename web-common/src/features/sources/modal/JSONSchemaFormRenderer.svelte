@@ -4,7 +4,7 @@
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
   import { normalizeErrors } from "./utils";
-  import type { JSONSchemaField, MultiStepFormSchema } from "./types";
+  import type { MultiStepFormSchema } from "./types";
   import {
     findAuthMethodKey,
     getAuthOptionsFromSchema,
