@@ -170,7 +170,7 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 				var replayLimit int64
 				if replayLimitStr := req.URL.Query().Get("logs_replay_limit"); replayLimitStr != "" {
 					var err error
-					replayLimit, err = strconv.ParseInt(replayLimitStr, 10, 64)
+					replayLimit, err = strconv.ParseInt(replayLimitStr, 10, 32)
 					if err != nil {
 						return fmt.Errorf("invalid value for 'logs_replay_limit': %w", err)
 					}
