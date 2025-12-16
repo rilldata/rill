@@ -26,7 +26,7 @@ Create a connector with your credentials to connect to Snowflake. Here's an exam
 type: connector
 driver: snowflake
 
-dsn: "{{ .env.snowflake.dsn }}" 
+dsn: "{{ .env.snowflake_dsn }}" 
 ```
 
 :::tip Using the Add Data Form

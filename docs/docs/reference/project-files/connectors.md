@@ -559,7 +559,7 @@ _[string, array]_ - List of connector names for which temporary secrets should b
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
-token: '{{ .env.connector.motherduck_token }}' # Set the MotherDuck token from your .env file _(required)_
+token: '{{ .env.motherduck_token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
 ```

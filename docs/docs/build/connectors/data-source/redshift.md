@@ -32,8 +32,8 @@ Create a connector with your credentials to connect to Redshift. Here's an examp
 type: connector
 
 driver: redshift
-aws_access_key_id: "{{ .env.redshift.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.redshift.aws_secret_access_key }}"
+aws_access_key_id: "{{ .env.redshift_aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.redshift_aws_secret_access_key }}"
 database: "dev"
 ```
 

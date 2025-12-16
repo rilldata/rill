@@ -38,13 +38,13 @@ dev:
 
 # Production environment configuration
 prod:
-  host: "{{ .env.clickhouse.host }}"
-  port: "{{ .env.clickhouse.port }}"
-  database: "{{ .env.clickhouse.database }}"
-  username: "{{ .env.clickhouse.username }}"
-  password: "{{ .env.clickhouse.password }}"
+  host: "{{ .env.clickhouse_host }}"
+  port: "{{ .env.clickhouse_port }}"
+  database: "{{ .env.clickhouse_database }}"
+  username: "{{ .env.clickhouse_username }}"
+  password: "{{ .env.clickhouse_password }}"
   ssl: true
-  cluster: "{{ .env.clickhouse.cluster }}"
+  cluster: "{{ .env.clickhouse_cluster }}"
 ```
 
 In this example:
@@ -81,7 +81,7 @@ dev:
   project_id: rilldata_dev
 project_id: rilldata
 
-google_application_credentials: '{{ .env.bigquery.google_application_credentials}}'
+google_application_credentials: '{{ .env.bigquery_google_application_credentials}}'
 ```
 
 ```yaml

@@ -119,8 +119,8 @@ Create `connectors/my_gcs_hmac.yaml`:
 type: connector
 driver: gcs
 
-key_id: "{{ .env.gcs.key_id }}"
-secret: "{{ .env.gcs.secret }}"
+key_id: "{{ .env.gcs_key_id }}"
+secret: "{{ .env.gcs_secret }}"
 ```
 
 **Step 2: Create model configuration**
