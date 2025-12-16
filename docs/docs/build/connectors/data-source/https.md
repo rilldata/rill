@@ -7,33 +7,25 @@ sidebar_position: 25
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-Import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project.
-
 ## Overview
 
-The HTTPS connector allows you to import data from publicly accessible files hosted on web servers, CDNs, or cloud storage services. This is perfect for working with datasets that are regularly updated or shared publicly.
+The HTTPS connector allows you to import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project. It supports publicly accessible files hosted on web servers, CDNs, or cloud storage services, making it perfect for working with datasets that are regularly updated or shared publicly.
+
+The connector supports various remote data sources:
+
+- **Public HTTP/HTTPS URLs**: Direct links to CSV, JSON, Parquet, and other data files hosted on web servers or CDNs
+- **Cloud Storage URLs**: Public links to files in Google Cloud Storage, Amazon S3, Azure Blob Storage, or other cloud providers
+- **REST API Endpoints**: Connect to REST APIs that return JSON, CSV, or other structured data formats. The connector can handle paginated responses and authenticated endpoints
+
+The connector supports downloading and processing various file formats:
+
+- **CSV**: Comma-separated values files
+- **JSON**: JavaScript Object Notation files (including JSONL/NDJSON)
+- **Parquet**: Columnar data format
+- **Other formats**: Any format supported by DuckDB's file readers
 
 
-## Connect to HTTPS
-
-To connect to data via HTTPS, you have two options depending on your data source:
-
-1. **Use authenticated endpoints** (for private APIs or protected resources)
-2. **Use public URLs** (for publicly accessible files)
-
-Choose the method that matches your data source requirements.
-
-### Authenticated Endpoints
-
-If your endpoint requires authentication, create a `https` connector that includes your authentication credentials. The connector defines the headers that will be used when accessing HTTPS sources. Here's an example connector configuration:
-
-```yaml
-type: connector 
-driver: https 
-
-headers:
-    Authorization: "Bearer {{ .env.connector.https.token }}"
-```
+## Create a HTTPS Connector
 
 ### Public URLs
 
@@ -45,7 +37,33 @@ driver: https
 # No headers needed for public endpoints
 ```
 
-## Adding an HTTPS Source
+### Authenticated Endpoints
+
+If your endpoint requires authentication, create a `https` connector that includes your authentication credentials. The connector defines the headers that will be used when accessing HTTPS sources.
+
+When running Rill locally, you can store authentication credentials in your project's `.env` file:
+
+```bash
+connector.https.token=your_api_token_here
+```
+
+Reference these credentials in your connector configuration using template variables:
+
+```yaml
+type: connector 
+driver: https 
+
+headers:
+    Authorization: "Bearer {{ .env.connector.https.token }}"
+```
+:::note
+
+For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
+
+:::
+
+
+## Create an HTTPS Source Model
 
 ### Option 1: Using the Rill UI
 
@@ -80,49 +98,6 @@ sql: |
   select * from read_json('https://api.example.com/data.json', auto_detect=true)
 ```
 
-## Supported URL Types
-
-The HTTPS connector supports various remote data sources:
-
-- **Public HTTP/HTTPS URLs**: Direct links to CSV, JSON, Parquet, and other data files hosted on web servers or CDNs
-- **Cloud Storage URLs**: Public links to files in Google Cloud Storage, Amazon S3, Azure Blob Storage, or other cloud providers
-- **REST API Endpoints**: Connect to REST APIs that return JSON, CSV, or other structured data formats. The connector can handle paginated responses and authenticated endpoints
-
-## Authentication
-
-### Local Development
-
-When running Rill locally, you can store authentication credentials in your project's `.env` file:
-
-```bash
-connector.https.token=your_api_token_here
-```
-
-Reference these credentials in your connector configuration using template variables:
-
-```yaml
-type: connector
-driver: https
-
-headers:
-    Authorization: "Bearer {{ .env.connector.https.token }}"
-```
-
-
-:::tip Using the Add Data Form
-When adding an HTTPS source through the Rill UI, you can enter authentication headers directly, and Rill will automatically create the connector file and populate the `.env` file with the appropriate variables.
-:::
-
-
-## Supported File Formats
-
-The HTTPS connector supports downloading and processing various file formats:
-
-- **CSV**: Comma-separated values files
-- **JSON**: JavaScript Object Notation files (including JSONL/NDJSON)
-- **Parquet**: Columnar data format
-- **Other formats**: Any format supported by DuckDB's file readers
-
 ## Best Practices
 
 - **Use HTTPS URLs**: Prefer secure HTTPS connections over HTTP when possible to protect data in transit
@@ -132,6 +107,3 @@ The HTTPS connector supports downloading and processing various file formats:
 - **Error Handling**: Use `ignore_errors=1` in SQL functions when reading files to handle malformed rows gracefully
 - **Rate Limiting**: Be aware of API rate limits when connecting to REST API endpoints. Consider implementing retry logic or pagination handling
 
-## Reference
-
-For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
