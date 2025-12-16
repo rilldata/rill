@@ -29,8 +29,8 @@ Create a connector with your credentials to connect to Athena. Here's an example
 type: connector
 
 driver: athena
-aws_access_key_id: "{{ .env.connector.athena.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.connector.athena.aws_secret_access_key }}"
+aws_access_key_id: "{{ .env.athena.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.athena.aws_secret_access_key }}"
 output_location: "s3://bucket/path/folder"
 region: "us-east-1"
 ```

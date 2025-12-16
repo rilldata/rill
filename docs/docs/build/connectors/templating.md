@@ -38,13 +38,13 @@ dev:
 
 # Production environment configuration
 prod:
-  host: "{{ .env.connector.clickhouse.host }}"
-  port: "{{ .env.connector.clickhouse.port }}"
-  database: "{{ .env.connector.clickhouse.database }}"
-  username: "{{ .env.connector.clickhouse.username }}"
-  password: "{{ .env.connector.clickhouse.password }}"
+  host: "{{ .env.clickhouse.host }}"
+  port: "{{ .env.clickhouse.port }}"
+  database: "{{ .env.clickhouse.database }}"
+  username: "{{ .env.clickhouse.username }}"
+  password: "{{ .env.clickhouse.password }}"
   ssl: true
-  cluster: "{{ .env.connector.clickhouse.cluster }}"
+  cluster: "{{ .env.clickhouse.cluster }}"
 ```
 
 In this example:
@@ -57,8 +57,8 @@ Some connectors will reference two unique databases and require two unique crede
 
 IE:
 ```
-"{{ .env.connector.dev_clickhouse.username }}"
-"{{ .env.connector.prod_clickhouse.username }}"
+"{{ .env.dev_clickhouse.username }}"
+"{{ .env.prod_clickhouse.username }}"
 ```
 
 Or, by creating a separate connector altogether.
@@ -81,7 +81,7 @@ dev:
   project_id: rilldata_dev
 project_id: rilldata
 
-google_application_credentials: '{{ .env.connector.bigquery.google_application_credentials}}'
+google_application_credentials: '{{ .env.bigquery.google_application_credentials}}'
 ```
 
 ```yaml

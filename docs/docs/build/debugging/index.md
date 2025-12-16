@@ -80,7 +80,7 @@ When connecting to a data source via a connector, you'll see a "Connector" being
 ```bash
 INFO    Reconciling resource    {"name": "gcs", "type": "Connector"}
 INFO    Reconciled resource     {"name": "gcs", "type": "Connector", "elapsed": "39ms"}
-WARN    Reconcile failed        {"name": "gcs", "type": "Connector", "elapsed": "1ms", "error": "failed to resolve templated property \"google_application_credentials\": template: :1:6: executing \"\" at <.env.connector.gcs.google_application_credentialsss>: map has no entry for key \"google_application_credentials\""}
+WARN    Reconcile failed        {"name": "gcs", "type": "Connector", "elapsed": "1ms", "error": "failed to resolve templated property \"google_application_credentials\": template: :1:6: executing \"\" at <.env.gcs_google_application_credentialsss>: map has no entry for key \"google_application_credentials\""}
 ```
 
 Once connected, you'll likely create a model and see this also reconciling in the logs. Similar to the above, if there are any issues, you'll see it both in the logs and UI.

@@ -35,7 +35,7 @@ type: connector
 driver: azure
 
 azure_storage_account: rilltest
-azure_storage_key: "{{ .env.connector.azure.azure_storage_key }}"
+azure_storage_key: "{{ .env.azure.azure_storage_key }}"
 ```
 
 This approach ensures your Azure Blob Storage sources authenticate consistently across both local development and cloud deployment. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
@@ -49,7 +49,7 @@ type: connector
 
 driver: azure
 
-azure_storage_connection_string: "{{ .env.connector.azure.azure_storage_connection_string }}"
+azure_storage_connection_string: "{{ .env.azure.azure_storage_connection_string }}"
 ```
 
 This approach ensures your Azure Blob Storage sources authenticate consistently across both local development and cloud deployment. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
@@ -64,7 +64,7 @@ type: connector
 driver: azure
 
 azure_storage_account: rilltest 
-azure_storage_sas_token: "{{ .env.connector.azure.azure_storage_sas_token }}"
+azure_storage_sas_token: "{{ .env.azure.azure_storage_sas_token }}"
 ```
 
 This method provides fine-grained access control and enhanced security for your Azure Blob Storage connections. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.

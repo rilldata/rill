@@ -103,6 +103,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
         return `${key}: "{{ .env.${makeEnvConnectorKey(
           connector.name as string,
           key,
+          options?.connectorInstanceName as string,
         )} }}"`;
       }
 
@@ -124,6 +125,7 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
+  connectorInstanceName?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -167,6 +169,7 @@ export async function updateDotEnvWithSecrets(
     const connectorSecretKey = makeEnvConnectorKey(
       connector.name as string,
       key,
+      connectorInstanceName as string,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -231,8 +234,14 @@ export function makeDotEnvConnectorKey(
   return `connector.${nameToUse}.${key}`;
 }
 
-export function makeEnvConnectorKey(driverName: string, key: string) {
-  return `${driverName}_${key}`;
+export function makeEnvConnectorKey(
+  driverName: string,
+  key: string,
+  connectorInstanceName?: string,
+) {
+  // Once Connector Name in UI, update nameToUse to the connector_name parameter
+  const nameToUse = connectorInstanceName || driverName;
+  return `${nameToUse}_${key}`;
 }
 
 export async function updateRillYAMLWithOlapConnector(

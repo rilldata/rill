@@ -65,7 +65,7 @@ Create `connectors/my_gcs.yaml`:
 type: connector
 driver: gcs
 
-google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
+google_application_credentials: "{{ .env.gcs_google_application_credentials }}"
 ```
 
 **Step 2: Create model configuration**
@@ -119,8 +119,8 @@ Create `connectors/my_gcs_hmac.yaml`:
 type: connector
 driver: gcs
 
-key_id: "{{ .env.connector.gcs.key_id }}"
-secret: "{{ .env.connector.gcs.secret }}"
+key_id: "{{ .env.gcs.key_id }}"
+secret: "{{ .env.gcs.secret }}"
 ```
 
 **Step 2: Create model configuration**

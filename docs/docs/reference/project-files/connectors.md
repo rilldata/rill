@@ -39,7 +39,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Slack**](#slack) - Slack data
 
 :::warning Security Recommendation
-For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
+For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.<connector_driver>_<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
 :::
 
 
@@ -559,7 +559,7 @@ _[string, array]_ - List of connector names for which temporary secrets should b
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
-token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
+token: '{{ .env.connector.motherduck_token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
 ```
@@ -1054,7 +1054,7 @@ parallel_fetch_limit: 2
 # Example: Snowflake connector advance configuration
 type: connector
 driver: snowflake
-dsn: '{{ .env.SNOWFLAKE_DSN }}' # define SNOWFLAKE_DSN in .env file like SNOWFLAKE_DSN='my_username@my_account/my_db/my_schema?warehouse=my_wh&role=my_role&authenticator=SNOWFLAKE_JWT&privateKey=my_private_key'
+dsn: '{{ .env.snowflake_dsn }}' # define SNOWFLAKE_DSN in .env file like SNOWFLAKE_DSN='my_username@my_account/my_db/my_schema?warehouse=my_wh&role=my_role&authenticator=SNOWFLAKE_JWT&privateKey=my_private_key'
 parallel_fetch_limit: 2
 ```
 

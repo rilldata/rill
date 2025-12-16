@@ -33,7 +33,7 @@ driver: postgres
 host: "localhost"
 port: "5432"
 user: "postgres"
-password: "{{ .env.connector.postgres.password }}"
+password: "{{ .env.postgres_password }}"
 dbname: "postgres"
 ```
 
