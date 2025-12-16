@@ -1717,6 +1717,7 @@ func TestRBAC(t *testing.T) {
 		}
 		require.True(t, found)
 
+		// it will still not be restricted as all org level users are part of autogroup:members and it is unrestricted
 		proj, err := userClient.GetProject(ctx, &adminv1.GetProjectRequest{
 			Org:     org.Organization.Name,
 			Project: project.Project.Name,
@@ -1728,6 +1729,29 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, claims)
 		rules := claims.Claims("").AdditionalRules
+		require.Len(t, rules, 0)
+
+		// restrict autogroup:members so that usergroup restriction takes effect
+		restrict = true
+		_, err = admin.SetProjectMemberUsergroupRole(ctx, &adminv1.SetProjectMemberUsergroupRoleRequest{
+			Org:               org.Organization.Name,
+			Project:           project.Project.Name,
+			Usergroup:         database.UsergroupNameAutogroupMembers,
+			RestrictResources: &restrict,
+		})
+		require.NoError(t, err)
+		// fetch again and check it is restricted now
+		proj, err = userClient.GetProject(ctx, &adminv1.GetProjectRequest{
+			Org:     org.Organization.Name,
+			Project: project.Project.Name,
+		})
+		require.NoError(t, err)
+		// parse jwt
+		require.NotNil(t, proj.Jwt)
+		claims, err = fix.Audience.ParseAndValidate(proj.Jwt)
+		require.NoError(t, err)
+		require.NotNil(t, claims)
+		rules = claims.Claims("").AdditionalRules
 		require.Len(t, rules, 1)
 		require.NotNil(t, rules[0].GetAccess())
 		require.Equal(t, false, rules[0].GetAccess().Allow)
@@ -1880,13 +1904,6 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = admin.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
-			Org:   org.Organization.Name,
-			Email: user.Email,
-			Role:  database.OrganizationRoleNameViewer,
-		})
-		require.NoError(t, err)
-
 		_, err = admin.AddProjectMemberUser(ctx, &adminv1.AddProjectMemberUserRequest{
 			Org:     org.Organization.Name,
 			Project: project.Project.Name,
@@ -1996,6 +2013,16 @@ func TestRBAC(t *testing.T) {
 			Usergroup: group.Usergroup.GroupName,
 			Role:      database.ProjectRoleNameEditor,
 			Resources: []*adminv1.ResourceName{{Type: "metrics_view", Name: "mv1"}},
+		})
+		require.NoError(t, err)
+
+		// restrict autogroup:members so that usergroup restriction takes effect
+		restrict := true
+		_, err = admin.SetProjectMemberUsergroupRole(ctx, &adminv1.SetProjectMemberUsergroupRoleRequest{
+			Org:               org.Organization.Name,
+			Project:           project.Project.Name,
+			Usergroup:         database.UsergroupNameAutogroupMembers,
+			RestrictResources: &restrict,
 		})
 		require.NoError(t, err)
 

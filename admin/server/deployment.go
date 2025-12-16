@@ -836,14 +836,6 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 	if err != nil {
 		return false, nil, err
 	}
-	// filter out managed usergroups as they do not have resource restrictions
-	var filteredMug []*database.MemberUsergroup
-	for _, g := range mug {
-		if !g.Managed {
-			filteredMug = append(filteredMug, g)
-		}
-	}
-	mug = filteredMug
 	restrictResources := mu != nil || len(mug) > 0
 	var resources []database.ResourceName
 	if mu != nil {
