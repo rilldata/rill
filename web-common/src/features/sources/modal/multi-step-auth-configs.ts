@@ -70,6 +70,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
         title: "S3 URI",
         description: "Path to your S3 bucket or prefix",
         pattern: "^s3://",
+        "x-placeholder": "s3://bucket/path",
         "x-step": "source",
       },
       name: {
@@ -77,6 +78,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
         title: "Model name",
         description: "Name for the source model",
         pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+        "x-placeholder": "my_model",
         "x-step": "source",
       },
     },
@@ -142,6 +144,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
         title: "GCS URI",
         description: "Path to your GCS bucket or prefix",
         pattern: "^gs://",
+        "x-placeholder": "gs://bucket/path",
         "x-step": "source",
       },
       name: {
@@ -149,6 +152,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
         title: "Model name",
         description: "Name for the source model",
         pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+        "x-placeholder": "my_model",
         "x-step": "source",
       },
     },
@@ -230,6 +234,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
         description:
           "URI to the Azure blob container or directory (e.g., https://<account>.blob.core.windows.net/container)",
         pattern: "^https?://",
+        "x-placeholder": "https://account.blob.core.windows.net/container",
         "x-step": "source",
       },
       name: {
@@ -237,6 +242,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
         title: "Model name",
         description: "Name for the source model",
         pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+        "x-placeholder": "my_model",
         "x-step": "source",
       },
     },
