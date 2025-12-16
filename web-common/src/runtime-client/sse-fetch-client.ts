@@ -7,10 +7,6 @@ const BACKOFF_DELAY = 1000; // Base delay in ms
 const RETRY_COUNT_DELAY = 500; // Delay before resetting retry count
 const RECONNECT_CALLBACK_DELAY = 150; // Delay before firing reconnect callbacks
 
-// Throttling configuration
-// const OUT_OF_FOCUS_TIMEOUT = 4000; // 2 minutes
-// const OUT_OF_FOCUS_SHORT_TIMEOUT = 20000; // 20 seconds
-
 /**
  * Represents a Server-Sent Event message
  */
@@ -133,8 +129,8 @@ export class SSEFetchClient {
     headers?: Record<string, string>;
   };
 
-  constructor(public params: Params) {
-    if (params.timeouts) {
+  constructor(public params?: Params) {
+    if (params?.timeouts) {
       this.outOfFocusThrottler = new Throttler(
         params.timeouts.normal,
         params.timeouts.short,
@@ -164,7 +160,7 @@ export class SSEFetchClient {
 
       const currentAttempts = get(this.retryAttempts);
 
-      if (currentAttempts >= (this.params.maxRetryAttempts ?? 0)) {
+      if (currentAttempts >= (this.params?.maxRetryAttempts ?? 0)) {
         throw new Error("Max retries exceeded");
       }
 
@@ -308,7 +304,7 @@ export class SSEFetchClient {
       await this.processSSEStream(response.body);
     } catch (error) {
       if (error.name !== "AbortError") {
-        if (this.params.retryOnError && !get(this.closed)) {
+        if (this.params?.retryOnError && !get(this.closed)) {
           void this.reconnect();
         }
 
@@ -316,7 +312,7 @@ export class SSEFetchClient {
           listener(error instanceof Error ? error : new Error(String(error))),
         );
       } else {
-        if (this.params.retryOnClose && !get(this.closed)) {
+        if (this.params?.retryOnClose && !get(this.closed)) {
           void this.reconnect();
         } else {
           this.closed.set(true);
@@ -346,6 +342,8 @@ export class SSEFetchClient {
    * Call this when the client is no longer needed to prevent memory leaks
    */
   public cleanup(): void {
+    this.stop();
+
     // Clear all event listeners
     this.listeners.message = [];
     this.listeners.error = [];
