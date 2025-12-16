@@ -335,7 +335,6 @@ export class SSEFetchClient {
       this.abortController.abort("SSE stream stopped by client");
       this.abortController = undefined;
     }
-    console.log("stop");
 
     // Clear timeouts
     clearTimeout(this.reconnectTimeout);

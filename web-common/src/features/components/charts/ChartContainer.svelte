@@ -71,7 +71,11 @@
 
   $: exploreAvailability = showExploreLink
     ? useExploreAvailability($runtime.instanceId, $spec?.metrics_view)
-    : readable({ isAvailable: false, exploreName: null });
+    : readable({
+        isAvailable: false,
+        exploreName: null,
+        displayName: undefined,
+      });
 
   $: exploreName = derived(
     exploreAvailability,
@@ -131,6 +135,7 @@
         {#if showExploreLink && $exploreAvailability.isAvailable}
           <ExploreLink
             exploreName={$exploreName}
+            displayName={$exploreAvailability.displayName}
             {organization}
             {project}
             exploreState={$exploreState}
