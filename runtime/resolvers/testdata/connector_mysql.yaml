@@ -22,7 +22,7 @@ tests:
       sql: "select * from all_datatypes_duckdb order by tinyint_col"
     result_csv: |
       tinyint_col,smallint_col,mediumint_col,int_col,bigint_col,float_col,double_col,decimal_col,char_col,varchar_col,tinytext_col,text_col,mediumtext_col,longtext_col,binary_col,varbinary_col,tinyblob_col,blob_col,mediumblob_col,longblob_col,enum_col,set_col,date_col,datetime_col,timestamp_col,time_col,year_col,boolean_col,bit_col,json_col
-      0,0,0,0,0,0,0,0,,,,,,,AAAAAAAAAAAAAA==,,,,,,small,,1970-01-01,1970-01-01T00:00:00Z,,,1970,false,false,{}
+      0,0,0,0,0,0,0,0,,,,,,,AAAAAAAAAAAAAA==,,,,,,small,,1970-01-01,1970-01-01T00:00:00Z,,00:00:00,1970,false,false,{}
       127,32767,8388607,2147483647,1000000000000000000,1.100000023841858,2.2,3.3,C,VarChar,Tiny Text,Text,Medium Text,Long text content,QmluYXJ5AAAAAA==,VmFyQmluYXJ5,VGlueSBCbG9i,QmxvYg==,TWVkaXVtIEJsb2I=,TG9uZyBCbG9i,medium,"a,b",2024-02-14,2025-02-14T12:34:56Z,2025-02-14T12:34:56Z,12:34:56,2024,true,true,"{""key"": ""value""}"
       ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
   - name: query_all_datatypes_duckdb
