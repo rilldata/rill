@@ -49,31 +49,34 @@
     return variables.map((v) => `${v.key}=${v.value}`).join("\n") + "\n";
   }
 
-  function updateEnvFile(variables: EnvVariable[]) {
+  async function updateEnvFile(variables: EnvVariable[]) {
     const newContent = serializeEnvFile(variables);
+    // Update editor content without autosave
     fileArtifact.updateEditorContent(newContent, false, false);
+    // Force save since .env has autosave disabled
+    await fileArtifact.saveLocalContent(true);
   }
 
   function handleToggleView() {
     viewMode = viewMode === "code" ? "viz" : "code";
   }
 
-  function handleAddVariables(event: CustomEvent<{ variables: EnvVariable[] }>) {
+  async function handleAddVariables(event: CustomEvent<{ variables: EnvVariable[] }>) {
     const newVariables = event.detail.variables;
     const updatedVariables = [...envVariables, ...newVariables];
-    updateEnvFile(updatedVariables);
+    await updateEnvFile(updatedVariables);
   }
 
-  function handleEditVariable(oldKey: string, key: string, value: string) {
+  async function handleEditVariable(oldKey: string, key: string, value: string) {
     const updatedVariables = envVariables.map((v) =>
       v.key === oldKey ? { key, value } : v,
     );
-    updateEnvFile(updatedVariables);
+    await updateEnvFile(updatedVariables);
   }
 
-  function handleDeleteVariable(key: string) {
+  async function handleDeleteVariable(key: string) {
     const updatedVariables = envVariables.filter((v) => v.key !== key);
-    updateEnvFile(updatedVariables);
+    await updateEnvFile(updatedVariables);
   }
 
   $: actionsColumn = {
