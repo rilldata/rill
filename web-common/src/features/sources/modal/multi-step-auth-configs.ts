@@ -1,7 +1,6 @@
 import type {
   AuthOption,
   JSONSchemaConditional,
-  JSONSchemaField,
   MultiStepFormSchema,
 } from "./types";
 
