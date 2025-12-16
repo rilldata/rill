@@ -297,6 +297,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
+  connectorName?: string,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -304,10 +305,13 @@ export async function submitAddConnectorForm(
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
 
-  const newConnectorName = getName(
-    connector.name as string,
-    fileArtifacts.getNamesForKind(ResourceKind.Connector),
-  );
+  // Use provided name or generate a unique default
+  const newConnectorName =
+    connectorName ??
+    getName(
+      connector.name as string,
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
 
   // Check if there's already an ongoing submission for this connector
   const existingSubmission = connectorSubmissions.get(

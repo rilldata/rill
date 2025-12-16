@@ -28,13 +28,16 @@ import {
   setConnectorConfig,
   setStep,
 } from "./connectorStepStore";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
 import type { ActionResult } from "@sveltejs/kit";
+import { fileArtifacts } from "../../entity-management/file-artifacts";
+import { getName } from "../../entity-management/name-utils";
+import { ResourceKind } from "../../entity-management/resource-selectors";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -63,6 +66,10 @@ export class AddDataFormManager {
   dsn: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
+
+  // Connector name field (only for connector forms, used for file naming)
+  connectorName = writable<string>("");
+  connectorNameError = writable<string | null>(null);
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -155,6 +162,15 @@ export class AddDataFormManager {
       onUpdate: onDsnUpdate,
       resetForm: false,
     });
+
+    // Initialize connector name with a unique default based on driver name
+    if (isConnectorForm) {
+      const defaultName = getName(
+        connector.name as string,
+        fileArtifacts.getNamesForKind(ResourceKind.Connector),
+      );
+      this.connectorName.set(defaultName);
+    }
   }
 
   get isSourceForm(): boolean {
@@ -277,13 +293,30 @@ export class AddDataFormManager {
 
       const values = event.form.data;
 
+      // Validate connector name for connector forms
+      if (isConnectorForm) {
+        const stepState = get(connectorStepStore) as ConnectorStepState;
+        if (!isMultiStepConnector || stepState.step === "connector") {
+          if (!this.validateConnectorName()) {
+            return;
+          }
+        }
+      }
+
       try {
         const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          const connectorName = get(this.connectorName);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+            connectorName,
+          );
           setConnectorConfig(values);
           setStep("source");
           return;
@@ -291,7 +324,14 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          const connectorName = get(this.connectorName);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+            connectorName,
+          );
           onClose();
         }
       } catch (e) {
@@ -375,6 +415,7 @@ export class AddDataFormManager {
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseParamsValues?: Record<string, unknown>;
     clickhouseDsnValues?: Record<string, unknown>;
+    connectorName?: string;
   }): string {
     const connector = this.connector;
     const {
@@ -390,6 +431,7 @@ export class AddDataFormManager {
       clickhouseConnectorType,
       clickhouseParamsValues,
       clickhouseDsnValues,
+      connectorName,
     } = ctx;
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
@@ -402,6 +444,7 @@ export class AddDataFormManager {
           onlyDsn || connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
+        connectorInstanceName: connectorName,
       });
     };
 
@@ -426,6 +469,7 @@ export class AddDataFormManager {
           connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
+        connectorInstanceName: connectorName,
       });
     };
 
@@ -498,16 +542,42 @@ export class AddDataFormManager {
       values,
     );
     try {
+      const connectorName = get(this.connectorName);
       await submitAddConnectorForm(
         queryClient,
         this.connector,
         processedValues,
         true,
+        connectorName,
       );
       return { ok: true } as const;
     } catch (e) {
       const { message, details } = this.normalizeError(e);
       return { ok: false, message, details } as const;
     }
+  }
+
+  /**
+   * Validate connector name
+   */
+  validateConnectorName(): boolean {
+    const name = get(this.connectorName);
+
+    if (!name || name.trim() === "") {
+      this.connectorNameError.set("Connector name is required");
+      return false;
+    }
+
+    // Check if name matches the valid pattern (alphanumeric, underscores, hyphens)
+    const VALID_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
+    if (!VALID_NAME_PATTERN.test(name)) {
+      this.connectorNameError.set(
+        "Name can only contain letters, numbers, underscores, and hyphens",
+      );
+      return false;
+    }
+
+    this.connectorNameError.set(null);
+    return true;
   }
 }

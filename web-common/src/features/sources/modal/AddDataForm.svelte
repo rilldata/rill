@@ -26,6 +26,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -132,6 +133,16 @@
   let clickhouseShowSaveAnyway: boolean = false;
 
   $: isSubmitDisabled = (() => {
+    // For connector forms, validate connector name
+    if (
+      isConnectorForm &&
+      (!isMultiStepConnector || stepState.step === "connector")
+    ) {
+      if (!$connectorName || $connectorName.trim() === "") {
+        return true;
+      }
+    }
+
     if (onlyDsn || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
@@ -264,6 +275,7 @@
     clickhouseConnectorType,
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
+    connectorName: $connectorName,
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =
@@ -299,6 +311,19 @@
       $paramsTainted as Record<string, boolean> | null | undefined,
     );
   }
+
+  // Connector name handling
+  const connectorName = formManager.connectorName;
+  const connectorNameError = formManager.connectorNameError;
+
+  // Validate connector name as user types
+  $: if (isConnectorForm) {
+    if ($connectorName && $connectorName.trim() !== "") {
+      formManager.validateConnectorName();
+    } else {
+      $connectorNameError = null;
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -309,6 +334,21 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
+      {#if isConnectorForm && (!isMultiStepConnector || stepState.step === "connector")}
+        <!-- Connector Name Field (only for connector forms, not sources) -->
+        <div class="pb-4">
+          <Input
+            id="connector-name"
+            label="Connector name"
+            placeholder="Enter connector name"
+            hint="Used to name the connector file and environment variables"
+            bind:value={$connectorName}
+            errors={$connectorNameError ? [$connectorNameError] : []}
+            alwaysShowError
+          />
+        </div>
+      {/if}
+
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
