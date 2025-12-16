@@ -36,6 +36,7 @@
   export let connectorType: ClickHouseConnectorType = "self-hosted";
   export let connectionTab: ConnectorType = "parameters";
   export let showSaveAnyway: boolean = false;
+  export let connectorName: string;
   export let onClose: () => void;
   export let setError: (
     error: string | null,
@@ -207,6 +208,7 @@
         connector,
         values,
         true, // saveAnyway = true
+        connectorName,
       );
 
       onClose();
@@ -252,6 +254,7 @@
         connector,
         values,
         false, // Normal submission, not saveAnyway
+        connectorName,
       );
       onClose();
     } catch (e) {

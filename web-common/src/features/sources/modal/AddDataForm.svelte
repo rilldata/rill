@@ -365,6 +365,7 @@
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
           bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          connectorName={$connectorName}
         />
       {:else if hasDsnFormOption}
         <Tabs
