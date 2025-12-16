@@ -19,7 +19,11 @@ export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
 ) {
-  // Get the secret property keys
+  // DEPRECATED: Secret handling in source files is no longer used.
+  // Secrets are now handled at the connector level (connector.yaml + .env).
+  // Sources reference connectors by name, and prepareSourceFormData() strips
+  // configProperties (which contain secrets) from source files.
+  // This code remains for backwards compatibility but should not be needed.
   const secretPropertyKeys =
     connector.sourceProperties
       ?.filter((property) => property.secret)
@@ -47,6 +51,8 @@ export function compileSourceYAML(
     .map((key) => {
       const value = formValues[key] as string;
 
+      // DEPRECATED: This secret handling is no longer used in practice.
+      // Secrets belong in connector.yaml, not source.yaml files.
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // For source files, we include secret properties

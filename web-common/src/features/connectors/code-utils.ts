@@ -102,7 +102,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
       if (isSecretProperty) {
         return `${key}: "{{ .env.${makeEnvConnectorKey(
           connector.name as string,
-          key
+          key,
         )} }}"`;
       }
 
@@ -167,7 +167,7 @@ export async function updateDotEnvWithSecrets(
 
     const connectorSecretKey = makeEnvConnectorKey(
       connector.name as string,
-      key
+      key,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -233,10 +233,7 @@ export function makeDotEnvConnectorKey(
   return `connector.${nameToUse}.${key}`;
 }
 
-export function makeEnvConnectorKey(
-  driverName: string,
-  key: string
-) {
+export function makeEnvConnectorKey(driverName: string, key: string) {
   // Note: The connector instance name is used when provided, otherwise fall back to driver name.
   // This enables configuring multiple connectors that use the same driver with unique env keys.
 
