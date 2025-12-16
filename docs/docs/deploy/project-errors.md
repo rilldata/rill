@@ -1,28 +1,46 @@
 ---
 title: Managing Project Errors
-description: Explore and configure alerts for project errors
+description: Configure alerts and manage errors for deployed projects in Rill Cloud
 sidebar_label: Managing Project Errors
 sidebar_position: 25
 ---
 
-## Overview
+When you deploy to Rill Cloud, projects can encounter errors—from missing credentials to data type mismatches. This guide focuses on managing errors in deployed projects and setting up automated alerts.
 
-Rill projects can go into an error state for many reasons, such as a malformed YAML file, missing credentials for a connector, or a breaking change in a data type.
-Regardless of the error, Rill Cloud takes various steps to surface, manage, and contain errors:
+:::info General Troubleshooting
+For general troubleshooting guidance, error message explanations, and debugging techniques, see the [Debugging Rill Projects](/build/debugging) documentation.
+:::
 
-- **Visibility:** Admins will always be able to view the project status at the individual resource level within Rill Cloud using the `Status` tab or by using the [rill project status](/reference/cli/project/status) CLI command.
-- **Isolation:** Rill Cloud will handle errors at the individual resource level. For example, if a dashboard falls into an error state or fails to reconcile, all other dashboards should remain available. 
-- **Fallback:** Rill Cloud will attempt to fall back to the most recent valid state when possible. For example, if the underlying model for a dashboard fails to build, the dashboard will keep serving from the most recent valid state.
+## How Rill Handles Errors
 
-## Receive alerts for project errors
+Rill's error management approach ensures visibility and isolation:
 
-To help you quickly identify and fix errors, you can configure a Rill alert that will trigger when one or more resources in your project enter an error state. The alert must be configured using a YAML file committed to your Rill project repository (configuration through the UI is not yet possible).
+- **Visibility:** View project status at the resource level via the `Status` tab or [`rill project status`](/reference/cli/project/status) CLI command
+- **Isolation:** Errors are contained to individual resource trees—if one dashboard fails, others remain available
+- **Fallback:** Rill attempts to serve from the most recent valid state when possible
 
-:::tip Want to learn more about alerts?
+:::tip Check upstream dependencies
+The surfaced error might not be the root cause. A dashboard error could stem from an underlying model timeout. Always check the [project status page](/manage/project-management#checking-deployment-status) to trace errors to their source.
+:::
+
+## Deployment-Specific Error Scenarios
+
+Most errors will surface during local development in Rill Developer. However, after deploying to Rill Cloud, you may encounter additional issues:
+
+1. **Production configuration missing** - Your YAML files reference `prod:` parameters that have been defined incorrectly. Verify your [dev/prod setup](/build/connectors/templating).
+2. **Timeouts, OOM** - Production data volumes may be larger than local development data, leading to timeouts and out-of-memory issues. [Contact us](/contact) if you see any related error messages.
+
+To troubleshoot deployment errors:
+
+1. **Check the resource status** in the [project status page](/manage/project-management#checking-deployment-status)
+2. **Review project logs** using `rill project logs` or the Rill Cloud UI
+3. **Compare with local behavior** - If it worked locally, check production-specific configuration differences
+
+## Setting Up Error Alerts
+
+You can configure alerts to automatically notify you when project errors occur. Once set up, you'll receive notifications (via email or Slack) whenever any resource in your project enters an error state.
 
 Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts)!
-
-:::
 
 ### Configure an email alert
 
@@ -47,15 +65,13 @@ notify:
     recipients: [john@example.com]
 ```
 
-:::info Don't forget to commit your changes!
+This will give you a good idea of what object has an issue, and you can browse the [status page](/manage/project-management#checking-deployment-status) for more information.
 
 After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
-:::
-
 ### Configure a Slack alert
 
-To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](../explore/alerts/slack). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
+To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](/build/connectors/data-source/slack#setting-up-the-slack-integration). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
 
 ```yaml
 type: alert
@@ -77,8 +93,4 @@ notify:
     channels: [rill-alerts]
 ```
 
-:::info Don't forget to commit your changes!
-
-After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
-
-:::
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository or update your Rill project via the Deploy button.

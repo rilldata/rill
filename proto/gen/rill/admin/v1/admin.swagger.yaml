@@ -465,6 +465,8 @@ paths:
                 type: string
               logoAssetId:
                 type: string
+              logoDarkAssetId:
+                type: string
               faviconAssetId:
                 type: string
               thumbnailAssetId:
@@ -1524,6 +1526,14 @@ paths:
             properties:
               environment:
                 type: string
+              branch:
+                type: string
+                description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+              editable:
+                type: boolean
+                description: |-
+                  Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                  Can't be set for `prod` deployments.
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -1608,6 +1618,9 @@ paths:
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
+              themeMode:
+                type: string
+                description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
@@ -4793,6 +4806,8 @@ definitions:
         type: string
       branch:
         type: string
+      editable:
+        type: boolean
       runtimeHost:
         type: string
       runtimeInstanceId:
@@ -5532,6 +5547,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      logoDarkUrl:
         type: string
       faviconUrl:
         type: string
@@ -6319,12 +6336,21 @@ definitions:
       name:
         type: string
         title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
       inputSchema:
         type: string
         title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
     title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object

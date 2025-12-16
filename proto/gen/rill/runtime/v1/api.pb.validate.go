@@ -5223,6 +5223,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for UseAi
 
+	// no validation rules for Prompt
+
 	if len(errors) > 0 {
 		return GenerateMetricsViewFileRequestMultiError(errors)
 	}
@@ -5410,6 +5412,231 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GenerateMetricsViewFileResponseValidationError{}
+
+// Validate checks the field values on GenerateCanvasFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateCanvasFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateCanvasFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateCanvasFileRequestMultiError, or nil if none found.
+func (m *GenerateCanvasFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateCanvasFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateCanvasFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateCanvasFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for MetricsViewName
+
+	// no validation rules for Path
+
+	// no validation rules for UseAi
+
+	if len(errors) > 0 {
+		return GenerateCanvasFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateCanvasFileRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateCanvasFileRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GenerateCanvasFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateCanvasFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateCanvasFileRequestMultiError) AllErrors() []error { return m }
+
+// GenerateCanvasFileRequestValidationError is the validation error returned by
+// GenerateCanvasFileRequest.Validate if the designated constraints aren't met.
+type GenerateCanvasFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateCanvasFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateCanvasFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateCanvasFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateCanvasFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateCanvasFileRequestValidationError) ErrorName() string {
+	return "GenerateCanvasFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateCanvasFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateCanvasFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateCanvasFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateCanvasFileRequestValidationError{}
+
+var _GenerateCanvasFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateCanvasFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateCanvasFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateCanvasFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateCanvasFileResponseMultiError, or nil if none found.
+func (m *GenerateCanvasFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateCanvasFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AiSucceeded
+
+	if len(errors) > 0 {
+		return GenerateCanvasFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateCanvasFileResponseMultiError is an error wrapping multiple
+// validation errors returned by GenerateCanvasFileResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GenerateCanvasFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateCanvasFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateCanvasFileResponseMultiError) AllErrors() []error { return m }
+
+// GenerateCanvasFileResponseValidationError is the validation error returned
+// by GenerateCanvasFileResponse.Validate if the designated constraints aren't met.
+type GenerateCanvasFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateCanvasFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateCanvasFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateCanvasFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateCanvasFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateCanvasFileResponseValidationError) ErrorName() string {
+	return "GenerateCanvasFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateCanvasFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateCanvasFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateCanvasFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateCanvasFileResponseValidationError{}
 
 // Validate checks the field values on GenerateResolverRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -10344,6 +10571,303 @@ var _ interface {
 	ErrorName() string
 } = MessageValidationError{}
 
+// Validate checks the field values on AnalystAgentContext with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalystAgentContext) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalystAgentContext with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalystAgentContextMultiError, or nil if none found.
+func (m *AnalystAgentContext) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalystAgentContext) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Explore
+
+	if all {
+		switch v := interface{}(m.GetWhere()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalystAgentContextValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalystAgentContextValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalystAgentContextValidationError{
+				field:  "Where",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalystAgentContextValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalystAgentContextValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalystAgentContextValidationError{
+				field:  "TimeStart",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalystAgentContextValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalystAgentContextValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalystAgentContextValidationError{
+				field:  "TimeEnd",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return AnalystAgentContextMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalystAgentContextMultiError is an error wrapping multiple validation
+// errors returned by AnalystAgentContext.ValidateAll() if the designated
+// constraints aren't met.
+type AnalystAgentContextMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalystAgentContextMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalystAgentContextMultiError) AllErrors() []error { return m }
+
+// AnalystAgentContextValidationError is the validation error returned by
+// AnalystAgentContext.Validate if the designated constraints aren't met.
+type AnalystAgentContextValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalystAgentContextValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalystAgentContextValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalystAgentContextValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalystAgentContextValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalystAgentContextValidationError) ErrorName() string {
+	return "AnalystAgentContextValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalystAgentContextValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalystAgentContext.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalystAgentContextValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalystAgentContextValidationError{}
+
+// Validate checks the field values on DeveloperAgentContext with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeveloperAgentContext) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeveloperAgentContext with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeveloperAgentContextMultiError, or nil if none found.
+func (m *DeveloperAgentContext) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeveloperAgentContext) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InitProject
+
+	// no validation rules for CurrentFilePath
+
+	if len(errors) > 0 {
+		return DeveloperAgentContextMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeveloperAgentContextMultiError is an error wrapping multiple validation
+// errors returned by DeveloperAgentContext.ValidateAll() if the designated
+// constraints aren't met.
+type DeveloperAgentContextMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeveloperAgentContextMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeveloperAgentContextMultiError) AllErrors() []error { return m }
+
+// DeveloperAgentContextValidationError is the validation error returned by
+// DeveloperAgentContext.Validate if the designated constraints aren't met.
+type DeveloperAgentContextValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeveloperAgentContextValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeveloperAgentContextValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeveloperAgentContextValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeveloperAgentContextValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeveloperAgentContextValidationError) ErrorName() string {
+	return "DeveloperAgentContextValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeveloperAgentContextValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeveloperAgentContext.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeveloperAgentContextValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeveloperAgentContextValidationError{}
+
 // Validate checks the field values on ListConversationsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -10879,6 +11403,244 @@ var _ interface {
 	ErrorName() string
 } = GetConversationResponseValidationError{}
 
+// Validate checks the field values on ListToolsRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ListToolsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListToolsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListToolsRequestMultiError, or nil if none found.
+func (m *ListToolsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListToolsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return ListToolsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListToolsRequestMultiError is an error wrapping multiple validation errors
+// returned by ListToolsRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ListToolsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListToolsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListToolsRequestMultiError) AllErrors() []error { return m }
+
+// ListToolsRequestValidationError is the validation error returned by
+// ListToolsRequest.Validate if the designated constraints aren't met.
+type ListToolsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListToolsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListToolsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListToolsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListToolsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListToolsRequestValidationError) ErrorName() string { return "ListToolsRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ListToolsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListToolsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListToolsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListToolsRequestValidationError{}
+
+// Validate checks the field values on ListToolsResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ListToolsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListToolsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListToolsResponseMultiError, or nil if none found.
+func (m *ListToolsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListToolsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetTools() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListToolsResponseValidationError{
+						field:  fmt.Sprintf("Tools[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListToolsResponseValidationError{
+						field:  fmt.Sprintf("Tools[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListToolsResponseValidationError{
+					field:  fmt.Sprintf("Tools[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListToolsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListToolsResponseMultiError is an error wrapping multiple validation errors
+// returned by ListToolsResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ListToolsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListToolsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListToolsResponseMultiError) AllErrors() []error { return m }
+
+// ListToolsResponseValidationError is the validation error returned by
+// ListToolsResponse.Validate if the designated constraints aren't met.
+type ListToolsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListToolsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListToolsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListToolsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListToolsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListToolsResponseValidationError) ErrorName() string {
+	return "ListToolsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListToolsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListToolsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListToolsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListToolsResponseValidationError{}
+
 // Validate checks the field values on CompleteRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -10916,14 +11678,27 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
-	// no validation rules for Explore
+	if m.GetAgent() != "" {
+
+		if _, ok := _CompleteRequest_Agent_InLookup[m.GetAgent()]; !ok {
+			err := CompleteRequestValidationError{
+				field:  "Agent",
+				reason: "value must be in list [analyst_agent developer_agent]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if all {
-		switch v := interface{}(m.GetWhere()).(type) {
+		switch v := interface{}(m.GetAnalystAgentContext()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteRequestValidationError{
-					field:  "Where",
+					field:  "AnalystAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -10931,16 +11706,16 @@ func (m *CompleteRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteRequestValidationError{
-					field:  "Where",
+					field:  "AnalystAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetAnalystAgentContext()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteRequestValidationError{
-				field:  "Where",
+				field:  "AnalystAgentContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -10948,11 +11723,11 @@ func (m *CompleteRequest) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetTimeStart()).(type) {
+		switch v := interface{}(m.GetDeveloperAgentContext()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteRequestValidationError{
-					field:  "TimeStart",
+					field:  "DeveloperAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -10960,45 +11735,16 @@ func (m *CompleteRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteRequestValidationError{
-					field:  "TimeStart",
+					field:  "DeveloperAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetDeveloperAgentContext()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteRequestValidationError{
-				field:  "TimeStart",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetTimeEnd()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CompleteRequestValidationError{
-					field:  "TimeEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CompleteRequestValidationError{
-					field:  "TimeEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CompleteRequestValidationError{
-				field:  "TimeEnd",
+				field:  "DeveloperAgentContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -11084,6 +11830,11 @@ var _ interface {
 } = CompleteRequestValidationError{}
 
 var _CompleteRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+var _CompleteRequest_Agent_InLookup = map[string]struct{}{
+	"analyst_agent":   {},
+	"developer_agent": {},
+}
 
 // Validate checks the field values on CompleteResponse with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -11243,20 +11994,42 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_CompleteStreamingRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := CompleteStreamingRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for ConversationId
 
 	// no validation rules for Prompt
 
-	// no validation rules for Explore
+	if m.GetAgent() != "" {
+
+		if _, ok := _CompleteStreamingRequest_Agent_InLookup[m.GetAgent()]; !ok {
+			err := CompleteStreamingRequestValidationError{
+				field:  "Agent",
+				reason: "value must be in list [analyst_agent developer_agent]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if all {
-		switch v := interface{}(m.GetWhere()).(type) {
+		switch v := interface{}(m.GetAnalystAgentContext()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "Where",
+					field:  "AnalystAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -11264,16 +12037,16 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "Where",
+					field:  "AnalystAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetAnalystAgentContext()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteStreamingRequestValidationError{
-				field:  "Where",
+				field:  "AnalystAgentContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -11281,11 +12054,11 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetTimeStart()).(type) {
+		switch v := interface{}(m.GetDeveloperAgentContext()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "TimeStart",
+					field:  "DeveloperAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -11293,45 +12066,16 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "TimeStart",
+					field:  "DeveloperAgentContext",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetDeveloperAgentContext()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteStreamingRequestValidationError{
-				field:  "TimeStart",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetTimeEnd()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "TimeEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "TimeEnd",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CompleteStreamingRequestValidationError{
-				field:  "TimeEnd",
+				field:  "DeveloperAgentContext",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -11417,6 +12161,13 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CompleteStreamingRequestValidationError{}
+
+var _CompleteStreamingRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+var _CompleteStreamingRequest_Agent_InLookup = map[string]struct{}{
+	"analyst_agent":   {},
+	"developer_agent": {},
+}
 
 // Validate checks the field values on CompleteStreamingResponse with the rules
 // defined in the proto definition for this message. If any rules are

@@ -34,9 +34,12 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
+  import { Wand } from "lucide-svelte";
 
   let active = false;
   let showExploreDialog = false;
+  let generateDataDialog = false;
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
@@ -280,6 +283,12 @@
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
           <File size="16px" /> Blank file
         </DropdownMenu.Item>
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => (generateDataDialog = true)}
+        >
+          <Wand size="14px" /> Generate data using AI (beta)
+        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
@@ -332,3 +341,5 @@
   bind:open={showExploreDialog}
   {metricsViews}
 />
+
+<GenerateSampleData initializeProject={false} bind:open={generateDataDialog} />

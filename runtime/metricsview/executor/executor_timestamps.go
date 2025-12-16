@@ -41,6 +41,7 @@ func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (metricsv
 		Query:            rangeSQL,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return metricsview.TimestampsResult{}, err
@@ -94,6 +95,7 @@ func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (metr
 		Query:            rangeSQL,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return metricsview.TimestampsResult{}, err
@@ -153,6 +155,7 @@ func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (metricsvi
 		Query:            rangeSQL,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return metricsview.TimestampsResult{}, err
@@ -218,6 +221,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (metricsvi
 			ExecutionTimeout: defaultExecutionTimeout,
 			UseCache:         &useCache,
 			PopulateCache:    &populateCache,
+			QueryAttributes:  e.queryAttributes,
 		})
 		if err != nil {
 			return err
@@ -254,6 +258,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (metricsvi
 			ExecutionTimeout: defaultExecutionTimeout,
 			UseCache:         &useCache,
 			PopulateCache:    &populateCache,
+			QueryAttributes:  e.queryAttributes,
 		})
 		if err != nil {
 			return err
@@ -290,6 +295,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (metricsvi
 				ExecutionTimeout: defaultExecutionTimeout,
 				UseCache:         &useCache,
 				PopulateCache:    &populateCache,
+				QueryAttributes:  e.queryAttributes,
 			})
 			if err != nil {
 				return err

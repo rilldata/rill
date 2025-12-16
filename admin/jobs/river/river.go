@@ -838,20 +838,3 @@ func newPeriodicJob(jobArgs river.JobArgs, cronExpr string, runOnStart bool) (*r
 
 	return periodicJob, nil
 }
-
-// Observability work wrapper for the job workers
-func work(ctx context.Context, logger *zap.Logger, name string, fn func(context.Context) error) error {
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), oteltrace.WithAttributes(attribute.String("name", name)))
-	defer span.End()
-
-	start := time.Now()
-	logger.Info("job started", zap.String("name", name), observability.ZapCtx(ctx))
-	err := fn(ctx)
-	jobLatencyHistogram.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attribute.String("name", name), attribute.Bool("failed", err != nil)))
-	if err != nil {
-		logger.Error("job failed", zap.String("name", name), zap.Error(err), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-		return err
-	}
-	logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
-	return nil
-}

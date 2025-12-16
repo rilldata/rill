@@ -159,11 +159,10 @@ export class CartesianChartProvider {
     const topNXQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const instanceId = $runtime.instanceId;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
           !!dimensionName;
@@ -178,7 +177,7 @@ export class CartesianChartProvider {
             dimensions: [{ name: dimensionName }],
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: topNWhere,
-            timeRange,
+            timeRange: hasTimeSeries ? timeRange : undefined,
             limit: limit?.toString(),
           },
           {
@@ -196,10 +195,9 @@ export class CartesianChartProvider {
     const topNColorQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           hasColorDimension &&
           !!colorDimensionName &&
           !!colorLimit;
@@ -242,13 +240,13 @@ export class CartesianChartProvider {
           timeGrain,
           comparisonTimeRange,
           showTimeComparison,
+          hasTimeSeries,
         } = $timeAndFilterStore;
         const topNXData = $topNXQuery?.data?.data;
 
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension &&

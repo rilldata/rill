@@ -1,33 +1,25 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
-  import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import Banner from "@rilldata/web-common/components/banner/Banner.svelte";
+  import { fileWatcher, resourceWatcher } from "./watchers";
+  import { MAX_RETRIES } from "@rilldata/web-common/runtime-client/watch-request-client";
 
-  const fileWatcher = new WatchFilesClient().client;
-  const resourceWatcher = new WatchResourcesClient().client;
-  const { retryAttempts: fileAttempts, closed: fileWatcherClosed } =
-    fileWatcher;
-  const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
-    resourceWatcher;
+  const { retryAttempts: fileAttempts } = fileWatcher;
+  const { retryAttempts: resourceAttempts } = resourceWatcher;
 
   export let host: string;
   export let instanceId: string;
 
-  $: fileWatcher.watch(
-    `${host}/v1/instances/${instanceId}/files/watch?stream=files`,
-    true,
-  );
+  $: fileWatcherEndpoint = `${host}/v1/instances/${instanceId}/files/watch?stream=files`;
+  $: resourceWatcherEndpoint = `${host}/v1/instances/${instanceId}/resources/-/watch?stream=resources`;
 
-  $: resourceWatcher.watch(
-    `${host}/v1/instances/${instanceId}/resources/-/watch?stream=resources`,
-    true,
-  );
+  $: void fileWatcher.watch(fileWatcherEndpoint, true);
 
-  $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
+  $: void resourceWatcher.watch(resourceWatcherEndpoint, true);
+
+  $: failed = $fileAttempts >= MAX_RETRIES || $resourceAttempts >= MAX_RETRIES;
 
   onMount(() => {
     void fileArtifacts.init(queryClient, instanceId);
@@ -38,14 +30,19 @@
     };
   });
 
-  function handleVisibilityChange() {
+  async function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
-      fileWatcher.heartbeat();
-      resourceWatcher.heartbeat();
+      await fileWatcher.heartbeat();
+      await resourceWatcher.heartbeat();
     } else {
       fileWatcher.throttle(true);
       resourceWatcher.throttle(true);
     }
+  }
+
+  async function keepAlive() {
+    await fileWatcher.heartbeat();
+    await resourceWatcher.heartbeat();
   }
 </script>
 
@@ -55,18 +52,9 @@
     fileWatcher.throttle();
     resourceWatcher.throttle();
   }}
-  on:click={() => {
-    fileWatcher.heartbeat();
-    resourceWatcher.heartbeat();
-  }}
-  on:keydown={() => {
-    fileWatcher.heartbeat();
-    resourceWatcher.heartbeat();
-  }}
-  on:focus={() => {
-    fileWatcher.heartbeat();
-    resourceWatcher.heartbeat();
-  }}
+  on:click={keepAlive}
+  on:keydown={keepAlive}
+  on:focus={keepAlive}
 />
 
 {#if failed}
@@ -77,15 +65,5 @@
     body="Try restarting the server"
   />
 {:else}
-  {#if $fileWatcherClosed || $resourceWatcherClosed}
-    <Banner
-      banner={{
-        message:
-          "Connection closed due to inactivity. Interact with the page to reconnect.",
-        type: "warning",
-        iconType: "alert",
-      }}
-    />
-  {/if}
   <slot />
 {/if}

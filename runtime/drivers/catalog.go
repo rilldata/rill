@@ -45,6 +45,7 @@ type CatalogStore interface {
 	InsertModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
+	UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)

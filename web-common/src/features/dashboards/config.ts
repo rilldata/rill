@@ -1,8 +1,8 @@
 export const MEASURE_CONFIG = {
   breakpoint: 960,
   chart: {
-    height: 125,
-    fullHeight: 220,
+    height: 145,
+    fullHeight: 245,
   },
   bigNumber: {
     widthWithChart: 140,

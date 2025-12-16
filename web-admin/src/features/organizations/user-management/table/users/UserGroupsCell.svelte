@@ -3,16 +3,24 @@
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { writable } from "svelte/store";
 
   export let organization: string;
   export let userId: string;
+  export let groupCount: number;
   export let onEditUserGroup: (groupName: string) => void;
 
   let isDropdownOpen = false;
+  const userGroupsEnabledStore = writable(false);
+  $: userGroupsEnabledStore.set(isDropdownOpen);
 
-  const userGroupsQuery = getUserGroupsForUsersInOrg(organization, userId);
+  const userGroupsQuery = getUserGroupsForUsersInOrg(
+    organization,
+    userId,
+    userGroupsEnabledStore,
+  );
   $: ({ data: userGroups, isPending, error } = $userGroupsQuery);
-  $: hasGroups = userGroups.length > 0;
+  $: hasGroups = groupCount > 0;
 </script>
 
 {#if hasGroups}
@@ -23,7 +31,7 @@
         : 'hover:bg-slate-100'} px-2 py-1"
     >
       <span class="capitalize">
-        {userGroups.length} Group{userGroups.length > 1 ? "s" : ""}
+        {groupCount} Group{groupCount !== 1 ? "s" : ""}
       </span>
       {#if isDropdownOpen}
         <CaretUpIcon size="12px" />

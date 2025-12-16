@@ -40,6 +40,7 @@
 {#if $exploreAvailability.isAvailable}
   <ExploreLink
     exploreName={$context.exploreName}
+    displayName={$exploreAvailability.displayName}
     {organization}
     {project}
     {exploreState}

@@ -37,6 +37,7 @@ export type TransformerArgs<R extends TransformerProperties> = {
 export interface ExploreAvailabilityResult {
   isAvailable: boolean;
   exploreName?: string;
+  displayName?: string;
   error?: string;
 }
 
