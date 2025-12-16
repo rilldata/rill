@@ -100,10 +100,9 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeEnvConnectorKey(
           connector.name as string,
-          key,
-          options?.connectorInstanceName,
+          key
         )} }}"`;
       }
 
@@ -166,10 +165,9 @@ export async function updateDotEnvWithSecrets(
       return;
     }
 
-    const connectorSecretKey = makeDotEnvConnectorKey(
+    const connectorSecretKey = makeEnvConnectorKey(
       connector.name as string,
-      key,
-      connectorInstanceName,
+      key
     );
 
     blob = replaceOrAddEnvVariable(
@@ -233,6 +231,16 @@ export function makeDotEnvConnectorKey(
   // This enables configuring multiple connectors that use the same driver with unique env keys.
   const nameToUse = connectorInstanceName || driverName;
   return `connector.${nameToUse}.${key}`;
+}
+
+export function makeEnvConnectorKey(
+  driverName: string,
+  key: string
+) {
+  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
+  // This enables configuring multiple connectors that use the same driver with unique env keys.
+
+  return `${driverName}_${key}`;
 }
 
 export async function updateRillYAMLWithOlapConnector(
