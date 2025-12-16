@@ -55,8 +55,8 @@
   />
 
   <svelte:fragment slot="body">
-    <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {filePath} {errors} />
+    <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {errors} />
   </svelte:fragment>
 
-  <ThemeInspector {filePath} {resource} slot="inspector" />
+  <ThemeInspector {filePath} slot="inspector" />
 </WorkspaceContainer>
