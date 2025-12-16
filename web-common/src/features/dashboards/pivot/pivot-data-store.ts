@@ -300,8 +300,16 @@ export function createPivotDataStore(
         if (!isFlat) {
           // Determine limit to apply: use rowLimit if set, otherwise use pagination limit
           let limitToApply = NUM_ROWS_PER_PAGE.toString();
-          if (config.pivot.rowLimit !== undefined) {
-            limitToApply = config.pivot.rowLimit.toString();
+          const rowLimit = config.pivot.rowLimit;
+          if (rowLimit !== undefined) {
+            const remainingRows = rowLimit - rowOffset;
+            if (remainingRows <= 0) {
+              limitToApply = "0";
+            } else if (remainingRows < NUM_ROWS_PER_PAGE) {
+              limitToApply = remainingRows.toString();
+            } else {
+              limitToApply = NUM_ROWS_PER_PAGE.toString();
+            }
           }
 
           // Get sort order for the anchor dimension
@@ -627,10 +635,23 @@ export function createPivotDataStore(
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
-                    const reachedEndForRowData =
-                      (isFlat
-                        ? isCellDataEmpty
-                        : rowDimensionValues.length === 0) && rowPage > 1;
+                    let reachedEndForRowData = false;
+
+                    if (isFlat) {
+                      reachedEndForRowData = isCellDataEmpty && rowPage > 1;
+                    } else {
+                      const rowLimit = config.pivot.rowLimit;
+                      if (rowLimit !== undefined) {
+                        // Check if we've fetched all rows allowed by rowLimit
+                        // This includes both the current page data and any previous pages
+                        const totalRowsFetched =
+                          rowOffset + rowDimensionValues.length;
+                        reachedEndForRowData = totalRowsFetched >= rowLimit;
+                      } else {
+                        reachedEndForRowData =
+                          rowDimensionValues.length === 0 && rowPage > 1;
+                      }
+                    }
                     return {
                       isFetching: false,
                       data: tableDataExpanded,
