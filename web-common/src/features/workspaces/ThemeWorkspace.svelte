@@ -24,8 +24,6 @@
     fileName,
   } = fileArtifact);
 
-  $: themeName = $resourceName?.name ?? getNameFromFile(filePath);
-
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);

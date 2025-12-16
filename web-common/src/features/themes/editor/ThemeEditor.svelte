@@ -7,7 +7,6 @@
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
 
-  export let filePath: string;
   export let errors: LineStatus[];
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
