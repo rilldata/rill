@@ -16,8 +16,8 @@ import {
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
-  keepPreviousData,
   type CreateQueryResult,
+  keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
@@ -241,12 +241,6 @@ export function getAxisQueryForMeasureTotals(
       mergedFilter = mergeFilters(otherFilters, sortedRowFilters);
     }
 
-    // Use rowLimit if set, otherwise default to 100
-    const limitToApply =
-      config.pivot.rowLimit !== undefined
-        ? config.pivot.rowLimit.toString()
-        : "100";
-
     rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
@@ -255,7 +249,6 @@ export function getAxisQueryForMeasureTotals(
       mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
-      limitToApply,
     );
   }
 
