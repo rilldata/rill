@@ -221,22 +221,18 @@ export function deleteEnvVariable(
 
   return newBlob;
 }
-
+// DEPRECATED: This secret handling is no longer used in practice.
+// Secrets belong in connector.yaml, not source.yaml files.
 export function makeDotEnvConnectorKey(
   driverName: string,
   key: string,
   connectorInstanceName?: string,
 ) {
-  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
-  // This enables configuring multiple connectors that use the same driver with unique env keys.
   const nameToUse = connectorInstanceName || driverName;
   return `connector.${nameToUse}.${key}`;
 }
 
 export function makeEnvConnectorKey(driverName: string, key: string) {
-  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
-  // This enables configuring multiple connectors that use the same driver with unique env keys.
-
   return `${driverName}_${key}`;
 }
 
