@@ -87,11 +87,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("no Rill project found at %q (missing rill.yaml)", projectPath)
 			}
 
-			// Check for excessive number of files in the project path
-			if err := start.EnforceRepoLimits(cmd.Context(), projectPath, ch); err != nil {
-				return err
-			}
-
 			envVarsMap, err := start.ParseVariables(envVars)
 			if err != nil {
 				return err

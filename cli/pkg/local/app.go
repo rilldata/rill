@@ -77,6 +77,33 @@ type AppOptions struct {
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
+	// Check that projectPath doesn't have an excessive number of files.
+	// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
+	if _, err := os.Stat(opts.ProjectPath); err == nil {
+		repo, _, err := cmdutil.RepoForProjectPath(opts.ProjectPath)
+		if err != nil {
+			return nil, err
+		}
+		_, err = repo.ListGlob(ctx, "**", false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
+				opts.Ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
+				return nil, nil
+			}
+			return nil, fmt.Errorf("failed to list project files: %w", err)
+		}
+	}
+
+	// Always attempt to pull env for any valid Rill project (after projectPath is set)
+	if opts.Ch.IsAuthenticated() {
+		if IsProjectInit(opts.ProjectPath) {
+			err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
+			if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+				opts.Ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+			}
+		}
+	}
+
 	// Parse log format
 	parsedLogFormat, ok := ParseLogFormat(opts.LogFormat)
 	if !ok {
@@ -90,16 +117,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 	logger, cleanupFn := initLogger(opts.Verbose, opts.Silent, parsedLogFormat, logPath)
 	sugarLogger := logger.Sugar()
-
-	// Always attempt to pull env for any valid Rill project (after projectPath is set)
-	if opts.Ch.IsAuthenticated() {
-		if IsProjectInit(opts.ProjectPath) {
-			err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
-			if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-				opts.Ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-			}
-		}
-	}
 
 	var tracesExporter observability.Exporter
 	if opts.Debug {

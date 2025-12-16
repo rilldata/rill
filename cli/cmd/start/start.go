@@ -1,8 +1,6 @@
 package start
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,7 +11,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/envdetect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
 )
 
@@ -116,11 +113,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Check for excessive number of files in the project path
-			if err := EnforceRepoLimits(cmd.Context(), projectPath, ch); err != nil {
-				return err
-			}
-
 			// Parser variables from "a=b" format to map
 			envVars = append(envVars, envVarsOld...)
 			envVarsMap, err := ParseVariables(envVars)
@@ -220,27 +212,6 @@ func ResolveProjectPath(path string) (string, error) {
 	}
 
 	return path, nil
-}
-
-func EnforceRepoLimits(ctx context.Context, projectPath string, ch *cmdutil.Helper) error {
-	// Check that projectPath doesn't have an excessive number of files.
-	// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
-	if _, err := os.Stat(projectPath); err != nil {
-		return err
-	}
-
-	repo, _, err := cmdutil.RepoForProjectPath(projectPath)
-	if err != nil {
-		return err
-	}
-	_, err = repo.ListGlob(ctx, "**", false)
-	if err != nil {
-		if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
-			ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
-		}
-		return fmt.Errorf("failed to list project files: %w", err)
-	}
-	return nil
 }
 
 func ParseVariables(vals []string) (map[string]string, error) {
