@@ -1,5 +1,6 @@
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import { PinIcon } from "lucide-svelte";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slideRight } from "../../../lib/transitions";
@@ -7,7 +8,6 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
-  import { PinIcon } from "lucide-svelte";
 
   export let removable = false;
   export let active = false;
@@ -112,9 +112,9 @@
   }
 
   .chip {
-    @apply flex  gap-x-1;
+    @apply flex flex-none gap-x-1;
     @apply items-center justify-center;
-    @apply px-2 py-[3px] border w-full max-w-fit truncate;
+    @apply px-2 py-[3px] border w-fit;
   }
 
   .dimension {
