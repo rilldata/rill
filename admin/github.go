@@ -357,6 +357,12 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 				continue
 			}
 
+			// We don't trigger runtime reconcile if the deployment is not ready
+			if depl.Status != database.DeploymentStatusRunning {
+				s.Logger.Info("process github event: runtime reconcile not triggered, deployment is not ready", zap.String("project_id", project.ID), zap.String("deployment_id", depl.ID), zap.String("deployment_status", depl.Status.String()), observability.ZapCtx(ctx))
+				continue
+			}
+
 			err = s.TriggerParser(ctx, depl)
 			if err != nil {
 				return err
