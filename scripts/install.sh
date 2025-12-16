@@ -88,7 +88,7 @@ printInstallOptions() {
 }
 
 # Ask for preferred install option
-promtInstallChoice() {
+promptInstallChoice() {
     printf "Pick install option: (1/2/3)\n"
     read -r ans </dev/tty;
     case $ans in
@@ -227,14 +227,16 @@ installRill() {
     detectPreviousInstallation
     if [ -z "${INSTALL_DIR}" ]; then
         printInstallOptions
-        promtInstallChoice
+        promptInstallChoice
         checkConflictingInstallation
     fi
     initTmpDir
     downloadBinary
     installBinary
     testInstalledBinary
-    addPathConfigEntries
+    if [ -z "${NON_INTERACTIVE}" ]; then
+        addPathConfigEntries
+    fi
     printStartHelp
     publishSyftEvent installed
 }
@@ -274,6 +276,7 @@ case $1 in
     --non-interactive)
         INSTALL_DIR=${2:-"/usr/local/bin"}
         VERSION=${3:-latest}
+        NON_INTERACTIVE=true
         installRill
         ;;
     *)
