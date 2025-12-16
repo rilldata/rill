@@ -27,6 +27,7 @@
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
+  let ready = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -41,7 +42,8 @@
     saveState: { saving },
   } = fileArtifact);
 
-  let ready = false;
+  // Reset ready when canvasName changes
+  $: if (canvasName) ready = false;
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
