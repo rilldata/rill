@@ -28,7 +28,8 @@
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import "@rilldata/web-common/app.css";
-  import { organizationData } from "@rilldata/web-common/features/themes/organization-logo";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import type { V1Organization } from "@rilldata/web-admin/client";
 
   export let data;
@@ -41,10 +42,10 @@
     planDisplayName,
   } = data);
 
-  $: {
-    const org = organizationObj as V1Organization | undefined;
-    organizationData.set(org);
-  }
+  $: organizationLogoUrl = getThemedLogoUrl(
+    $themeControl as "light" | "dark",
+    organizationObj as V1Organization | undefined,
+  );
 
   $: ({
     params: { organization },
@@ -154,6 +155,7 @@
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
         readProjects={organizationPermissions?.readProjects}
         {planDisplayName}
+        {organizationLogoUrl}
       />
 
       {#if withinOnlyOrg}
