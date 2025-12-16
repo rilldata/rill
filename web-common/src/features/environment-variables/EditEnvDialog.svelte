@@ -26,11 +26,8 @@
   }>();
 
   let isKeyAlreadyExists = false;
-
-  const initialValues = {
-    key: keyName,
-    value: value,
-  };
+  let initialKey = keyName;
+  let initialValue = value;
 
   const schema = yup(
     object({
@@ -45,7 +42,7 @@
   );
 
   const { form, enhance, submit, submitting, errors } = superForm(
-    defaults(initialValues, schema),
+    defaults({ key: "", value: "" }, schema),
     {
       SPA: true,
       validators: schema,
@@ -57,19 +54,18 @@
         if (isKeyAlreadyExists) return;
 
         dispatch("save", {
-          oldKey: keyName,
+          oldKey: initialKey,
           key: $form.key,
           value: $form.value,
         });
 
         open = false;
-        handleReset();
       },
     },
   );
 
   $: hasNewChanges =
-    $form.key !== initialValues.key || $form.value !== initialValues.value;
+    $form.key !== initialKey || $form.value !== initialValue;
 
   function handleKeyChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -82,23 +78,14 @@
     $form.value = target.value;
   }
 
-  function handleReset() {
-    $form.key = initialValues.key;
-    $form.value = initialValues.value;
-    isKeyAlreadyExists = false;
-  }
-
   function checkForExistingKey() {
     const existingKeys = existingVariables.map((v) => v.key);
-    isKeyAlreadyExists = isDuplicateKey($form.key, existingKeys, keyName);
+    isKeyAlreadyExists = isDuplicateKey($form.key, existingKeys, initialKey);
   }
 
-  onMount(() => {
-    $form.key = keyName;
-    $form.value = value;
-  });
-
   $: if (open) {
+    initialKey = keyName;
+    initialValue = value;
     $form.key = keyName;
     $form.value = value;
     isKeyAlreadyExists = false;
@@ -107,14 +94,7 @@
   $: isSubmitDisabled = $submitting || !hasNewChanges || isKeyAlreadyExists;
 </script>
 
-<Dialog
-  bind:open
-  onOpenChange={(isOpen) => {
-    if (!isOpen) {
-      handleReset();
-    }
-  }}
->
+<Dialog bind:open>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -170,7 +150,6 @@
         type="plain"
         onClick={() => {
           open = false;
-          handleReset();
         }}>Cancel</Button
       >
       <Button type="primary" disabled={isSubmitDisabled} onClick={submit}>
