@@ -471,21 +471,13 @@ export function createPivotDataStore(
                 totalsRowData,
               );
 
-              // Determine limit for table cell query
-              let tableCellLimit = "5000";
-              if (isFlat) {
-                tableCellLimit = NUM_ROWS_PER_PAGE.toString();
-              } else if (config.pivot.rowLimit !== undefined) {
-                tableCellLimit = config.pivot.rowLimit.toString();
-              }
-
               tableCellQuery = createTableCellQuery(
                 ctx,
                 config,
                 columnDimensionAxes?.data,
                 totalsRowData,
                 rowDimensionValues,
-                tableCellLimit,
+                isFlat ? NUM_ROWS_PER_PAGE.toString() : "5000",
                 isFlat ? rowOffset.toString() : "0",
               );
             } else {
