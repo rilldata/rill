@@ -1,7 +1,11 @@
 import * as yup from "yup";
 import { dsnSchema, getYupSchema } from "./yupSchemas";
-import { getMultiStepFormConfig } from "./multi-step-auth-configs";
-import type { AddDataFormType } from "./types";
+import {
+  getConnectorSchema,
+  getFieldLabel,
+  getRequiredFieldsByAuthMethod,
+} from "./multi-step-auth-configs";
+import type { AddDataFormType, MultiStepFormSchema } from "./types";
 
 export { dsnSchema };
 
@@ -51,22 +55,17 @@ function makeAuthOptionValidationSchema(
   connectorName: string,
   getAuthMethod?: () => string | undefined,
 ) {
-  const config = getMultiStepFormConfig(connectorName);
-  if (!config) return null;
+  const schema = getConnectorSchema(connectorName);
+  if (!schema) return null;
 
   const fieldValidations: Record<string, yup.StringSchema> = {};
+  const requiredByMethod = getRequiredFieldsByAuthMethod(schema, {
+    step: "connector",
+  });
 
-  for (const [method, fields] of Object.entries(
-    config.requiredFieldsByMethod || {},
-  )) {
+  for (const [method, fields] of Object.entries(requiredByMethod || {})) {
     for (const fieldId of fields) {
-      const authField = config.authFieldGroups[method]?.find(
-        (f) => f.id === fieldId,
-      );
-      const label =
-        config.fieldLabels[fieldId] ||
-        (authField?.type === "input" ? authField.label : authField?.id) ||
-        fieldId;
+      const label = getFieldLabel(schema as MultiStepFormSchema, fieldId);
       fieldValidations[fieldId] = (
         fieldValidations[fieldId] || yup.string()
       ).test(

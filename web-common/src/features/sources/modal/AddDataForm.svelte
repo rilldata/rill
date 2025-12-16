@@ -22,11 +22,14 @@
   import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
-  import MultiStepFormRenderer from "./MultiStepFormRenderer.svelte";
+  import JSONSchemaFormRenderer from "./JSONSchemaFormRenderer.svelte";
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { getMultiStepFormConfig } from "./multi-step-auth-configs";
+  import {
+    getAuthOptionsFromSchema,
+    getConnectorSchema,
+  } from "./multi-step-auth-configs";
   import { get } from "svelte/store";
 
   export let connector: V1ConnectorDriver;
@@ -154,7 +157,7 @@
     // Multi-step connectors, connector step: check auth fields (any satisfied group enables button)
     if (isMultiStepConnector && stepState.step === "connector") {
       return isMultiStepConnectorDisabled(
-        activeMultiStepConfig,
+        activeSchema,
         selectedAuthMethod,
         $paramsForm,
         $paramsErrors,
@@ -207,15 +210,18 @@
     }
   })();
 
-  $: activeMultiStepConfig =
+  $: activeSchema =
     isMultiStepConnector && connector.name
-      ? getMultiStepFormConfig(connector.name) || null
+      ? getConnectorSchema(connector.name) || null
       : null;
 
-  $: if (isMultiStepConnector && activeMultiStepConfig) {
-    const options = activeMultiStepConfig.authOptions ?? [];
-    const fallback =
-      activeMultiStepConfig.defaultAuthMethod || options[0]?.value || null;
+  $: activeAuthInfo = activeSchema
+    ? getAuthOptionsFromSchema(activeSchema)
+    : null;
+
+  $: if (isMultiStepConnector && activeAuthInfo) {
+    const options = activeAuthInfo.options ?? [];
+    const fallback = activeAuthInfo.defaultMethod || options[0]?.value || null;
     const hasValidSelection = options.some(
       (option) => option.value === stepState.selectedAuthMethod,
     );
@@ -437,12 +443,12 @@
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            {#if activeMultiStepConfig}
-              <MultiStepFormRenderer
-                config={activeMultiStepConfig}
-                properties={filteredParamsProperties}
-                {paramsForm}
-                paramsErrors={$paramsErrors}
+            {#if activeSchema}
+              <JSONSchemaFormRenderer
+                schema={activeSchema}
+                step="connector"
+                form={paramsForm}
+                errors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
                 bind:authMethod={$selectedAuthMethodStore}
@@ -464,13 +470,25 @@
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            <FormRenderer
-              properties={stepProperties}
-              form={paramsForm}
-              errors={$paramsErrors}
-              {onStringInputChange}
-              uploadFile={handleFileUpload}
-            />
+            {#if activeSchema}
+              <JSONSchemaFormRenderer
+                schema={activeSchema}
+                step="source"
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+                bind:authMethod={$selectedAuthMethodStore}
+              />
+            {:else}
+              <FormRenderer
+                properties={stepProperties}
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
+            {/if}
           </AddDataFormSection>
         {/if}
       {:else}

@@ -1,9 +1,7 @@
 import type {
-  AuthField,
   AuthOption,
   JSONSchemaConditional,
   JSONSchemaField,
-  MultiStepFormConfig,
   MultiStepFormSchema,
 } from "./types";
 
@@ -261,61 +259,16 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   },
 };
 
-export function getMultiStepFormConfig(
+export function getConnectorSchema(
   connectorName: string,
-): MultiStepFormConfig | null {
+): MultiStepFormSchema | null {
   const schema =
     multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
   if (!schema?.properties) return null;
-
-  const authMethodKey = findAuthMethodKey(schema);
-  if (!authMethodKey) return null;
-
-  const authProperty = schema.properties[authMethodKey];
-  const authOptions = buildAuthOptions(authProperty);
-  if (!authOptions.length) return null;
-
-  const defaultAuthMethod =
-    authProperty.default !== undefined && authProperty.default !== null
-      ? String(authProperty.default)
-      : authOptions[0]?.value;
-
-  const requiredByMethod = buildRequiredByMethod(
-    schema,
-    authMethodKey,
-    authOptions.map((o) => o.value),
-  );
-  const authFieldGroups = buildAuthFieldGroups(
-    schema,
-    authMethodKey,
-    authOptions,
-    requiredByMethod,
-  );
-  const excludedKeys = buildExcludedKeys(
-    schema,
-    authMethodKey,
-    authFieldGroups,
-  );
-  const clearFieldsByMethod = buildClearFieldsByMethod(
-    schema,
-    authMethodKey,
-    authOptions,
-  );
-
-  return {
-    schema,
-    authMethodKey,
-    authOptions,
-    defaultAuthMethod: defaultAuthMethod || undefined,
-    clearFieldsByMethod,
-    excludedKeys,
-    authFieldGroups,
-    requiredFieldsByMethod: requiredByMethod,
-    fieldLabels: buildFieldLabels(schema),
-  };
+  return schema;
 }
 
-function findAuthMethodKey(schema: MultiStepFormSchema): string | null {
+export function findAuthMethodKey(schema: MultiStepFormSchema): string | null {
   if (!schema.properties) return null;
   for (const [key, value] of Object.entries(schema.properties)) {
     if (value.enum && value["x-display"] === "radio") {
@@ -325,41 +278,113 @@ function findAuthMethodKey(schema: MultiStepFormSchema): string | null {
   return schema.properties.auth_method ? "auth_method" : null;
 }
 
-function buildAuthOptions(authProperty: JSONSchemaField): AuthOption[] {
-  if (!authProperty.enum) return [];
+export function getAuthOptionsFromSchema(
+  schema: MultiStepFormSchema,
+): { key: string; options: AuthOption[]; defaultMethod?: string } | null {
+  const authMethodKey = findAuthMethodKey(schema);
+  if (!authMethodKey) return null;
+  const authProperty = schema.properties?.[authMethodKey];
+  if (!authProperty?.enum) return null;
+
   const labels = authProperty["x-enum-labels"] ?? [];
   const descriptions = authProperty["x-enum-descriptions"] ?? [];
-  return authProperty.enum.map((value, idx) => ({
-    value: String(value),
-    label: labels[idx] ?? String(value),
-    description:
-      descriptions[idx] ?? authProperty.description ?? "Choose an option",
-    hint: authProperty["x-hint"],
-  }));
+  const options =
+    authProperty.enum?.map((value, idx) => ({
+      value: String(value),
+      label: labels[idx] ?? String(value),
+      description:
+        descriptions[idx] ?? authProperty.description ?? "Choose an option",
+      hint: authProperty["x-hint"],
+    })) ?? [];
+
+  const defaultMethod =
+    authProperty.default !== undefined && authProperty.default !== null
+      ? String(authProperty.default)
+      : options[0]?.value;
+
+  return {
+    key: authMethodKey,
+    options,
+    defaultMethod: defaultMethod || undefined,
+  };
 }
 
-function buildRequiredByMethod(
+export function getRequiredFieldsByAuthMethod(
   schema: MultiStepFormSchema,
-  authMethodKey: string,
-  methods: string[],
+  opts?: { step?: "connector" | "source" },
 ): Record<string, string[]> {
+  const authInfo = getAuthOptionsFromSchema(schema);
+  if (!authInfo) return {};
+
   const conditionals = schema.allOf ?? [];
   const baseRequired = new Set(schema.required ?? []);
   const result: Record<string, string[]> = {};
 
-  for (const method of methods) {
-    const required = new Set<string>(baseRequired);
-    for (const conditional of conditionals) {
-      if (!matchesAuthMethod(conditional, authMethodKey, method)) {
-        conditional.else?.required?.forEach((field) => required.add(field));
-        continue;
+  for (const option of authInfo.options) {
+    const required = new Set<string>();
+
+    // Start with base required fields.
+    baseRequired.forEach((field) => {
+      if (!opts?.step || isStepMatch(schema, field, opts.step)) {
+        required.add(field);
       }
-      conditional.then?.required?.forEach((field) => required.add(field));
+    });
+
+    // Apply conditionals.
+    for (const conditional of conditionals) {
+      const matches = matchesAuthMethod(
+        conditional,
+        authInfo.key,
+        option.value,
+      );
+      const target = matches ? conditional.then : conditional.else;
+      target?.required?.forEach((field) => {
+        if (!opts?.step || isStepMatch(schema, field, opts.step)) {
+          required.add(field);
+        }
+      });
     }
-    result[method] = Array.from(required);
+
+    result[option.value] = Array.from(required);
   }
 
   return result;
+}
+
+export function getFieldLabel(
+  schema: MultiStepFormSchema,
+  key: string,
+): string {
+  return schema.properties?.[key]?.title || key;
+}
+
+export function isStepMatch(
+  schema: MultiStepFormSchema,
+  key: string,
+  step: "connector" | "source",
+): boolean {
+  const prop = schema.properties?.[key];
+  if (!prop) return false;
+  return (prop["x-step"] ?? "connector") === step;
+}
+
+export function isVisibleForValues(
+  schema: MultiStepFormSchema,
+  key: string,
+  values: Record<string, unknown>,
+): boolean {
+  const prop = schema.properties?.[key];
+  if (!prop) return false;
+  const conditions = prop["x-visible-if"];
+  if (!conditions) return true;
+
+  return Object.entries(conditions).every(([depKey, expected]) => {
+    const actual = values?.[depKey];
+    if (Array.isArray(expected)) {
+      return expected.map(String).includes(String(actual));
+    }
+    return String(actual) === String(expected);
+  });
 }
 
 function matchesAuthMethod(
@@ -371,128 +396,4 @@ function matchesAuthMethod(
     conditional.if?.properties?.[authMethodKey as keyof VisibleIf]?.const;
   if (constValue === undefined || constValue === null) return false;
   return String(constValue) === method;
-}
-
-function buildAuthFieldGroups(
-  schema: MultiStepFormSchema,
-  authMethodKey: string,
-  authOptions: AuthOption[],
-  requiredByMethod: Record<string, string[]>,
-): Record<string, AuthField[]> {
-  const groups: Record<string, AuthField[]> = {};
-  const properties = schema.properties ?? {};
-
-  for (const option of authOptions) {
-    const required = new Set(requiredByMethod[option.value] ?? []);
-    for (const [key, prop] of Object.entries(properties)) {
-      if (key === authMethodKey) continue;
-      if (!isConnectorStep(prop)) continue;
-      if (!isVisibleForMethod(prop, authMethodKey, option.value)) continue;
-
-      const field: AuthField = toAuthField(key, prop, required.has(key));
-      groups[option.value] = [...(groups[option.value] ?? []), field];
-    }
-  }
-
-  return groups;
-}
-
-function buildClearFieldsByMethod(
-  schema: MultiStepFormSchema,
-  authMethodKey: string,
-  authOptions: AuthOption[],
-): Record<string, string[]> {
-  const properties = schema.properties ?? {};
-  const clear: Record<string, string[]> = {};
-
-  for (const option of authOptions) {
-    const fields: string[] = [];
-    for (const [key, prop] of Object.entries(properties)) {
-      if (key === authMethodKey) continue;
-      if (!isVisibleForMethod(prop, authMethodKey, option.value)) {
-        fields.push(key);
-      }
-    }
-    clear[option.value] = fields;
-  }
-
-  return clear;
-}
-
-function buildExcludedKeys(
-  schema: MultiStepFormSchema,
-  authMethodKey: string,
-  authFieldGroups: Record<string, AuthField[]>,
-): string[] {
-  const excluded = new Set<string>([authMethodKey]);
-  const properties = schema.properties ?? {};
-  const groupedFieldKeys = new Set(
-    Object.values(authFieldGroups)
-      .flat()
-      .map((field) => field.id),
-  );
-
-  for (const [key, prop] of Object.entries(properties)) {
-    const step = prop["x-step"];
-    if (step === "source") excluded.add(key);
-    if (groupedFieldKeys.has(key)) excluded.add(key);
-  }
-
-  return Array.from(excluded);
-}
-
-function buildFieldLabels(schema: MultiStepFormSchema): Record<string, string> {
-  const labels: Record<string, string> = {};
-  for (const [key, prop] of Object.entries(schema.properties ?? {})) {
-    if (prop.title) labels[key] = prop.title;
-  }
-  return labels;
-}
-
-function isConnectorStep(prop: JSONSchemaField): boolean {
-  return (prop["x-step"] ?? "connector") === "connector";
-}
-
-function isVisibleForMethod(
-  prop: JSONSchemaField,
-  authMethodKey: string,
-  method: string,
-): boolean {
-  const conditions = prop["x-visible-if"];
-  if (!conditions) return true;
-
-  const authCondition = conditions[authMethodKey];
-  if (authCondition === undefined) return true;
-  if (Array.isArray(authCondition)) {
-    return authCondition.map(String).includes(method);
-  }
-  return String(authCondition) === method;
-}
-
-function toAuthField(
-  key: string,
-  prop: JSONSchemaField,
-  isRequired: boolean,
-): AuthField {
-  const base = {
-    id: key,
-    optional: !isRequired,
-    hint: prop.description ?? prop["x-hint"],
-  };
-
-  if (prop["x-display"] === "file" || prop.format === "file") {
-    return {
-      type: "credentials",
-      accept: prop["x-accept"],
-      ...base,
-    };
-  }
-
-  return {
-    type: "input",
-    label: prop.title ?? key,
-    placeholder: prop["x-placeholder"],
-    secret: prop["x-secret"],
-    ...base,
-  };
 }
