@@ -8,19 +8,26 @@
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { Readable } from "svelte/store";
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
-  import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+  import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
-  export let parentOption: InlineContextPickerOption;
+  export let parentOption: InlineContextPickerParentOption;
   export let selectedChatContext: InlineContext | null = null;
   export let highlightManager: PickerOptionsHighlightManager;
   export let searchTextStore: Readable<string>;
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
-  $: ({ context, openStore, recentlyUsed, currentlyActive, children } =
-    parentOption);
+  $: ({
+    context,
+    openStore,
+    recentlyUsed,
+    currentlyActive,
+    children,
+    childrenLoading,
+  } = parentOption);
   $: typeConfig = InlineContextConfig[context.type];
   $: resolvedChildren = children ?? [];
 
@@ -52,9 +59,10 @@
     recentlyUsed ||
     currentlyActive ||
     $searchTextStore.length > 0;
-  $: if (shouldForceOpen) {
+  function forceOpen() {
     openStore.set(true);
   }
+  $: if (shouldForceOpen) forceOpen();
 
   function ensureInView(node: HTMLElement, active: boolean) {
     if (active) {
@@ -70,7 +78,7 @@
   }
 </script>
 
-<Collapsible.Root bind:open={$openStore} class="border-b last:border-b-0">
+<Collapsible.Root bind:open={$openStore}>
   <Collapsible.Trigger asChild let:builder>
     <button
       class="context-item parent-context-item"
@@ -108,9 +116,7 @@
             {parentTypeLabel}
           </div>
         {/if}
-      {/if}
-
-      {#if recentlyUsed}
+      {:else if recentlyUsed}
         <span class="parent-context-label">Recently asked</span>
       {:else if currentlyActive}
         <span class="parent-context-label">Current</span>
@@ -118,51 +124,53 @@
     </button>
   </Collapsible.Trigger>
   <Collapsible.Content class="flex flex-col ml-0.5 gap-y-0.5">
-    {#each resolvedChildren as childCategory, i}
-      {#if i !== 0}<div class="content-separator"></div>{/if}
-
-      {#each childCategory as child (`${child.type}-${child.value}`)}
-        {@const selected =
-          selectedChatContext !== null &&
-          inlineContextsAreEqual(child, selectedChatContext)}
-        {@const highlighted =
-          highlightedContext !== null &&
-          inlineContextsAreEqual(child, highlightedContext)}
-        {@const mouseContextHighlightHandler =
-          highlightManager.mouseOverHandler(child)}
-        {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
-
-        <button
-          class="context-item"
-          class:highlight={highlighted}
-          type="button"
-          on:click={() => onSelect(child)}
-          use:ensureInView={highlighted}
-          use:mouseContextHighlightHandler
-        >
-          <div class="context-item-checkbox">
-            {#if selected}
-              <CheckIcon size="12px" />
-            {/if}
-          </div>
-          {#if icon}
-            <div class="text-gray-500">
-              <svelte:component this={icon} size="14px" />
-            </div>
-          {:else}
-            <div class="context-item-icon"></div>
-          {/if}
-
-          <span class="context-item-label">{child.label}</span>
-
-          {#if highlighted}
-            <div class="context-item-keyboard-shortcut">↑/↓</div>
-          {/if}
-        </button>
-      {/each}
+    {#if childrenLoading}
+      <DelayedSpinner isLoading={childrenLoading} />
     {:else}
-      <div class="contents-empty">No matches found</div>
-    {/each}
+      {#each resolvedChildren as childCategory, i (i)}
+        {#each childCategory as child (`${child.type}-${child.value}`)}
+          {@const selected =
+            selectedChatContext !== null &&
+            inlineContextsAreEqual(child, selectedChatContext)}
+          {@const highlighted =
+            highlightedContext !== null &&
+            inlineContextsAreEqual(child, highlightedContext)}
+          {@const mouseContextHighlightHandler =
+            highlightManager.mouseOverHandler(child)}
+          {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
+
+          <button
+            class="context-item"
+            class:highlight={highlighted}
+            type="button"
+            on:click={() => onSelect(child)}
+            use:ensureInView={highlighted}
+            use:mouseContextHighlightHandler
+          >
+            <div class="context-item-checkbox">
+              {#if selected}
+                <CheckIcon size="12px" />
+              {/if}
+            </div>
+            {#if icon}
+              <div class="text-gray-500">
+                <svelte:component this={icon} size="16px" />
+              </div>
+            {:else}
+              <div class="context-item-icon"></div>
+            {/if}
+
+            <span class="context-item-label">{child.label}</span>
+
+            {#if highlighted}
+              <div class="context-item-keyboard-shortcut">↑/↓</div>
+            {/if}
+          </button>
+        {/each}
+      {:else}
+        <div class="contents-empty">No matches found</div>
+      {/each}
+    {/if}
   </Collapsible.Content>
 </Collapsible.Root>
 
@@ -176,8 +184,8 @@
   }
 
   .context-item-label {
-    @apply text-sm grow;
-    @apply overflow-hidden whitespace-nowrap text-ellipsis;
+    @apply basis-full grow shrink;
+    @apply text-sm overflow-hidden whitespace-nowrap text-ellipsis;
   }
 
   .context-item {
@@ -197,7 +205,8 @@
   }
 
   .context-item-keyboard-shortcut {
-    @apply min-w-9 text-accent-foreground/60;
+    @apply grow-0 shrink-0;
+    @apply text-accent-foreground/60;
   }
 
   .context-item-icon {
@@ -205,14 +214,11 @@
   }
 
   .context-item-type-label {
-    @apply min-w-20 text-xs font-normal text-right text-popover-foreground/60;
+    @apply grow-0 shrink-0;
+    @apply text-xs font-normal text-right text-popover-foreground/60;
   }
 
   .contents-empty {
     @apply px-2 py-1.5 w-full ui-copy-inactive;
-  }
-
-  .content-separator {
-    @apply -mx-1 my-1 h-px bg-muted;
   }
 </style>

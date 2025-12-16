@@ -1,7 +1,7 @@
 import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { inlineContextsAreEqual } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { get, writable } from "svelte/store";
-import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import type { InlineContextPickerSection } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import { ParentPickerTypes } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
 
 export class PickerOptionsHighlightManager {
@@ -11,14 +11,16 @@ export class PickerOptionsHighlightManager {
   private highlightedIndex = -1;
 
   public filterOptionsUpdated(
-    filteredOptions: InlineContextPickerOption[],
+    filteredOptions: InlineContextPickerSection[],
     selectedChatContext: InlineContext | null,
   ) {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
-    this.highlightableContexts = filteredOptions.flatMap((option) => [
-      option.context,
-      ...(option.children?.flat() ?? []),
-    ]);
+    this.highlightableContexts = filteredOptions
+      .flat()
+      .flatMap((option) => [
+        option.context,
+        ...(option.children?.flat() ?? []),
+      ]);
 
     // Prefer selecting already selected context.
     if (this.highlightContext(get(this.highlightedContext))) {

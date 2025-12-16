@@ -4,7 +4,10 @@ import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client.
 import type { RpcStatus } from "@rilldata/web-common/runtime-client";
 import type { Readable, Writable } from "svelte/store";
 
-export type InlineContextPickerOption = {
+// Sections are aggregated group of parent options by type like all metrics views, all models, etc.
+export type InlineContextPickerSection = InlineContextPickerParentOption[];
+
+export type InlineContextPickerParentOption = {
   context: InlineContext;
   openStore: Writable<boolean>;
   recentlyUsed?: boolean;
@@ -13,4 +16,5 @@ export type InlineContextPickerOption = {
   childrenQueryOptions?: Readable<
     CreateQueryOptions<unknown, ErrorType<RpcStatus>, InlineContext[][]>
   >;
+  childrenLoading?: boolean;
 };

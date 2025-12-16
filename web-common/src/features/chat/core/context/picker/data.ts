@@ -10,7 +10,10 @@ import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import type { InlineContextPickerOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import type {
+  InlineContextPickerParentOption,
+  InlineContextPickerSection,
+} from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
@@ -36,26 +39,29 @@ import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/das
 function getPickerOptions({
   metricViews,
   files,
-}: PickerArgs): Readable<InlineContextPickerOption[]> {
+}: PickerArgs): Readable<InlineContextPickerParentOption[]> {
   const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
   const activeMetricsViewStore = getActiveMetricsViewNameStore();
   const activeFileArtifactStore = getActiveFileArtifactStore();
 
   return derived(
     [
+      // Stable parts that only change when the underlying data is refetched.
+      // Open store is created here to maintain the user selection.
       metricViews ? getMetricsViewPickerOptions() : readable(null),
       files ? getModelsPickerOptions() : readable(null),
     ],
     ([metricsViewOptions, filesOption], set) => {
       const allOptions = [metricsViewOptions, filesOption]
         .filter(Boolean)
-        .flat() as InlineContextPickerOption[];
+        .flat() as InlineContextPickerParentOption[];
       const subOptionStores = allOptions.map((o) =>
         o.childrenQueryOptions
           ? createQuery(o.childrenQueryOptions, queryClient)
           : readable(null),
       );
 
+      // Unstable parts that are rerun when active entity changes or query status changes.
       const resolvedOptionsStore = derived(
         [
           lastUsedMetricsViewStore,
@@ -69,13 +75,14 @@ function getPickerOptions({
           activeFileArtifact,
           ...subOptionStoresResp
         ]) => {
-          const resolvedOptions = new Array<InlineContextPickerOption>(
+          const resolvedOptions = new Array<InlineContextPickerParentOption>(
             subOptionStoresResp.length,
           );
           subOptionStoresResp.forEach((subOptionStore, i) => {
             resolvedOptions[i] = {
               ...allOptions[i],
               children: subOptionStore?.data ?? allOptions[i].children ?? [],
+              childrenLoading: subOptionStore?.isPending ?? false,
             };
 
             fillInRecentlyUsedOrActiveStatus(resolvedOptions[i], {
@@ -113,39 +120,50 @@ export function getFilteredPickerOptions(
         label.toLowerCase().includes(searchText.toLowerCase()) ||
         value.toLowerCase().includes(searchText.toLowerCase());
 
-      let recentlyUsed: InlineContextPickerOption | null = null;
-      let currentlyActive: InlineContextPickerOption | null = null;
+      let recentlyUsed: InlineContextPickerParentOption | null = null;
+      let currentlyActive: InlineContextPickerParentOption | null = null;
 
-      const filteredOptions = options.map((option) => {
-        const children =
-          option.children
-            ?.map((cc) =>
-              cc.filter((c) => filterFunction(c.label ?? "", c.value)),
-            )
-            .filter((cc) => cc.length > 0) ?? [];
+      const filteredOptions = options
+        .map((option) => {
+          const children =
+            option.children
+              ?.map((cc) =>
+                cc.filter((c) => filterFunction(c.label ?? "", c.value)),
+              )
+              .filter((cc) => cc.length > 0) ?? [];
 
-        const parentMatches = filterFunction(
-          option.context.label ?? "",
-          option.context.value,
-        );
+          const parentMatches = filterFunction(
+            option.context.label ?? "",
+            option.context.value,
+          );
 
-        if (!parentMatches && children.length === 0) return null;
+          if (!parentMatches && children.length === 0) return null;
 
-        if (option.recentlyUsed) recentlyUsed = option;
-        if (option.currentlyActive) currentlyActive = option;
-        if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
+          if (!recentlyUsed && option.recentlyUsed) {
+            recentlyUsed = option;
+          }
+          if (!currentlyActive && option.currentlyActive) {
+            currentlyActive = option;
+          }
+          if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
 
-        return {
-          ...option,
-          children,
-        } satisfies InlineContextPickerOption;
-      });
+          return {
+            ...option,
+            children,
+          } satisfies InlineContextPickerParentOption;
+        })
+        .filter(Boolean) as InlineContextPickerParentOption[];
 
       if (recentlyUsed === currentlyActive) currentlyActive = null;
 
-      return [recentlyUsed, currentlyActive, ...filteredOptions].filter(
-        Boolean,
-      ) as InlineContextPickerOption[];
+      const topSection = (
+        [
+          recentlyUsed,
+          currentlyActive,
+        ] as (InlineContextPickerParentOption | null)[]
+      ).filter(Boolean) as InlineContextPickerParentOption[];
+      const otherSections = splitParentOptionsIntoSections(filteredOptions);
+      return [topSection, ...otherSections].filter((s) => s.length > 0);
     },
   );
 }
@@ -155,7 +173,9 @@ export function getFilteredPickerOptions(
  * 1st level: metrics view context options
  * 2nd level: measures and dimensions options for each metrics view
  */
-function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
+function getMetricsViewPickerOptions(): Readable<
+  InlineContextPickerParentOption[]
+> {
   const metricsViewsQuery = createQuery(
     getValidMetricsViewsQueryOptions(),
     queryClient,
@@ -201,7 +221,7 @@ function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
         },
         openStore: writable(false),
         children: [measures, dimensions],
-      } satisfies InlineContextPickerOption;
+      } satisfies InlineContextPickerParentOption;
     });
   });
 }
@@ -212,7 +232,7 @@ function getMetricsViewPickerOptions(): Readable<InlineContextPickerOption[]> {
  * 2nd level: all the columns in the source/model resource.
  * NOTE: this only lists resources that are parsed as sources/models. Any parse errors will exlcude the file.
  */
-function getModelsPickerOptions(): Readable<InlineContextPickerOption[]> {
+function getModelsPickerOptions(): Readable<InlineContextPickerParentOption[]> {
   const modelResourcesQuery = createQuery(
     getClientFilteredResourcesQueryOptions(ResourceKind.Model),
     queryClient,
@@ -241,7 +261,7 @@ function getModelsPickerOptions(): Readable<InlineContextPickerOption[]> {
             modelName,
             openStore,
           ),
-        } satisfies InlineContextPickerOption;
+        } satisfies InlineContextPickerParentOption;
       });
     },
   );
@@ -294,7 +314,7 @@ export const ParentPickerTypes = new Set([
 ]);
 
 function fillInRecentlyUsedOrActiveStatus(
-  option: InlineContextPickerOption,
+  option: InlineContextPickerParentOption,
   {
     lastUsedMv,
     activeMv,
@@ -313,4 +333,21 @@ function fillInRecentlyUsedOrActiveStatus(
       activeFileArtifact.resource?.kind === ResourceKind.Model &&
       activeFileArtifact.resource?.name === option.context.model;
   }
+}
+
+function splitParentOptionsIntoSections(
+  options: InlineContextPickerParentOption[],
+) {
+  if (options.length === 0) return [];
+
+  let lastSection: InlineContextPickerSection = [];
+  const sections: InlineContextPickerSection[] = [lastSection];
+  options.forEach((option) => {
+    if (option.context.type !== lastSection[0]?.context.type) {
+      lastSection = [];
+      sections.push(lastSection);
+    }
+    lastSection.push(option);
+  });
+  return sections;
 }
