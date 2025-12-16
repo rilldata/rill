@@ -84,30 +84,11 @@
   $: errorMessage =
     !validSpec && (reconcileError || resource?.meta?.reconcileError);
 
-  $: if (fetchedCanvas && !isReconciling) {
-    const metricsViews: Record<string, V1MetricsView | undefined> = {};
-    const refMetricsViews = fetchedCanvas?.referencedMetricsViews;
-    if (refMetricsViews) {
-      Object.keys(refMetricsViews).forEach((key) => {
-        metricsViews[key] = refMetricsViews?.[key]?.metricsView;
-      });
-    }
-
-    const validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
-
-    if (validSpec) {
-      const processed = {
-        canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
-        components: fetchedCanvas?.resolvedComponents,
-        metricsViews,
-        filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
-      };
-
-      resolvedStore = setCanvasStore(canvasName, instanceId, processed);
-    }
-  } else if (existingStore) {
-    resolvedStore = existingStore;
-  }
+  $: resolvedStore = getResolvedStore(
+    fetchedCanvas,
+    isReconciling,
+    existingStore,
+  );
 
   $: ready = !!resolvedStore;
 
@@ -162,6 +143,37 @@
       !canvasResource.canvas?.canvas?.state?.validSpec &&
       !!canvasResource?.canvas?.meta?.reconcileError;
     return isCanvasErrored;
+  }
+
+  function getResolvedStore(
+    fetchedCanvas: V1ResolveCanvasResponse | undefined,
+    isReconciling: boolean,
+    existingStore: CanvasStore | undefined,
+  ) {
+    if (fetchedCanvas && !isReconciling) {
+      const metricsViews: Record<string, V1MetricsView | undefined> = {};
+      const refMetricsViews = fetchedCanvas?.referencedMetricsViews;
+      if (refMetricsViews) {
+        Object.keys(refMetricsViews).forEach((key) => {
+          metricsViews[key] = refMetricsViews?.[key]?.metricsView;
+        });
+      }
+
+      const validSpec = fetchedCanvas?.canvas?.canvas?.state?.validSpec;
+
+      if (validSpec) {
+        const processed = {
+          canvas: fetchedCanvas?.canvas?.canvas?.state?.validSpec,
+          components: fetchedCanvas?.resolvedComponents,
+          metricsViews,
+          filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
+        };
+
+        return setCanvasStore(canvasName, instanceId, processed);
+      }
+    }
+
+    return existingStore;
   }
 </script>
 
