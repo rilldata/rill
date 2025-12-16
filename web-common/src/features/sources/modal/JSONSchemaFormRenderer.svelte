@@ -95,108 +95,56 @@
           name="multi-auth-method"
         >
           <svelte:fragment slot="custom-content" let:option>
-            <div class="space-y-3">
-              {#each visibleFieldsFor(option.value, "connector") as [key, prop]}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if prop["x-display"] === "file" || prop.format === "file"}
-                    <CredentialsInput
-                      id={key}
-                      hint={prop.description ?? prop["x-hint"]}
-                      optional={!isRequiredFor(option.value, key)}
-                      bind:value={$form[key]}
-                      uploadFile={handleFileUpload}
-                      accept={prop["x-accept"]}
-                    />
-                  {:else if prop.type === "boolean"}
-                    <Checkbox
-                      id={key}
-                      bind:checked={$form[key]}
-                      label={prop.title ?? key}
-                      hint={prop.description ?? prop["x-hint"]}
-                      optional={!isRequiredFor(option.value, key)}
-                    />
-                  {:else if prop.enum && prop["x-display"] === "radio"}
-                    <Radio
-                      bind:value={$form[key]}
-                      options={prop.enum.map((value, idx) => ({
-                        value: String(value),
-                        label: prop["x-enum-labels"]?.[idx] ?? String(value),
-                        description: prop["x-enum-descriptions"]?.[idx],
-                      }))}
-                      name={`${key}-radio`}
-                    />
-                  {:else}
-                    <Input
-                      id={key}
-                      label={prop.title ?? key}
-                      placeholder={prop["x-placeholder"]}
-                      optional={!isRequiredFor(option.value, key)}
-                      secret={prop["x-secret"]}
-                      hint={prop.description ?? prop["x-hint"]}
-                      errors={normalizeErrors(errors?.[key])}
-                      bind:value={$form[key]}
-                      onInput={(_, e) => onStringInputChange(e)}
-                      alwaysShowError
-                    />
-                  {/if}
-                </div>
-              {/each}
-            </div>
+            {#each visibleFieldsFor(option.value, "connector") as [key, prop]}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if prop["x-display"] === "file" || prop.format === "file"}
+                  <CredentialsInput
+                    id={key}
+                    hint={prop.description ?? prop["x-hint"]}
+                    optional={!isRequiredFor(option.value, key)}
+                    bind:value={$form[key]}
+                    uploadFile={handleFileUpload}
+                    accept={prop["x-accept"]}
+                  />
+                {:else if prop.type === "boolean"}
+                  <Checkbox
+                    id={key}
+                    bind:checked={$form[key]}
+                    label={prop.title ?? key}
+                    hint={prop.description ?? prop["x-hint"]}
+                    optional={!isRequiredFor(option.value, key)}
+                  />
+                {:else if prop.enum && prop["x-display"] === "radio"}
+                  <Radio
+                    bind:value={$form[key]}
+                    options={prop.enum.map((value, idx) => ({
+                      value: String(value),
+                      label: prop["x-enum-labels"]?.[idx] ?? String(value),
+                      description: prop["x-enum-descriptions"]?.[idx],
+                    }))}
+                    name={`${key}-radio`}
+                  />
+                {:else}
+                  <Input
+                    id={key}
+                    label={prop.title ?? key}
+                    placeholder={prop["x-placeholder"]}
+                    optional={!isRequiredFor(option.value, key)}
+                    secret={prop["x-secret"]}
+                    hint={prop.description ?? prop["x-hint"]}
+                    errors={normalizeErrors(errors?.[key])}
+                    bind:value={$form[key]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {/if}
+              </div>
+            {/each}
           </svelte:fragment>
         </Radio>
       </div>
     {:else if authInfo.options[0]}
-      <div class="space-y-3">
-        {#each visibleFieldsFor(authMethod || authInfo.options[0].value, "connector") as [key, prop]}
-          <div class="py-1.5 first:pt-0 last:pb-0">
-            {#if prop["x-display"] === "file" || prop.format === "file"}
-              <CredentialsInput
-                id={key}
-                hint={prop.description ?? prop["x-hint"]}
-                optional={!isRequiredFor(authMethod, key)}
-                bind:value={$form[key]}
-                uploadFile={handleFileUpload}
-                accept={prop["x-accept"]}
-              />
-            {:else if prop.type === "boolean"}
-              <Checkbox
-                id={key}
-                bind:checked={$form[key]}
-                label={prop.title ?? key}
-                hint={prop.description ?? prop["x-hint"]}
-                optional={!isRequiredFor(authMethod, key)}
-              />
-            {:else if prop.enum && prop["x-display"] === "radio"}
-              <Radio
-                bind:value={$form[key]}
-                options={prop.enum.map((value, idx) => ({
-                  value: String(value),
-                  label: prop["x-enum-labels"]?.[idx] ?? String(value),
-                  description: prop["x-enum-descriptions"]?.[idx],
-                }))}
-                name={`${key}-radio`}
-              />
-            {:else}
-              <Input
-                id={key}
-                label={prop.title ?? key}
-                placeholder={prop["x-placeholder"]}
-                optional={!isRequiredFor(authMethod, key)}
-                secret={prop["x-secret"]}
-                hint={prop.description ?? prop["x-hint"]}
-                errors={normalizeErrors(errors?.[key])}
-                bind:value={$form[key]}
-                onInput={(_, e) => onStringInputChange(e)}
-                alwaysShowError
-              />
-            {/if}
-          </div>
-        {/each}
-      </div>
-    {/if}
-  {:else}
-    <div class="space-y-3">
-      {#each visibleFieldsFor(authMethod, step) as [key, prop]}
+      {#each visibleFieldsFor(authMethod || authInfo.options[0].value, "connector") as [key, prop]}
         <div class="py-1.5 first:pt-0 last:pb-0">
           {#if prop["x-display"] === "file" || prop.format === "file"}
             <CredentialsInput
@@ -241,6 +189,52 @@
           {/if}
         </div>
       {/each}
-    </div>
+    {/if}
+  {:else}
+    {#each visibleFieldsFor(authMethod, step) as [key, prop]}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        {#if prop["x-display"] === "file" || prop.format === "file"}
+          <CredentialsInput
+            id={key}
+            hint={prop.description ?? prop["x-hint"]}
+            optional={!isRequiredFor(authMethod, key)}
+            bind:value={$form[key]}
+            uploadFile={handleFileUpload}
+            accept={prop["x-accept"]}
+          />
+        {:else if prop.type === "boolean"}
+          <Checkbox
+            id={key}
+            bind:checked={$form[key]}
+            label={prop.title ?? key}
+            hint={prop.description ?? prop["x-hint"]}
+            optional={!isRequiredFor(authMethod, key)}
+          />
+        {:else if prop.enum && prop["x-display"] === "radio"}
+          <Radio
+            bind:value={$form[key]}
+            options={prop.enum.map((value, idx) => ({
+              value: String(value),
+              label: prop["x-enum-labels"]?.[idx] ?? String(value),
+              description: prop["x-enum-descriptions"]?.[idx],
+            }))}
+            name={`${key}-radio`}
+          />
+        {:else}
+          <Input
+            id={key}
+            label={prop.title ?? key}
+            placeholder={prop["x-placeholder"]}
+            optional={!isRequiredFor(authMethod, key)}
+            secret={prop["x-secret"]}
+            hint={prop.description ?? prop["x-hint"]}
+            errors={normalizeErrors(errors?.[key])}
+            bind:value={$form[key]}
+            onInput={(_, e) => onStringInputChange(e)}
+            alwaysShowError
+          />
+        {/if}
+      </div>
+    {/each}
   {/if}
 {/if}
