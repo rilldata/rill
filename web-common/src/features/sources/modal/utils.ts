@@ -1,7 +1,12 @@
 import { humanReadableErrorMessage } from "../errors/errors";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
-import type { MultiStepFormConfig } from "./types";
+import type { MultiStepFormSchema } from "./types";
+import {
+  getAuthOptionsFromSchema,
+  getRequiredFieldsByAuthMethod,
+  isStepMatch,
+} from "./multi-step-auth-configs";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.
@@ -89,18 +94,19 @@ export function hasOnlyDsn(
  * required fields. Falls back to configured default/first auth method.
  */
 export function isMultiStepConnectorDisabled(
-  config: MultiStepFormConfig | null,
+  schema: MultiStepFormSchema | null,
   selectedMethod: string,
   paramsFormValue: Record<string, unknown>,
   paramsFormErrors: Record<string, unknown>,
 ) {
-  if (!config) return true;
+  if (!schema) return true;
 
-  const options = config.authOptions ?? [];
+  const authInfo = getAuthOptionsFromSchema(schema);
+  const options = authInfo?.options ?? [];
   const hasValidSelection = options.some((opt) => opt.value === selectedMethod);
   const method =
     (hasValidSelection && selectedMethod) ||
-    config.defaultAuthMethod ||
+    authInfo?.defaultMethod ||
     options[0]?.value;
 
   if (!method) return true;
@@ -108,17 +114,17 @@ export function isMultiStepConnectorDisabled(
   // Selecting "public" should always enable the button for multi-step auth flows.
   if (method === "public") return false;
 
-  const fields = config.authFieldGroups?.[method] || [];
-  // Unknown auth methods or ones without fields stay disabled.
-  if (!fields.length) return true;
+  const requiredByMethod = getRequiredFieldsByAuthMethod(schema, {
+    step: "connector",
+  });
+  const requiredFields = requiredByMethod[method] ?? [];
+  if (!requiredFields.length) return true;
 
-  return !fields.every((field) => {
-    if (field.optional ?? false) return true;
-
-    const value = paramsFormValue[field.id];
-    const errorsForField = paramsFormErrors[field.id] as any;
+  return !requiredFields.every((fieldId) => {
+    if (!isStepMatch(schema, fieldId, "connector")) return true;
+    const value = paramsFormValue[fieldId];
+    const errorsForField = paramsFormErrors[fieldId] as any;
     const hasErrors = Boolean(errorsForField?.length);
-
     return !isEmpty(value) && !hasErrors;
   });
 }
