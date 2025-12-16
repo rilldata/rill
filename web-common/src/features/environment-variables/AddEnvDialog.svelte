@@ -181,7 +181,10 @@
         if (key) {
           variables.push({
             key: key.trim(),
-            value: valueParts.join("=").trim().replace(/^["']|["']$/g, ""),
+            value: valueParts
+              .join("=")
+              .trim()
+              .replace(/^["']|["']$/g, ""),
           });
         }
       }

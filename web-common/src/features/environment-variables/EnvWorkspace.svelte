@@ -61,13 +61,19 @@
     viewMode = viewMode === "code" ? "viz" : "code";
   }
 
-  async function handleAddVariables(event: CustomEvent<{ variables: EnvVariable[] }>) {
+  async function handleAddVariables(
+    event: CustomEvent<{ variables: EnvVariable[] }>,
+  ) {
     const newVariables = event.detail.variables;
     const updatedVariables = [...envVariables, ...newVariables];
     await updateEnvFile(updatedVariables);
   }
 
-  async function handleEditVariable(oldKey: string, key: string, value: string) {
+  async function handleEditVariable(
+    oldKey: string,
+    key: string,
+    value: string,
+  ) {
     const updatedVariables = envVariables.map((v) =>
       v.key === oldKey ? { key, value } : v,
     );
@@ -108,10 +114,7 @@
     >
       <div class="flex items-center gap-2">
         <div class="radio relative">
-          {#each [
-            { view: "code", icon: Code2Icon, label: "Code view" },
-            { view: "viz", icon: Settings, label: "No-code view" },
-          ] as { view, icon: Icon, label } (view)}
+          {#each [{ view: "code", icon: Code2Icon, label: "Code view" }, { view: "viz", icon: Settings, label: "No-code view" }] as { view, icon: Icon, label } (view)}
             <Tooltip activeDelay={700} distance={8}>
               <button
                 aria-label="Switch to {label}"
@@ -151,7 +154,12 @@
 
   <WorkspaceEditorContainer slot="body">
     {#if viewMode === "code"}
-      <Editor {fileArtifact} {extensions} bind:editor bind:autoSave={$autoSave} />
+      <Editor
+        {fileArtifact}
+        {extensions}
+        bind:editor
+        bind:autoSave={$autoSave}
+      />
     {:else}
       <div class="h-full w-full overflow-auto p-4">
         <EnvVariablesTable data={envVariables} {actionsColumn} />
@@ -159,6 +167,12 @@
     {/if}
   </WorkspaceEditorContainer>
 </WorkspaceContainer>
+
+<AddEnvDialog
+  bind:open={addDialogOpen}
+  existingVariables={envVariables}
+  on:add={handleAddVariables}
+/>
 
 <style lang="postcss">
   button {
@@ -174,9 +188,3 @@
     @apply h-fit bg-slate-100 p-[2px] rounded-[6px] flex;
   }
 </style>
-
-<AddEnvDialog
-  bind:open={addDialogOpen}
-  existingVariables={envVariables}
-  on:add={handleAddVariables}
-/>

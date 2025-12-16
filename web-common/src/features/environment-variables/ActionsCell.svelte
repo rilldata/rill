@@ -17,7 +17,9 @@
   let isEditDialogOpen = false;
   let isDeleteDialogOpen = false;
 
-  function handleSave(event: CustomEvent<{ oldKey: string; key: string; value: string }>) {
+  function handleSave(
+    event: CustomEvent<{ oldKey: string; key: string; value: string }>,
+  ) {
     onSave(event.detail.oldKey, event.detail.key, event.detail.value);
   }
 
