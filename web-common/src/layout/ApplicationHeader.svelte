@@ -37,6 +37,7 @@
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
   $: showDeployCTA = $deploy && !onDeployPage;
+  $: showDeveloperChat = $developerChat && !onDeployPage;
 
   $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
@@ -122,7 +123,7 @@
       {:else if route.id?.includes("canvas")}
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
-    {:else if $developerChat}
+    {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
     {#if showDeployCTA}

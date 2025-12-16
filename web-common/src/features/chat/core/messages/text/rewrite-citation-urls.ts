@@ -7,8 +7,36 @@ import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtim
 import { createQuery } from "@tanstack/svelte-query";
 import { marked } from "marked";
 import { derived, type Readable } from "svelte/store";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+import { goto } from "$app/navigation";
 
 const CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
+
+export function enhanceCitationLinks(node: HTMLElement) {
+  const isEmbedded = EmbedStore.isEmbedded();
+
+  function handleClick(e: MouseEvent) {
+    if (!e.target || !(e.target instanceof HTMLElement)) return; // typesafety
+    if (e.metaKey || e.ctrlKey) {
+      if (isEmbedded) {
+        // Prevent cmd/ctrl+click in embedded context. The iframe url used for embedding cannot be opened as is.
+        e.preventDefault();
+      }
+      return;
+    }
+    const urlParams = e.target.getAttribute("data-url-params");
+    if (!urlParams) return;
+    e.preventDefault();
+    void goto("?" + urlParams);
+  }
+
+  node.addEventListener("click", handleClick);
+  return {
+    destroy() {
+      node.removeEventListener("click", handleClick);
+    },
+  };
+}
 
 /**
  * Creates a rewriter that adds hooks to the ` marked ` library to rewrite citation urls to directly apply the url params.
@@ -41,7 +69,7 @@ export function getCitationUrlRewriter(
           // Mapping failed for some reason, remove the link since it is probably invalid.
           if (!isValid) return "";
 
-          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}">${tokens.text}</a>`;
+          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}" data-url-params="${urlParams.toString()}">${tokens.text}</a>`;
         },
       },
     });

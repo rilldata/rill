@@ -8,10 +8,11 @@
   import type { MetricsViewContextOption } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
   import type { Readable } from "svelte/store";
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
+  import { InlineContextHighlightManager } from "@rilldata/web-common/features/chat/core/context/inline-context-highlight-manager.ts";
 
   export let metricsViewContextOption: MetricsViewContextOption;
   export let selectedChatContext: InlineContext | null = null;
-  export let highlightedContext: InlineContext | null = null;
+  export let highlightManager: InlineContextHighlightManager;
   export let searchTextStore: Readable<string>;
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
@@ -23,6 +24,9 @@
     measures,
     dimensions,
   } = metricsViewContextOption);
+  const highlightedContextStore = highlightManager.highlightedContext;
+  $: highlightedContext = $highlightedContextStore;
+
   $: metricsViewSelected =
     selectedChatContext !== null &&
     inlineContextsAreEqual(metricsViewContext, selectedChatContext);
@@ -32,7 +36,11 @@
     highlightedContext !== null &&
     inlineContextsAreEqual(metricsViewContext, highlightedContext);
   $: withinMetricsViewHighlighted =
+    !metricsViewHighlighted &&
     highlightedContext?.metricsView === metricsViewContext.metricsView;
+
+  $: mouseContextHighlightHandler =
+    highlightManager.mouseOverHandler(metricsViewContext);
 
   let open =
     withinMetricsViewSelected ||
@@ -67,22 +75,31 @@
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
       use:ensureInView={metricsViewHighlighted}
+      use:mouseContextHighlightHandler
       on:click={focusEditor}
     >
-      {#if open}
-        <ChevronDownIcon size="12px" strokeWidth={4} />
-      {:else}
-        <ChevronRightIcon size="12px" strokeWidth={4} />
-      {/if}
+      <div class="min-w-3.5">
+        {#if open}
+          <ChevronDownIcon size="12px" strokeWidth={4} />
+        {:else}
+          <ChevronRightIcon size="12px" strokeWidth={4} />
+        {/if}
+      </div>
       <input
         type="radio"
         checked={metricsViewSelected}
         on:click|stopPropagation={() => onSelect(metricsViewContext)}
         class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
       />
-      <span class="text-sm grow">{metricsViewContext.label}</span>
+      <span class="context-item-label">{metricsViewContext.label}</span>
+      <div
+        class="context-item-keyboard-shortcut"
+        class:hidden={!metricsViewHighlighted}
+      >
+        ↑/↓
+      </div>
       {#if recentlyUsed}
-        <span class="metrics-view-context-label">Recent asked</span>
+        <span class="metrics-view-context-label">Recently asked</span>
       {:else if currentlyActive}
         <span class="metrics-view-context-label">Current</span>
       {/if}
@@ -96,12 +113,15 @@
       {@const highlighted =
         highlightedContext !== null &&
         inlineContextsAreEqual(measure, highlightedContext)}
+      {@const mouseContextHighlightHandler =
+        highlightManager.mouseOverHandler(measure)}
       <button
         class="context-item"
         class:highlight={highlighted}
         type="button"
         on:click={() => onSelect(measure)}
         use:ensureInView={highlighted}
+        use:mouseContextHighlightHandler
       >
         <div class="context-item-checkbox">
           {#if selected}
@@ -109,7 +129,10 @@
           {/if}
         </div>
         <div class="square"></div>
-        <span>{measure.label}</span>
+        <span class="context-item-label">{measure.label}</span>
+        <div class="context-item-keyboard-shortcut" class:hidden={!highlighted}>
+          ↑/↓
+        </div>
       </button>
     {/each}
 
@@ -124,12 +147,15 @@
       {@const highlighted =
         highlightedContext !== null &&
         inlineContextsAreEqual(dimension, highlightedContext)}
+      {@const mouseContextHighlightHandler =
+        highlightManager.mouseOverHandler(dimension)}
       <button
         class="context-item"
         class:highlight={highlighted}
         type="button"
         on:click={() => onSelect(dimension)}
         use:ensureInView={highlighted}
+        use:mouseContextHighlightHandler
       >
         <div class="context-item-checkbox">
           {#if selected}
@@ -137,7 +163,10 @@
           {/if}
         </div>
         <div class="circle"></div>
-        <span>{dimension.label}</span>
+        <span class="context-item-label">{dimension.label}</span>
+        <div class="context-item-keyboard-shortcut" class:hidden={!highlighted}>
+          ↑/↓
+        </div>
       </button>
     {/each}
 
@@ -156,27 +185,36 @@
     @apply text-xs font-normal text-right text-popover-foreground/60;
   }
 
+  .context-item-label {
+    @apply text-sm grow;
+    @apply overflow-hidden whitespace-nowrap text-ellipsis;
+  }
+
   .context-item {
     @apply flex flex-row items-center gap-x-2 px-2 py-1 w-full;
     @apply cursor-default select-none rounded-sm outline-none;
     @apply text-sm text-left text-wrap break-words;
   }
   .context-item:hover {
-    @apply bg-accent text-accent-foreground cursor-pointer;
+    @apply cursor-pointer;
   }
   .context-item.highlight {
     @apply bg-accent text-accent-foreground;
   }
 
   .context-item-checkbox {
-    @apply w-3 h-3;
+    @apply min-w-3 h-3;
+  }
+
+  .context-item-keyboard-shortcut {
+    @apply min-w-9 text-accent-foreground/60;
   }
 
   .square {
-    @apply w-2 h-2 bg-theme-secondary-600/50;
+    @apply min-w-2 h-2 bg-theme-secondary-600/50;
   }
   .circle {
-    @apply w-2 h-2 rounded-full bg-theme-500/50;
+    @apply min-w-2 h-2 rounded-full bg-theme-500/50;
   }
 
   .contents-empty {

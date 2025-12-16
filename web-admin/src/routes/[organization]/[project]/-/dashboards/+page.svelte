@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { navigating, page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
+  import DashboardBuilding from "@rilldata/web-common/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";

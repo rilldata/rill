@@ -306,7 +306,9 @@ export function getValueIndexInExpression(
 }
 
 export function getValuesInExpression(expr?: V1Expression): any[] {
-  return expr ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []) : [];
+  return expr
+    ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []).flat()
+    : [];
 }
 
 export const matchExpressionByName = (e: V1Expression, name: string) => {
@@ -407,6 +409,7 @@ const SupportedOperations = new Set<V1Operation>([
   V1Operation.OPERATION_LIKE,
   V1Operation.OPERATION_NLIKE,
 ]);
+
 export function isExpressionUnsupported(expression: V1Expression) {
   if (
     !expression.cond ||

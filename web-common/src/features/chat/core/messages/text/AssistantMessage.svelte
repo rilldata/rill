@@ -2,13 +2,14 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    enhanceCitationLinks,
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
-  } from "@rilldata/web-common/features/chat/core/messages/rewrite-citation-urls.ts";
+  } from "@rilldata/web-common/features/chat/core/messages/text/rewrite-citation-urls.ts";
   import { derived } from "svelte/store";
-  import Markdown from "../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../runtime-client";
-  import { extractMessageText } from "../utils";
+  import Markdown from "../../../../../components/markdown/Markdown.svelte";
+  import type { V1Message } from "../../../../../runtime-client";
+  import { extractMessageText } from "../../utils";
 
   export let message: V1Message;
 
@@ -31,18 +32,18 @@
 </script>
 
 <div class="chat-message">
-  <div class="chat-message-content">
+  <div class="chat-message-content" use:enhanceCitationLinks>
     <Markdown {content} converter={convertCitationUrls} />
   </div>
 </div>
 
 <style lang="postcss">
   .chat-message {
-    @apply max-w-[90%] self-start;
+    @apply max-w-full;
   }
 
   .chat-message-content {
-    @apply px-4 py-2 rounded-2xl;
+    @apply py-2;
     @apply text-sm leading-relaxed break-words;
     @apply text-gray-700;
   }
