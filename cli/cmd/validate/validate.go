@@ -3,21 +3,17 @@ package validate
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
-	"github.com/rilldata/rill/cli/cmd/env"
+	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
 )
 
@@ -67,9 +63,15 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Validate project resources",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			projectPath, err := resolveProjectPath(args)
-			if err != nil {
-				return err
+			var projectPath string
+			if len(args) > 0 {
+				var err error
+				projectPath, err = start.ResolveProjectPath(args[0])
+				if err != nil {
+					return err
+				}
+			} else {
+				projectPath = "."
 			}
 
 			// Validate output format
@@ -85,23 +87,12 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("no Rill project found at %q (missing rill.yaml)", projectPath)
 			}
 
-			if ch.IsAuthenticated() {
-				err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
-				if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-					ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-				}
-			}
-
-			if err := enforceRepoLimits(cmd.Context(), projectPath, ch); err != nil {
+			// Check for excessive number of files in the project path
+			if err := start.EnforceRepoLimits(cmd.Context(), projectPath, ch); err != nil {
 				return err
 			}
 
-			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
-			if !ok {
-				return fmt.Errorf("invalid log format %q", logFormat)
-			}
-
-			envVarsMap, err := parseVariables(envVars)
+			envVarsMap, err := start.ParseVariables(envVars)
 			if err != nil {
 				return err
 			}
@@ -118,7 +109,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				Reset:          reset,
 				Environment:    environment,
 				ProjectPath:    projectPath,
-				LogFormat:      parsedLogFormat,
+				LogFormat:      logFormat,
 				Variables:      envVarsMap,
 				LocalURL:       "",           // No UI, so no local URL
 				AllowedOrigins: []string{""}, // No UI, so no allowed origins
@@ -145,56 +136,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().StringVarP(&outputFile, "output-file", "o", "", "Output file for validation results (JSON format)")
 
 	return validateCmd
-}
-
-func resolveProjectPath(args []string) (string, error) {
-	if len(args) == 0 {
-		return ".", nil
-	}
-
-	projectPath := args[0]
-	if strings.HasSuffix(projectPath, ".git") {
-		repoName, err := gitutil.CloneRepo(projectPath)
-		if err != nil {
-			return "", fmt.Errorf("clone repo error: %w", err)
-		}
-		projectPath = repoName
-	}
-
-	return projectPath, nil
-}
-
-func enforceRepoLimits(ctx context.Context, projectPath string, ch *cmdutil.Helper) error {
-	if _, err := os.Stat(projectPath); err != nil {
-		return err
-	}
-
-	repo, _, err := cmdutil.RepoForProjectPath(projectPath)
-	if err != nil {
-		return err
-	}
-	_, err = repo.ListGlob(ctx, "**", false)
-	if err != nil {
-		if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
-			ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
-		}
-		return fmt.Errorf("failed to list project files: %w", err)
-	}
-	return nil
-}
-
-func parseVariables(vals []string) (map[string]string, error) {
-	res := make(map[string]string)
-	for _, val := range vals {
-		parsed, err := godotenv.Unmarshal(val)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse variable %q: %w", val, err)
-		}
-		for k, v := range parsed {
-			res[k] = v
-		}
-	}
-	return res, nil
 }
 
 func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, outputFormat printer.Format, outputFile string) error {

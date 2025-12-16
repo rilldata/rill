@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
@@ -68,7 +69,7 @@ type AppOptions struct {
 	Reset          bool
 	Environment    string
 	ProjectPath    string
-	LogFormat      LogFormat
+	LogFormat      string
 	Variables      map[string]string
 	LocalURL       string
 	AllowedOrigins []string
@@ -76,13 +77,29 @@ type AppOptions struct {
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
+	// Parse log format
+	parsedLogFormat, ok := ParseLogFormat(opts.LogFormat)
+	if !ok {
+		return nil, fmt.Errorf("invalid log format %q", opts.LogFormat)
+	}
+
 	// Setup logger
 	logPath, err := opts.Ch.DotRill.ResolveFilename("rill.log", true)
 	if err != nil {
 		return nil, err
 	}
-	logger, cleanupFn := initLogger(opts.Verbose, opts.Silent, opts.LogFormat, logPath)
+	logger, cleanupFn := initLogger(opts.Verbose, opts.Silent, parsedLogFormat, logPath)
 	sugarLogger := logger.Sugar()
+
+	// Always attempt to pull env for any valid Rill project (after projectPath is set)
+	if opts.Ch.IsAuthenticated() {
+		if IsProjectInit(opts.ProjectPath) {
+			err := env.PullVars(ctx, opts.Ch, opts.ProjectPath, "", opts.Environment, false)
+			if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+				opts.Ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+			}
+		}
+	}
 
 	var tracesExporter observability.Exporter
 	if opts.Debug {
