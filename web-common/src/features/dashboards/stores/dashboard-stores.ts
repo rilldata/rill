@@ -550,6 +550,7 @@ const metricsViewReducers = {
       exploreState.pivot = {
         ...exploreState.pivot,
         rowLimit: limit,
+        expanded: {},
         rowPage: 1,
         activeCell: null,
       };
