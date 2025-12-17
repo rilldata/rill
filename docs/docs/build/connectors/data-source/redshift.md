@@ -78,20 +78,14 @@ When ingesting data locally, consider setting parameters in your connector file 
 
 For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
 
-## Deploy to Rill Cloud
+## Cloud deployment
 
-When deploying your project to Rill Cloud, you must explicitly provide an access key and secret for an AWS service account with access to the Redshift database used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to Redshift used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#redshift) for more information.
 
-When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication. If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-```bash
-rill env configure
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
 ```
-
-:::tip Did you know?
-
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-
-:::
+rill env push
+```
 
 ## Appendix
 

@@ -76,5 +76,12 @@ connectors:
   type: slack
 ```
 
-Afterwards, when you next deploy the project, you will be prompted to set your Slack Bot User OAuth Token via `rill env configure`.
+## Cloud deployment
+
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide Slack credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#slack) for more information.
+
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
+```
 

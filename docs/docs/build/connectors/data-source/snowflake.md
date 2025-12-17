@@ -57,20 +57,14 @@ When ingesting data locally, consider setting parameters in your connector file 
 
 For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
 
-## Deploy to Rill Cloud
+## Cloud deployment
 
-When deploying your project to Rill Cloud, you must provide Snowflake credentials via the connection string as a source configuration `dsn` field. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide Snowflake credentials via the connection string as a source configuration `dsn` field used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#snowflake) for more information.
 
-To manually configure your environment variables, run:
-```bash
-rill env configure
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
 ```
-
-:::tip Did you know?
-
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-
-:::
+rill env push
+```
 
 ## Appendix
 

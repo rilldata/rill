@@ -51,6 +51,15 @@ If your project has already been deployed to Rill Cloud with configured credenti
 
 :::
 
+## Cloud deployment
+
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide OpenAI API credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#openai) for more information.
+
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
+```
+
 ## Usage
 
 Once configured, OpenAI integration enables various AI-powered features in Rill:
