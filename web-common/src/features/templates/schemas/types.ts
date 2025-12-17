@@ -16,7 +16,8 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   "x-display"?: "radio" | "select" | "textarea" | "file";
-  "x-step"?: "connector" | "source";
+  // Arbitrary step identifier so renderers can filter without hardcoding.
+  "x-step"?: string;
   "x-secret"?: boolean;
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
   "x-enum-labels"?: string[];
