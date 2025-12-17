@@ -1,4 +1,4 @@
-import type { MultiStepFormSchema } from "../types";
+import type { MultiStepFormSchema } from "./types";
 
 export const azureSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",

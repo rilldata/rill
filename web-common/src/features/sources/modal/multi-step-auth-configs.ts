@@ -3,9 +3,9 @@ import type {
   JSONSchemaConditional,
   MultiStepFormSchema,
 } from "./types";
-import { azureSchema } from "./schemas/azure";
-import { gcsSchema } from "./schemas/gcs";
-import { s3Schema } from "./schemas/s3";
+import { azureSchema } from "../../templates/schemas/azure";
+import { gcsSchema } from "../../templates/schemas/gcs";
+import { s3Schema } from "../../templates/schemas/s3";
 
 type VisibleIf = Record<
   string,
