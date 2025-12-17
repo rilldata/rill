@@ -70,7 +70,7 @@ export function getAuthOptionsFromSchema(
 
 export function getRequiredFieldsByAuthMethod(
   schema: MultiStepFormSchema,
-  opts?: { step?: "connector" | "source" },
+  opts?: { step?: string },
 ): Record<string, string[]> {
   const authInfo = getAuthOptionsFromSchema(schema);
   if (!authInfo) return {};
@@ -120,11 +120,13 @@ export function getFieldLabel(
 export function isStepMatch(
   schema: MultiStepFormSchema,
   key: string,
-  step: "connector" | "source",
+  step: string,
 ): boolean {
   const prop = schema.properties?.[key];
   if (!prop) return false;
-  return (prop["x-step"] ?? "connector") === step;
+  const fieldStep = prop["x-step"];
+  if (!fieldStep) return true;
+  return fieldStep === step;
 }
 
 export function isVisibleForValues(

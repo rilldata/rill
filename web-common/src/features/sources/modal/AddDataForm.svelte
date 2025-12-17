@@ -220,15 +220,29 @@
     : null;
 
   $: if (isMultiStepConnector && activeAuthInfo) {
+    const authKey = activeAuthInfo.key;
     const options = activeAuthInfo.options ?? [];
     const fallback = activeAuthInfo.defaultMethod || options[0]?.value || null;
+    const currentValue = ($paramsForm as Record<string, unknown> | undefined)?.[
+      authKey
+    ] as string | undefined;
     const hasValidSelection = options.some(
-      (option) => option.value === stepState.selectedAuthMethod,
+      (option) => option.value === currentValue,
     );
-    if (!hasValidSelection) {
-      if (fallback !== stepState.selectedAuthMethod) {
-        setAuthMethod(fallback ?? null);
-      }
+    const nextValue = (hasValidSelection ? currentValue : fallback) ?? null;
+
+    if (!hasValidSelection && nextValue !== null) {
+      paramsForm.update(
+        ($form) => {
+          if ($form?.[authKey] === nextValue) return $form;
+          return { ...$form, [authKey]: nextValue };
+        },
+        { taint: false },
+      );
+    }
+
+    if (nextValue !== stepState.selectedAuthMethod) {
+      setAuthMethod(nextValue);
     }
   } else if (stepState.selectedAuthMethod) {
     setAuthMethod(null);
@@ -451,7 +465,6 @@
                 errors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
-                bind:authMethod={$selectedAuthMethodStore}
               />
             {:else}
               <FormRenderer
@@ -478,7 +491,6 @@
                 errors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
-                bind:authMethod={$selectedAuthMethodStore}
               />
             {:else}
               <FormRenderer
