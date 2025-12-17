@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -82,8 +83,11 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Validate output format
 			outputFormat := ch.Printer.Format
 			switch outputFormat {
-			case printer.FormatHuman, printer.FormatJSON:
-				// supported formats
+			// supported formats
+			case printer.FormatHuman:
+			case printer.FormatJSON:
+				// override human output to console otherwise any printfs or printlns will be discarded
+				ch.Printer.OverrideHumanOutput(color.Output)
 			default:
 				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
