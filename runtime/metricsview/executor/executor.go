@@ -900,6 +900,161 @@ END) as __rill_time_grain`)
 	return rows, nil
 }
 
+// BindTargetsQuery allows setting min, max and watermark from a cache for a TargetsQuery
+func (e *Executor) BindTargetsQuery(ctx context.Context, qry *metricsview.TargetsQuery, timestamps metricsview.TimestampsResult) error {
+	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
+		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
+	} else if e.metricsView.TimeDimension != "" {
+		e.timestamps[e.metricsView.TimeDimension] = timestamps
+	}
+
+	tz, err := time.LoadLocation(qry.TimeZone)
+	if err != nil {
+		return err
+	}
+
+	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *Executor) Targets(ctx context.Context, qry *metricsview.TargetsQuery) ([]map[string]any, error) {
+	reqMeasures := qry.Measures
+	if len(reqMeasures) == 0 {
+		for _, mes := range e.metricsView.Measures {
+			reqMeasures = append(reqMeasures, mes.Name)
+		}
+	}
+
+	rows := make([]map[string]any, 0)
+
+	for _, target := range e.metricsView.Targets {
+		targetMeasures := make([]string, 0)
+
+		// Collect measures that are requested.
+		for _, measure := range target.Measures {
+			if slices.Contains(reqMeasures, measure) {
+				targetMeasures = append(targetMeasures, measure)
+			}
+		}
+
+		// If none of the measures in the target are requested, skip the target.
+		if len(targetMeasures) == 0 {
+			continue
+		}
+
+		rowsForTarget, err := e.executeTargetsQuery(ctx, qry, target, targetMeasures)
+		if err != nil {
+			return nil, err
+		}
+
+		rows = append(rows, rowsForTarget...)
+	}
+
+	return rows, nil
+}
+
+func (e *Executor) executeTargetsQuery(ctx context.Context, qry *metricsview.TargetsQuery, target *runtimev1.MetricsViewSpec_Target, forMeasures []string) ([]map[string]any, error) {
+	// Acquire olap connection for the target's table's connector
+	olap, release, err := e.rt.OLAP(ctx, e.instanceID, target.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	dialect := olap.Dialect()
+
+	// Only call resolveTimeRange if either start/end was not provided.
+	// This avoids executing Timestamps without caching if it was not bound already.
+	if qry.TimeRange.Start.IsZero() || qry.TimeRange.End.IsZero() {
+		tz, err := time.LoadLocation(qry.TimeZone)
+		if err != nil {
+			return nil, err
+		}
+
+		err = e.resolveTimeRange(ctx, qry.TimeRange, tz, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	start := qry.TimeRange.Start.Format(time.RFC3339)
+	end := qry.TimeRange.End.Format(time.RFC3339)
+
+	b := &strings.Builder{}
+
+	b.WriteString("SELECT *")
+	if target.HasGrain {
+		// Convert the string grain to an integer so that it is easy to calculate "less than or equal to".
+		b.WriteString(`,(CASE
+  WHEN grain = 'millisecond' THEN 1
+  WHEN grain = 'second' THEN 2
+  WHEN grain = 'minute' THEN 3
+  WHEN grain = 'hour' THEN 4
+  WHEN grain = 'day' THEN 5
+  WHEN grain = 'week' THEN 6
+  WHEN grain = 'month' THEN 7
+  WHEN grain = 'quarter' THEN 8
+  WHEN grain = 'year' THEN 9
+  ELSE 0
+END) as __rill_time_grain`)
+	}
+
+	b.WriteString(" FROM ")
+	b.WriteString(dialect.EscapeTable(target.Database, target.DatabaseSchema, target.Table))
+
+	b.WriteString(" WHERE ")
+
+	b.WriteString("time >= ? AND time < ?")
+	args := []any{start, end}
+
+	if qry.Target != "" {
+		b.WriteString(" AND target = ?")
+		args = append(args, qry.Target)
+	}
+
+	if target.HasGrain && qry.TimeGrain != metricsview.TimeGrainUnspecified {
+		b.WriteString(" AND (__rill_time_grain == 0 OR __rill_time_grain <= ?)")
+		args = append(args, int(qry.TimeGrain.ToTimeutil()))
+	}
+
+	b.WriteString(" ORDER BY time")
+
+	res, err := olap.Query(ctx, &drivers.Statement{
+		Query:           b.String(),
+		Args:            args,
+		Priority:        0,
+		QueryAttributes: e.queryAttributes,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	rows := make([]map[string]any, 0)
+
+	for res.Next() {
+		row := make(map[string]any)
+		if err := res.MapScan(row); err != nil {
+			return nil, err
+		}
+
+		// Fill in the for_measures field. Used to indicate which targets apply to which measures.
+		row["for_measures"] = forMeasures
+
+		rows = append(rows, row)
+	}
+
+	err = res.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
+}
+
 func whereExprForSearch(where *metricsview.Expression, dimension, search string) *metricsview.Expression {
 	if where == nil {
 		return &metricsview.Expression{

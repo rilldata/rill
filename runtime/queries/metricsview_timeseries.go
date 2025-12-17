@@ -38,6 +38,7 @@ type MetricsViewTimeSeries struct {
 	TimeZone        string                       `json:"time_zone,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
 	TimeDimension   string                       `json:"time_dimension,omitempty"`
+	IncludeTargets  bool                         `json:"include_targets,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -131,7 +132,26 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer res.Close()
 
-	return q.populateResult(res, timeDim, mv.ValidSpec, nullImpl)
+	err = q.populateResult(res, timeDim, mv.ValidSpec, nullImpl)
+	if err != nil {
+		return err
+	}
+
+	// Query targets for measures that have targets configured (only if include_targets is true)
+	if q.IncludeTargets {
+		targetValues, err := q.queryTargets(ctx, rt, instanceID, mv.ValidSpec, qry, timeDim, priority, userAttrs, security, q.Result.Data)
+		if err != nil {
+			// Log error but don't fail the query if targets fail
+			// TODO: Add proper logging
+			_ = err
+			// Initialize targets to empty slice on error
+			q.Result.Targets = []*runtimev1.MetricsViewTargetValue{}
+		} else {
+			q.Result.Targets = targetValues
+		}
+	}
+
+	return nil
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -442,4 +462,321 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	qry.TimeZone = q.TimeZone
 
 	return qry, nil
+}
+
+func (q *MetricsViewTimeSeries) queryTargets(
+	ctx context.Context,
+	rt *runtime.Runtime,
+	instanceID string,
+	mv *runtimev1.MetricsViewSpec,
+	qry *metricsview.Query,
+	timeDim string,
+	priority int,
+	userAttrs map[string]any,
+	security *runtime.ResolvedSecurity,
+	timeSeriesData []*runtimev1.TimeSeriesValue,
+) ([]*runtimev1.MetricsViewTargetValue, error) {
+	// Check if any measures have targets
+	measureTargets := make(map[string][]*runtimev1.MetricsViewSpec_Target)
+	for _, target := range mv.Targets {
+		for _, measure := range target.Measures {
+			// Check if this measure is in the query
+			for _, measureName := range q.MeasureNames {
+				if measureName == measure {
+					measureTargets[measure] = append(measureTargets[measure], target)
+					break
+				}
+			}
+		}
+	}
+
+	if len(measureTargets) == 0 {
+		// Return empty slice instead of nil to distinguish between "no targets" and "error"
+		return []*runtimev1.MetricsViewTargetValue{}, nil
+	}
+
+	// Extract time grain from query
+	queryTimeGrain := metricsview.TimeGrainFromProto(q.TimeGranularity)
+
+	// Query targets for each measure
+	var targetValues []*runtimev1.MetricsViewTargetValue
+	e, err := executor.New(ctx, rt, instanceID, mv, false, security, priority, userAttrs)
+	if err != nil {
+		return nil, err
+	}
+	defer e.Close()
+
+	// Build targets query
+	targetsQuery := &metricsview.TargetsQuery{
+		MetricsView: q.MetricsViewName,
+		Measures:    make([]string, 0, len(measureTargets)),
+		TimeRange:   qry.TimeRange,
+		TimeZone:    qry.TimeZone,
+		TimeGrain:   queryTimeGrain,
+		Priority:    priority,
+	}
+
+	for measure := range measureTargets {
+		targetsQuery.Measures = append(targetsQuery.Measures, measure)
+	}
+
+	// Resolve time range if needed
+	if targetsQuery.TimeRange != nil && (targetsQuery.TimeRange.Start.IsZero() || targetsQuery.TimeRange.End.IsZero()) {
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, targetsQuery.TimeRange.TimeDimension, nil, priority)
+		if err != nil {
+			return nil, err
+		}
+
+		if targetsQuery.TimeRange.Start.IsZero() {
+			targetsQuery.TimeRange.Start = tsRes.Min
+		}
+		if targetsQuery.TimeRange.End.IsZero() {
+			targetsQuery.TimeRange.End = tsRes.Max
+		}
+
+		err = e.BindTargetsQuery(ctx, targetsQuery, tsRes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Execute targets query
+	targetRows, err := e.Targets(ctx, targetsQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group target rows by measure and target identifier
+	targetsByMeasureSeries := make(map[string]map[string][]map[string]any)
+	for _, row := range targetRows {
+		var forMeasures []string
+		if forMeasuresVal, ok := row["for_measures"]; ok {
+			switch v := forMeasuresVal.(type) {
+			case []string:
+				forMeasures = v
+			case []interface{}:
+				forMeasures = make([]string, 0, len(v))
+				for _, item := range v {
+					if s, ok := item.(string); ok {
+						forMeasures = append(forMeasures, s)
+					}
+				}
+			}
+		}
+		if len(forMeasures) == 0 {
+			continue
+		}
+
+		targetIdentifier, ok := row["target"].(string)
+		if !ok {
+			continue
+		}
+
+		for _, measure := range forMeasures {
+			if _, ok := targetsByMeasureSeries[measure]; !ok {
+				targetsByMeasureSeries[measure] = make(map[string][]map[string]any)
+			}
+			targetsByMeasureSeries[measure][targetIdentifier] = append(targetsByMeasureSeries[measure][targetIdentifier], row)
+		}
+	}
+
+	// Match targets to time series data points by time period
+	tz := time.UTC
+	if q.TimeZone != "" {
+		var err error
+		tz, err = time.LoadLocation(q.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("invalid timezone %q: %w", q.TimeZone, err)
+		}
+	}
+
+	for measure, targetMap := range targetsByMeasureSeries {
+		for targetIdentifier, rows := range targetMap {
+			var values []*structpb.Struct
+
+			// Get display name for target (if available)
+			targetDisplayName := targetIdentifier
+			if len(rows) > 0 {
+				if dn, ok := rows[0]["target_name"].(string); ok && dn != "" {
+					targetDisplayName = dn
+				}
+			}
+
+			// Determine the effective grain to use for matching
+			effectiveGrain := queryTimeGrain
+			if len(rows) > 1 {
+				// Try to detect target grain by looking at time intervals
+				var targetTimes []time.Time
+				for _, targetRow := range rows {
+					if targetTimeVal, ok := targetRow["time"]; ok {
+						if targetTime, err := parseTargetTimeForTimeSeries(targetTimeVal); err == nil {
+							targetTimes = append(targetTimes, targetTime)
+						}
+					}
+				}
+				if len(targetTimes) >= 2 {
+					// Check if times are spaced by days (approximately 24 hours)
+					dayCount := 0
+					for i := 1; i < len(targetTimes); i++ {
+						interval := targetTimes[i].Sub(targetTimes[i-1])
+						hours := interval.Hours()
+						if hours >= 23 && hours <= 25 {
+							dayCount++
+						}
+					}
+					// If most intervals are ~24 hours, targets are daily
+					if dayCount > len(targetTimes)/2 {
+						effectiveGrain = metricsview.TimeGrainDay
+					}
+				}
+			}
+			// Use the coarser grain between target grain and query grain for matching
+			if isGrainCoarserThan(queryTimeGrain, effectiveGrain) {
+				// Query grain is coarser, use it
+			} else if isGrainCoarserThan(effectiveGrain, queryTimeGrain) {
+				// Detected target grain is coarser, keep it (e.g., Day when query is Hour)
+			} else {
+				// Same or can't determine, use query grain
+				effectiveGrain = queryTimeGrain
+			}
+
+			// Build a map of target rows by time (truncated to effective grain)
+			targetMapByTime := make(map[string]map[string]any)
+			for _, targetRow := range rows {
+				targetTimeVal, ok := targetRow["time"]
+				if !ok {
+					continue
+				}
+				targetTime, err := parseTargetTimeForTimeSeries(targetTimeVal)
+				if err != nil {
+					continue
+				}
+				// Truncate target time to the effective grain for matching
+				targetTimeKey := truncateTimeToGrainForTimeSeries(targetTime, effectiveGrain, tz).Format(time.RFC3339)
+
+				// Store the target row by its truncated time key
+				targetMapByTime[targetTimeKey] = targetRow
+			}
+
+			// Build a set of unique time periods from time series data at the effective grain
+			uniqueTimeKeys := make(map[string]bool)
+			for _, tsValue := range timeSeriesData {
+				if tsValue.Ts == nil {
+					continue
+				}
+				resultTime := tsValue.Ts.AsTime()
+				// Truncate result time to the effective grain (same as targets)
+				resultTimeKey := truncateTimeToGrainForTimeSeries(resultTime, effectiveGrain, tz).Format(time.RFC3339)
+				uniqueTimeKeys[resultTimeKey] = true
+			}
+
+			// Match targets to unique time periods from time series data
+			values = make([]*structpb.Struct, 0, len(uniqueTimeKeys))
+			for timeKey := range uniqueTimeKeys {
+				targetRow, found := targetMapByTime[timeKey]
+				if found {
+					// Create a struct from the matching target row
+					structRow := make(map[string]any)
+					for k, v := range targetRow {
+						if k != "for_measures" {
+							structRow[k] = v
+						}
+					}
+					st, err := pbutil.ToStruct(structRow, nil)
+					if err != nil {
+						return nil, fmt.Errorf("failed to convert target row to struct: %w", err)
+					}
+					values = append(values, st)
+				}
+			}
+			// Sort values by time to ensure consistent ordering
+			if len(values) > 0 {
+				type valueWithTime struct {
+					value *structpb.Struct
+					time  time.Time
+				}
+				valuesWithTime := make([]valueWithTime, 0, len(values))
+				for _, v := range values {
+					if timeVal, ok := v.Fields["time"]; ok {
+						if t, err := parseTimeFromStructValue(timeVal); err == nil {
+							valuesWithTime = append(valuesWithTime, valueWithTime{value: v, time: t})
+						}
+					}
+				}
+				// Sort by time
+				for i := 0; i < len(valuesWithTime)-1; i++ {
+					for j := i + 1; j < len(valuesWithTime); j++ {
+						if valuesWithTime[i].time.After(valuesWithTime[j].time) {
+							valuesWithTime[i], valuesWithTime[j] = valuesWithTime[j], valuesWithTime[i]
+						}
+					}
+				}
+				// Rebuild values in sorted order
+				values = make([]*structpb.Struct, len(valuesWithTime))
+				for i, vwt := range valuesWithTime {
+					values[i] = vwt.value
+				}
+			}
+
+			targetValues = append(targetValues, &runtimev1.MetricsViewTargetValue{
+				Measure: measure,
+				Target: &runtimev1.MetricsViewTargetInfo{
+					Name:       targetIdentifier,
+					TargetName: targetDisplayName,
+				},
+				Values: values,
+			})
+		}
+	}
+
+	return targetValues, nil
+}
+
+// parseTargetTimeForTimeSeries parses the time value from a target row for timeseries
+func parseTargetTimeForTimeSeries(timeVal any) (time.Time, error) {
+	switch v := timeVal.(type) {
+	case time.Time:
+		return v, nil
+	case string:
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("failed to parse time: %w", err)
+		}
+		return t, nil
+	default:
+		return time.Time{}, fmt.Errorf("unexpected time type: %T", v)
+	}
+}
+
+// truncateTimeToGrainForTimeSeries truncates a time to the specified grain for timeseries
+func truncateTimeToGrainForTimeSeries(t time.Time, grain metricsview.TimeGrain, tz *time.Location) time.Time {
+	// Convert to the timezone first
+	t = t.In(tz)
+	switch grain {
+	case metricsview.TimeGrainDay:
+		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, tz)
+	case metricsview.TimeGrainWeek:
+		// Find the start of the week (Monday)
+		weekday := int(t.Weekday())
+		if weekday == 0 {
+			weekday = 7 // Sunday becomes 7
+		}
+		daysFromMonday := weekday - 1
+		return time.Date(t.Year(), t.Month(), t.Day()-daysFromMonday, 0, 0, 0, 0, tz)
+	case metricsview.TimeGrainMonth:
+		return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, tz)
+	case metricsview.TimeGrainQuarter:
+		quarter := (int(t.Month()) - 1) / 3
+		month := time.Month(quarter*3 + 1)
+		return time.Date(t.Year(), month, 1, 0, 0, 0, 0, tz)
+	case metricsview.TimeGrainYear:
+		return time.Date(t.Year(), 1, 1, 0, 0, 0, 0, tz)
+	case metricsview.TimeGrainHour:
+		return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, tz)
+	case metricsview.TimeGrainMinute:
+		return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, tz)
+	default:
+		// For other grains or unspecified, return as-is
+		return t
+	}
 }

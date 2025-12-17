@@ -140,6 +140,12 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return res, err
 	}
 
+	// Check and rewrite targets
+	err = e.validateAndNormalizeTargets(ctx, mv, res)
+	if err != nil {
+		return res, err
+	}
+
 	// Pinot does have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
@@ -551,6 +557,123 @@ func (e *Executor) validateAndNormalizeAnnotations(ctx context.Context, mv *runt
 		}
 		if !hasDesc {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for annotation %q does not have the required "description" column`, annotation.Table, annotation.Name))
+		}
+	}
+
+	for _, release := range olapReleases {
+		release()
+	}
+
+	return nil
+}
+
+// validateAndNormalizeTargets validates the targets by checking the model/table defined with expected columns.
+// Rewrites the targets to use the resolved table name from the defined model.
+// Resolves the measure selector and stores the resolved measures in the target.
+func (e *Executor) validateAndNormalizeTargets(ctx context.Context, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) error {
+	allMeasures := make([]string, 0, len(mv.Measures))
+	for _, m := range mv.Measures {
+		allMeasures = append(allMeasures, m.Name)
+	}
+
+	// Get the controller used for getting the target's model
+	ct, err := e.rt.Controller(ctx, e.instanceID)
+	if err != nil {
+		return fmt.Errorf("failed to get controller: %w", err)
+	}
+
+	// Different models could be in the same or different connector. Maintain a map to reuse connections.
+	olaps := make(map[string]drivers.OLAPStore)
+	olapReleases := make([]func(), 0)
+	for _, target := range mv.Targets {
+		// Resolve the measures selector
+		target.Measures, err = fieldselectorpb.ResolveFields(target.Measures, target.MeasuresSelector, allMeasures)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measures for target %q: %w", target.Name, err))
+		}
+		target.MeasuresSelector = nil
+
+		if target.Model != "" {
+			modelRes, err := ct.Get(ctx, &runtimev1.ResourceName{Name: target.Model, Kind: runtime.ResourceKindModel}, false)
+			if err == nil && modelRes.GetModel().State.ResultTable != "" {
+				target.Table = modelRes.GetModel().State.ResultTable
+				target.Connector = modelRes.GetModel().State.ResultConnector
+			} else {
+				target.Table = target.Model
+			}
+		}
+
+		// Get the connector for the model either from the map or acquire a new one
+		olap, ok := olaps[target.Connector]
+		if !ok {
+			var release func()
+			olap, release, err = e.rt.OLAP(ctx, e.instanceID, target.Connector)
+			if err != nil {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to acquire connection to table %q for target %q: %w", target.Table, target.Name, err))
+				break // other connections might fail as well
+			}
+			olapReleases = append(olapReleases, release)
+		}
+
+		// Get the table schema
+		tableSchema, err := olap.InformationSchema().Lookup(ctx, target.Database, target.DatabaseSchema, target.Table)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get table details %q for target %q: %w", target.Table, target.Name, err))
+			continue
+		}
+
+		// Validate the table for required columns and save metadata about optional columns. This metadata will be used during querying the table.
+		var hasTime, hasValue, hasTarget bool
+		dimensionColumns := make(map[string]bool)
+		for _, d := range mv.Dimensions {
+			dimensionColumns[strings.ToLower(d.Name)] = true
+		}
+
+		for _, field := range tableSchema.Schema.Fields {
+			fieldNameLower := strings.ToLower(field.Name)
+			switch fieldNameLower {
+			case "time":
+				hasTime = true
+				// Validate time column type
+				if field.Type.Code != runtimev1.Type_CODE_TIMESTAMP && field.Type.Code != runtimev1.Type_CODE_DATE {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for target %q has "time" column with invalid type %s, expected TIMESTAMP or DATE`, target.Table, target.Name, field.Type.Code))
+				}
+
+			case "value":
+				hasValue = true
+
+			case "target":
+				hasTarget = true
+
+			case "grain":
+				target.HasGrain = true
+				// Validate grain column is string type
+				if field.Type.Code != runtimev1.Type_CODE_STRING {
+					res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for target %q has "grain" column with invalid type %s, expected STRING`, target.Table, target.Name, field.Type.Code))
+				}
+
+			case "target_name":
+				// Optional column, no validation needed
+
+			case "numerator", "denominator":
+				// Optional columns for ratio measures, no validation needed
+
+			default:
+				// Check if this is a dimension column
+				if dimensionColumns[fieldNameLower] {
+					// This is a valid dimension column
+				}
+			}
+		}
+
+		if !hasTime {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for target %q does not have the required "time" column`, target.Table, target.Name))
+		}
+		if !hasValue {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for target %q does not have the required "value" column`, target.Table, target.Name))
+		}
+		if !hasTarget {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf(`table %q for target %q does not have the required "target" column`, target.Table, target.Name))
 		}
 	}
 

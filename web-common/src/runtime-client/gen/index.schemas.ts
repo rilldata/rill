@@ -121,6 +121,21 @@ export interface MetricsViewSpecMeasureWindow {
   frameExpression?: string;
 }
 
+export interface MetricsViewSpecTarget {
+  name?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+  /** Name of the model that contains targets. Either table or model should be set. */
+  model?: string;
+  /** Measures this target applies to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  /** Signifies that the underlying table has `grain` column. Will be used while querying to filter targets based on query time grain. */
+  hasGrain?: boolean;
+}
+
 export interface NumericHistogramBinsBin {
   bucket?: number;
   low?: number;
@@ -1362,6 +1377,7 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  includeTargets?: boolean;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -1371,6 +1387,7 @@ export type V1MetricsViewAggregationResponseDataItem = {
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+  targets?: V1MetricsViewTargetValue[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1566,6 +1583,12 @@ export interface V1MetricsViewSpec {
   parentDimensions?: V1FieldSelector;
   parentMeasures?: V1FieldSelector;
   annotations?: V1MetricsViewSpecAnnotation[];
+  /** Targets that can be applied to measures. Each target needs to have a model or a table defined.
+1. The underlying model/table has to have `time`, `value`, and `series` columns.
+2. Can additionally have `grain` column to specify the lowest time grain at which the target applies.
+3. Can have dimension columns matching dimension names for dimension-specific targets.
+4. Can have `numerator` and `denominator` columns for ratio measure targets. */
+  targets?: MetricsViewSpecTarget[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1613,6 +1636,32 @@ This may be empty if the metrics view is based on an externally managed table. *
   dataRefreshedOn?: string;
 }
 
+export type V1MetricsViewTargetDataItem = { [key: string]: unknown };
+
+export interface V1MetricsViewTarget {
+  name?: string;
+  measures?: string[];
+  targets?: V1MetricsViewTargetInfo[];
+  data?: V1MetricsViewTargetDataItem[];
+}
+
+export interface V1MetricsViewTargetInfo {
+  name?: string;
+  targetName?: string;
+}
+
+export type V1MetricsViewTargetValueValuesItem = { [key: string]: unknown };
+
+export interface V1MetricsViewTargetValue {
+  measure?: string;
+  target?: V1MetricsViewTargetInfo;
+  values?: V1MetricsViewTargetValueValuesItem[];
+}
+
+export interface V1MetricsViewTargetsResponse {
+  targets?: V1MetricsViewTarget[];
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1643,11 +1692,13 @@ export interface V1MetricsViewTimeSeriesRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  includeTargets?: boolean;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
+  targets?: V1MetricsViewTargetValue[];
 }
 
 export interface V1MetricsViewToplistRequest {
@@ -2858,6 +2909,15 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  includeTargets?: boolean;
+};
+
+export type QueryServiceMetricsViewTargetsBody = {
+  measures?: string[];
+  target?: string;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  priority?: number;
 };
 
 export type QueryServiceMetricsViewAnnotationsBody = {
@@ -2952,6 +3012,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  includeTargets?: boolean;
 };
 
 export type QueryServiceMetricsViewToplistBody = {

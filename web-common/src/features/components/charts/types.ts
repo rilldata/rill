@@ -16,6 +16,7 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
+  V1MetricsViewTargetValue,
 } from "@rilldata/web-common/runtime-client";
 import {
   type MetricsViewSpecDimension,
@@ -101,6 +102,7 @@ export type ChartDataResult = {
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
   hasComparison?: boolean;
+  targets?: V1MetricsViewTargetValue[];
 };
 
 export interface ChartDomainValues {

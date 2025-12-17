@@ -1,5 +1,6 @@
 import type { CartesianCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import type { CircularCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CircularChart";
+import type { GaugeSpec } from "@rilldata/web-common/features/canvas/components/gauge";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartType } from "../../components/charts/types";
 import type { ImageSpec } from "./image";
@@ -15,7 +16,8 @@ export type ComponentWithMetricsView =
   | TableSpec
   | KPISpec
   | KPIGridSpec
-  | LeaderboardSpec;
+  | LeaderboardSpec
+  | GaugeSpec;
 
 export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 
@@ -54,7 +56,8 @@ export type CanvasComponentType =
   | "image"
   | "pivot"
   | "table"
-  | "leaderboard";
+  | "leaderboard"
+  | "gauge";
 
 interface LineChart {
   line_chart: CartesianCanvasChartSpec;

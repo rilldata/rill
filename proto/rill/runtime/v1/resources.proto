@@ -289,6 +289,26 @@ message MetricsViewSpec {
     // Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
     bool has_duration = 11;
   }
+  // Targets that can be applied to measures
+  message Target {
+    string name = 1;
+    // Connector containing the table
+    string connector = 2;
+    // Name of the database where table is located (optional)
+    string database = 3;
+    // Name of the database schema where table is located (optional)
+    string database_schema = 4;
+    // Name of the table that contains targets
+    string table = 5;
+    // Name of the model that contains targets. Either table or model should be set.
+    string model = 6;
+    // Measures this target applies to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+    repeated string measures = 7;
+    // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+    FieldSelector measures_selector = 8;
+    // Signifies that the underlying table has `grain` column. Will be used while querying to filter targets based on query time grain.
+    bool has_grain = 9;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the database where table is located (optional)
@@ -322,6 +342,12 @@ message MetricsViewSpec {
   FieldSelector parent_measures = 32;
   // Annotations in the metrics view
   repeated Annotation annotations = 29;
+  // Targets that can be applied to measures. Each target needs to have a model or a table defined.
+  // 1. The underlying model/table has to have `time`, `value`, and `series` columns.
+  // 2. Can additionally have `grain` column to specify the lowest time grain at which the target applies.
+  // 3. Can have dimension columns matching dimension names for dimension-specific targets.
+  // 4. Can have `numerator` and `denominator` columns for ratio measure targets.
+  repeated Target targets = 34;
   // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).

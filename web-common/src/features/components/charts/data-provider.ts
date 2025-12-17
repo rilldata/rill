@@ -115,6 +115,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
 
       const domainValues = getDomainValues();
       const hasComparison = $timeAndFilterStore.showTimeComparison;
+      const targets = chartData?.data?.targets;
 
       return {
         data: data || [],
@@ -124,6 +125,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         domainValues,
         isDarkMode: isThemeModeDark,
         hasComparison,
+        targets,
         theme: {
           primary:
             theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.primary ||

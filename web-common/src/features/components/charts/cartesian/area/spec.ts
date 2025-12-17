@@ -15,6 +15,75 @@ import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
+
+function createTargetLineLayers(
+  config: CartesianChartSpec,
+  data: ChartDataResult,
+  xField: string,
+  yField: string,
+): Array<LayerSpec<Field> | UnitSpec<Field>> {
+  if (!data.targets || data.targets.length === 0) {
+    return [];
+  }
+
+  const targetLayers: Array<LayerSpec<Field> | UnitSpec<Field>> = [];
+  
+  // Get the measure name from y field
+  const measureName = config.y?.field;
+  if (!measureName) return [];
+
+  // Get the actual time dimension field name (unsanitized)
+  const timeFieldName = config.x?.field;
+  if (!timeFieldName) return [];
+
+  // Find targets for this measure
+  const measureTargets = data.targets.filter(
+    (t) => t.measure === measureName,
+  );
+
+  for (const target of measureTargets) {
+    if (!target.values || target.values.length === 0) continue;
+
+    // Transform target values to chart data format
+    // Target values have: time (or time dimension name), value, target, target_name
+    // The time field name in target values matches the time dimension name in the query
+    const targetName = target.target?.targetName || target.target?.name || "Target";
+    
+    // Create a target line layer with dashed line style
+    const targetLayer: UnitSpec<Field> = {
+      data: {
+        values: target.values.map((v) => {
+          // Use the time field from target values (which matches the time dimension name)
+          // Fallback to 'time' if the field doesn't exist
+          const timeValue = v[timeFieldName] ?? v.time;
+          return {
+            [xField]: timeValue,
+            [yField]: v.value,
+            target_name: targetName,
+          };
+        }),
+      },
+      mark: {
+        type: "line",
+        strokeDash: [5, 5],
+        opacity: 0.7,
+        stroke: data.theme.primary.css("hsl").replace("deg", "").replaceAll(" ", ", "),
+      },
+      encoding: {
+        x: createPositionEncoding(config.x, data),
+        y: {
+          field: sanitizeValueForVega(yField),
+          type: "quantitative",
+          title: yField,
+        },
+      },
+    };
+
+    targetLayers.push(targetLayer);
+  }
+
+  return targetLayers;
+}
 export function generateVLAreaChartSpec(
   config: CartesianChartSpec,
   data: ChartDataResult,
@@ -66,6 +135,12 @@ export function generateVLAreaChartSpec(
           : undefined,
     }),
   ];
+
+  // Add target lines if available
+  if (data.targets && config.x?.type === "temporal") {
+    const targetLayers = createTargetLineLayers(config, data, xField, yField);
+    layers.push(...targetLayers);
+  }
 
   spec.layer = layers;
 

@@ -40,6 +40,7 @@ export type CartesianChartSpec = {
   x?: FieldConfig<"nominal" | "time">;
   y?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal"> | string;
+  includeTargets?: boolean;
 };
 
 export type CartesianChartDefaultOptions = {
@@ -91,6 +92,7 @@ export class CartesianChartProvider {
   createChartDataQuery(
     runtime: Writable<Runtime>,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
+    includeTargetsStore?: Readable<boolean>,
   ): ChartDataQuery {
     const config = get(this.spec);
 
@@ -231,9 +233,11 @@ export class CartesianChartProvider {
 
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
-    const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNXQuery, topNColorQuery],
-      ([$runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
+    const queryOptionsStore = includeTargetsStore
+      ? derived(
+          [runtime, timeAndFilterStore, topNXQuery, topNColorQuery, includeTargetsStore],
+          ([$runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery, $includeTargets]) => {
+            const includeTargets = $includeTargets;
         const {
           timeRange,
           where,
@@ -339,6 +343,7 @@ export class CartesianChartProvider {
                 : undefined,
             fillMissing: config.x?.type === "temporal",
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
+            includeTargets: includeTargets ?? config.includeTargets ?? false,
           },
           {
             query: {
@@ -347,8 +352,128 @@ export class CartesianChartProvider {
             },
           },
         );
-      },
-    );
+          },
+        )
+      : derived(
+          [runtime, timeAndFilterStore, topNXQuery, topNColorQuery],
+          ([$runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
+            const includeTargets = undefined;
+        const {
+          timeRange,
+          where,
+          timeGrain,
+          comparisonTimeRange,
+          showTimeComparison,
+          hasTimeSeries,
+        } = $timeAndFilterStore;
+        const topNXData = $topNXQuery?.data?.data;
+
+        const topNColorData = $topNColorQuery?.data?.data;
+        const enabled =
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
+          !!measures?.length &&
+          !!dimensions?.length &&
+          (hasColorDimension &&
+          config.x?.type === "nominal" &&
+          !Array.isArray(config.x?.sort)
+            ? topNXData !== undefined
+            : true) &&
+          (hasColorDimension && colorDimensionName && colorLimit
+            ? topNColorData !== undefined
+            : true);
+
+        let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
+          where,
+          config.x,
+        );
+
+        let includedXValues: string[] = [];
+
+        // Apply topN filter for x dimension
+        if (Array.isArray(config.x?.sort)) {
+          includedXValues = config.x.sort;
+        } else if (topNXData?.length && dimensionName) {
+          includedXValues = topNXData.map((d) => d[dimensionName] as string);
+        }
+
+        if (dimensionName) {
+          this.customSortXItems = includedXValues;
+          const filterForTopXValues = createInExpression(
+            dimensionName,
+            includedXValues,
+          );
+          combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
+        }
+
+        // Apply topN filter for color dimension
+        if (topNColorData?.length && colorDimensionName) {
+          const topColorValues = topNColorData.map(
+            (d) => d[colorDimensionName] as string,
+          );
+          this.customColorValues = topColorValues;
+          const filterForTopColorValues = createInExpression(
+            colorDimensionName,
+            topColorValues,
+          );
+          combinedWhere = mergeFilters(combinedWhere, filterForTopColorValues);
+        }
+
+        // Store combinedWhere for use in BaseChart
+        this.combinedWhere.set(combinedWhere);
+
+        // Update dimensions with timeGrain if temporal
+        if (config.x?.type === "temporal" && timeGrain) {
+          dimensions = dimensions.map((d) =>
+            d.name === dimensionName ? { ...d, timeGrain } : d,
+          );
+        }
+
+        const measuresWithComparison: V1MetricsViewAggregationMeasure[] =
+          Array.from(measuresSet)
+            .map((measureName) => {
+              if (showTimeComparison && comparisonTimeRange?.start) {
+                return [
+                  { name: measureName },
+                  {
+                    name: measureName + ComparisonDeltaPreviousSuffix,
+                    comparisonValue: {
+                      measure: measureName,
+                    },
+                  },
+                ];
+              }
+              return { name: measureName };
+            })
+            .flat();
+
+        return getQueryServiceMetricsViewAggregationQueryOptions(
+          $runtime.instanceId,
+          config.metrics_view,
+          {
+            measures: measuresWithComparison,
+            dimensions,
+            sort: xAxisSort ? [xAxisSort] : undefined,
+            where: combinedWhere,
+            timeRange,
+            comparisonTimeRange:
+              showTimeComparison &&
+              comparisonTimeRange?.start &&
+              comparisonTimeRange?.end
+                ? comparisonTimeRange
+                : undefined,
+            fillMissing: config.x?.type === "temporal",
+            limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
+            includeTargets: includeTargets ?? config.includeTargets ?? false,
+          },
+          {
+            query: {
+              enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+        );
+          },
+        );
 
     const query = createQuery(queryOptionsStore);
     return query;

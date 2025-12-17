@@ -21,7 +21,7 @@
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
-    metricsView: { getMeasureForMetricView },
+    metricsView: { getMeasureForMetricView, getMetricsViewFromName },
   } = ctx.canvasEntity);
 
   $: ({ instanceId } = $runtime);
@@ -50,6 +50,16 @@
   $: measureStore = getMeasureForMetricView(measureName, metricsViewName);
   $: measure = $measureStore;
 
+  $: metricsViewQuery = getMetricsViewFromName(metricsViewName);
+  $: metricsViewSpec = $metricsViewQuery?.metricsView;
+
+  // Check if the measure has targets configured
+  $: hasTargets = Boolean(
+    metricsViewSpec?.targets?.some((target) =>
+      target.measures?.includes(measureName),
+    ),
+  );
+
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
   $: showComparison = !!comparisonOptions?.length && showTimeComparison;
@@ -73,6 +83,7 @@
       },
       where,
       priority: 50,
+      includeTargets: hasTargets,
     },
     {
       query: {
@@ -89,6 +100,7 @@
       timeRange: comparisonTimeRange,
       where,
       priority: 50,
+      includeTargets: hasTargets,
     },
     {
       query: {

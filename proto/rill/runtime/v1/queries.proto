@@ -147,6 +147,14 @@ service QueryService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema"};
   }
 
+  // MetricsViewTargets returns all targets for a metrics view
+  rpc MetricsViewTargets(MetricsViewTargetsRequest) returns (MetricsViewTargetsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view}/targets",
+      body: "*"
+    };
+  }
+
   // MetricsViewSearch Get the data types of measures and dimensions
   rpc MetricsViewSearch(MetricsViewSearchRequest) returns (MetricsViewSearchResponse) {
     option (google.api.http) = {
@@ -453,6 +461,8 @@ message MetricsViewAggregationRequest {
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
+  // Optional. If true, includes target values in the response for measures that have targets configured
+  bool include_targets = 23;
 }
 
 message MetricsViewAggregationResponse {
@@ -460,6 +470,8 @@ message MetricsViewAggregationResponse {
   StructType schema = 1;
   // Not optional, not null
   repeated google.protobuf.Struct data = 2;
+  // Target values for measures that have targets configured
+  repeated MetricsViewTargetValue targets = 3;
 }
 
 message MetricsViewAggregationDimension {
@@ -703,6 +715,8 @@ message MetricsViewTimeSeriesRequest {
   int32 priority = 8;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
   string time_dimension = 15; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  // Optional. If true, includes target values in the response for measures that have targets configured
+  bool include_targets = 17;
 }
 
 message MetricsViewTimeSeriesResponse {
@@ -710,6 +724,8 @@ message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
   // Not optional, not null
   repeated TimeSeriesValue data = 2;
+  // Target values for measures that have targets configured
+  repeated MetricsViewTargetValue targets = 3;
 }
 
 message MetricsViewTotalsRequest {
@@ -903,6 +919,44 @@ message MetricsViewAnnotationsRequest {
   int64 limit = 8 [(validate.rules).int64.gte = 0];
   // Optional
   int64 offset = 9 [(validate.rules).int64.gte = 0];
+}
+
+message MetricsViewTargetsRequest {
+  string instance_id = 1;
+  string metrics_view = 2 [(validate.rules).string.min_len = 1];
+  // Optional: filter by measure name
+  repeated string measures = 3;
+  // Optional: filter by target name (identifier)
+  string target = 4;
+  // Optional: time range filter
+  TimeRange time_range = 5;
+  // Optional: time grain to filter targets (only targets with grain <= this grain will be returned)
+  TimeGrain time_grain = 6;
+  // Optional
+  int32 priority = 7;
+}
+
+message MetricsViewTargetsResponse {
+  repeated MetricsViewTarget targets = 1;
+}
+
+message MetricsViewTarget {
+  string name = 1;
+  repeated string measures = 2;
+  repeated MetricsViewTargetInfo targets = 3; // Available targets for this target definition
+  repeated google.protobuf.Struct data = 4; // Target table rows
+}
+
+message MetricsViewTargetInfo {
+  string name = 1; // Target identifier (e.g., "budget_2025")
+  string target_name = 2; // Target display name (e.g., "Budget 2025")
+}
+
+message MetricsViewTargetValue {
+  string measure = 1; // Measure name this target applies to
+  MetricsViewTargetInfo target = 2; // Target information (required)
+  // Target value(s) matching the query dimensions/time
+  repeated google.protobuf.Struct values = 3;
 }
 
 message MetricsViewAnnotationsResponse {

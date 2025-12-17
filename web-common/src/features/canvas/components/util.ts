@@ -3,6 +3,7 @@ import {
   type CanvasChartSpec,
 } from "@rilldata/web-common/features/canvas/components/charts";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
+import { GaugeComponent } from "@rilldata/web-common/features/canvas/components/gauge";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -90,6 +91,7 @@ const NON_CHART_TYPES = [
   "table",
   "pivot",
   "leaderboard",
+  "gauge",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -121,6 +123,7 @@ const baseComponentMap = {
   leaderboard: LeaderboardComponent,
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
+  gauge: GaugeComponent,
 } as const;
 
 const chartComponentMap = Object.fromEntries(
@@ -140,6 +143,7 @@ const baseDisplayMap = {
   pivot: "Pivot",
   image: "Image",
   leaderboard: "Leaderboard",
+  gauge: "Gauge",
 } as const;
 
 const chartDisplayMap = Object.fromEntries(

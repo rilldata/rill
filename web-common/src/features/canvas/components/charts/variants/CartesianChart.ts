@@ -16,7 +16,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { get, type Readable } from "svelte/store";
+import { derived, get, writable, type Readable } from "svelte/store";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -197,7 +197,53 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    // Compute includeTargets reactively by deriving from spec and metrics view
+    // Get metrics view query store - it's reactive and depends on allMetricsViews
+    const config = get(this.specStore);
+    const metricsViewQueryStore = config.metrics_view
+      ? ctx.canvasEntity.metricsView.getMetricsViewFromName(config.metrics_view)
+      : null;
+    
+    // Create includeTargets store that's reactive to both spec and metrics view changes
+    const includeTargetsStore: Readable<boolean> = metricsViewQueryStore
+      ? derived(
+          [this.specStore, metricsViewQueryStore],
+          ([$config, $metricsViewQueryValue]) => {
+            if ($config.includeTargets !== undefined) {
+              return $config.includeTargets;
+            }
+            
+            if (
+              (this.type !== "line_chart" && this.type !== "area_chart") ||
+              $config.x?.type !== "temporal"
+            ) {
+              return false;
+            }
+            
+            const metricsViewSpec = $metricsViewQueryValue?.metricsView;
+            if (!metricsViewSpec?.targets) {
+              return false;
+            }
+            
+            const measureNames = new Set<string>();
+            if (isMultiFieldConfig($config.y)) {
+              $config.y.fields?.forEach((f) => measureNames.add(f));
+            } else if ($config.y?.field) {
+              measureNames.add($config.y.field);
+            }
+            
+            return metricsViewSpec.targets.some((target) =>
+              target.measures?.some((m) => measureNames.has(m)),
+            );
+          },
+        )
+      : derived([this.specStore], ([$config]) => $config.includeTargets ?? false);
+    
+    return this.provider.createChartDataQuery(
+      ctx.runtime,
+      timeAndFilterStore,
+      includeTargetsStore,
+    );
   }
 
   static newComponentSpec(

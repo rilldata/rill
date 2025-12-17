@@ -61,6 +61,26 @@
     measure?.name ?? ""
   ] ?? null) as number | null;
 
+  // Extract target data from aggregation response
+  $: targetsData = primaryTotalResult?.data?.targets;
+  $: targetForMeasure = targetsData?.find(
+    (t) => t.measure === measure?.name,
+  );
+  $: targetValue = targetForMeasure?.values?.[0]?.["value"] as
+    | number
+    | null
+    | undefined;
+  $: targetName =
+    targetForMeasure?.target?.targetName ||
+    targetForMeasure?.target?.name ||
+    undefined;
+
+  // Calculate difference vs target
+  $: targetDifference =
+    primaryTotal != null && targetValue != null
+      ? primaryTotal - targetValue
+      : null;
+
   $: primaryData = primarySparklineResult?.data?.data ?? [];
 
   $: comparisonData = comparisonSparklineResult?.data?.data ?? [];
@@ -120,6 +140,23 @@
         </span>
       {/if}
     </div>
+
+    {#if targetValue != null && targetName}
+      <div class="target-info">
+        <span class="text-xs text-gray-500">
+          Target ({targetName}): {measureValueFormatter(targetValue)}
+        </span>
+        {#if targetDifference != null}
+          <span
+            class="text-xs font-medium"
+            class:text-green-500={targetDifference >= 0}
+            class:text-red-500={targetDifference < 0}
+          >
+            {targetDifference >= 0 ? "+" : ""}{measureValueFormatter(targetDifference)}
+          </span>
+        {/if}
+      </div>
+    {/if}
 
     {#if showComparison}
       <div class="comparison-value-wrapper">
@@ -273,6 +310,10 @@
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
     @apply font-medium text-ellipsis text-gray-500;
+  }
+
+  .target-info {
+    @apply flex items-center gap-x-2 text-xs -mb-[3px] truncate flex-none h-5;
   }
 
   @container component-container (inline-size < 300px) {

@@ -36,7 +36,7 @@
   $: ({
     canvasEntity: {
       metricsView,
-      metricsView: { getMeasuresForMetricView },
+      metricsView: { getMeasuresForMetricView, getMetricsViewFromName },
     },
   } = store);
 

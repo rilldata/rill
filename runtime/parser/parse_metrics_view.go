@@ -81,6 +81,15 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
+	Targets []*struct {
+		Name           string             `yaml:"name"`
+		Model          string             `yaml:"model"`
+		Database       string             `yaml:"database"`
+		DatabaseSchema string             `yaml:"database_schema"`
+		Table          string             `yaml:"table"`
+		Connector      string             `yaml:"connector"`
+		Measures       *FieldSelectorYAML `yaml:"measures"`
+	} `yaml:"targets"`
 	Security        *SecurityPolicyYAML
 	QueryAttributes map[string]string `yaml:"query_attributes"`
 	Cache           struct {
@@ -710,6 +719,37 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	// Add targets as refs to the end of the metrics view.
+	for _, target := range tmp.Targets {
+		if target == nil {
+			continue
+		}
+
+		if target.Table != "" && target.Model != "" {
+			return fmt.Errorf(`cannot set both the "model" field and the "table" field for target`)
+		}
+		if target.Table == "" && target.Model == "" {
+			return fmt.Errorf(`must set a value for either the "model" field or the "table" field for target`)
+		}
+		if target.Name == "" {
+			if target.Model != "" {
+				target.Name = target.Model
+			} else {
+				target.Name = target.Table
+			}
+		}
+
+		if target.Model != "" {
+			// Not setting Kind because for backwards compatibility, it may actually be a source or an external table.
+			node.Refs = append(node.Refs, ResourceName{Name: target.Model})
+		} else if target.Table != "" {
+			// By convention, if the table name matches a source or model name we add a DAG link.
+			// We may want to remove this at some point, but the cases where it would not be desired are very rare.
+			// Not setting Kind so that inference kicks in.
+			node.Refs = append(node.Refs, ResourceName{Name: target.Table})
+		}
+	}
+
 	securityRefs, err := inferRefsFromSecurityRules(securityRules)
 	if err != nil {
 		return err
@@ -793,6 +833,28 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Connector:        annotation.Connector,
 			Measures:         annotationMeasures,
 			MeasuresSelector: annotationMeasuresSelector,
+		})
+	}
+
+	for _, target := range tmp.Targets {
+		if target == nil {
+			continue
+		}
+		var targetMeasuresSelector *runtimev1.FieldSelector
+		targetMeasures, ok := target.Measures.TryResolve()
+		if !ok {
+			targetMeasuresSelector = target.Measures.Proto()
+		}
+
+		spec.Targets = append(spec.Targets, &runtimev1.MetricsViewSpec_Target{
+			Name:             target.Name,
+			Model:            target.Model,
+			Database:         target.Database,
+			DatabaseSchema:   target.DatabaseSchema,
+			Table:            target.Table,
+			Connector:        target.Connector,
+			Measures:         targetMeasures,
+			MeasuresSelector: targetMeasuresSelector,
 		})
 	}
 

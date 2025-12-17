@@ -37,6 +37,7 @@ import type {
   QueryServiceMetricsViewRowsBody,
   QueryServiceMetricsViewSchemaParams,
   QueryServiceMetricsViewSearchBody,
+  QueryServiceMetricsViewTargetsBody,
   QueryServiceMetricsViewTimeRangeBody,
   QueryServiceMetricsViewTimeRangesBody,
   QueryServiceMetricsViewTimeSeriesBody,
@@ -71,6 +72,7 @@ import type {
   V1MetricsViewRowsResponse,
   V1MetricsViewSchemaResponse,
   V1MetricsViewSearchResponse,
+  V1MetricsViewTargetsResponse,
   V1MetricsViewTimeRangeResponse,
   V1MetricsViewTimeRangesResponse,
   V1MetricsViewTimeSeriesResponse,
@@ -995,6 +997,115 @@ export function createQueryServiceMetricsViewAggregation<
   return query;
 }
 
+/**
+ * @summary MetricsViewTargets returns all targets for a metrics view
+ */
+export const queryServiceMetricsViewTargets = (
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewTargetsBody: QueryServiceMetricsViewTargetsBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1MetricsViewTargetsResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/targets`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewTargetsBody,
+    signal,
+  });
+};
+
+export const getQueryServiceMetricsViewTargetsMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTargets>>,
+    TError,
+    {
+      instanceId: string;
+      metricsView: string;
+      data: QueryServiceMetricsViewTargetsBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTargets>>,
+  TError,
+  {
+    instanceId: string;
+    metricsView: string;
+    data: QueryServiceMetricsViewTargetsBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["queryServiceMetricsViewTargets"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTargets>>,
+    {
+      instanceId: string;
+      metricsView: string;
+      data: QueryServiceMetricsViewTargetsBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsView, data } = props ?? {};
+
+    return queryServiceMetricsViewTargets(instanceId, metricsView, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceMetricsViewTargetsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTargets>>
+>;
+export type QueryServiceMetricsViewTargetsMutationBody =
+  QueryServiceMetricsViewTargetsBody;
+export type QueryServiceMetricsViewTargetsMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary MetricsViewTargets returns all targets for a metrics view
+ */
+export const createQueryServiceMetricsViewTargets = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewTargets>>,
+      TError,
+      {
+        instanceId: string;
+        metricsView: string;
+        data: QueryServiceMetricsViewTargetsBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTargets>>,
+  TError,
+  {
+    instanceId: string;
+    metricsView: string;
+    data: QueryServiceMetricsViewTargetsBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getQueryServiceMetricsViewTargetsMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 export const queryServiceMetricsViewAnnotations = (
   instanceId: string,
   metricsViewName: string,

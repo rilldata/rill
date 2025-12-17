@@ -1655,6 +1655,57 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
+              includeTargets:
+                type: boolean
+                title: Optional. If true, includes target values in the response for measures that have targets configured
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/targets:
+    post:
+      summary: MetricsViewTargets returns all targets for a metrics view
+      operationId: QueryService_MetricsViewTargets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTargetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsView
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              measures:
+                type: array
+                items:
+                  type: string
+                title: 'Optional: filter by measure name'
+              target:
+                type: string
+                title: 'Optional: filter by target name (identifier)'
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: 'Optional: time range filter'
+              timeGrain:
+                $ref: '#/definitions/v1TimeGrain'
+                title: 'Optional: time grain to filter targets (only targets with grain <= this grain will be returned)'
+              priority:
+                type: integer
+                format: int32
+                title: Optional
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/annotations:
@@ -2142,6 +2193,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              includeTargets:
+                type: boolean
+                title: Optional. If true, includes target values in the response for measures that have targets configured
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -3428,6 +3482,38 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
+  MetricsViewSpecTarget:
+    type: object
+    properties:
+      name:
+        type: string
+      connector:
+        type: string
+        title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      databaseSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
+      table:
+        type: string
+        title: Name of the table that contains targets
+      model:
+        type: string
+        description: Name of the model that contains targets. Either table or model should be set.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Measures this target applies to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      hasGrain:
+        type: boolean
+        description: Signifies that the underlying table has `grain` column. Will be used while querying to filter targets based on query time grain.
+    title: Targets that can be applied to measures
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -5473,6 +5559,9 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
+      includeTargets:
+        type: boolean
+        title: Optional. If true, includes target values in the response for measures that have targets configured
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5484,6 +5573,12 @@ definitions:
         items:
           type: object
         title: Not optional, not null
+      targets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewTargetValue'
+        title: Target values for measures that have targets configured
   v1MetricsViewAggregationSort:
     type: object
     properties:
@@ -5849,6 +5944,17 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewSpecAnnotation'
         title: Annotations in the metrics view
+      targets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecTarget'
+        description: |-
+          Targets that can be applied to measures. Each target needs to have a model or a table defined.
+          1. The underlying model/table has to have `time`, `value`, and `series` columns.
+          2. Can additionally have `grain` column to specify the lowest time grain at which the target applies.
+          3. Can have dimension columns matching dimension names for dimension-specific targets.
+          4. Can have `numerator` and `denominator` columns for ratio measure targets.
       securityRules:
         type: array
         items:
@@ -5934,6 +6040,57 @@ definitions:
         description: |-
           The last time the metrics view's underlying data was refreshed.
           This may be empty if the metrics view is based on an externally managed table.
+  v1MetricsViewTarget:
+    type: object
+    properties:
+      name:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      targets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewTargetInfo'
+        title: Available targets for this target definition
+      data:
+        type: array
+        items:
+          type: object
+        title: Target table rows
+  v1MetricsViewTargetInfo:
+    type: object
+    properties:
+      name:
+        type: string
+        title: Target identifier (e.g., "budget_2025")
+      targetName:
+        type: string
+        title: Target display name (e.g., "Budget 2025")
+  v1MetricsViewTargetValue:
+    type: object
+    properties:
+      measure:
+        type: string
+        title: Measure name this target applies to
+      target:
+        $ref: '#/definitions/v1MetricsViewTargetInfo'
+        title: Target information (required)
+      values:
+        type: array
+        items:
+          type: object
+        title: Target value(s) matching the query dimensions/time
+  v1MetricsViewTargetsResponse:
+    type: object
+    properties:
+      targets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewTarget'
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
@@ -6006,6 +6163,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      includeTargets:
+        type: boolean
+        title: Optional. If true, includes target values in the response for measures that have targets configured
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -6021,6 +6181,12 @@ definitions:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
         title: Not optional, not null
+      targets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewTargetValue'
+        title: Target values for measures that have targets configured
   v1MetricsViewToplistRequest:
     type: object
     properties:

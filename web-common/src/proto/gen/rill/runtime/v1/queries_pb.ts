@@ -1086,6 +1086,13 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    */
   rows = false;
 
+  /**
+   * Optional. If true, includes target values in the response for measures that have targets configured
+   *
+   * @generated from field: bool include_targets = 23;
+   */
+  includeTargets = false;
+
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1116,6 +1123,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "fill_missing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "rows", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "include_targets", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {
@@ -1153,6 +1161,13 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
    */
   data: Struct[] = [];
 
+  /**
+   * Target values for measures that have targets configured
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewTargetValue targets = 3;
+   */
+  targets: MetricsViewTargetValue[] = [];
+
   constructor(data?: PartialMessage<MetricsViewAggregationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1163,6 +1178,7 @@ export class MetricsViewAggregationResponse extends Message<MetricsViewAggregati
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "schema", kind: "message", T: StructType },
     { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 3, name: "targets", kind: "message", T: MetricsViewTargetValue, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationResponse {
@@ -2511,6 +2527,13 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    */
   timeDimension = "";
 
+  /**
+   * Optional. If true, includes target values in the response for measures that have targets configured
+   *
+   * @generated from field: bool include_targets = 17;
+   */
+  includeTargets = false;
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2533,6 +2556,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 15, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "include_targets", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesRequest {
@@ -2570,6 +2594,13 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
    */
   data: TimeSeriesValue[] = [];
 
+  /**
+   * Target values for measures that have targets configured
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewTargetValue targets = 3;
+   */
+  targets: MetricsViewTargetValue[] = [];
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2580,6 +2611,7 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
     { no: 2, name: "data", kind: "message", T: TimeSeriesValue, repeated: true },
+    { no: 3, name: "targets", kind: "message", T: MetricsViewTargetValue, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesResponse {
@@ -3829,6 +3861,287 @@ export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotation
 
   static equals(a: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined, b: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined): boolean {
     return proto3.util.equals(MetricsViewAnnotationsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTargetsRequest
+ */
+export class MetricsViewTargetsRequest extends Message<MetricsViewTargetsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view = 2;
+   */
+  metricsView = "";
+
+  /**
+   * Optional: filter by measure name
+   *
+   * @generated from field: repeated string measures = 3;
+   */
+  measures: string[] = [];
+
+  /**
+   * Optional: filter by target name (identifier)
+   *
+   * @generated from field: string target = 4;
+   */
+  target = "";
+
+  /**
+   * Optional: time range filter
+   *
+   * @generated from field: rill.runtime.v1.TimeRange time_range = 5;
+   */
+  timeRange?: TimeRange;
+
+  /**
+   * Optional: time grain to filter targets (only targets with grain <= this grain will be returned)
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Optional
+   *
+   * @generated from field: int32 priority = 7;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewTargetsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTargetsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "target", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_range", kind: "message", T: TimeRange },
+    { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 7, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTargetsRequest {
+    return new MetricsViewTargetsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTargetsRequest {
+    return new MetricsViewTargetsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTargetsRequest {
+    return new MetricsViewTargetsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTargetsRequest | PlainMessage<MetricsViewTargetsRequest> | undefined, b: MetricsViewTargetsRequest | PlainMessage<MetricsViewTargetsRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTargetsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTargetsResponse
+ */
+export class MetricsViewTargetsResponse extends Message<MetricsViewTargetsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewTarget targets = 1;
+   */
+  targets: MetricsViewTarget[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewTargetsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTargetsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "targets", kind: "message", T: MetricsViewTarget, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTargetsResponse {
+    return new MetricsViewTargetsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTargetsResponse {
+    return new MetricsViewTargetsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTargetsResponse {
+    return new MetricsViewTargetsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTargetsResponse | PlainMessage<MetricsViewTargetsResponse> | undefined, b: MetricsViewTargetsResponse | PlainMessage<MetricsViewTargetsResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTargetsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTarget
+ */
+export class MetricsViewTarget extends Message<MetricsViewTarget> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: repeated string measures = 2;
+   */
+  measures: string[] = [];
+
+  /**
+   * Available targets for this target definition
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewTargetInfo targets = 3;
+   */
+  targets: MetricsViewTargetInfo[] = [];
+
+  /**
+   * Target table rows
+   *
+   * @generated from field: repeated google.protobuf.Struct data = 4;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewTarget>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTarget";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "targets", kind: "message", T: MetricsViewTargetInfo, repeated: true },
+    { no: 4, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTarget {
+    return new MetricsViewTarget().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTarget {
+    return new MetricsViewTarget().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTarget {
+    return new MetricsViewTarget().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTarget | PlainMessage<MetricsViewTarget> | undefined, b: MetricsViewTarget | PlainMessage<MetricsViewTarget> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTarget, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTargetInfo
+ */
+export class MetricsViewTargetInfo extends Message<MetricsViewTargetInfo> {
+  /**
+   * Target identifier (e.g., "budget_2025")
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Target display name (e.g., "Budget 2025")
+   *
+   * @generated from field: string target_name = 2;
+   */
+  targetName = "";
+
+  constructor(data?: PartialMessage<MetricsViewTargetInfo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTargetInfo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "target_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTargetInfo {
+    return new MetricsViewTargetInfo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTargetInfo {
+    return new MetricsViewTargetInfo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTargetInfo {
+    return new MetricsViewTargetInfo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTargetInfo | PlainMessage<MetricsViewTargetInfo> | undefined, b: MetricsViewTargetInfo | PlainMessage<MetricsViewTargetInfo> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTargetInfo, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTargetValue
+ */
+export class MetricsViewTargetValue extends Message<MetricsViewTargetValue> {
+  /**
+   * Measure name this target applies to
+   *
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  /**
+   * Target information (required)
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewTargetInfo target = 2;
+   */
+  target?: MetricsViewTargetInfo;
+
+  /**
+   * Target value(s) matching the query dimensions/time
+   *
+   * @generated from field: repeated google.protobuf.Struct values = 3;
+   */
+  values: Struct[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewTargetValue>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTargetValue";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "target", kind: "message", T: MetricsViewTargetInfo },
+    { no: 3, name: "values", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTargetValue {
+    return new MetricsViewTargetValue().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTargetValue {
+    return new MetricsViewTargetValue().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTargetValue {
+    return new MetricsViewTargetValue().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTargetValue | PlainMessage<MetricsViewTargetValue> | undefined, b: MetricsViewTargetValue | PlainMessage<MetricsViewTargetValue> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTargetValue, a, b);
   }
 }
 

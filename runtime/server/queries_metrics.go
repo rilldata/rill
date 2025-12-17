@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -76,6 +77,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
+		IncludeTargets:      req.IncludeTargets,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -236,6 +238,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		Filter:          req.Filter,
 		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
+		IncludeTargets:  req.IncludeTargets,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -638,6 +641,191 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 	return &runtimev1.MetricsViewAnnotationsResponse{
 		Rows: rows,
 	}, nil
+}
+
+func (s *Server) MetricsViewTargets(ctx context.Context, req *runtimev1.MetricsViewTargetsRequest) (*runtimev1.MetricsViewTargetsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsView),
+		attribute.String("args.measures", strings.Join(req.Measures, ",")),
+		attribute.String("args.target", req.Target),
+	)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	qry := metricsview.TargetsQuery{
+		MetricsView: req.MetricsView,
+		Measures:    req.Measures,
+		Target:      req.Target,
+		TimeZone:    "",
+		TimeGrain:   metricsview.TimeGrainFromProto(req.TimeGrain),
+		Priority:    int(req.Priority),
+	}
+
+	if req.TimeRange != nil {
+		qry.TimeRange = &metricsview.TimeRange{
+			Start:         req.TimeRange.Start.AsTime(),
+			End:           req.TimeRange.End.AsTime(),
+			Expression:    req.TimeRange.Expression,
+			IsoDuration:   req.TimeRange.IsoDuration,
+			IsoOffset:     req.TimeRange.IsoOffset,
+			RoundToGrain:  metricsview.TimeGrainFromProto(req.TimeRange.RoundToGrain),
+			TimeDimension: req.TimeRange.TimeDimension,
+		}
+	}
+
+	props, err := qry.AsMap()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         req.InstanceId,
+		Resolver:           "metrics_targets",
+		ResolverProperties: props,
+		Claims:             claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	// Get metrics view to access target definitions
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsView)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group rows by target
+	targetsMap := make(map[string]*runtimev1.MetricsViewTarget)
+	targetInfoMap := make(map[string]map[string]bool) // target name -> target identifier -> exists
+
+	for {
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+
+		// Find which target this row belongs to by checking measures
+		var targetName string
+		forMeasures, ok := row["for_measures"].([]string)
+		if !ok || len(forMeasures) == 0 {
+			continue
+		}
+
+		// Find target that matches the measures
+		for _, target := range mv.ValidSpec.Targets {
+			for _, targetMeasure := range target.Measures {
+				for _, rowMeasure := range forMeasures {
+					if targetMeasure == rowMeasure {
+						targetName = target.Name
+						break
+					}
+				}
+				if targetName != "" {
+					break
+				}
+			}
+			if targetName != "" {
+				break
+			}
+		}
+
+		if targetName == "" {
+			continue
+		}
+
+		target, ok := targetsMap[targetName]
+		if !ok {
+			target = &runtimev1.MetricsViewTarget{
+				Name:     targetName,
+				Measures: []string{},
+				Targets:  []*runtimev1.MetricsViewTargetInfo{},
+				Data:     []*structpb.Struct{},
+			}
+			targetsMap[targetName] = target
+			targetInfoMap[targetName] = make(map[string]bool)
+		}
+
+		// Extract target identifier
+		targetIdentifier, ok := row["target"].(string)
+		if !ok {
+			continue
+		}
+
+		// Add target info to list if not already present
+		if !targetInfoMap[targetName][targetIdentifier] {
+			targetDisplayName := targetIdentifier
+			if dn, ok := row["target_name"].(string); ok && dn != "" {
+				targetDisplayName = dn
+			}
+			target.Targets = append(target.Targets, &runtimev1.MetricsViewTargetInfo{
+				Name:      targetIdentifier,
+				TargetName: targetDisplayName,
+			})
+			targetInfoMap[targetName][targetIdentifier] = true
+		}
+
+		// Extract measures
+		if forMeasuresVal, ok := row["for_measures"]; ok {
+			var forMeasures []string
+			switch v := forMeasuresVal.(type) {
+			case []string:
+				forMeasures = v
+			case []interface{}:
+				forMeasures = make([]string, 0, len(v))
+				for _, item := range v {
+					if s, ok := item.(string); ok {
+						forMeasures = append(forMeasures, s)
+					}
+				}
+			}
+			for _, m := range forMeasures {
+				if !contains(target.Measures, m) {
+					target.Measures = append(target.Measures, m)
+				}
+			}
+		}
+
+		// Convert row to structpb.Struct (excluding for_measures)
+		structRow := make(map[string]any)
+		for k, v := range row {
+			if k != "for_measures" {
+				structRow[k] = v
+			}
+		}
+		st, err := pbutil.ToStruct(structRow, res.Schema())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		target.Data = append(target.Data, st)
+	}
+
+	// Convert map to slice
+	targets := make([]*runtimev1.MetricsViewTarget, 0, len(targetsMap))
+	for _, target := range targetsMap {
+		targets = append(targets, target)
+	}
+
+	return &runtimev1.MetricsViewTargetsResponse{
+		Targets: targets,
+	}, nil
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
 type annotation struct {
