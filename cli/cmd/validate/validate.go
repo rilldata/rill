@@ -270,10 +270,6 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat pri
 		}
 	}
 
-	// Print summary in the end
-	if result.Summary.ParseErrors+result.Summary.ReconcileErrors > 0 {
-		return fmt.Errorf("validation failed: %d error(s) (%d parse, %d reconcile)", result.Summary.ParseErrors+result.Summary.ReconcileErrors, result.Summary.ParseErrors, result.Summary.ReconcileErrors)
-	}
 	timeout := false
 	for _, res := range result.Resources {
 		if res.Timeout {
@@ -283,6 +279,11 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat pri
 	}
 	if timeout {
 		return fmt.Errorf("validation timed out for one or more models, check individual resource status to see which; if a model processes full data, consider adding an explicit dev partition or rerun with --model-timeout-seconds to allow more time")
+	}
+
+	// Print summary in the end
+	if result.Summary.ParseErrors+result.Summary.ReconcileErrors > 0 {
+		return fmt.Errorf("validation failed: %d error(s) (%d parse, %d reconcile)", result.Summary.ParseErrors+result.Summary.ReconcileErrors, result.Summary.ParseErrors, result.Summary.ReconcileErrors)
 	}
 
 	ch.PrintfSuccess("Validation completed successfully\n")
