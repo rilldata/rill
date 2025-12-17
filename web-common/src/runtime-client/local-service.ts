@@ -19,6 +19,8 @@ import {
   GitPullRequest,
   GitPushRequest,
   GithubRepoStatusRequest,
+  PushEnvRequest,
+  PullEnvRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -541,4 +543,54 @@ export function createLocalServiceGetProjectRequest<
       queryOptions?.queryFn ??
       (() => localServiceGetProjectRequest(organizationName, name)),
   });
+}
+
+export function localServicePushEnv(args: PartialMessage<PushEnvRequest>) {
+  return getClient().pushEnv(new PushEnvRequest(args));
+}
+export function createLocalServicePushEnv<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServicePushEnv>>,
+      TError,
+      PartialMessage<PushEnvRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServicePushEnv>>,
+    TError,
+    PartialMessage<PushEnvRequest>,
+    unknown
+  >({ mutationFn: localServicePushEnv, ...mutationOptions });
+}
+
+export function localServicePullEnv(args: PartialMessage<PullEnvRequest>) {
+  return getClient().pullEnv(new PullEnvRequest(args));
+}
+export function createLocalServicePullEnv<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: Partial<
+    CreateMutationOptions<
+      Awaited<ReturnType<typeof localServicePullEnv>>,
+      TError,
+      PartialMessage<PullEnvRequest>,
+      TContext
+    >
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServicePullEnv>>,
+    TError,
+    PartialMessage<PullEnvRequest>,
+    unknown
+  >({ mutationFn: localServicePullEnv, ...mutationOptions });
 }

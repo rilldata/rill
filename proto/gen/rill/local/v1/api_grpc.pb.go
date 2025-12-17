@@ -36,6 +36,8 @@ const (
 	LocalService_ListMatchingProjects_FullMethodName                = "/rill.local.v1.LocalService/ListMatchingProjects"
 	LocalService_ListProjectsForOrg_FullMethodName                  = "/rill.local.v1.LocalService/ListProjectsForOrg"
 	LocalService_GetProject_FullMethodName                          = "/rill.local.v1.LocalService/GetProject"
+	LocalService_PullEnv_FullMethodName                             = "/rill.local.v1.LocalService/PullEnv"
+	LocalService_PushEnv_FullMethodName                             = "/rill.local.v1.LocalService/PushEnv"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -81,6 +83,10 @@ type LocalServiceClient interface {
 	ListProjectsForOrg(ctx context.Context, in *ListProjectsForOrgRequest, opts ...grpc.CallOption) (*ListProjectsForOrgResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// PullEnv pulls environment variables from cloud to local .env file
+	PullEnv(ctx context.Context, in *PullEnvRequest, opts ...grpc.CallOption) (*PullEnvResponse, error)
+	// PushEnv pushes local environment variables to cloud
+	PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error)
 }
 
 type localServiceClient struct {
@@ -261,6 +267,26 @@ func (c *localServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 	return out, nil
 }
 
+func (c *localServiceClient) PullEnv(ctx context.Context, in *PullEnvRequest, opts ...grpc.CallOption) (*PullEnvResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PullEnvResponse)
+	err := c.cc.Invoke(ctx, LocalService_PullEnv_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) PushEnv(ctx context.Context, in *PushEnvRequest, opts ...grpc.CallOption) (*PushEnvResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PushEnvResponse)
+	err := c.cc.Invoke(ctx, LocalService_PushEnv_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility.
@@ -304,6 +330,10 @@ type LocalServiceServer interface {
 	ListProjectsForOrg(context.Context, *ListProjectsForOrgRequest) (*ListProjectsForOrgResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// PullEnv pulls environment variables from cloud to local .env file
+	PullEnv(context.Context, *PullEnvRequest) (*PullEnvResponse, error)
+	// PushEnv pushes local environment variables to cloud
+	PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -364,6 +394,12 @@ func (UnimplementedLocalServiceServer) ListProjectsForOrg(context.Context, *List
 }
 func (UnimplementedLocalServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedLocalServiceServer) PullEnv(context.Context, *PullEnvRequest) (*PullEnvResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PullEnv not implemented")
+}
+func (UnimplementedLocalServiceServer) PushEnv(context.Context, *PushEnvRequest) (*PushEnvResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushEnv not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 func (UnimplementedLocalServiceServer) testEmbeddedByValue()                      {}
@@ -692,6 +728,42 @@ func _LocalService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_PullEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PullEnvRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).PullEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_PullEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).PullEnv(ctx, req.(*PullEnvRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_PushEnv_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushEnvRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).PushEnv(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_PushEnv_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).PushEnv(ctx, req.(*PushEnvRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -766,6 +838,14 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProject",
 			Handler:    _LocalService_GetProject_Handler,
+		},
+		{
+			MethodName: "PullEnv",
+			Handler:    _LocalService_PullEnv_Handler,
+		},
+		{
+			MethodName: "PushEnv",
+			Handler:    _LocalService_PushEnv_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

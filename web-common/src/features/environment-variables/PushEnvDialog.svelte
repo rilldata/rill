@@ -9,24 +9,59 @@
     DialogTitle,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
-  import { Copy, CheckIcon } from "lucide-svelte";
   import type { EnvVariable } from "./types";
+  import {
+    createLocalServicePushEnv,
+    createLocalServiceGetCurrentProject,
+  } from "@rilldata/web-common/runtime-client/local-service";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { get } from "svelte/store";
 
   export let open = false;
   export let currentVariables: EnvVariable[] = [];
+  export let onSuccess: (() => void) | undefined = undefined;
 
-  let copied = false;
-  let copiedTimeout: ReturnType<typeof setTimeout>;
+  const currentProjectQuery = createLocalServiceGetCurrentProject();
+  const pushEnvMutation = createLocalServicePushEnv();
 
-  const pushCommand = "rill env push";
+  $: isPending = $pushEnvMutation.isPending;
+  $: error = $pushEnvMutation.error;
 
-  function handleCopyCommand() {
-    navigator.clipboard.writeText(pushCommand);
-    copied = true;
-    clearTimeout(copiedTimeout);
-    copiedTimeout = setTimeout(() => {
-      copied = false;
-    }, 2000);
+  async function handlePush() {
+    const currentProject = get(currentProjectQuery).data;
+    const project = currentProject?.project;
+
+    // Try to get project info, but allow backend to infer if not available
+    const orgName = project?.orgName ?? "";
+    const projectName = project?.name ?? "";
+
+    try {
+      const result = await $pushEnvMutation.mutateAsync({
+        org: orgName,
+        project: projectName,
+        environment: "", // Empty for both environments
+      });
+
+      const addedCount = result.addedCount ?? 0;
+      const changedCount = result.changedCount ?? 0;
+
+      if (addedCount === 0 && changedCount === 0) {
+        eventBus.emit("notification", {
+          message: "No changes to push. Local .env file is already up to date.",
+        });
+      } else {
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Successfully pushed ${addedCount} new and ${changedCount} changed variable(s) to Rill Cloud.`,
+        });
+      }
+
+      open = false;
+      onSuccess?.();
+    } catch (err) {
+      // Error is already handled by the mutation
+      console.error("Failed to push environment variables:", err);
+    }
   }
 </script>
 
@@ -41,29 +76,73 @@
         Push your local .env file variables to your Rill Cloud project.
       </DialogDescription>
     </DialogHeader>
-    <div class="py-4 space-y-4">
-      <div class="relative">
-        <div
-          class="bg-gray-50 border border-gray-200 rounded-md p-3 pr-12 font-mono text-sm"
-        >
-          {pushCommand}
-        </div>
-        <button
-          class="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded transition-colors"
-          on:click={handleCopyCommand}
-          aria-label="Copy command"
-        >
-          {#if copied}
-            <CheckIcon size="16px" class="text-green-600" />
-          {:else}
-            <Copy size="16px" class="text-gray-600" />
-          {/if}
-        </button>
-      </div>
-    </div>
+    <div class="space-y-4">
+      <p class="text-sm text-gray-700">
+        Push your local .env file variables to your Rill Cloud project. This
+        will merge your local variables with cloud variables.
+      </p>
 
+      {#if !$currentProjectQuery.data?.project}
+        <div
+          class="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800"
+        >
+          <p class="font-medium mb-1">Note</p>
+          <p>
+            Project will be inferred from your Git remote. Make sure your
+            project is deployed to Rill Cloud.
+          </p>
+        </div>
+      {/if}
+
+      {#if error}
+        <div
+          class="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800"
+        >
+          <p class="font-medium mb-1">Error</p>
+          <p>{error?.message || "Failed to push environment variables"}</p>
+        </div>
+      {/if}
+
+      <div
+        class="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800"
+      >
+        <p class="font-medium mb-1">Note</p>
+        <p>
+          This will merge your local variables with cloud variables. Variables
+          that exist in both will be updated with your local values.
+        </p>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        You currently have <strong>{currentVariables.length}</strong>
+        variable{currentVariables.length === 1 ? "" : "s"} in your local .env file.
+      </p>
+
+      <p class="text-xs text-gray-500">
+        For more information see our{" "}
+        <a
+          href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-blue-600 hover:underline"
+        >
+          environment variables documentation
+        </a>
+        .
+      </p>
+    </div>
     <DialogFooter>
-      <Button type="plain" onClick={() => (open = false)}>Close</Button>
+      <Button type="plain" onClick={() => (open = false)} disabled={isPending}>
+        Cancel
+      </Button>
+      <Button
+        type="primary"
+        onClick={handlePush}
+        disabled={isPending}
+        loading={isPending}
+      >
+        Push to Rill Cloud
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

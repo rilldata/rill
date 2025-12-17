@@ -78,6 +78,10 @@ const (
 	LocalServiceListProjectsForOrgProcedure = "/rill.local.v1.LocalService/ListProjectsForOrg"
 	// LocalServiceGetProjectProcedure is the fully-qualified name of the LocalService's GetProject RPC.
 	LocalServiceGetProjectProcedure = "/rill.local.v1.LocalService/GetProject"
+	// LocalServicePullEnvProcedure is the fully-qualified name of the LocalService's PullEnv RPC.
+	LocalServicePullEnvProcedure = "/rill.local.v1.LocalService/PullEnv"
+	// LocalServicePushEnvProcedure is the fully-qualified name of the LocalService's PushEnv RPC.
+	LocalServicePushEnvProcedure = "/rill.local.v1.LocalService/PushEnv"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -100,6 +104,8 @@ var (
 	localServiceListMatchingProjectsMethodDescriptor                = localServiceServiceDescriptor.Methods().ByName("ListMatchingProjects")
 	localServiceListProjectsForOrgMethodDescriptor                  = localServiceServiceDescriptor.Methods().ByName("ListProjectsForOrg")
 	localServiceGetProjectMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetProject")
+	localServicePullEnvMethodDescriptor                             = localServiceServiceDescriptor.Methods().ByName("PullEnv")
+	localServicePushEnvMethodDescriptor                             = localServiceServiceDescriptor.Methods().ByName("PushEnv")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -143,6 +149,10 @@ type LocalServiceClient interface {
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
+	// PullEnv pulls environment variables from cloud to local .env file
+	PullEnv(context.Context, *connect.Request[v1.PullEnvRequest]) (*connect.Response[v1.PullEnvResponse], error)
+	// PushEnv pushes local environment variables to cloud
+	PushEnv(context.Context, *connect.Request[v1.PushEnvRequest]) (*connect.Response[v1.PushEnvResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -257,6 +267,18 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetProjectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		pullEnv: connect.NewClient[v1.PullEnvRequest, v1.PullEnvResponse](
+			httpClient,
+			baseURL+LocalServicePullEnvProcedure,
+			connect.WithSchema(localServicePullEnvMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		pushEnv: connect.NewClient[v1.PushEnvRequest, v1.PushEnvResponse](
+			httpClient,
+			baseURL+LocalServicePushEnvProcedure,
+			connect.WithSchema(localServicePushEnvMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -279,6 +301,8 @@ type localServiceClient struct {
 	listMatchingProjects                *connect.Client[v1.ListMatchingProjectsRequest, v1.ListMatchingProjectsResponse]
 	listProjectsForOrg                  *connect.Client[v1.ListProjectsForOrgRequest, v1.ListProjectsForOrgResponse]
 	getProject                          *connect.Client[v1.GetProjectRequest, v1.GetProjectResponse]
+	pullEnv                             *connect.Client[v1.PullEnvRequest, v1.PullEnvResponse]
+	pushEnv                             *connect.Client[v1.PushEnvRequest, v1.PushEnvResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -367,6 +391,16 @@ func (c *localServiceClient) GetProject(ctx context.Context, req *connect.Reques
 	return c.getProject.CallUnary(ctx, req)
 }
 
+// PullEnv calls rill.local.v1.LocalService.PullEnv.
+func (c *localServiceClient) PullEnv(ctx context.Context, req *connect.Request[v1.PullEnvRequest]) (*connect.Response[v1.PullEnvResponse], error) {
+	return c.pullEnv.CallUnary(ctx, req)
+}
+
+// PushEnv calls rill.local.v1.LocalService.PushEnv.
+func (c *localServiceClient) PushEnv(ctx context.Context, req *connect.Request[v1.PushEnvRequest]) (*connect.Response[v1.PushEnvResponse], error) {
+	return c.pushEnv.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -408,6 +442,10 @@ type LocalServiceHandler interface {
 	ListProjectsForOrg(context.Context, *connect.Request[v1.ListProjectsForOrgRequest]) (*connect.Response[v1.ListProjectsForOrgResponse], error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error)
+	// PullEnv pulls environment variables from cloud to local .env file
+	PullEnv(context.Context, *connect.Request[v1.PullEnvRequest]) (*connect.Response[v1.PullEnvResponse], error)
+	// PushEnv pushes local environment variables to cloud
+	PushEnv(context.Context, *connect.Request[v1.PushEnvRequest]) (*connect.Response[v1.PushEnvResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -518,6 +556,18 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetProjectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServicePullEnvHandler := connect.NewUnaryHandler(
+		LocalServicePullEnvProcedure,
+		svc.PullEnv,
+		connect.WithSchema(localServicePullEnvMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServicePushEnvHandler := connect.NewUnaryHandler(
+		LocalServicePushEnvProcedure,
+		svc.PushEnv,
+		connect.WithSchema(localServicePushEnvMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -554,6 +604,10 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceListProjectsForOrgHandler.ServeHTTP(w, r)
 		case LocalServiceGetProjectProcedure:
 			localServiceGetProjectHandler.ServeHTTP(w, r)
+		case LocalServicePullEnvProcedure:
+			localServicePullEnvHandler.ServeHTTP(w, r)
+		case LocalServicePushEnvProcedure:
+			localServicePushEnvHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -629,4 +683,12 @@ func (UnimplementedLocalServiceHandler) ListProjectsForOrg(context.Context, *con
 
 func (UnimplementedLocalServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.GetProjectResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetProject is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) PullEnv(context.Context, *connect.Request[v1.PullEnvRequest]) (*connect.Response[v1.PullEnvResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.PullEnv is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) PushEnv(context.Context, *connect.Request[v1.PushEnvRequest]) (*connect.Response[v1.PushEnvResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.PushEnv is not implemented"))
 }
