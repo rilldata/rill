@@ -1,5 +1,6 @@
 <script lang="ts">
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
+  import CopyShortcutTooltip from "@rilldata/web-common/components/tooltip/CopyShortcutTooltip.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
@@ -233,36 +234,44 @@
         cellInspectorStore.updateValue(dimensionValue.toString());
       }
     }}
-    class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
   >
-    <span class="truncate select-text">
-      <FormattedDataType value={dimensionValue} truncate />
-    </span>
+    <CopyShortcutTooltip
+      value={dimensionValue}
+      type="VARCHAR"
+      label="dimension value"
+      hideAfter={3000}
+    >
+      <div class="relative size-full flex flex-none justify-between items-center leaderboard-label">
+        <span class="truncate select-text">
+          <FormattedDataType value={dimensionValue} truncate />
+        </span>
 
-    {#if previousValueString && hovered}
-      <span
-        class="opacity-50 whitespace-nowrap font-normal"
-        transition:slide={{ axis: "x", duration: 200 }}
-      >
-        {previousValueString} →
-      </span>
-    {/if}
+        {#if previousValueString && hovered}
+          <span
+            class="opacity-50 whitespace-nowrap font-normal"
+            transition:slide={{ axis: "x", duration: 200 }}
+          >
+            {previousValueString} →
+          </span>
+        {/if}
 
-    {#if href}
-      <span class="external-link-wrapper">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          {href}
-          title={href}
-          on:click|stopPropagation
-          class:hovered
-        >
-          <ExternalLink className="fill-primary-600" />
-        </a>
-      </span>
-    {/if}
+        {#if href}
+          <span class="external-link-wrapper">
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              {href}
+              title={href}
+              on:click|stopPropagation
+              class:hovered
+            >
+              <ExternalLink className="fill-primary-600" />
+            </a>
+          </span>
+        {/if}
+      </div>
+    </CopyShortcutTooltip>
   </td>
 
   {#each Object.keys(values) as measureName}
@@ -289,18 +298,27 @@
         }
       }}
     >
-      <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
-        <FormattedDataType
-          type="INTEGER"
-          value={values[measureName]
-            ? formatters[measureName]?.(values[measureName])
-            : null}
-        />
-      </div>
+      <CopyShortcutTooltip
+        value={values[measureName]
+          ? formatters[measureName]?.(values[measureName])
+          : null}
+        type="INTEGER"
+        label={`${measureName} value`}
+        hideAfter={3000}
+      >
+        <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
+          <FormattedDataType
+            type="INTEGER"
+            value={values[measureName]
+              ? formatters[measureName]?.(values[measureName])
+              : null}
+          />
+        </div>
 
-      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
-        <LongBarZigZag />
-      {/if}
+        {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
+          <LongBarZigZag />
+        {/if}
+      </CopyShortcutTooltip>
     </td>
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
@@ -325,13 +343,20 @@
           }
         }}
       >
-        <PercentageChange
+        <CopyShortcutTooltip
           value={pctOfTotals[measureName]}
-          color="text-gray-500"
-        />
-        {#if showZigZags[measureName]}
-          <LongBarZigZag />
-        {/if}
+          type="RILL_PERCENTAGE_CHANGE"
+          label={`${measureName} percent of total`}
+          hideAfter={3000}
+        >
+          <PercentageChange
+            value={pctOfTotals[measureName]}
+            color="text-gray-500"
+          />
+          {#if showZigZags[measureName]}
+            <LongBarZigZag />
+          {/if}
+        </CopyShortcutTooltip>
       </td>
     {/if}
 
@@ -357,18 +382,27 @@
           }
         }}
       >
-        <FormattedDataType
-          color="text-gray-500"
-          type="INTEGER"
+        <CopyShortcutTooltip
           value={deltaAbsMap[measureName]
             ? formatters[measureName]?.(deltaAbsMap[measureName])
             : null}
-          customStyle={deltaAbsMap[measureName] !== null &&
-          deltaAbsMap[measureName] < 0
-            ? "text-red-500"
-            : ""}
-          truncate={true}
-        />
+          type="INTEGER"
+          label={`${measureName} delta`}
+          hideAfter={3000}
+        >
+          <FormattedDataType
+            color="text-gray-500"
+            type="INTEGER"
+            value={deltaAbsMap[measureName]
+              ? formatters[measureName]?.(deltaAbsMap[measureName])
+              : null}
+            customStyle={deltaAbsMap[measureName] !== null &&
+            deltaAbsMap[measureName] < 0
+              ? "text-red-500"
+              : ""}
+            truncate={true}
+          />
+        </CopyShortcutTooltip>
       </td>
     {/if}
 
@@ -392,15 +426,24 @@
           }
         }}
       >
-        <PercentageChange
+        <CopyShortcutTooltip
           value={deltaRels[measureName]
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
-          color="text-gray-500"
-        />
-        {#if showZigZags[measureName]}
-          <LongBarZigZag />
-        {/if}
+          type="RILL_PERCENTAGE_CHANGE"
+          label={`${measureName} delta %`}
+          hideAfter={3000}
+        >
+          <PercentageChange
+            value={deltaRels[measureName]
+              ? formatMeasurePercentageDifference(deltaRels[measureName])
+              : null}
+            color="text-gray-500"
+          />
+          {#if showZigZags[measureName]}
+            <LongBarZigZag />
+          {/if}
+        </CopyShortcutTooltip>
       </td>
     {/if}
   {/each}
