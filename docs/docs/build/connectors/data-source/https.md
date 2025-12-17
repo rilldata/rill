@@ -24,55 +24,18 @@ The connector supports downloading and processing various file formats:
 - **Parquet**: Columnar data format
 - **Other formats**: Any format supported by DuckDB's file readers
 
+## Using Public URLs
 
-## Create a HTTPS Connector
+For publicly accessible files, you don't need to create a connector. Simply use the URL directly in your source or model configuration.
 
-### Public URLs
-
-For publicly accessible files, you don't need to create a connector at all. Simply specify the URL directly in your source or model configuration. If you need to use a connector (for example, to set up path prefixes), you can create one without headers:
-
-```yaml
-type: connector
-driver: https
-# No headers needed for public endpoints
-```
-
-### Authenticated Endpoints
-
-If your endpoint requires authentication, create a `https` connector that includes your authentication credentials. The connector defines the headers that will be used when accessing HTTPS sources.
-
-When running Rill locally, you can store authentication credentials in your project's `.env` file:
-
-```bash
-connector.https.token=your_api_token_here
-```
-
-Reference these credentials in your connector configuration using template variables:
-
-```yaml
-type: connector 
-driver: https 
-
-headers:
-    Authorization: "Bearer {{ .env.connector.https.token }}"
-```
-:::note
-
-For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
-
-:::
-
-
-## Create an HTTPS Source Model
-
-### Option 1: Using the Rill UI
+### Using the UI
 
 1. In the left navigation pane, click the **"Add"** button and select data
 2. Select **"HTTPS"** from the connector options
 3. Enter your file's URL (e.g., `https://example.com/data.csv`)
 4. Click **"Add Data"**
 
-### Option 2: Using Code
+### Using Code
 
 Create a model that reads directly from an HTTPS URL:
 
@@ -97,6 +60,68 @@ connector: duckdb
 sql: |
   select * from read_json('https://api.example.com/data.json', auto_detect=true)
 ```
+
+---
+
+## Using Authenticated Endpoints
+
+If your endpoint requires authentication, you need to follow a two-step process:
+
+1. **Create a connector** - Configure your HTTPS connector with authentication credentials
+2. **Create a source model** - Define which URL to ingest using the connector
+
+This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
+
+### Using the UI
+
+When you add an HTTPS data model through the Rill UI for authenticated endpoints, the process follows two steps:
+
+1. **Configure Authentication** - Set up your HTTPS connector with authentication headers
+2. **Configure Data Model** - Define which URL to ingest
+
+The UI will automatically create both the connector file and model file for you.
+
+### Manual Configuration
+
+If you prefer to configure manually, create two files:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/my_https.yaml`:
+
+```yaml
+type: connector 
+driver: https 
+
+headers:
+    Authorization: "Bearer {{ .env.connector.https.token }}"
+```
+
+**Step 2: Create model configuration**
+
+Create `models/my_https_data.yaml`:
+
+```yaml
+type: model
+materialize: true
+
+connector: duckdb
+
+sql: |
+  select * from read_csv('https://api.example.com/data.csv', auto_detect=true, ignore_errors=1, header=true)
+```
+
+**Step 3: Add credentials to `.env`**
+
+```bash
+connector.https.token=your_api_token_here
+```
+
+:::note
+For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
+:::
+
+---
 
 ## Best Practices
 
