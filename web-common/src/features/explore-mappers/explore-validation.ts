@@ -39,6 +39,9 @@ export function useExploreAvailability(
     return {
       isAvailable: true,
       exploreName: selectedDashboard?.meta?.name?.name,
+      displayName:
+        selectedDashboard?.explore?.spec?.displayName ||
+        selectedDashboard?.explore?.state?.validSpec?.displayName,
     };
   });
 }

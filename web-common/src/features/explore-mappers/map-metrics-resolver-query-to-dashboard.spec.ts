@@ -10,7 +10,6 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_PUBLISHER_DIMENSION,
-  AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
@@ -250,7 +249,6 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         mapMetricsResolverQueryToDashboard(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
           query,
         ),
       ).toEqual(expectedPartialExplore);
