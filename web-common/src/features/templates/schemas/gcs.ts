@@ -1,4 +1,4 @@
-import type { MultiStepFormSchema } from "../types";
+import type { MultiStepFormSchema } from "./types";
 
 export const gcsSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
