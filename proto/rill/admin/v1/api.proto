@@ -405,6 +405,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
   }
 
+  // ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+  rpc ListUsergroupsForProjectAndUser(ListUsergroupsForProjectAndUserRequest) returns (ListUsergroupsForProjectAndUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}/usergroups"};
+  }
+
   // UpdateOrganizationMemberUserAttributes updates the attributes for a member
   rpc UpdateOrganizationMemberUserAttributes(UpdateOrganizationMemberUserAttributesRequest) returns (UpdateOrganizationMemberUserAttributesResponse) {
     option (google.api.http) = {
@@ -442,6 +447,11 @@ service AdminService {
       put: "/v1/orgs/{org}/projects/{project}/members/{email}",
       body: "*"
     };
+  }
+
+  // GetProjectMemberUser gets the member details
+  rpc GetProjectMemberUser(GetProjectMemberUserRequest) returns (GetProjectMemberUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members/{email}"};
   }
 
   // ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -1810,6 +1820,26 @@ message GetOrganizationMemberUserResponse {
   OrganizationMemberUser member = 1;
 }
 
+message GetProjectMemberUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message GetProjectMemberUserResponse {
+  ProjectMemberUser member = 1;
+}
+
+message ListUsergroupsForProjectAndUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.min_len = 1];
+}
+
+message ListUsergroupsForProjectAndUserResponse {
+  repeated MemberUsergroup usergroups = 1;
+}
+
 message UpdateOrganizationMemberUserAttributesRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
@@ -1964,6 +1994,8 @@ message AddProjectMemberUserRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
   string role = 4 [(validate.rules).string.min_len = 1];
+  optional bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message AddProjectMemberUserResponse {
@@ -1982,7 +2014,9 @@ message SetProjectMemberUserRoleRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
-  string role = 4 [(validate.rules).string.min_len = 1];
+  optional string role = 4 [(validate.rules).string.min_len = 1];
+  optional bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message SetProjectMemberUserRoleResponse {}
@@ -2098,6 +2132,8 @@ message AddProjectMemberUsergroupRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
+  optional bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message AddProjectMemberUsergroupResponse {}
@@ -2106,7 +2142,9 @@ message SetProjectMemberUsergroupRoleRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
-  string role = 4 [(validate.rules).string.min_len = 1];
+  optional string role = 4 [(validate.rules).string.min_len = 1];
+  optional bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message SetProjectMemberUsergroupRoleResponse {}
@@ -3136,6 +3174,8 @@ message ProjectMemberUser {
   string org_role_name = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+  bool restrict_resources = 9;
+  repeated ResourceName resources = 10;
 }
 
 message UsergroupMemberUser {
@@ -3158,6 +3198,8 @@ message ProjectInvite {
   string role_name = 2;
   string org_role_name = 4;
   string invited_by = 3;
+  bool restrict_resources = 5;
+  repeated ResourceName resources = 6;
 }
 
 message WhitelistedDomain {
@@ -3326,6 +3368,8 @@ message MemberUsergroup {
   uint32 users_count = 7;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
+  bool restrict_resources = 8;
+  repeated ResourceName resources = 9;
 }
 
 enum BillingIssueType {

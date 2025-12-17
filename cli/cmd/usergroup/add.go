@@ -13,6 +13,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var role string
 	var groupName string
+	var explores []string
+	var canvases []string
+	var restrictResources bool
 
 	addCmd := &cobra.Command{
 		Use:   "add",
@@ -34,27 +37,41 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
+				resources, err := cmdutil.ParseResourceStrings(explores, canvases)
+				if err != nil {
+					return err
+				}
+				if len(resources) > 0 {
+					restrictResources = true
+				}
+
 				_, err = client.AddProjectMemberUsergroup(cmd.Context(), &adminv1.AddProjectMemberUsergroupRequest{
-					Org:       ch.Org,
-					Project:   projectName,
-					Usergroup: groupName,
-					Role:      role,
+					Org:               ch.Org,
+					Project:           projectName,
+					Usergroup:         groupName,
+					Role:              role,
+					Resources:         resources,
+					RestrictResources: &restrictResources,
 				})
 				if err != nil {
 					return err
 				}
 				ch.PrintfSuccess("Role %q added to user group %q in project %q\n", role, groupName, projectName)
-			} else {
-				_, err = client.AddOrganizationMemberUsergroup(cmd.Context(), &adminv1.AddOrganizationMemberUsergroupRequest{
-					Org:       ch.Org,
-					Usergroup: groupName,
-					Role:      role,
-				})
-				if err != nil {
-					return err
-				}
-				ch.PrintfSuccess("Role %q added to user group %q in organization %q\n", role, groupName, ch.Org)
+				return nil
 			}
+
+			if len(explores) > 0 || len(canvases) > 0 || restrictResources {
+				return fmt.Errorf("resource restrictions can only be set when adding a user group to a project")
+			}
+			_, err = client.AddOrganizationMemberUsergroup(cmd.Context(), &adminv1.AddOrganizationMemberUsergroupRequest{
+				Org:       ch.Org,
+				Usergroup: groupName,
+				Role:      role,
+			})
+			if err != nil {
+				return err
+			}
+			ch.PrintfSuccess("Role %q added to user group %q in organization %q\n", role, groupName, ch.Org)
 
 			return nil
 		},
@@ -64,6 +81,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	addCmd.Flags().StringVar(&groupName, "group", "", "User group")
 	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user group (options: %s)", strings.Join(usergroupRoles, ", ")))
+	addCmd.Flags().StringArrayVar(&explores, "explore", nil, "Explore resource to restrict to (repeat for multiple)")
+	addCmd.Flags().StringArrayVar(&canvases, "canvas", nil, "Canvas resource to restrict to (repeat for multiple)")
+	addCmd.Flags().BoolVar(&restrictResources, "restrict-resources", false, "Restrict the user group to provided resources (defaults to true when resources are provided)")
 
 	return addCmd
 }

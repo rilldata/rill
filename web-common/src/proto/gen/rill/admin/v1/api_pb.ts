@@ -5337,6 +5337,178 @@ export class GetOrganizationMemberUserResponse extends Message<GetOrganizationMe
 }
 
 /**
+ * @generated from message rill.admin.v1.GetProjectMemberUserRequest
+ */
+export class GetProjectMemberUserRequest extends Message<GetProjectMemberUserRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string email = 3;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<GetProjectMemberUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectMemberUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectMemberUserRequest {
+    return new GetProjectMemberUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectMemberUserRequest {
+    return new GetProjectMemberUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectMemberUserRequest {
+    return new GetProjectMemberUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectMemberUserRequest | PlainMessage<GetProjectMemberUserRequest> | undefined, b: GetProjectMemberUserRequest | PlainMessage<GetProjectMemberUserRequest> | undefined): boolean {
+    return proto3.util.equals(GetProjectMemberUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetProjectMemberUserResponse
+ */
+export class GetProjectMemberUserResponse extends Message<GetProjectMemberUserResponse> {
+  /**
+   * @generated from field: rill.admin.v1.ProjectMemberUser member = 1;
+   */
+  member?: ProjectMemberUser;
+
+  constructor(data?: PartialMessage<GetProjectMemberUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectMemberUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "member", kind: "message", T: ProjectMemberUser },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectMemberUserResponse {
+    return new GetProjectMemberUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectMemberUserResponse {
+    return new GetProjectMemberUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectMemberUserResponse {
+    return new GetProjectMemberUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectMemberUserResponse | PlainMessage<GetProjectMemberUserResponse> | undefined, b: GetProjectMemberUserResponse | PlainMessage<GetProjectMemberUserResponse> | undefined): boolean {
+    return proto3.util.equals(GetProjectMemberUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListUsergroupsForProjectAndUserRequest
+ */
+export class ListUsergroupsForProjectAndUserRequest extends Message<ListUsergroupsForProjectAndUserRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string email = 3;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<ListUsergroupsForProjectAndUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListUsergroupsForProjectAndUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupsForProjectAndUserRequest {
+    return new ListUsergroupsForProjectAndUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsergroupsForProjectAndUserRequest {
+    return new ListUsergroupsForProjectAndUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsergroupsForProjectAndUserRequest {
+    return new ListUsergroupsForProjectAndUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListUsergroupsForProjectAndUserRequest | PlainMessage<ListUsergroupsForProjectAndUserRequest> | undefined, b: ListUsergroupsForProjectAndUserRequest | PlainMessage<ListUsergroupsForProjectAndUserRequest> | undefined): boolean {
+    return proto3.util.equals(ListUsergroupsForProjectAndUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListUsergroupsForProjectAndUserResponse
+ */
+export class ListUsergroupsForProjectAndUserResponse extends Message<ListUsergroupsForProjectAndUserResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.MemberUsergroup usergroups = 1;
+   */
+  usergroups: MemberUsergroup[] = [];
+
+  constructor(data?: PartialMessage<ListUsergroupsForProjectAndUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListUsergroupsForProjectAndUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "usergroups", kind: "message", T: MemberUsergroup, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupsForProjectAndUserResponse {
+    return new ListUsergroupsForProjectAndUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListUsergroupsForProjectAndUserResponse {
+    return new ListUsergroupsForProjectAndUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListUsergroupsForProjectAndUserResponse {
+    return new ListUsergroupsForProjectAndUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListUsergroupsForProjectAndUserResponse | PlainMessage<ListUsergroupsForProjectAndUserResponse> | undefined, b: ListUsergroupsForProjectAndUserResponse | PlainMessage<ListUsergroupsForProjectAndUserResponse> | undefined): boolean {
+    return proto3.util.equals(ListUsergroupsForProjectAndUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.UpdateOrganizationMemberUserAttributesRequest
  */
 export class UpdateOrganizationMemberUserAttributesRequest extends Message<UpdateOrganizationMemberUserAttributesRequest> {
@@ -6678,6 +6850,16 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
    */
   role = "";
 
+  /**
+   * @generated from field: optional bool restrict_resources = 5;
+   */
+  restrictResources?: boolean;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6690,6 +6872,8 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
@@ -6846,9 +7030,19 @@ export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUse
   email = "";
 
   /**
-   * @generated from field: string role = 4;
+   * @generated from field: optional string role = 4;
    */
-  role = "";
+  role?: string;
+
+  /**
+   * @generated from field: optional bool restrict_resources = 5;
+   */
+  restrictResources?: boolean;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<SetProjectMemberUserRoleRequest>) {
     super();
@@ -6861,7 +7055,9 @@ export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUse
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberUserRoleRequest {
@@ -7902,6 +8098,16 @@ export class AddProjectMemberUsergroupRequest extends Message<AddProjectMemberUs
    */
   role = "";
 
+  /**
+   * @generated from field: optional bool restrict_resources = 5;
+   */
+  restrictResources?: boolean;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<AddProjectMemberUsergroupRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7914,6 +8120,8 @@ export class AddProjectMemberUsergroupRequest extends Message<AddProjectMemberUs
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUsergroupRequest {
@@ -7984,9 +8192,19 @@ export class SetProjectMemberUsergroupRoleRequest extends Message<SetProjectMemb
   usergroup = "";
 
   /**
-   * @generated from field: string role = 4;
+   * @generated from field: optional string role = 4;
    */
-  role = "";
+  role?: string;
+
+  /**
+   * @generated from field: optional bool restrict_resources = 5;
+   */
+  restrictResources?: boolean;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<SetProjectMemberUsergroupRoleRequest>) {
     super();
@@ -7999,7 +8217,9 @@ export class SetProjectMemberUsergroupRoleRequest extends Message<SetProjectMemb
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberUsergroupRoleRequest {
@@ -16041,6 +16261,16 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * @generated from field: bool restrict_resources = 9;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 10;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<ProjectMemberUser>) {
     super();
     proto3.util.initPartial(data, this);
@@ -16057,6 +16287,8 @@ export class ProjectMemberUser extends Message<ProjectMemberUser> {
     { no: 8, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 9, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectMemberUser {
@@ -16216,6 +16448,16 @@ export class ProjectInvite extends Message<ProjectInvite> {
    */
   invitedBy = "";
 
+  /**
+   * @generated from field: bool restrict_resources = 5;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 6;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<ProjectInvite>) {
     super();
     proto3.util.initPartial(data, this);
@@ -16228,6 +16470,8 @@ export class ProjectInvite extends Message<ProjectInvite> {
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "org_role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectInvite {
@@ -17301,6 +17545,16 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * @generated from field: bool restrict_resources = 8;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 9;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<MemberUsergroup>) {
     super();
     proto3.util.initPartial(data, this);
@@ -17316,6 +17570,8 @@ export class MemberUsergroup extends Message<MemberUsergroup> {
     { no: 7, name: "users_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 8, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MemberUsergroup {

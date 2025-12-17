@@ -18,7 +18,6 @@
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
   export let exploreState: Partial<ExploreState> | undefined = undefined;
-  export let isEmbedded: boolean = false;
   export let mode: "inline" | "dropdown-item" | "icon-button" = "inline";
   export let disabled: boolean = false;
 
@@ -37,7 +36,6 @@
         exploreName,
         organization,
         project,
-        isEmbedded,
       );
       await goto(exploreURL);
     } catch (error) {

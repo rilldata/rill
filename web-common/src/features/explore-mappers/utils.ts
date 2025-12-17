@@ -27,6 +27,7 @@ import {
   runtimeServiceGetExplore,
   type V1ExploreSpec,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1TimeRange,
   type V1TimeRangeSummary,
@@ -199,6 +200,51 @@ export async function getExplorePageUrlSearchParams(
       metricsViewSpec,
       exploreSpec,
       fullTimeRange?.timeRangeSummary,
+      exploreState,
+    ),
+  );
+
+  return searchParams;
+}
+
+/**
+ * Sync method to get explore page url search params if metrics view time range is present in cache.
+ * Else the map will have to happen in the `/-/open-query` route.
+ * @param exploreState
+ * @param metricsViewSpec
+ * @param exploreSpec
+ */
+export function maybeGetExplorePageUrlSearchParams(
+  exploreState: Partial<ExploreState>,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+) {
+  const instanceId = get(runtime).instanceId;
+  const metricsViewName = exploreSpec.metricsView ?? "";
+
+  const metricsViewTimeRangeQueryKey =
+    getQueryServiceMetricsViewTimeRangeQueryKey(
+      instanceId,
+      metricsViewName,
+      {},
+    );
+
+  // Get time range query from cache if present, else we will go to `/-/open-query` to fetch it.
+  const queryResp = queryClient.getQueryData<V1MetricsViewTimeRangeResponse>(
+    metricsViewTimeRangeQueryKey,
+  );
+  if (!queryResp) return null;
+
+  // This is just for an initial redirect.
+  // DashboardStateDataLoader will handle compression etc. during init
+  // So no need to use getCleanedUrlParamsForGoto
+  const searchParams = convertPartialExploreStateToUrlParams(
+    exploreSpec,
+    exploreState,
+    getTimeControlState(
+      metricsViewSpec,
+      exploreSpec,
+      queryResp.timeRangeSummary,
       exploreState,
     ),
   );

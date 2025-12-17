@@ -551,8 +551,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
 		return &objectStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
-	if opts.InputHandle.Driver() == "local_file" {
-		return &localFileToSelfExecutor{opts.InputHandle, c}, nil
+	if opts.InputHandle.Driver() == "local_file" || opts.InputHandle.Driver() == "https" {
+		return &fileStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
 	return nil, drivers.ErrNotImplemented
 }

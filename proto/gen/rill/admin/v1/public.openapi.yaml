@@ -759,6 +759,11 @@ components:
                 project:
                     $ref: '#/components/schemas/v1Project'
             type: object
+        v1GetProjectMemberUserResponse:
+            properties:
+                member:
+                    $ref: '#/components/schemas/v1ProjectMemberUser'
+            type: object
         v1GetProjectResponse:
             properties:
                 jwt:
@@ -1133,6 +1138,13 @@ components:
                         $ref: '#/components/schemas/v1Usergroup'
                     type: array
             type: object
+        v1ListUsergroupsForProjectAndUserResponse:
+            properties:
+                usergroups:
+                    items:
+                        $ref: '#/components/schemas/v1MemberUsergroup'
+                    type: array
+            type: object
         v1ListWhitelistedDomainsResponse:
             properties:
                 domains:
@@ -1195,6 +1207,12 @@ components:
                     type: boolean
                 groupName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -1434,6 +1452,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
             type: object
@@ -1471,6 +1495,12 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    type: boolean
                 roleName:
                     type: string
                 updatedOn:
@@ -2242,7 +2272,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.77.8
+    version: v0.77.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
@@ -2819,6 +2849,7 @@ paths:
     /v1/orgs/{org}/projects/{project}/invites: {}
     /v1/orgs/{org}/projects/{project}/members: {}
     /v1/orgs/{org}/projects/{project}/members/{email}: {}
+    /v1/orgs/{org}/projects/{project}/members/{email}/usergroups: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}
