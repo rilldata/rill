@@ -6,7 +6,6 @@ import {
 import {
   type V1Expression,
   V1Operation,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 
@@ -25,7 +24,6 @@ export function parseTimeRangeFromFilters(
   filter: V1Expression,
   timeDimension: string,
   timezone: string,
-  timeRangeSummary: V1TimeRangeSummary,
 ): DashboardTimeControls | undefined {
   let start: DateTime | undefined = undefined;
   let end: DateTime | undefined = undefined;
@@ -98,11 +96,15 @@ export function parseTimeRangeFromFilters(
     }
   }
 
-  if (!end && start && timeRangeSummary.max) {
-    end = DateTime.fromISO(timeRangeSummary.max);
+  if (!end && start) {
+    return {
+      name: `${start.toISO()} to watermark`,
+    } as DashboardTimeControls;
   }
-  if (!start && end && timeRangeSummary.min) {
-    start = DateTime.fromISO(timeRangeSummary.min);
+  if (!start && end) {
+    return {
+      name: `earliest to ${end.toISO()}`,
+    } as DashboardTimeControls;
   }
 
   if (!end || !start) return undefined;
