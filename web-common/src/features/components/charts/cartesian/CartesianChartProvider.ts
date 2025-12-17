@@ -9,6 +9,7 @@ import {
   isFieldConfig,
   isMultiFieldConfig,
 } from "@rilldata/web-common/features/components/charts/util";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -98,14 +99,16 @@ export class CartesianChartProvider {
     let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
+    let measuresSet = new Set<string>();
     if (isMultiMeasure) {
-      const measuresSet = new Set(config.y?.fields);
+      measuresSet = new Set(config.y?.fields);
       if (config.y?.type === "quantitative" && config.y?.field) {
         measuresSet.add(config.y.field);
       }
       measures = Array.from(measuresSet).map((name) => ({ name }));
     } else {
       if (config.y?.type === "quantitative" && config.y?.field) {
+        measuresSet = new Set([config.y.field]);
         measures = [{ name: config.y.field }];
       }
     }
@@ -231,8 +234,14 @@ export class CartesianChartProvider {
     const queryOptionsStore = derived(
       [runtime, timeAndFilterStore, topNXQuery, topNColorQuery],
       ([$runtime, $timeAndFilterStore, $topNXQuery, $topNColorQuery]) => {
-        const { timeRange, where, timeGrain, hasTimeSeries } =
-          $timeAndFilterStore;
+        const {
+          timeRange,
+          where,
+          timeGrain,
+          comparisonTimeRange,
+          showTimeComparison,
+          hasTimeSeries,
+        } = $timeAndFilterStore;
         const topNXData = $topNXQuery?.data?.data;
 
         const topNColorData = $topNColorQuery?.data?.data;
@@ -295,15 +304,39 @@ export class CartesianChartProvider {
           );
         }
 
+        const measuresWithComparison: V1MetricsViewAggregationMeasure[] =
+          Array.from(measuresSet)
+            .map((measureName) => {
+              if (showTimeComparison && comparisonTimeRange?.start) {
+                return [
+                  { name: measureName },
+                  {
+                    name: measureName + ComparisonDeltaPreviousSuffix,
+                    comparisonValue: {
+                      measure: measureName,
+                    },
+                  },
+                ];
+              }
+              return { name: measureName };
+            })
+            .flat();
+
         return getQueryServiceMetricsViewAggregationQueryOptions(
           $runtime.instanceId,
           config.metrics_view,
           {
-            measures,
+            measures: measuresWithComparison,
             dimensions,
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: combinedWhere,
             timeRange,
+            comparisonTimeRange:
+              showTimeComparison &&
+              comparisonTimeRange?.start &&
+              comparisonTimeRange?.end
+                ? comparisonTimeRange
+                : undefined,
             fillMissing: config.x?.type === "temporal",
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),
           },
