@@ -146,7 +146,7 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	for _, d := range ds {
 		d := d
 		grp.Go(func() error {
-			// delete any dev deployments for the prod branch to maintain one branch - one dev deployment mapping
+			// delete any dev deployments for the prod branch to maintain one branch per deployment mapping
 			if p.ProdBranch == d.Branch && d.Environment == "dev" {
 				err := s.TeardownDeployment(ctx, d)
 				if err != nil {
