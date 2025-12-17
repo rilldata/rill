@@ -9,19 +9,49 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import EnvVariablesTable from "./EnvVariablesTable.svelte";
   import type { EnvVariable } from "./types";
-  import { Code2Icon, Plus, Settings } from "lucide-svelte";
+  import { Code2Icon, Plus, Settings, Download, Upload } from "lucide-svelte";
   import { parse as parseDotenv } from "dotenv";
   import type { EditorView } from "@codemirror/view";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import ActionsCell from "./ActionsCell.svelte";
   import AddEnvDialog from "./AddEnvDialog.svelte";
+  import PullEnvDialog from "./PullEnvDialog.svelte";
+  import PushEnvDialog from "./PushEnvDialog.svelte";
+  import {
+    createLocalServiceGetCurrentProject,
+    createLocalServiceGetMetadata,
+  } from "@rilldata/web-common/runtime-client/local-service";
 
   export let fileArtifact: any;
 
   let editor: EditorView;
   let viewMode: "code" | "viz" = "viz";
   let addDialogOpen = false;
+  let pullDialogOpen = false;
+  let pushDialogOpen = false;
+
+  const currentProjectQuery = createLocalServiceGetCurrentProject();
+  const metadataQuery = createLocalServiceGetMetadata();
+
+  $: rcUrl = (() => {
+    const currentProject = $currentProjectQuery.data;
+    const metadata = $metadataQuery.data;
+    const project = currentProject?.project;
+    const adminUrl = metadata?.adminUrl;
+    if (!project?.orgName || !project?.name || !adminUrl) return "";
+
+    // Convert admin URL to frontend URL (similar to getPlanUpgradeUrl)
+    let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
+    // hack for dev env
+    if (cloudUrl === "http://localhost:8080") {
+      cloudUrl = "http://localhost:3000";
+    }
+
+    const url = new URL(cloudUrl);
+    url.pathname = `/${project.orgName}/${project.name}/-/settings/environment-variables`;
+    return url.toString();
+  })();
 
   $: ({ autoSave, hasUnsavedChanges, path, remoteContent, editorContent } =
     fileArtifact);
@@ -138,17 +168,48 @@
           />
         </div>
       </div>
-      {#if viewMode === "viz"}
+       <div class="ml-auto flex gap-x-2 h-full w-fit items-center">
+        {#if rcUrl}
+          <Button
+            type="secondary"
+            small
+            href={rcUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2"
+          >
+            <span>View in RC</span>
+          </Button>
+        {/if}
         <Button
-          type="primary"
-          small
-          onClick={() => (addDialogOpen = true)}
-          class="flex items-center gap-2"
-        >
-          <Plus size="14px" />
-          <span>Add variable</span>
-        </Button>
-      {/if}
+              type="secondary"
+              small
+              onClick={() => (pullDialogOpen = true)}
+              class="flex items-center gap-2"
+            >
+              <Download size="14px" />
+            </Button>
+            <Button
+              type="secondary"
+              small
+              onClick={() => (pushDialogOpen = true)}
+              class="flex items-center gap-2"
+            >
+              <Upload size="14px" />
+            </Button>
+        {#if viewMode === "viz"}
+        
+            <Button
+              type="primary"
+              small
+              onClick={() => (addDialogOpen = true)}
+              class="flex items-center gap-2"
+            >
+              <Plus size="14px" />
+              <span>Add variable</span>
+            </Button>
+        {/if} 
+      </div>
     </div>
   </div>
 
@@ -173,6 +234,10 @@
   existingVariables={envVariables}
   on:add={handleAddVariables}
 />
+
+<PullEnvDialog bind:open={pullDialogOpen} currentVariables={envVariables} />
+
+<PushEnvDialog bind:open={pushDialogOpen} currentVariables={envVariables} />
 
 <style lang="postcss">
   button {
