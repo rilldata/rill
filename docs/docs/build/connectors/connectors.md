@@ -205,14 +205,14 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckLake" className="duckdb-icon"/>}
+    icon={<img src="/img/build/connectors/icons/Logo-DuckLake.png" alt="DuckLake" className="duckdb-icon"/>}
     header="DuckLake"
     content="Query data directly from object storage using DuckDB's data lakehouse capabilities."
     link="/build/connectors/data-source/ducklake"
     linkLabel="Learn more"
   />
   <ConnectorIcon
-    icon={<p className="iceberg-icon">🧊</p>}
+    icon={<img src="/img/build/connectors/icons/Logo-Iceberg.svg" alt="Iceberg" />}
     header="Apache Iceberg"
     content="Connect to Apache Iceberg tables for reliable, scalable data lake management."
     link="/build/connectors/data-source/iceberg"
@@ -225,6 +225,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 ### Google Sheets
 ### HTTPS
 ### Local File
+### Python Scripts
 ### Salesforce
 
 
@@ -259,7 +260,13 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     link="/build/connectors/data-source/local-file"
     linkLabel="Learn more"
   />
-
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-Python.svg" alt="Python" className="sheets-icon"/>}
+    header="Python Scripts"
+    content="Use Python scripts to extract, transform, and load data from various sources using tools like dlt."
+    link="/build/connectors/data-source/python"
+    linkLabel="Learn more"
+  />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Salesforce.svg" alt="Salesforce" />}
     header="Salesforce"
@@ -273,16 +280,6 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
 
 :::tip Missing a connector?
 We're constantly adding new data connectors. If you don't see what you need, [let us know](/contact) and we'll help you get connected.
-:::
-
-## Deployment Options
-
-### Self-Hosting
-
-**[Self-Hosting Rill](/get-started/install#self-hosting-rill)** - Deploy and manage Rill in your own infrastructure for complete control over your data, security, and compliance requirements.
-
-:::info Interested in Self-Hosting?
-Self-hosting Rill is available for enterprise customers. [Contact our team](/contact) to discuss your requirements.
 :::
 
 ## Other Integrations

@@ -7,8 +7,8 @@ sidebar_position: 10
 
 Rill can be deployed and managed in your own infrastructure, giving you complete control over your data, security, and compliance requirements. Self-hosting Rill allows you to run Rill on-premises or in your own cloud environment while maintaining all the features and capabilities of Rill Cloud.
 
-:::tip Getting Started
-Self-hosting Rill is available for enterprise customers. To get started with self-hosting, please [contact our team](/contact) to discuss your requirements.
+:::info Private Beta
+Self-hosting Rill is currently in private beta and available for enterprise customers. To get started with self-hosting, please [contact our team](/contact) to discuss your requirements.
 :::
 
 ### Benefits of Self-Hosting
@@ -112,7 +112,7 @@ Self-hosted deployments include:
 
 :::info Interested in Self-Hosting?
 
-Self-hosting Rill is available for enterprise customers. If you're interested in deploying Rill in your own infrastructure, please [contact our team](/contact) to discuss your requirements and get started.
+Self-hosting Rill is currently in private beta and available for enterprise customers. If you're interested in deploying Rill in your own infrastructure, please [contact our team](/contact) to discuss your requirements and get started.
 
 Our team can help you:
 - Plan your deployment architecture
