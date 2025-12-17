@@ -1,4 +1,5 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import { calculateEffectiveRowLimit } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -298,19 +299,12 @@ export function createPivotDataStore(
           readable(null);
 
         if (!isFlat) {
-          // Determine limit to apply: use rowLimit if set, otherwise use pagination limit
-          let limitToApply = NUM_ROWS_PER_PAGE.toString();
-          const rowLimit = config.pivot.rowLimit;
-          if (rowLimit !== undefined) {
-            const remainingRows = rowLimit - rowOffset;
-            if (remainingRows <= 0) {
-              limitToApply = "0";
-            } else if (remainingRows < NUM_ROWS_PER_PAGE) {
-              limitToApply = remainingRows.toString();
-            } else {
-              limitToApply = NUM_ROWS_PER_PAGE.toString();
-            }
-          }
+          // Calculate the effective limit based on rowLimit, offset, and page size
+          const limitToApply = calculateEffectiveRowLimit(
+            config.pivot.rowLimit,
+            rowOffset,
+            NUM_ROWS_PER_PAGE,
+          );
 
           // Get sort order for the anchor dimension
           rowDimensionAxisQuery = getAxisForDimensions(

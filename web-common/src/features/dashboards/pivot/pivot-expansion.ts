@@ -279,6 +279,7 @@ export function queryExpandedRowMeasureValues(
         createAndExpression([]);
 
       // Use rowLimit if set, otherwise default to 100
+      // TODO: Add See more option
       const expandLimitToApply =
         config.pivot.rowLimit !== undefined
           ? config.pivot.rowLimit.toString()

@@ -6,6 +6,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
+  import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -32,13 +33,12 @@
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
 
-  // Row limit options
+  // Row limit options - uses shared constants to ensure sync with URL validation
   const rowLimitOptions: { value: string; label: string }[] = [
-    { value: "5", label: "5" },
-    { value: "10", label: "10" },
-    { value: "25", label: "25" },
-    { value: "50", label: "50" },
-    { value: "100", label: "100" },
+    ...PIVOT_ROW_LIMIT_OPTIONS.map((limit) => ({
+      value: limit.toString(),
+      label: limit.toString(),
+    })),
     { value: "all", label: "All" },
   ];
 

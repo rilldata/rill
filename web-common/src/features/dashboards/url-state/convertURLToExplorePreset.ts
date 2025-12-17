@@ -1,4 +1,5 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -569,8 +570,12 @@ function fromPivotUrlParams(
       ExploreStateURLParams.PivotRowLimit,
     ) as string;
     const rowLimit = parseInt(rowLimitStr, 10);
-    const allowedValues = [5, 10, 25, 50, 100];
-    if (!isNaN(rowLimit) && rowLimit > 0 && allowedValues.includes(rowLimit)) {
+    // Use shared constants to validate row limit values
+    if (
+      !isNaN(rowLimit) &&
+      rowLimit > 0 &&
+      (PIVOT_ROW_LIMIT_OPTIONS as readonly number[]).includes(rowLimit)
+    ) {
       preset.pivotRowLimit = rowLimit;
     }
   }
