@@ -18,7 +18,6 @@ describe("should convert to and from inline prompt", () => {
         type: InlineContextType.MetricsView,
         metricsView: "adbids",
         value: "adbids",
-        label: "Ad Bids",
       },
       expectedPrompt: `<chat-reference>type="metricsView" metricsView="adbids"</chat-reference>`,
     },
@@ -40,7 +39,6 @@ describe("should convert to and from inline prompt", () => {
         metricsView: "adbids",
         measure: "impressions",
         value: "impressions",
-        label: "Impressions measure",
       },
       expectedPrompt: `<chat-reference>type="measure" metricsView="adbids" measure="impressions"</chat-reference>`,
     },
@@ -87,8 +85,6 @@ describe("should convert to and from inline prompt", () => {
           .replace("<chat-reference>", "")
           .replace("</chat-reference>", ""),
       );
-      const expectedCtx = { ...ctx };
-      delete expectedCtx.label;
       expect(convertedCtx).toEqual(ctx);
     });
   }

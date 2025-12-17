@@ -11,6 +11,7 @@ import {
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import type {
+  InlineContextPickerChildSection,
   InlineContextPickerParentOption,
   InlineContextPickerSection,
 } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
@@ -127,10 +128,13 @@ export function getFilteredPickerOptions(
         .map((option) => {
           const children =
             option.children
-              ?.map((cc) =>
-                cc.filter((c) => filterFunction(c.label ?? "", c.value)),
-              )
-              .filter((cc) => cc.length > 0) ?? [];
+              ?.map((cc) => ({
+                type: cc.type,
+                options: cc.options.filter((c) =>
+                  filterFunction(c.label ?? "", c.value),
+                ),
+              }))
+              .filter((cc) => cc.options.length > 0) ?? [];
 
           const parentMatches = filterFunction(
             option.context.label ?? "",
@@ -156,14 +160,20 @@ export function getFilteredPickerOptions(
 
       if (recentlyUsed === currentlyActive) currentlyActive = null;
 
-      const topSection = (
+      const topSectionOptions = (
         [
           recentlyUsed,
           currentlyActive,
         ] as (InlineContextPickerParentOption | null)[]
       ).filter(Boolean) as InlineContextPickerParentOption[];
+      const topSection = {
+        type: "topSection",
+        options: topSectionOptions,
+      } satisfies InlineContextPickerSection;
+
       const otherSections = splitParentOptionsIntoSections(filteredOptions);
-      return [topSection, ...otherSections].filter((s) => s.length > 0);
+
+      return [topSection, ...otherSections].filter((s) => s.options.length > 0);
     },
   );
 }
@@ -199,6 +209,10 @@ function getMetricsViewPickerOptions(): Readable<
               measure: m.name!,
             }) satisfies InlineContext,
         ) ?? [];
+      const measuresSection = {
+        type: InlineContextType.Measure,
+        options: measures,
+      } satisfies InlineContextPickerChildSection;
 
       const dimensions =
         metricsViewSpec?.dimensions?.map(
@@ -211,6 +225,10 @@ function getMetricsViewPickerOptions(): Readable<
               dimension: d.name!,
             }) satisfies InlineContext,
         ) ?? [];
+      const dimensionsSection = {
+        type: InlineContextType.Dimension,
+        options: dimensions,
+      } satisfies InlineContextPickerChildSection;
 
       return {
         context: {
@@ -220,7 +238,7 @@ function getMetricsViewPickerOptions(): Readable<
           value: mvName,
         },
         openStore: writable(false),
-        children: [measures, dimensions],
+        children: [measuresSection, dimensionsSection],
       } satisfies InlineContextPickerParentOption;
     });
   });
@@ -230,7 +248,7 @@ function getMetricsViewPickerOptions(): Readable<
  * Creates a store that contains a 2-level list of sources/model resources.
  * 1st level: section for sources/models.
  * 2nd level: all the columns in the source/model resource.
- * NOTE: this only lists resources that are parsed as sources/models. Any parse errors will exlcude the file.
+ * NOTE: this only lists resources that are parsed as sources/models. Any parse errors will exclude the file.
  */
 function getModelsPickerOptions(): Readable<InlineContextPickerParentOption[]> {
   const modelResourcesQuery = createQuery(
@@ -285,19 +303,26 @@ function getModelColumnsQueryOptions(
       {
         query: {
           enabled: enabled && Boolean(table),
-          select: (data) => [
-            data.profileColumns?.map(
-              (col) =>
-                ({
-                  type: InlineContextType.Column,
-                  label: col.name,
-                  value: col.name!,
-                  column: col.name,
-                  columnType: col.type,
-                  model: modelName,
-                }) satisfies InlineContext,
-            ) ?? [],
-          ],
+          select: (data) => {
+            const options =
+              data.profileColumns?.map(
+                (col) =>
+                  ({
+                    type: InlineContextType.Column,
+                    label: col.name,
+                    value: col.name!,
+                    column: col.name,
+                    columnType: col.type,
+                    model: modelName,
+                  }) satisfies InlineContext,
+              ) ?? [];
+            return [
+              {
+                type: InlineContextType.Column,
+                options,
+              } satisfies InlineContextPickerChildSection,
+            ];
+          },
         },
       },
     ),
@@ -340,14 +365,20 @@ function splitParentOptionsIntoSections(
 ) {
   if (options.length === 0) return [];
 
-  let lastSection: InlineContextPickerSection = [];
-  const sections: InlineContextPickerSection[] = [lastSection];
+  let lastSection: InlineContextPickerSection | null = null;
+  const sections: InlineContextPickerSection[] = [];
   options.forEach((option) => {
-    if (option.context.type !== lastSection[0]?.context.type) {
-      lastSection = [];
+    if (
+      lastSection === null ||
+      option.context.type !== lastSection.options[0].context.type
+    ) {
+      lastSection = {
+        type: option.context.type,
+        options: [],
+      } satisfies InlineContextPickerSection;
       sections.push(lastSection);
     }
-    lastSection.push(option);
+    lastSection.options.push(option);
   });
   return sections;
 }

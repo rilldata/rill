@@ -16,10 +16,10 @@ export class PickerOptionsHighlightManager {
   ) {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
     this.highlightableContexts = filteredOptions
-      .flat()
-      .flatMap((option) => [
-        option.context,
-        ...(option.children?.flat() ?? []),
+      .flatMap((section) => section.options)
+      .flatMap((p) => [
+        p.context,
+        ...(p.children?.flatMap((c) => c.options) ?? []),
       ]);
 
     // Prefer selecting already selected context.

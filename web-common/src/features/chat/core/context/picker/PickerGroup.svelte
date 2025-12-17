@@ -127,8 +127,8 @@
     {#if childrenLoading}
       <DelayedSpinner isLoading={childrenLoading} />
     {:else}
-      {#each resolvedChildren as childCategory, i (i)}
-        {#each childCategory as child (`${child.type}-${child.value}`)}
+      {#each resolvedChildren as childCategory (childCategory.type)}
+        {#each childCategory.options as child (child.value)}
           {@const selected =
             selectedChatContext !== null &&
             inlineContextsAreEqual(child, selectedChatContext)}

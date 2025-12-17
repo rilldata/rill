@@ -99,9 +99,9 @@
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
 <div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
-  {#each $filteredOptions as section, i (i)}
+  {#each $filteredOptions as section (section.type)}
     <div class="border-b last:border-b-0">
-      {#each section as parentOption, j (j)}
+      {#each section.options as parentOption (parentOption.context.value)}
         <PickerGroup
           {parentOption}
           {selectedChatContext}

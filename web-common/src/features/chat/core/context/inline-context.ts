@@ -13,7 +13,8 @@ export enum InlineContextType {
 export type InlineContext = {
   type: InlineContextType;
   label?: string;
-  value: string; // Main value for this context, used as an ID of sorts
+  // Main value for this context, used as a key in svelte loop and to easily filter on value
+  value: string;
   metricsView?: string;
   measure?: string;
   dimension?: string;
@@ -28,23 +29,7 @@ export function inlineContextsAreEqual(
   ctx1: InlineContext,
   ctx2: InlineContext,
 ) {
-  const nonValuesAreEqual =
-    ctx1.type === ctx2.type &&
-    ctx1.metricsView === ctx2.metricsView &&
-    ctx1.measure === ctx2.measure &&
-    ctx1.dimension === ctx2.dimension &&
-    ctx1.timeRange === ctx2.timeRange &&
-    ctx1.model === ctx2.model &&
-    ctx1.column === ctx2.column &&
-    ctx1.columnType === ctx2.columnType;
-  if (!nonValuesAreEqual) return false;
-  if (!ctx1.values && !ctx2.values) return true;
-  else if (!ctx1.values || !ctx2.values) return false;
-
-  return (
-    ctx1.values.length === ctx2.values.length &&
-    ctx1.values.every((value, index) => value === ctx2.values![index])
-  );
+  return ctx1.type === ctx2.type && ctx1.value === ctx2.value;
 }
 
 export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
@@ -87,6 +72,10 @@ export function normalizeInlineContext(ctx: InlineContext) {
 
     case InlineContextType.Column:
       normalisedContext.value = normalisedContext.column!;
+      break;
+
+    case InlineContextType.DimensionValues:
+      normalisedContext.value = normalisedContext.values!.join(",");
       break;
   }
 

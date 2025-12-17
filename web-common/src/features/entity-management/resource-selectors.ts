@@ -16,8 +16,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import type { ErrorType } from "../../runtime-client/http-client";
-import { derived } from "svelte/store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived } from "svelte/store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
