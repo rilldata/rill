@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -63,6 +64,11 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Validate project resources",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Ensure rill start is not running
+			if err := checkRillStartNotRunning(cmd.Context()); err != nil {
+				return err
+			}
+
 			var projectPath string
 			if len(args) > 0 {
 				var err error
@@ -272,4 +278,16 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat pri
 
 	ch.PrintfSuccess("Validation completed successfully\n")
 	return nil
+}
+
+// checkRillStartNotRunning checks if rill start is running on the default port. this is best efforts check and assumes default port 9009.
+func checkRillStartNotRunning(ctx context.Context) error {
+	d := net.Dialer{Timeout: time.Second}
+	conn, err := d.DialContext(ctx, "tcp", "localhost:9009")
+	if err != nil {
+		// this could be another error than unix.ECONNREFUSED but ignore as best-efforts check
+		return nil
+	}
+	conn.Close()
+	return fmt.Errorf("rill start appears to be running on http://localhost:9009; stop it and rerun validate")
 }
