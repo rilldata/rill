@@ -2,24 +2,16 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fileAndResourceWatcher } from "./file-and-resource-watcher";
   import { Tooltip } from "bits-ui";
+  import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
 
-  const { closed, retryAttempts } = fileAndResourceWatcher;
+  const { status: statusStore } = fileAndResourceWatcher;
 
-  let state: "connected" | "closed" | "reconnecting" = "connected";
   let showIndicator: boolean = true;
   let connectedTimer: ReturnType<typeof setTimeout>;
 
-  $: reconnecting = $retryAttempts > 0;
+  $: status = $statusStore;
 
-  $: if (reconnecting) {
-    state = "reconnecting";
-  } else if ($closed) {
-    state = "closed";
-  } else {
-    state = "connected";
-  }
-
-  $: if (state !== "connected") {
+  $: if (status !== ConnectionStatus.OPEN) {
     clearTimeout(connectedTimer);
     showIndicator = true;
   } else {
@@ -32,16 +24,18 @@
 {#if showIndicator}
   <Tooltip.Root>
     <Tooltip.Trigger>
-      <div class="{state}  flex-none size-[9px] rounded-full opacity-75"></div>
+      <div class="{status}  flex-none size-[9px] rounded-full opacity-75"></div>
     </Tooltip.Trigger>
 
     <Tooltip.Content side="right" sideOffset={8}>
       <TooltipContent>
-        {#if state === "reconnecting"}
+        {#if status === ConnectionStatus.CONNECTING}
           Attempting to reconnect
-        {:else if state === "closed"}
-          Connection closed due to inactivity
-        {:else}
+        {:else if status === ConnectionStatus.CLOSED}
+          Disconnected from Rill engine
+        {:else if status === ConnectionStatus.PAUSED}
+          Connection paused due to inactivity
+        {:else if status === ConnectionStatus.OPEN}
           Connected to Rill engine
         {/if}
       </TooltipContent>
@@ -50,15 +44,16 @@
 {/if}
 
 <style lang="postcss">
-  .closed {
+  .closed,
+  .paused {
     @apply bg-red-600 animate-pulse;
   }
 
-  .reconnecting {
+  .connecting {
     @apply bg-yellow-600 animate-pulse;
   }
 
-  .connected {
+  .open {
     @apply bg-emerald-600;
   }
 </style>

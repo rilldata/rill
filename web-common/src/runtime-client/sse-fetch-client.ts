@@ -1,11 +1,5 @@
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get, writable } from "svelte/store";
-import { Throttler } from "../lib/throttler";
-import { asyncWait } from "../lib/waitUtils";
-
-const BACKOFF_DELAY = 1000; // Base delay in ms
-const RETRY_COUNT_DELAY = 500; // Delay before resetting retry count
-const RECONNECT_CALLBACK_DELAY = 150; // Delay before firing reconnect callbacks
+import { get } from "svelte/store";
 
 /**
  * Represents a Server-Sent Event message
@@ -84,16 +78,6 @@ function isValidEvent(event: Partial<SSEMessage>): event is SSEMessage {
   return event.data !== undefined && event.data !== "";
 }
 
-type Params = {
-  timeouts?: {
-    short: number;
-    normal: number;
-  };
-  maxRetryAttempts?: number;
-  retryOnError?: boolean;
-  retryOnClose?: boolean;
-};
-
 // ===== SSE FETCH CLIENT =====
 
 /**
@@ -109,100 +93,13 @@ export class SSEFetchClient {
     message: ((message: SSEMessage) => void)[];
     error: ((error: Error) => void)[];
     close: (() => void)[];
-    reconnect: (() => void)[];
+    open: (() => void)[];
   } = {
     message: [],
     error: [],
     close: [],
-    reconnect: [],
+    open: [],
   };
-  private outOfFocusThrottler: Throttler | undefined;
-  public retryAttempts = writable(0);
-  private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
-  private retryTimeout: ReturnType<typeof setTimeout> | undefined;
-  public closed = writable(false);
-  private isReconnecting = false;
-  private url: string;
-  private options: {
-    method?: "GET" | "POST";
-    body?: Record<string, unknown>;
-    headers?: Record<string, string>;
-  };
-
-  constructor(public params?: Params) {
-    if (params?.timeouts) {
-      this.outOfFocusThrottler = new Throttler(
-        params.timeouts.normal,
-        params.timeouts.short,
-      );
-    }
-  }
-
-  /**
-   * Handle reconnection with exponential backoff
-   */
-  private async reconnect() {
-    // Prevent concurrent reconnection attempts
-    if (this.isReconnecting) return;
-    this.isReconnecting = true;
-
-    try {
-      clearTimeout(this.reconnectTimeout);
-
-      if (this.outOfFocusThrottler?.isThrottling()) {
-        this.outOfFocusThrottler.cancel();
-      }
-
-      // Don't reconnect if client is already streaming
-      if (this.isStreaming()) {
-        return;
-      }
-
-      const currentAttempts = get(this.retryAttempts);
-
-      if (currentAttempts >= (this.params?.maxRetryAttempts ?? 0)) {
-        throw new Error("Max retries exceeded");
-      }
-
-      if (currentAttempts > 0) {
-        const delay = BACKOFF_DELAY * 2 ** currentAttempts;
-        await asyncWait(delay);
-      }
-
-      this.retryAttempts.update((n) => n + 1);
-
-      void this.start(this.url, this.options, true);
-    } finally {
-      this.isReconnecting = false;
-    }
-  }
-
-  public heartbeat = async () => {
-    if (get(this.closed)) {
-      await this.reconnect();
-    }
-    this.scheduleAutoClose();
-  };
-
-  /**
-   * Close the connection and clean up all resources
-   */
-  public close = (cleanup = false) => {
-    this.stop();
-    this.closed.set(true);
-
-    if (cleanup) {
-      this.cleanup();
-    }
-  };
-
-  /**
-   * Enable auto-close behavior to manage HTTP connection quota (browsers limit ~6 concurrent connections per host)
-   */
-  public scheduleAutoClose(prioritize: boolean = false) {
-    this.outOfFocusThrottler?.cancel();
-    this.outOfFocusThrottler?.throttle(this.close, prioritize);
-  }
 
   /**
    * Add event listener for SSE events
@@ -210,7 +107,7 @@ export class SSEFetchClient {
   public on(event: "message", listener: (message: SSEMessage) => void): void;
   public on(event: "error", listener: (error: Error) => void): void;
   public on(event: "close", listener: () => void): void;
-  public on(event: "reconnect", listener: () => void): void;
+  public on(event: "open", listener: () => void): void;
   public on(event: string, listener: any): void {
     if (this.listeners[event as keyof typeof this.listeners]) {
       this.listeners[event as keyof typeof this.listeners].push(listener);
@@ -223,7 +120,7 @@ export class SSEFetchClient {
   public off(event: "message", listener: (message: SSEMessage) => void): void;
   public off(event: "error", listener: (error: Error) => void): void;
   public off(event: "close", listener: () => void): void;
-  public off(event: "reconnect", listener: () => void): void;
+  public off(event: "open", listener: () => void): void;
   public off(event: string, listener: any): void {
     const eventListeners = this.listeners[event as keyof typeof this.listeners];
     if (eventListeners) {
@@ -247,13 +144,7 @@ export class SSEFetchClient {
       body?: Record<string, unknown>;
       headers?: Record<string, string>;
     } = {},
-    reconnect = false,
   ): Promise<void> {
-    this.url = url;
-    this.options = options;
-
-    this.closed.set(false);
-
     // Clean up any existing connection
     this.stop();
 
@@ -290,36 +181,19 @@ export class SSEFetchClient {
         throw new Error("No response body");
       }
 
-      this.retryTimeout = setTimeout(() => {
-        this.retryAttempts.set(0);
-      }, RETRY_COUNT_DELAY);
-
-      if (reconnect) {
-        this.reconnectTimeout = setTimeout(() => {
-          this.listeners.reconnect.forEach((cb) => void cb());
-        }, RECONNECT_CALLBACK_DELAY);
-      }
+      this.listeners.open.forEach((listener) => listener());
 
       // Process the SSE stream
       await this.processSSEStream(response.body);
     } catch (error) {
       if (error.name !== "AbortError") {
-        if (this.params?.retryOnError && !get(this.closed)) {
-          void this.reconnect();
-        }
-
         this.listeners.error.forEach((listener) =>
           listener(error instanceof Error ? error : new Error(String(error))),
         );
-      } else {
-        if (this.params?.retryOnClose && !get(this.closed)) {
-          void this.reconnect();
-        } else {
-          this.closed.set(true);
-        }
-
-        this.listeners.close.forEach((listener) => listener());
       }
+    } finally {
+      this.stop();
+      this.listeners.close.forEach((listener) => listener());
     }
   }
 
@@ -331,10 +205,6 @@ export class SSEFetchClient {
       this.abortController.abort("SSE stream stopped by client");
       this.abortController = undefined;
     }
-
-    // Clear timeouts
-    clearTimeout(this.reconnectTimeout);
-    clearTimeout(this.retryTimeout);
   }
 
   /**

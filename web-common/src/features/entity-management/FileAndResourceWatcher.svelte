@@ -3,26 +3,26 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import {
-    fileAndResourceWatcher,
-    MAX_RETRIES,
-  } from "./file-and-resource-watcher";
+  import { fileAndResourceWatcher } from "./file-and-resource-watcher";
+  import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
 
   export let host: string;
   export let instanceId: string;
 
-  const { retryAttempts } = fileAndResourceWatcher;
+  const { status: statusStore } = fileAndResourceWatcher;
 
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;
 
   $: fileAndResourceWatcher.watch(watcherEndpoint);
 
-  $: failed = $retryAttempts >= MAX_RETRIES;
+  $: status = $statusStore;
+
+  $: closed = status === ConnectionStatus.CLOSED;
 
   onMount(() => {
     void fileArtifacts.init(queryClient, instanceId);
 
-    return () => fileAndResourceWatcher.close();
+    return () => fileAndResourceWatcher.close(true);
   });
 
   function handleVisibilityChange() {
@@ -42,7 +42,7 @@
   on:focus={() => fileAndResourceWatcher.heartbeat()}
 />
 
-{#if failed}
+{#if closed}
   <ErrorPage
     fatal
     statusCode={500}
