@@ -279,7 +279,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
 
 ### Self-Hosting
 
-**[Self-Hosting Rill](/build/connectors/self-hosting)** - Deploy and manage Rill in your own infrastructure for complete control over your data, security, and compliance requirements.
+**[Self-Hosting Rill](/get-started/install#self-hosting-rill)** - Deploy and manage Rill in your own infrastructure for complete control over your data, security, and compliance requirements.
 
 :::info Interested in Self-Hosting?
 Self-hosting Rill is available for enterprise customers. [Contact our team](/contact) to discuss your requirements.
