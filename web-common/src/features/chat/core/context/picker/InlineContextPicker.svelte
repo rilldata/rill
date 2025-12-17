@@ -22,10 +22,7 @@
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
-  const filteredOptions = getFilteredPickerOptions(
-    { metricViews: true, files: true },
-    searchTextStore,
-  );
+  const filteredOptions = getFilteredPickerOptions(searchTextStore);
 
   const highlightManager = new PickerOptionsHighlightManager();
   const highlightedContext = highlightManager.highlightedContext;

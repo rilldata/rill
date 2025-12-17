@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, readable, writable, type Readable } from "svelte/store";
+import { derived, get, readable, writable, type Readable } from "svelte/store";
 import {
   type InlineContext,
   InlineContextType,
@@ -30,6 +30,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 import { getLastUsedMetricsViewNameStore } from "@rilldata/web-common/features/chat/core/context/picker/get-last-used-metrics-view.ts";
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view and sources/models.
@@ -37,20 +38,18 @@ import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/das
  * 2. Any asynchronous options for 2nd level lists are fetched based on the open status of the top level option.
  * 3. Active metrics view and active source/model are tracked separately and filled in the resolved options.
  */
-function getPickerOptions({
-  metricViews,
-  files,
-}: PickerArgs): Readable<InlineContextPickerParentOption[]> {
+function getPickerOptions(): Readable<InlineContextPickerParentOption[]> {
   const lastUsedMetricsViewStore = getLastUsedMetricsViewNameStore();
   const activeMetricsViewStore = getActiveMetricsViewNameStore();
   const activeFileArtifactStore = getActiveFileArtifactStore();
+  const isRillDev = !get(featureFlags.adminServer);
 
   return derived(
     [
       // Stable parts that only change when the underlying data is refetched.
       // Open store is created here to maintain the user selection.
-      metricViews ? getMetricsViewPickerOptions() : readable(null),
-      files ? getModelsPickerOptions() : readable(null),
+      getMetricsViewPickerOptions(),
+      isRillDev ? getModelsPickerOptions() : readable(null),
     ],
     ([metricsViewOptions, filesOption], set) => {
       const allOptions = [metricsViewOptions, filesOption]
@@ -109,12 +108,9 @@ function getPickerOptions({
  * 2. Bubbles up the recently used and active top level options to the top of the list.
  * 3. Removes any top level options that don't match the search text including any 2nd level options within it.
  */
-export function getFilteredPickerOptions(
-  args: PickerArgs,
-  searchTextStore: Readable<string>,
-) {
+export function getFilteredPickerOptions(searchTextStore: Readable<string>) {
   return derived(
-    [getPickerOptions(args), searchTextStore],
+    [getPickerOptions(), searchTextStore],
     ([options, searchText]) => {
       const filterFunction = (label: string, value: string) =>
         searchText.length === 0 ||
@@ -329,10 +325,6 @@ function getModelColumnsQueryOptions(
   );
 }
 
-export type PickerArgs = {
-  metricViews: boolean;
-  files: boolean;
-};
 export const ParentPickerTypes = new Set([
   InlineContextType.MetricsView,
   InlineContextType.Model,

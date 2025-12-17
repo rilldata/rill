@@ -19,7 +19,7 @@
 
   let value = "";
 
-  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -75,7 +75,6 @@
     editor = new Editor({
       element,
       extensions: getEditorPlugins({
-        enableMention,
         placeholder,
         onSubmit: () => void sendMessage(),
       }),
@@ -116,11 +115,9 @@
     style:height
   />
   <div class="chat-input-footer">
-    {#if enableMention}
-      <button class="text-base ml-1" type="button" on:click={startMention}>
-        @
-      </button>
-    {/if}
+    <button class="text-base ml-1" type="button" on:click={startMention}>
+      @
+    </button>
     <div class="grow"></div>
     <div>
       {#if canCancel}

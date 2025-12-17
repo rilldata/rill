@@ -17,11 +17,9 @@ import {
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function getEditorPlugins({
-  enableMention,
   placeholder,
   onSubmit,
 }: {
-  enableMention: boolean;
   placeholder: string;
   onSubmit: () => void;
 }) {
@@ -35,12 +33,9 @@ export function getEditorPlugins({
       placeholder,
     }),
     EditorSubmitExtension.configure({ onSubmit, sharedEditorStore }),
+    configureInlineContextTipTapExtension(sharedEditorStore),
     UndoRedo,
   ];
-
-  if (enableMention) {
-    plugins.push(configureInlineContextTipTapExtension(sharedEditorStore));
-  }
 
   return plugins;
 }
