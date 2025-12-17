@@ -38,6 +38,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			if projectName == "" && (len(explores) > 0 || len(canvases) > 0 || restrictResources) {
+				return fmt.Errorf("resource restrictions can only be set when adding a user to a project")
+			}
+
 			// Handle adding the user to the org.
 			// We do this only if a more specific target (group or project) is not specified.
 			if projectName == "" && group == "" {
@@ -69,10 +73,6 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					ch.PrintfSuccess("User %q added to the organization %q as %q\n", email, ch.Org, role)
 				}
 				return nil
-			}
-
-			if projectName == "" && (len(explores) > 0 || len(canvases) > 0 || restrictResources) {
-				return fmt.Errorf("resource restrictions can only be set when adding a user to a project")
 			}
 
 			// Handle adding the user to a project.

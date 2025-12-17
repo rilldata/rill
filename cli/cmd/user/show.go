@@ -50,6 +50,9 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("No custom attributes set\n")
 			}
 
+			if project == "" {
+				return nil
+			}
 			projMember, err := client.GetProjectMemberUser(cmd.Context(), &adminv1.GetProjectMemberUserRequest{
 				Org:     ch.Org,
 				Project: project,
