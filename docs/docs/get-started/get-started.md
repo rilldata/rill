@@ -8,7 +8,7 @@ sidebar_position: 00
 import TileIcon from '@site/src/components/TileIcon';
 
 ## Install 
-Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions docs](/get-started/install/install). For self-hosting Rill in your own infrastructure, see [Self-Hosting Rill](/get-started/install/self-host).
+Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions docs](/get-started/install). For self-hosting Rill in your own infrastructure, see [Self-Hosting Rill](/get-started/install/self-host).
 
 ```bash
 curl https://rill.sh | sh
