@@ -160,12 +160,13 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Reloaded       bool
-	Skipped        bool
-	Added          []ResourceName
-	Modified       []ResourceName
-	ModifiedDotEnv bool
-	Deleted        []ResourceName
+	Reloaded           bool
+	Skipped            bool
+	Added              []ResourceName
+	Modified           []ResourceName
+	ModifiedDotEnv     bool
+	ModifiedConnectors bool
+	Deleted            []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -191,6 +192,7 @@ type Parser struct {
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
+	connectors                 map[ResourceName]*runtimev1.ConnectorSpec
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -332,6 +334,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
+	p.connectors = make(map[ResourceName]*runtimev1.ConnectorSpec)
 	p.insertedResources = nil
 	p.updatedResources = nil
 	p.deletedResources = nil
@@ -550,13 +553,32 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		} else {
 			diff.Added = append(diff.Added, resource.Name)
 		}
+		if resource.Name.Kind == ResourceKindConnector {
+			// check if it is new or different from existing connector
+			// it is okay to compare before templating is applied because modification to rill.yaml/.env will anyways trigger a controller restart
+			if existing, ok := p.connectors[resource.Name.Normalized()]; !ok || !isEqualConnectorSpec(existing, resource.ConnectorSpec) {
+				diff.ModifiedConnectors = true
+			}
+			p.connectors[resource.Name.Normalized()] = resource.ConnectorSpec
+		}
 	}
 	for _, resource := range p.updatedResources {
 		diff.Modified = append(diff.Modified, resource.Name)
+		if resource.Name.Kind == ResourceKindConnector {
+			// check if there is an existing connector with the same name and spec is different
+			if existing, ok := p.connectors[resource.Name.Normalized()]; ok && !isEqualConnectorSpec(existing, resource.ConnectorSpec) {
+				diff.ModifiedConnectors = true
+			}
+			p.connectors[resource.Name.Normalized()] = resource.ConnectorSpec
+		}
 	}
 	for _, deleted := range p.deletedResources {
 		if p.Resources[deleted.Name.Normalized()] == nil {
 			diff.Deleted = append(diff.Deleted, deleted.Name)
+			if deleted.Name.Kind == ResourceKindConnector {
+				delete(p.connectors, deleted.Name.Normalized())
+				diff.ModifiedConnectors = true
+			}
 		}
 	}
 

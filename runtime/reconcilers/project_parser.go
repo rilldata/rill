@@ -313,7 +313,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	}
 
 	// not setting restartController=true when diff is actually nil prevents infinite restarts
-	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded
+	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded || diff.ModifiedConnectors
 	if updateConfig {
 		restartController := diff != nil
 		err := r.reconcileProjectConfig(ctx, parser, restartController)

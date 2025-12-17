@@ -2,7 +2,9 @@ package parser
 
 import (
 	"fmt"
+	"maps"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -126,4 +128,32 @@ func containsTemplating(v any) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// isEqualConnectorSpec compares two ConnectorSpec for equality. The comparison is done before templating is applied.
+func isEqualConnectorSpec(a, b *runtimev1.ConnectorSpec) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	if a.Driver != b.Driver {
+		return false
+	}
+	if a.Provision != b.Provision {
+		return false
+	}
+	if !maps.Equal(a.Properties.AsMap(), b.Properties.AsMap()) {
+		return false
+	}
+	if !maps.Equal(a.ProvisionArgs.AsMap(), b.ProvisionArgs.AsMap()) {
+		return false
+	}
+	if len(a.TemplatedProperties) != len(b.TemplatedProperties) {
+		return false
+	}
+	for i, v := range a.TemplatedProperties {
+		if v != b.TemplatedProperties[i] {
+			return false
+		}
+	}
+	return true
 }
