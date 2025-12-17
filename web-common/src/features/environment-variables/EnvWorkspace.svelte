@@ -46,9 +46,10 @@
     const project = currentProject?.project;
     const adminUrl = metadata?.adminUrl;
     const hasManageProject = $manageProjectAccess ?? false;
-    
+
     // Only show RC URL if user has manageProject permission (is admin)
-    if (!project?.orgName || !project?.name || !adminUrl || !hasManageProject) return "";
+    if (!project?.orgName || !project?.name || !adminUrl || !hasManageProject)
+      return "";
 
     // Convert admin URL to frontend URL (similar to getPlanUpgradeUrl)
     let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
@@ -177,7 +178,7 @@
           />
         </div>
       </div>
-       <div class="ml-auto flex gap-x-2 h-full w-fit items-center">
+      <div class="ml-auto flex gap-x-2 h-full w-fit items-center">
         {#if rcUrl}
           <Button
             type="secondary"
@@ -191,33 +192,32 @@
           </Button>
         {/if}
         <Button
-              type="secondary"
-              small
-              onClick={() => (pullDialogOpen = true)}
-              class="flex items-center gap-2"
-            >
-              <Download size="14px" />
-            </Button>
-            <Button
-              type="secondary"
-              small
-              onClick={() => (pushDialogOpen = true)}
-              class="flex items-center gap-2"
-            >
-              <Upload size="14px" />
-            </Button>
+          type="secondary"
+          small
+          onClick={() => (pullDialogOpen = true)}
+          class="flex items-center gap-2"
+        >
+          <Download size="14px" />
+        </Button>
+        <Button
+          type="secondary"
+          small
+          onClick={() => (pushDialogOpen = true)}
+          class="flex items-center gap-2"
+        >
+          <Upload size="14px" />
+        </Button>
         {#if viewMode === "viz"}
-        
-            <Button
-              type="primary"
-              small
-              onClick={() => (addDialogOpen = true)}
-              class="flex items-center gap-2"
-            >
-              <Plus size="14px" />
-              <span>Add variable</span>
-            </Button>
-        {/if} 
+          <Button
+            type="primary"
+            small
+            onClick={() => (addDialogOpen = true)}
+            class="flex items-center gap-2"
+          >
+            <Plus size="14px" />
+            <span>Add variable</span>
+          </Button>
+        {/if}
       </div>
     </div>
   </div>
