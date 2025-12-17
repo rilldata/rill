@@ -308,6 +308,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	}
 
 	if instCfg.ParserSkipUpdatesIfParseErrors && len(parser.Errors) > 0 {
+		// best efforts cancellation of all resource reconciliations, ignoring all errors
+		resources, _ := r.C.List(ctx, "", "", false)
+		for _, res := range resources {
+			if res.Meta.Hidden {
+				continue
+			}
+			_ = r.C.Cancel(ctx, res.Meta.Name)
+		}
 		return parseErrsErr
 	}
 

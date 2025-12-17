@@ -21,8 +21,8 @@ import (
 // ValidationResult represents the complete validation output
 type ValidationResult struct {
 	Summary     ValidationSummary `json:"summary"`
-	ParseErrors []ParseError      `json:"parse_errors,omitempty"`
-	Resources   []ResourceStatus  `json:"resources,omitempty"`
+	ParseErrors []ParseError      `json:"parse_errors"`
+	Resources   []ResourceStatus  `json:"resources"`
 }
 
 type ValidationSummary struct {
@@ -34,7 +34,7 @@ type ValidationSummary struct {
 // ParseError represents a parse error (serializable version of runtimev1.ParseError)
 type ParseError struct {
 	Message   string `json:"message" header:"message"`
-	FilePath  string `json:"file_path,omitempty" header:"file_path"`
+	FilePath  string `json:"file_path" header:"file_path"`
 	StartLine uint32 `json:"start_line,omitempty" header:"start_line"`
 }
 
@@ -42,9 +42,9 @@ type ResourceStatus struct {
 	Kind     string `json:"kind" header:"kind"`
 	Name     string `json:"name" header:"name"`
 	Status   string `json:"status" header:"status"`
-	Error    string `json:"error,omitempty" header:"error"`
-	FilePath string `json:"file_path,omitempty" header:"file_path"`
-	Timeout  bool   `json:"timeout,omitempty" header:"timeout"`
+	Error    string `json:"error" header:"error"`
+	FilePath string `json:"file_path" header:"file_path"`
+	Timeout  bool   `json:"timeout" header:"timeout"`
 }
 
 // ValidateCmd validates and reconciles a project without starting the UI.
@@ -173,11 +173,10 @@ func buildValidationResult(resources []*runtimev1.Resource) *ValidationResult {
 	}
 
 	for _, r := range resources {
-		if r.Meta.Name.Kind == runtime.GlobalProjectParserName.Kind && r.Meta.Name.Name == runtime.GlobalProjectParserName.Name {
+		if r.Meta.Name.Kind == runtime.GlobalProjectParserName.Kind && strings.EqualFold(r.Meta.Name.Name, runtime.GlobalProjectParserName.Name) {
 			parseErrors := parseErrorsFromParser(r)
-			if len(parseErrors) > 0 {
-				result.Summary.ParseErrors = len(parseErrors)
-			}
+			result.Summary.ParseErrors = len(parseErrors)
+			result.ParseErrors = parseErrors
 			continue
 		}
 		if r.Meta.Hidden {
