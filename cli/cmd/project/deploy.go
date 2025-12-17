@@ -183,7 +183,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		ch.PrintfBold("Project location within repo: ")
 		ch.Printf("%s\n", subpath)
 	}
-	if o.Managed {
+	if o.Managed && ch.Interactive {
 		// if user explicitly wants managed deploys confirm if they want to really skip github connection
 		ok, err := cmdutil.ConfirmPrompt("Do you want to skip connecting to GitHub and use Rill managed deploys? (Note: Subsequent deploys/push from Rill will not push changes to your GitHub repo)", "", true)
 		if err != nil {
