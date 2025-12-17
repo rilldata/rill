@@ -64,7 +64,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Validate project resources",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Ensure rill start is not running
 			if err := checkRillStartNotRunning(cmd.Context()); err != nil {
 				return err
 			}
