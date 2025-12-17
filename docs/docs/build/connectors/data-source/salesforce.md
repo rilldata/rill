@@ -45,7 +45,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide Salesforce credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#salesforce) for more information.
 

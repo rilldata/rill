@@ -77,7 +77,7 @@ gcloud auth activate-service-account --key-file=path_to_json_key_file
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#bigquery) for more information.
 

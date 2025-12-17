@@ -76,7 +76,7 @@ connectors:
   type: slack
 ```
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide Slack credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#slack) for more information.
 

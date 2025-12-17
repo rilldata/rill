@@ -82,7 +82,7 @@ When ingesting data locally, consider setting parameters in your connector file 
 
 For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to Athena used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#athena) for more information.
 

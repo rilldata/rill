@@ -74,7 +74,7 @@ The HTTPS connector supports various remote data sources:
 
 When running Rill locally, you can use existing credentials configured on your machine for authenticated requests. If you don't have credentials configured, you'll need to define the key with `headers: "Authorization: Bearer token"`.
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide authentication credentials for protected HTTPS endpoints used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#https) for more information.
 

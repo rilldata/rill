@@ -87,7 +87,7 @@ If your project is already deployed to Rill Cloud with configured credentials, u
 
 :::
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 When deploying a project to Rill Cloud, Rill requires you to explicitly provide either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token for the containers used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#azure) for more information.
 
