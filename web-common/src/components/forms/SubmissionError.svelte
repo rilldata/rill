@@ -68,7 +68,7 @@
   .error-container {
     @apply border-red-600 bg-red-50;
     @apply p-2 flex border rounded;
-    @apply max-h-40 overflow-y-auto;
+    @apply max-h-48 overflow-y-auto;
   }
 
   .message {

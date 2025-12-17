@@ -44,7 +44,7 @@
   {#if showAdditionalInfo && connector}
     <div class="mt-4 flex items-center gap-1">
       <span class="text-sm leading-none font-medium"
-        >Additional Information</span
+        >Local Development only</span
       >
       <Tooltip location="right" alignment="middle" distance={8}>
         <div class="text-gray-500">
