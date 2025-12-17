@@ -22,6 +22,7 @@
     createLocalServiceGetCurrentProject,
     createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors";
 
   export let fileArtifact: any;
 
@@ -34,12 +35,20 @@
   const currentProjectQuery = createLocalServiceGetCurrentProject();
   const metadataQuery = createLocalServiceGetMetadata();
 
+  $: project = $currentProjectQuery.data?.project;
+  $: manageProjectAccess = project
+    ? getManageProjectAccess(project.orgName ?? "", project.name ?? "")
+    : null;
+
   $: rcUrl = (() => {
     const currentProject = $currentProjectQuery.data;
     const metadata = $metadataQuery.data;
     const project = currentProject?.project;
     const adminUrl = metadata?.adminUrl;
-    if (!project?.orgName || !project?.name || !adminUrl) return "";
+    const hasManageProject = $manageProjectAccess ?? false;
+    
+    // Only show RC URL if user has manageProject permission (is admin)
+    if (!project?.orgName || !project?.name || !adminUrl || !hasManageProject) return "";
 
     // Convert admin URL to frontend URL (similar to getPlanUpgradeUrl)
     let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
@@ -178,7 +187,7 @@
             rel="noopener noreferrer"
             class="flex items-center gap-2"
           >
-            <span>View in RC</span>
+            <span>View in Cloud</span>
           </Button>
         {/if}
         <Button
