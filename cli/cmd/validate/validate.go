@@ -256,7 +256,7 @@ func outputResult(ch *cmdutil.Helper, result *ValidationResult, outputFormat pri
 	} else {
 		// Output to console based on format
 		if outputFormat == printer.FormatJSON {
-			fmt.Println(string(jsonData))
+			ch.Println(string(jsonData))
 		} else {
 			// Table format - show parse errors and resources separately
 			if len(result.ParseErrors) > 0 {
