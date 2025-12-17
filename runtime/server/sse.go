@@ -65,11 +65,6 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "cannot specify both 'stream' and 'events' parameters", http.StatusBadRequest)
 			return
 		}
-<<<<<<< HEAD
-		v := v[0 : len(v)-1] // Make singular, e.g. "logs" -> "log"
-		eventTypes = []string{v}
-		omitEventNames = true
-=======
 		omitEventNames = true
 		switch v {
 		case "files":
@@ -82,7 +77,6 @@ func (s *Server) SSEHandler(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, fmt.Sprintf("unknown stream type %q", v), http.StatusBadRequest)
 			return
 		}
->>>>>>> main
 	}
 
 	// Deduplicate to prevent starting multiple goroutines for the same event type.
