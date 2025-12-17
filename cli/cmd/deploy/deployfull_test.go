@@ -51,7 +51,7 @@ func TestDeployE2E(t *testing.T) {
 		})
 	}
 
-	// Stop devtool - cancel will send SIGINT and wait up to 15s for graceful shutdown
+	// Stop devtool - cancel will send SIGINT and wait for graceful shutdown
 	cancelFn()
 	<-closeChan
 	t.Log("Devtool shutdown complete")
