@@ -1,8 +1,15 @@
 swagger: "2.0"
 info:
-  title: Rill Admin API
-  description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
-  version: version not set
+  title: Rill API
+  description: It is used to manage organizations, projects, deployments, users, and roles.
+  version: v1
+  contact:
+    name: Rill Data
+    url: https://rilldata.com
+  license:
+    name: Apache 2.0
+    url: https://github.com/rilldata/rill/blob/main/LICENSE.md
+host: api.rilldata.com
 consumes:
   - application/json
 produces:
@@ -373,7 +380,6 @@ paths:
           in: query
           required: false
           type: string
-      x-visibility: public
     post:
       summary: CreateOrganization creates a new organization
       operationId: AdminService_CreateOrganization
@@ -392,7 +398,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateOrganizationRequest'
-      x-visibility: public
   /v1/orgs/{org}:
     get:
       summary: GetOrganization returns information about a specific organization
@@ -415,7 +420,6 @@ paths:
           in: query
           required: false
           type: boolean
-      x-visibility: public
     delete:
       summary: DeleteOrganization deletes an organization
       operationId: AdminService_DeleteOrganization
@@ -433,7 +437,6 @@ paths:
           in: path
           required: true
           type: string
-      x-visibility: public
     patch:
       summary: UpdateOrganization deletes an organizations
       operationId: AdminService_UpdateOrganization
@@ -465,8 +468,6 @@ paths:
                 type: string
               logoAssetId:
                 type: string
-              logoDarkAssetId:
-                type: string
               faviconAssetId:
                 type: string
               thumbnailAssetId:
@@ -475,7 +476,6 @@ paths:
                 type: string
               billingEmail:
                 type: string
-      x-visibility: public
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -713,7 +713,6 @@ paths:
           in: query
           required: false
           type: string
-      x-visibility: public
   /v1/orgs/{org}/members:
     get:
       summary: ListOrganizationMemberUsers lists all the org members
@@ -760,7 +759,6 @@ paths:
           in: query
           required: false
           type: string
-      x-visibility: public
     post:
       summary: AddOrganizationMemberUser adds a user to the organization
       operationId: AdminService_AddOrganizationMemberUser
@@ -790,7 +788,6 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      x-visibility: public
   /v1/orgs/{org}/members/{email}:
     get:
       summary: GetOrganizationMemberUser gets the member details
@@ -834,7 +831,6 @@ paths:
           in: path
           required: true
           type: string
-      x-visibility: public
     put:
       summary: SetOrganizationMemberUserRole sets the role for the member
       operationId: AdminService_SetOrganizationMemberUserRole
@@ -941,11 +937,6 @@ paths:
           in: query
           required: false
           type: string
-        - name: includeCounts
-          description: Optionally include counts
-          in: query
-          required: false
-          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -982,7 +973,6 @@ paths:
           in: query
           required: false
           type: string
-      x-visibility: public
     post:
       summary: CreateProject creates a new project
       operationId: AdminService_CreateProject
@@ -1039,7 +1029,6 @@ paths:
                 type: string
               skipDeploy:
                 type: boolean
-      x-visibility: public
   /v1/orgs/{org}/projects-for-user:
     get:
       summary: |-
@@ -1108,7 +1097,6 @@ paths:
           in: query
           required: false
           type: boolean
-      x-visibility: public
     delete:
       summary: DeleteProject deletes an project
       operationId: AdminService_DeleteProject
@@ -1130,7 +1118,6 @@ paths:
           in: path
           required: true
           type: string
-      x-visibility: public
     patch:
       summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
@@ -1186,7 +1173,6 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
       summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
@@ -1526,14 +1512,6 @@ paths:
             properties:
               environment:
                 type: string
-              branch:
-                type: string
-                description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
-              editable:
-                type: boolean
-                description: |-
-                  Whether the deployment is editable and the edited changes are persisted back to the git repo.
-                  Can't be set for `prod` deployments.
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -1618,9 +1596,6 @@ paths:
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
-              themeMode:
-                type: string
-                description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
@@ -1735,39 +1710,7 @@ paths:
                 type: string
               role:
                 type: string
-              restrictResources:
-                type: boolean
-              resources:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/members/{email}:
-    get:
-      summary: GetProjectMemberUser gets the member details
-      operationId: AdminService_GetProjectMemberUser
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetProjectMemberUserResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
-        - name: email
-          in: path
-          required: true
-          type: string
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1826,22 +1769,15 @@ paths:
             properties:
               role:
                 type: string
-              restrictResources:
-                type: boolean
-              resources:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1ResourceName'
-  /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
-    get:
-      summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
-      operationId: AdminService_ListUsergroupsForProjectAndUser
+  /v1/orgs/{org}/projects/{project}/members/{email}/resources:
+    post:
+      summary: AddProjectMemberUserResources grants resource-scoped access to an existing or invited user (viewer role implied).
+      operationId: AdminService_AddProjectMemberUserResources
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListUsergroupsForProjectAndUserResponse'
+            $ref: '#/definitions/v1AddProjectMemberUserResourcesResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1859,6 +1795,54 @@ paths:
           in: path
           required: true
           type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/members/{email}/resources:remove:
+    post:
+      summary: RemoveProjectMemberUserResources revokes resource-scoped access for a project member.
+      operationId: AdminService_RemoveProjectMemberUserResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUserResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -2338,13 +2322,6 @@ paths:
             properties:
               role:
                 type: string
-              restrictResources:
-                type: boolean
-              resources:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1ResourceName'
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2378,8 +2355,75 @@ paths:
             properties:
               role:
                 type: string
-              restrictResources:
-                type: boolean
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:
+    post:
+      summary: AddProjectMemberUsergroupResources grants resource-scoped access to an existing project user group.
+      operationId: AdminService_AddProjectMemberUsergroupResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUsergroupResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:remove:
+    post:
+      summary: RemoveProjectMemberUsergroupResources revokes resource-scoped access for a project user group.
+      operationId: AdminService_RemoveProjectMemberUsergroupResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUsergroupResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
               resources:
                 type: array
                 items:
@@ -2458,7 +2502,6 @@ paths:
           in: query
           required: false
           type: boolean
-      x-visibility: public
     put:
       summary: UpdateProjectVariables updates variables for a project.
       operationId: AdminService_UpdateProjectVariables
@@ -3512,82 +3555,6 @@ paths:
           in: query
           required: false
           type: string
-        - name: superuserForceAccess
-          description: If set and the caller is a superuser, force access regardless of project permissions.
-          in: query
-          required: false
-          type: boolean
-  /v1/projects/{projectId}/repo/virtual/file:
-    get:
-      summary: GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
-      operationId: AdminService_GetVirtualFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetVirtualFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: projectId
-          description: The project ID to get the virtual file for.
-          in: path
-          required: true
-          type: string
-        - name: environment
-          description: |-
-            The environment to get the virtual file for.
-            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
-          in: query
-          required: false
-          type: string
-        - name: path
-          description: The path of the virtual file to get.
-          in: query
-          required: false
-          type: string
-        - name: superuserForceAccess
-          description: If set and the caller is a superuser, force access regardless of project permissions.
-          in: query
-          required: false
-          type: boolean
-    delete:
-      summary: DeleteVirtualFile deletes a virtual file from a project's virtual repo
-      operationId: AdminService_DeleteVirtualFile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteVirtualFileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: projectId
-          description: The project ID to delete the virtual file from.
-          in: path
-          required: true
-          type: string
-        - name: environment
-          description: |-
-            The environment to delete the virtual file from.
-            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
-          in: query
-          required: false
-          type: string
-        - name: path
-          description: The path of the virtual file to delete.
-          in: query
-          required: false
-          type: string
-        - name: superuserForceAccess
-          description: If set and the caller is a superuser, force access regardless of project permissions.
-          in: query
-          required: false
-          type: boolean
   /v1/projects/{projectId}/reports/meta:
     post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -4438,11 +4405,18 @@ definitions:
         type: boolean
   v1AddOrganizationMemberUsergroupResponse:
     type: object
+  v1AddProjectMemberUserResourcesResponse:
+    type: object
+    properties:
+      pendingSignup:
+        type: boolean
   v1AddProjectMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
+  v1AddProjectMemberUsergroupResourcesResponse:
+    type: object
   v1AddProjectMemberUsergroupResponse:
     type: object
   v1AddUsergroupMemberUserResponse:
@@ -4868,8 +4842,6 @@ definitions:
     type: object
   v1DeleteUsergroupResponse:
     type: object
-  v1DeleteVirtualFileResponse:
-    type: object
   v1DenyProjectAccessResponse:
     type: object
   v1Deployment:
@@ -4885,8 +4857,6 @@ definitions:
         type: string
       branch:
         type: string
-      editable:
-        type: boolean
       runtimeHost:
         type: string
       runtimeInstanceId:
@@ -4906,13 +4876,9 @@ definitions:
     enum:
       - DEPLOYMENT_STATUS_UNSPECIFIED
       - DEPLOYMENT_STATUS_PENDING
-      - DEPLOYMENT_STATUS_RUNNING
-      - DEPLOYMENT_STATUS_ERRORED
+      - DEPLOYMENT_STATUS_OK
+      - DEPLOYMENT_STATUS_ERROR
       - DEPLOYMENT_STATUS_STOPPED
-      - DEPLOYMENT_STATUS_UPDATING
-      - DEPLOYMENT_STATUS_STOPPING
-      - DEPLOYMENT_STATUS_DELETING
-      - DEPLOYMENT_STATUS_DELETED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1EditAlertResponse:
     type: object
@@ -5136,11 +5102,6 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
-  v1GetProjectMemberUserResponse:
-    type: object
-    properties:
-      member:
-        $ref: '#/definitions/v1ProjectMemberUser'
   v1GetProjectResponse:
     type: object
     properties:
@@ -5245,12 +5206,6 @@ definitions:
         $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
-  v1GetVirtualFileResponse:
-    type: object
-    properties:
-      file:
-        $ref: '#/definitions/v1VirtualFile'
-        description: The virtual file.
   v1GithubPermission:
     type: string
     enum:
@@ -5545,14 +5500,6 @@ definitions:
           $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
-  v1ListUsergroupsForProjectAndUserResponse:
-    type: object
-    properties:
-      usergroups:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MemberUsergroup'
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -5626,8 +5573,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-      restrictResources:
-        type: boolean
       resources:
         type: array
         items:
@@ -5646,8 +5591,6 @@ definitions:
       description:
         type: string
       logoUrl:
-        type: string
-      logoDarkUrl:
         type: string
       faviconUrl:
         type: string
@@ -5866,8 +5809,6 @@ definitions:
         type: string
       invitedBy:
         type: string
-      restrictResources:
-        type: boolean
       resources:
         type: array
         items:
@@ -5921,8 +5862,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-      restrictResources:
-        type: boolean
       resources:
         type: array
         items:
@@ -6080,7 +6019,11 @@ definitions:
     type: object
   v1RemoveProjectMemberServiceResponse:
     type: object
+  v1RemoveProjectMemberUserResourcesResponse:
+    type: object
   v1RemoveProjectMemberUserResponse:
+    type: object
+  v1RemoveProjectMemberUsergroupResourcesResponse:
     type: object
   v1RemoveProjectMemberUsergroupResponse:
     type: object
@@ -6449,21 +6392,12 @@ definitions:
       name:
         type: string
         title: The name of the tool
-      displayName:
-        type: string
-        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool
-      meta:
-        type: object
-        title: Metadata about the tool
       inputSchema:
         type: string
         title: JSON Schema defining the expected parameters for the tool (as JSON string)
-      outputSchema:
-        type: string
-        title: JSON Schema defining the expected output of the tool (as JSON string)
     title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
@@ -6603,10 +6537,13 @@ definitions:
         type: string
       prefix:
         type: string
-      attributes:
-        type: object
+<<<<<<< HEAD
       refresh:
         type: boolean
+=======
+      attributes:
+        type: object
+>>>>>>> main
       createdOn:
         type: string
         format: date-time
@@ -6685,5 +6622,5 @@ definitions:
       role:
         type: string
 externalDocs:
-  description: Rill API Documentation
-  url: https://docs.rilldata.com
+  description: Rill API Reference
+  url: https://docs.rilldata.com/api/admin
