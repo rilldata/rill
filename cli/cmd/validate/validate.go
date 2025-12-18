@@ -66,6 +66,18 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Validate project resources",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// first, validate and set the output format
+			outputFormat := ch.Printer.Format
+			switch outputFormat {
+			// supported formats
+			case printer.FormatHuman:
+			case printer.FormatJSON:
+				// override human output to console otherwise any printfs or printlns will be discarded
+				ch.Printer.OverrideHumanOutput(color.Output)
+			default:
+				return fmt.Errorf("only human and json output format is supported for validate command")
+			}
+
 			if err := checkRillStartNotRunning(cmd.Context()); err != nil {
 				return err
 			}
@@ -79,18 +91,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			} else {
 				projectPath = "."
-			}
-
-			// Validate output format
-			outputFormat := ch.Printer.Format
-			switch outputFormat {
-			// supported formats
-			case printer.FormatHuman:
-			case printer.FormatJSON:
-				// override human output to console otherwise any printfs or printlns will be discarded
-				ch.Printer.OverrideHumanOutput(color.Output)
-			default:
-				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
 
 			if !local.IsProjectInit(projectPath) {
