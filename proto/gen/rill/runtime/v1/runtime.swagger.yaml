@@ -3080,6 +3080,42 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/revert/{commitSha}:
+    post:
+      summary: RevertToCommit creates a new commit that reverts changes from a specific commit
+      operationId: RuntimeService_RevertToCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevertToCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: commitSha
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              files:
+                type: array
+                items:
+                  type: string
+                description: 'Optional: specific files to revert. If empty, reverts entire commit.'
+            title: Request message for RuntimeService.RevertToCommit
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/trigger:
     post:
       summary: |-
@@ -6910,6 +6946,14 @@ definitions:
         type: string
       name:
         type: string
+  v1RevertToCommitResponse:
+    type: object
+    properties:
+      newCommitSha:
+        type: string
+      message:
+        type: string
+    title: Response message for RuntimeService.RevertToCommit
   v1Schedule:
     type: object
     properties:

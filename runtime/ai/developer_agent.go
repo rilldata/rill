@@ -51,6 +51,13 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		return nil, err
 	}
 
+	// Create a checkpoint before making any changes
+	// This commits any uncommitted changes or returns the current HEAD SHA
+	_, err = s.CallTool(ctx, RoleAssistant, CheckpointName, nil, &CheckpointArgs{})
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate the prompts
 	systemPrompt, err := t.systemPrompt(ctx)
 	if err != nil {

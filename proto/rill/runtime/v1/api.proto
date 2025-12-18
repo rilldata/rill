@@ -111,6 +111,14 @@ service RuntimeService {
     };
   }
 
+  // RevertToCommit creates a new commit that reverts changes from a specific commit
+  rpc RevertToCommit(RevertToCommitRequest) returns (RevertToCommitResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/revert/{commit_sha}",
+      body: "*"
+    };
+  }
+
   // ListExamples lists all the examples embedded into binary
   rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
     option (google.api.http) = {get: "/v1/examples"};
@@ -543,6 +551,18 @@ message RenameFileRequest {
 
 // Response message for RuntimeService.RenameFile
 message RenameFileResponse {}
+
+// Request message for RuntimeService.RevertToCommit
+message RevertToCommitRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_sha = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.RevertToCommit
+message RevertToCommitResponse {
+  string new_commit_sha = 1;
+  string message = 2;
+}
 
 // Example contains metadata about an example project that is available for unpacking.
 message Example {

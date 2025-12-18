@@ -34,6 +34,7 @@ const (
 	RuntimeService_CreateDirectory_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateDirectory"
 	RuntimeService_DeleteFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/DeleteFile"
 	RuntimeService_RenameFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_RevertToCommit_FullMethodName          = "/rill.runtime.v1.RuntimeService/RevertToCommit"
 	RuntimeService_ListExamples_FullMethodName            = "/rill.runtime.v1.RuntimeService/ListExamples"
 	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
@@ -100,6 +101,8 @@ type RuntimeServiceClient interface {
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
+	// RevertToCommit creates a new commit that reverts changes from a specific commit
+	RevertToCommit(ctx context.Context, in *RevertToCommitRequest, opts ...grpc.CallOption) (*RevertToCommitResponse, error)
 	// ListExamples lists all the examples embedded into binary
 	ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error)
 	// UnpackExample unpacks an example project
@@ -319,6 +322,16 @@ func (c *runtimeServiceClient) RenameFile(ctx context.Context, in *RenameFileReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RenameFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_RenameFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) RevertToCommit(ctx context.Context, in *RevertToCommitRequest, opts ...grpc.CallOption) (*RevertToCommitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevertToCommitResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_RevertToCommit_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -650,6 +663,8 @@ type RuntimeServiceServer interface {
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error)
+	// RevertToCommit creates a new commit that reverts changes from a specific commit
+	RevertToCommit(context.Context, *RevertToCommitRequest) (*RevertToCommitResponse, error)
 	// ListExamples lists all the examples embedded into binary
 	ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error)
 	// UnpackExample unpacks an example project
@@ -760,6 +775,9 @@ func (UnimplementedRuntimeServiceServer) DeleteFile(context.Context, *DeleteFile
 }
 func (UnimplementedRuntimeServiceServer) RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameFile not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RevertToCommit(context.Context, *RevertToCommitRequest) (*RevertToCommitResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevertToCommit not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListExamples not implemented")
@@ -1119,6 +1137,24 @@ func _RuntimeService_RenameFile_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).RenameFile(ctx, req.(*RenameFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_RevertToCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevertToCommitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RevertToCommit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_RevertToCommit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RevertToCommit(ctx, req.(*RevertToCommitRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1632,6 +1668,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenameFile",
 			Handler:    _RuntimeService_RenameFile_Handler,
+		},
+		{
+			MethodName: "RevertToCommit",
+			Handler:    _RuntimeService_RevertToCommit_Handler,
 		},
 		{
 			MethodName: "ListExamples",

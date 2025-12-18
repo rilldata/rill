@@ -8,6 +8,7 @@
   import type { ConversationManager } from "../conversation-manager";
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
+  import CheckpointBlock from "./checkpoint/CheckpointBlock.svelte";
   import Error from "./Error.svelte";
   import FileDiffBlock from "./file-diff/FileDiffBlock.svelte";
   import AssistantMessage from "./text/AssistantMessage.svelte";
@@ -115,6 +116,8 @@
         <WorkingBlock />
       {:else if block.type === "chart"}
         <ChartBlock {block} {tools} />
+      {:else if block.type === "checkpoint"}
+        <CheckpointBlock {block} {tools} />
       {:else if block.type === "file-diff"}
         <FileDiffBlock {block} {tools} />
       {/if}
