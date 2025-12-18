@@ -11,8 +11,10 @@ import (
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const QueryMetricsViewName = "query_metrics_view"
@@ -189,6 +191,7 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 
 	// Gather the result rows
 	var data []map[string]any
+	schema := &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: res.Schema()}
 	for {
 		row, err := res.Next()
 		if err != nil {
@@ -197,6 +200,18 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 			}
 			return nil, err
 		}
+
+		// Cast non-JSON types to JSON-compatible types
+		v, err := jsonval.ToValue(row, schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert row to value: %w", err)
+		}
+		var ok bool
+		row, ok = v.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("expected row to be map[string]any, got %T", v)
+		}
+
 		data = append(data, row)
 	}
 

@@ -295,6 +295,19 @@ SELECT * FROM read_parquet('gs://my-bucket/data/**/*.parquet')
 SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
 ```
 
+---
+
+## Deploy to Rill Cloud
+
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide Service Account JSON or HMAC Keys for Google Cloud Storage used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#gcs) for more information.
+
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
+```
+
+---
+
 ## Appendix
 
 ### How to create a service account using the Google Cloud Console
