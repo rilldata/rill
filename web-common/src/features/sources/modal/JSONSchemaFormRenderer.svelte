@@ -57,21 +57,32 @@
   }
 
   // Clear hidden fields for the active step to avoid stale submissions.
+  // Depend on `$form` so this runs when the auth method (or other values) change.
   $: if (schema) {
-    form.update(
-      ($form) => {
-        const properties = schema.properties ?? {};
-        for (const [key, prop] of Object.entries(properties)) {
-          if (!matchesStep(prop, stepFilter)) continue;
-          const visible = isVisibleForValues(schema, key, $form);
-          if (!visible && key in $form && $form[key] !== "") {
-            $form[key] = "";
+    const currentValues = $form;
+    const properties = schema.properties ?? {};
+
+    const shouldClear = Object.entries(properties).some(([key, prop]) => {
+      if (!matchesStep(prop, stepFilter)) return false;
+      const visible = isVisibleForValues(schema, key, currentValues);
+      return !visible && key in currentValues && currentValues[key] !== "";
+    });
+
+    if (shouldClear) {
+      form.update(
+        ($form) => {
+          for (const [key, prop] of Object.entries(properties)) {
+            if (!matchesStep(prop, stepFilter)) continue;
+            const visible = isVisibleForValues(schema, key, $form);
+            if (!visible && key in $form && $form[key] !== "") {
+              $form[key] = "";
+            }
           }
-        }
-        return $form;
-      },
-      { taint: false },
-    );
+          return $form;
+        },
+        { taint: false },
+      );
+    }
   }
 
   function matchesStep(prop: JSONSchemaField | undefined, stepValue?: string) {
