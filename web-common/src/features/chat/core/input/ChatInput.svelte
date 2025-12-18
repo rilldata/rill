@@ -80,6 +80,12 @@
         onSubmit: () => void sendMessage(),
       }),
       content: "",
+      editorProps: {
+        attributes: {
+          class: config.minChatHeight,
+          style: height ? `height: ${height};` : "",
+        },
+      },
       onTransaction: () => {
         // force re-render so `editor.isActive` works as expected
         editor = editor;
@@ -109,12 +115,7 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div
-    class="chat-input-container"
-    bind:this={element}
-    class:fixed-height={!!height}
-    style:height
-  />
+  <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
     {#if enableMention}
       <button class="text-base ml-1" type="button" on:click={startMention}>
@@ -158,17 +159,12 @@
   }
 
   :global(.tiptap) {
-    @apply px-2 py-2 min-h-[2.5rem] outline-none;
+    @apply px-2 py-2 outline-none;
     @apply text-sm leading-relaxed;
   }
 
   .chat-input-container {
     @apply w-full max-h-32 overflow-auto;
-  }
-
-  .chat-input-container.fixed-height {
-    min-height: unset;
-    max-height: unset;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
