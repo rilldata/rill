@@ -22,10 +22,6 @@ export function makeFullyQualifiedTableName(
       return `${database}.${databaseSchema}.${table}`;
     case "pinot":
       return table;
-    case "starrocks":
-      // StarRocks uses catalog.database.table format
-      // database = StarRocks catalog, databaseSchema = StarRocks database
-      return `${database}.${databaseSchema}.${table}`;
     // Non-OLAP connectors: use standard database.schema.table format
     default:
       if (database && databaseSchema) {
@@ -64,14 +60,6 @@ export function makeSufficientlyQualifiedTableName(
     case "pinot":
       // TODO
       return table;
-    case "starrocks":
-      // StarRocks uses catalog.database.table format
-      // database = StarRocks catalog (default: default_catalog), databaseSchema = StarRocks database
-      if (database === "default_catalog" || database === "") {
-        if (databaseSchema === "" || databaseSchema === "default") return table;
-        return `${databaseSchema}.${table}`;
-      }
-      return `${database}.${databaseSchema}.${table}`;
     case "mysql":
       // MySQL uses database.table format (no schema concept like PostgreSQL)
       if (database && database !== "default") {
@@ -119,8 +107,6 @@ export function makeTablePreviewHref(
       return `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
-    case "starrocks":
-      return `/connector/starrocks/${connectorName}/${database}/${databaseSchema}/${table}`;
     default:
       return null;
   }

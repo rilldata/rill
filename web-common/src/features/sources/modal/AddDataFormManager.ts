@@ -375,7 +375,7 @@ export class AddDataFormManager {
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseParamsValues?: Record<string, unknown>;
     clickhouseDsnValues?: Record<string, unknown>;
-  }): string {
+\  }): string {
     const connector = this.connector;
     const {
       connectionTab,

@@ -215,30 +215,6 @@ export const getYupSchema = {
     //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
     //   .required("Connector name is required"),
   }),
-
-  starrocks: yup.object().shape({
-    dsn: yup.string().optional(),
-    host: yup
-      .string()
-      .required("Host is required")
-      .matches(
-        /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
-        "Do not prefix the host with `http(s)://`",
-      ),
-    port: yup
-      .string()
-      .matches(/^\d+$/, "Port must be a number")
-      .default("9030"),
-    username: yup.string().required("Username is required"),
-    password: yup.string(),
-    catalog: yup
-      .string()
-      .required("Catalog is required")
-      .default("default_catalog"),
-    database: yup.string().optional(),
-    ssl: yup.boolean(),
-    name: yup.string(),
-  }),
 };
 
 export const dsnSchema = yup.object().shape({

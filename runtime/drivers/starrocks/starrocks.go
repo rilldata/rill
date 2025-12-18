@@ -356,16 +356,13 @@ func (c *connection) initDB() error {
 
 	// Validate catalog exists (only if specified and not default_catalog)
 	// This validation happens once during initialization, not on every Ping()
+	// Use catalog's information_schema to verify the catalog is accessible
 	if c.configProp.Catalog != "" && c.configProp.Catalog != defaultCatalog {
-		var catalogCount int
-		catalogQuery := "SELECT COUNT(*) FROM information_schema.catalogs WHERE catalog_name = ?"
-		if err := db.QueryRowContext(pingCtx, catalogQuery, c.configProp.Catalog).Scan(&catalogCount); err != nil {
+		var dummy int
+		catalogQuery := fmt.Sprintf("SELECT 1 FROM %s.information_schema.schemata LIMIT 1", c.configProp.Catalog)
+		if err := db.QueryRowContext(pingCtx, catalogQuery).Scan(&dummy); err != nil {
 			db.Close()
-			return fmt.Errorf("failed to validate catalog: %w", err)
-		}
-		if catalogCount == 0 {
-			db.Close()
-			return fmt.Errorf("catalog %q does not exist", c.configProp.Catalog)
+			return fmt.Errorf("failed to validate catalog %q: %w", c.configProp.Catalog, err)
 		}
 	}
 
