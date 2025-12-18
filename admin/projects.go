@@ -83,7 +83,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Check if the project has an archive or git info
 	hasArchive := opts.ArchiveAssetID != nil
-	hasGitInfo := opts.GitRemote != nil && opts.GithubInstallationID != nil && opts.ProdBranch != ""
+	hasGitInfo := opts.GitRemote != nil && opts.GithubInstallationID != nil && opts.PrimaryBranch != ""
 	if !hasArchive && !hasGitInfo {
 		return nil, fmt.Errorf("failed to deploy project: either an archive or git info must be provided")
 	}
@@ -94,7 +94,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProjectID:   proj.ID,
 		OwnerUserID: nil,
 		Environment: "prod",
-		Branch:      proj.ProdBranch,
+		Branch:      proj.PrimaryBranch,
 		Editable:    false,
 	})
 	if err != nil {
@@ -114,11 +114,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		Provisioner:          proj.Provisioner,
 		ProdVersion:          proj.ProdVersion,
-		ProdBranch:           proj.ProdBranch,
+		PrimaryBranch:        proj.PrimaryBranch,
 		Subpath:              proj.Subpath,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		ProdDeploymentID:     &depl.ID,
+		PrimaryDeploymentID:  &depl.ID,
 		DevSlots:             proj.DevSlots,
 		DevTTLSeconds:        proj.DevTTLSeconds,
 		Annotations:          proj.Annotations,
@@ -175,20 +175,31 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	impactsDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
-		(oldProj.ProdSlots != opts.ProdSlots) ||
-		(oldProj.Name != opts.Name) ||
-		(oldProj.Subpath != opts.Subpath) ||
-		(oldProj.ProdBranch != opts.ProdBranch) ||
-		!reflect.DeepEqual(oldProj.Annotations, opts.Annotations) ||
-		!reflect.DeepEqual(oldProj.GitRemote, opts.GitRemote) ||
-		!reflect.DeepEqual(oldProj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID)
+	// check if there is an existing dev deployment for the new primary branch
+	depls, err := s.DB.FindDeploymentsForProject(ctx, oldProj.ID, "", opts.PrimaryBranch)
+	if err != nil {
+		return nil, err
+	}
+	for _, d := range depls {
+		if d.Environment == "dev" {
+			return nil, fmt.Errorf("cannot change primary branch to %q as there is an existing dev deployment for this branch. Delete the dev deployment first", opts.PrimaryBranch)
+		}
+	}
 
 	proj, err := s.DB.UpdateProject(ctx, oldProj.ID, opts)
 	if err != nil {
 		return nil, err
 	}
+
+	impactsDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
+		(oldProj.ProdSlots != opts.ProdSlots) ||
+		(oldProj.Name != opts.Name) ||
+		(oldProj.Subpath != opts.Subpath) ||
+		(oldProj.PrimaryBranch != opts.PrimaryBranch) ||
+		!reflect.DeepEqual(oldProj.Annotations, opts.Annotations) ||
+		!reflect.DeepEqual(oldProj.GitRemote, opts.GitRemote) ||
+		!reflect.DeepEqual(oldProj.GithubInstallationID, opts.GithubInstallationID) ||
+		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID)
 
 	if !impactsDeployments {
 		return proj, nil
@@ -196,43 +207,35 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
 
-	if oldProj.ProdBranch != opts.ProdBranch {
-		// check if there is an existing deployment for the new prod branch
-		depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID, "", opts.ProdBranch)
-		if err != nil {
-			return nil, err
-		}
-		if len(depls) > 0 {
-			for _, d := range depls {
-				if d.Environment != "prod" {
-					// dev deployments are deleted later in the UpdateDeploymentsForProject call
-					continue
-				}
-				// to avoid reconciling changes for the new prod branch directly update project to point to existing deployment
-				proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-					Name:                 proj.Name,
-					Description:          proj.Description,
-					Public:               proj.Public,
-					DirectoryName:        proj.DirectoryName,
-					Provisioner:          proj.Provisioner,
-					ArchiveAssetID:       proj.ArchiveAssetID,
-					GitRemote:            proj.GitRemote,
-					GithubInstallationID: proj.GithubInstallationID,
-					GithubRepoID:         proj.GithubRepoID,
-					ManagedGitRepoID:     proj.ManagedGitRepoID,
-					ProdVersion:          proj.ProdVersion,
-					ProdBranch:           proj.ProdBranch,
-					Subpath:              proj.Subpath,
-					ProdDeploymentID:     &d.ID,
-					ProdSlots:            proj.ProdSlots,
-					ProdTTLSeconds:       proj.ProdTTLSeconds,
-					DevSlots:             proj.DevSlots,
-					DevTTLSeconds:        proj.DevTTLSeconds,
-					Annotations:          proj.Annotations,
-				})
-				if err != nil {
-					return nil, err
-				}
+	// if there is an existing prod deployment for the new branch then update the project use that as its primary deployment
+	if oldProj.PrimaryBranch != opts.PrimaryBranch {
+		for _, d := range depls {
+			if d.Environment != "prod" {
+				continue
+			}
+			proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+				Name:                 proj.Name,
+				Description:          proj.Description,
+				Public:               proj.Public,
+				DirectoryName:        proj.DirectoryName,
+				Provisioner:          proj.Provisioner,
+				ArchiveAssetID:       proj.ArchiveAssetID,
+				GitRemote:            proj.GitRemote,
+				GithubInstallationID: proj.GithubInstallationID,
+				GithubRepoID:         proj.GithubRepoID,
+				ManagedGitRepoID:     proj.ManagedGitRepoID,
+				ProdVersion:          proj.ProdVersion,
+				PrimaryBranch:        proj.PrimaryBranch,
+				Subpath:              proj.Subpath,
+				PrimaryDeploymentID:  &d.ID,
+				ProdSlots:            proj.ProdSlots,
+				ProdTTLSeconds:       proj.ProdTTLSeconds,
+				DevSlots:             proj.DevSlots,
+				DevTTLSeconds:        proj.DevTTLSeconds,
+				Annotations:          proj.Annotations,
+			})
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -323,7 +326,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 }
 
 // RedeployProject de-provisions and re-provisions a project's deployment.
-// If prevDepl is nil, it provisions a new prod deployment based on prodBranch.
+// If prevDepl is nil, it provisions a new prod deployment based on primary_branch.
 func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
 	// Provision new deployment
 	var branch, environment string
@@ -333,7 +336,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		environment = prevDepl.Environment
 		editable = prevDepl.Editable
 	} else {
-		branch = proj.ProdBranch
+		branch = proj.PrimaryBranch
 		environment = "prod"
 	}
 	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
@@ -347,7 +350,7 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		return nil, err
 	}
 
-	if environment != "prod" || branch != proj.ProdBranch {
+	if environment != "prod" || branch != proj.PrimaryBranch {
 		// Delete old prod deployment if exists
 		if prevDepl != nil {
 			err := s.TeardownDeployment(ctx, prevDepl)
@@ -371,9 +374,9 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		GithubRepoID:         proj.GithubRepoID,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
-		ProdBranch:           proj.ProdBranch,
+		PrimaryBranch:        proj.PrimaryBranch,
 		Subpath:              proj.Subpath,
-		ProdDeploymentID:     &newDepl.ID,
+		PrimaryDeploymentID:  &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,
@@ -421,9 +424,9 @@ func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) 
 		GithubRepoID:         proj.GithubRepoID,
 		ManagedGitRepoID:     proj.ManagedGitRepoID,
 		ProdVersion:          proj.ProdVersion,
-		ProdBranch:           proj.ProdBranch,
+		PrimaryBranch:        proj.PrimaryBranch,
 		Subpath:              proj.Subpath,
-		ProdDeploymentID:     nil,
+		PrimaryDeploymentID:  nil,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		DevSlots:             proj.DevSlots,

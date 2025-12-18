@@ -317,7 +317,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		if req.Branch != "" {
 			branch = req.Branch
 		} else {
-			branch = proj.ProdBranch
+			branch = proj.PrimaryBranch
 		}
 		if req.Editable {
 			return nil, status.Error(codes.InvalidArgument, "editable cannot be set for prod deployments")
@@ -390,7 +390,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		return nil, err
 	}
 
-	if depl.Environment == "prod" && proj.ProdBranch == branch {
+	if depl.Environment == "prod" && proj.PrimaryBranch == branch {
 		// If this is a prod deployment, we update the prod deployment on project
 		_, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 			Name:                 proj.Name,
@@ -404,9 +404,9 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 			GithubRepoID:         proj.GithubRepoID,
 			ManagedGitRepoID:     proj.ManagedGitRepoID,
 			ProdVersion:          proj.ProdVersion,
-			ProdBranch:           proj.ProdBranch,
+			PrimaryBranch:        proj.PrimaryBranch,
 			Subpath:              proj.Subpath,
-			ProdDeploymentID:     &depl.ID,
+			PrimaryDeploymentID:  &depl.ID,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			DevSlots:             proj.DevSlots,
@@ -551,11 +551,11 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
 	}
 
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -664,11 +664,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
 	}
 
-	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

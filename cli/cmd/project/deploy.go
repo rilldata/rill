@@ -26,17 +26,18 @@ import (
 var ErrInvalidProject = errors.New("invalid project")
 
 type DeployOpts struct {
-	GitPath     string
-	SubPath     string
-	RemoteName  string
-	Name        string
-	Description string
-	Public      bool
-	Provisioner string
-	ProdVersion string
-	ProdBranch  string
-	Slots       int
-	PushEnv     bool
+	GitPath       string
+	SubPath       string
+	RemoteName    string
+	Name          string
+	Description   string
+	Public        bool
+	Provisioner   string
+	ProdVersion   string
+	ProdBranch    string
+	PrimaryBranch string
+	Slots         int
+	PushEnv       bool
 
 	ArchiveUpload bool
 	// Managed indicates if the project should be deployed using Rill Managed Git.
@@ -61,6 +62,10 @@ func (o *DeployOpts) LocalProjectPath() string {
 }
 
 func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.Helper) error {
+	if o.ProdBranch != "" {
+		// handle deprecated flag
+		o.PrimaryBranch = o.ProdBranch
+	}
 	if o.remoteURL != "" {
 		// already validated
 		// just a hack to avoid re-validation when `rill project deploy` internally calls `rill project connect-github`
@@ -294,7 +299,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
+
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	deployCmd.Flags().MarkDeprecated("prod-branch", "use --primary-branch instead")
+	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	deployCmd.MarkFlagsMutuallyExclusive("prod-branch", "primary-branch")
+
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
@@ -480,7 +490,7 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 		}
 		config := &gitutil.Config{
 			Remote:        opts.pushToProject.GitRemote,
-			DefaultBranch: opts.pushToProject.ProdBranch,
+			DefaultBranch: opts.pushToProject.PrimaryBranch,
 			Subpath:       subpath,
 		}
 		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil, "1")

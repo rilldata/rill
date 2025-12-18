@@ -3680,9 +3680,9 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   subpath = "";
 
   /**
-   * @generated from field: string prod_branch = 9;
+   * @generated from field: string primary_branch = 9;
    */
-  prodBranch = "";
+  primaryBranch = "";
 
   /**
    * git_remote is set for projects whose project files are stored in Git.
@@ -3726,7 +3726,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 5, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3897,9 +3897,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   directoryName?: string;
 
   /**
-   * @generated from field: optional string prod_branch = 5;
+   * @generated from field: optional string primary_branch = 5;
    */
-  prodBranch?: string;
+  primaryBranch?: string;
 
   /**
    * @generated from field: optional string git_remote = 6;
@@ -3959,7 +3959,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 15, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -11342,9 +11342,9 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
   gitSubpath = "";
 
   /**
-   * @generated from field: string git_prod_branch = 5;
+   * @generated from field: string git_primary_branch = 5;
    */
-  gitProdBranch = "";
+  gitPrimaryBranch = "";
 
   /**
    * @generated from field: bool git_managed_repo = 8;
@@ -11371,7 +11371,7 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
     { no: 3, name: "git_password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "git_password_expires_at", kind: "message", T: Timestamp },
     { no: 4, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "git_prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "git_primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "git_managed_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -15498,9 +15498,9 @@ export class Project extends Message<Project> {
   subpath = "";
 
   /**
-   * @generated from field: string prod_branch = 9;
+   * @generated from field: string primary_branch = 9;
    */
-  prodBranch = "";
+  primaryBranch = "";
 
   /**
    * @generated from field: string archive_asset_id = 23;
@@ -15513,9 +15513,9 @@ export class Project extends Message<Project> {
   prodSlots = protoInt64.zero;
 
   /**
-   * @generated from field: string prod_deployment_id = 13;
+   * @generated from field: string primary_deployment_id = 13;
    */
-  prodDeploymentId = "";
+  primaryDeploymentId = "";
 
   /**
    * @generated from field: int64 dev_slots = 25;
@@ -15574,10 +15574,10 @@ export class Project extends Message<Project> {
     { no: 8, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "managed_git_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "primary_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 25, name: "dev_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

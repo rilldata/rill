@@ -433,7 +433,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 			provisioner,
 			prod_slots,
 			subpath,
-			prod_branch,
+			primary_branch,
 			archive_asset_id,
 			git_remote,
 			github_installation_id,
@@ -454,7 +454,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		opts.Provisioner,
 		opts.ProdSlots,
 		opts.Subpath,
-		opts.ProdBranch,
+		opts.PrimaryBranch,
 		opts.ArchiveAssetID,
 		opts.GitRemote,
 		opts.GithubInstallationID,
@@ -494,13 +494,13 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 			description = $2,
 			public = $3,
 			directory_name = $4,
-			prod_branch = $5,
+			primary_branch = $5,
 			git_remote = $6,
 			github_installation_id = $7,
 			github_repo_id = $8,
 			managed_git_repo_id = $9,
 			archive_asset_id = $10,
-			prod_deployment_id = $11,
+			primary_deployment_id = $11,
 			provisioner = $12,
 			prod_slots = $13,
 			subpath = $14,
@@ -517,13 +517,13 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Description,
 		opts.Public,
 		opts.DirectoryName,
-		opts.ProdBranch,
+		opts.PrimaryBranch,
 		opts.GitRemote,
 		opts.GithubInstallationID,
 		opts.GithubRepoID,
 		opts.ManagedGitRepoID,
 		opts.ArchiveAssetID,
-		opts.ProdDeploymentID,
+		opts.PrimaryDeploymentID,
 		opts.Provisioner,
 		opts.ProdSlots,
 		opts.Subpath,
@@ -2936,7 +2936,7 @@ func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]s
 
 func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
 	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND primary_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
 	if err != nil {
 		return 0, parseErr("billing projects", err)
 	}

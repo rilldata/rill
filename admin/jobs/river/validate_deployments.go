@@ -100,8 +100,8 @@ func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Co
 
 	// Determine the current production deployment, if any
 	var prodDeplID string
-	if proj.ProdDeploymentID != nil {
-		prodDeplID = *proj.ProdDeploymentID
+	if proj.PrimaryDeploymentID != nil {
+		prodDeplID = *proj.PrimaryDeploymentID
 	}
 
 	for _, depl := range depls {

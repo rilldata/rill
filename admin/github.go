@@ -344,14 +344,14 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 
 	// Iterate over all projects and trigger reconcile
 	for _, project := range projects {
-		if branch != project.ProdBranch {
+		if branch != project.PrimaryBranch {
 			// Ignore if push was not to production branch
 			continue
 		}
 
 		// Trigger reconcile (runs in the background)
-		if project.ProdDeploymentID != nil {
-			depl, err := s.DB.FindDeployment(ctx, *project.ProdDeploymentID)
+		if project.PrimaryDeploymentID != nil {
+			depl, err := s.DB.FindDeployment(ctx, *project.PrimaryDeploymentID)
 			if err != nil {
 				s.Logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
 				continue
