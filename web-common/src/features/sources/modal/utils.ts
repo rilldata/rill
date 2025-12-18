@@ -96,7 +96,6 @@ export function hasOnlyDsn(
  */
 export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
-  _selectedMethod: string,
   paramsFormValue: Record<string, unknown>,
   paramsFormErrors: Record<string, unknown>,
 ) {
