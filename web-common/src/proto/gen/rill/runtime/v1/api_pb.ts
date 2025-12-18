@@ -4282,6 +4282,11 @@ export class Conversation extends Message$1<Conversation> {
   userAgent = "";
 
   /**
+   * @generated from field: string checkpoint_message_id = 8;
+   */
+  checkpointMessageId = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
   createdOn?: Timestamp;
@@ -4310,6 +4315,7 @@ export class Conversation extends Message$1<Conversation> {
     { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "checkpoint_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
     { no: 7, name: "messages", kind: "message", T: Message, repeated: true },
@@ -4738,6 +4744,200 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 
   static equals(a: GetConversationResponse | PlainMessage<GetConversationResponse> | undefined, b: GetConversationResponse | PlainMessage<GetConversationResponse> | undefined): boolean {
     return proto3.util.equals(GetConversationResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.SetConversationCheckpoint
+ *
+ * @generated from message rill.runtime.v1.SetConversationCheckpointRequest
+ */
+export class SetConversationCheckpointRequest extends Message$1<SetConversationCheckpointRequest> {
+  /**
+   * Instance the conversation belongs to.
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Conversation ID to checkpoint.
+   *
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * Message ID of the latest message *before* the checkpoint.
+   *
+   * @generated from field: string message_id = 3;
+   */
+  messageId = "";
+
+  constructor(data?: PartialMessage<SetConversationCheckpointRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SetConversationCheckpointRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetConversationCheckpointRequest {
+    return new SetConversationCheckpointRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetConversationCheckpointRequest {
+    return new SetConversationCheckpointRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetConversationCheckpointRequest {
+    return new SetConversationCheckpointRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetConversationCheckpointRequest | PlainMessage<SetConversationCheckpointRequest> | undefined, b: SetConversationCheckpointRequest | PlainMessage<SetConversationCheckpointRequest> | undefined): boolean {
+    return proto3.util.equals(SetConversationCheckpointRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.SetConversationCheckpoint
+ *
+ * @generated from message rill.runtime.v1.SetConversationCheckpointResponse
+ */
+export class SetConversationCheckpointResponse extends Message$1<SetConversationCheckpointResponse> {
+  constructor(data?: PartialMessage<SetConversationCheckpointResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SetConversationCheckpointResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetConversationCheckpointResponse {
+    return new SetConversationCheckpointResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetConversationCheckpointResponse {
+    return new SetConversationCheckpointResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetConversationCheckpointResponse {
+    return new SetConversationCheckpointResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SetConversationCheckpointResponse | PlainMessage<SetConversationCheckpointResponse> | undefined, b: SetConversationCheckpointResponse | PlainMessage<SetConversationCheckpointResponse> | undefined): boolean {
+    return proto3.util.equals(SetConversationCheckpointResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.RevertConversationWrites
+ *
+ * @generated from message rill.runtime.v1.RevertConversationWritesRequest
+ */
+export class RevertConversationWritesRequest extends Message$1<RevertConversationWritesRequest> {
+  /**
+   * Instance the conversation belongs to.
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Conversation ID to revert writes for.
+   *
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * Start message ID to revert from (inclusive). If empty, it reverts from after the conversation's checkpoint.
+   *
+   * @generated from field: string from_message_id = 3;
+   */
+  fromMessageId = "";
+
+  /**
+   * End message ID to revert to (inclusive). If empty, it reverts to the latest message.
+   *
+   * @generated from field: string to_message_id = 4;
+   */
+  toMessageId = "";
+
+  constructor(data?: PartialMessage<RevertConversationWritesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RevertConversationWritesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "from_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "to_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevertConversationWritesRequest {
+    return new RevertConversationWritesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevertConversationWritesRequest {
+    return new RevertConversationWritesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevertConversationWritesRequest {
+    return new RevertConversationWritesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevertConversationWritesRequest | PlainMessage<RevertConversationWritesRequest> | undefined, b: RevertConversationWritesRequest | PlainMessage<RevertConversationWritesRequest> | undefined): boolean {
+    return proto3.util.equals(RevertConversationWritesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.RevertConversationWrites
+ *
+ * @generated from message rill.runtime.v1.RevertConversationWritesResponse
+ */
+export class RevertConversationWritesResponse extends Message$1<RevertConversationWritesResponse> {
+  /**
+   * @generated from field: repeated string restored_paths = 1;
+   */
+  restoredPaths: string[] = [];
+
+  constructor(data?: PartialMessage<RevertConversationWritesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RevertConversationWritesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "restored_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevertConversationWritesResponse {
+    return new RevertConversationWritesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevertConversationWritesResponse {
+    return new RevertConversationWritesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevertConversationWritesResponse {
+    return new RevertConversationWritesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevertConversationWritesResponse | PlainMessage<RevertConversationWritesResponse> | undefined, b: RevertConversationWritesResponse | PlainMessage<RevertConversationWritesResponse> | undefined): boolean {
+    return proto3.util.equals(RevertConversationWritesResponse, a, b);
   }
 }
 

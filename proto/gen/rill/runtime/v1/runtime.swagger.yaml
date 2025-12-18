@@ -548,6 +548,81 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/checkpoint:
+    post:
+      summary: SetConversationCheckpoint updates a conversation's checkpoint to after a specified message.
+      operationId: RuntimeService_SetConversationCheckpoint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetConversationCheckpointResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance the conversation belongs to.
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          description: Conversation ID to checkpoint.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              messageId:
+                type: string
+                description: Message ID of the latest message *before* the checkpoint.
+            title: Request message for RuntimeService.SetConversationCheckpoint
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/revert-writes:
+    post:
+      summary: RevertConversationWrites reverts file writes made in a conversation with the AI.
+      operationId: RuntimeService_RevertConversationWrites
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevertConversationWritesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance the conversation belongs to.
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          description: Conversation ID to revert writes for.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              fromMessageId:
+                type: string
+                description: Start message ID to revert from (inclusive). If empty, it reverts from after the conversation's checkpoint.
+              toMessageId:
+                type: string
+                description: End message ID to revert to (inclusive). If empty, it reverts to the latest message.
+            title: Request message for RuntimeService.RevertConversationWrites
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
     get:
       summary: |-
@@ -4489,6 +4564,8 @@ definitions:
         type: string
       userAgent:
         type: string
+      checkpointMessageId:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -6910,6 +6987,14 @@ definitions:
         type: string
       name:
         type: string
+  v1RevertConversationWritesResponse:
+    type: object
+    properties:
+      restoredPaths:
+        type: array
+        items:
+          type: string
+    title: Response message for RuntimeService.RevertConversationWrites
   v1Schedule:
     type: object
     properties:
@@ -7027,6 +7112,9 @@ definitions:
       resource:
         $ref: '#/definitions/v1ResourceName'
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
+  v1SetConversationCheckpointResponse:
+    type: object
+    title: Response message for RuntimeService.SetConversationCheckpoint
   v1Source:
     type: object
     properties:

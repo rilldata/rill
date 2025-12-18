@@ -749,6 +749,7 @@ export interface V1Conversation {
   ownerId?: string;
   title?: string;
   userAgent?: string;
+  checkpointMessageId?: string;
   createdOn?: string;
   updatedOn?: string;
   /** NOTE: Deprecated. */
@@ -2216,6 +2217,10 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RevertConversationWritesResponse {
+  restoredPaths?: string[];
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2277,6 +2282,10 @@ It is ORed together with the condition_kinds. */
 
 export interface V1SecurityRuleTransitiveAccess {
   resource?: V1ResourceName;
+}
+
+export interface V1SetConversationCheckpointResponse {
+  [key: string]: unknown;
 }
 
 export interface V1Source {
@@ -2604,6 +2613,18 @@ export type RuntimeServiceListConversationsParams = {
    * Optional search pattern for filtering by user agent.
    */
   userAgentPattern?: string;
+};
+
+export type RuntimeServiceSetConversationCheckpointBody = {
+  /** Message ID of the latest message *before* the checkpoint. */
+  messageId?: string;
+};
+
+export type RuntimeServiceRevertConversationWritesBody = {
+  /** Start message ID to revert from (inclusive). If empty, it reverts from after the conversation's checkpoint. */
+  fromMessageId?: string;
+  /** End message ID to revert to (inclusive). If empty, it reverts to the latest message. */
+  toMessageId?: string;
 };
 
 export type ConnectorServiceListBucketsParams = {

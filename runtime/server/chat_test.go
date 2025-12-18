@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -87,6 +89,15 @@ measures:
 	require.NotEmpty(t, res2.Messages)
 	require.Len(t, res2.Messages, 4)
 
+	// Set and verify a checkpoint in the conversation
+	checkpointMsg := res2.Messages[len(res2.Messages)-1]
+	_, err = srv.SetConversationCheckpoint(ctx, &runtimev1.SetConversationCheckpointRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+		MessageId:      checkpointMsg.Id,
+	})
+	require.NoError(t, err)
+
 	// Ask a question in a new conversation
 	res3, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
 		InstanceId: instanceID,
@@ -97,13 +108,14 @@ measures:
 	require.NotEqual(t, res3.ConversationId, res1.ConversationId)
 	require.NotEmpty(t, res3.Messages)
 
-	// Check it persisted the messages in the first conversation
+	// Check it persisted the messages and checkpoint in the first conversation
 	get1, err := srv.GetConversation(ctx, &runtimev1.GetConversationRequest{
 		InstanceId:     instanceID,
 		ConversationId: res1.ConversationId,
 	})
 	require.NoError(t, err)
 	require.Len(t, get1.Messages, len(res1.Messages)+len(res2.Messages))
+	require.Equal(t, checkpointMsg.Id, get1.Conversation.CheckpointMessageId)
 
 	// Check it persisted the messages in the second conversation
 	get2, err := srv.GetConversation(ctx, &runtimev1.GetConversationRequest{
@@ -287,4 +299,76 @@ func TestListTools(t *testing.T) {
 		require.NotEmpty(t, tool.InputSchema)
 		require.NotEmpty(t, tool.OutputSchema)
 	}
+}
+
+func TestRevertConversationWrites(t *testing.T) {
+	// Skip in CI since we make real LLM calls.
+	testmode.Expensive(t)
+
+	// Setup test runtime and server with an LLM configured.
+	model1Contents := `
+type: model
+sql: SELECT 1
+`
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
+		Files: map[string]string{
+			"/models/model1.yaml": model1Contents,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Create test server
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Create test context with claims (to test conversation listings, which filter by user ID)
+	ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+		UserID:      "foo",
+		Permissions: runtime.AllPermissions,
+	})
+
+	// Ask a question
+	res1, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
+		InstanceId: instanceID,
+		Prompt:     "Create a new file called /models/model2.yaml with a simple SQL query that does `SELECT 1`. Then remove the file /models/model1.yaml. I confirm you are allowed to delete this file and you don't need to ask for further confirmation.",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, res1.ConversationId)
+	require.NotEmpty(t, res1.Messages)
+
+	dat, _ := protojson.Marshal(res1)
+	t.Logf("Complete response: %s", string(dat))
+
+	// Verify that the files were modified
+	repo, err := srv.ListFiles(ctx, &runtimev1.ListFilesRequest{
+		InstanceId: instanceID,
+		Glob:       "/models/*.yaml",
+	})
+	require.NoError(t, err)
+	require.Len(t, repo.Files, 1)
+	require.Equal(t, "/models/model2.yaml", repo.Files[0].Path)
+
+	// Revert the conversation writes
+	_, err = srv.RevertConversationWrites(ctx, &runtimev1.RevertConversationWritesRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+	})
+	require.NoError(t, err)
+
+	// Verify that the files were reverted
+	repo, err = srv.ListFiles(ctx, &runtimev1.ListFilesRequest{
+		InstanceId: instanceID,
+		Glob:       "/models/*.yaml",
+	})
+	require.NoError(t, err)
+	require.Len(t, repo.Files, 1)
+	require.Equal(t, "/models/model1.yaml", repo.Files[0].Path)
+
+	content, err := srv.GetFile(ctx, &runtimev1.GetFileRequest{
+		InstanceId: instanceID,
+		Path:       "/models/model1.yaml",
+	})
+	require.NoError(t, err)
+	require.Equal(t, strings.TrimSpace(model1Contents), strings.TrimSpace(content.Blob))
 }

@@ -124,12 +124,13 @@ The user might ask you to "Create a dashboard for my Github activity". You would
 At a high level, you should follow these steps:
 1. Understand the current contents of the project by reviewing the list_files output.
 2. Make a plan for how to implement the user's request. If the user asks to join, combine, or analyze data from multiple existing models, you should create a new model that references those existing models in SQL.
-3. Only if necessary, add a new model or update an existing model to reflect the user's request. Use "develop_model" with a prompt describing what to create or change.
+3. Only if necessary, add a new model, update an existing model, or delete a model to reflect the user's request. Use "develop_model" with a prompt describing what to create, change or delete.
 4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.
    - To *create* a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
    - To *edit* an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
 5. If a user requests a new model/file, DO NOT overwrite existing file and instead use a unique name.
-6. After successfully creating/updating the artifacts, provide a summary with links using the following format:
+6. Don't delete a file unless the user explicitly asks you to delete it.
+7. After successfully creating/updating the artifacts, provide a summary with links using the following format:
 {{ backticks }}
 ## Summary of Changes
 I've created the following files for you:

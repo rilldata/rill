@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -87,6 +88,138 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	return &runtimev1.GetConversationResponse{
 		Conversation: sessionToPB(session.CatalogSession(), messagePBs),
 		Messages:     messagePBs,
+	}, nil
+}
+
+func (s *Server) SetConversationCheckpoint(ctx context.Context, req *runtimev1.SetConversationCheckpointRequest) (resp *runtimev1.SetConversationCheckpointResponse, resErr error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err := session.Flush(ctx)
+		if err != nil {
+			resErr = errors.Join(resErr, err)
+		}
+	}()
+
+	msg, ok := session.Message(ai.FilterByID(req.MessageId))
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "message %q not found in conversation %q", req.MessageId, req.ConversationId)
+	}
+
+	err = session.UpdateCheckpoint(ctx, msg.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.SetConversationCheckpointResponse{}, nil
+}
+
+func (s *Server) RevertConversationWrites(ctx context.Context, req *runtimev1.RevertConversationWritesRequest) (resp *runtimev1.RevertConversationWritesResponse, resErr error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err := session.Flush(ctx)
+		if err != nil {
+			resErr = errors.Join(resErr, err)
+		}
+	}()
+
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	if req.FromMessageId == "" {
+		req.FromMessageId = session.CatalogSession().CheckpointMessageID
+	}
+
+	// Revert changes in reverse order.
+	var restoredPaths []string
+	var started bool
+	msgs := session.Messages()
+	for i := len(msgs) - 1; i >= 0; i-- {
+		// Stop if we reach from_message_id
+		msg := msgs[i]
+		if req.FromMessageId != "" && msgs[i].ID == req.FromMessageId {
+			break
+		}
+
+		// Skip if to_message_id is set and we haven't reached it yet (remember we're iterating from newest to oldest)
+		if !started && req.ToMessageId != "" && msg.ID != req.ToMessageId {
+			continue
+		}
+		started = true
+
+		// Skip if it's not a WriteFileResult
+		if msg.Tool != ai.WriteFileName || msg.Type != ai.MessageTypeResult || msg.ContentType != ai.MessageContentTypeJSON {
+			continue
+		}
+		resMsg := msgs[i]
+
+		// Parse the WriteFileResult
+		content, err := session.UnmarshalMessageContent(resMsg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal message %q: %w", resMsg.ID, err)
+		}
+		res, ok := content.(*ai.WriteFileResult)
+		if !ok {
+			return nil, fmt.Errorf("unexpected content type %T for message %q", content, resMsg.ID)
+		}
+
+		// Get the call args
+		callMsg, ok := session.Message(ai.FilterByID(resMsg.ParentID))
+		if !ok {
+			return nil, fmt.Errorf("call message %q not found for result message %q", resMsg.ParentID, resMsg.ID)
+		}
+		content, err = session.UnmarshalMessageContent(callMsg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal call message %q: %w", callMsg.ID, err)
+		}
+		args, ok := content.(*ai.WriteFileArgs)
+		if !ok {
+			return nil, fmt.Errorf("unexpected content type %T for message %q", content, callMsg.ID)
+		}
+
+		// Revert the file write
+		if res.IsNewFile {
+			err = repo.Delete(ctx, args.Path, true)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete file %q: %w", args.Path, err)
+			}
+		} else {
+			err = repo.Put(ctx, args.Path, strings.NewReader(res.PreviousContents))
+			if err != nil {
+				return nil, fmt.Errorf("failed to restore file %q: %w", args.Path, err)
+			}
+		}
+		restoredPaths = append(restoredPaths, args.Path)
+	}
+
+	return &runtimev1.RevertConversationWritesResponse{
+		RestoredPaths: restoredPaths,
 	}, nil
 }
 
@@ -393,13 +526,14 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
 func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
-		Id:        s.ID,
-		OwnerId:   s.OwnerID,
-		Title:     s.Title,
-		UserAgent: s.UserAgent,
-		CreatedOn: timestamppb.New(s.CreatedOn),
-		UpdatedOn: timestamppb.New(s.UpdatedOn),
-		Messages:  messages,
+		Id:                  s.ID,
+		OwnerId:             s.OwnerID,
+		Title:               s.Title,
+		UserAgent:           s.UserAgent,
+		CheckpointMessageId: s.CheckpointMessageID,
+		CreatedOn:           timestamppb.New(s.CreatedOn),
+		UpdatedOn:           timestamppb.New(s.UpdatedOn),
+		Messages:            messages,
 	}
 }
 
