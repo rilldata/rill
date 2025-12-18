@@ -317,7 +317,8 @@
   const connectorNameError = formManager.connectorNameError;
 
   // Debounce timer for connector name validation
-  let connectorNameValidationTimeout: ReturnType<typeof setTimeout> | null = null;
+  let connectorNameValidationTimeout: ReturnType<typeof setTimeout> | null =
+    null;
 
   // Validate connector name as user types
   $: if (isConnectorForm) {

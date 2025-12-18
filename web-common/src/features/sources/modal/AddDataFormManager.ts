@@ -542,7 +542,7 @@ export class AddDataFormManager {
     const processedValues = applyClickHouseCloudRequirements(
       this.connector.name,
       (clickhouseConnectorType as ClickHouseConnectorType) ||
-      ("self-hosted" as ClickHouseConnectorType),
+        ("self-hosted" as ClickHouseConnectorType),
       values,
     );
     try {
