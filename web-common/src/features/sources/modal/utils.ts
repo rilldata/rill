@@ -96,7 +96,7 @@ export function hasOnlyDsn(
  */
 export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
-  selectedMethod: string,
+  _selectedMethod: string,
   paramsFormValue: Record<string, unknown>,
   paramsFormErrors: Record<string, unknown>,
 ) {
@@ -109,12 +109,10 @@ export function isMultiStepConnectorDisabled(
     authKey && paramsFormValue?.[authKey] != null
       ? String(paramsFormValue[authKey])
       : undefined;
-  const hasValidSelection = options.some((opt) => opt.value === selectedMethod);
   const hasValidFormSelection = options.some(
     (opt) => opt.value === methodFromForm,
   );
   const method =
-    (hasValidSelection && selectedMethod) ||
     (hasValidFormSelection && methodFromForm) ||
     authInfo?.defaultMethod ||
     options[0]?.value;
