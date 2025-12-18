@@ -38,6 +38,10 @@ import type { ActionResult } from "@sveltejs/kit";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
+import { EntityType } from "../../entity-management/types";
+import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -297,7 +301,7 @@ export class AddDataFormManager {
       if (isConnectorForm) {
         const stepState = get(connectorStepStore) as ConnectorStepState;
         if (!isMultiStepConnector || stepState.step === "connector") {
-          if (!this.validateConnectorName()) {
+          if (!(await this.validateConnectorName())) {
             return;
           }
         }
@@ -538,7 +542,7 @@ export class AddDataFormManager {
     const processedValues = applyClickHouseCloudRequirements(
       this.connector.name,
       (clickhouseConnectorType as ClickHouseConnectorType) ||
-        ("self-hosted" as ClickHouseConnectorType),
+      ("self-hosted" as ClickHouseConnectorType),
       values,
     );
     try {
@@ -560,7 +564,7 @@ export class AddDataFormManager {
   /**
    * Validate connector name
    */
-  validateConnectorName(): boolean {
+  async validateConnectorName(): Promise<boolean> {
     const name = get(this.connectorName);
 
     if (!name || name.trim() === "") {
@@ -577,7 +581,34 @@ export class AddDataFormManager {
       return false;
     }
 
-    this.connectorNameError.set(null);
-    return true;
+    // Check if connector file already exists
+    try {
+      const instanceId = get(runtime).instanceId;
+      const connectorFilePath = getFileAPIPathFromNameAndType(
+        name,
+        EntityType.Connector,
+      );
+
+      // Try to get the file - if it exists, this will succeed
+      await runtimeServiceGetFile(instanceId, { path: connectorFilePath });
+
+      // File exists, set error
+      this.connectorNameError.set(
+        `A connector with the name "${name}" already exists`,
+      );
+      return false;
+    } catch (error: any) {
+      // If error is 404/not found, file doesn't exist - that's good
+      // If it's a different error, we'll allow it (could be network issue, etc.)
+      if (error?.status === 404 || error?.code === 5) {
+        // File doesn't exist, validation passes
+        this.connectorNameError.set(null);
+        return true;
+      }
+      // For other errors, don't block the user but log it
+      console.warn("Error checking if connector file exists:", error);
+      this.connectorNameError.set(null);
+      return true;
+    }
   }
 }

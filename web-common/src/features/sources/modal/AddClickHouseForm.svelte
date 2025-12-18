@@ -28,6 +28,11 @@
   } from "./constants";
   import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
+  import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { EntityType } from "../../entity-management/types";
+  import { runtimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get } from "svelte/store";
 
   export let connector: V1ConnectorDriver;
   export let formId: string;
@@ -202,6 +207,37 @@
     // The parent will handle all the logic including form validation bypass
     const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
+    // Validate connector name before submitting (even for Save Anyway)
+    if (connectorName && connectorName.trim() !== "") {
+      try {
+        const instanceId = get(runtime).instanceId;
+        const connectorFilePath = getFileAPIPathFromNameAndType(
+          connectorName,
+          EntityType.Connector,
+        );
+
+        // Try to get the file - if it exists, this will succeed
+        await runtimeServiceGetFile(instanceId, { path: connectorFilePath });
+
+        // File exists, show error and prevent submission
+        const errorMessage = `A connector with the name "${connectorName}" already exists`;
+        if (connectionTab === "parameters") {
+          paramsError = errorMessage;
+          setError(paramsError, undefined);
+        } else if (connectionTab === "dsn") {
+          dsnError = errorMessage;
+          setError(dsnError, undefined);
+        }
+        return;
+      } catch (error: any) {
+        // If error is 404/not found, file doesn't exist - that's good, continue
+        // If it's a different error, we'll allow it (could be network issue, etc.)
+        if (error?.status !== 404 && error?.code !== 5) {
+          console.warn("Error checking if connector file exists:", error);
+        }
+      }
+    }
+
     try {
       await submitAddConnectorForm(
         queryClient,
@@ -237,6 +273,38 @@
     if (!event.form.valid) {
       return;
     }
+
+    // Validate connector name before submitting
+    if (connectorName && connectorName.trim() !== "") {
+      try {
+        const instanceId = get(runtime).instanceId;
+        const connectorFilePath = getFileAPIPathFromNameAndType(
+          connectorName,
+          EntityType.Connector,
+        );
+
+        // Try to get the file - if it exists, this will succeed
+        await runtimeServiceGetFile(instanceId, { path: connectorFilePath });
+
+        // File exists, show error and prevent submission
+        const errorMessage = `A connector with the name "${connectorName}" already exists`;
+        if (connectionTab === "parameters") {
+          paramsError = errorMessage;
+          setError(paramsError, undefined);
+        } else if (connectionTab === "dsn") {
+          dsnError = errorMessage;
+          setError(dsnError, undefined);
+        }
+        return;
+      } catch (error: any) {
+        // If error is 404/not found, file doesn't exist - that's good, continue
+        // If it's a different error, we'll allow it (could be network issue, etc.)
+        if (error?.status !== 404 && error?.code !== 5) {
+          console.warn("Error checking if connector file exists:", error);
+        }
+      }
+    }
+
     const values = { ...event.form.data };
 
     // Ensure ClickHouse Cloud specific requirements are met

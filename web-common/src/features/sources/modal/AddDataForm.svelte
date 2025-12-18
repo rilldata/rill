@@ -316,10 +316,20 @@
   const connectorName = formManager.connectorName;
   const connectorNameError = formManager.connectorNameError;
 
+  // Debounce timer for connector name validation
+  let connectorNameValidationTimeout: ReturnType<typeof setTimeout> | null = null;
+
   // Validate connector name as user types
   $: if (isConnectorForm) {
     if ($connectorName && $connectorName.trim() !== "") {
-      formManager.validateConnectorName();
+      // Clear existing timeout
+      if (connectorNameValidationTimeout) {
+        clearTimeout(connectorNameValidationTimeout);
+      }
+      // Debounce validation to avoid too many API calls
+      connectorNameValidationTimeout = setTimeout(async () => {
+        await formManager.validateConnectorName();
+      }, 500);
     } else {
       $connectorNameError = null;
     }
