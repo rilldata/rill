@@ -25,6 +25,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var debug bool
 	var readonly bool
 	var reset bool
+	var pullEnv bool
 	var noUI bool
 	var noOpen bool
 	var logFormat string
@@ -121,11 +122,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Always attempt to pull env for any valid Rill project (after projectPath is set)
-			if ch.IsAuthenticated() {
-				if local.IsProjectInit(projectPath) {
-					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
-					if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+			if pullEnv {
+				if ch.IsAuthenticated() {
+					if local.IsProjectInit(projectPath) {
+						err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
+						if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+							ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+						}
 					}
 				}
 			}
@@ -216,6 +219,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
 	startCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
+	startCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
