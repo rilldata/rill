@@ -338,3 +338,14 @@ SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data
 SELECT * FROM read_parquet('azure://account.blob.core.windows.net/container/data/2024-*.parquet')
 ```
 
+---
+
+## Deploy to Rill Cloud
+
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token for the containers used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#azure) for more information.
+
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
+```
+
