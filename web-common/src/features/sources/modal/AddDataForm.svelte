@@ -77,6 +77,7 @@
   };
 
   let selectedAuthMethod: string = "";
+  let activeAuthMethod: string | null = null;
   $: selectedAuthMethod = $selectedAuthMethodStore;
   $: stepState = $connectorStepStore;
   $: stepProperties =
@@ -159,7 +160,6 @@
     if (isMultiStepConnector && stepState.step === "connector") {
       return isMultiStepConnectorDisabled(
         activeSchema,
-        selectedAuthMethod,
         $paramsForm,
         $paramsErrors,
       );
@@ -246,6 +246,16 @@
       }
     }
   }
+
+  // Auth method to use for UI (labels, CTA), derived from form first.
+  $: activeAuthMethod = (() => {
+    if (!(isMultiStepConnector && activeSchema)) return selectedAuthMethod;
+    const authKey = findAuthMethodKey(activeSchema);
+    if (authKey && $paramsForm?.[authKey] != null) {
+      return String($paramsForm[authKey]);
+    }
+    return selectedAuthMethod;
+  })();
 
   $: isSubmitting = submitting;
 
@@ -345,7 +355,7 @@
     onClose,
     queryClient,
     getConnectionTab: () => connectionTab,
-    getSelectedAuthMethod: () => selectedAuthMethod,
+    getSelectedAuthMethod: () => activeAuthMethod || undefined,
     setParamsError: (message: string | null, details?: string) => {
       paramsError = message;
       paramsErrorDetails = details;
@@ -551,7 +561,7 @@
             ? "Connecting..."
             : isMultiStepConnector && stepState.step === "source"
               ? "Importing data..."
-              : selectedAuthMethod === "public"
+              : activeAuthMethod === "public"
                 ? "Continuing..."
                 : "Testing connection..."}
           form={connector.name === "clickhouse" ? clickhouseFormId : formId}
@@ -564,7 +574,7 @@
             submitting,
             clickhouseConnectorType,
             clickhouseSubmitting,
-            selectedAuthMethod,
+            selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
           })}
         </Button>
       </div>
