@@ -78,6 +78,7 @@
 
   let selectedAuthMethod: string = "";
   let activeAuthMethod: string | null = null;
+  let prevAuthMethod: string | null = null;
   $: selectedAuthMethod = $selectedAuthMethodStore;
   $: stepState = $connectorStepStore;
   $: stepProperties =
@@ -268,6 +269,13 @@
     }
     return selectedAuthMethod;
   })();
+
+  // Clear Save Anyway state whenever auth method changes (any direction).
+  $: if (activeAuthMethod !== prevAuthMethod) {
+    prevAuthMethod = activeAuthMethod;
+    showSaveAnyway = false;
+    saveAnyway = false;
+  }
 
   $: isSubmitting = submitting;
 
