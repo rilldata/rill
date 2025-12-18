@@ -8,13 +8,6 @@
   export let value: string;
   export let assembled = true;
 
-  // These props may be passed during re-renders but are not used by this component
-  // They're meant for PivotShowMoreCell but can leak during component transitions
-  // Replace with $restProps when migrating to Svelte 5
-  export let currentLimit: number | undefined = undefined;
-  export let dimensionLabel: string | undefined = undefined;
-  export let depth: number | undefined = undefined;
-
   $: canExpand = row.getCanExpand();
   $: expanded = row.getIsExpanded();
   $: assembledAndCanExpand = assembled && canExpand;

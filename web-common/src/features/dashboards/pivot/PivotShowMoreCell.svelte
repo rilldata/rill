@@ -1,19 +1,17 @@
 <script lang="ts">
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import { getNextLimitLabel } from "./pivot-constants";
+  import type { PivotDataRow } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import type { Row } from "@tanstack/svelte-table";
 
-  export let currentLimit: number;
-  export let dimensionLabel: string;
-  export let depth: number = 0;
+  export let row: Row<PivotDataRow>;
+  export let value: string;
   export let assembled = true;
-
-  $: nextLimitLabel = getNextLimitLabel(currentLimit);
 </script>
 
-<div class="show-more-cell" style:padding-left="{depth * 14}px">
+<div class="show-more-cell" style:padding-left="{row?.depth * 14}px">
   <Spacer size="16px" />
   <span class="italic {assembled ? 'ui-copy' : 'ui-copy-inactive'}">
-    Increase limit to {nextLimitLabel} on '{dimensionLabel}'
+    {value}
   </span>
 </div>
 
