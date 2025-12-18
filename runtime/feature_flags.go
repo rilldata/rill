@@ -51,11 +51,15 @@ var defaultFeatureFlags = map[string]string{
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
-	"dashboard_chat": "false",
+	"dashboard_chat": "{{ not .user.embed }}",
+	// Controls visibility of local rill developer chat functionality
+	"developer_chat": "false",
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
+	// Controls visibility of the "Create Canvas" dashboard buttons
+	"generate_canvas": "false",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
 }
@@ -104,6 +108,17 @@ func ResolveFeatureFlags(inst *drivers.Instance, userAttributes map[string]any, 
 			k = strcase.ToLowerCamel(k)
 		}
 		featureFlags[k] = bv
+	}
+
+	// Apply feature flag dependencies:
+	// If chat is disabled, dashboard_chat should also be disabled
+	chatKey := "chat"
+	dashboardChatKey := "dashboard_chat"
+	if camelCase {
+		dashboardChatKey = "dashboardChat"
+	}
+	if !featureFlags[chatKey] {
+		featureFlags[dashboardChatKey] = false
 	}
 
 	return featureFlags, nil

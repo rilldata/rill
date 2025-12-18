@@ -7,12 +7,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"slices"
 	"strings"
 	"time"
 
-	"github.com/r3labs/sse/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -22,9 +20,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -423,58 +419,6 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	return &runtimev1.CreateTriggerResponse{}, nil
 }
 
-// WatchResourcesHandler implements an HTTP handler for runtimev1.RuntimeServiceServer
-func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	instanceID := r.PathValue("instance_id")
-	kind := r.URL.Query().Get("kind")
-	replay := r.URL.Query().Get("replay") == "true"
-
-	claims := auth.GetClaims(ctx, instanceID)
-	if !claims.Can(runtime.ReadObjects) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
-	eventServer := sse.New()
-	eventServer.CreateStream("resources")
-	eventServer.Headers = map[string]string{
-		"Content-Type":  "text/event-stream",
-		"Cache-Control": "no-cache",
-		"Connection":    "keep-alive",
-	}
-
-	// Create a shim that adapts the SSE server to the WatchResources gRPC server
-	shim := &watchResourcesServerShim{r: r, sse: eventServer}
-
-	// Use the existing WatchResources implementation in a goroutine
-	go func() {
-		err := s.WatchResources(&runtimev1.WatchResourcesRequest{
-			InstanceId: instanceID,
-			Kind:       kind,
-			Replay:     replay,
-		}, shim)
-		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				s.logger.Warn("watch resources error", zap.String("instance_id", instanceID), zap.String("kind", kind), zap.Error(err))
-			}
-
-			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
-			if err != nil {
-				s.logger.Error("failed to marshal error as json", zap.Error(err))
-			}
-
-			eventServer.Publish("resources", &sse.Event{
-				Data:  errJSON,
-				Event: []byte("error"),
-			})
-		}
-		eventServer.Close()
-	}()
-
-	eventServer.ServeHTTP(w, r)
-}
-
 // modelPartitionsToPB converts a slice of drivers.ModelPartition to a slice of runtimev1.ModelPartition.
 func modelPartitionsToPB(partitions []drivers.ModelPartition) []*runtimev1.ModelPartition {
 	pbs := make([]*runtimev1.ModelPartition, len(partitions))
@@ -523,51 +467,4 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
-}
-
-// A shim for runtimev1.RuntimeService_WatchResourcesServer
-type watchResourcesServerShim struct {
-	r   *http.Request
-	sse *sse.Server
-}
-
-// Context returns the context from the HTTP request
-func (s *watchResourcesServerShim) Context() context.Context {
-	return s.r.Context()
-}
-
-// Send adapts the WatchResourcesResponse to SSE events
-func (s *watchResourcesServerShim) Send(e *runtimev1.WatchResourcesResponse) error {
-	data, err := protojson.Marshal(e)
-	if err != nil {
-		return err
-	}
-
-	s.sse.Publish("resources", &sse.Event{Data: data})
-	return nil
-}
-
-// SetHeader implements the grpc.ServerStream interface
-func (s *watchResourcesServerShim) SetHeader(metadata.MD) error {
-	return nil // No-op for HTTP/SSE
-}
-
-// SendHeader implements the grpc.ServerStream interface
-func (s *watchResourcesServerShim) SendHeader(metadata.MD) error {
-	return nil // No-op for HTTP/SSE
-}
-
-// SetTrailer implements the grpc.ServerStream interface
-func (s *watchResourcesServerShim) SetTrailer(metadata.MD) {
-	// No-op for HTTP/SSE
-}
-
-// SendMsg implements the grpc.ServerStream interface
-func (s *watchResourcesServerShim) SendMsg(m any) error {
-	return errors.New("not implemented")
-}
-
-// RecvMsg implements the grpc.ServerStream interface
-func (s *watchResourcesServerShim) RecvMsg(m any) error {
-	return errors.New("not implemented")
 }

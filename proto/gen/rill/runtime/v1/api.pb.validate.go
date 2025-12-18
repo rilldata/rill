@@ -5223,6 +5223,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for UseAi
 
+	// no validation rules for Prompt
+
 	if len(errors) > 0 {
 		return GenerateMetricsViewFileRequestMultiError(errors)
 	}
@@ -5410,6 +5412,231 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GenerateMetricsViewFileResponseValidationError{}
+
+// Validate checks the field values on GenerateCanvasFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateCanvasFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateCanvasFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateCanvasFileRequestMultiError, or nil if none found.
+func (m *GenerateCanvasFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateCanvasFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateCanvasFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateCanvasFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for MetricsViewName
+
+	// no validation rules for Path
+
+	// no validation rules for UseAi
+
+	if len(errors) > 0 {
+		return GenerateCanvasFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateCanvasFileRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateCanvasFileRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GenerateCanvasFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateCanvasFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateCanvasFileRequestMultiError) AllErrors() []error { return m }
+
+// GenerateCanvasFileRequestValidationError is the validation error returned by
+// GenerateCanvasFileRequest.Validate if the designated constraints aren't met.
+type GenerateCanvasFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateCanvasFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateCanvasFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateCanvasFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateCanvasFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateCanvasFileRequestValidationError) ErrorName() string {
+	return "GenerateCanvasFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateCanvasFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateCanvasFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateCanvasFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateCanvasFileRequestValidationError{}
+
+var _GenerateCanvasFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateCanvasFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateCanvasFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateCanvasFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateCanvasFileResponseMultiError, or nil if none found.
+func (m *GenerateCanvasFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateCanvasFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AiSucceeded
+
+	if len(errors) > 0 {
+		return GenerateCanvasFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateCanvasFileResponseMultiError is an error wrapping multiple
+// validation errors returned by GenerateCanvasFileResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GenerateCanvasFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateCanvasFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateCanvasFileResponseMultiError) AllErrors() []error { return m }
+
+// GenerateCanvasFileResponseValidationError is the validation error returned
+// by GenerateCanvasFileResponse.Validate if the designated constraints aren't met.
+type GenerateCanvasFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateCanvasFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateCanvasFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateCanvasFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateCanvasFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateCanvasFileResponseValidationError) ErrorName() string {
+	return "GenerateCanvasFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateCanvasFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateCanvasFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateCanvasFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateCanvasFileResponseValidationError{}
 
 // Validate checks the field values on GenerateResolverRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -7406,8 +7633,6 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 	// no validation rules for Kind
 
 	// no validation rules for Replay
-
-	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)
@@ -10558,6 +10783,8 @@ func (m *DeveloperAgentContext) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for InitProject
+
+	// no validation rules for CurrentFilePath
 
 	if len(errors) > 0 {
 		return DeveloperAgentContextMultiError(errors)

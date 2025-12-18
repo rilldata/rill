@@ -9,6 +9,11 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
+  import {
+    conversationSidebarCollapsed,
+    toggleConversationSidebar,
+  } from "./fullpage-store";
+  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
 
@@ -18,6 +23,10 @@
 
   let chatInputComponent: ChatInput;
 
+  function onMessageSend() {
+    chatInputComponent?.focusInput();
+  }
+
   // Focus on mount with a small delay for component initialization
   onMount(() => {
     // Give the component tree time to fully initialize
@@ -25,10 +34,6 @@
       chatInputComponent?.focusInput();
     }, 100);
   });
-
-  function onMessageSend() {
-    chatInputComponent?.focusInput();
-  }
 
   // Clean up conversation manager resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
@@ -43,6 +48,8 @@
   <!-- Conversation List Sidebar -->
   <ConversationSidebar
     {conversationManager}
+    collapsed={$conversationSidebarCollapsed}
+    onToggle={toggleConversationSidebar}
     onConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
@@ -59,7 +66,11 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <Messages {conversationManager} layout="fullpage" />
+        <Messages
+          {conversationManager}
+          layout="fullpage"
+          config={projectChat}
+        />
       </div>
     </div>
 
@@ -69,6 +80,7 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
+          config={projectChat}
         />
       </div>
     </div>

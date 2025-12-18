@@ -9,9 +9,9 @@ import { get, writable } from "svelte/store";
 import { asyncWait } from "../lib/waitUtils";
 import { runtime } from "./runtime-store";
 
-const MAX_RETRIES = 5;
+export const MAX_RETRIES = 5;
 const BACKOFF_DELAY = 1000;
-const RETRY_COUNT_DELAY = 500;
+const RETRY_COUNT_DELAY = 1000;
 const RECONNECT_CALLBACK_DELAY = 150;
 
 type WatchResponse =
@@ -62,17 +62,14 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listeners.get(event)?.push(listener);
   }
 
-  public heartbeat = () => {
+  public heartbeat = async () => {
     if (get(this.closed)) {
-      this.reconnect().catch((e) => {
-        console.error("Reconnection failed:", e);
-        throw e;
-      });
+      await this.reconnect();
     }
     this.throttle();
   };
 
-  public watch(url: string, useSSE: boolean = false) {
+  public async watch(url: string, useSSE: boolean = false) {
     this.cancel();
     this.url = url;
 
@@ -83,7 +80,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     if (this.useSSE) {
       this.listenSSE();
     } else {
-      this.listen().catch(console.error);
+      await this.listen();
     }
 
     // Start throttling after the first connection
@@ -128,7 +125,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     if (this.useSSE) {
       this.listenSSE(true);
     } else {
-      this.listen(true).catch(console.error);
+      await this.listen(true);
     }
   }
 
@@ -152,10 +149,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
     const sseUrl = new URL(this.url, window.location.origin);
 
     try {
-      this.retryTimeout = setTimeout(() => {
-        this.retryAttempts.set(0);
-      }, RETRY_COUNT_DELAY);
-
       if (reconnect) {
         this.reconnectTimeout = setTimeout(() => {
           this.listeners.get("reconnect")?.forEach((cb) => void cb());
@@ -164,10 +157,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
       this.closed.set(false);
 
-      // Create new EventSource
       this.eventSource = new EventSource(sseUrl.toString());
 
-      // Handle incoming messages
       this.eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -177,28 +168,21 @@ export class WatchRequestClient<Res extends WatchResponse> {
         }
       };
 
-      // Handle connection errors
-      this.eventSource.onerror = () => {
+      this.eventSource.onerror = async () => {
+        clearTimeout(this.retryTimeout);
         this.cancel();
+
         if (get(this.closed)) return;
 
-        this.reconnect().catch((e) => {
-          console.error("Reconnection failed:", e);
-          // Or rethrow the original error if needed
-          throw e;
-        });
+        await this.reconnect();
       };
+
+      this.retryTimeout = setTimeout(() => {
+        this.retryAttempts.set(0);
+      }, RETRY_COUNT_DELAY);
     } catch {
       clearTimeout(this.retryTimeout);
-
       this.cancel();
-      if (get(this.closed)) return;
-
-      this.reconnect().catch((e) => {
-        console.error("Reconnection failed:", e);
-        // Or rethrow the original error if needed
-        throw e;
-      });
     }
   }
 
@@ -211,10 +195,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.stream = this.getFetchStream(this.url, this.controller);
 
     try {
-      this.retryTimeout = setTimeout(() => {
-        this.retryAttempts.set(0);
-      }, RETRY_COUNT_DELAY);
-
       if (reconnect) {
         this.reconnectTimeout = setTimeout(() => {
           this.listeners.get("reconnect")?.forEach((cb) => void cb());
@@ -222,6 +202,11 @@ export class WatchRequestClient<Res extends WatchResponse> {
       }
 
       this.closed.set(false);
+
+      this.retryTimeout = setTimeout(() => {
+        this.retryAttempts.set(0);
+      }, RETRY_COUNT_DELAY);
+
       for await (const res of this.stream) {
         if (this.controller?.signal.aborted) break;
         if (res.error) throw new Error(res.error.message);
@@ -235,11 +220,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.cancel();
       if (get(this.closed)) return;
 
-      this.reconnect().catch((e) => {
-        console.error("Reconnection failed:", e);
-        // Or rethrow the original error if needed
-        throw e;
-      });
+      await this.reconnect();
     }
   }
 

@@ -834,6 +834,44 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-canvas:
+    post:
+      summary: GenerateCanvasFile generates a canvas YAML file from a metrics view
+      operationId: RuntimeService_GenerateCanvasFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateCanvasFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              metricsViewName:
+                type: string
+                description: Metrics view name to base the canvas on.
+              path:
+                type: string
+                description: Path to save the canvas file to.
+              useAi:
+                type: boolean
+                description: |-
+                  If true, the AI will be used to generate the canvas file.
+                  Otherwise, it falls back to a simpler heuristic approach.
+            title: Request message for RuntimeService.GenerateCanvasFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -891,6 +929,9 @@ paths:
                 description: |-
                   If true, the AI will be used to generate the metrics view file.
                   Otherwise, it falls back to a simpler heuristic approach.
+              prompt:
+                type: string
+                description: Optional prompt to guide AI generation.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -1477,6 +1518,34 @@ paths:
                 type: string
                 format: date-time
                 description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/filter-expression/resolve:
+    post:
+      summary: ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+      operationId: QueryService_ConvertExpressionToMetricsSQL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConvertExpressionToMetricsSQLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              expression:
+                $ref: '#/definitions/v1Expression'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -2306,6 +2375,46 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/resolve-templated-string:
+    post:
+      summary: ResolveTemplatedString resolves a templated strings.
+      operationId: QueryService_ResolveTemplatedString
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveTemplatedStringResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              body:
+                type: string
+                title: Any string with Go templating
+              useFormatTokens:
+                type: boolean
+                description: If true, output format tokens instead of raw values.
+              additionalWhereByMetricsView:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
+                title: Additional filters to inject into metrics SQL queries by metrics view name
+              additionalTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Additional time range to add to metrics SQL queries
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
       summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -2945,10 +3054,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: level
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:
@@ -3200,6 +3305,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       column:
         type: string
       expression:
@@ -3252,6 +3361,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       expression:
         type: string
       type:
@@ -3752,6 +3865,14 @@ definitions:
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      filterExpr:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1DefaultMetricsSQLFilter'
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Valid Metrics SQL expression
   v1CanvasRow:
     type: object
     properties:
@@ -3839,6 +3960,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        title: Array of dimension or measure names
   v1CanvasState:
     type: object
     properties:
@@ -4376,6 +4502,12 @@ definitions:
           $ref: '#/definitions/v1Message'
         description: 'NOTE: Deprecated.'
     title: Conversation metadata and messages
+  v1ConvertExpressionToMetricsSQLResponse:
+    type: object
+    properties:
+      sql:
+        type: string
+        description: The SQL filter string representation of the expression.
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -4427,6 +4559,11 @@ definitions:
         type: string
       databaseSchema:
         type: string
+  v1DefaultMetricsSQLFilter:
+    type: object
+    properties:
+      expression:
+        $ref: '#/definitions/v1Expression'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4441,6 +4578,11 @@ definitions:
         description: |-
           Set to true if the prompt is provided as part of project initialization.
           This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
+      currentFilePath:
+        type: string
+        description: |-
+          Optional path to the file that the user is currently viewing/editing.
+          This helps the agent understand which file the user is referring to in their request.
     description: Context for prompts handled by the developer_agent.
   v1DirEntry:
     type: object
@@ -4754,6 +4896,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1GenerateCanvasFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
+        type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+    title: Response message for RuntimeService.GenerateCanvasFile
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
@@ -5718,6 +5867,13 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      queryAttributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+          Keys and values are stored as templates and will be resolved at query time.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -6630,6 +6786,11 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+  v1ResolveTemplatedStringResponse:
+    type: object
+    properties:
+      body:
+        type: string
   v1ResolvedTimeRange:
     type: object
     properties:

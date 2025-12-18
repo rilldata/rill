@@ -127,9 +127,13 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 
 		q := client.Query(srcProps.SQL)
-		q.QueryConfig.ForceStorageAPI = true
-		it, err = q.Read(ctx)
+		job, err := q.Run(ctx) // force usage of Storage API by skipping fast paths
+		if err != nil {
+			client.Close()
+			return nil, err
+		}
 
+		it, err = job.Read(ctx)
 		if err != nil && strings.Contains(err.Error(), "Response too large to return") {
 			// https://cloud.google.com/knowledge/kb/bigquery-response-too-large-to-return-consider-setting-allowlargeresults-to-true-in-your-job-configuration-000004266
 			client.Close()
@@ -219,7 +223,6 @@ func (f *fileIterator) Next(ctx context.Context) ([]string, error) {
 		}
 		return []string{file}, nil
 	}
-
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(ctx))
 	span.SetAttributes(attribute.Bool("storage_api", true))
 

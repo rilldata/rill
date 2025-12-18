@@ -24,13 +24,9 @@ type deleteUnusedGithubReposWorker struct {
 	logger *zap.Logger
 }
 
-func (w *deleteUnusedGithubReposWorker) Work(ctx context.Context, job *river.Job[deleteUnusedGithubReposArgs]) error {
-	return work(ctx, w.admin.Logger, job.Kind, w.deleteUnusedGithubRepos)
-}
-
 // deleteUnusedGithubRepos deletes unused Rill managed Github repositories from the database and Github.
 // An unused repository is one that is not associated with any Rill project since more than 7 days.
-func (w *deleteUnusedGithubReposWorker) deleteUnusedGithubRepos(ctx context.Context) error {
+func (w *deleteUnusedGithubReposWorker) Work(ctx context.Context, job *river.Job[deleteUnusedGithubReposArgs]) error {
 	for {
 		// 1. Fetch repositories that are not associated with any Rill project
 		repos, err := w.admin.DB.FindUnusedManagedGitRepos(ctx, _unusedGithubRepoPageSize)

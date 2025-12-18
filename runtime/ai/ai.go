@@ -59,6 +59,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &DevelopModel{Runtime: rt})
 	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
+	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
 
@@ -133,8 +134,9 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
-	// Check access: for now, only allow users to access their own sessions
-	if opts.Claims.UserID != session.OwnerID {
+	// Check access: for now, only allow users to access their own sessions.
+	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
+	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks {
 		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 

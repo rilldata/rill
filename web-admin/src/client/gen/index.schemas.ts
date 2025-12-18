@@ -396,6 +396,7 @@ export interface V1Deployment {
   ownerUserId?: string;
   environment?: string;
   branch?: string;
+  editable?: boolean;
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
@@ -588,6 +589,10 @@ export interface V1GetProjectAccessRequestResponse {
 
 export interface V1GetProjectByIDResponse {
   project?: V1Project;
+}
+
+export interface V1GetProjectMemberUserResponse {
+  member?: V1ProjectMemberUser;
 }
 
 export interface V1GetProjectResponse {
@@ -833,6 +838,10 @@ export interface V1ListUsergroupsForOrganizationAndUserResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListUsergroupsForProjectAndUserResponse {
+  usergroups?: V1MemberUsergroup[];
+}
+
 export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
@@ -867,6 +876,8 @@ export interface V1MemberUsergroup {
   usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1Organization {
@@ -875,6 +886,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  logoDarkUrl?: string;
   faviconUrl?: string;
   thumbnailUrl?: string;
   customDomain?: string;
@@ -993,6 +1005,8 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
@@ -1020,6 +1034,8 @@ export interface V1ProjectMemberUser {
   orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectPermissions {
@@ -1586,7 +1602,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
 
@@ -1602,6 +1618,12 @@ export type AdminServiceCreateAlertBodyBody = {
 export type AdminServiceUnsubscribeAlertBodyBody = {
   email?: string;
   slackUser?: string;
+};
+
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+  role?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceCreateReportBodyBody = {
@@ -1660,6 +1682,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  logoDarkAssetId?: string;
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
@@ -1833,6 +1856,13 @@ export type AdminServiceListDeploymentsParams = {
 
 export type AdminServiceCreateDeploymentBody = {
   environment?: string;
+  /** Branch to deploy from. 
+Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+Optional for `dev` deployments. */
+  branch?: string;
+  /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
+Can't be set for `prod` deployments. */
+  editable?: boolean;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -1871,6 +1901,8 @@ export type AdminServiceGetIFrameBody = {
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
+  /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
+  themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
@@ -1897,6 +1929,8 @@ export type AdminServiceListProjectMemberUsersParams = {
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceRedeployProjectParams = {

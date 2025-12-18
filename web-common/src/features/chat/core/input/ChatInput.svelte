@@ -1,22 +1,26 @@
 <script lang="ts">
-  import { getActiveExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { Editor } from "@tiptap/core";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
-  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
+  export let config: ChatConfig;
 
-  const placeholder = "Ask about your data...";
   let value = "";
+
+  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
@@ -29,8 +33,6 @@
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
 
-  const context = getActiveExploreContext();
-
   let element: HTMLDivElement;
   let editor: Editor;
 
@@ -39,14 +41,9 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage(
-        {
-          analystAgentContext: $context,
-        },
-        {
-          onStreamStart: () => editor.commands.setContent(""),
-        },
-      );
+      await currentConversation.sendMessage($additionalContextStore, {
+        onStreamStart: () => editor.commands.setContent(""),
+      });
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -77,12 +74,18 @@
   onMount(() => {
     editor = new Editor({
       element,
-      extensions: getEditorPlugins(
+      extensions: getEditorPlugins({
+        enableMention,
         placeholder,
-        conversationManager,
-        () => void sendMessage(),
-      ),
+        onSubmit: () => void sendMessage(),
+      }),
       content: "",
+      editorProps: {
+        attributes: {
+          class: config.minChatHeight,
+          style: height ? `height: ${height};` : "",
+        },
+      },
       onTransaction: () => {
         // force re-render so `editor.isActive` works as expected
         editor = editor;
@@ -112,16 +115,13 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div
-    class="chat-input-container"
-    bind:this={element}
-    class:fixed-height={!!height}
-    style:height
-  />
+  <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
-    <button class="text-base ml-1" type="button" on:click={startMention}>
-      @
-    </button>
+    {#if enableMention}
+      <button class="text-base ml-1" type="button" on:click={startMention}>
+        @
+      </button>
+    {/if}
     <div class="grow"></div>
     <div>
       {#if canCancel}
@@ -145,7 +145,7 @@
 
 <style lang="postcss">
   .chat-input-form {
-    @apply flex flex-col gap-1 p-1 m-4;
+    @apply flex flex-col gap-1 py-1 mx-4 mb-4;
     @apply bg-background border rounded-md;
     transition: border-color 0.2s;
   }
@@ -159,18 +159,12 @@
   }
 
   :global(.tiptap) {
-    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply px-2 py-2 outline-none;
     @apply text-sm leading-relaxed;
   }
 
   .chat-input-container {
-    @apply w-full;
-  }
-
-  .chat-input-container.fixed-height {
-    min-height: unset;
-    max-height: unset;
-    @apply overflow-auto;
+    @apply w-full max-h-32 overflow-auto;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
@@ -199,6 +193,6 @@
   }
 
   .chat-input-footer {
-    @apply flex flex-row;
+    @apply flex flex-row px-1;
   }
 </style>

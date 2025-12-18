@@ -54,6 +54,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var debug bool
 	var silent bool
 	var reset bool
+	var pullEnv bool
 	var logFormat string
 	var envVars []string
 	var environment string
@@ -111,6 +112,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				Silent:         silent,
 				Debug:          debug,
 				Reset:          reset,
+				PullEnv:        pullEnv,
 				Environment:    environment,
 				ProjectPath:    projectPath,
 				LogFormat:      logFormat,
@@ -131,6 +133,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().SortFlags = false
 	validateCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
 	validateCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
+	validateCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	validateCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	validateCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	validateCmd.Flags().BoolVar(&silent, "silent", false, "Suppress all log output by setting log level to panic, overrides verbose flag")

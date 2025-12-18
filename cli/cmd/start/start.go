@@ -22,6 +22,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var debug bool
 	var readonly bool
 	var reset bool
+	var pullEnv bool
 	var noUI bool
 	var noOpen bool
 	var logFormat string
@@ -148,6 +149,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Verbose:        verbose,
 				Debug:          debug,
 				Reset:          reset,
+				PullEnv:        pullEnv,
 				Environment:    environment,
 				ProjectPath:    projectPath,
 				LogFormat:      logFormat,
@@ -176,6 +178,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
 	startCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
+	startCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")

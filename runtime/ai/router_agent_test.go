@@ -40,6 +40,18 @@ func TestRouterAgent(t *testing.T) {
 			prompt: "What is 2 + 2?",
 			agent:  ai.AnalystAgentName,
 		},
+		{
+			prompt: "developer: Add the metric code_churn",
+			agent:  ai.DeveloperAgentName,
+		},
+		{
+			prompt: "developer_agent: Add a new metric code_churn",
+			agent:  ai.DeveloperAgentName,
+		},
+		{
+			prompt: "Add a new metric code_churn. Use the developer agent.",
+			agent:  ai.DeveloperAgentName,
+		},
 	}
 	for _, c := range cases {
 		var res *ai.RouterAgentResult

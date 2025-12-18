@@ -556,6 +556,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			config := &gitutil.Config{
 				Remote:        projResp.Project.GitRemote,
 				DefaultBranch: projResp.Project.ProdBranch,
+				Subpath:       projResp.Project.Subpath,
 			}
 			err = s.app.ch.CommitAndSafePush(ctx, reporoot, config, "", author, "1")
 			if err != nil {
@@ -622,10 +623,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	if err != nil {
 		return nil, errors.New("failed to get assumed user email")
 	}
-	isRepresentingUser := false
-	if representingUser != "" {
-		isRepresentingUser = true
-	}
+	isRepresentingUser := representingUser != ""
 
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
 		User: &adminv1.User{

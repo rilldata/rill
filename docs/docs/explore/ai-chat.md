@@ -1,8 +1,8 @@
 ---
-title: "AI Chat in Rill Cloud"
+title: "Contextual AI Chat"
 description: Chat with your data using natural language in Rill Cloud
 sidebar_label: "AI Chat"
-sidebar_position: 00
+sidebar_position: 01
 ---
 
 ## Overview
@@ -32,7 +32,6 @@ AI Chat uses the same [Rill MCP Server](/explore/mcp) technology that powers ext
 2. Click on the **AI** tab in the project navigation
 3. Start typing your question in the chat interface
 
-<!-- 
 ### Access AI Chat from a Dashboard
 
 You can also access AI Chat directly while exploring a dashboard, making it easy to ask questions about what you're currently viewing:
@@ -43,7 +42,6 @@ You can also access AI Chat directly while exploring a dashboard, making it easy
 <img src='/img/explore/chat/dashboard-chat.png' class='rounded-gif'/>
 <br />
 
-
 When you open AI Chat from a dashboard, the AI is automatically aware of:
 - **Current dashboard context** - The metrics view you're viewing
 - **Applied filters** - Any dimension or measure filters you've set
@@ -51,13 +49,13 @@ When you open AI Chat from a dashboard, the AI is automatically aware of:
 - **Comparison settings** - Any active time comparisons
 
 This context-aware functionality means you can ask questions like:
-- "Why did this metric spike?" (referring to what's visible on screen)
+- "Why did this measure spike?" (referring to what's visible on screen)
 - "What's driving this change?" (analyzing the current time period)
 - "Show me more details about these results" (diving deeper into filtered data)
 
 :::tip Context-Aware Queries
 Opening AI Chat from within a dashboard allows for more natural, context-aware questions. The AI understands what you're looking at, so you don't need to repeat filters or time ranges in your questions.
-::: -->
+:::
 
 ## Understanding Responses
 
@@ -114,7 +112,7 @@ You can add `ai_instructions` in two places:
 1. **`rill.yaml`** - Project-wide instructions that apply to all queries across your entire project
 2. **`<metrics_view>.yaml`** - Metrics view-specific instructions for individual dashboards
 
-For detailed examples and best practices on writing effective AI instructions, see the [Rill MCP documentation](/explore/mcp#adding-ai-instructions-to-your-model).
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
 
 ## Use in Your Favorite AI Client
 

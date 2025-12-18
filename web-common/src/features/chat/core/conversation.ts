@@ -17,8 +17,13 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
+import { transformToBlocks, type Block } from "./messages/block-transform";
 import { MessageContentType, MessageType, ToolName } from "./types";
+import {
+  getOptimisticMessageId,
+  invalidateConversationsList,
+  NEW_CONVERSATION_ID,
+} from "./utils";
 
 /**
  * Individual conversation state management.
@@ -88,6 +93,22 @@ export class Conversation {
   }
 
   /**
+   * Get message blocks for rendering this conversation.
+   * Transforms raw messages into a structured list of blocks (text, thinking blocks, charts).
+   */
+  public getBlocks(): Readable<Block[]> {
+    return derived(
+      [this.getConversationQuery(), this.isStreaming],
+      ([$query, $isStreaming]) => {
+        const messages = $query.data?.messages ?? [];
+        const isLoading = !!$query.isLoading;
+
+        return transformToBlocks(messages, $isStreaming, isLoading);
+      },
+    );
+  }
+
+  /**
    * Send a message and handle streaming response
    *
    * @param context - Chat context to be sent with the message
@@ -122,13 +143,20 @@ export class Conversation {
     try {
       options?.onStreamStart?.();
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt, context);
+      const streamPromise = this.startStreaming(
+        prompt,
+        context,
+        options?.onMessage,
+      );
 
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
       options?.onStreamComplete?.(this.conversationId);
+
+      // Temporary fix to make sure the title of the conversation is updated.
+      void invalidateConversationsList(this.instanceId);
     } catch (error) {
       // Transport errors can occur at two different stages:
       // 1. Before streaming starts: message not persisted, needs rollback
@@ -185,6 +213,7 @@ export class Conversation {
   private async startStreaming(
     prompt: string,
     context: RuntimeServiceCompleteBody | undefined,
+    onMessage: ((message: V1Message) => void) | undefined,
   ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
@@ -209,6 +238,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
+          if (response.message) onMessage?.(response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");
