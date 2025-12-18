@@ -54,7 +54,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().MarkDeprecated("prod-branch", "use --primary-branch instead")
+	_ = deployCmd.Flags().MarkDeprecated("prod-branch", "use --primary-branch instead")
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.MarkFlagsMutuallyExclusive("prod-branch", "primary-branch")
 

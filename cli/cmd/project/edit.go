@@ -96,7 +96,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
 
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
-	editCmd.Flags().MarkDeprecated("prod-branch", "use --primary-branch instead")
+	_ = editCmd.Flags().MarkDeprecated("prod-branch", "use --primary-branch instead")
 	editCmd.Flags().StringVar(&primaryBranch, "primary-branch", "", "Primary branch name")
 	editCmd.MarkFlagsMutuallyExclusive("prod-branch", "primary-branch")
 
