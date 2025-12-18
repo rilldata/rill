@@ -1,3 +1,5 @@
+export const SHOW_MORE_BUTTON = "SHOW_MORE_BUTTON";
+
 /**
  * Allowed row limit values for the pivot table.
  * These values are used both in the UI dropdown and for URL validation.
@@ -27,4 +29,27 @@ export function calculateEffectiveRowLimit(
     return "0";
   }
   return Math.min(remainingRows, pageSize).toString();
+}
+
+/**
+ * Gets the next limit in the progression: 5 → 10 → 25 → 50 → 100
+ * If current limit is not in the standard progression, returns the next higher value.
+ *
+ * @param currentLimit - The current row limit
+ * @returns The next limit in the progression, or undefined if at/beyond 100
+ */
+export function getNextRowLimit(currentLimit: number): number | undefined {
+  const limits = [...PIVOT_ROW_LIMIT_OPTIONS]; // [5, 10, 25, 50, 100]
+  return limits.find((limit) => limit > currentLimit) ?? undefined;
+}
+
+/**
+ * Gets the display label for the next limit in the progression.
+ *
+ * @param currentLimit - The current row limit
+ * @returns The label to display (e.g., "10", "25", "100")
+ */
+export function getNextLimitLabel(currentLimit: number): string {
+  const nextLimit = getNextRowLimit(currentLimit);
+  return nextLimit ? nextLimit.toString() : "100";
 }

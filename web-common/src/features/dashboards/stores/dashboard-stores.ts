@@ -551,7 +551,25 @@ const metricsViewReducers = {
         ...exploreState.pivot,
         rowLimit: limit,
         expanded: {},
+        nestedRowLimits: {},
         rowPage: 1,
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotRowLimitForExpandedRow(
+    name: string,
+    expandIndex: string,
+    limit: number,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        nestedRowLimits: {
+          ...exploreState.pivot.nestedRowLimits,
+          [expandIndex]: limit,
+        },
         activeCell: null,
       };
     });

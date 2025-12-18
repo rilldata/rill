@@ -150,6 +150,12 @@
               rowId,
               columnId,
             )}
+          setPivotRowLimitForExpanded={(expandIndex, limit) =>
+            metricsExplorerStore.setPivotRowLimitForExpandedRow(
+              $exploreName,
+              expandIndex,
+              limit,
+            )}
         />
       {/if}
     </div>

@@ -5,6 +5,10 @@
     getDimensionColumnProps,
     getMeasureColumnProps,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import {
+    getNextRowLimit,
+    SHOW_MORE_BUTTON,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import {
     isElement,
@@ -51,6 +55,9 @@
   export let setPivotRowPage: (page: number) => void;
   export let setPivotActiveCell:
     | ((rowId: string, columnId: string) => void)
+    | undefined = undefined;
+  export let setPivotRowLimitForExpanded:
+    | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
@@ -185,14 +192,33 @@
   function onCellClick(e: MouseEvent) {
     if (!(e.target instanceof HTMLElement)) return;
 
-    const rowId = e.target.dataset.rowid;
-    const columnId = e.target.dataset.columnid;
-    const rowHeader = e.target.dataset.rowheader === "true";
+    // Find the closest td element that has the data attributes
+    const td = e.target.closest("td");
+    if (!td || !(td instanceof HTMLElement)) return;
+
+    const rowId = td.dataset.rowid;
+    const columnId = td.dataset.columnid;
+    const rowHeader = td.dataset.rowheader === "true";
+    const value = td.dataset.value;
 
     if (rowId === undefined || columnId === undefined) return;
 
     const row = $table.getRow(rowId);
     if (!row) return;
+
+    // Handle "Show More" button clicks
+    if (value === SHOW_MORE_BUTTON && rowHeader) {
+      const rowData = row.original;
+
+      const expandIndex = rowId.split(".").slice(0, -1).join(".");
+      const currentLimit = rowData.__currentLimit as number;
+      const nextLimit = getNextRowLimit(currentLimit);
+
+      if (expandIndex && nextLimit && setPivotRowLimitForExpanded) {
+        setPivotRowLimitForExpanded(expandIndex, nextLimit);
+      }
+      return;
+    }
 
     if (rowHeader) {
       if (row.getCanExpand()) row.getToggleExpandedHandler()();

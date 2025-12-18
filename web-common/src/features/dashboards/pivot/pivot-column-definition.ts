@@ -1,6 +1,7 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -15,6 +16,7 @@ import type { ComponentType, SvelteComponent } from "svelte";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
+import PivotShowMoreCell from "./PivotShowMoreCell.svelte";
 import {
   cellComponent,
   createIndexMap,
@@ -426,8 +428,22 @@ function getNestedColumnDef(
         accessorFn: (row) => row[d.name],
         header: nestedLabel,
         cell: ({ row, getValue }) => {
+          const value = getValue() as string;
+
+          // Handle Show More button
+          if (value === SHOW_MORE_BUTTON) {
+            const rowData = row.original;
+            return cellComponent(PivotShowMoreCell, {
+              currentLimit: rowData.__currentLimit as number,
+              dimensionLabel:
+                rowDimensions?.[row.depth]?.label ||
+                rowDimensions?.[row.depth]?.name,
+              depth: row.depth,
+            });
+          }
+
           const formattedDimensionValue = formatDimensionValue(
-            getValue() as string,
+            value,
             row.depth,
             config.time,
             rowDimensionNames,

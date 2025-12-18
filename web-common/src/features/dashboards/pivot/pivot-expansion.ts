@@ -1,3 +1,4 @@
+import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -150,6 +151,8 @@ interface ExpandedRowMeasureValues {
   rowDimensionValues: string[];
   data: V1MetricsViewAggregationResponseDataItem[];
   totals: V1MetricsViewAggregationResponseDataItem[];
+  hasMore?: boolean; // True if we got limit+1 results (indicates more data available)
+  effectiveLimit?: number; // The limit that was applied to this query
 }
 
 export function getExpandedErrorState(
@@ -278,12 +281,12 @@ export function queryExpandedRowMeasureValues(
         mergeFilters(filterForRowDimensionAxes, config.whereFilter) ??
         createAndExpression([]);
 
-      // Use rowLimit if set, otherwise default to 100
-      // TODO: Add See more option
-      const expandLimitToApply =
-        config.pivot.rowLimit !== undefined
-          ? config.pivot.rowLimit.toString()
-          : "100";
+      // Get effective limit (local limit overrides global limit)
+      const localLimit = config.pivot.nestedRowLimits?.[expandIndex];
+      const effectiveLimit = localLimit ?? config.pivot.rowLimit ?? 100;
+
+      // Query for limit+1 to detect if more data is available
+      const queryLimit = (effectiveLimit + 1).toString();
 
       return derived(
         [
@@ -296,7 +299,7 @@ export function queryExpandedRowMeasureValues(
             subTableMergedFilters,
             sortPivotBy,
             timeRange,
-            expandLimitToApply,
+            queryLimit,
           ),
         ],
         ([expandIndex, subRowDimensions], axisSet) => {
@@ -319,8 +322,21 @@ export function queryExpandedRowMeasureValues(
 
           const subRowDimensionValues =
             subRowDimensions?.data?.[anchorDimension] || [];
-          const subRowDimensionTotals =
+
+          // Detect if more data is available (we got limit+1 results)
+          const hasMore = subRowDimensionValues.length > effectiveLimit;
+
+          // Trim to effective limit (remove the +1 row we fetched for detection)
+          const trimmedValues = hasMore
+            ? subRowDimensionValues.slice(0, effectiveLimit)
+            : subRowDimensionValues;
+
+          // Also trim the totals to match the trimmed values
+          const allSubRowDimensionTotals =
             subRowDimensions?.totals?.[anchorDimension] || [];
+          const subRowDimensionTotals = hasMore
+            ? allSubRowDimensionTotals.slice(0, effectiveLimit)
+            : allSubRowDimensionTotals;
 
           const subRowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
             ctx,
@@ -328,7 +344,7 @@ export function queryExpandedRowMeasureValues(
             isMeasureSortAccessor,
             sortAccessor,
             anchorDimension,
-            subRowDimensionValues,
+            trimmedValues,
             timeRangeRow,
             subTableMergedFilters,
           );
@@ -345,7 +361,7 @@ export function queryExpandedRowMeasureValues(
               anchorDimension,
               columnDimensionAxesData,
               totalsRow,
-              subRowDimensionValues,
+              trimmedValues,
               subTableMergedFilters,
               rowNestTimeFilters,
             );
@@ -366,15 +382,17 @@ export function queryExpandedRowMeasureValues(
                   {
                     isFetching: true,
                     expandIndex,
-                    rowDimensionValues: subRowDimensionValues,
+                    rowDimensionValues: trimmedValues,
                     totals: [],
                     data: subTableData?.data?.data || [],
+                    hasMore,
+                    effectiveLimit,
                   };
                 return rowMeasureValueWithoutSubTable;
               }
 
               const mergedRowTotals = mergeRowTotalsInOrder(
-                subRowDimensionValues,
+                trimmedValues,
                 subRowDimensionTotals,
                 subRowTotals?.data?.[anchorDimension] || [],
                 subRowTotals?.totals?.[anchorDimension] || [],
@@ -385,9 +403,11 @@ export function queryExpandedRowMeasureValues(
                   {
                     isFetching: false,
                     expandIndex,
-                    rowDimensionValues: subRowDimensionValues,
+                    rowDimensionValues: trimmedValues,
                     totals: mergedRowTotals,
                     data: mergedRowTotals,
+                    hasMore,
+                    effectiveLimit,
                   };
                 return rowMeasureValueWithoutSubTable;
               }
@@ -396,9 +416,11 @@ export function queryExpandedRowMeasureValues(
                 const rowMeasureValueWithTotals: ExpandedRowMeasureValues = {
                   isFetching: true,
                   expandIndex,
-                  rowDimensionValues: subRowDimensionValues,
+                  rowDimensionValues: trimmedValues,
                   totals: mergedRowTotals,
                   data: subTableData?.data?.data || [],
+                  hasMore,
+                  effectiveLimit,
                 };
 
                 return rowMeasureValueWithTotals;
@@ -407,9 +429,11 @@ export function queryExpandedRowMeasureValues(
               const rowMeasureValue: ExpandedRowMeasureValues = {
                 isFetching: false,
                 expandIndex,
-                rowDimensionValues: subRowDimensionValues,
+                rowDimensionValues: trimmedValues,
                 totals: mergedRowTotals,
                 data: subTableData?.data?.data || [],
+                hasMore,
+                effectiveLimit,
               };
               return rowMeasureValue;
             },
@@ -492,22 +516,37 @@ export function addExpandedDataToPivot(
         );
       }
 
-      parent[lastIdx].subRows = subTableData?.map((row) => {
-        const newRow = {
-          ...row,
-          [rowDimensions[0]]: row[anchorDimension],
-        };
+      const mappedSubRows =
+        subTableData?.map((row) => {
+          const newRow = {
+            ...row,
+            [rowDimensions[0]]: row[anchorDimension],
+          };
 
-        /**
-         * Add sub rows to the new row if number of row dimensions
-         * is greater than number of nest levels expanded except
-         * for the last level
-         */
-        if (numRowDimensions - 1 > indices.length) {
-          newRow.subRows = [{ [rowDimensions[0]]: "LOADING_CELL" }];
-        }
-        return newRow;
-      });
+          /**
+           * Add sub rows to the new row if number of row dimensions
+           * is greater than number of nest levels expanded except
+           * for the last level
+           */
+          if (numRowDimensions - 1 > indices.length) {
+            newRow.subRows = [{ [rowDimensions[0]]: "LOADING_CELL" }];
+          }
+          return newRow;
+        }) || [];
+
+      // Add "Show More" button row if more data is available and we're not at max limit (100)
+      if (
+        expandedRowData.hasMore &&
+        expandedRowData.effectiveLimit &&
+        expandedRowData.effectiveLimit < 100
+      ) {
+        mappedSubRows.push({
+          [rowDimensions[0]]: SHOW_MORE_BUTTON,
+          __currentLimit: expandedRowData.effectiveLimit,
+        } as PivotDataRow);
+      }
+
+      parent[lastIdx].subRows = mappedSubRows;
     }
   });
   return pivotData;
