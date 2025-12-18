@@ -239,7 +239,7 @@ export function makeEnvConnectorKey(
   key: string,
   connectorInstanceName?: string,
 ) {
-  // Once Connector Name in UI, update nameToUse to the connector_name parameter
+  // Uses the Unique Connector Name provided in UI, driver just for backup.
   const nameToUse = connectorInstanceName || driverName;
   return `${nameToUse}_${key}`;
 }
