@@ -114,6 +114,11 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 		return nil, err
 	}
 
+	// This check prevents changing sharing boundaries on already shared conversations by non-owners.
+	if session.CatalogSession().OwnerID != claims.UserID && !claims.SkipChecks {
+		return nil, ErrForbidden
+	}
+
 	// validate that the requested message id exists
 	// TODO should we make sure the requested shared until message is of type result from router agent? if not then go up the chain and use the last result message id?
 	foundMsg := false
