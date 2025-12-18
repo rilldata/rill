@@ -38,7 +38,7 @@ It's never a good idea to commit sensitive information to Git and goes against s
 
 ### `rill env push`
 
-As a project admin, you can run `rill env push` from your loca CLI that will update your Rill project with the contexts of your *`<RILL_PROJECT_HOME>/.env`* file.
+As a project admin, you can run `rill env push` from your local CLI that will update your Rill project with the contexts of your *`<RILL_PROJECT_HOME>/.env`* file.
 - Rill Cloud will use the specified credentials and variables in this `.env` file for the deployed project.
 - Other users will also be able to use `rill env pull` to retrieve these defined credentials for local use (with Rill Developer).
 
