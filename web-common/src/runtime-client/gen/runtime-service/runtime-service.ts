@@ -51,6 +51,7 @@ import type {
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceShareConversationBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -96,6 +97,7 @@ import type {
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1RenameFileResponse,
+  V1ShareConversationResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -1393,6 +1395,109 @@ export function createRuntimeServiceGetConversation<
   return query;
 }
 
+export const runtimeServiceShareConversation = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceShareConversationBody: RuntimeServiceShareConversationBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ShareConversationResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/share`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceShareConversationBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceShareConversationMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceShareConversationBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceShareConversationBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceShareConversation"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceShareConversationBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceShareConversation(instanceId, conversationId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceShareConversationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceShareConversation>>
+>;
+export type RuntimeServiceShareConversationMutationBody =
+  RuntimeServiceShareConversationBody;
+export type RuntimeServiceShareConversationMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceShareConversation = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceShareConversationBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceShareConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceShareConversationBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceShareConversationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 Note that it covers all registered tools, but the current user may not have access to all of them.

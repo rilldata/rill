@@ -4742,6 +4742,88 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 }
 
 /**
+ * @generated from message rill.runtime.v1.ShareConversationRequest
+ */
+export class ShareConversationRequest extends Message$1<ShareConversationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * should ideally be the latest message of "type": "result"
+   *
+   * @generated from field: string shared_until_message_id = 3;
+   */
+  sharedUntilMessageId = "";
+
+  constructor(data?: PartialMessage<ShareConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ShareConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "shared_until_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShareConversationRequest {
+    return new ShareConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ShareConversationRequest {
+    return new ShareConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ShareConversationRequest {
+    return new ShareConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ShareConversationRequest | PlainMessage<ShareConversationRequest> | undefined, b: ShareConversationRequest | PlainMessage<ShareConversationRequest> | undefined): boolean {
+    return proto3.util.equals(ShareConversationRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ShareConversationResponse
+ */
+export class ShareConversationResponse extends Message$1<ShareConversationResponse> {
+  constructor(data?: PartialMessage<ShareConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ShareConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShareConversationResponse {
+    return new ShareConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ShareConversationResponse {
+    return new ShareConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ShareConversationResponse {
+    return new ShareConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ShareConversationResponse | PlainMessage<ShareConversationResponse> | undefined, b: ShareConversationResponse | PlainMessage<ShareConversationResponse> | undefined): boolean {
+    return proto3.util.equals(ShareConversationResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.ListTools
  *
  * @generated from message rill.runtime.v1.ListToolsRequest

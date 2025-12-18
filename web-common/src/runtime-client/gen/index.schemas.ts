@@ -2279,6 +2279,10 @@ export interface V1SecurityRuleTransitiveAccess {
   resource?: V1ResourceName;
 }
 
+export interface V1ShareConversationResponse {
+  [key: string]: unknown;
+}
+
 export interface V1Source {
   spec?: V1SourceSpec;
   state?: V1SourceState;
@@ -2604,6 +2608,10 @@ export type RuntimeServiceListConversationsParams = {
    * Optional search pattern for filtering by user agent.
    */
   userAgentPattern?: string;
+};
+
+export type RuntimeServiceShareConversationBody = {
+  sharedUntilMessageId?: string;
 };
 
 export type ConnectorServiceListBucketsParams = {

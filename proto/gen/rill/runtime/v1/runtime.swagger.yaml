@@ -548,6 +548,38 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
+    post:
+      operationId: RuntimeService_ShareConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ShareConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              sharedUntilMessageId:
+                type: string
+                title: 'should ideally be the latest message of "type": "result"'
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
     get:
       summary: |-
@@ -7027,6 +7059,8 @@ definitions:
       resource:
         $ref: '#/definitions/v1ResourceName'
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
+  v1ShareConversationResponse:
+    type: object
   v1Source:
     type: object
     properties:

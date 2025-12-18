@@ -61,7 +61,12 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
-	if !claims.Can(runtime.UseAI) {
+
+	anonUser := false
+	if claims != nil && claims.UserID == "" && !claims.SkipChecks {
+		anonUser = true
+	}
+	if !claims.Can(runtime.UseAI) && !anonUser {
 		return nil, ErrForbidden
 	}
 
@@ -72,6 +77,10 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if anonUser && !session.Shareable() {
+		return nil, ErrForbidden
 	}
 
 	messages := session.Messages()
@@ -88,6 +97,48 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 		Conversation: sessionToPB(session.CatalogSession(), messagePBs),
 		Messages:     messagePBs,
 	}, nil
+}
+
+func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConversationRequest) (*runtimev1.ShareConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// validate that the requested message id exists
+	// TODO should we make sure the requested shared until message is of type result from router agent? if not then go up the chain and use the last result message id?
+	foundMsg := false
+	for _, msg := range session.Messages() {
+		if msg.ID == req.SharedUntilMessageId {
+			// found the message, proceed
+			foundMsg = true
+			break
+		}
+	}
+	if !foundMsg {
+		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.SharedUntilMessageId, req.ConversationId)
+	}
+
+	// now save the session with the shared until message id and flush immediately
+	err = session.UpdateSharedUntilMessageID(ctx, req.SharedUntilMessageId)
+	if err != nil {
+		return nil, err
+	}
+	err = session.Flush(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ShareConversationResponse{}, nil
 }
 
 func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest) (*runtimev1.ListToolsResponse, error) {

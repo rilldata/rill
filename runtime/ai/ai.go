@@ -98,6 +98,11 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
 		}
+		retrieveUntilMessageID := session.SharedUntilMessageID
+		if session.OwnerID == opts.Claims.UserID || opts.Claims.SkipChecks {
+			// If the user owns the session or skipCheck enabled, they can see all messages.
+			retrieveUntilMessageID = ""
+		}
 
 		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
 		if err != nil {
@@ -116,6 +121,10 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 				ContentType: MessageContentType(m.ContentType),
 				Content:     m.Content,
 			})
+			// only load messages up to and including that retrieveUntilMessageID; messages are ordered by "Index" ascending.
+			if m.ID == retrieveUntilMessageID {
+				break
+			}
 		}
 	}
 	if opts.SessionID == "" {
@@ -134,9 +143,9 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
-	// Check access: for now, only allow users to access their own sessions.
+	// Check access: for now, only allow users to access their own sessions or shared sessions with trimmed messages.
 	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
-	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks {
+	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks && session.SharedUntilMessageID == "" {
 		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 
@@ -522,6 +531,10 @@ func (s *BaseSession) Title() string {
 	return s.dto.Title
 }
 
+func (s *BaseSession) Shareable() bool {
+	return s.dto.SharedUntilMessageID != ""
+}
+
 func (s *BaseSession) UpdateTitle(ctx context.Context, title string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -534,6 +547,14 @@ func (s *BaseSession) UpdateUserAgent(ctx context.Context, userAgent string) err
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.dto.UserAgent = userAgent
+	s.dtoDirty = true
+	return nil
+}
+
+func (s *BaseSession) UpdateSharedUntilMessageID(ctx context.Context, messageID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dto.SharedUntilMessageID = messageID
 	s.dtoDirty = true
 	return nil
 }

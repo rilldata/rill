@@ -249,6 +249,13 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
+      body: "*"
+    };
+  }
+
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
@@ -1011,6 +1018,15 @@ message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
 }
+
+message ShareConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // should ideally be the latest message of "type": "result"
+  string shared_until_message_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message ShareConversationResponse {}
 
 // Request message for RuntimeService.ListTools
 message ListToolsRequest {
