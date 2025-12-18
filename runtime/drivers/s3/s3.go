@@ -61,6 +61,24 @@ var spec = drivers.Spec{
 			Required:    false,
 			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3 compatible services, such as Cloudflare R2 or MinIO.",
 		},
+		{
+			Key:         "aws_role_arn",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "AWS Role ARN to assume",
+		},
+		{
+			Key:         "aws_role_session_name",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+		},
+		{
+			Key:         "aws_external_id",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
