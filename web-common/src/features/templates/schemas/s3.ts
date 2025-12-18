@@ -54,6 +54,15 @@ export const s3Schema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
     },
+    aws_role_arn: {
+      type: "string",
+      title: "AWS Role ARN",
+      description: "AWS Role ARN to assume",
+      "x-placeholder": "arn:aws:iam::123456789012:role/MyRole",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+    },
     path: {
       type: "string",
       title: "S3 URI",
