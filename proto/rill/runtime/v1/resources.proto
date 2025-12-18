@@ -486,6 +486,9 @@ message ExplorePreset {
   // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
   FieldSelector measures_selector = 10;
 
+  DefaultMetricsSQLFilter filter = 33;
+  repeated string pinned = 34;
+
   optional Expression where = 11;
   // Temporary to differentiate between "select" and "in list" modes. Expression will be replaced with UI specific state in the future.
   repeated string dimensions_with_inlist_filter = 29;
