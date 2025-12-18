@@ -419,6 +419,53 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 	return &runtimev1.CreateTriggerResponse{}, nil
 }
 
+// TriggerReport implements runtimev1.RuntimeServiceServer
+func (s *Server) TriggerReport(ctx context.Context, req *runtimev1.TriggerReportRequest) (*runtimev1.TriggerReportResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.name", req.Name),
+	)
+
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Get the report resource
+	reportName := &runtimev1.ResourceName{
+		Kind: runtime.ResourceKindReport,
+		Name: req.Name,
+	}
+	self, err := ctrl.Get(ctx, reportName, true)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("report %q not found", req.Name))
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	rep := self.GetReport()
+	if rep == nil {
+		return nil, status.Error(codes.InvalidArgument, "resource is not a report")
+	}
+
+	// Set trigger flag
+	rep.Spec.Trigger = true
+
+	// Update the resource spec
+	err = ctrl.UpdateSpec(ctx, reportName, self)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Errorf("failed to trigger report: %w", err).Error())
+	}
+
+	return &runtimev1.TriggerReportResponse{}, nil
+}
+
 // modelPartitionsToPB converts a slice of drivers.ModelPartition to a slice of runtimev1.ModelPartition.
 func modelPartitionsToPB(partitions []drivers.ModelPartition) []*runtimev1.ModelPartition {
 	pbs := make([]*runtimev1.ModelPartition, len(partitions))

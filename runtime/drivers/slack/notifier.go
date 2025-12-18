@@ -55,6 +55,7 @@ func (n *notifier) SendScheduledReport(s *drivers.ScheduledReport) error {
 		DownloadFormat:   s.DownloadFormat,
 		OpenLink:         s.OpenLink,
 		DownloadLink:     s.DownloadLink,
+		MarkdownBody:     s.MarkdownBody,
 	}
 
 	buf := new(bytes.Buffer)
@@ -100,7 +101,21 @@ func (n *notifier) sendReportToUsers(d ReportStatusData) error {
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
-		_, _, err = n.api.PostMessage(user.ID, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
+		// Use Block Kit format to ensure mrkdwn is properly enabled
+		blocks := []slack.Block{
+			slack.NewSectionBlock(
+				&slack.TextBlockObject{
+					Type: "mrkdwn",
+					Text: txt,
+				},
+				nil,
+				nil,
+			),
+		}
+		_, _, err = n.api.PostMessage(user.ID,
+			slack.MsgOptionBlocks(blocks...),
+			slack.MsgOptionDisableLinkUnfurl(),
+		)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
@@ -192,8 +207,23 @@ func (n *notifier) sendTextToChannels(txt string) error {
 		return fmt.Errorf("slack api is not configured, consider setting a bot token")
 	}
 
+	// Use Block Kit format to ensure mrkdwn is properly enabled
+	blocks := []slack.Block{
+		slack.NewSectionBlock(
+			&slack.TextBlockObject{
+				Type: "mrkdwn",
+				Text: txt,
+			},
+			nil,
+			nil,
+		),
+	}
+
 	for _, channel := range n.props.Channels {
-		_, _, err := n.api.PostMessage(channel, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
+		_, _, err := n.api.PostMessage(channel,
+			slack.MsgOptionBlocks(blocks...),
+			slack.MsgOptionDisableLinkUnfurl(),
+		)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
@@ -210,12 +240,27 @@ func (n *notifier) sendTextToUsers(txt string) error {
 		return fmt.Errorf("slack api is not configured, consider setting a bot token")
 	}
 
+	// Use Block Kit format to ensure mrkdwn is properly enabled
+	blocks := []slack.Block{
+		slack.NewSectionBlock(
+			&slack.TextBlockObject{
+				Type: "mrkdwn",
+				Text: txt,
+			},
+			nil,
+			nil,
+		),
+	}
+
 	for _, email := range n.props.Users {
 		user, err := n.api.GetUserByEmail(email)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
-		_, _, err = n.api.PostMessage(user.ID, slack.MsgOptionText(txt, false), slack.MsgOptionDisableLinkUnfurl())
+		_, _, err = n.api.PostMessage(user.ID,
+			slack.MsgOptionBlocks(blocks...),
+			slack.MsgOptionDisableLinkUnfurl(),
+		)
 		if err != nil {
 			return fmt.Errorf("slack api error: %w", err)
 		}
@@ -224,9 +269,23 @@ func (n *notifier) sendTextToUsers(txt string) error {
 }
 
 func (n *notifier) sendTextViaWebhooks(txt string) error {
+	// Use Block Kit format to ensure mrkdwn is properly enabled
+	blocks := []slack.Block{
+		slack.NewSectionBlock(
+			&slack.TextBlockObject{
+				Type: "mrkdwn",
+				Text: txt,
+			},
+			nil,
+			nil,
+		),
+	}
+
 	for _, webhook := range n.props.Webhooks {
 		payload := slack.WebhookMessage{
-			Text: txt,
+			Blocks: &slack.Blocks{
+				BlockSet: blocks,
+			},
 		}
 		err := slack.PostWebhook(webhook, &payload)
 		if err != nil {
@@ -260,6 +319,7 @@ type ReportStatusData struct {
 	OpenLink         string
 	DownloadLink     string
 	UnsubscribeLink  string
+	MarkdownBody     string // Resolved markdown content for markdown-only reports
 }
 
 type AlertStatusData struct {

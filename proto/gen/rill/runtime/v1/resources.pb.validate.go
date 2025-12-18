@@ -6537,6 +6537,8 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for IntervalsCheckUnclosed
 
+	// no validation rules for Markdown
+
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)
 	}

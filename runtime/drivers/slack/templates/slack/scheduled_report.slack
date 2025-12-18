@@ -1,9 +1,17 @@
 *{{ .DisplayName }}*
+{{ if .MarkdownBody }}
+
+{{ .MarkdownBody }}
+{{ else }}
 
 Your report for *{{ .ReportTimeString }}* is ready to view.
-
+{{ if .DownloadLink }}
 <{{ .OpenLink }}|Open in browser> to see the full details.
 
 Or <{{ .DownloadLink }}|download the {{ .DownloadFormat }} file> directly.
+{{ else if .OpenLink }}
+<{{ .OpenLink }}|Open in browser> to see the full details.
+{{ end }}
 
 {{ if .UnsubscribeLink }}To unsubscribe from this report, <{{ .UnsubscribeLink }}|click here>.{{ end }}
+{{ end }}

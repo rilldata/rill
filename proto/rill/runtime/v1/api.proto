@@ -218,6 +218,14 @@ service RuntimeService {
     };
   }
 
+  // TriggerReport triggers an ad-hoc execution of a report.
+  rpc TriggerReport(TriggerReportRequest) returns (TriggerReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/reports/{name}/trigger",
+      body: "*"
+    };
+  }
+
   // Connectors
 
   // ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
@@ -810,6 +818,13 @@ message CreateTriggerRequest {
 }
 
 message CreateTriggerResponse {}
+
+message TriggerReportRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message TriggerReportResponse {}
 
 // **********
 // Connectors

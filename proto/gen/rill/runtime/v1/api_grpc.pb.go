@@ -50,6 +50,7 @@ const (
 	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
 	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
+	RuntimeService_TriggerReport_FullMethodName           = "/rill.runtime.v1.RuntimeService/TriggerReport"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
@@ -133,6 +134,8 @@ type RuntimeServiceClient interface {
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
+	// TriggerReport triggers an ad-hoc execution of a report.
+	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
 	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
 	// including their configuration specs and the capabilities they support.
 	ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error)
@@ -503,6 +506,16 @@ func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, in *CreateTrig
 	return out, nil
 }
 
+func (c *runtimeServiceClient) TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TriggerReportResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_TriggerReport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListConnectorDriversResponse)
@@ -683,6 +696,8 @@ type RuntimeServiceServer interface {
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
+	// TriggerReport triggers an ad-hoc execution of a report.
+	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
 	// ListConnectorDrivers returns a description of all the connector drivers registed in the runtime,
 	// including their configuration specs and the capabilities they support.
 	ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error)
@@ -808,6 +823,9 @@ func (UnimplementedRuntimeServiceServer) GetModelPartitions(context.Context, *Ge
 }
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
+}
+func (UnimplementedRuntimeServiceServer) TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerReport not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectorDrivers not implemented")
@@ -1397,6 +1415,24 @@ func _RuntimeService_CreateTrigger_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_TriggerReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).TriggerReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_TriggerReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).TriggerReport(ctx, req.(*TriggerReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListConnectorDrivers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListConnectorDriversRequest)
 	if err := dec(in); err != nil {
@@ -1688,6 +1724,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateTrigger",
 			Handler:    _RuntimeService_CreateTrigger_Handler,
+		},
+		{
+			MethodName: "TriggerReport",
+			Handler:    _RuntimeService_TriggerReport_Handler,
 		},
 		{
 			MethodName: "ListConnectorDrivers",

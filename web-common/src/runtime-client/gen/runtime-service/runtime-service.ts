@@ -51,6 +51,7 @@ import type {
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceTriggerReportBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -96,6 +97,7 @@ import type {
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1RenameFileResponse,
+  V1TriggerReportResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -3416,6 +3418,99 @@ export const createRuntimeServiceQueryResolver = <
 > => {
   const mutationOptions =
     getRuntimeServiceQueryResolverMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary TriggerReport triggers an ad-hoc execution of a report.
+ */
+export const runtimeServiceTriggerReport = (
+  instanceId: string,
+  name: string,
+  runtimeServiceTriggerReportBody: RuntimeServiceTriggerReportBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1TriggerReportResponse>({
+    url: `/v1/instances/${instanceId}/reports/${name}/trigger`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceTriggerReportBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceTriggerReportMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceTriggerReport>>,
+    TError,
+    { instanceId: string; name: string; data: RuntimeServiceTriggerReportBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceTriggerReport>>,
+  TError,
+  { instanceId: string; name: string; data: RuntimeServiceTriggerReportBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceTriggerReport"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceTriggerReport>>,
+    { instanceId: string; name: string; data: RuntimeServiceTriggerReportBody }
+  > = (props) => {
+    const { instanceId, name, data } = props ?? {};
+
+    return runtimeServiceTriggerReport(instanceId, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceTriggerReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceTriggerReport>>
+>;
+export type RuntimeServiceTriggerReportMutationBody =
+  RuntimeServiceTriggerReportBody;
+export type RuntimeServiceTriggerReportMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary TriggerReport triggers an ad-hoc execution of a report.
+ */
+export const createRuntimeServiceTriggerReport = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceTriggerReport>>,
+      TError,
+      {
+        instanceId: string;
+        name: string;
+        data: RuntimeServiceTriggerReportBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceTriggerReport>>,
+  TError,
+  { instanceId: string; name: string; data: RuntimeServiceTriggerReportBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceTriggerReportMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

@@ -27,8 +27,9 @@ type ReportYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
-	Query   struct {
+	Timeout  string `yaml:"timeout"`
+	Markdown string `yaml:"markdown"` // Markdown template with metrics_sql templating
+	Query    struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -112,36 +113,48 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Query name
-	if tmp.Query.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
-	}
-
-	// Query args
-	if tmp.Query.ArgsJSON != "" {
-		// Validate JSON
-		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
-			return errors.New(`failed to parse "query.args_json" as JSON`)
+	// Validate markdown and query/export are mutually exclusive
+	var exportFormat runtimev1.ExportFormat
+	if tmp.Markdown != "" {
+		if tmp.Query.Name != "" {
+			return errors.New(`cannot set both "markdown" and "query.name"`)
+		}
+		if tmp.Export.Format != "" {
+			return errors.New(`cannot set both "markdown" and "export.format"`)
 		}
 	} else {
-		// Fall back to query.args if query.args_json is not set
-		data, err := json.Marshal(tmp.Query.Args)
-		if err != nil {
-			return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+		// Query name
+		if tmp.Query.Name == "" {
+			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
 		}
-		tmp.Query.ArgsJSON = string(data)
-	}
-	if tmp.Query.ArgsJSON == "" {
-		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
-	}
 
-	// Parse export format
-	exportFormat, err := parseExportFormat(tmp.Export.Format)
-	if err != nil {
-		return err
-	}
-	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
-		return fmt.Errorf(`missing required property "export.format"`)
+		// Query args
+		if tmp.Query.ArgsJSON != "" {
+			// Validate JSON
+			if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
+				return errors.New(`failed to parse "query.args_json" as JSON`)
+			}
+		} else {
+			// Fall back to query.args if query.args_json is not set
+			data, err := json.Marshal(tmp.Query.Args)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			}
+			tmp.Query.ArgsJSON = string(data)
+		}
+		if tmp.Query.ArgsJSON == "" {
+			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		}
+
+		// Parse export format
+		var err error
+		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		if err != nil {
+			return err
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
+			return fmt.Errorf(`missing required property "export.format"`)
+		}
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
@@ -151,6 +164,14 @@ func (p *Parser) parseReport(node *Node) error {
 	isLegacySyntax := len(tmp.Email.Recipients) > 0
 
 	// Validate recipients
+	// If markdown is set, ensure at least one notifier is configured
+	if tmp.Markdown != "" {
+		if !isLegacySyntax && len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 &&
+			len(tmp.Notify.Slack.Users) == 0 && len(tmp.Notify.Slack.Webhooks) == 0 {
+			return fmt.Errorf(`markdown reports require at least one notification recipient in "notify" section`)
+		}
+	}
+
 	if isLegacySyntax {
 		// Backward compatibility
 		for _, email := range tmp.Email.Recipients {
@@ -160,7 +181,7 @@ func (p *Parser) parseReport(node *Node) error {
 			}
 		}
 	} else {
-		if len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 &&
+		if tmp.Markdown == "" && len(tmp.Notify.Email.Recipients) == 0 && len(tmp.Notify.Slack.Channels) == 0 &&
 			len(tmp.Notify.Slack.Users) == 0 && len(tmp.Notify.Slack.Webhooks) == 0 {
 			return fmt.Errorf(`missing notification recipients`)
 		}
@@ -199,11 +220,14 @@ func (p *Parser) parseReport(node *Node) error {
 	if timeout != 0 {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
-	r.ReportSpec.QueryName = tmp.Query.Name
-	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
-	r.ReportSpec.ExportFormat = exportFormat
-	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	r.ReportSpec.Markdown = tmp.Markdown
+	if tmp.Markdown == "" {
+		r.ReportSpec.QueryName = tmp.Query.Name
+		r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
+		r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
+		r.ReportSpec.ExportFormat = exportFormat
+		r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	}
 
 	if isLegacySyntax {
 		// Backwards compatibility

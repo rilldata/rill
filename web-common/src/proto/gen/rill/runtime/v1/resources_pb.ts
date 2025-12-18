@@ -3442,6 +3442,13 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   intervalsCheckUnclosed = false;
 
+  /**
+   * Markdown template with metrics_sql templating support
+   *
+   * @generated from field: string markdown = 17;
+   */
+  markdown = "";
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3465,6 +3472,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 13, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 15, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "markdown", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

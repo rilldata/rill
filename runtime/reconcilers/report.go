@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/url"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/russross/blackfriday/v2"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -499,6 +501,91 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
+	// Handle markdown reports
+	if rep.Spec.Markdown != "" {
+		// For markdown-only reports (no query/export), we never send OpenLink, UnsubscribeLink, or DownloadLink
+		// The content is self-contained in the notification, so no admin service is needed
+
+		sent := false
+		// Resolve markdown template
+		resolvedMarkdown, err := r.resolveMarkdownTemplate(ctx, rep.Spec.Markdown)
+		if err != nil {
+			return false, fmt.Errorf("failed to resolve markdown template: %w", err)
+		}
+
+		// Convert markdown to HTML for email
+		htmlBody := string(blackfriday.Run([]byte(resolvedMarkdown)))
+
+		for _, notifier := range rep.Spec.Notifiers {
+			switch notifier.Connector {
+			case "email":
+				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+				for _, recipient := range recipients {
+					err := r.C.Runtime.Email.SendInformational(&email.Informational{
+						ToEmail:    recipient,
+						ToName:     "",
+						Subject:    fmt.Sprintf("%s (%s)", rep.Spec.DisplayName, t.Format(time.RFC1123)),
+						Body:       template.HTML(htmlBody),
+						ShowFooter: true,
+					})
+					sent = true
+					if err != nil {
+						return true, fmt.Errorf("failed to send markdown report email to %q: %w", recipient, err)
+					}
+				}
+			default:
+				// For Slack and other notifiers, send markdown as text
+				// Markdown reports never include URLs (OpenLink, DownloadLink, UnsubscribeLink)
+				err := func() (outErr error) {
+					conn, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, notifier.Connector)
+					if err != nil {
+						return err
+					}
+					defer release()
+					n, err := conn.AsNotifier(notifier.Properties.AsMap())
+					if err != nil {
+						return err
+					}
+					// Send the resolved markdown content to Slack
+					msg := &drivers.ScheduledReport{
+						DisplayName:     rep.Spec.DisplayName,
+						ReportTime:      t,
+						DownloadFormat:  "",               // Not applicable for markdown reports
+						OpenLink:        "",               // Never include URLs for markdown reports
+						DownloadLink:    "",               // Never include URLs for markdown reports
+						UnsubscribeLink: "",               // Never include URLs for markdown reports
+						MarkdownBody:    resolvedMarkdown, // Include the resolved markdown content
+					}
+					// TODO: Extend drivers.ScheduledReport or create new interface to support markdown body
+					// For now, we'll just send the standard report format
+					// The resolved markdown could be included if we extend the interface
+					start := time.Now()
+					defer func() {
+						totalLatency := time.Since(start).Milliseconds()
+						if r.C.Activity != nil {
+							r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
+								attribute.Bool("failed", outErr != nil),
+								attribute.String("connector", notifier.Connector),
+								attribute.String("notification_type", "markdown_report"),
+							)
+						}
+					}()
+					err = n.SendScheduledReport(msg)
+					sent = true
+					if err != nil {
+						return fmt.Errorf("failed to send markdown %s notification: %w", notifier.Connector, err)
+					}
+					return nil
+				}()
+				if err != nil {
+					return sent, err
+				}
+			}
+		}
+		return false, nil
+	}
+
+	// Existing query/export logic - these always require admin service
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
@@ -536,6 +623,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	sent := false
+
 	for _, notifier := range rep.Spec.Notifiers {
 		switch notifier.Connector {
 		case "email":
@@ -619,6 +707,23 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+// resolveMarkdownTemplate resolves a markdown template string that may contain metrics_sql templating.
+// It uses the shared runtime function for template resolution.
+func (r *ReportReconciler) resolveMarkdownTemplate(ctx context.Context, markdownTemplate string) (string, error) {
+	// Get claims for the report execution - use system/admin claims with full access
+	claims := &runtime.SecurityClaims{
+		UserAttributes: map[string]any{},
+		SkipChecks:     true, // Report execution runs with system privileges
+	}
+
+	return r.C.Runtime.ResolveTemplatedStringWithMetricsSQL(ctx, runtime.ResolveTemplatedStringOptions{
+		InstanceID:      r.C.InstanceID,
+		Claims:          claims,
+		Body:            markdownTemplate,
+		UseFormatTokens: false,
+	})
 }
 
 func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {

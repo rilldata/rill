@@ -34,4 +34,5 @@ type ScheduledReport struct {
 	OpenLink        string
 	DownloadLink    string
 	UnsubscribeLink string
+	MarkdownBody    string // Resolved markdown content for markdown-only reports
 }

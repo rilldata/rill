@@ -608,6 +608,7 @@ message ReportSpec {
   string intervals_iso_duration = 13;
   int32 intervals_limit = 14;
   bool intervals_check_unclosed = 15;
+  string markdown = 17; // Markdown template with metrics_sql templating support
 }
 
 message ReportState {

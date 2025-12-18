@@ -2103,6 +2103,7 @@ export interface V1ReportSpec {
   intervalsIsoDuration?: string;
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
+  markdown?: string;
 }
 
 export interface V1ReportState {
@@ -2479,6 +2480,10 @@ export interface V1ToolResult {
 
 export interface V1TopK {
   entries?: TopKEntry[];
+}
+
+export interface V1TriggerReportResponse {
+  [key: string]: unknown;
 }
 
 export interface V1UnpackEmptyResponse {
@@ -3128,6 +3133,8 @@ export type RuntimeServiceQueryResolverBody = {
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
   limit?: number;
 };
+
+export type RuntimeServiceTriggerReportBody = { [key: string]: unknown };
 
 export type QueryServiceExportReportBody = {
   /** The execution time to evaluate the report relative to.

@@ -8953,6 +8953,234 @@ var _ interface {
 	ErrorName() string
 } = CreateTriggerResponseValidationError{}
 
+// Validate checks the field values on TriggerReportRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerReportRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerReportRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerReportRequestMultiError, or nil if none found.
+func (m *TriggerReportRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerReportRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_TriggerReportRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := TriggerReportRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := TriggerReportRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return TriggerReportRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerReportRequestMultiError is an error wrapping multiple validation
+// errors returned by TriggerReportRequest.ValidateAll() if the designated
+// constraints aren't met.
+type TriggerReportRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerReportRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerReportRequestMultiError) AllErrors() []error { return m }
+
+// TriggerReportRequestValidationError is the validation error returned by
+// TriggerReportRequest.Validate if the designated constraints aren't met.
+type TriggerReportRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerReportRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerReportRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerReportRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerReportRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerReportRequestValidationError) ErrorName() string {
+	return "TriggerReportRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerReportRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerReportRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerReportRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerReportRequestValidationError{}
+
+var _TriggerReportRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on TriggerReportResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerReportResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerReportResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerReportResponseMultiError, or nil if none found.
+func (m *TriggerReportResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerReportResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return TriggerReportResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerReportResponseMultiError is an error wrapping multiple validation
+// errors returned by TriggerReportResponse.ValidateAll() if the designated
+// constraints aren't met.
+type TriggerReportResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerReportResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerReportResponseMultiError) AllErrors() []error { return m }
+
+// TriggerReportResponseValidationError is the validation error returned by
+// TriggerReportResponse.Validate if the designated constraints aren't met.
+type TriggerReportResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerReportResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerReportResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerReportResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerReportResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerReportResponseValidationError) ErrorName() string {
+	return "TriggerReportResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerReportResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerReportResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerReportResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerReportResponseValidationError{}
+
 // Validate checks the field values on ConnectorDriver with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
