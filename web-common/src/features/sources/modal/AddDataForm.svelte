@@ -28,6 +28,7 @@
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import {
     getAuthOptionsFromSchema,
+    findAuthMethodKey,
     getConnectorSchema,
   } from "./multi-step-auth-configs";
   import { get } from "svelte/store";
@@ -232,6 +233,18 @@
     }
   } else if (stepState.selectedAuthMethod) {
     setAuthMethod(null);
+  }
+
+  // Keep auth method store aligned with the form's enum value from the schema.
+  $: if (isMultiStepConnector && activeSchema) {
+    const authKey = findAuthMethodKey(activeSchema);
+    if (authKey) {
+      const currentValue = $paramsForm?.[authKey] as string | undefined;
+      const normalized = currentValue ? String(currentValue) : null;
+      if (normalized !== (stepState.selectedAuthMethod ?? null)) {
+        setAuthMethod(normalized);
+      }
+    }
   }
 
   $: isSubmitting = submitting;
@@ -451,7 +464,6 @@
                 errors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
-                bind:authMethod={$selectedAuthMethodStore}
               />
             {:else}
               <FormRenderer
@@ -478,7 +490,6 @@
                 errors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
-                bind:authMethod={$selectedAuthMethodStore}
               />
             {:else}
               <FormRenderer
