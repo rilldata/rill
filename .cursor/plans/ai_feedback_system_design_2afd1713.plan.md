@@ -1,16 +1,10 @@
----
-name: AI Feedback System Design
-overview: ""
-todos: []
----
-
 # AI Feedback System Technical Design
 
 ## Overview
 
 Users can upvote/downvote any AI response. Downvoting opens a modal with categorized feedback options. Feedback is stored as tool call messages in the existing `ai_messages` table, making it available for both analytics and LLM context in subsequent conversations.
 
-For negative feedback, the system asynchronously invokes an LLM to predict attribution (`rill` vs `project`), enabling automatic triage without blocking the user.
+For negative feedback, the system invokes an LLM to predict attribution (`rill` vs `project`), enabling automatic triage.
 
 ### Use Cases
 
@@ -91,7 +85,7 @@ Using key-value strings for flexibility rather than typed enums, since feedback 
 }
 ```
 
-**For negative feedback** - includes AI-predicted attribution (populated async):
+**For negative feedback** - includes AI-predicted attribution:
 
 ```json
 {
@@ -131,25 +125,26 @@ Using key-value strings for flexibility rather than typed enums, since feedback 
 ### Analytics Query Example
 
 ```sql
-SELECT 
+SELECT
     session_id,
     created_on,
     json_extract(content, '$.target_message_id') as target_message_id,
     json_extract(content, '$.sentiment') as sentiment,
     json_extract(content, '$.categories') as categories,
     json_extract(content, '$.comment') as comment
-FROM ai_messages 
+FROM ai_messages
 WHERE tool = 'user_feedback' AND type = 'call'
 ```
+
 ```sql
 -- Get attribution predictions for negative feedback
-SELECT 
+SELECT
     m1.session_id,
     m1.created_on,
     json_extract(m2.content, '$.predicted_attribution') as attribution,
     json_extract(m2.content, '$.suggested_action') as suggested_action
 FROM ai_messages m1
-JOIN ai_messages m2 ON m1.parent_id = m2.parent_id 
+JOIN ai_messages m2 ON m1.parent_id = m2.parent_id
     AND m2.type = 'result' AND m2.tool = 'user_feedback'
 WHERE m1.tool = 'user_feedback' AND m1.type = 'call'
     AND json_extract(m1.content, '$.sentiment') = 'negative'
@@ -169,9 +164,9 @@ message CompleteStreamingRequest {
   string agent = 10;
   AnalystAgentContext analyst_agent_context = 11;
   DeveloperAgentContext developer_agent_context = 12;
-  
+
   // NEW: Optional feedback context. If provided, records feedback
-  // and returns immediately. Attribution prediction runs async.
+  // via the router_agent calling the user_feedback tool.
   UserFeedbackContext user_feedback_context = 13;
 }
 
@@ -185,46 +180,29 @@ message UserFeedbackContext {
 
 **Behavior:**
 
-- If `user_feedback_context` is provided: Record feedback call, return immediately (user not blocked)
-- For negative sentiment: Spawn goroutine to run attribution prediction, store result when complete
+- If `user_feedback_context` is provided: API handler invokes `router_agent` with feedback intent
+- `router_agent` calls the `user_feedback` tool, which records messages and runs attribution synchronously
 
-## Async Attribution Flow
+## Feedback Flow
 
-To avoid blocking the user, attribution prediction runs asynchronously:
+The `router_agent` handles feedback by calling the `user_feedback` tool:
 
-```
-Frontend submits negative feedback
+```javascript
+Frontend submits feedback
     ↓
 CompleteStreaming(user_feedback_context: {...})
     ↓
-Record user_feedback tool "call" message
+API handler invokes router_agent with feedback context
     ↓
-Return "recorded" acknowledgment to user immediately
+router_agent calls user_feedback tool
     ↓
-Spawn goroutine:
-    → Invoke LLM with attribution prompt
-    → Store "result" message with prediction when complete
+Tool records "call" message
+    ↓
+If positive: Record simple "result" → Return
+If negative: Run attribution LLM call → Record "result" with prediction → Return
 ```
 
-**Implementation:**
-
-```go
-// Record feedback call immediately
-s.EmitMessage(ctx, feedbackCallMessage)
-
-// For positive feedback, just record simple result and return
-if sentiment == "positive" {
-    s.EmitMessage(ctx, simpleResultMessage)
-    return
-}
-
-// For negative feedback, return immediately, run attribution async
-go func() {
-    bgCtx := context.Background() // Detached context
-    result := predictAttribution(bgCtx, ...)
-    s.EmitMessage(bgCtx, resultMessageWithAttribution)
-}()
-```
+Attribution runs synchronously. Since it's a short LLM call (~1-2s) with structured output, the brief delay is acceptable UX - the user already clicked "submit feedback" and expects confirmation.
 
 ## AI Attribution Prediction
 
@@ -232,26 +210,20 @@ For negative feedback, the system invokes an LLM to analyze the feedback and pre
 
 ### Structured Output
 
-The attribution response uses **JSON Schema-constrained output** to guarantee valid structure:
+The attribution response uses the existing `s.Complete()` pattern with a typed struct:
 
 ```go
-// Define typed result struct
-type FeedbackAttributionResult struct {
-    PredictedAttribution string  `json:"predicted_attribution" jsonschema:"enum=rill,project"`
+var result struct {
+    PredictedAttribution string  `json:"predicted_attribution"`
     AttributionReasoning string  `json:"attribution_reasoning"`
     SuggestedAction      *string `json:"suggested_action,omitempty"`
 }
-
-// Infer schema and pass to Complete
-outputSchema, _ := jsonschema.For[*FeedbackAttributionResult]()
-
-res, err := llm.Complete(ctx, &drivers.CompleteOptions{
-    Messages:     messages,
-    OutputSchema: outputSchema,  // LLM constrained to this schema
+err := s.Complete(ctx, "Feedback attribution", &result, &CompleteOptions{
+    Messages: messages,
 })
 ```
 
-This leverages OpenAI's structured output feature - the model is guaranteed to return JSON matching the schema. The `enum=rill,project` constraint ensures `predicted_attribution` can only be one of those two values.
+This leverages the AI session's built-in structured output support (same pattern used in `router_agent.go` for agent choice). The model is guaranteed to return JSON matching the struct schema.
 
 ### Attribution Prompt Context
 
@@ -264,7 +236,7 @@ The LLM receives:
 
 ### Attribution Prompt
 
-```
+```javascript
 Analyze this user feedback on an AI response and determine the root cause.
 
 User's original question: {original_prompt}
@@ -305,22 +277,27 @@ When attribution is `project`, the reasoning should identify which deficiency ap
 ### Files to modify:
 
 1. [`proto/rill/runtime/v1/api.proto`](proto/rill/runtime/v1/api.proto) - Add `UserFeedbackContext` message and field
-2. [`runtime/server/chat.go`](runtime/server/chat.go) - Handle feedback context in streaming handler
-3. [`runtime/ai/`](runtime/ai/) - Add logic to insert `user_feedback` tool call/result messages
-4. [`runtime/ai/`](runtime/ai/) - Add attribution prediction prompt and async LLM invocation
+2. [`runtime/server/chat.go`](runtime/server/chat.go) - Pass feedback context to `router_agent`
+3. [`runtime/ai/router_agent.go`](runtime/ai/router_agent.go) - Handle feedback by calling `user_feedback` tool
+4. [`runtime/ai/`](runtime/ai/) - Add `user_feedback` tool with attribution prediction logic
 
 ### Implementation Flow
 
-```
+```javascript
 Frontend submits feedback
     ↓
 CompleteStreaming(user_feedback_context: {...})
     ↓
-Record user_feedback tool call message
+API handler invokes router_agent
     ↓
-If positive: Record simple result → Return
-If negative: Return immediately → goroutine runs attribution → stores result
+router_agent calls user_feedback tool
+    ↓
+Tool records call message, runs attribution (if negative), records result
+    ↓
+Return to user
 ```
+
+This keeps AI logic consolidated in the `runtime/ai/` package and makes it testable via existing agent testing patterns.
 
 ## Frontend Implementation
 
