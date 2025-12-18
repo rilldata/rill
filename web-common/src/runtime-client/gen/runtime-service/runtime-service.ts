@@ -34,6 +34,7 @@ import type {
   RuntimeServiceDeleteFileParams,
   RuntimeServiceDeleteInstanceBody,
   RuntimeServiceEditInstanceBody,
+  RuntimeServiceForkConversationBody,
   RuntimeServiceGenerateCanvasFileBody,
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
@@ -70,6 +71,7 @@ import type {
   V1DeleteFileResponse,
   V1DeleteInstanceResponse,
   V1EditInstanceResponse,
+  V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
@@ -1395,6 +1397,120 @@ export function createRuntimeServiceGetConversation<
   return query;
 }
 
+/**
+ * @summary ForkConversation creates a new conversation by copying messages from an existing one.
+If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+ */
+export const runtimeServiceForkConversation = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceForkConversationBody: RuntimeServiceForkConversationBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ForkConversationResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/fork`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceForkConversationBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceForkConversationMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceForkConversationBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceForkConversationBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceForkConversation"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceForkConversationBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceForkConversation(instanceId, conversationId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceForkConversationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceForkConversation>>
+>;
+export type RuntimeServiceForkConversationMutationBody =
+  RuntimeServiceForkConversationBody;
+export type RuntimeServiceForkConversationMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ForkConversation creates a new conversation by copying messages from an existing one.
+If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+ */
+export const createRuntimeServiceForkConversation = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceForkConversationBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceForkConversation>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceForkConversationBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceForkConversationMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ShareConversation enables sharing of the conversation by adding metadata.
+ */
 export const runtimeServiceShareConversation = (
   instanceId: string,
   conversationId: string,
@@ -1466,6 +1582,9 @@ export type RuntimeServiceShareConversationMutationBody =
   RuntimeServiceShareConversationBody;
 export type RuntimeServiceShareConversationMutationError = ErrorType<RpcStatus>;
 
+/**
+ * @summary ShareConversation enables sharing of the conversation by adding metadata.
+ */
 export const createRuntimeServiceShareConversation = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,

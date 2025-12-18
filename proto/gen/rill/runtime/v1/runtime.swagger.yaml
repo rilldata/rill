@@ -548,8 +548,41 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
+    post:
+      summary: |-
+        ForkConversation creates a new conversation by copying messages from an existing one.
+        If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+      operationId: RuntimeService_ForkConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ForkConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ForkConversation
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
     post:
+      summary: ShareConversation enables sharing of the conversation by adding metadata.
       operationId: RuntimeService_ShareConversation
       responses:
         "200":
@@ -578,6 +611,7 @@ paths:
               sharedUntilMessageId:
                 type: string
                 title: 'should ideally be the latest message of "type": "result"'
+            title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
@@ -4928,6 +4962,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1ForkConversationResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+        title: new conversation ID
+    title: Response message for RuntimeService.ForkConversation
   v1GenerateCanvasFileResponse:
     type: object
     properties:
@@ -7061,6 +7102,7 @@ definitions:
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
   v1ShareConversationResponse:
     type: object
+    title: Response message for RuntimeService.ShareConversation
   v1Source:
     type: object
     properties:

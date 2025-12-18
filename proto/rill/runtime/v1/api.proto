@@ -249,9 +249,19 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // ShareConversation enables sharing of the conversation by adding metadata.
   rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
+      body: "*"
+    };
+  }
+
+  // ForkConversation creates a new conversation by copying messages from an existing one.
+  // If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+  rpc ForkConversation(ForkConversationRequest) returns (ForkConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
       body: "*"
     };
   }
@@ -1019,6 +1029,7 @@ message GetConversationResponse {
   repeated Message messages = 2;
 }
 
+// Request message for RuntimeService.ShareConversation
 message ShareConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2 [(validate.rules).string.min_len = 1];
@@ -1026,7 +1037,19 @@ message ShareConversationRequest {
   string shared_until_message_id = 3 [(validate.rules).string.min_len = 1];
 }
 
+// Response message for RuntimeService.ShareConversation
 message ShareConversationResponse {}
+
+// Request message for RuntimeService.ForkConversation
+message ForkConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.ForkConversation
+message ForkConversationResponse {
+  string conversation_id = 1; // new conversation ID
+}
 
 // Request message for RuntimeService.ListTools
 message ListToolsRequest {

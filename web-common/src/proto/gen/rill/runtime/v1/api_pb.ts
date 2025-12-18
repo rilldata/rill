@@ -4742,6 +4742,8 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 }
 
 /**
+ * Request message for RuntimeService.ShareConversation
+ *
  * @generated from message rill.runtime.v1.ShareConversationRequest
  */
 export class ShareConversationRequest extends Message$1<ShareConversationRequest> {
@@ -4793,6 +4795,8 @@ export class ShareConversationRequest extends Message$1<ShareConversationRequest
 }
 
 /**
+ * Response message for RuntimeService.ShareConversation
+ *
  * @generated from message rill.runtime.v1.ShareConversationResponse
  */
 export class ShareConversationResponse extends Message$1<ShareConversationResponse> {
@@ -4820,6 +4824,92 @@ export class ShareConversationResponse extends Message$1<ShareConversationRespon
 
   static equals(a: ShareConversationResponse | PlainMessage<ShareConversationResponse> | undefined, b: ShareConversationResponse | PlainMessage<ShareConversationResponse> | undefined): boolean {
     return proto3.util.equals(ShareConversationResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ForkConversation
+ *
+ * @generated from message rill.runtime.v1.ForkConversationRequest
+ */
+export class ForkConversationRequest extends Message$1<ForkConversationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  constructor(data?: PartialMessage<ForkConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ForkConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ForkConversationRequest {
+    return new ForkConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ForkConversationRequest {
+    return new ForkConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ForkConversationRequest {
+    return new ForkConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ForkConversationRequest | PlainMessage<ForkConversationRequest> | undefined, b: ForkConversationRequest | PlainMessage<ForkConversationRequest> | undefined): boolean {
+    return proto3.util.equals(ForkConversationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ForkConversation
+ *
+ * @generated from message rill.runtime.v1.ForkConversationResponse
+ */
+export class ForkConversationResponse extends Message$1<ForkConversationResponse> {
+  /**
+   * new conversation ID
+   *
+   * @generated from field: string conversation_id = 1;
+   */
+  conversationId = "";
+
+  constructor(data?: PartialMessage<ForkConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ForkConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ForkConversationResponse {
+    return new ForkConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ForkConversationResponse {
+    return new ForkConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ForkConversationResponse {
+    return new ForkConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ForkConversationResponse | PlainMessage<ForkConversationResponse> | undefined, b: ForkConversationResponse | PlainMessage<ForkConversationResponse> | undefined): boolean {
+    return proto3.util.equals(ForkConversationResponse, a, b);
   }
 }
 

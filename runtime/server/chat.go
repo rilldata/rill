@@ -62,7 +62,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
 
-	anonUser := false
+	var anonUser bool
 	if claims != nil && claims.UserID == "" && !claims.SkipChecks {
 		anonUser = true
 	}
@@ -139,6 +139,35 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 	}
 
 	return &runtimev1.ShareConversationResponse{}, nil
+}
+
+func (s *Server) ForkConversation(ctx context.Context, req *runtimev1.ForkConversationRequest) (*runtimev1.ForkConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	// Setup user agent
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "unknown"
+	}
+	userAgent := fmt.Sprintf("rill/%s", version)
+
+	// Open the existing AI session, this will only contain messages the user has access to
+	id, err := s.ai.ForkSession(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+		UserAgent:  userAgent,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ForkConversationResponse{
+		ConversationId: id,
+	}, nil
 }
 
 func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest) (*runtimev1.ListToolsResponse, error) {

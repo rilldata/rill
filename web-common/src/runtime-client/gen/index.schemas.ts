@@ -1027,6 +1027,10 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1ForkConversationResponse {
+  conversationId?: string;
+}
+
 export interface V1GenerateCanvasFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -2609,6 +2613,8 @@ export type RuntimeServiceListConversationsParams = {
    */
   userAgentPattern?: string;
 };
+
+export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
 
 export type RuntimeServiceShareConversationBody = {
   sharedUntilMessageId?: string;

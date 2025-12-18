@@ -11640,6 +11640,236 @@ var _ interface {
 	ErrorName() string
 } = ShareConversationResponseValidationError{}
 
+// Validate checks the field values on ForkConversationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ForkConversationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ForkConversationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ForkConversationRequestMultiError, or nil if none found.
+func (m *ForkConversationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ForkConversationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_ForkConversationRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ForkConversationRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := ForkConversationRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ForkConversationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ForkConversationRequestMultiError is an error wrapping multiple validation
+// errors returned by ForkConversationRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ForkConversationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ForkConversationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ForkConversationRequestMultiError) AllErrors() []error { return m }
+
+// ForkConversationRequestValidationError is the validation error returned by
+// ForkConversationRequest.Validate if the designated constraints aren't met.
+type ForkConversationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ForkConversationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ForkConversationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ForkConversationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ForkConversationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ForkConversationRequestValidationError) ErrorName() string {
+	return "ForkConversationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ForkConversationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sForkConversationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ForkConversationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ForkConversationRequestValidationError{}
+
+var _ForkConversationRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on ForkConversationResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ForkConversationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ForkConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ForkConversationResponseMultiError, or nil if none found.
+func (m *ForkConversationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ForkConversationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConversationId
+
+	if len(errors) > 0 {
+		return ForkConversationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ForkConversationResponseMultiError is an error wrapping multiple validation
+// errors returned by ForkConversationResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ForkConversationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ForkConversationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ForkConversationResponseMultiError) AllErrors() []error { return m }
+
+// ForkConversationResponseValidationError is the validation error returned by
+// ForkConversationResponse.Validate if the designated constraints aren't met.
+type ForkConversationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ForkConversationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ForkConversationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ForkConversationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ForkConversationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ForkConversationResponseValidationError) ErrorName() string {
+	return "ForkConversationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ForkConversationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sForkConversationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ForkConversationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ForkConversationResponseValidationError{}
+
 // Validate checks the field values on ListToolsRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
