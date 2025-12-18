@@ -36,6 +36,10 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
 import type { ActionResult } from "@sveltejs/kit";
+import {
+  findAuthMethodKey,
+  getConnectorSchema,
+} from "./multi-step-auth-configs";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -331,8 +335,26 @@ export class AddDataFormManager {
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
     }) => {
       const values = event.form.data;
-      const selectedAuthMethod = getSelectedAuthMethod?.();
+      const schema = getConnectorSchema(this.connector.name ?? "");
+      const authKey = schema ? findAuthMethodKey(schema) : null;
+      const selectedAuthMethod =
+        (authKey && values && values[authKey] != null
+          ? String(values[authKey])
+          : undefined) ||
+        getSelectedAuthMethod?.() ||
+        "";
       const stepState = get(connectorStepStore) as ConnectorStepState;
+
+      // Fast-path: public auth skips validation/test and goes straight to source step.
+      if (
+        isMultiStepConnector &&
+        stepState.step === "connector" &&
+        selectedAuthMethod === "public"
+      ) {
+        setConnectorConfig(values);
+        setStep("source");
+        return;
+      }
 
       // When in the source step of a multi-step flow, the superform still uses
       // the connector schema, so it can appear invalid because connector fields

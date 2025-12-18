@@ -102,8 +102,20 @@
   // Update form when (re)entering step 1: restore defaults for connector properties
   $: if (isMultiStepConnector && stepState.step === "connector") {
     paramsForm.update(
-      () =>
-        getInitialFormValuesFromProperties(connector.configProperties ?? []),
+      ($current) => {
+        const base = getInitialFormValuesFromProperties(
+          connector.configProperties ?? [],
+        );
+        // Preserve previously selected auth method when returning to connector step.
+        if (activeSchema) {
+          const authKey = findAuthMethodKey(activeSchema);
+          const persisted = stepState.selectedAuthMethod;
+          if (authKey && persisted) {
+            base[authKey] = persisted;
+          }
+        }
+        return { ...base, ...$current };
+      },
       { taint: false },
     );
   }
