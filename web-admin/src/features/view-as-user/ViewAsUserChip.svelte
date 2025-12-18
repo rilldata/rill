@@ -16,7 +16,7 @@
       {active}
       builders={[builder]}
       removeTooltipText="Clear view"
-      on:remove={() => {
+      onRemove={() => {
         viewAsUserStore.set(null);
         errorStore.reset();
       }}

@@ -12,7 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
-func ParseSQLFilter(sql string) (*metricsview.Expression, error) {
+func ParseFilter(sql string) (*metricsview.Expression, error) {
 	p := parser.New()
 	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
 	sql = "SELECT * FROM tbl WHERE " + sql

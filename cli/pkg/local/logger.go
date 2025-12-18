@@ -103,6 +103,11 @@ func consoleFilterPredicate(entry zapcore.Entry, fields []zapcore.Field) bool {
 		return true
 	}
 
+	// Filter out AI info logs (too verbose)
+	if entry.LoggerName == "ai" {
+		return false
+	}
+
 	switch entry.Message {
 	// Filter out reconciling logs for internal resources
 	case "Reconciling resource", "Reconciled resource":

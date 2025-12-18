@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// sqlForExpression generates a SQL expression for a query expression.
+// SQLForExpression generates a SQL expression for a query expression.
 // pseudoHaving is true if the expression is allowed to reference measure expressions.
 // visible is true if the expression is only allowed to reference dimensions and measures that are exposed by the security policy.
-func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving, visible bool) (string, []any, error) {
+func (ast *AST) SQLForExpression(e *Expression, n *SelectNode, pseudoHaving, visible bool) (string, []any, error) {
 	b := &sqlExprBuilder{
 		ast:          ast,
 		node:         n,
@@ -80,7 +82,7 @@ func (b *sqlExprBuilder) writeValue(val any) error {
 
 func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	// We construct a Query that combines the parent Query's contextual info with that of the Subquery.
-	outer := b.ast.query
+	outer := b.ast.Query
 	inner := &Query{
 		MetricsView:         outer.MetricsView,
 		Dimensions:          []Dimension{sub.Dimension},
@@ -100,7 +102,11 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
-	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect)
+	innerSecurity := b.ast.Security
+	if !b.visible {
+		innerSecurity = skipMetricsViewSecurity{}
+	}
+	innerAST, err := NewAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect)
 	if err != nil {
 		return fmt.Errorf("failed to create AST for subquery: %w", err)
 	}
@@ -111,7 +117,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 
 	// Output: (SELECT <dimension> FROM (<subquery>))
 	b.writeString("(SELECT ")
-	b.writeString(b.ast.dialect.EscapeIdentifier(sub.Dimension.Name))
+	b.writeString(b.ast.Dialect.EscapeIdentifier(sub.Dimension.Name))
 	b.writeString(" FROM (")
 	b.writeString(sql)
 	b.writeString("))")
@@ -213,7 +219,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			if lookup != nil {
 				b.writeString(fmt.Sprintf("%s IN ", lookup.keyExpr))
 				b.writeByte('(')
-				ex, err := b.ast.dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
+				ex, err := b.ast.Dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
 				if err != nil {
 					return err
 				}
@@ -231,8 +237,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		}
 
 		// Generate unnest join
-		unnestTableAlias := b.ast.generateIdentifier()
-		unnestFrom, tupleStyle, auto, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
+		unnestTableAlias := b.ast.GenerateIdentifier()
+		unnestFrom, tupleStyle, auto, err := b.ast.Dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
 		if err != nil {
 			return err
 		}
@@ -242,9 +248,9 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		}
 		var unnestColAlias string
 		if tupleStyle {
-			unnestColAlias = b.ast.sqlForMember(unnestTableAlias, left.Name)
+			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
 		} else {
-			unnestColAlias = b.ast.sqlForMember("", left.Name)
+			unnestColAlias = b.ast.Dialect.EscapeIdentifier(left.Name)
 		}
 
 		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
@@ -348,7 +354,7 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverride string, not bool) error {
 	b.writeByte('(')
 
-	if b.ast.dialect.SupportsILike() {
+	if b.ast.Dialect.SupportsILike() {
 		// Output: <left> [NOT] ILIKE <right>
 
 		if leftOverride != "" {
@@ -360,7 +366,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			}
 		}
 
-		if b.ast.dialect.RequiresCastForLike() {
+		if b.ast.Dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
 
@@ -375,14 +381,14 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 			return err
 		}
 
-		if b.ast.dialect.RequiresCastForLike() {
+		if b.ast.Dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
-	} else if b.ast.dialect.SupportsRegexMatch() {
+	} else if b.ast.Dialect.SupportsRegexMatch() {
 		if not {
 			b.writeString(" NOT ")
 		}
-		b.writeString(b.ast.dialect.GetRegexMatchFunction())
+		b.writeString(b.ast.Dialect.GetRegexMatchFunction())
 		b.writeByte('(')
 		if leftOverride != "" {
 			b.writeParenthesizedString(leftOverride)
@@ -430,7 +436,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 				return err
 			}
 		}
-		if b.ast.dialect.RequiresCastForLike() {
+		if b.ast.Dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
 		b.writeByte(')')
@@ -446,7 +452,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		if err != nil {
 			return err
 		}
-		if b.ast.dialect.RequiresCastForLike() {
+		if b.ast.Dialect.RequiresCastForLike() {
 			b.writeString("::TEXT")
 		}
 		b.writeByte(')')
@@ -637,12 +643,12 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 		}
 
 		// Second, search for the dimension in the metrics view's dimensions (since expressions are allowed to reference dimensions not included in the query)
-		dim, err := b.ast.lookupDimension(name, b.visible)
+		dim, err := b.ast.LookupDimension(name, b.visible)
 		if err != nil {
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		ex, err := b.ast.dialect.MetricsViewDimensionExpression(dim)
+		ex, err := b.ast.Dialect.MetricsViewDimensionExpression(dim)
 		if err != nil {
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
@@ -655,7 +661,7 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 		if dim.LookupTable != "" {
 			var keyExpr string
 			if dim.Column != "" {
-				keyExpr = b.ast.dialect.EscapeIdentifier(dim.Column)
+				keyExpr = b.ast.Dialect.EscapeIdentifier(dim.Column)
 			} else if dim.Expression != "" {
 				keyExpr = dim.Expression
 			} else {
@@ -714,4 +720,21 @@ type lookupMeta struct {
 	keyExpr  string
 	keyCol   string
 	valueCol string
+}
+
+// skipMetricsViewSecurity implements the MetricsViewSecurity interface in a way that allows all access.
+type skipMetricsViewSecurity struct{}
+
+var _ MetricsViewSecurity = skipMetricsViewSecurity{}
+
+func (s skipMetricsViewSecurity) CanAccessField(field string) bool {
+	return true
+}
+
+func (s skipMetricsViewSecurity) RowFilter() string {
+	return ""
+}
+
+func (s skipMetricsViewSecurity) QueryFilter() *runtimev1.Expression {
+	return nil
 }

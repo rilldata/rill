@@ -102,6 +102,49 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 	return runtime.ReconcileResult{Err: validateErr}
 }
 
+func (r *ExploreReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+
+	explore := res.GetExplore()
+	if explore == nil {
+		return nil, fmt.Errorf("resource is not an explore")
+	}
+
+	spec := explore.GetState().GetValidSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("explore valid spec is nil")
+	}
+
+	if spec.MetricsView == "" {
+		return nil, fmt.Errorf("explore does not reference a metrics view")
+	}
+
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+
+	// give access to the underlying metrics view
+	if spec.MetricsView != "" {
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView})
+	}
+
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionResources,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
+}
+
 // validateAndRewrite validates the explore spec and rewrites it with the following rules:
 //   - The dimensions_exclude and measures_exclude flags will be resolved using the parent metrics view's fields, and set to false.
 //   - The parent metrics view's access and field access security rules will be copied to the explore spec's security rules.
@@ -160,8 +203,12 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 
 	// Validate and rewrite dimensions
+	timeDims := make(map[string]struct{})
 	allDims := make([]string, 0, len(mv.Dimensions))
 	for _, d := range mv.Dimensions {
+		if d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME {
+			timeDims[d.Name] = struct{}{}
+		}
 		allDims = append(allDims, d.Name)
 	}
 	spec.Dimensions, err = fieldselectorpb.ResolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
@@ -200,6 +247,19 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		p.MeasuresSelector = nil
 	}
 
+	// Filter out all time dimensions from the explore's spec.
+	// TODO: Remove when the UI supports multiple time dimensions.
+	spec.Dimensions = slices.DeleteFunc(spec.Dimensions, func(v string) bool {
+		_, isTime := timeDims[v]
+		return isTime
+	})
+	if spec.DefaultPreset != nil {
+		spec.DefaultPreset.Dimensions = slices.DeleteFunc(spec.DefaultPreset.Dimensions, func(v string) bool {
+			_, isTime := timeDims[v]
+			return isTime
+		})
+	}
+
 	// Done with rewriting
 	return spec, mvr.GetMetricsView().State.DataRefreshedOn, nil
 }
@@ -230,7 +290,7 @@ func mergeAccessRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
 			condition.WriteString(" AND ")
 		}
 		condition.WriteString("(")
-		condition.WriteString(access.Condition)
+		condition.WriteString(access.ConditionExpression)
 		condition.WriteString(")")
 	}
 
@@ -242,8 +302,8 @@ func mergeAccessRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
 	return &runtimev1.SecurityRule{
 		Rule: &runtimev1.SecurityRule_Access{
 			Access: &runtimev1.SecurityRuleAccess{
-				Condition: condition.String(),
-				Allow:     true,
+				ConditionExpression: condition.String(),
+				Allow:               true,
 			},
 		},
 	}

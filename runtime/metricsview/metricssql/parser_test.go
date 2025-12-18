@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -16,22 +17,48 @@ import (
 
 func TestCompile(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-	ctrl, err := rt.Controller(context.Background(), instanceID)
+	ctrl, err := rt.Controller(t.Context(), instanceID)
 	require.NoError(t, err)
-	olap, release, err := rt.OLAP(context.Background(), instanceID, "")
+	olap, release, err := rt.OLAP(t.Context(), instanceID, "")
 	require.NoError(t, err)
 	defer release()
 
 	resource := &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}
-	mv, err := ctrl.Get(context.Background(), resource, false)
+	mv, err := ctrl.Get(t.Context(), resource, false)
 	require.NoError(t, err)
 
 	resource = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics_advanced"}
-	advancedMV, err := ctrl.Get(context.Background(), resource, false)
+	advancedMV, err := ctrl.Get(t.Context(), resource, false)
 	require.NoError(t, err)
 
 	claims := &runtime.SecurityClaims{}
-	compiler := metricssql.New(ctrl, instanceID, claims, 1)
+	compiler := metricssql.New(&metricssql.CompilerOptions{
+		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+			if err != nil {
+				return nil, err
+			}
+			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+			if err != nil {
+				return nil, err
+			}
+			if !sec.CanAccess() {
+				return nil, runtime.ErrForbidden
+			}
+			return mv, nil
+		},
+		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
+			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			e, err := executor.New(ctx, rt, instanceID, mv.GetMetricsView().State.ValidSpec, false, sec, 0, nil)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			return e.Timestamps(ctx, timeDim)
+		},
+	})
 	passTests := []struct {
 		inSQL    string
 		outSQL   string
@@ -101,7 +128,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"select pub, dom,measure_0 from ad_bids_metrics  where tld = 'Yahoo' having measure_0 > 10 order by pub desc, dom asc limit 10",
-			"SELECT (t1.\"pub\") AS \"pub\", (t1.\"dom\") AS \"dom\", (t1.\"measure_0\") AS \"measure_0\" FROM (SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)) = ?) GROUP BY 1, 2) t1 WHERE ((t1.\"measure_0\") > ?) ORDER BY \"pub\" DESC NULLS LAST, \"dom\" NULLS LAST LIMIT 10",
+			"SELECT (\"t1\".\"pub\") AS \"pub\", (\"t1\".\"dom\") AS \"dom\", (\"t1\".\"measure_0\") AS \"measure_0\" FROM (SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)) = ?) GROUP BY 1, 2) t1 WHERE ((\"t1\".\"measure_0\") > ?) ORDER BY \"pub\" DESC NULLS LAST, \"dom\" NULLS LAST LIMIT 10",
 			mv,
 			[]any{"Yahoo", 10},
 		},
@@ -143,7 +170,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"select timestamp, bids_1day_rolling_avg from ad_bids_metrics_advanced",
-			"SELECT (t1.\"timestamp\") AS \"timestamp\", (AVG(bids) OVER (ORDER BY t1.\"timestamp\" RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW)) AS \"bids_1day_rolling_avg\" FROM (SELECT (\"timestamp\") AS \"timestamp\", (count(*)) AS \"bids\" FROM \"ad_bids\" GROUP BY 1) t1",
+			"SELECT (\"t1\".\"timestamp\") AS \"timestamp\", (AVG(bids) OVER (ORDER BY \"t1\".\"timestamp\" RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW)) AS \"bids_1day_rolling_avg\" FROM (SELECT (\"timestamp\") AS \"timestamp\", (count(*)) AS \"bids\" FROM \"ad_bids\" GROUP BY 1) t1",
 			advancedMV,
 			nil,
 		},
@@ -155,11 +182,11 @@ func TestCompile(t *testing.T) {
 		},
 	}
 
-	clm, err := rt.ResolveSecurity(instanceID, claims, mv)
+	clm, err := rt.ResolveSecurity(t.Context(), instanceID, claims, mv)
 	require.NoError(t, err)
 
 	for _, test := range passTests {
-		q, err := compiler.Rewrite(context.Background(), test.inSQL)
+		q, err := compiler.Parse(t.Context(), test.inSQL)
 		require.NoError(t, err, "input = %v", test.inSQL)
 		ast, err := metricsview.NewAST(test.resource.GetMetricsView().State.ValidSpec, clm, q, olap.Dialect())
 		require.NoError(t, err)
@@ -169,7 +196,7 @@ func TestCompile(t *testing.T) {
 		require.Equal(t, test.outSQL, sql)
 		require.ElementsMatch(t, test.args, args)
 
-		res, err := olap.Query(context.Background(), &drivers.Statement{Query: sql, Args: args})
+		res, err := olap.Query(t.Context(), &drivers.Statement{Query: sql, Args: args})
 		require.NoError(t, err)
 		require.NoError(t, res.Close())
 	}

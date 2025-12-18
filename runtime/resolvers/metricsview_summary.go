@@ -8,7 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -22,7 +22,7 @@ type metricsSummaryResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	mvName     string
-	executor   *metricsview.Executor
+	executor   *executor.Executor
 	args       *metricsSummaryArgs
 }
 
@@ -65,7 +65,7 @@ func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOption
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,12 @@ func newMetricsSummaryResolver(ctx context.Context, opts *runtime.ResolverOption
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	var userAttrs map[string]any
+	if opts.Claims != nil {
+		userAttrs = opts.Claims.UserAttributes
+	}
+
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}
@@ -128,4 +133,8 @@ func (r *metricsSummaryResolver) ResolveInteractive(ctx context.Context) (runtim
 
 func (r *metricsSummaryResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsSummaryResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
 }

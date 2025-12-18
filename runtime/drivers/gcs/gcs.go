@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -27,12 +28,31 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
+			Key:         "google_application_credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
+		},
+		{
+			Key:         "key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Access Key ID",
+			Description: "HMAC access key ID for S3-compatible authentication",
+			Hint:        "Optional S3-compatible Key ID when used in compatibility mode",
+			Secret:      true,
+		},
+		{
+			Key:         "secret",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Secret Access Key",
+			Description: "HMAC secret access key for S3-compatible authentication",
+			Hint:        "Optional S3-compatible Secret when used in compatibility mode",
+			Secret:      true,
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -60,16 +80,22 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type ConfigProperties struct {
-	SecretJSON      string `mapstructure:"google_application_credentials"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	// When working in s3 compatible mode
+	// For GCS native authentication google service account json credentials
+	SecretJSON string `mapstructure:"google_application_credentials"`
+	// For S3-compatible mode HMAC credentials
 	KeyID  string `mapstructure:"key_id"`
 	Secret string `mapstructure:"secret"`
+	// A list of bucket path prefixes that this connector is allowed to access.
+	// Useful when different buckets or bucket prefixes use different credentials,
+	// allowing the system to select the appropriate connector based on the bucket path.
+	// Example formats: `gs://my-bucket/` `gs://my-bucket/path/` `gs://my-bucket/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
-func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
+func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
 	gcsConfig := &ConfigProperties{}
-	err := mapstructure.WeakDecode(in, gcsConfig)
+	err := mapstructure.WeakDecode(prop, gcsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +118,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		s3Config := s3.ConfigProperties{
 			AccessKeyID:     conf.KeyID,
 			SecretAccessKey: conf.Secret,
-			Endpoint:        "storage.googleapis.com",
+			Endpoint:        "https://storage.googleapis.com",
+			Region:          "auto",
+			PathPrefixes:    convertPrefixesToS3(conf.PathPrefixes),
 			AllowHostAccess: conf.AllowHostAccess,
 		}
 		config := make(map[string]any)
@@ -276,4 +304,19 @@ func (c *Connection) newClient(ctx context.Context) (*gcp.HTTPClient, error) {
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+}
+
+func convertPrefixesToS3(prefixes []string) []string {
+	out := make([]string, len(prefixes))
+	for i, p := range prefixes {
+		switch {
+		case strings.HasPrefix(p, "gs://"):
+			out[i] = "s3://" + strings.TrimPrefix(p, "gs://")
+		case strings.HasPrefix(p, "gcs://"):
+			out[i] = "s3://" + strings.TrimPrefix(p, "gcs://")
+		default:
+			out[i] = p
+		}
+	}
+	return out
 }

@@ -15,9 +15,12 @@
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
   import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
-  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import {
+    useCreateMetricsViewFromTableUIAction,
+    useCreateMetricsViewWithCanvasAndExploreUIAction,
+  } from "../../metrics-views/ai-generation/generateMetricsView";
 
-  const { ai } = featureFlags;
+  const { ai, generateCanvas } = featureFlags;
 
   export let sourcePath: string | null;
 
@@ -34,18 +37,30 @@
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
-  $: createExploreFromTable =
+  // When generateCanvas is enabled, create both explore and canvas dashboards
+  // and navigate to canvas (with fallback to explore on failure)
+  $: createDashboardFromTable =
     sourcePath !== null
-      ? useCreateMetricsViewFromTableUIAction(
-          instanceId,
-          sinkConnector as string,
-          "",
-          "",
-          sourceName,
-          true,
-          BehaviourEventMedium.Button,
-          MetricsEventSpace.Modal,
-        )
+      ? $generateCanvas
+        ? useCreateMetricsViewWithCanvasAndExploreUIAction(
+            instanceId,
+            sinkConnector as string,
+            "",
+            "",
+            sourceName,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.Modal,
+          )
+        : useCreateMetricsViewFromTableUIAction(
+            instanceId,
+            sinkConnector as string,
+            "",
+            "",
+            sourceName,
+            true,
+            BehaviourEventMedium.Button,
+            MetricsEventSpace.Modal,
+          )
       : null;
 
   function close() {
@@ -61,9 +76,9 @@
     // This should never happen, because the button is
     // disabled when this is null, but adding this check
     // for type narrowing and just in case.
-    if (createExploreFromTable === null) return;
+    if (createDashboardFromTable === null) return;
     close();
-    await createExploreFromTable();
+    await createDashboardFromTable();
   }
 </script>
 
@@ -86,7 +101,7 @@
 
         <Button
           builders={[builder]}
-          disabled={createExploreFromTable === null}
+          disabled={createDashboardFromTable === null}
           onClick={generateMetrics}
           type="primary"
         >

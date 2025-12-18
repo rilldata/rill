@@ -1,0 +1,66 @@
+expensive: true
+connectors:
+  - motherduck
+tests:
+  # Note: Test queries Motherduck directly as an OLAP engine.
+  - name: query_data_motherduck
+    resolver: sql
+    properties:
+      connector: motherduck
+      sql: "select * from rilldata.integration_test.all_datatypes order by tinyint_col"
+    result_csv: |
+      tinyint_col,smallint_col,integer_col,bigint_col,hugeint_col,utinyint_col,usmallint_col,uinteger_col,ubigint_col,float_col,double_col,decimal_col,boolean_col,varchar_col,blob_col,date_col,time_col,timestamp_col,timestamp_s_col,timestamp_ms_col,timestamp_ns_col,timestamptz_col,interval_col,uuid_col,list_int_col,list_float_col,list_varchar_col,list_boolean_col,list_timestamp_col,list_date_col,array_int_col,array_float_col,array_varchar_col,array_boolean_col,array_date_col,array_timestamp_col,map_int_col,map_float_col,map_varchar_col,map_boolean_col,map_date_col,map_timestamp_col,struct_col
+      0,0,0,0,0,0,0,0,0,0,0,0,false,,,1970-01-01,0001-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0,00000000-0000-0000-0000-000000000000,"[0,0]","[0,0]","["""",""""]","[false,false]","[""1970-01-01T00:00:00Z"",""1970-01-01T00:00:00Z""]","[""1970-01-01"",""1970-01-01""]","[0,0,0]","[0,0,0]","["""","""",""""]","[false,false,false]","[""1970-01-01"",""1970-01-01"",""1970-01-01""]","[""1970-01-01T00:00:00Z"",""1970-01-01T00:00:00Z"",""1970-01-01T00:00:00Z""]","{"""":0}","{"""":0}","{"""":""""}","{"""":false}","{"""":""1970-01-01""}","{"""":""1970-01-01T00:00:00Z""}","{""field_bool"":false,""field_date"":""1970-01-01"",""field_float"":0,""field_int"":0,""field_str"":"""",""field_timestamp"":""1970-01-01T00:00:00Z""}"
+      127,32767,2147483647,9223372036854776000,1234567890123456800,255,65535,4294967295,18446744073709552000,3.141590118408203,2.71828,1234.567,true,Hello,SGVsbG8gQmxvYg==,2025-04-29,0001-01-01T12:34:56Z,2025-04-29T12:34:56Z,2025-04-29T12:34:56Z,2025-04-29T12:34:56.123Z,2025-04-29T12:34:56.123456789Z,2025-04-29T12:34:56Z,31104000000,550e8400-e29b-41d4-a716-446655440000,"[1,2]","[1.100000023841858,2.200000047683716]","[""A"",""B""]","[true,false]","[""2025-04-29T12:34:56Z"",""2025-05-01T12:34:56Z""]","[""2025-04-29"",""2025-05-01""]","[1,2,3]","[1.100000023841858,2.200000047683716,3.299999952316284]","[""A"",""B"",""C""]","[true,false,true]","[""2025-04-29"",""2025-05-01"",""2025-05-02""]","[""2025-04-29T12:34:56Z"",""2025-05-01T12:34:56Z"",""2025-05-02T12:34:56Z""]","{""key1"":1,""key2"":2}","{""key1"":1.100000023841858,""key2"":2.200000047683716}","{""key1"":""A"",""key2"":""B""}","{""key1"":true,""key2"":false}","{""key1"":""2025-04-29"",""key2"":""2025-05-01""}","{""key1"":""2025-04-29T12:34:56Z"",""key2"":""2025-05-01T12:34:56Z""}","{""field_bool"":true,""field_date"":""2025-04-29"",""field_float"":1.2300000190734863,""field_int"":123,""field_str"":""Struct Field"",""field_timestamp"":""2025-04-29T12:34:56Z""}"
+      ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+  # Note: Test queries Motherduck directly as an OLAP engine.
+  - name: query_datatypes_motherduck
+    resolver: sql
+    properties:
+      connector: motherduck
+      sql: "describe rilldata.integration_test.all_datatypes"
+    result_csv: |
+      column_name,column_type,null,key,default,extra
+      tinyint_col,TINYINT,YES,,,
+      smallint_col,SMALLINT,YES,,,
+      integer_col,INTEGER,YES,,,
+      bigint_col,BIGINT,YES,,,
+      hugeint_col,HUGEINT,YES,,,
+      utinyint_col,UTINYINT,YES,,,
+      usmallint_col,USMALLINT,YES,,,
+      uinteger_col,UINTEGER,YES,,,
+      ubigint_col,UBIGINT,YES,,,
+      float_col,FLOAT,YES,,,
+      double_col,DOUBLE,YES,,,
+      decimal_col,"DECIMAL(18,3)",YES,,,
+      boolean_col,BOOLEAN,YES,,,
+      varchar_col,VARCHAR,YES,,,
+      blob_col,BLOB,YES,,,
+      date_col,DATE,YES,,,
+      time_col,TIME,YES,,,
+      timestamp_col,TIMESTAMP,YES,,,
+      timestamp_s_col,TIMESTAMP_S,YES,,,
+      timestamp_ms_col,TIMESTAMP_MS,YES,,,
+      timestamp_ns_col,TIMESTAMP_NS,YES,,,
+      timestamptz_col,TIMESTAMP WITH TIME ZONE,YES,,,
+      interval_col,INTERVAL,YES,,,
+      uuid_col,UUID,YES,,,
+      list_int_col,INTEGER[],YES,,,
+      list_float_col,FLOAT[],YES,,,
+      list_varchar_col,VARCHAR[],YES,,,
+      list_boolean_col,BOOLEAN[],YES,,,
+      list_timestamp_col,TIMESTAMP[],YES,,,
+      list_date_col,DATE[],YES,,,
+      array_int_col,INTEGER[3],YES,,,
+      array_float_col,FLOAT[3],YES,,,
+      array_varchar_col,VARCHAR[3],YES,,,
+      array_boolean_col,BOOLEAN[3],YES,,,
+      array_date_col,DATE[3],YES,,,
+      array_timestamp_col,TIMESTAMP[3],YES,,,
+      map_int_col,"MAP(VARCHAR, INTEGER)",YES,,,
+      map_float_col,"MAP(VARCHAR, FLOAT)",YES,,,
+      map_varchar_col,"MAP(VARCHAR, VARCHAR)",YES,,,
+      map_boolean_col,"MAP(VARCHAR, BOOLEAN)",YES,,,
+      map_date_col,"MAP(VARCHAR, DATE)",YES,,,
+      map_timestamp_col,"MAP(VARCHAR, TIMESTAMP)",YES,,,
+      struct_col,"STRUCT(field_int INTEGER, field_float FLOAT, field_str VARCHAR, field_bool BOOLEAN, field_date DATE, field_timestamp TIMESTAMP)",YES,,,

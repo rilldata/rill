@@ -13,7 +13,6 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 
@@ -21,51 +20,45 @@ import (
 	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
 )
 
+// Compiler is responsible for parsing metrics SQL queries into metricsview.Query objects.
+//
+// Internally, it creates and re-uses a TiDB parser object.
+// It's not lightweight, so re-use the Compiler when possible.
+// However, note that it is not concurrency safe.
 type Compiler struct {
-	p          *parser.Parser
-	controller *runtime.Controller
-	instanceID string
-	claims     *runtime.SecurityClaims
-	priority   int
+	p    *parser.Parser
+	opts *CompilerOptions
 }
 
-// New returns a compiler and created a tidb parser object.
-// The instantiated parser object and thus compiler is not goroutine safe and not lightweight.
-// It is better to keep it in a single goroutine, and reuse it if possible.
-func New(ctrl *runtime.Controller, instanceID string, claims *runtime.SecurityClaims, priority int) *Compiler {
+// CompilerOptions provide options for the Compiler.
+type CompilerOptions struct {
+	// GetMetricsView is a callback to lookup a referenced metrics view.
+	// It is required for parsing full queries, but optional when parsing only filters.
+	GetMetricsView func(ctx context.Context, name string) (*runtimev1.Resource, error)
+	// GetTimestamps is a callback to resolve timestamps for a given time dimension.
+	// It is optional, but if not provided, queries that use rilltime expressions will error.
+	// TODO: Ideally we should replace this with support for rilltime expressions in *metricsview.Expression itself, so evaluation can be delayed until query execution.
+	GetTimestamps func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error)
+}
+
+// New creates a new Compiler.
+func New(opts *CompilerOptions) *Compiler {
 	p := parser.New()
 	// Weirdly setting just ModeANSI which is a combination having ModeANSIQuotes doesn't ensure double quotes are used to identify SQL identifiers
 	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
+
 	return &Compiler{
-		p:          p,
-		controller: ctrl,
-		instanceID: instanceID,
-		claims:     claims,
-		priority:   priority,
+		p:    p,
+		opts: opts,
 	}
 }
 
-type query struct {
-	q *metricsview.Query
-
-	controller *runtime.Controller
-	claims     *runtime.SecurityClaims
-	instanceID string
-	priority   int
-
-	// fields available after parsing FROM clause
-	metricsViewSpec *runtimev1.MetricsViewSpec
-	executor        *metricsview.Executor
-	dims            map[string]any
-	measures        map[string]any
-}
-
-// Rewrite parses a metrics SQL query and compiles it to a metricview.Query.
-// It uses tidb parser(which is a MySQL compliant parser) and transforms over the generated AST to generate query.
-// We use MySQL's ANSI sql Mode to conform more closely to standard SQL.
+// Parse parses a metrics SQL query into a metricview.Query.
+// It uses the tidb parser (which is a MySQL compliant parser) and transforms over the generated AST to generate query.
+// We use MySQL's ANSI SQL Mode to conform more closely to standard SQL.
 //
 // Whenever adding transform method over new node type also look at its `Restore` method to get an idea how it can be parsed into a SQL query.
-func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query, error) {
+func (c *Compiler) Parse(ctx context.Context, sql string) (*metricsview.Query, error) {
 	stmtNodes, _, err := c.p.ParseSQL(sql)
 	if err != nil {
 		return nil, err
@@ -81,19 +74,13 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	}
 
 	q := &query{
-		q:          &metricsview.Query{},
-		controller: c.controller,
-		claims:     c.claims,
-		instanceID: c.instanceID,
-		priority:   c.priority,
+		q:    &metricsview.Query{},
+		opts: c.opts,
 	}
 
 	// parse from clause
 	if err := q.parseFrom(ctx, stmt.From); err != nil {
 		return nil, err
-	}
-	if q.executor != nil {
-		defer q.executor.Close()
 	}
 
 	// parse select fields
@@ -133,6 +120,17 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	return q.q, nil
 }
 
+type query struct {
+	q    *metricsview.Query
+	opts *CompilerOptions
+
+	// fields available after parsing FROM clause
+	metricsView     *runtimev1.Resource
+	metricsViewSpec *runtimev1.MetricsViewSpec
+	dims            map[string]any
+	measures        map[string]any
+}
+
 func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error {
 	n := node.TableRefs
 	if n == nil || n.Left == nil {
@@ -150,36 +148,30 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return fmt.Errorf("metrics sql: only FROM `metrics_view` is supported")
 	}
 
-	resource := &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: tblName.Name.String()}
-	mv, err := q.controller.Get(ctx, resource, false)
+	if q.opts == nil || q.opts.GetMetricsView == nil {
+		return fmt.Errorf("metrics sql: must provide the GetMetricsView option to the compiler")
+	}
+	mv, err := q.opts.GetMetricsView(ctx, tblName.Name.String())
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			return fmt.Errorf("metrics sql: metrics view `%s` not found", tblName.Name.String())
 		}
 		return err
 	}
+	q.metricsView = mv
+	q.q.MetricsView = mv.Meta.Name.Name
 
-	q.q.MetricsView = tblName.Name.String()
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
-		return fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
+		return fmt.Errorf("metrics view %q is not valid", mv.Meta.Name.Name)
 	}
 	q.metricsViewSpec = spec
-	security, err := q.controller.Runtime.ResolveSecurity(q.instanceID, q.claims, mv)
-	if err != nil {
-		return fmt.Errorf("metrics sql: failed to resolve security: %w", err)
-	}
-
-	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority)
-	if err != nil {
-		return fmt.Errorf("metrics sql: failed to create executor: %w", err)
-	}
-	q.executor = ex
 
 	q.measures = make(map[string]any, len(spec.Measures))
 	for _, measure := range spec.Measures {
 		q.measures[measure.Name] = nil
 	}
+
 	q.dims = make(map[string]any, len(spec.Dimensions))
 	for _, dim := range spec.Dimensions {
 		q.dims[dim.Name] = nil

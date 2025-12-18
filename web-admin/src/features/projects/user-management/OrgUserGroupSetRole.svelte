@@ -39,7 +39,7 @@
   async function handleAddRole(role: string) {
     try {
       await $addUserGroupRole.mutateAsync({
-        organization: organization,
+        org: organization,
         usergroup: group.groupName,
         data: {
           role: role,
@@ -65,7 +65,7 @@
   async function handleSetRole(role: string) {
     try {
       await $setUserGroupRole.mutateAsync({
-        organization: organization,
+        org: organization,
         usergroup: group.groupName,
         data: {
           role: role,
@@ -91,7 +91,7 @@
   async function handleRemove() {
     try {
       await $removeOrganizationMemberUsergroup.mutateAsync({
-        organization: organization,
+        org: organization,
         usergroup: group.groupName,
       });
 

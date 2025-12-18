@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 )
 
@@ -87,7 +88,12 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	var userAttrs map[string]any
+	if q.SecurityClaims != nil {
+		userAttrs = q.SecurityClaims.UserAttributes
+	}
+
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority, userAttrs)
 	if err != nil {
 		return err
 	}
@@ -129,7 +135,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
+	var userAttrs map[string]any
+	if q.SecurityClaims != nil {
+		userAttrs = q.SecurityClaims.UserAttributes
+	}
+
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority, userAttrs)
 	if err != nil {
 		return err
 	}
@@ -164,7 +175,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	path, err := e.Export(ctx, qry, nil, format, headers)
+	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers)
 	if err != nil {
 		return err
 	}
@@ -527,7 +538,7 @@ func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
 	if expr != nil && sql != "" {
-		sqlExpr, err := metricssql.ParseSQLFilter(sql)
+		sqlExpr, err := metricssql.ParseFilter(sql)
 		if err != nil {
 			return nil, err
 		}
@@ -545,7 +556,7 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricsview.NewExpressionFromProto(expr), nil
 	}
 	if sql != "" {
-		return metricssql.ParseSQLFilter(sql)
+		return metricssql.ParseFilter(sql)
 	}
 	return nil, nil
 }

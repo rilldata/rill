@@ -57,7 +57,10 @@
 <div>
   {#each entries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
-      <div class="component-param">
+      <div
+        class="component-param"
+        class:grouped={config.meta?.layout === "grouped"}
+      >
         <!-- TEXT, NUMBER, RILL_TIME -->
         {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
           <Input
@@ -111,15 +114,19 @@
 
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
-          <div class="flex items-center justify-between py-2">
+          <div class="flex items-center justify-between py-1">
             <InputLabel
               small
               label={config.label ?? key}
               id={key}
-              faint={!localParamValues[key]}
+              faint={config.meta?.invertBoolean
+                ? localParamValues[key]
+                : !localParamValues[key]}
             />
             <Switch
-              checked={$specStore[key]}
+              checked={config.meta?.invertBoolean
+                ? !$specStore[key]
+                : $specStore[key]}
               on:click={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}
@@ -247,5 +254,9 @@
   .component-param {
     @apply py-3 px-5;
     @apply border-t;
+  }
+  .component-param.grouped {
+    @apply py-0;
+    @apply border-none;
   }
 </style>

@@ -87,6 +87,7 @@ function getAlertPreviewQueryRequest(
     timeControlArgs,
     exploreSpec,
   );
+
   req.limit = "50"; // arbitrary limit to make sure we do not pull too much of data
   if (!timeControlArgs.selectedTimeRange?.end) return req;
 

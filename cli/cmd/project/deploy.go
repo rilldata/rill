@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -24,10 +23,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var (
-	nonSlugRegex      = regexp.MustCompile(`[^\w-]`)
-	ErrInvalidProject = errors.New("invalid project")
-)
+var ErrInvalidProject = errors.New("invalid project")
 
 type DeployOpts struct {
 	GitPath     string
@@ -47,6 +43,9 @@ type DeployOpts struct {
 	Managed bool
 	// Github indicates if the project should be connected to GitHub for automatic deploys.
 	Github bool
+
+	// SkipDeploy skips the runtime deployment step. Used for testing.
+	SkipDeploy bool
 
 	// remoteURL is the git remote url of the repository if detected. Set internally.
 	remoteURL string
@@ -84,7 +83,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 
 	// check if specified project already exists
-	if o.Name != "" {
+	if o.Name != "" && ch.Org != "" {
 		p, err := getProject(ctx, ch, ch.Org, o.Name)
 		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return err
@@ -137,12 +136,17 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return fmt.Errorf("aborting deploy")
 		}
 		if o.pushToProject.ManagedGitId != "" && o.Github {
-			ch.PrintfError("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			ch.Printf("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			ch.PrintfBold("Run `rill project edit --remote-url <github_remote>` to tranfer the project to GitHub.\n")
 			return fmt.Errorf("aborting deploy")
 		}
 		if o.pushToProject.OrgName != ch.Org {
 			ch.PrintfError("A project in another org deploys from this repository. Please switch to org %q to push changes to the project %q.\n", o.pushToProject.OrgName, o.pushToProject.Name)
 			return fmt.Errorf("aborting deploy")
+		}
+		if subpath != "" && o.pushToProject.Subpath != subpath {
+			// just for verification confirm that subpath matches the one stored in project
+			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Try doing deploy using rill cli from github repo root by passing explicit subpath using `rill deploy --subpath %s`", subpath, o.pushToProject.Subpath, o.pushToProject.Subpath)
 		}
 		// set flags based on existing project
 		o.Managed = o.pushToProject.ManagedGitId != ""
@@ -186,7 +190,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return err
 		}
 		connectToGithub = !ok
-	} else if !o.Github {
+	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
 		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
 		if err != nil {
@@ -299,6 +303,14 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		}
 	}
 
+	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
+	if !ch.IsDev() {
+		err := deployCmd.Flags().MarkHidden("skip-deploy")
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return deployCmd
 }
 
@@ -344,14 +356,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// We create a default org based on the user name.
 	// TODO : Ask user prompt similar to UI instead of silently creating org based on email
 	if ch.Org == "" {
-		user, err := adminClient.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-		if err != nil {
-			return err
-		}
-		// email can have other characters like . and + what to do ?
-		username, _, _ := strings.Cut(user.User.Email, "@")
-		username = nonSlugRegex.ReplaceAllString(username, "-")
-		err = createOrgFlow(ctx, ch, username)
+		err = createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
@@ -377,14 +382,15 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 
 	// Create a new project
 	req := &adminv1.CreateProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             opts.Name,
-		Description:      opts.Description,
-		Provisioner:      opts.Provisioner,
-		ProdVersion:      opts.ProdVersion,
-		ProdSlots:        int64(opts.Slots),
-		Public:           opts.Public,
-		DirectoryName:    filepath.Base(localProjectPath),
+		Org:           ch.Org,
+		Project:       opts.Name,
+		Description:   opts.Description,
+		Provisioner:   opts.Provisioner,
+		ProdVersion:   opts.ProdVersion,
+		ProdSlots:     int64(opts.Slots),
+		Public:        opts.Public,
+		DirectoryName: filepath.Base(localProjectPath),
+		SkipDeploy:    opts.SkipDeploy,
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -424,9 +430,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
 		} else if len(vars) > 0 {
 			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -439,8 +445,12 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 		if ch.Interactive {
 			ch.PrintfSuccess("Opening project in browser...\n")
-			time.Sleep(3 * time.Second)
-			_ = browser.Open(res.Project.FrontendUrl)
+			select {
+			case <-time.After(3 * time.Second):
+				_ = browser.Open(res.Project.FrontendUrl)
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
@@ -459,11 +469,21 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			return err
 		}
 	} else if proj.GitRemote != "" {
+		// Infer repo root and subpath for git operations
+		repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(opts.LocalProjectPath())
+		if err != nil {
+			return err
+		}
+		// Verify subpath matches the one stored in the project
+		if subpath != proj.Subpath {
+			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Run rill cli from github repo root and pass explicit subpath using `rill deploy --subpath %s`", subpath, proj.Subpath, proj.Subpath)
+		}
 		config := &gitutil.Config{
 			Remote:        opts.pushToProject.GitRemote,
 			DefaultBranch: opts.pushToProject.ProdBranch,
+			Subpath:       subpath,
 		}
-		err := gitutil.CommitAndForcePush(ctx, opts.LocalProjectPath(), config, "", nil)
+		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil, "1")
 		if err != nil {
 			return err
 		}
@@ -480,9 +500,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             proj.Name,
-				ArchiveAssetId:   &assetID,
+				Org:            ch.Org,
+				Project:        proj.Name,
+				ArchiveAssetId: &assetID,
 			}
 		} else {
 			// need to migrate to rill managed git
@@ -491,9 +511,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             opts.Name,
-				GitRemote:        &gitRepo.Remote,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				GitRemote: &gitRepo.Remote,
 			}
 		}
 		// Update the project
@@ -515,9 +535,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
 		} else if len(vars) > 0 {
 			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      proj.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   proj.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -530,35 +550,23 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 	return nil
 }
 
-func createOrgFlow(ctx context.Context, ch *cmdutil.Helper, defaultName string) error {
+func createOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
 	c, err := ch.Client()
 	if err != nil {
 		return err
 	}
 
+	ch.PrintfBold("No organization found for your account. Creating a new organization.\n")
+	name, err := orgNamePrompt(ctx, ch)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
-		Name: defaultName,
+		Name: name,
 	})
 	if err != nil {
-		if !errMsgContains(err, "an org with that name already exists") {
-			return err
-		}
-
-		ch.PrintfWarn("Rill organizations are derived from the owner of your Github repository.\n")
-		ch.PrintfWarn("The %q organization associated with your Github repository already exists.\n", defaultName)
-		ch.PrintfWarn("Contact your Rill admin to be added to your org or create a new organization below.\n")
-
-		name, err := orgNamePrompt(ctx, ch)
-		if err != nil {
-			return err
-		}
-
-		res, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
-			Name: name,
-		})
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	// Switching to the created org
@@ -613,7 +621,7 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 		return false, err
 	}
 
-	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
@@ -642,7 +650,7 @@ func getProject(ctx context.Context, ch *cmdutil.Helper, org, project string) (*
 		return nil, err
 	}
 
-	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org, Name: project})
+	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{Org: org, Project: project})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {

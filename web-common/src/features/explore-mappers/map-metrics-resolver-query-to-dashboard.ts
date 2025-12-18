@@ -5,7 +5,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
-import { maybeConvertEqualityToInExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import {
+  filterIdentifiers,
+  maybeConvertEqualityToInExpressions,
+  flattenInExpressionValues,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
 import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
@@ -80,9 +85,13 @@ export function mapMetricsResolverQueryToDashboard(
   }
 
   // Convert where filter
-  partialExploreState.whereFilter = mapResolverExpressionToV1Expression(
-    query.where,
-  );
+  if (query.where) {
+    partialExploreState.whereFilter = mapResolverExpressionToV1Expression(
+      query.where,
+    );
+  }
+
+  maybeGetTimeRangeFromFilter(partialExploreState, metricsViewSpec);
 
   // Convert sort
   if (query.sort) {
@@ -97,6 +106,60 @@ export function mapMetricsResolverQueryToDashboard(
   mapActivePage(query, partialExploreState, timeDimensions);
 
   return partialExploreState;
+}
+
+const OperationMap: Record<string, V1Operation> = {
+  "": V1Operation.OPERATION_UNSPECIFIED,
+  eq: V1Operation.OPERATION_EQ,
+  neq: V1Operation.OPERATION_NEQ,
+  lt: V1Operation.OPERATION_LT,
+  lte: V1Operation.OPERATION_LTE,
+  gt: V1Operation.OPERATION_GT,
+  gte: V1Operation.OPERATION_GTE,
+  in: V1Operation.OPERATION_IN,
+  nin: V1Operation.OPERATION_NIN,
+  ilike: V1Operation.OPERATION_LIKE,
+  nilike: V1Operation.OPERATION_NLIKE,
+  or: V1Operation.OPERATION_OR,
+  and: V1Operation.OPERATION_AND,
+};
+export function mapResolverExpressionToV1Expression(
+  expr: Expression | undefined,
+): V1Expression | undefined {
+  if (!expr) return undefined;
+
+  if (expr.name) {
+    return { ident: expr.name };
+  }
+
+  if (expr.val) {
+    return { val: expr.val };
+  }
+
+  if (expr.cond) {
+    const condExpr = maybeConvertEqualityToInExpressions({
+      cond: {
+        op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
+        exprs: expr.cond.exprs
+          ?.map(mapResolverExpressionToV1Expression)
+          .filter(Boolean) as V1Expression[] | undefined,
+      },
+    });
+    return flattenInExpressionValues(condExpr);
+  }
+
+  if (expr.subquery) {
+    return {
+      subquery: {
+        dimension: expr.subquery.dimension.name,
+        measures: expr.subquery.measures.map((m) => m.name),
+        where: mapResolverExpressionToV1Expression(expr.subquery.where),
+        having: mapResolverExpressionToV1Expression(expr.subquery.having),
+      },
+    };
+  }
+
+  return {};
 }
 
 function getValidDimensions(
@@ -151,57 +214,25 @@ function mapResolverTimeRangeToDashboardControls(
   return { name: TimeRangePreset.ALL_TIME } as DashboardTimeControls;
 }
 
-const OperationMap: Record<string, V1Operation> = {
-  "": V1Operation.OPERATION_UNSPECIFIED,
-  eq: V1Operation.OPERATION_EQ,
-  neq: V1Operation.OPERATION_NEQ,
-  lt: V1Operation.OPERATION_LT,
-  lte: V1Operation.OPERATION_LTE,
-  gt: V1Operation.OPERATION_GT,
-  gte: V1Operation.OPERATION_GTE,
-  in: V1Operation.OPERATION_IN,
-  nin: V1Operation.OPERATION_NIN,
-  ilike: V1Operation.OPERATION_LIKE,
-  nilike: V1Operation.OPERATION_NLIKE,
-  or: V1Operation.OPERATION_OR,
-  and: V1Operation.OPERATION_AND,
-};
-function mapResolverExpressionToV1Expression(
-  expr: Expression | undefined,
-): V1Expression | undefined {
-  if (!expr) return undefined;
-
-  if (expr.name) {
-    return { ident: expr.name };
+function maybeGetTimeRangeFromFilter(
+  partialExploreState: Partial<ExploreState>,
+  metricsViewSpec: V1MetricsViewSpec,
+) {
+  if (!partialExploreState.whereFilter || !metricsViewSpec.timeDimension) {
+    return;
   }
-
-  if (expr.val) {
-    return { val: expr.val };
-  }
-
-  if (expr.cond) {
-    return maybeConvertEqualityToInExpressions({
-      cond: {
-        op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
-        exprs: expr.cond.exprs
-          ?.map(mapResolverExpressionToV1Expression)
-          .filter(Boolean) as V1Expression[] | undefined,
-      },
-    });
-  }
-
-  if (expr.subquery) {
-    return {
-      subquery: {
-        dimension: expr.subquery.dimension.name,
-        measures: expr.subquery.measures.map((m) => m.name),
-        where: mapResolverExpressionToV1Expression(expr.subquery.where),
-        having: mapResolverExpressionToV1Expression(expr.subquery.having),
-      },
-    };
-  }
-
-  return {};
+  const tr = parseTimeRangeFromFilters(
+    partialExploreState.whereFilter,
+    metricsViewSpec.timeDimension,
+    partialExploreState.selectedTimezone ?? "UTC",
+  );
+  if (!tr) return;
+  partialExploreState.selectedTimeRange = tr;
+  // Remove any filter that apply on time dimension
+  partialExploreState.whereFilter = filterIdentifiers(
+    partialExploreState.whereFilter,
+    (_, i) => i !== metricsViewSpec.timeDimension,
+  );
 }
 
 function mapSort(
@@ -256,12 +287,12 @@ function mapActivePage(
   partialExploreState: Partial<ExploreState>,
   timeDimensions: Dimension[],
 ) {
-  const hasVisibleMeasures =
-    (partialExploreState.visibleMeasures?.length ?? 0) > 0;
+  const hasExactlyOneMeasure =
+    (partialExploreState.visibleMeasures?.length ?? 0) === 1;
   const visibleDimensions = partialExploreState.visibleDimensions ?? [];
   const showTDD =
     timeDimensions.length === 1 &&
-    hasVisibleMeasures &&
+    hasExactlyOneMeasure &&
     visibleDimensions.length <= 1;
   const showDimensionTable = !showTDD && visibleDimensions.length === 1;
   const showPivot = timeDimensions.length > 1 || visibleDimensions.length > 1;
@@ -275,6 +306,16 @@ function mapActivePage(
     partialExploreState.selectedComparisonDimension = visibleDimensions[0];
     partialExploreState.activePage =
       DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+
+    const timeDimension = timeDimensions[0];
+    const shouldUpdateTimeGrain =
+      partialExploreState.selectedTimeRange &&
+      timeDimension?.compute?.time_floor?.grain;
+    if (shouldUpdateTimeGrain) {
+      // Selected time grain is used in TDD's pivot table at the bottom.
+      partialExploreState.selectedTimeRange!.interval =
+        DateTimeUnitToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
+    }
   } else if (showDimensionTable) {
     partialExploreState.selectedDimensionName = visibleDimensions[0];
     partialExploreState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;

@@ -28,6 +28,12 @@ var (
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
 )
 
+type GithubToken struct {
+	AccessToken  string
+	Expiry       time.Time
+	RefreshToken string
+}
+
 // Github exposes the features we require from the Github API.
 type Github interface {
 	AppClient() *github.Client
@@ -348,6 +354,12 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 			depl, err := s.DB.FindDeployment(ctx, *project.ProdDeploymentID)
 			if err != nil {
 				s.Logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
+				continue
+			}
+
+			// We don't trigger runtime reconcile if the deployment is not ready
+			if depl.Status != database.DeploymentStatusRunning {
+				s.Logger.Info("process github event: runtime reconcile not triggered, deployment is not ready", zap.String("project_id", project.ID), zap.String("deployment_id", depl.ID), zap.String("deployment_status", depl.Status.String()), observability.ZapCtx(ctx))
 				continue
 			}
 

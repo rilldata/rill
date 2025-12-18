@@ -83,5 +83,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.MarkFlagsMutuallyExclusive("managed", "archive", "subpath")
 	deployCmd.MarkFlagsMutuallyExclusive("managed", "archive", "github")
 
+	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
+	if !ch.IsDev() {
+		err = deployCmd.Flags().MarkHidden("skip-deploy")
+		if err != nil {
+			panic(err)
+		}
+	}
 	return deployCmd
 }

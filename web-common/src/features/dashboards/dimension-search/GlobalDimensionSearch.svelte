@@ -29,7 +29,7 @@
     >
       <Search
         bind:value={searchText}
-        on:submit={onSubmit}
+        {onSubmit}
         placeholder="Search dimensions"
         autofocus
         border={false}

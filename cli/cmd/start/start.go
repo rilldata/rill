@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/envdetect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -24,6 +25,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var debug bool
 	var readonly bool
 	var reset bool
+	var pullEnv bool
 	var noUI bool
 	var noOpen bool
 	var logFormat string
@@ -103,13 +105,27 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectPath = "."
 			}
 
+			// Check for WSL Windows partition usage (based on the project path)
+			if envdetect.IsWSLWindowsPartition(projectPath) {
+				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
+				confirm, err := cmdutil.ConfirmPrompt(
+					"Do you want to continue anyway?",
+					"", false, // Default to "No"
+				)
+				if err != nil {
+					return err
+				}
+				if !confirm {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
+			}
+
 			// Always attempt to pull env for any valid Rill project (after projectPath is set)
-			if ch.IsAuthenticated() {
-				if local.IsProjectInit(projectPath) {
-					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
-					if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-					}
+			if pullEnv && ch.IsAuthenticated() && local.IsProjectInit(projectPath) {
+				err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
+				if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+					ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
 				}
 			}
 
@@ -165,6 +181,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			allowedOrigins = append(allowedOrigins, localURL)
 
+			ch.Interactive = false // Disable interactive mode for the app server
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Ch:             ch,
 				Verbose:        verbose,
@@ -198,6 +215,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
 	startCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
+	startCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")

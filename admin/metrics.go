@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/metrics"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/server/auth"
 )
 
@@ -40,11 +41,11 @@ func (s *Service) OpenMetricsProject(ctx context.Context) (*metrics.Client, bool
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     "admin-service",
 		TTL:         metricsProjectClientTTL,
-		InstancePermissions: map[string][]auth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: {
-				auth.ReadAPI,
-				auth.ReadMetrics,
-				auth.ReadObjects,
+				runtime.ReadAPI,
+				runtime.ReadMetrics,
+				runtime.ReadObjects,
 			},
 		},
 		Attributes: map[string]any{"admin": true},

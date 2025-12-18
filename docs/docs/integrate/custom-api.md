@@ -26,6 +26,43 @@ curl -X POST https://api.rilldata.com/v1/organizations/<org-name>/projects/<proj
   -d '{"param1": "value1", "param2": "value2"}'
 ```
 
+## Testing custom APIs locally
+
+When developing and testing custom APIs with Rill Developer on localhost, you can access your APIs without authentication at:
+
+```
+http://localhost:9009/v1/instances/default/api/<filename>
+```
+
+Where `<filename>` is the name of your API file (without the `.yaml` extension).
+
+### Local API examples
+
+For a custom API defined in `my-api.yaml`:
+
+**GET request:**
+```bash
+curl "http://localhost:9009/v1/instances/default/api/my-api?param1=value1&param2=value2"
+```
+
+**POST request:**
+```bash
+curl -X POST http://localhost:9009/v1/instances/default/api/my-api \
+  -H "Content-Type: application/json" \
+  -d '{"param1": "value1", "param2": "value2"}'
+```
+
+### Local OpenAPI schema
+
+You can also access the OpenAPI spec locally without authentication:
+```bash
+curl http://localhost:9009/v1/instances/default/api/openapi -o openapi.json
+```
+
+:::note
+Local development URLs do not require authentication tokens. This makes it easy to test your APIs during development, but remember to implement proper authentication when deploying to production.
+:::
+
 ## OpenAPI schema
 
 Rill automatically generates an OpenAPI spec that combines the built-in metrics APIs with your custom API definitions. You can use this OpenAPI spec to generate a typed client for accessing Rill from your programming language of choice. You can download the customized OpenAPI spec with:
@@ -35,42 +72,52 @@ curl https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name
   -o openapi.json
 ```
 
-## Access tokens
+## Authentication
 
-There are three types of access tokens you can use with custom APIs.
+Rill APIs require authentication tokens. Choose the appropriate token type for your use case:
 
-### User tokens
+### Quick Start
 
-These tokens are tied to your personal user and access permissions. They are useful for local scripting and experimentation. Not recommended for production use. 
+**For local testing (No authentication required when running locally):**  
+```bash
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>-
 
-Use the `rill token issue` CLI command to obtain a personal access token. See the [CLI reference](../reference/cli/token) for details.
+# Test your API endpoint locally (no auth required)
+curl http://localhost:9009/v1/instances/default/api/<filename>
+```
 
-### Service tokens
+**For Rill Cloud testing:**
+```bash
+rill token issue --display-name "API Testing"
+# Returns: rill_usr_...
 
-These tokens are tied to your Rill organization and persist even if the creating user is removed. They currently always have admin access to all projects in the organization. Service tokens are recommended for use cases that integrate Rill into production systems (such as scheduled jobs or backend APIs).
+curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/<api-name> \
+  -H "Authorization: Bearer rill_usr_..."
+```
 
-Since service tokens have admin permissions, they MUST NOT be embedded directly in your frontend or otherwise shared with end users. See "Ephemeral tokens" below for how to create safe, short-lived access tokens.
+**For production systems:**
+```bash
+rill service create my-api \
+  --project-role viewer \
+  --attributes '{"customer_id":"acme-corp"}'
+# Returns: rill_svc_...
+```
 
-Use the `rill service create` CLI command to create a service account and issue a token for it. See the [CLI reference](../reference/cli/service) for details.
+:::tip Token Documentation
+For comprehensive guidance on token types, roles, custom attributes, and management:
+- **[User Tokens](/manage/user-tokens)** - Personal access tokens for development
+- **[Service Tokens](/manage/service-tokens)** - Long-lived tokens for production systems
+- **[Roles and Permissions](/manage/roles-permissions)** - Understand access levels
 
-:::note
-When using security policies with service accounts, the `{{ .user.admin }}` user attribute is `true`, but apart from that, the service account does not have any other user attributes. This means if your security policy uses templating like `{{ .user.email }}`, it must have fallback logic in place for when no `email` is present.
 :::
 
-### Ephemeral user tokens
+### Using custom attributes with security policies
 
-You can use a service token to issue a short-lived, ephemeral access token with arbitrary user attributes. This enables you to create tokens that mimic an end user, even for users who are not signed up for Rill. Unlike service tokens, the access permissions of an ephemeral token are scoped to a specific project and user attributes.
+Service tokens can include custom attributes for fine-grained access control. Reference these attributes in your [security policies](/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards):
 
-The primary use case for these tokens is to have your backend issue a short-lived token that represents your current user, which your frontend can use to make direct calls to APIs in Rill. This is the same feature that powers Rill's embedded dashboards.
-
-To get an ephemeral user token, you need to use a service token to perform a handshake with Rill's credentials API at `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/credentials`. For example:
-```bash
-curl -X POST https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/credentials \
-  -H "Authorization: Bearer <service-account-token>" \
-  --data-raw '{ "user_email":"<user-email>" }'
-``` 
-
-The API accepts the following parameters:
-- `user_email`: Optional user email that the token should represent. The user does not need to exist in Rill.
-- `attributes`: Optional raw JSON payload of user attributes. This setting is not compatible with `user_email`. When using this, make sure to explicitly pass all the attributes used in your security policies, like `email` or `domain`.
-- `ttl_seconds`: Optional time-to-live for the token. Defaults to 24 hours (86400 seconds).
+```yaml
+# In your metrics view
+security:
+  access: true
+  row_filter: customer_id = '{{ .user.customer_id }}'
+```

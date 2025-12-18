@@ -174,7 +174,7 @@
                     </tr>
                     <tr>
                       <td align="center" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:12px;line-height:1.25;text-align:center;color:#000000;">To edit or unsubscribe from this alert, <a href="{{ .EditLink }}">click here</a>.</div>
+                        <div style="font-family:Helvetica;font-size:12px;line-height:1.25;text-align:center;color:#000000;">{{ if .EditLink }} To edit this alert, <a href="{{ .EditLink }}">click here</a>. {{ end }} {{ if .UnsubscribeLink }} To unsubscribe from this alert, <a href="{{ .UnsubscribeLink }}">click here</a>. {{ end }}</div>
                       </td>
                     </tr>
                     <tr>

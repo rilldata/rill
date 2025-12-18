@@ -1,5 +1,7 @@
 <script lang="ts">
   import { DateTime } from "luxon";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import AlertTriangle from "../icons/AlertTriangle.svelte";
 
   const formatsWithoutYear = [
     "M/d", // 7/4 or 07/04
@@ -30,123 +32,174 @@
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
 
-  export let selectingStart: boolean;
+  enum ErrorType {
+    INVALID = "invalid",
+    OUT_OF_RANGE = "out-of-range",
+  }
+
   export let date: DateTime;
   export let zone: string;
   export let boundary: "start" | "end";
   export let currentYear: number;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
-  export let onValidDateInput: (date: DateTime) => void;
+  export let onValidDateInput: (
+    date: DateTime,
+    boundary: "start" | "end",
+  ) => void;
+  export let onFocus: () => void;
 
-  let initialValue: string | null = null;
-  let displayError: boolean;
+  let errorType: ErrorType | null = null;
+  let inputIsFocused = false;
+  let dateString = date.toLocaleString({
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   $: id = boundary + "-date";
-
   $: label = boundary + " date";
 
-  function validateInput(
-    e: FocusEvent & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
+  $: if (!inputIsFocused) {
+    dateString = date.toLocaleString({
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  $: if (
+    (minDate && date < minDate.startOf("day")) ||
+    (maxDate && date >= maxDate)
   ) {
-    const changed = e.currentTarget.value !== initialValue;
-    if (!changed) return;
+    errorType = ErrorType.OUT_OF_RANGE;
+  } else {
+    errorType = null;
+  }
 
-    const dateString = e.currentTarget.value;
-
-    let date: DateTime = DateTime.invalid("invalid");
+  function convertToDateTime(dateString: string): DateTime<true> | undefined {
+    let potentialDate: DateTime | undefined = undefined;
     let format: string | null = null;
 
     for (const potentialFormat of formats) {
-      date = DateTime.fromFormat(dateString, potentialFormat, {
+      potentialDate = DateTime.fromFormat(dateString, potentialFormat, {
         zone,
       });
 
-      if (date.isValid) {
+      if (potentialDate.isValid) {
         format = potentialFormat;
-        displayError = false;
+
         break;
       }
     }
 
-    if (!date.isValid) {
-      displayError = true;
-      return;
-    }
-
-    if (minDate && date < minDate) {
-      displayError = true;
-      return;
-    }
-
-    if (maxDate && date > maxDate) {
-      displayError = true;
-      return;
-    }
-
     if (
-      date.year !== currentYear &&
+      potentialDate &&
+      potentialDate.year !== currentYear &&
       format &&
       formatsWithoutYear.includes(format)
     ) {
-      date = date.set({ year: currentYear });
+      potentialDate = potentialDate.set({ year: currentYear });
     }
 
-    onValidDateInput(date);
+    if (potentialDate?.isValid) {
+      return potentialDate;
+    } else {
+      return undefined;
+    }
+  }
+
+  function processInput(value: string) {
+    let potentialDate = convertToDateTime(value);
+
+    if (potentialDate) {
+      if (boundary === "end") {
+        potentialDate = potentialDate?.plus({ day: 1 }).startOf("day");
+      }
+
+      onValidDateInput(potentialDate, boundary);
+    } else {
+      errorType = ErrorType.INVALID;
+      return;
+    }
+  }
+
+  function resetDate() {
+    if (boundary === "start") {
+      date = minDate ?? DateTime.now().startOf("day");
+      onValidDateInput(date, boundary);
+    } else {
+      date = maxDate ?? DateTime.now().plus({ day: 1 }).startOf("day");
+      onValidDateInput(date, boundary);
+    }
   }
 </script>
 
 <div class="flex flex-col gap-y-1 w-full">
-  <label
-    class="capitalize"
-    for={id}
-    class:error={selectingStart && displayError}
-  >
+  <label class="capitalize flex items-center" for={id}>
     {label}
   </label>
 
-  <input
-    tabindex="0"
-    {id}
-    aria-label={label}
-    type="text"
-    class:active={(boundary === "start") === selectingStart}
-    class:error={displayError}
-    value={date.toLocaleString({
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })}
-    on:click={(e) => {
-      selectingStart = boundary === "start";
-      initialValue = e.currentTarget.value;
-    }}
-    on:keydown={({ currentTarget, key }) => {
-      if (key === "Enter") {
-        currentTarget.blur();
-      }
-    }}
-    on:blur={validateInput}
-  />
+  <div class="input-wrapper" class:error={errorType === ErrorType.INVALID}>
+    <input
+      tabindex="0"
+      {id}
+      class="size-full bg-transparent"
+      aria-label={label}
+      type="text"
+      bind:value={dateString}
+      on:focus={() => {
+        onFocus();
+        inputIsFocused = true;
+      }}
+      on:blur={() => {
+        processInput(dateString);
+        inputIsFocused = false;
+      }}
+    />
+    {#if errorType === ErrorType.OUT_OF_RANGE || (errorType && !inputIsFocused)}
+      <Tooltip.Root portal="body">
+        <Tooltip.Trigger asChild let:builder>
+          <button use:builder.action {...builder} on:click={resetDate}>
+            <AlertTriangle
+              className="size-4 text-{errorType === ErrorType.INVALID
+                ? 'red'
+                : 'yellow'}-500"
+            />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Content
+          side="top"
+          sideOffset={10}
+          class="bg-gray-700 text-surface shadow-md"
+        >
+          {#if errorType === ErrorType.OUT_OF_RANGE}
+            Date is out of range. Click to reset.
+          {:else}
+            Date is invalid. Click to reset.
+          {/if}
+        </Tooltip.Content>
+      </Tooltip.Root>
+    {/if}
+  </div>
 </div>
 
 <style lang="postcss">
-  input {
-    @apply h-8 px-2 w-full rounded-[2px] border border-gray-300;
+  .input-wrapper {
+    @apply h-8 px-2 w-full rounded-md border border-gray-300 flex bg-surface;
+    @apply items-center justify-between;
   }
 
-  input.active {
+  .input-wrapper:focus-within {
     outline: none;
     @apply border-primary-600;
   }
-  input:active,
+
   input:focus {
     outline: none;
   }
 
-  input.error:not(:focus) {
+  .input-wrapper.error:not(:focus-within) {
     @apply border-destructive text-destructive;
   }
 

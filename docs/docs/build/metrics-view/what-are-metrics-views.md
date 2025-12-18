@@ -26,6 +26,8 @@ In Rill, your metrics view is defined by _metric definitions_. Metric definition
 
 Once your [model or underlying table](/build/metrics-view/underlying-model) is ready to visualize, you'll need to create a metrics view to define your measures and dimensions. This can be done in a few ways. Either create a blank YAML file, use the Add metrics view button, or "Generate Metrics with AI" from the model.
 
+
+
 ### Create a Metrics view with Code
 Copy the below into a blank YAML or use the Add -> metrics view to create a blank metrics view. Here you can start to define dimensions and measures as seen below.
 
@@ -42,21 +44,19 @@ timeseries: timestamp_column # Choose a timestamp column (if any) from your tabl
 
 dimensions:
   - column: category
-    label: "Category"
+    display_name: "Category"
     description: "Description of the dimension"
 
 measures:
   - expression: "SUM(revenue)"
-    label: "Total Revenue"
+    display_name: "Total Revenue"
     description: "Total revenue generated"
 ```
 
-:::info Check our reference documentation
-
-For more information about available metrics view properties, feel free to check our [reference YAML documentation](/reference/project-files/metrics-views).
-
+:::tip Set project-wide time defaults
+Configure default time modifiers like first day of week and smallest time grain for all metrics views.
+[Learn more about metrics view defaults →](/build/project-configuration#metrics-views-time-modifiers)
 :::
-
 ### Using the Visual Metrics Editor
 
 When you add a metrics definition using the UI, a code definition will automatically be created as a YAML file in your Rill project within the metrics directory by default.
@@ -84,7 +84,7 @@ You can now create dashboards directly for the connector panel. This will create
 
 :::
 
-You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openai). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
+You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openai). If you want to disable metrics view generation with AI from your environment, please set the following in the `rill.yaml`:
 
 
 ```yaml

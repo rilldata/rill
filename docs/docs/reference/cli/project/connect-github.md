@@ -23,6 +23,7 @@ rill project connect-github [<path>] [flags]
       --provisioner string    Project provisioner
       --prod-version string   Rill version (default: the latest release version) (default "latest")
       --prod-branch string    Git branch to deploy from (default: the default Git branch)
+      --push-env              Push local .env file to Rill Cloud (default true)
 ```
 
 ### Global flags

@@ -28,6 +28,7 @@ import type {
   QueryServiceColumnTimeRangeParams,
   QueryServiceColumnTimeSeriesBody,
   QueryServiceColumnTopKBody,
+  QueryServiceConvertExpressionToMetricsSQLBody,
   QueryServiceExportBody,
   QueryServiceExportReportBody,
   QueryServiceMetricsViewAggregationBody,
@@ -46,6 +47,7 @@ import type {
   QueryServiceQueryBody,
   QueryServiceResolveCanvasBody,
   QueryServiceResolveComponentBody,
+  QueryServiceResolveTemplatedStringBody,
   QueryServiceTableCardinalityParams,
   QueryServiceTableColumnsParams,
   QueryServiceTableRowsParams,
@@ -60,6 +62,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1ColumnTimeSeriesResponse,
   V1ColumnTopKResponse,
+  V1ConvertExpressionToMetricsSQLResponse,
   V1ExportReportResponse,
   V1ExportResponse,
   V1MetricsViewAggregationResponse,
@@ -76,6 +79,7 @@ import type {
   V1QueryResponse,
   V1ResolveCanvasResponse,
   V1ResolveComponentResponse,
+  V1ResolveTemplatedStringResponse,
   V1TableCardinalityResponse,
   V1TableColumnsResponse,
   V1TableRowsResponse,
@@ -771,6 +775,99 @@ export const createQueryServiceExport = <
   TContext
 > => {
   const mutationOptions = getQueryServiceExportMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+ */
+export const queryServiceConvertExpressionToMetricsSQL = (
+  instanceId: string,
+  queryServiceConvertExpressionToMetricsSQLBody: QueryServiceConvertExpressionToMetricsSQLBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ConvertExpressionToMetricsSQLResponse>({
+    url: `/v1/instances/${instanceId}/queries/filter-expression/resolve`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceConvertExpressionToMetricsSQLBody,
+    signal,
+  });
+};
+
+export const getQueryServiceConvertExpressionToMetricsSQLMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+    TError,
+    { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+  TError,
+  { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody },
+  TContext
+> => {
+  const mutationKey = ["queryServiceConvertExpressionToMetricsSQL"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+    { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return queryServiceConvertExpressionToMetricsSQL(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceConvertExpressionToMetricsSQLMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>
+  >;
+export type QueryServiceConvertExpressionToMetricsSQLMutationBody =
+  QueryServiceConvertExpressionToMetricsSQLBody;
+export type QueryServiceConvertExpressionToMetricsSQLMutationError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+ */
+export const createQueryServiceConvertExpressionToMetricsSQL = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+      TError,
+      {
+        instanceId: string;
+        data: QueryServiceConvertExpressionToMetricsSQLBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof queryServiceConvertExpressionToMetricsSQL>>,
+  TError,
+  { instanceId: string; data: QueryServiceConvertExpressionToMetricsSQLBody },
+  TContext
+> => {
+  const mutationOptions =
+    getQueryServiceConvertExpressionToMetricsSQLMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -1534,7 +1631,8 @@ export function createQueryServiceMetricsViewSearch<
 }
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 export const queryServiceMetricsViewTimeRange = (
   instanceId: string,
@@ -1617,7 +1715,8 @@ export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
 export type QueryServiceMetricsViewTimeRangeQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 
 export function createQueryServiceMetricsViewTimeRange<
@@ -1657,6 +1756,9 @@ export function createQueryServiceMetricsViewTimeRange<
   return query;
 }
 
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 export const queryServiceMetricsViewTimeRanges = (
   instanceId: string,
   metricsViewName: string,
@@ -1736,6 +1838,10 @@ export type QueryServiceMetricsViewTimeRangesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
 >;
 export type QueryServiceMetricsViewTimeRangesQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 
 export function createQueryServiceMetricsViewTimeRanges<
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
@@ -2373,6 +2479,123 @@ export function createQueryServiceColumnNumericHistogram<
     instanceId,
     tableName,
     params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ResolveTemplatedString resolves a templated strings.
+ */
+export const queryServiceResolveTemplatedString = (
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveTemplatedStringResponse>({
+    url: `/v1/instances/${instanceId}/queries/resolve-templated-string`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveTemplatedStringBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveTemplatedStringQueryKey = (
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+) => {
+  return [
+    `/v1/instances/${instanceId}/queries/resolve-templated-string`,
+    queryServiceResolveTemplatedStringBody,
+  ] as const;
+};
+
+export const getQueryServiceResolveTemplatedStringQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveTemplatedStringQueryKey(
+      instanceId,
+      queryServiceResolveTemplatedStringBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
+  > = ({ signal }) =>
+    queryServiceResolveTemplatedString(
+      instanceId,
+      queryServiceResolveTemplatedStringBody,
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QueryServiceResolveTemplatedStringQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>
+>;
+export type QueryServiceResolveTemplatedStringQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ResolveTemplatedString resolves a templated strings.
+ */
+
+export function createQueryServiceResolveTemplatedString<
+  TData = Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  queryServiceResolveTemplatedStringBody: QueryServiceResolveTemplatedStringBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceResolveTemplatedString>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQueryServiceResolveTemplatedStringQueryOptions(
+    instanceId,
+    queryServiceResolveTemplatedStringBody,
     options,
   );
 

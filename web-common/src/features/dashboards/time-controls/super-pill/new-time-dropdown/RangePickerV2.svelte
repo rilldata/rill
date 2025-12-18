@@ -19,6 +19,7 @@
     RillAllTimeInterval,
     RillIsoInterval,
     RillPeriodToGrainInterval,
+    RillTimeLabel,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
   import {
@@ -26,6 +27,7 @@
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
+    V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
@@ -45,13 +47,13 @@
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
-  export let minDate: DateTime;
-  export let maxDate: DateTime;
+  export let minDate: DateTime<true> | undefined;
+  export let maxDate: DateTime<true> | undefined;
   export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
@@ -63,7 +65,6 @@
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
 
-  let firstVisibleMonth = interval?.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -72,6 +73,7 @@
   let showCalendarPicker = false;
   let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
+  let searchValue: string | undefined = timeString;
 
   $: if (timeString) {
     try {
@@ -87,8 +89,12 @@
 
   $: usingLegacyTime = parsedTime?.isOldFormat;
 
+  $: hasAsOfClause = !!parsedTime?.asOfLabel;
+
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
-  $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
+  $: ref = usingLegacyTime
+    ? RillTimeLabel.Latest
+    : parsedTime?.asOfLabel?.label;
 
   $: truncationGrain = usingLegacyTime
     ? timeString?.startsWith("rill") && !timeString.endsWith("C")
@@ -102,7 +108,11 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
+  $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
+
+  $: smallestTimeGrainOrder = getGrainOrder(
+    smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
+  );
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
     try {
@@ -114,9 +124,10 @@
       const rangeGrainOrder =
         getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
 
-      const hasAsOfString = !!parsed.asOfLabel;
-
       const asOfGrainOrder = getGrainOrder(truncationGrain);
+
+      const shouldAppendAsOfString =
+        !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
 
       if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
         truncationGrain = isPeriodToDate
@@ -124,15 +135,19 @@
           : parsed.rangeGrain;
       }
 
-      if (!hasAsOfString) {
+      if (shouldAppendAsOfString) {
+        const isTruncationGrainAllowed =
+          getGrainOrder(truncationGrain) >= smallestTimeGrainOrder;
         const newAsOfString = constructAsOfString(
-          ref,
+          ref ?? RillTimeLabel.Latest,
           ignoreSnap
             ? undefined
-            : (truncationGrain ??
-                smallestTimeGrain ??
-                V1TimeGrain.TIME_GRAIN_MINUTE),
-          snapToEnd,
+            : truncationGrain
+              ? isTruncationGrainAllowed
+                ? truncationGrain
+                : parsed.rangeGrain
+              : (smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE),
+          hasAsOfClause || snapToEnd ? snapToEnd : true,
         );
 
         overrideRillTimeRef(parsed, newAsOfString);
@@ -159,7 +174,7 @@
   }
 
   function onSelectAsOfOption(
-    ref: "latest" | "watermark" | "now" | string,
+    ref: RillTimeLabel | undefined,
     inclusive: boolean,
   ) {
     if (!timeString) return;
@@ -174,7 +189,11 @@
   }
 
   // Zone is taken as a param to make it reactive
-  function returnAnchor(asOf: string, zone: string): DateTime | undefined {
+  function returnAnchor(
+    asOf: string | undefined,
+    zone: string,
+  ): DateTime | undefined {
+    if (!maxDate) return DateTime.now().setZone(zone);
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
@@ -199,9 +218,9 @@
 
 <Popover.Root
   bind:open
-  onOpenChange={(open) => {
-    if (open) {
-      firstVisibleMonth = interval.start;
+  onOpenChange={(o) => {
+    if (o) {
+      searchValue = timeString;
     }
   }}
 >
@@ -246,7 +265,9 @@
       </Tooltip.Trigger>
 
       <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <PrimaryRangeTooltip {timeString} {interval} />
+        {#if interval}
+          <PrimaryRangeTooltip {timeString} {interval} />
+        {/if}
       </Tooltip.Content>
     </Tooltip.Root>
   </Popover.Trigger>
@@ -261,6 +282,7 @@
       bind:this={searchComponent}
       {context}
       {timeString}
+      bind:searchValue
       onSelectRange={(range) => {
         open = false;
         handleRangeSelect(range);
@@ -353,7 +375,7 @@
           </div>
         {/if}
 
-        {#if !lockTimeZone && dateTimeAnchor}
+        {#if !lockTimeZone}
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
 
@@ -393,7 +415,9 @@
                   {context}
                   {availableTimeZones}
                   activeTimeZone={zone}
-                  watermark={dateTimeAnchor}
+                  referencePoint={dateTimeAnchor ??
+                    interval?.end ??
+                    DateTime.now()}
                   onSelectTimeZone={(z) => {
                     onSelectTimeZone(z);
                     closeMenu();
@@ -409,14 +433,18 @@
       {#if showCalendarPicker}
         <div class="bg-slate-50 border-l p-3 size-full">
           <CalendarPlusDateInput
-            {firstVisibleMonth}
             {interval}
             {zone}
+            minTimeGrain={V1TimeGrainToDateTimeUnit[
+              smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+            ]}
             {maxDate}
             {minDate}
-            applyRange={(interval) => {
-              const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
-              onSelectRange(string);
+            onApply={() => {
+              if (searchValue) handleRangeSelect(searchValue);
+            }}
+            updateRange={(string) => {
+              searchValue = string;
             }}
             closeMenu={() => (open = false)}
           />

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -132,10 +133,21 @@ func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMe
 
 	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
+		memberAttrs := ""
+		if m.Attributes != nil && len(m.Attributes.Fields) > 0 {
+			attrMap := m.Attributes.AsMap()
+			var attrs []string
+			for key, value := range attrMap {
+				attrs = append(attrs, fmt.Sprintf("%s=%v", key, value))
+			}
+			memberAttrs = strings.Join(attrs, ", ")
+		}
+
 		allMembers = append(allMembers, &memberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+			Email:      m.UserEmail,
+			Name:       m.UserName,
+			RoleName:   m.RoleName,
+			Attributes: memberAttrs,
 		})
 	}
 
@@ -148,12 +160,13 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 		return
 	}
 
-	allMembers := make([]*memberUserWithRole, 0, len(members))
+	allMembers := make([]*projectMemberUserWithRole, 0, len(members))
 	for _, m := range members {
-		allMembers = append(allMembers, &memberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+		allMembers = append(allMembers, &projectMemberUserWithRole{
+			Email:     m.UserEmail,
+			Name:      m.UserName,
+			RoleName:  m.RoleName,
+			Resources: formatResourceNamesPB(m.RestrictResources, m.Resources),
 		})
 	}
 
@@ -231,9 +244,17 @@ type memberUser struct {
 }
 
 type memberUserWithRole struct {
-	Email    string `header:"email" json:"email"`
-	Name     string `header:"name" json:"display_name"`
-	RoleName string `header:"role" json:"role_name"`
+	Email      string `header:"email" json:"email"`
+	Name       string `header:"name" json:"display_name"`
+	RoleName   string `header:"role" json:"role_name"`
+	Attributes string `header:"attributes" json:"attributes"`
+}
+
+type projectMemberUserWithRole struct {
+	Email     string `header:"email" json:"email"`
+	Name      string `header:"name" json:"display_name"`
+	RoleName  string `header:"role" json:"role_name"`
+	Resources string `header:"resources" json:"resources"`
 }
 
 type orgMemberService struct {
@@ -283,6 +304,7 @@ func (p *Printer) PrintProjectInvites(invites []*adminv1.ProjectInvite) {
 			RoleName:    i.RoleName,
 			OrgRoleName: i.OrgRoleName,
 			InvitedBy:   i.InvitedBy,
+			Resources:   formatResourceNamesPB(i.RestrictResources, i.Resources),
 		})
 	}
 	p.PrintDataWithTitle(rows, "Invites pending acceptance")
@@ -293,6 +315,7 @@ type projectInvite struct {
 	RoleName    string `header:"role" json:"role_name"`
 	OrgRoleName string `header:"org_role" json:"org_role_name"`
 	InvitedBy   string `header:"invited_by" json:"invited_by"`
+	Resources   string `header:"resources" json:"resources"`
 }
 
 func (p *Printer) PrintServices(svcs []*adminv1.Service) {
@@ -572,6 +595,7 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 	return &memberUsergroup{
 		Name:      ug.GroupName,
 		Role:      role,
+		Resources: formatResourceNamesPB(ug.RestrictResources, ug.Resources),
 		CreatedOn: ug.CreatedOn.AsTime().Local().Format(time.DateTime),
 		UpdatedOn: ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
 	}
@@ -580,8 +604,24 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 type memberUsergroup struct {
 	Name      string `header:"name" json:"name"`
 	Role      string `header:"role" json:"role"`
+	Resources string `header:"resources" json:"resources"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
+}
+
+func formatResourceNamesPB(restrictResources bool, resources []*adminv1.ResourceName) string {
+	if !restrictResources {
+		return "all"
+	}
+	if len(resources) == 0 {
+		return "none"
+	}
+	var parts []string
+	for _, r := range resources {
+		parts = append(parts, fmt.Sprintf("%s/%s", r.Type, r.Name))
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ", ")
 }
 
 func (p *Printer) PrintModelPartitions(partitions []*runtimev1.ModelPartition) {
@@ -651,7 +691,7 @@ func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingIssue{
-		Organization: e.Organization,
+		Organization: e.Org,
 		Type:         e.Type.String(),
 		Level:        e.Level.String(),
 		Metadata:     string(meta), // TODO pretty print
@@ -684,7 +724,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			rows[i] = make([]string, len(headers))
 			for j, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+					rows[i][j] = p.FormatValue(val.AsInterface())
 				} else {
 					rows[i][j] = "null"
 				}
@@ -707,7 +747,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			record := make([]string, len(headers))
 			for i, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					record[i] = fmt.Sprintf("%v", val.AsInterface())
+					record[i] = p.FormatValue(val.AsInterface())
 				} else {
 					record[i] = ""
 				}

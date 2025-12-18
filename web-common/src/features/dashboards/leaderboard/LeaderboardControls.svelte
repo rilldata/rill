@@ -53,6 +53,8 @@
     .map(({ name }) => name)
     .filter(isDefined);
 
+  $: isMultiSelectEnabled = $leaderboardMeasureNames.length > 1;
+
   // if the percent of total is currently being shown,
   // but it is not valid for this measure, then turn it off
   $: if (
@@ -85,8 +87,10 @@
     {setLeaderboardMeasureNames}
     {setLeaderboardSortByMeasureName}
   />
-  <LeaderboardAdvancedActions
-    isOpen={isLeaderboardActionsOpen}
-    toggle={toggleLeaderboardShowContextForAllMeasures}
-  />
+  {#if isMultiSelectEnabled}
+    <LeaderboardAdvancedActions
+      isOpen={isLeaderboardActionsOpen}
+      toggle={toggleLeaderboardShowContextForAllMeasures}
+    />
+  {/if}
 </div>

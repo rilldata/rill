@@ -24,7 +24,7 @@
   $: ({ instanceId } = $runtime);
 
   $: ctx = getCanvasStore(canvasName, instanceId);
-  $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.spec);
+  $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.metricsView);
 
   $: timeDimension = getTimeDimensionForMetricView(metricName);
 
@@ -66,11 +66,11 @@
       </Chip>
     </DropdownMenu.Trigger>
 
-    <DropdownMenu.Content sameWidth class="p-0">
+    <DropdownMenu.Content class="p-0">
       <div class="p-3 pb-1">
         <Search bind:value={searchValue} autofocus={false} />
       </div>
-      <div class="max-h-64 overflow-y-auto">
+      <div class="max-h-64 overflow-y-auto pb-2">
         {#if type == "dimension" && includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"

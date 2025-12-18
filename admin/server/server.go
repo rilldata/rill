@@ -204,16 +204,25 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)
 
+	// Add backwards compatibility alias for iframe endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/iframe", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
+
+	// Add backwards compatibility alias for credentials endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/credentials", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
 	}
 
-	// Server public JWKS for runtime JWT verification
-	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
-
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, s.limiter)
+	s.authenticator.RegisterEndpoints(mux, s.limiter, s.issuer)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
@@ -243,13 +252,13 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Temporary endpoint for testing headers.
 	// NOTE: Commented out since it is unsafe, but keeping the code since it's been helpful for debugging on several occasions.
-	mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "r.Host: %s\n", r.Host)
-		for k, v := range r.Header {
-			fmt.Fprintf(w, "%s: %v\n", k, v)
-		}
-	})
+	// mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Content-Type", "text/plain")
+	// 	fmt.Fprintf(w, "r.Host: %s\n", r.Host)
+	// 	for k, v := range r.Header {
+	// 		fmt.Fprintf(w, "%s: %v\n", k, v)
+	// 	}
+	// })
 
 	// Build CORS options for admin server
 
@@ -364,7 +373,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 }
 
 func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
-	user, err := s.admin.DB.FindUser(ctx, userID)
+	user, attributes, err := s.admin.DB.FindUserWithAttributes(ctx, userID, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +383,6 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		return nil, err
 	}
 
-	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
 	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
@@ -386,6 +394,10 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
 		"groups": groupNames,
 		"admin":  projectPermissions.ManageProject,
+	}
+
+	for k, v := range attributes {
+		attr[k] = v
 	}
 
 	return attr, nil
@@ -413,13 +425,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2
 	}
-	switch fullMethodName {
-	case
-		"/rill.admin.v1.AdminService/CreateProject",
-		"/rill.admin.v1.AdminService/UpdateProject",
-		"/rill.admin.v1.AdminService/RedeployProject",
-		"/rill.admin.v1.AdminService/TriggerRedeploy":
-		return time.Minute * 5
+	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
+		return time.Minute * 4
 	}
 	return time.Minute
 }

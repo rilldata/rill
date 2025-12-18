@@ -200,3 +200,48 @@ notify:
 	require.Equal(t, true, c.AnonymousAccess)
 	require.Equal(t, drivers.Connectors["slack"].Spec(), *c.Spec)
 }
+
+func TestManagedConnectorPropagation(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: `
+olap_connector: managed_duckdb
+`,
+		"/connectors/managed_duckdb.yaml": `
+type: connector
+driver: duckdb
+managed: true
+`,
+		"/connectors/non_managed_duckdb.yaml": `
+type: connector
+driver: duckdb
+managed: false
+`,
+		"/connectors/managed_props_duckdb.yaml": `
+type: connector
+driver: duckdb
+managed:
+  hello: world
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	require.Len(t, p.Resources, 3)
+
+	r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "managed_duckdb"}]
+	require.NotNil(t, r)
+	require.True(t, r.ConnectorSpec.Provision)
+	require.Nil(t, r.ConnectorSpec.Properties)
+
+	r = p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "non_managed_duckdb"}]
+	require.NotNil(t, r)
+	require.False(t, r.ConnectorSpec.Provision)
+	require.Nil(t, r.ConnectorSpec.Properties)
+
+	r = p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "managed_props_duckdb"}]
+	require.NotNil(t, r)
+	require.True(t, r.ConnectorSpec.Provision)
+	require.Nil(t, r.ConnectorSpec.Properties)
+	require.Equal(t, "world", r.ConnectorSpec.ProvisionArgs.AsMap()["hello"])
+}

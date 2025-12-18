@@ -18,6 +18,7 @@ rill project edit [<project-name>] [flags]
       --prod-branch string     Production branch name
       --public                 Make dashboards publicly accessible
       --path string            Project directory (default ".")
+      --remote-url string      Github remote URL
       --subpath string         Relative path to project in the repository (for monorepos)
       --provisioner string     Project provisioner (default: current provisioner)
       --prod-ttl-seconds int   Time-to-live in seconds for production deployment (0 means no expiration)

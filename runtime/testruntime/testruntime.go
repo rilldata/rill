@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	goruntime "runtime"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -19,8 +20,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
@@ -33,6 +36,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
@@ -46,6 +50,7 @@ type TestingT interface {
 	Name() string
 	TempDir() string
 	FailNow()
+	SkipNow()
 	Errorf(format string, args ...interface{})
 	Cleanup(f func())
 	Context() context.Context
@@ -62,7 +67,7 @@ func New(t TestingT, allowHostAccess bool) *runtime.Runtime {
 				Name: "metastore",
 				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 				// "cache=shared" is needed to prevent threading problems.
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 			},
 		},
 		ConnectionCacheSize:          100,
@@ -94,6 +99,7 @@ type InstanceOptions struct {
 	WatchRepo         bool
 	StageChanges      bool
 	DisableHostAccess bool
+	EnableLLM         bool
 	TestConnectors    []string
 	FrontendURL       string
 }
@@ -122,6 +128,23 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		vars["rill.watch_repo"] = strconv.FormatBool(opts.WatchRepo)
 	}
 
+	// Making LLM completions in tests is disabled by default.
+	// If enabled, we skip the test in CI (short mode) to prevent running up costs.
+	var aiConnector string
+	if opts.EnableLLM {
+		// Mark AI tests as expensive
+		testmode.Expensive(t)
+
+		// Add "openai" to the test connectors if not already present.
+		if !slices.Contains(opts.TestConnectors, "openai") {
+			opts.TestConnectors = append(opts.TestConnectors, "openai")
+		}
+
+		// Set the "openai" test connector as the instance's default AI connector.
+		// This enables LLM completions.
+		aiConnector = "openai"
+	}
+
 	for _, conn := range opts.TestConnectors {
 		acquire, ok := Connectors[conn]
 		require.True(t, ok, "unknown test connector %q", conn)
@@ -137,30 +160,34 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		Environment:      "test",
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
+		AIConnector:      aiConnector,
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": tmpDir},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": tmpDir})),
 			},
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: map[string]string{"dsn": olapDSN},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
 			},
 			{
 				Type: "sqlite",
 				Name: "catalog",
 				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 				// "cache=shared" is needed to prevent threading problems.
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 			},
 		},
 		Variables:   vars,
 		FrontendURL: opts.FrontendURL,
 	}
 
+	if opts.Files == nil {
+		opts.Files = make(map[string]string)
+	}
 	if _, ok := opts.Files["rill.yaml"]; !ok {
 		opts.Files["rill.yaml"] = ""
 	}
@@ -210,6 +237,14 @@ func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, strin
 // The passed name should match a test project in the testdata folder.
 // You should not do mutable repo operations on the returned instance.
 func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
+	return newInstanceHelper(t, name, nil)
+}
+
+func NewInstanceForProjectWithConfigs(t TestingT, name string, instConfig map[string]string) (*runtime.Runtime, string) {
+	return newInstanceHelper(t, name, instConfig)
+}
+
+func newInstanceHelper(t TestingT, name string, instConfig map[string]string) (*runtime.Runtime, string) {
 	rt := New(t, true)
 	ctx := t.Context()
 
@@ -234,21 +269,22 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": projectPath},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": projectPath})),
 			},
 			{
 				Type:   olapDriver,
 				Name:   olapDriver,
-				Config: map[string]string{"dsn": olapDSN},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": olapDSN})),
 			},
 			{
 				Type: "sqlite",
 				Name: "catalog",
 				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 				// "cache=shared" is needed to prevent threading problems.
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 			},
 		},
+		Variables: instConfig,
 	}
 
 	err := rt.CreateInstance(ctx, inst)
@@ -294,19 +330,19 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": projectPath},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": projectPath})),
 			},
 			{
 				Type:   "druid",
 				Name:   "druid",
-				Config: map[string]string{"dsn": dsn},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": dsn})),
 			},
 			{
 				Type: "sqlite",
 				Name: "catalog",
 				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 				// "cache=shared" is needed to prevent threading problems.
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 			},
 		},
 	}
@@ -336,7 +372,7 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_clickhouse")
 
-	olapConfig := map[string]string{"dsn": dsn, "mode": "readwrite"}
+	olapConfig := map[string]any{"dsn": dsn, "mode": "readwrite"}
 	if withCluster {
 		olapConfig["cluster"] = cluster
 		olapConfig["log_queries"] = "true"
@@ -350,19 +386,19 @@ func NewInstanceWithClickhouseProject(t TestingT, withCluster bool) (*runtime.Ru
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": projectPath},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": projectPath})),
 			},
 			{
 				Type:   "clickhouse",
 				Name:   "clickhouse",
-				Config: olapConfig,
+				Config: Must(structpb.NewStruct(olapConfig)),
 			},
 			{
 				Type: "sqlite",
 				Name: "catalog",
 				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 				// "cache=shared" is needed to prevent threading problems.
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+				Config: Must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 			},
 		},
 		Variables: map[string]string{"rill.stage_changes": "false"},

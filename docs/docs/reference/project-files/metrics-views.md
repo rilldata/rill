@@ -14,11 +14,11 @@ _[string]_ - The version of the metrics view schema
 
 ### `type`
 
-_[string]_ - Refers to the resource type and must be `metrics_view` _(required)_
+_[string]_ - Refers to the resource type and must be `metrics_view` 
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/connect/olap) for more information 
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information 
 
 ### `display_name`
 
@@ -32,9 +32,13 @@ _[string]_ - Refers to the description for the metrics view
 
 _[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
 
+### `parent`
+
+_[string]_ - Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view 
+
 ### `model`
 
-_[string]_ - Refers to the model powering the dashboard (either model or table is required) _(required)_
+_[string]_ - Refers to the model powering the dashboard (either model or table is required) 
 
 ### `database`
 
@@ -78,6 +82,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`description`** - _[string]_ - a freeform text description of the dimension 
 
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty) 
+
   - **`column`** - _[string]_ - a categorical column 
 
   - **`expression`** - _[string]_ - a non-aggregate expression such as string_split(domain, '.'). One of column and expression is required but cannot have both at the same time 
@@ -97,6 +103,8 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
   - **`label`** - _[string]_ - a label for your measure, deprecated use display_name 
 
   - **`description`** - _[string]_ - a freeform text description of the measure 
+
+  - **`tags`** - _[array of string]_ - optional list of tags for categorizing the measure (defaults to empty) 
 
   - **`type`** - _[string]_ - Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist. 
 
@@ -184,6 +192,38 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
+### `parent_dimensions`
+
+_[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view. 
+
+  - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+  - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+    - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+    - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+### `parent_measures`
+
+_[oneOf]_ - Optional field selectors for measures to inherit from the parent metrics view. 
+
+  - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+  - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+    - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+    - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
 ### `annotations`
 
 _[array of object]_ - Used to define annotations that can be displayed on charts 
@@ -259,6 +299,112 @@ _[object]_ - Defines [security rules and access control policies](/build/metrics
     - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
 
     - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
+
+### `explore`
+
+_[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true. 
+
+  - **`skip`** - _[boolean]_ - If true, disables the explore view for this metrics view. 
+
+  - **`name`** - _[string]_ - Name of the explore view. 
+
+  - **`display_name`** - _[string]_ - Display name for the explore view. 
+
+  - **`description`** - _[string]_ - Description for the explore view. 
+
+  - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view. 
+
+  - **`theme`** - _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set. 
+
+    - **option 1** - _[string]_ - Name of an existing theme to apply to the explore view.
+
+    - **option 2** - _[object]_ - Inline theme configuration.
+
+      - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
+
+        - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+
+        - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`light`** - _[object]_ - Light theme color configuration 
+
+        - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+
+      - **`dark`** - _[object]_ - Dark theme color configuration 
+
+        - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+        - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
+
+  - **`time_ranges`** - _[array of oneOf]_ - Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'. 
+
+    - **option 1** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection
+
+    - **option 2** - _[object]_ - Object containing time range and comparison configuration
+
+      - **`range`** - _[string]_ - a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) extensions for the selection _(required)_
+
+      - **`comparison_offsets`** - _[array of oneOf]_ - list of time comparison options for this time range selection (optional). Must be one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions) 
+
+        - **option 1** - _[string]_ - Offset string only (range is inferred)
+
+        - **option 2** - _[object]_ - Object containing offset and range configuration for time comparison
+
+          - **`offset`** - _[string]_ - Time offset for comparison (e.g., 'P1D' for one day ago) 
+
+          - **`range`** - _[string]_ - Custom time range for comparison period 
+
+  - **`time_zones`** - _[array of string]_ - List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers. 
+
+  - **`lock_time_zone`** - _[boolean]_ - When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC. 
+
+  - **`allow_custom_time_range`** - _[boolean]_ - Defaults to true. When set to false, hides the ability to set a custom time range for the user. 
+
+  - **`defaults`** - _[object]_ - Preset UI state to show by default. 
+
+    - **`dimensions`** - _[oneOf]_ - Default dimensions to load on viewing the explore view. 
+
+      - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+      - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+      - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+        - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+        - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+        - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+    - **`measures`** - _[oneOf]_ - Default measures to load on viewing the explore view. 
+
+      - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+      - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+      - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+        - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+        - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+        - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+    - **`time_range`** - _[string]_ - Default time range to display when the explore view loads. 
+
+    - **`comparison_mode`** - _[string]_ - Default comparison mode for metrics (none, time, or dimension). 
+
+    - **`comparison_dimension`** - _[string]_ - Default dimension to use for comparison when comparison_mode is 'dimension'. 
+
+  - **`embeds`** - _[object]_ - Configuration options for embedded explore views. 
+
+    - **`hide_pivot`** - _[boolean]_ - When true, hides the pivot table view in embedded mode. 
 
 ## Common Properties
 

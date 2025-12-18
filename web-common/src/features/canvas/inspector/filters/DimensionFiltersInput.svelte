@@ -1,84 +1,82 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
-  import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
-  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-  import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import { flip } from "svelte/animate";
-  import type { Filters } from "../../stores/filters";
-  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import CanvasFilterButton from "@rilldata/web-common/features/dashboards/filters/CanvasFilterButton.svelte";
+  import type { FilterState } from "../../stores/filter-state";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
 
   export let id: string;
   export let canvasName: string;
   export let metricsView: string;
-  export let localFilters: Filters;
-  export let excludedDimensions: string[];
+  export let localFilters: FilterState;
+  export let excludedDimensions: Set<string>;
+  export let updateLocalFilterString: (newFilterString: string) => void;
 
-  let localFiltersEnabled = false;
+  let localFiltersEnabledOverride = false;
 
   $: ({ instanceId } = $runtime);
 
   $: ({
     canvasEntity: {
-      spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
+      filterManager: { dimensionsForMetricsView, measuresForMetricsView },
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
-    whereFilter,
-    toggleMultipleDimensionValueSelections,
-    applyDimensionInListMode,
-    applyDimensionContainsMode,
+    parsed,
+    temporaryFilterKeys,
     removeDimensionFilter,
     toggleDimensionFilterMode,
-    setMeasureFilter,
-    removeMeasureFilter,
+    toggleDimensionValueSelections,
+    applyDimensionContainsMode,
+    applyDimensionInListMode,
     setTemporaryFilterName,
+    removeMeasureFilter,
+    setMeasureFilter,
     clearAllFilters,
-    dimensionHasFilter,
-    temporaryFilters,
-    allDimensionFilterItems,
-    allMeasureFilterItems,
-    measureHasFilter,
-    searchParamsStore,
   } = localFilters);
 
-  $: if ($searchParamsStore.has(ExploreStateURLParams.Filters)) {
-    localFiltersEnabled = true;
-  }
+  $: ({
+    dimensionFilters,
+    where,
+    urlFormat,
+    measureFilters,
+    complexFilters,
+    hasFilters,
+  } = $parsed);
 
-  $: allDimensions = getDimensionsForMetricView(metricsView);
-  $: allValidDimensions = $allDimensions.filter(
-    (d) => !excludedDimensions.includes(d.name || (d.column as string)),
+  $: localFiltersEnabled = !!urlFormat?.length || localFiltersEnabledOverride;
+
+  $: allDimensions = $dimensionsForMetricsView.get(metricsView);
+  $: allSimpleMeasures = $measuresForMetricsView.get(metricsView);
+
+  $: dimensionArray = Array.from(allDimensions?.values() ?? []);
+
+  $: remappedDimensions = new Map(
+    Array.from(allDimensions?.entries() ?? []).map(([id, dim]) => {
+      return [id, new Map([[metricsView, dim]])];
+    }),
   );
-  $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
 
-  $: allDimensionFilters = $allDimensionFilterItems;
-  $: allMeasureFilters = $allMeasureFilterItems;
+  $: remappedMeasures = new Map(
+    Array.from(allSimpleMeasures?.entries() ?? []).map(([id, measure]) => {
+      return [id, new Map([[metricsView, measure]])];
+    }),
+  );
 
-  // hasFilter only checks for complete filters and excludes temporary ones
-  $: hasFilters =
-    allDimensionFilters.size + allMeasureFilters.length >
-    $temporaryFilters.size;
-
-  $: isComplexFilter = isExpressionUnsupported($whereFilter);
-
-  function handleMeasureFilterApply(
-    dimension: string,
-    measureName: string,
-    oldDimension: string,
-    filter: MeasureFilterEntry,
-  ) {
-    if (oldDimension && oldDimension !== dimension) {
-      removeMeasureFilter(oldDimension, measureName);
-    }
-    setMeasureFilter(dimension, filter);
+  function dimensionHasFilter(dimensionName: string): boolean {
+    return (
+      dimensionFilters.has(dimensionName) ||
+      excludedDimensions.has(dimensionName)
+    );
+  }
+  function measureHasFilter(measureName: string): boolean {
+    return measureFilters.has(measureName);
   }
 </script>
 
@@ -95,10 +93,10 @@
       checked={localFiltersEnabled}
       on:click={() => {
         if (localFiltersEnabled) {
-          localFiltersEnabled = false;
-          clearAllFilters();
+          localFiltersEnabledOverride = false;
+          updateLocalFilterString("");
         } else {
-          localFiltersEnabled = true;
+          localFiltersEnabledOverride = true;
         }
       }}
       small
@@ -115,80 +113,89 @@
     <div class="flex justify-between gap-x-2">
       <InputLabel small label="Filters" {id} />
 
-      <FilterButton
-        allDimensions={allValidDimensions}
-        filteredSimpleMeasures={$allSimpleMeasures}
-        dimensionHasFilter={$dimensionHasFilter}
-        measureHasFilter={$measureHasFilter}
-        {setTemporaryFilterName}
+      <CanvasFilterButton
+        allDimensions={remappedDimensions}
+        filteredSimpleMeasures={remappedMeasures}
         addBorder={false}
+        {dimensionHasFilter}
+        {measureHasFilter}
+        {setTemporaryFilterName}
       />
     </div>
 
     <div class="relative flex flex-col gap-x-2 gap-y-2 items-start">
       <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-        {#if isComplexFilter}
-          <AdvancedFilter advancedFilter={$whereFilter} />
-        {:else if allDimensionFilters.size || allMeasureFilters.length}
-          {#each allDimensionFilters as [name, { label, isInclude, mode, selectedValues, inputText }] (name)}
-            {@const dimension = allValidDimensions.find(
-              (d) => d.name === name || d.column === name,
-            )}
-            {@const dimensionName = dimension?.name || dimension?.column}
-            <div animate:flip={{ duration: 200 }}>
-              {#if dimensionName}
-                <DimensionFilter
-                  metricsViewNames={[metricsView]}
-                  readOnly={false}
-                  smallChip
-                  {name}
-                  {label}
-                  {mode}
-                  {selectedValues}
-                  {inputText}
-                  timeStart={new Date(0).toISOString()}
-                  timeEnd={new Date().toISOString()}
-                  timeControlsReady
-                  excludeMode={!isInclude}
-                  whereFilter={$whereFilter}
-                  onRemove={() => removeDimensionFilter(name)}
-                  onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                  onSelect={(value) =>
-                    toggleMultipleDimensionValueSelections(name, [value], true)}
-                  onMultiSelect={(values) =>
-                    toggleMultipleDimensionValueSelections(name, values, true)}
-                  onApplyInList={(values) =>
-                    applyDimensionInListMode(name, values)}
-                  onApplyContainsMode={(searchText) =>
-                    applyDimensionContainsMode(name, searchText)}
-                />
-              {/if}
-            </div>
-          {/each}
-          {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
-            <div animate:flip={{ duration: 200 }}>
-              <MeasureFilter
-                allDimensions={allValidDimensions}
-                {name}
-                {label}
-                {dimensionName}
-                {filter}
-                onRemove={() => removeMeasureFilter(dimensionName, name)}
-                onApply={({ dimension, oldDimension, filter }) =>
-                  handleMeasureFilterApply(
-                    dimension,
-                    name,
-                    oldDimension,
-                    filter,
-                  )}
-              />
-            </div>
-          {/each}
-        {/if}
+        {#each complexFilters as filter, i (i)}
+          <AdvancedFilter advancedFilter={filter} />
+        {/each}
+
+        {#each dimensionFilters as [id, filterData] (id)}
+          <DimensionFilter
+            {filterData}
+            timeStart={new Date(0).toISOString()}
+            timeEnd={new Date().toISOString()}
+            openOnMount={$temporaryFilterKeys.has(id)}
+            timeControlsReady
+            expressionMap={new Map([[metricsView, where]])}
+            removeDimensionFilter={async () => {
+              const newParam = removeDimensionFilter(id);
+              updateLocalFilterString(newParam);
+            }}
+            toggleDimensionFilterMode={async () => {
+              const newParam = toggleDimensionFilterMode(id);
+              if (newParam) updateLocalFilterString(newParam);
+            }}
+            toggleDimensionValueSelections={async (_, values) => {
+              const newParam = toggleDimensionValueSelections(id, values);
+
+              if (newParam) updateLocalFilterString(newParam);
+            }}
+            applyDimensionInListMode={async (_, values) => {
+              const newParam = applyDimensionInListMode(id, values);
+              if (newParam) updateLocalFilterString(newParam);
+            }}
+            applyDimensionContainsMode={async (searchText) => {
+              const newParam = applyDimensionContainsMode(id, searchText);
+              if (newParam) updateLocalFilterString(newParam);
+            }}
+          />
+        {/each}
+
+        {#each measureFilters as [id, filterData] (id)}
+          <MeasureFilter
+            {filterData}
+            allDimensions={dimensionArray}
+            onRemove={() => {
+              const newParam = removeMeasureFilter(
+                filterData.dimensionName,
+                filterData.name,
+              );
+
+              if (newParam) updateLocalFilterString(newParam);
+            }}
+            onApply={({ dimension, filter, oldDimension }) => {
+              const newParam = setMeasureFilter(
+                dimension,
+                filter,
+                oldDimension,
+              );
+              if (newParam) updateLocalFilterString(newParam);
+            }}
+            toggleFilterPin={undefined}
+          />
+        {/each}
       </div>
       <div class="ml-auto">
         {#if hasFilters}
-          <Button type="text" onClick={clearAllFilters}>Clear filters</Button>
+          <Button
+            type="text"
+            onClick={() => {
+              const newParam = clearAllFilters();
+              updateLocalFilterString(newParam);
+            }}
+          >
+            Clear filters
+          </Button>
         {/if}
       </div>
     </div>

@@ -54,15 +54,32 @@
 
   // Debounced search for better performance
   const debouncedSearch = debounce(async (query: string) => {
+    let remoteResults = [] as SearchResult[];
+    let localResults = [] as SearchResult[];
+
+    try {
+      if (onSearch) {
+        remoteResults = await onSearch(query);
+      }
+    } catch {
+      remoteResults = [];
+    }
+
     if (searchList) {
-      searchResults = filterSearchResults(searchList, searchKeys, query);
-    } else {
-      try {
-        searchResults = await onSearch(query);
-      } catch {
-        searchResults = [];
+      localResults = filterSearchResults(searchList, searchKeys, query);
+    }
+
+    // Merge and de-duplicate by identifier
+    const seen = new Set<string>();
+    const merged: SearchResult[] = [];
+    for (const r of [...localResults, ...remoteResults]) {
+      if (!seen.has(r.identifier)) {
+        merged.push(r);
+        seen.add(r.identifier);
       }
     }
+
+    searchResults = merged;
     showDropdown = searchResults.length > 0;
     if (showDropdown) {
       updateDropdownPosition();
@@ -132,19 +149,23 @@
   }
 
   async function refreshSearchResults() {
-    if (searchList) {
-      searchResults = searchList;
-    } else {
-      try {
-        searchResults = await onSearch("");
-        showDropdown = searchResults.length > 0;
-        if (showDropdown) {
-          updateDropdownPosition();
+    try {
+      const remote = onSearch ? await onSearch("") : [];
+      const local = searchList ?? [];
+      const seen = new Set<string>();
+      const merged: SearchResult[] = [];
+      for (const r of [...local, ...remote]) {
+        if (!seen.has(r.identifier)) {
+          merged.push(r);
+          seen.add(r.identifier);
         }
-      } catch {
-        searchResults = [];
-        showDropdown = false;
       }
+      searchResults = merged;
+      showDropdown = searchResults.length > 0;
+      if (showDropdown) updateDropdownPosition();
+    } catch {
+      searchResults = searchList ?? [];
+      showDropdown = searchResults.length > 0;
     }
   }
 
@@ -282,14 +303,9 @@
     }
   }
 
-  function handleFocus() {
-    if (searchList) {
-      searchResults = filterSearchResults(searchList, searchKeys, input);
-      showDropdown = searchResults.length > 0;
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    }
+  async function handleFocus() {
+    // On focus, load top 5 users from server (via onSearch("") -> no searchPattern)
+    await refreshSearchResults();
   }
 
   function handleBlur(e: FocusEvent) {
@@ -334,7 +350,7 @@
       )}
     >
       <div
-        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
+        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1 max-h-[120px] overflow-y-auto pr-1"
       >
         {#each selected as identifier (identifier)}
           <span
@@ -368,7 +384,9 @@
       </div>
 
       {#if roleSelect && (selected.length > 0 || input.trim())}
-        <UserRoleSelect bind:value={role} />
+        <div class="shrink-0 ml-2">
+          <UserRoleSelect bind:value={role} />
+        </div>
       {/if}
     </div>
 

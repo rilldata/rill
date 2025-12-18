@@ -1,66 +1,65 @@
 <script lang="ts">
   import { Database, Folder } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import type { V1AnalyzedConnector } from "../../../runtime-client";
+  import type {
+    V1AnalyzedConnector,
+    V1TableInfo,
+  } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
-  import {
-    useTablesOLAP as useTablesLegacy,
-    useTablesForSchema,
-  } from "../selectors";
+  import { useInfiniteListTables } from "../selectors";
+  import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { onMount } from "svelte";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
 
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
 
-  // Use appropriate selector based on API version
-  $: tablesQuery = useNewAPI
-    ? useTablesForSchema(
-        instanceId,
-        connectorName,
-        database,
-        databaseSchema,
-        expanded,
-      )
-    : useTablesLegacy(
-        instanceId,
-        connectorName,
-        database,
-        databaseSchema,
-        expanded,
-      );
+  $: tablesQuery = useInfiniteListTables(
+    instanceId,
+    connectorName,
+    database,
+    databaseSchema,
+    100,
+    expanded,
+  );
 
-  $: ({ data, error, isLoading } = $tablesQuery);
+  $: ({
+    data,
+    error,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = $tablesQuery);
 
-  // Handle data structure differences between APIs
-  $: typedData = useNewAPI
-    ? // New API returns V1TableInfo[]
-      (data as Array<{ name: string; view?: boolean }> | undefined)?.map(
-        (table) => ({
-          name: table.name,
-          database,
-          databaseSchema,
-          hasUnsupportedDataTypes: false, // Not available in new API
-          view: table.view ?? false,
-        }),
-      )
-    : // Legacy API returns V1OlapTableInfo[]
-      (data as
-        | Array<{
-            name: string;
-            database: string;
-            databaseSchema: string;
-            hasUnsupportedDataTypes: boolean;
-          }>
-        | undefined);
+  let loadMoreContainer: HTMLDivElement;
+  let isNarrow = false;
+
+  onMount(() => {
+    if (!loadMoreContainer) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width;
+      isNarrow = width < 220; // switch to shorter copy on narrow sidebar
+    });
+    observer.observe(loadMoreContainer);
+    return () => observer.disconnect();
+  });
+
+  // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
+  $: typedData = data?.tables?.map((table: V1TableInfo) => ({
+    name: table.name ?? "",
+    database,
+    databaseSchema,
+    view: table.view ?? false,
+  }));
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
@@ -89,11 +88,11 @@
   </button>
 
   {#if expanded}
-    {#if error}
+    {#if error && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
         Error: {error.message}
       </div>
-    {:else if isLoading}
+    {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
         Loading tables...
       </div>
@@ -113,7 +112,6 @@
       <ol>
         {#each typedData as tableInfo (tableInfo)}
           <TableEntry
-            {instanceId}
             driver={connector.driver.name}
             connector={connectorName}
             showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
@@ -127,12 +125,36 @@
             {database}
             {databaseSchema}
             table={tableInfo.name}
-            hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes ?? false}
             {store}
-            {useNewAPI}
           />
         {/each}
       </ol>
+
+      {#if hasNextPage}
+        <div
+          class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}"
+          bind:this={loadMoreContainer}
+        >
+          {#if error}
+            <span class="error">Failed to load more tables.</span>
+            <Button type="plain" small onClick={() => fetchNextPage()}>
+              Retry
+            </Button>
+          {:else}
+            <Button
+              type="plain"
+              small
+              disabled={isFetchingNextPage}
+              loading={isFetchingNextPage}
+              loadingCopy={isNarrow ? "Loading..." : "Loading tables..."}
+              class="w-full"
+              onClick={() => fetchNextPage()}
+            >
+              {isNarrow ? "Load more" : "Load more tables"}
+            </Button>
+          {/if}
+        </div>
+      {/if}
     {/if}
   {/if}
 </li>
@@ -155,5 +177,9 @@
   .message {
     @apply pr-3.5 py-2; /* left-padding is set dynamically above */
     @apply text-gray-500;
+  }
+
+  .load-more {
+    @apply py-2 pr-2;
   }
 </style>

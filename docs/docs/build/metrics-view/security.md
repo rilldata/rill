@@ -2,7 +2,7 @@
 title: Who Can Access Your Data
 description: Control who can view your metrics and data
 sidebar_label: Data Access Control
-sidebar_position: 20
+sidebar_position: 50
 ---
 
 Rill supports **granular access policies** that let you control:
@@ -48,7 +48,7 @@ security:
 ```
 
 When a user loads a dashboard, the policies are resolved in two phases:
-  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
+  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/build/connectors/templating))
   2. The resulting expression is then evaluated contextually:
      - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
      - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
@@ -58,7 +58,7 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 Metrics views limit data access for all requests, including MCP integrations and custom APIs. When creating a token or copying from the AI tab, the user's attributes (such as email, domain, groups, and custom attributes) are automatically included in the request context. This ensures that the same security policies that apply to dashboard users also apply to programmatic access, maintaining consistent data governance across all access methods.
 
-You can also pass attributes into the `rill service create <token_name> --attributes` as a JSON object to create custom attributes.
+For more details, see [Service Tokens](/manage/service-tokens).
 :::
 Typical use cases include:
 
@@ -81,6 +81,11 @@ There are two locations that control data access in Rill.
 ### Project Level Defaults
 
 By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+
+:::tip Set project-wide security defaults
+Configure default security policies for all metrics views and dashboards in your project.
+[Learn more about security defaults →](/build/project-configuration#metrics-views-security-policy)
+:::
 
 ```yaml
 metrics_views:
@@ -153,6 +158,11 @@ Note: Rill requires users to confirm their email address before letting them int
 ## Testing Policies in Rill Developer
 
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+
+:::tip Test policies in Rill Developer
+Use `mock_users` in rill.yaml to test your security policies before deploying.
+[Learn more about testing security →](/build/project-configuration#testing-security)
+:::
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
 ```yaml
@@ -277,7 +287,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column, and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
+To support this, ingest a separate data [source](/build/connectors) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of your Rill project with the following contents:
 ```csv

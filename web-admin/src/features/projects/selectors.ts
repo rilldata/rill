@@ -4,6 +4,7 @@ import {
   createAdminServiceGetProject,
   createAdminServiceListProjectMemberUsers,
   getAdminServiceGetProjectQueryKey,
+  getAdminServiceGetProjectQueryOptions,
 } from "@rilldata/web-admin/client";
 import {
   adminServiceGetMagicAuthToken,
@@ -20,6 +21,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { derived, type Readable } from "svelte/store";
 
 export function getProjectPermissions(orgName: string, projName: string) {
   return createAdminServiceGetProject(orgName, projName, undefined, {
@@ -57,6 +59,28 @@ export function useProjectId(orgName: string, projectName: string) {
         select: (resp) => resp.project?.id,
       },
     },
+  );
+}
+
+export type OrgAndProjectNameStore = Readable<{
+  organization: string;
+  project: string;
+}>;
+export function getProjectIdQueryOptions(
+  orgAndProjectNameStore: OrgAndProjectNameStore,
+) {
+  return derived(orgAndProjectNameStore, ({ organization, project }) =>
+    getAdminServiceGetProjectQueryOptions(
+      organization,
+      project,
+      {},
+      {
+        query: {
+          enabled: !!organization && !!project,
+          select: (resp) => resp.project?.id,
+        },
+      },
+    ),
   );
 }
 

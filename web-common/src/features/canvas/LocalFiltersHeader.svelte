@@ -5,6 +5,7 @@
   import type {
     MetricsViewSpecDimension,
     MetricsViewSpecMeasure,
+    V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import { readable, type Readable } from "svelte/store";
 
@@ -16,7 +17,7 @@
   $: ({
     specStore,
     parent: {
-      spec: { getDimensionsForMetricView, getMeasuresForMetricView },
+      metricsView: { getDimensionsForMetricView, getMeasuresForMetricView },
     },
     timeAndFilterStore,
     localFilters,
@@ -31,19 +32,56 @@
     dimensions = getDimensionsForMetricView(metricsViewName);
   }
 
-  $: ({ showTimeComparison, timeRangeStateStore } = localTimeControls);
+  $: ({
+    showTimeComparisonStore,
+    interval: intervalStore,
+    rangeStore,
+    grainStore,
+    comparisonRangeStore,
+    comparisonIntervalStore,
+  } = localTimeControls);
 
-  $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+  $: showTimeComparison = $showTimeComparisonStore;
+  $: activeTimeGrain = $grainStore;
 
-  $: ({ whereFilter, dimensionThresholdFilters, dimensionsWithInlistFilter } =
-    localFilters);
+  $: comparisonRange = $comparisonRangeStore;
+  $: comparisonInterval = $comparisonIntervalStore;
+
+  $: interval = $intervalStore;
+  $: selectedRangeAlias = $rangeStore;
+
+  $: selectedTimeRange = interval
+    ? {
+        name: selectedRangeAlias,
+        start: interval?.start.toJSDate(),
+        end: interval?.end.toJSDate(),
+        interval: activeTimeGrain,
+      }
+    : undefined;
+
+  // $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+  $: displayComparisonTimeRange =
+    showTimeComparison && comparisonInterval && comparisonRange
+      ? <V1TimeRange>{
+          name: comparisonRange,
+          start: comparisonInterval.start.toISO(),
+          end: comparisonInterval.end.toISO(),
+          interval: activeTimeGrain,
+        }
+      : undefined;
+
+  $: ({ parsed } = localFilters);
+
+  $: ({
+    dimensionThresholdFilters,
+    dimensionFilter,
+    dimensionsWithInListFilter,
+  } = $parsed);
 
   $: displayTimeRange = {
     ...$timeAndFilterStore.timeRange,
     isoDuration: selectedTimeRange?.name,
   };
-
-  $: displayComparisonTimeRange = $timeAndFilterStore.comparisonTimeRange;
 
   $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
 </script>
@@ -53,16 +91,15 @@
     class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
   >
     <Filter size="16px" className="text-gray-400" />
+
     <FilterChipsReadOnly
-      metricsViewName={$specStore.metrics_view}
+      metricsViewNames={[$specStore.metrics_view]}
       dimensions={$dimensions}
       measures={$measures}
-      dimensionThresholdFilters={$dimensionThresholdFilters}
-      dimensionsWithInlistFilter={$dimensionsWithInlistFilter}
-      filters={$whereFilter}
-      displayComparisonTimeRange={$showTimeComparison
-        ? displayComparisonTimeRange
-        : undefined}
+      {dimensionThresholdFilters}
+      dimensionsWithInlistFilter={dimensionsWithInListFilter}
+      filters={dimensionFilter}
+      {displayComparisonTimeRange}
       displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
       queryTimeStart={selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={selectedTimeRange?.end?.toISOString()}

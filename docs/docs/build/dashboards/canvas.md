@@ -5,7 +5,7 @@ sidebar_label: Canvas Dashboards
 sidebar_position: 05
 ---
 
-While Rill's signature **[Explore dashboards](/build/dashboards/dashboards.md)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations and arrange them into your preferred layout.
+While Rill's signature **[Explore dashboards](/build/dashboards/explore)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations and arrange them into your preferred layout.
 
 
 Canvas dashboards are built using various components that can display data, create visualizations, and add rich content from independent metrics views. You can create components dynamically through the visual Canvas Dashboard interface or define them in individual YAML files.
@@ -32,7 +32,7 @@ To modify any single widget, click to select it and use the right-hand panel to 
 
 
 ### Filters
-Optionally toggle on the **global filter bar** under Canvas properties to give dashboard viewers access to the same time and dimension filters available on Explore dashboards. 
+Optionally toggle on the **global filter bar** under Canvas properties to give dashboard viewers access to the same time and dimension filters available on Explore dashboards.
 
 <img src = '/img/build/dashboard/canvas/global-filter-bar.png' class='rounded-gif' />
 <br/>
@@ -49,6 +49,11 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 
 <img src = '/img/build/dashboard/canvas/code-toggle.png' class='rounded-gif' />
 <br/>
+
+:::tip Customize default time ranges
+Set project-wide default time ranges and available options for all canvas dashboards.
+[Learn more about canvas defaults →](/build/project-configuration#canvas-defaults)
+::: 
 
 <!-- 
 ## Default Filters

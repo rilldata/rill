@@ -1,23 +1,31 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
-  import ChatFooter from "../../core/input/ChatFooter.svelte";
+  import {
+    cleanupConversationManager,
+    getConversationManager,
+  } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
-  import ChatMessages from "../../core/messages/ChatMessages.svelte";
-  import ChatHeader from "./ChatHeader.svelte";
+  import Messages from "../../core/messages/Messages.svelte";
+  import SidebarHeader from "./SidebarHeader.svelte";
   import {
     SIDEBAR_DEFAULTS,
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
 
+  import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+
+  export let config: ChatConfig;
+
   $: ({ instanceId } = $runtime);
 
-  // Initialize chat with browser storage for conversation management
-  $: chat = getChatInstance(instanceId, {
+  // Initialize conversation manager with browser storage for conversation management
+  $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
+    agent: config.agent,
   });
 
   let chatInputComponent: ChatInput;
@@ -30,18 +38,27 @@
     chatInputComponent?.focusInput();
   }
 
-  // Clean up chat resources when switching projects
+  // Clean up conversation manager resources when switching projects
   beforeNavigate(({ from, to }) => {
     const currentProject = from?.params?.project;
     const targetProject = to?.params?.project;
 
     if (currentProject !== targetProject) {
-      cleanupChatInstance(instanceId);
+      cleanupConversationManager(instanceId);
     }
+  });
+
+  onMount(() => {
+    chatInputComponent?.focusInput();
   });
 </script>
 
-<div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">
+<div
+  class="chat-sidebar"
+  style="--sidebar-width: {$sidebarWidth}px;"
+  on:click|stopPropagation
+  role="presentation"
+>
   <Resizer
     min={SIDEBAR_DEFAULTS.MIN_SIDEBAR_WIDTH}
     max={SIDEBAR_DEFAULTS.MAX_SIDEBAR_WIDTH}
@@ -53,28 +70,26 @@
   />
   <div class="chat-sidebar-content">
     <div class="chatbot-header-container">
-      <ChatHeader
-        {chat}
+      <SidebarHeader
+        {conversationManager}
         {onNewConversation}
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <ChatMessages {chat} layout="sidebar" />
-    <ChatInput {chat} bind:this={chatInputComponent} onSend={onMessageSend} />
-    <ChatFooter />
+    <Messages {conversationManager} layout="sidebar" {config} />
+    <ChatInput
+      {conversationManager}
+      bind:this={chatInputComponent}
+      onSend={onMessageSend}
+      {config}
+    />
   </div>
 </div>
 
 <style lang="postcss">
   .chat-sidebar {
-    position: relative;
+    @apply flex flex-col relative h-full bg-surface border;
     width: var(--sidebar-width);
-    height: 100%;
-    background: #ffffff;
-    border-left: 1px solid #e5e7eb;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
   }
 
   .chat-sidebar-content {

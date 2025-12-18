@@ -20,8 +20,9 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode } = featureFlags;
+  const { darkMode, deploy, developerChat } = featureFlags;
 
   export let mode: string;
 
@@ -35,6 +36,8 @@
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
+  $: showDeployCTA = $deploy && !onDeployPage;
+  $: showDeveloperChat = $developerChat && !onDeployPage;
 
   $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
@@ -120,8 +123,10 @@
       {:else if route.id?.includes("canvas")}
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
+    {:else if showDeveloperChat}
+      <ChatToggle />
     {/if}
-    {#if !onDeployPage}
+    {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
     <LocalAvatarButton darkMode={$darkMode} />

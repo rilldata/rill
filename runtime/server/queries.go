@@ -8,6 +8,7 @@ import (
 
 	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -27,7 +28,7 @@ func unmarshalJSON(sql []byte) (*jsonvalue.V, error) {
 
 // Query implements QueryService.
 func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadOLAP) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadOLAP) {
 		return nil, ErrForbidden
 	}
 

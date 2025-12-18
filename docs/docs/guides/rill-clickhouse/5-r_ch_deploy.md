@@ -39,4 +39,4 @@ connection: dial tcp 127.0.0.1:9000: connect: connection refused
 
 This is likely due to using a locally running ClickHouse server. If so, you will not be able to access your locally running server from Rill Cloud. Instead, we suggest using [ClickHouse Cloud](https://clickhouse.com/cloud). 
 
-For steps to setup ClickHouse Cloud, please refer to [our documentation](https://docs.rilldata.com/connect/olap/clickhouse#connecting-to-clickhouse-cloud).
+For steps to setup ClickHouse Cloud, please refer to [our documentation](https://docs.rilldata.com/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud).

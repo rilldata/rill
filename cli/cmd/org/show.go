@@ -25,7 +25,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
-				Name: ch.Org,
+				Org: ch.Org,
 			})
 			if err != nil {
 				return err
@@ -51,7 +51,9 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Printf("Display Name: %s\n", org.DisplayName)
 			ch.Printf("Description: %s\n", org.Description)
 			ch.Printf("Custom Logo: %s\n", org.LogoUrl)
+			ch.Printf("Custom Dark Logo: %s\n", org.LogoDarkUrl)
 			ch.Printf("Custom Favicon: %s\n", org.FaviconUrl)
+			ch.Printf("Custom Thumbnail: %s\n", org.ThumbnailUrl)
 			ch.Printf("Custom Domain: %s\n", org.CustomDomain)
 			ch.Printf("Default Project Role: %s\n", defaultProjectRole)
 			if res.Permissions.ManageOrg { // Mirrors redaction rules in organizationToDTO

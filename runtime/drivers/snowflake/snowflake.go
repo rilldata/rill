@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -27,14 +29,14 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
+			DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
@@ -112,6 +114,9 @@ type configProperties struct {
 	PrivateKey         string         `mapstructure:"privateKey"`
 	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
 	Extras             map[string]any `mapstructure:",remain"`
+
+	// LogQueries controls whether to log the raw SQL passed to OLAP.
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func (c *configProperties) validate() error {
@@ -216,6 +221,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
+		dbMu:             semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -235,15 +241,18 @@ type connection struct {
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
+
+	db    *sqlx.DB // lazily populated using getDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -271,6 +280,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		return c.db.Close()
+	}
 	return nil
 }
 
@@ -301,7 +313,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -347,18 +359,26 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.dbMu.Release(1)
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
+	}
 	dsn, err := c.configProperties.resolveDSN()
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := sqlx.Open("snowflake", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
+	c.db, c.dbErr = sqlx.Open("snowflake", dsn)
+	if c.dbErr != nil {
+		return nil, c.dbErr
 	}
-	return db, nil
+	c.db.SetConnMaxIdleTime(time.Minute)
+	return c.db, c.dbErr
 }
 
 // parseRSAPrivateKey parses a private key string
