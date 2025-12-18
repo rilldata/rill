@@ -3,6 +3,7 @@ import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import type { MultiStepFormSchema } from "./types";
 import {
+  findAuthMethodKey,
   getAuthOptionsFromSchema,
   getRequiredFieldsByAuthMethod,
   isStepMatch,
@@ -103,9 +104,18 @@ export function isMultiStepConnectorDisabled(
 
   const authInfo = getAuthOptionsFromSchema(schema);
   const options = authInfo?.options ?? [];
+  const authKey = authInfo?.key || findAuthMethodKey(schema);
+  const methodFromForm =
+    authKey && paramsFormValue?.[authKey] != null
+      ? String(paramsFormValue[authKey])
+      : undefined;
   const hasValidSelection = options.some((opt) => opt.value === selectedMethod);
+  const hasValidFormSelection = options.some(
+    (opt) => opt.value === methodFromForm,
+  );
   const method =
     (hasValidSelection && selectedMethod) ||
+    (hasValidFormSelection && methodFromForm) ||
     authInfo?.defaultMethod ||
     options[0]?.value;
 
