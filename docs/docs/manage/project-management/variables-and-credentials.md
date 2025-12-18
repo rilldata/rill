@@ -8,14 +8,14 @@ sidebar_position: 50
 The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/deploy/deploy-credentials). 
 
 ## Modifying Variables and Credentials via the Settings Page
-Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmantal variables defined, please run `rill env configure` from your local CLI and Rill will automatically detect the sources that are used in your project and request the credentials. Once completed, the variables should be visible and editable from Rill Cloud. If you'd like to manually add the credentals, please see [our naming convention](#credentials-naming-schema) to get started. 
+Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmental variables defined, please run `rill env push` from your local CLI and Rill will automatically push the credentials in your project's `.env` file to Rill Cloud. If you'd like to manually add the credentials, please see [our naming convention](#credentials-naming-schema) to get started. 
 
 <img src = '/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
 <br />
 
 
 ### Adding and Editing Environmental Variables / Importing a `.env` file
-Once your environmantal variables are added to Rill Cloud, they can be modfied as needed.
+Once your environmental variables are added to Rill Cloud, they can be modified as needed.
 
 
 <img src = '/img/manage/var-and-creds/add-variable.png' class='rounded-gif' />
@@ -38,7 +38,7 @@ It's never a good idea to commit sensitive information to Git and goes against s
 
 ### `rill env push`
 
-As a project admin, you can either use `rill env configure` after deploying a project or `rill env push` to specify a particular set of credentials that your Rill Cloud project will use. If choosing the latter, you can update your *`<RILL_PROJECT_HOME>/.env`* file with the appropriate variables and credentials that are required. Alternatively, if this file has already been updated, you can run `rill env push` from your project's root directory.
+As a project admin, you can run `rill env push` from your local CLI that will update your Rill project with the contexts of your *`<RILL_PROJECT_HOME>/.env`* file.
 - Rill Cloud will use the specified credentials and variables in this `.env` file for the deployed project.
 - Other users will also be able to use `rill env pull` to retrieve these defined credentials for local use (with Rill Developer).
 

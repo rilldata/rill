@@ -1735,7 +1735,39 @@ paths:
                 type: string
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/members/{email}:
+    get:
+      summary: GetProjectMemberUser gets the member details
+      operationId: AdminService_GetProjectMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1794,6 +1826,39 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
+    get:
+      summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+      operationId: AdminService_ListUsergroupsForProjectAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUsergroupsForProjectAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -2273,6 +2338,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2306,6 +2378,13 @@ paths:
             properties:
               role:
                 type: string
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -5057,6 +5136,11 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectMemberUserResponse:
+    type: object
+    properties:
+      member:
+        $ref: '#/definitions/v1ProjectMemberUser'
   v1GetProjectResponse:
     type: object
     properties:
@@ -5461,6 +5545,14 @@ definitions:
           $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1ListUsergroupsForProjectAndUserResponse:
+    type: object
+    properties:
+      usergroups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -5534,6 +5626,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1Organization:
     type: object
     properties:
@@ -5767,6 +5866,13 @@ definitions:
         type: string
       invitedBy:
         type: string
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectMemberService:
     type: object
     properties:
@@ -5815,6 +5921,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectPermissions:
     type: object
     properties:

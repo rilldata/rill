@@ -13,8 +13,7 @@
     conversationSidebarCollapsed,
     toggleConversationSidebar,
   } from "./fullpage-store";
-
-  import { dashboardChatConfig } from "@rilldata/web-common/features/dashboards/chat-context.ts";
+  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
 
@@ -70,7 +69,7 @@
         <Messages
           {conversationManager}
           layout="fullpage"
-          config={dashboardChatConfig}
+          config={projectChat}
         />
       </div>
     </div>
@@ -81,7 +80,7 @@
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
-          config={dashboardChatConfig}
+          config={projectChat}
         />
       </div>
     </div>

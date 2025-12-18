@@ -7634,8 +7634,6 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 
 	// no validation rules for Replay
 
-	// no validation rules for Level
-
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)
 	}
