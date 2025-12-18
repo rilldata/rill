@@ -122,14 +122,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Always attempt to pull env for any valid Rill project (after projectPath is set)
-			if pullEnv {
-				if ch.IsAuthenticated() {
-					if local.IsProjectInit(projectPath) {
-						err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
-						if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-							ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-						}
-					}
+			if pullEnv && ch.IsAuthenticated() && local.IsProjectInit(projectPath) {
+				err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
+				if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+					ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
 				}
 			}
 
