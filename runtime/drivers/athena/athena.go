@@ -60,6 +60,14 @@ var spec = drivers.Spec{
 			Placeholder: "s3://bucket-name/path/",
 			Required:    true,
 		},
+		{
+			Key:         "region",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS region",
+			Description: "AWS region where the Athena instance is hosted.",
+			Placeholder: "us-west-2",
+			Required:    false,
+		},
 	},
 	ImplementsWarehouse: true,
 }
