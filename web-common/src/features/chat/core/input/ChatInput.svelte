@@ -83,6 +83,7 @@
       editorProps: {
         attributes: {
           class: config.minChatHeight,
+          style: height ? `height: ${height};` : "",
         },
       },
       onTransaction: () => {
@@ -114,12 +115,7 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div
-    class="chat-input-container"
-    bind:this={element}
-    class:fixed-height={!!height}
-    style:height
-  />
+  <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
     {#if enableMention}
       <button class="text-base ml-1" type="button" on:click={startMention}>
@@ -169,11 +165,6 @@
 
   .chat-input-container {
     @apply w-full max-h-32 overflow-auto;
-  }
-
-  .chat-input-container.fixed-height {
-    min-height: unset;
-    max-height: unset;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
