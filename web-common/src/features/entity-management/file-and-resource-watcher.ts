@@ -35,7 +35,10 @@ import { SSEConnectionManager } from "@rilldata/web-common/runtime-client/sse-co
 
 const REFETCH_LIST_FILES_THROTTLE_MS = 100;
 
-export const MAX_RETRIES = 3;
+// Throttling configuration
+const OUT_OF_FOCUS_TIMEOUT = 120000; // 2 minutes
+const OUT_OF_FOCUS_SHORT_TIMEOUT = 20000; // 20 seconds
+const MAX_RETRIES = 3;
 
 export type EventType = "file" | "resource";
 
@@ -53,10 +56,6 @@ export type AnyWatchResponse = {
   [K in keyof WatchEventMap]: WatchResponse<K>;
 }[keyof WatchEventMap];
 
-// Throttling configuration
-const OUT_OF_FOCUS_TIMEOUT = 10000; // 2 minutes
-const OUT_OF_FOCUS_SHORT_TIMEOUT = 20000; // 20 seconds
-
 export class FileAndResourceWatcher {
   private client = new SSEConnectionManager({
     autoCloseTimeouts: {
@@ -67,6 +66,9 @@ export class FileAndResourceWatcher {
     retryOnError: true,
     retryOnClose: true,
   });
+
+  public status = this.client.status;
+
   private readonly connectorNames = new Set<string>();
   private readonly seenFiles = new Set<string>();
   private refetchListFilesThrottle = new Throttler(
@@ -74,27 +76,25 @@ export class FileAndResourceWatcher {
     REFETCH_LIST_FILES_THROTTLE_MS,
   );
 
-  status = this.client.status;
-
   constructor() {
     this.setupSSEEventHandlers();
   }
 
-  public watch(url: string) {
+  public watch = (url: string) => {
     void this.client.start(url);
-  }
+  };
 
-  public heartbeat() {
-    void this.client?.heartbeat();
-  }
+  public heartbeat = () => {
+    void this.client.heartbeat();
+  };
 
-  public close(cleanup = false) {
-    this.client?.close(cleanup);
-  }
+  public close = (cleanup = false) => {
+    this.client.close(cleanup);
+  };
 
-  public scheduleAutoClose(useShortTimeout = false) {
-    this.client?.scheduleAutoClose(useShortTimeout);
-  }
+  public scheduleAutoClose = (useShortTimeout = false) => {
+    this.client.scheduleAutoClose(useShortTimeout);
+  };
 
   private setupSSEEventHandlers() {
     if (!this.client) return;

@@ -6,18 +6,20 @@
   import { fileAndResourceWatcher } from "./file-and-resource-watcher";
   import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
 
+  const {
+    status: statusStore,
+    heartbeat,
+    scheduleAutoClose,
+  } = fileAndResourceWatcher;
+
   export let host: string;
   export let instanceId: string;
-
-  const { status: statusStore } = fileAndResourceWatcher;
 
   $: watcherEndpoint = `${host}/v1/instances/${instanceId}/sse?events=file,resource`;
 
   $: fileAndResourceWatcher.watch(watcherEndpoint);
 
   $: status = $statusStore;
-
-  $: closed = status === ConnectionStatus.CLOSED;
 
   onMount(() => {
     void fileArtifacts.init(queryClient, instanceId);
@@ -27,22 +29,22 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
-      fileAndResourceWatcher.heartbeat();
+      heartbeat();
     } else {
-      fileAndResourceWatcher.scheduleAutoClose(true);
+      scheduleAutoClose(true);
     }
   }
 </script>
 
 <svelte:window
   on:visibilitychange={handleVisibilityChange}
-  on:blur={() => fileAndResourceWatcher.scheduleAutoClose()}
-  on:click={() => fileAndResourceWatcher.heartbeat()}
-  on:keydown={() => fileAndResourceWatcher.heartbeat()}
-  on:focus={() => fileAndResourceWatcher.heartbeat()}
+  on:blur={() => scheduleAutoClose()}
+  on:click={heartbeat}
+  on:keydown={heartbeat}
+  on:focus={heartbeat}
 />
 
-{#if closed}
+{#if status === ConnectionStatus.CLOSED}
   <ErrorPage
     fatal
     statusCode={500}

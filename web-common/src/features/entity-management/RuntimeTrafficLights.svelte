@@ -27,7 +27,7 @@
       <div class="{status}  flex-none size-[9px] rounded-full opacity-75"></div>
     </Tooltip.Trigger>
 
-    <Tooltip.Content side="right" sideOffset={8}>
+    <Tooltip.Content side="right" sideOffset={8} class="z-50">
       <TooltipContent>
         {#if status === ConnectionStatus.CONNECTING}
           Attempting to reconnect

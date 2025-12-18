@@ -39,7 +39,7 @@ type Callback<T, K extends keyof EventMap<T>> = (
 // ===== SSE CONNECTION MANAGER =====
 
 /**
- * A wrapper around SSEFetchClient to manage connection state and reconnections
+ * A wrapper around SSEFetchClient to manage status and reconnections
  */
 export class SSEConnectionManager {
   public status = writable<ConnectionStatus>(ConnectionStatus.CLOSED);
