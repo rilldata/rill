@@ -303,6 +303,24 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	}, lvl)
 }
 
+func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRequest) (*runtimev1.ReloadConfigResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	err := s.runtime.ReloadConfig(ctx, req.InstanceId, false)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.ReloadConfigResponse{}, nil
+}
+
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
 		InstanceId:         inst.ID,
