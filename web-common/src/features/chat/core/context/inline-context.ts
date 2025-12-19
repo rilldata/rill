@@ -8,6 +8,7 @@ export enum InlineContextType {
   DimensionValues = "dimensionValues",
   Model = "model",
   Column = "column",
+  Loading = "loading",
 }
 
 export type InlineContext = {
@@ -46,6 +47,15 @@ export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
   return false;
 }
 
+export function createLoadingContext(parentContext: InlineContext) {
+  return {
+    type: InlineContextType.Loading,
+    value: InlineContextType.Loading,
+    metricsView: parentContext.metricsView,
+    model: parentContext.model,
+  } satisfies InlineContext;
+}
+
 export function normalizeInlineContext(ctx: InlineContext) {
   const normalisedContext = Object.fromEntries(
     Object.entries(ctx).filter(([, v]) => v !== null && v !== undefined),
@@ -79,6 +89,10 @@ export function normalizeInlineContext(ctx: InlineContext) {
 
     case InlineContextType.DimensionValues:
       normalisedContext.value = normalisedContext.values!.join(",");
+      break;
+
+    case InlineContextType.Loading:
+      normalisedContext.value = InlineContextType.Loading;
       break;
   }
 

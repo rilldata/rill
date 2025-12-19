@@ -13,6 +13,7 @@ import {
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import type { InlineContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
 type ContextConfigPerType = {
   editable: boolean;
@@ -99,5 +100,11 @@ export const InlineContextConfig: Record<
     getTooltip: (ctx, meta) =>
       `From ${InlineContextConfig[InlineContextType.Model].getLabel(ctx, meta)}`,
     getIcon: (ctx) => fieldTypeToSymbol(ctx.columnType ?? ""),
+  },
+
+  [InlineContextType.Loading]: {
+    editable: false,
+    getLabel: () => "Loading",
+    getIcon: () => LoadingSpinner,
   },
 };

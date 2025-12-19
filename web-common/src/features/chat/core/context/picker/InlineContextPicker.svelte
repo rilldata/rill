@@ -33,12 +33,14 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     switch (event.key) {
-      case "ArrowUp":
+      case "ArrowUp": {
         highlightManager.highlightPreviousContext();
         break;
-      case "ArrowDown":
+      }
+      case "ArrowDown": {
         highlightManager.highlightNextContext();
         break;
+      }
       case "Enter":
         if ($highlightedContext) onSelect($highlightedContext);
         event.preventDefault();

@@ -12,7 +12,6 @@
   import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
   export let parentOption: InlineContextPickerParentOption;
   export let selectedChatContext: InlineContext | null = null;
@@ -21,14 +20,8 @@
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
-  $: ({
-    context,
-    openStore,
-    recentlyUsed,
-    currentlyActive,
-    children,
-    childrenLoading,
-  } = parentOption);
+  $: ({ context, openStore, recentlyUsed, currentlyActive, children } =
+    parentOption);
   $: typeConfig = InlineContextConfig[context.type];
   $: resolvedChildren = children ?? [];
 
@@ -114,53 +107,49 @@
     </button>
   </Collapsible.Trigger>
   <Collapsible.Content class="flex flex-col ml-0.5 gap-y-0.5">
-    {#if childrenLoading}
-      <DelayedSpinner isLoading={childrenLoading} />
-    {:else}
-      {#each resolvedChildren as childCategory (childCategory.type)}
-        {#each childCategory.options as child (child.value)}
-          {@const selected =
-            selectedChatContext !== null &&
-            inlineContextsAreEqual(child, selectedChatContext)}
-          {@const highlighted =
-            highlightedContext !== null &&
-            inlineContextsAreEqual(child, highlightedContext)}
-          {@const mouseContextHighlightHandler =
-            highlightManager.mouseOverHandler(child)}
-          {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
+    {#each resolvedChildren as childCategory (childCategory.type)}
+      {#each childCategory.options as child (child.value)}
+        {@const selected =
+          selectedChatContext !== null &&
+          inlineContextsAreEqual(child, selectedChatContext)}
+        {@const highlighted =
+          highlightedContext !== null &&
+          inlineContextsAreEqual(child, highlightedContext)}
+        {@const mouseContextHighlightHandler =
+          highlightManager.mouseOverHandler(child)}
+        {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
 
-          <button
-            class="context-item"
-            class:highlight={highlighted}
-            type="button"
-            on:click={() => onSelect(child)}
-            use:ensureInView={highlighted}
-            use:mouseContextHighlightHandler
-          >
-            <div class="context-item-checkbox">
-              {#if selected}
-                <CheckIcon size="12px" />
-              {/if}
+        <button
+          class="context-item"
+          class:highlight={highlighted}
+          type="button"
+          on:click={() => onSelect(child)}
+          use:ensureInView={highlighted}
+          use:mouseContextHighlightHandler
+        >
+          <div class="context-item-checkbox">
+            {#if selected}
+              <CheckIcon size="12px" />
+            {/if}
+          </div>
+          {#if icon}
+            <div class="text-gray-500">
+              <svelte:component this={icon} size="16px" />
             </div>
-            {#if icon}
-              <div class="text-gray-500">
-                <svelte:component this={icon} size="16px" />
-              </div>
-            {:else}
-              <div class="context-item-icon"></div>
-            {/if}
+          {:else}
+            <div class="context-item-icon"></div>
+          {/if}
 
-            <span class="context-item-label">{child.label}</span>
+          <span class="context-item-label">{child.label}</span>
 
-            {#if highlighted}
-              <div class="context-item-keyboard-shortcut">↑/↓</div>
-            {/if}
-          </button>
-        {/each}
-      {:else}
-        <div class="contents-empty">No matches found</div>
+          {#if highlighted}
+            <div class="context-item-keyboard-shortcut">↑/↓</div>
+          {/if}
+        </button>
       {/each}
-    {/if}
+    {:else}
+      <div class="contents-empty">No matches found</div>
+    {/each}
   </Collapsible.Content>
 </Collapsible.Root>
 

@@ -3,6 +3,7 @@ import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { derived, get, readable, writable, type Readable } from "svelte/store";
 import {
+  createLoadingContext,
   type InlineContext,
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -80,9 +81,18 @@ function getPickerOptions(): Readable<InlineContextPickerParentOption[]> {
             subOptionStoresResp.length,
           );
           subOptionStoresResp.forEach((subOptionStore, i) => {
+            let children = subOptionStore?.data ?? allOptions[i].children ?? [];
+            if (subOptionStore?.isPending) {
+              children = [
+                {
+                  type: InlineContextType.Loading,
+                  options: [createLoadingContext(allOptions[i].context)],
+                },
+              ];
+            }
             resolvedOptions[i] = {
               ...allOptions[i],
-              children: subOptionStore?.data ?? allOptions[i].children ?? [],
+              children,
               childrenLoading: subOptionStore?.isPending ?? false,
             };
 

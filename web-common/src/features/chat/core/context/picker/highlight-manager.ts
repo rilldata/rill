@@ -1,4 +1,8 @@
-import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import {
+  type InlineContext,
+  inlineContextIsWithin,
+  InlineContextType,
+} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { inlineContextsAreEqual } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { get, writable } from "svelte/store";
 import type { InlineContextPickerSection } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
@@ -11,27 +15,39 @@ export class PickerOptionsHighlightManager {
   private highlightedIndex = -1;
 
   public filterOptionsUpdated(
-    filteredOptions: InlineContextPickerSection[],
+    filteredSections: InlineContextPickerSection[],
     selectedChatContext: InlineContext | null,
   ) {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
-    this.highlightableContexts = filteredOptions
+    this.highlightableContexts = filteredSections
       .flatMap((section) => section.options)
-      .flatMap((p) => [
-        p.context,
-        ...(p.children?.flatMap((c) => c.options) ?? []),
+      .flatMap((parentOption) => [
+        parentOption.context,
+        ...(parentOption.children?.flatMap((c) => c.options) ?? []),
       ]);
 
     // Prefer selecting already selected context.
     const currentHighlightedContext = get(this.highlightedContext);
-    const currentHighlightedContextAvailable =
-      currentHighlightedContext &&
-      this.highlightableContexts.some((c) =>
-        inlineContextsAreEqual(c, currentHighlightedContext),
+    if (currentHighlightedContext) {
+      const currentHighlightedIndex = this.highlightableContexts.findIndex(
+        (c) => inlineContextsAreEqual(c, currentHighlightedContext),
       );
-    if (currentHighlightedContextAvailable) {
-      this.highlightContext(currentHighlightedContext);
-      return;
+      if (currentHighlightedIndex !== -1) {
+        this.highlightedIndex = currentHighlightedIndex;
+        this.updateHighlightedContext();
+        return;
+      }
+
+      if (currentHighlightedContext.type === InlineContextType.Loading) {
+        const parentIndex = this.highlightableContexts.findIndex((c) =>
+          inlineContextIsWithin(c, currentHighlightedContext),
+        );
+        if (parentIndex !== -1) {
+          this.highlightedIndex = parentIndex + 1;
+          this.updateHighlightedContext();
+          return;
+        }
+      }
     }
 
     // Next prefer the selected context if available.
