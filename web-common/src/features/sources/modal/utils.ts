@@ -99,7 +99,7 @@ export function isMultiStepConnectorDisabled(
   paramsFormValue: Record<string, unknown>,
   paramsFormErrors: Record<string, unknown>,
 ) {
-  if (!schema) return true;
+  if (!schema || !paramsFormValue) return true;
 
   const authInfo = getRadioEnumOptions(schema);
 
@@ -141,8 +141,11 @@ export function isMultiStepConnectorDisabled(
     step: "connector",
   });
   const requiredFields = requiredByMethod[method] ?? [];
+
+  // If no required fields found, button should be disabled (something is wrong)
   if (!requiredFields.length) return true;
 
+  // Check if all required fields are filled and have no errors
   return !requiredFields.every((fieldId) => {
     if (!isStepMatch(schema, fieldId, "connector")) return true;
     const value = paramsFormValue[fieldId];
