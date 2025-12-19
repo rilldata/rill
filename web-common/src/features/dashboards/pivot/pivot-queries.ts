@@ -16,8 +16,8 @@ import {
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
-  keepPreviousData,
   type CreateQueryResult,
+  keepPreviousData,
 } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";

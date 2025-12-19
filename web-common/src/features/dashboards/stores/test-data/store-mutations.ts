@@ -55,6 +55,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   setLeaderboardMeasureNames,
   setLeaderboardSortByMeasureName,
+  toggleLeaderboardShowContextForAllMeasures,
 } from "../../state-managers/actions/leaderboard";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
@@ -273,6 +274,11 @@ export const AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS: TestDashboardMutat
     ]);
   };
 
+export const AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES: TestDashboardMutation =
+  (mut) => {
+    toggleLeaderboardShowContextForAllMeasures(mut);
+  };
+
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
   toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
 };
@@ -381,6 +387,15 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
     metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
+
+export const AD_BIDS_SET_PIVOT_ROW_LIMIT_10: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 10);
+
+export const AD_BIDS_SET_PIVOT_ROW_LIMIT_50: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 50);
+
+export const AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED: TestDashboardMutation =
+  () => metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, undefined);
 
 export const AD_BIDS_FLAT_PIVOT_TABLE: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTableMode(

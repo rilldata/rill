@@ -89,15 +89,9 @@ If your project is already deployed to Rill Cloud with configured credentials, u
 
 ## Deploy to Rill Cloud
 
-When deploying your project to Rill Cloud, you must provide either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token for the containers used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, your deployment will result in errored dashboards.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token for the containers used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#azure) for more information.
 
-To manually configure your environment variables, run:
-```bash
-rill env configure
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
 ```
-
-:::tip Did you know?
-
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), use `rill env push` to [push these credentials](/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This allows other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-
-:::
+rill env push
+```

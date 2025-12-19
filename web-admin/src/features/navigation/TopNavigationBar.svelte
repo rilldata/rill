@@ -182,6 +182,7 @@
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
+  $: hasUserAccess = $user.isSuccess && $user.data.user && !onPublicURLPage;
 
   $: publicURLDashboardTitle =
     $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
@@ -241,7 +242,7 @@
             {#if $dashboardChat}
               <ChatToggle />
             {/if}
-            {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
+            {#if hasUserAccess}
               <ExploreBookmarks
                 {organization}
                 {project}
@@ -258,7 +259,7 @@
       {/if}
     {/if}
 
-    {#if onCanvasDashboardPage}
+    {#if onCanvasDashboardPage && hasUserAccess}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}

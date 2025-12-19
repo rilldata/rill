@@ -15,6 +15,7 @@
     type DimensionColumnProps,
     type MeasureColumnProps,
   } from "./pivot-column-definition";
+  import { isShowMoreRow } from "./pivot-utils";
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
@@ -328,7 +329,7 @@
     <tr style:height="{before}px" />
     {#each virtualRows as row (row.index)}
       {@const cells = rows[row.index].getVisibleCells()}
-      <tr>
+      <tr class:show-more-row={isShowMoreRow(rows[row.index])}>
         {#each cells as cell, i (cell.id)}
           {@const result =
             typeof cell.column.columnDef.cell === "function"
@@ -511,5 +512,16 @@
   }
   .active-cell.cell {
     @apply bg-primary-50;
+  }
+
+  /* Show more row styling */
+  .show-more-row,
+  .show-more-row .cell {
+    @apply bg-gray-50;
+  }
+
+  .show-more-row:hover,
+  .show-more-row:hover .cell {
+    @apply bg-gray-100;
   }
 </style>

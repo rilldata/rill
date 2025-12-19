@@ -124,10 +124,27 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access instance: %w", err)}
+	}
+
+	cfg, err := inst.Config()
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access instance config: %w", err)}
+	}
+
 	// Fetch contextual config
-	modelEnv, err := r.newModelEnv(ctx)
+	modelEnv, err := r.newModelEnv(ctx, inst, cfg)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
+	}
+
+	// Apply per-model timeout override if configured
+	if cfg.ModelTimeoutOverride > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(cfg.ModelTimeoutOverride)*time.Second)
+		defer cancel()
 	}
 
 	// Handle deletion
@@ -1643,17 +1660,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 }
 
 // newModelEnv makes a ModelEnv configured using the current instance.
-func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to access instance: %w", err)
-	}
-
-	cfg, err := inst.Config()
-	if err != nil {
-		return nil, fmt.Errorf("failed to access instance config: %w", err)
-	}
-
+func (r *ModelReconciler) newModelEnv(ctx context.Context, inst *drivers.Instance, instCfg drivers.InstanceConfig) (*drivers.ModelEnv, error) {
 	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access repo: %w", err)
@@ -1668,8 +1675,8 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 	return &drivers.ModelEnv{
 		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
 		RepoRoot:           repoRoot,
-		StageChanges:       cfg.StageChanges,
-		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		StageChanges:       instCfg.StageChanges,
+		DefaultMaterialize: instCfg.ModelDefaultMaterialize,
 		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
