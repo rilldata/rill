@@ -23,6 +23,12 @@ export const azureSchema: MultiStepFormSchema = {
         "Provide the storage account name and SAS token.",
         "Access publicly readable blobs without credentials.",
       ],
+      "x-grouped-fields": {
+        connection_string: ["azure_storage_connection_string"],
+        account_key: ["azure_storage_account", "azure_storage_key"],
+        sas_token: ["azure_storage_account", "azure_storage_sas_token"],
+        public: [],
+      },
       "x-step": "connector",
     },
     azure_storage_connection_string: {

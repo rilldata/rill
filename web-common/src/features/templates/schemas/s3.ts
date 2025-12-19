@@ -16,6 +16,16 @@ export const s3Schema: MultiStepFormSchema = {
         "Use AWS access key ID and secret access key.",
         "Access publicly readable buckets without credentials.",
       ],
+      "x-grouped-fields": {
+        access_keys: [
+          "aws_access_key_id",
+          "aws_secret_access_key",
+          "region",
+          "endpoint",
+          "aws_role_arn",
+        ],
+        public: [],
+      },
       "x-step": "connector",
     },
     aws_access_key_id: {

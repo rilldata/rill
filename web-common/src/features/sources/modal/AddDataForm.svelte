@@ -236,12 +236,20 @@
   $: if (isMultiStepConnector && activeAuthInfo) {
     const options = activeAuthInfo.options ?? [];
     const fallback = activeAuthInfo.defaultMethod || options[0]?.value || null;
+    const authKey =
+      activeAuthInfo.key || (activeSchema && findAuthMethodKey(activeSchema));
     const hasValidSelection = options.some(
       (option) => option.value === stepState.selectedAuthMethod,
     );
     if (!hasValidSelection) {
       if (fallback !== stepState.selectedAuthMethod) {
         setAuthMethod(fallback ?? null);
+        if (fallback && authKey) {
+          paramsForm.update(($form) => {
+            if ($form[authKey] !== fallback) $form[authKey] = fallback;
+            return $form;
+          });
+        }
       }
     }
   } else if (stepState.selectedAuthMethod) {
