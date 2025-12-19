@@ -96,11 +96,11 @@ export function applyClickHouseCloudRequirements(
   // Only force SSL for ClickHouse Cloud when the user is using individual params.
   // DSN strings encapsulate their own protocol, so we should not inject `ssl` there.
   const isDsnBased = "dsn" in values;
-  if (
+  const shouldEnforceSSL =
     connectorName === "clickhouse" &&
     connectorType === "clickhouse-cloud" &&
-    !isDsnBased
-  ) {
+    !isDsnBased;
+  if (shouldEnforceSSL) {
     return { ...values, ssl: true } as Record<string, unknown>;
   }
   return values;
