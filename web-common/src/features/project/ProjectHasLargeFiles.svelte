@@ -13,6 +13,7 @@
   import { AlertCircleIcon } from "lucide-svelte";
   import type { V1DirEntry } from "@rilldata/web-common/runtime-client";
   import Rocket from "svelte-radix/Rocket.svelte";
+  import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
   export let open = false;
   export let files: V1DirEntry[];
@@ -26,33 +27,29 @@
       Deploy
     </Button>
   </AlertDialogTrigger>
-  <AlertDialogContent>
+  <AlertDialogContent noCancel>
     <AlertDialogHeader>
-      <AlertDialogTitle>
-        <div class="flex flex-row items-center gap-x-2">
-          <AlertCircleIcon size={16} class="text-red-600" />
-          <span>Large files detected</span>
-        </div>
-      </AlertDialogTitle>
+      <AlertDialogTitle>Unable to deploy to Rill Cloud</AlertDialogTitle>
       <AlertDialogDescription>
         <div class="flex flex-col gap-y-2">
-          <div>This project has files too large to upload (100MB).</div>
-          <div class="flex flex-col gap-y-1">
-            {#each files as file (file.path)}
-              <div>
-                {file.path} ({formatMemorySize(
-                  file.size ? Number(file.size) : 0,
-                )})
-              </div>
-            {/each}
-            <div>/path/another/file (200MB)</div>
+          <div>
+            Local files over 100 MB can’t be deployed to Rill Cloud. Please
+            upload to S3 or another external storage first.
           </div>
-          <div>Please upload the file to s3 or similar providers.</div>
+          <ul class="flex flex-col list-disc ml-5 gap-y-1">
+            {#each files as file (file.path)}
+              {@const formattedSize = formatMemorySize(Number(file.size || 0))}
+              {@const [, fileName] = splitFolderAndFileName(file.path)}
+              <li>
+                {fileName} ({formattedSize})
+              </li>
+            {/each}
+          </ul>
         </div>
       </AlertDialogDescription>
     </AlertDialogHeader>
-    <AlertDialogFooter class="mt-5">
-      <Button onClick={() => (open = false)} type="primary">Ok</Button>
+    <AlertDialogFooter>
+      <Button onClick={() => (open = false)} type="primary" large>Ok</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

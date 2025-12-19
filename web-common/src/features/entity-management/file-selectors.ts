@@ -187,7 +187,8 @@ export function useDirectoryNamesInDirectorySelector(
   return directoryNames;
 }
 
-const GithubSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
+export const GithubSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
+// export const GithubSizeLimitInBytes = 100;
 export function getFilesExceedingGithubPushLimit(instanceId: string) {
   return createRuntimeServiceListFiles(
     instanceId,

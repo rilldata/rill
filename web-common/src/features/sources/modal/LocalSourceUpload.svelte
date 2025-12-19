@@ -3,10 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    openFileUploadDialog,
-    uploadTableFiles,
-  } from "@rilldata/web-common/features/sources/modal/file-upload";
+  import { uploadTableFiles } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
@@ -15,16 +12,55 @@
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileLocalFileSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { defaults, superForm, filesProxy } from "sveltekit-superforms";
+  import { object, array, mixed } from "yup";
+  import ShadcnInput from "@rilldata/web-common/components/forms/ShadcnInput.svelte";
+  import { GithubSizeLimitInBytes } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
+  import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
+  import {
+    PossibleFileExtensions,
+    PossibleZipExtensions,
+  } from "@rilldata/web-common/features/sources/modal/possible-file-extensions.ts";
+
+  const FORM_ID = "upload-files-form";
+  const schema = yup(
+    object({
+      files: array().of(
+        mixed().test(
+          "fileSize",
+          "Local files over 100 MB can’t be deployed to Rill Cloud. Please upload to S3 or another external storage first if you want to deploy to Rill Could.",
+          (value) => {
+            // Check if value exists and its size is within the limit
+            return value && value.size <= GithubSizeLimitInBytes;
+          },
+        ),
+      ),
+    }),
+  );
+
+  const { form, submit, enhance, errors } = superForm(
+    defaults({ files: [] }, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+
+        const values = form.data;
+        await handleUpload(values.files);
+      },
+    },
+  );
+
+  const files = filesProxy(form, "files");
+  $: filesError = Object.values($errors.files ?? {})[0] ?? "";
 
   const dispatch = createEventDispatcher();
 
   $: ({ instanceId } = $runtime);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
-
-  async function handleOpenFileDialog() {
-    return handleUpload(await openFileUploadDialog());
-  }
 
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(files, instanceId, false);
@@ -64,12 +100,42 @@
   }
 </script>
 
-<div class="grid place-items-center h-44">
-  <Button onClick={handleOpenFileDialog} type="primary"
-    >Upload a CSV, JSON or Parquet file
-  </Button>
-</div>
-<div class="flex p-6">
-  <div class="grow" />
-  <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
-</div>
+<form
+  method="POST"
+  enctype="multipart/form-data"
+  id={FORM_ID}
+  use:enhance
+  on:submit|preventDefault={submit}
+>
+  <div class="grid place-items-center h-44">
+    <div class="flex flex-col w-96">
+      <ShadcnInput
+        type="file"
+        bind:files={$files}
+        multiple
+        accept={[...PossibleFileExtensions, ...PossibleZipExtensions].join(",")}
+        class="h-8 w-full"
+      />
+      {#if filesError}
+        <div class="text-red-600 text-xs py-px mt-0.5">
+          <div>{filesError}</div>
+          <ul class="flex flex-col list-disc ml-5 gap-y-1">
+            {#each $files as file, i (file.name)}
+              {#if $errors.files?.[i]}
+                {@const formattedSize = formatMemorySize(
+                  Number(file.size || 0),
+                )}
+                <li>{file.name} ({formattedSize})</li>
+              {/if}
+            {/each}
+          </ul>
+        </div>
+      {/if}
+    </div>
+  </div>
+  <div class="flex p-6 gap-x-1">
+    <div class="grow" />
+    <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
+    <Button form={FORM_ID} submitForm type="primary">Upload</Button>
+  </div>
+</form>
