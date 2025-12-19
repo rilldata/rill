@@ -127,6 +127,36 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  postgres_connector: yup.object().shape({
+    host: yup.string().optional(),
+    port: yup.number().optional(),
+    database: yup.string().optional(),
+    user: yup.string().optional(),
+    password: yup.string().optional(),
+    sslmode: yup.string().optional(),
+    dsn: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  mysql_connector: yup.object().shape({
+    host: yup.string().optional(),
+    port: yup.number().optional(),
+    database: yup.string().optional(),
+    user: yup.string().optional(),
+    password: yup.string().optional(),
+    sslmode: yup.string().optional(),
+    dsn: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  sqlite_connector: yup.object().shape({
+    db: yup.string().optional(),
+  }),
+
   postgres: yup.object().shape({
     dsn: yup.string().optional(),
     host: yup.string().optional(),

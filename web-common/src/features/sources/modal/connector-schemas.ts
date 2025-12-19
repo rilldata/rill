@@ -2,13 +2,19 @@ import type { MultiStepFormSchema } from "../../templates/schemas/types";
 import { azureSchema } from "../../templates/schemas/azure";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { httpsSchema } from "../../templates/schemas/https";
+import { mysqlSchema } from "../../templates/schemas/mysql";
+import { postgresSchema } from "../../templates/schemas/postgres";
 import { s3Schema } from "../../templates/schemas/s3";
+import { sqliteSchema } from "../../templates/schemas/sqlite";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,
   https: httpsSchema,
+  postgres: postgresSchema,
+  mysql: mysqlSchema,
+  sqlite: sqliteSchema,
 };
 
 export function getConnectorSchema(
