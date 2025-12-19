@@ -127,23 +127,31 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
+  existingEnvBlob?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
-  // Get the existing .env file
+  // Use provided existingEnvBlob if available, otherwise fetch current .env
+  // This prevents race conditions when Save Anyway is clicked during Test and Connect
   let blob: string;
-  try {
-    const file = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    blob = file.blob || "";
-  } catch (error) {
-    // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
-      blob = "";
-    } else {
-      throw error;
+  if (existingEnvBlob !== undefined) {
+    blob = existingEnvBlob;
+  } else {
+    try {
+      const file = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+          path: ".env",
+        }),
+        queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      });
+      blob = file.blob || "";
+    } catch (error) {
+      // Handle the case where the .env file does not exist
+      if (error?.response?.data?.message?.includes("no such file")) {
+        blob = "";
+      } else {
+        throw error;
+      }
     }
   }
 

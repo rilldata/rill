@@ -233,6 +233,7 @@ const connectorSubmissions = new Map<
     promise: Promise<void>;
     connectorName: string;
     completed: boolean;
+    originalEnvBlob?: string;
   }
 >();
 
@@ -242,6 +243,7 @@ async function saveConnectorAnyway(
   formValues: AddDataFormValues,
   newConnectorName: string,
   instanceId?: string,
+  originalEnvBlob?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
 
@@ -254,19 +256,24 @@ async function saveConnectorAnyway(
   // Mark to avoid rollback by concurrent submissions
   savedAnywayPaths.add(newConnectorFilePath);
 
-  // Get existing .env first to determine unique keys
+  // Use provided originalEnvBlob if available, otherwise fetch current .env
+  // This prevents duplicate keys when Save Anyway is clicked during/after Test and Connect
   let existingEnvBlob = "";
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(resolvedInstanceId, {
-        path: ".env",
-      }),
-      queryFn: () =>
-        runtimeServiceGetFile(resolvedInstanceId, { path: ".env" }),
-    });
-    existingEnvBlob = envFile.blob || "";
-  } catch {
-    // File doesn't exist yet
+  if (originalEnvBlob !== undefined) {
+    existingEnvBlob = originalEnvBlob;
+  } else {
+    try {
+      const envFile = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(resolvedInstanceId, {
+          path: ".env",
+        }),
+        queryFn: () =>
+          runtimeServiceGetFile(resolvedInstanceId, { path: ".env" }),
+      });
+      existingEnvBlob = envFile.blob || "";
+    } catch {
+      // File doesn't exist yet
+    }
   }
 
   // Always create/overwrite to ensure the file is created immediately
@@ -279,12 +286,14 @@ async function saveConnectorAnyway(
     createOnly: false,
   });
 
-  // Update .env file with secrets
+  // Update .env file with secrets, using the original .env state
+  // to prevent duplicate keys when Save Anyway is clicked during Test and Connect
   const newEnvBlob = await updateDotEnvWithSecrets(
     queryClient,
     connector,
     formValues,
     "connector",
+    existingEnvBlob,
   );
 
   await runtimeServicePutFile(resolvedInstanceId, {
@@ -342,13 +351,15 @@ export async function submitAddConnectorForm(
       // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
-      // Proceed immediately with Save Anyway logic
+      // Proceed immediately with Save Anyway logic, using the original .env state
+      // to prevent duplicate keys with _1 suffix
       await saveConnectorAnyway(
         queryClient,
         connector,
         formValues,
         newConnectorName,
         instanceId,
+        existingSubmission.originalEnvBlob,
       );
       return;
     } else if (!existingSubmission.completed) {
@@ -384,15 +395,23 @@ export async function submitAddConnectorForm(
       // Get existing .env first to determine unique keys
       const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
 
+      // Store the original .env blob in the submission for potential Save Anyway clicks
+      const submission = connectorSubmissions.get(uniqueConnectorSubmissionKey);
+      if (submission) {
+        submission.originalEnvBlob = originalEnvBlob;
+      }
+
       // Make a new `<connector>.yaml` file
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
+        // Pass originalEnvBlob to prevent duplicate keys with _1 suffix
         await saveConnectorAnyway(
           queryClient,
           connector,
           formValues,
           newConnectorName,
           instanceId,
+          originalEnvBlob,
         );
         return;
       } else {
@@ -412,11 +431,13 @@ export async function submitAddConnectorForm(
       }
 
       // Create or update the `.env` file
+      // Use originalEnvBlob to ensure consistent key generation
       const newEnvBlob = await updateDotEnvWithSecrets(
         queryClient,
         connector,
         formValues,
         "connector",
+        originalEnvBlob,
       );
 
       if (!saveAnyway) {
@@ -508,6 +529,7 @@ export async function submitAddConnectorForm(
     promise: submissionPromise,
     connectorName: newConnectorName,
     completed: false,
+    originalEnvBlob: undefined, // Will be set after fetching
   });
 
   // Wait for the submission to complete
