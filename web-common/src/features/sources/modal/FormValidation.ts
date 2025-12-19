@@ -1,10 +1,10 @@
 import * as yup from "yup";
 import { dsnSchema, getYupSchema } from "./yupSchemas";
+import { getConnectorSchema } from "./connector-schemas";
 import {
-  getConnectorSchema,
   getFieldLabel,
-  getRequiredFieldsByAuthMethod,
-} from "./multi-step-auth-configs";
+  getRequiredFieldsByEnumValue,
+} from "../../templates/schema-utils";
 import type { AddDataFormType, MultiStepFormSchema } from "./types";
 
 export { dsnSchema };
@@ -49,7 +49,7 @@ export function getValidationSchemaForConnector(
 /**
  * Build a yup schema that enforces required fields for the selected auth option
  * using the multi-step auth config. This keeps validation in sync with the UI
- * definitions in constants/multi-step-auth-configs.
+ * definitions alongside the schema utilities.
  */
 function makeAuthOptionValidationSchema(
   connectorName: string,
@@ -59,7 +59,7 @@ function makeAuthOptionValidationSchema(
   if (!schema) return null;
 
   const fieldValidations: Record<string, yup.StringSchema> = {};
-  const requiredByMethod = getRequiredFieldsByAuthMethod(schema, {
+  const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
     step: "connector",
   });
 

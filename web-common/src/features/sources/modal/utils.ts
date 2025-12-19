@@ -3,11 +3,11 @@ import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import type { MultiStepFormSchema } from "./types";
 import {
-  findAuthMethodKey,
-  getAuthOptionsFromSchema,
-  getRequiredFieldsByAuthMethod,
-  isStepMatch,
-} from "./multi-step-auth-configs";
+  findRadioEnumKey,
+  getRadioEnumOptions,
+  getRequiredFieldsByEnumValue,
+} from "../../templates/schema-utils";
+import { isStepMatch } from "./connector-schemas";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.
@@ -101,9 +101,9 @@ export function isMultiStepConnectorDisabled(
 ) {
   if (!schema) return true;
 
-  const authInfo = getAuthOptionsFromSchema(schema);
+  const authInfo = getRadioEnumOptions(schema);
   const options = authInfo?.options ?? [];
-  const authKey = authInfo?.key || findAuthMethodKey(schema);
+  const authKey = authInfo?.key || findRadioEnumKey(schema);
   const methodFromForm =
     authKey && paramsFormValue?.[authKey] != null
       ? String(paramsFormValue[authKey])
@@ -113,7 +113,7 @@ export function isMultiStepConnectorDisabled(
   );
   const method =
     (hasValidFormSelection && methodFromForm) ||
-    authInfo?.defaultMethod ||
+    authInfo?.defaultValue ||
     options[0]?.value;
 
   if (!method) return true;
@@ -121,7 +121,7 @@ export function isMultiStepConnectorDisabled(
   // Selecting "public" should always enable the button for multi-step auth flows.
   if (method === "public") return false;
 
-  const requiredByMethod = getRequiredFieldsByAuthMethod(schema, {
+  const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
     step: "connector",
   });
   const requiredFields = requiredByMethod[method] ?? [];

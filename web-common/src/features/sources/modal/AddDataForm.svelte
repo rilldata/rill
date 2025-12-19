@@ -27,10 +27,10 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import {
-    getAuthOptionsFromSchema,
-    findAuthMethodKey,
-    getConnectorSchema,
-  } from "./multi-step-auth-configs";
+    findRadioEnumKey,
+    getRadioEnumOptions,
+  } from "../../templates/schema-utils";
+  import { getConnectorSchema } from "./connector-schemas";
   import { get } from "svelte/store";
 
   export let connector: V1ConnectorDriver;
@@ -109,7 +109,7 @@
         );
         // Preserve previously selected auth method when returning to connector step.
         if (activeSchema) {
-          const authKey = findAuthMethodKey(activeSchema);
+          const authKey = findRadioEnumKey(activeSchema);
           const persisted = stepState.selectedAuthMethod;
           if (authKey && persisted) {
             base[authKey] = persisted;
@@ -229,15 +229,13 @@
       ? getConnectorSchema(connector.name) || null
       : null;
 
-  $: activeAuthInfo = activeSchema
-    ? getAuthOptionsFromSchema(activeSchema)
-    : null;
+  $: activeAuthInfo = activeSchema ? getRadioEnumOptions(activeSchema) : null;
 
   $: if (isMultiStepConnector && activeAuthInfo) {
     const options = activeAuthInfo.options ?? [];
-    const fallback = activeAuthInfo.defaultMethod || options[0]?.value || null;
+    const fallback = activeAuthInfo.defaultValue || options[0]?.value || null;
     const authKey =
-      activeAuthInfo.key || (activeSchema && findAuthMethodKey(activeSchema));
+      activeAuthInfo.key || (activeSchema && findRadioEnumKey(activeSchema));
     const hasValidSelection = options.some(
       (option) => option.value === stepState.selectedAuthMethod,
     );
@@ -258,7 +256,7 @@
 
   // Keep auth method store aligned with the form's enum value from the schema.
   $: if (isMultiStepConnector && activeSchema) {
-    const authKey = findAuthMethodKey(activeSchema);
+    const authKey = findRadioEnumKey(activeSchema);
     if (authKey) {
       const currentValue = $paramsForm?.[authKey] as string | undefined;
       const normalized = currentValue ? String(currentValue) : null;
@@ -271,7 +269,7 @@
   // Auth method to use for UI (labels, CTA), derived from form first.
   $: activeAuthMethod = (() => {
     if (!(isMultiStepConnector && activeSchema)) return selectedAuthMethod;
-    const authKey = findAuthMethodKey(activeSchema);
+    const authKey = findRadioEnumKey(activeSchema);
     if (authKey && $paramsForm?.[authKey] != null) {
       return String($paramsForm[authKey]);
     }
