@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { Readable } from "svelte/store";
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
+  import { ensureInView } from "@rilldata/web-common/features/chat/core/context/picker/ensure-in-view.ts";
   import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
@@ -34,6 +35,7 @@
   const highlightedContextStore = highlightManager.highlightedContext;
   $: highlightedContext = $highlightedContextStore;
 
+  // Selected statuses
   $: parentOptionSelected =
     selectedChatContext !== null &&
     inlineContextsAreEqual(context, selectedChatContext);
@@ -41,6 +43,7 @@
     selectedChatContext !== null &&
     inlineContextIsWithin(context, selectedChatContext);
 
+  // Highlighted statuses
   $: parentOptionHighlighted =
     highlightedContext !== null &&
     inlineContextsAreEqual(context, highlightedContext);
@@ -63,19 +66,6 @@
     openStore.set(true);
   }
   $: if (shouldForceOpen) forceOpen();
-
-  function ensureInView(node: HTMLElement, active: boolean) {
-    if (active) {
-      node.scrollIntoView({ block: "nearest" });
-    }
-    return {
-      update(active: boolean) {
-        if (active) {
-          node.scrollIntoView({ block: "nearest" });
-        }
-      },
-    };
-  }
 </script>
 
 <Collapsible.Root bind:open={$openStore}>

@@ -30,9 +30,3 @@ export type InlineContextPickerChildSection = {
   type: string; // Used as a key in svelte loop
   options: InlineContext[];
 };
-
-// A simplified version of the parent option that is used in navigation in menu.
-export type SimplifiedPickerParent = {
-  context: InlineContext;
-  children: InlineContext[];
-};

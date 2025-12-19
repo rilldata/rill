@@ -34,7 +34,8 @@ import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view and sources/models.
- * 1. Chooses top level options based on the args provided. Currently, the args has toggle for metrics views and sources/models.
+ * 1. Chooses top level options based on where this is run in rill developer or not.
+ *    If rill dev, then sources/models are also included in the top level list along with metrics views.
  * 2. Any asynchronous options for 2nd level lists are fetched based on the open status of the top level option.
  * 3. Active metrics view and active source/model are tracked separately and filled in the resolved options.
  */

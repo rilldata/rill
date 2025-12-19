@@ -23,13 +23,26 @@ export class PickerOptionsHighlightManager {
       ]);
 
     // Prefer selecting already selected context.
-    if (this.highlightContext(get(this.highlightedContext))) {
+    const currentHighlightedContext = get(this.highlightedContext);
+    const currentHighlightedContextAvailable =
+      currentHighlightedContext &&
+      this.highlightableContexts.some((c) =>
+        inlineContextsAreEqual(c, currentHighlightedContext),
+      );
+    if (currentHighlightedContextAvailable) {
+      this.highlightContext(currentHighlightedContext);
       return;
     }
 
     // Next prefer the selected context if available.
     // TODO: only do this for the 1st time perhaps?
-    if (this.highlightContext(selectedChatContext)) {
+    const selectedContextAvailable =
+      selectedChatContext &&
+      this.highlightableContexts.some((c) =>
+        inlineContextsAreEqual(c, selectedChatContext),
+      );
+    if (selectedContextAvailable) {
+      this.highlightContext(selectedChatContext);
       return;
     }
 
