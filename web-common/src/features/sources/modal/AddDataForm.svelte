@@ -9,28 +9,22 @@
 
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
+  import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { hasOnlyDsn, isEmpty, isMultiStepConnectorDisabled } from "./utils";
+  import { hasOnlyDsn, isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
   } from "./constants";
-  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
-  import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
+  import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
-  import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import {
-    findRadioEnumKey,
-    getRadioEnumOptions,
-  } from "../../templates/schema-utils";
-  import { getConnectorSchema } from "./connector-schemas";
   import { get } from "svelte/store";
 
   export let connector: V1ConnectorDriver;
@@ -68,63 +62,23 @@
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   const onlyDsn = hasOnlyDsn(connector, isConnectorForm);
-  const selectedAuthMethodStore = {
-    subscribe: (run: (value: string) => void) =>
-      connectorStepStore.subscribe((state) =>
-        run(state.selectedAuthMethod ?? ""),
-      ),
-    set: (method: string) => setAuthMethod(method || null),
-  };
-
-  let selectedAuthMethod: string = "";
   let activeAuthMethod: string | null = null;
   let prevAuthMethod: string | null = null;
-  $: selectedAuthMethod = $selectedAuthMethodStore;
+  let stepState = $connectorStepStore;
+  let multiStepSubmitDisabled = false;
+  let multiStepButtonLabel = "";
+  let multiStepLoadingCopy = "";
+  let shouldShowSkipLink = false;
+  let primaryButtonLabel = "";
+  let primaryLoadingCopy = "";
+
   $: stepState = $connectorStepStore;
-  $: stepProperties =
-    isMultiStepConnector && stepState.step === "source"
-      ? (connector.sourceProperties ?? [])
-      : properties;
-  $: if (
-    isMultiStepConnector &&
-    stepState.step === "source" &&
-    stepState.connectorConfig
-  ) {
-    // Initialize form with source properties and default values
-    const sourceProperties = connector.sourceProperties ?? [];
-    const initialValues = getInitialFormValuesFromProperties(sourceProperties);
-
-    // Merge with stored connector config
-    const combinedValues = { ...stepState.connectorConfig, ...initialValues };
-
-    paramsForm.update(() => combinedValues, { taint: false });
-  }
-
-  // Update form when (re)entering step 1: restore defaults for connector properties
-  $: if (isMultiStepConnector && stepState.step === "connector") {
-    paramsForm.update(
-      ($current) => {
-        const base = getInitialFormValuesFromProperties(
-          connector.configProperties ?? [],
-        );
-        // Preserve previously selected auth method when returning to connector step.
-        if (activeSchema) {
-          const authKey = findRadioEnumKey(activeSchema);
-          const persisted = stepState.selectedAuthMethod;
-          if (authKey && persisted) {
-            base[authKey] = persisted;
-          }
-        }
-        return { ...base, ...$current };
-      },
-      { taint: false },
-    );
-  }
 
   // Form 1: Individual parameters
   const paramsFormId = formManager.paramsFormId;
   const properties = formManager.properties;
   const filteredParamsProperties = formManager.filteredParamsProperties;
+  let multiStepFormId = paramsFormId;
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -169,13 +123,8 @@
   }
 
   $: isSubmitDisabled = (() => {
-    // Multi-step connectors, connector step: check auth fields (any satisfied group enables button)
-    if (isMultiStepConnector && stepState.step === "connector") {
-      return isMultiStepConnectorDisabled(
-        activeSchema,
-        $paramsForm,
-        $paramsErrors,
-      );
+    if (isMultiStepConnector) {
+      return multiStepSubmitDisabled;
     }
 
     if (onlyDsn || connectionTab === "dsn") {
@@ -195,12 +144,7 @@
       return false;
     } else {
       // Parameters form: check required properties
-      // Use stepProperties for multi-step connectors, otherwise use properties
-      const propertiesToCheck = isMultiStepConnector
-        ? stepProperties
-        : properties;
-
-      for (const property of propertiesToCheck) {
+      for (const property of properties) {
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
@@ -214,7 +158,9 @@
     }
   })();
 
-  $: formId = formManager.getActiveFormId({ connectionTab, onlyDsn });
+  $: formId = isMultiStepConnector
+    ? multiStepFormId || formManager.getActiveFormId({ connectionTab, onlyDsn })
+    : formManager.getActiveFormId({ connectionTab, onlyDsn });
 
   $: submitting = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -224,56 +170,23 @@
     }
   })();
 
-  $: activeSchema =
-    isMultiStepConnector && connector.name
-      ? getConnectorSchema(connector.name) || null
-      : null;
+  $: primaryButtonLabel = isMultiStepConnector
+    ? multiStepButtonLabel
+    : formManager.getPrimaryButtonLabel({
+        isConnectorForm,
+        step: stepState.step,
+        submitting,
+        clickhouseConnectorType,
+        clickhouseSubmitting,
+        selectedAuthMethod: activeAuthMethod ?? undefined,
+      });
 
-  $: activeAuthInfo = activeSchema ? getRadioEnumOptions(activeSchema) : null;
-
-  $: if (isMultiStepConnector && activeAuthInfo) {
-    const options = activeAuthInfo.options ?? [];
-    const fallback = activeAuthInfo.defaultValue || options[0]?.value || null;
-    const authKey =
-      activeAuthInfo.key || (activeSchema && findRadioEnumKey(activeSchema));
-    const hasValidSelection = options.some(
-      (option) => option.value === stepState.selectedAuthMethod,
-    );
-    if (!hasValidSelection) {
-      if (fallback !== stepState.selectedAuthMethod) {
-        setAuthMethod(fallback ?? null);
-        if (fallback && authKey) {
-          paramsForm.update(($form) => {
-            if ($form[authKey] !== fallback) $form[authKey] = fallback;
-            return $form;
-          });
-        }
-      }
-    }
-  } else if (stepState.selectedAuthMethod) {
-    setAuthMethod(null);
-  }
-
-  // Keep auth method store aligned with the form's enum value from the schema.
-  $: if (isMultiStepConnector && activeSchema) {
-    const authKey = findRadioEnumKey(activeSchema);
-    if (authKey) {
-      const currentValue = $paramsForm?.[authKey] as string | undefined;
-      const normalized = currentValue ? String(currentValue) : null;
-      if (normalized !== (stepState.selectedAuthMethod ?? null)) {
-        setAuthMethod(normalized);
-      }
-    }
-  }
-
-  // Auth method to use for UI (labels, CTA), derived from form first.
-  $: activeAuthMethod = (() => {
-    if (!(isMultiStepConnector && activeSchema)) return selectedAuthMethod;
-    const authKey = findRadioEnumKey(activeSchema);
-    if (authKey && $paramsForm?.[authKey] != null) {
-      return String($paramsForm[authKey]);
-    }
-    return selectedAuthMethod;
+  $: primaryLoadingCopy = (() => {
+    if (connector.name === "clickhouse") return "Connecting...";
+    if (isMultiStepConnector) return multiStepLoadingCopy;
+    return activeAuthMethod === "public"
+      ? "Continuing..."
+      : "Testing connection...";
   })();
 
   // Clear Save Anyway state whenever auth method changes (any direction).
@@ -485,59 +398,26 @@
           />
         </AddDataFormSection>
       {:else if isMultiStepConnector}
-        {#if stepState.step === "connector"}
-          <!-- Multi-step connector: step 1 (connector configuration) -->
-          <AddDataFormSection
-            id={paramsFormId}
-            enhance={paramsEnhance}
-            onSubmit={paramsSubmit}
-          >
-            {#if activeSchema}
-              <JSONSchemaFormRenderer
-                schema={activeSchema}
-                step="connector"
-                form={paramsForm}
-                errors={$paramsErrors}
-                {onStringInputChange}
-                {handleFileUpload}
-              />
-            {:else}
-              <FormRenderer
-                properties={filteredParamsProperties}
-                form={paramsForm}
-                errors={$paramsErrors}
-                {onStringInputChange}
-                uploadFile={handleFileUpload}
-              />
-            {/if}
-          </AddDataFormSection>
-        {:else}
-          <!-- Multi-step connector: step 2 (source configuration) -->
-          <AddDataFormSection
-            id={paramsFormId}
-            enhance={paramsEnhance}
-            onSubmit={paramsSubmit}
-          >
-            {#if activeSchema}
-              <JSONSchemaFormRenderer
-                schema={activeSchema}
-                step="source"
-                form={paramsForm}
-                errors={$paramsErrors}
-                {onStringInputChange}
-                {handleFileUpload}
-              />
-            {:else}
-              <FormRenderer
-                properties={stepProperties}
-                form={paramsForm}
-                errors={$paramsErrors}
-                {onStringInputChange}
-                uploadFile={handleFileUpload}
-              />
-            {/if}
-          </AddDataFormSection>
-        {/if}
+        <MultiStepConnectorFlow
+          {connector}
+          {formManager}
+          {properties}
+          {filteredParamsProperties}
+          {paramsForm}
+          {paramsErrors}
+          {paramsEnhance}
+          {paramsSubmit}
+          {paramsFormId}
+          {onStringInputChange}
+          {handleFileUpload}
+          submitting={$paramsSubmitting}
+          bind:activeAuthMethod
+          bind:isSubmitDisabled={multiStepSubmitDisabled}
+          bind:primaryButtonLabel={multiStepButtonLabel}
+          bind:primaryLoadingCopy={multiStepLoadingCopy}
+          bind:formId={multiStepFormId}
+          bind:shouldShowSkipLink
+        />
       {:else}
         <AddDataFormSection
           id={paramsFormId}
@@ -583,25 +463,12 @@
           loading={connector.name === "clickhouse"
             ? clickhouseSubmitting
             : submitting}
-          loadingCopy={connector.name === "clickhouse"
-            ? "Connecting..."
-            : isMultiStepConnector && stepState.step === "source"
-              ? "Importing data..."
-              : activeAuthMethod === "public"
-                ? "Continuing..."
-                : "Testing connection..."}
+          loadingCopy={primaryLoadingCopy}
           form={connector.name === "clickhouse" ? clickhouseFormId : formId}
           submitForm
           type="primary"
         >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-            selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
-          })}
+          {primaryButtonLabel}
         </Button>
       </div>
     </div>
@@ -636,7 +503,7 @@
         yaml={yamlPreview}
       />
 
-      {#if isMultiStepConnector && $connectorStepStore.step === "connector"}
+      {#if shouldShowSkipLink}
         <div class="text-sm leading-normal font-medium text-muted-foreground">
           Already connected? <button
             type="button"
