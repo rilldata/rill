@@ -181,8 +181,8 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		return nil, err
 	}
 	for _, d := range depls {
-		if d.Environment == "dev" {
-			return nil, fmt.Errorf("cannot change primary branch to %q as there is an existing dev deployment for this branch. Delete the dev deployment first", opts.PrimaryBranch)
+		if d.Environment != "prod" {
+			return nil, fmt.Errorf("cannot change primary branch to %q as there is an existing non-production deployment for this branch. Delete that deployment first", opts.PrimaryBranch)
 		}
 	}
 
