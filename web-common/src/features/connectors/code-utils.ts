@@ -247,7 +247,7 @@ export function makeDotEnvConnectorKey(
 ) {
   // Always use driver name, not connector instance name
   // Uniqueness will be handled by makeUniqueEnvKey() checking existing .env keys
-  if (key === "password" || key === "dsn") {
+  if (key === "password" || key === "dsn" || key === "token") {
     return `${driverName}_${key}`.toUpperCase();
   }
   return `${key}`.toUpperCase();
