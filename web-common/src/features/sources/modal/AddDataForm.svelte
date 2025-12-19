@@ -145,7 +145,9 @@
     try {
       const instanceId = get(runtime).instanceId;
       const envFile = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+          path: ".env",
+        }),
         queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
       });
       existingEnvBlob = envFile.blob || "";

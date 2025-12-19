@@ -258,8 +258,11 @@ async function saveConnectorAnyway(
   let existingEnvBlob = "";
   try {
     const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(resolvedInstanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(resolvedInstanceId, { path: ".env" }),
+      queryKey: getRuntimeServiceGetFileQueryKey(resolvedInstanceId, {
+        path: ".env",
+      }),
+      queryFn: () =>
+        runtimeServiceGetFile(resolvedInstanceId, { path: ".env" }),
     });
     existingEnvBlob = envFile.blob || "";
   } catch (error) {

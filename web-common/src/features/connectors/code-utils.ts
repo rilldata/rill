@@ -101,10 +101,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // Generate base key from driver name only
-        const baseKey = makeDotEnvConnectorKey(
-          connector.name as string,
-          key,
-        );
+        const baseKey = makeDotEnvConnectorKey(connector.name as string, key);
         // Make it unique based on existing .env keys
         const uniqueKey = options?.existingEnvBlob
           ? makeUniqueEnvKey(baseKey, options.existingEnvBlob)
@@ -171,19 +168,12 @@ export async function updateDotEnvWithSecrets(
     }
 
     // Always generate base key from driver name (not connector instance name)
-    const baseKey = makeDotEnvConnectorKey(
-      connector.name as string,
-      key,
-    );
+    const baseKey = makeDotEnvConnectorKey(connector.name as string, key);
 
     // Check if this key already exists in .env and make it unique if needed
     const uniqueKey = makeUniqueEnvKey(baseKey, blob);
 
-    blob = replaceOrAddEnvVariable(
-      blob,
-      uniqueKey,
-      formValues[key] as string,
-    );
+    blob = replaceOrAddEnvVariable(blob, uniqueKey, formValues[key] as string);
   });
 
   return blob;
@@ -241,10 +231,7 @@ export function makeDotEnvConnectorKeyDeprecated(
   return `connector.${nameToUse}.${key}`;
 }
 
-export function makeDotEnvConnectorKey(
-  driverName: string,
-  key: string,
-) {
+export function makeDotEnvConnectorKey(driverName: string, key: string) {
   // Always use driver name, not connector instance name
   // Uniqueness will be handled by makeUniqueEnvKey() checking existing .env keys
   if (key === "password" || key === "dsn" || key === "token") {
@@ -258,7 +245,7 @@ function makeUniqueEnvKey(baseKey: string, existingEnvBlob: string): string {
   const existingKeys = new Set(
     lines
       .filter((line) => line.includes("="))
-      .map((line) => line.split("=")[0])
+      .map((line) => line.split("=")[0]),
   );
 
   if (!existingKeys.has(baseKey)) {
