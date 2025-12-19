@@ -60,6 +60,27 @@ var spec = drivers.Spec{
 			Placeholder: "s3://bucket-name/path/",
 			Required:    true,
 		},
+		{
+			Key:         "aws_role_arn",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "IAM Role ARN",
+			Description: "AWS IAM role ARN to assume (optional)",
+			Placeholder: "arn:aws:iam::123456789012:role/MyRole",
+		},
+		{
+			Key:         "region",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS Region",
+			Description: "AWS region where Athena is configured",
+			Placeholder: "us-east-1",
+		},
+		{
+			Key:         "workgroup",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Workgroup",
+			Description: "Athena workgroup name (optional)",
+			Placeholder: "primary",
+		},
 	},
 	ImplementsWarehouse: true,
 }

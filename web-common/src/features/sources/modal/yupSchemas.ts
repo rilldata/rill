@@ -157,6 +157,50 @@ export const getYupSchema = {
     db: yup.string().optional(),
   }),
 
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  snowflake_connector: yup.object().shape({
+    account: yup.string().optional(),
+    user: yup.string().optional(),
+    password: yup.string().optional(),
+    private_key: yup.string().optional(),
+    private_key_passphrase: yup.string().optional(),
+    warehouse: yup.string().optional(),
+    database: yup.string().optional(),
+    schema: yup.string().optional(),
+    role: yup.string().optional(),
+    dsn: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  bigquery_connector: yup.object().shape({
+    google_application_credentials: yup.string().optional(),
+    project_id: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  redshift_connector: yup.object().shape({
+    aws_access_key_id: yup.string().optional(),
+    aws_secret_access_key: yup.string().optional(),
+    region: yup.string().optional(),
+    database: yup.string().optional(),
+    workgroup: yup.string().optional(),
+    cluster_identifier: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  athena_connector: yup.object().shape({
+    aws_access_key_id: yup.string().optional(),
+    aws_secret_access_key: yup.string().optional(),
+    aws_role_arn: yup.string().optional(),
+    region: yup.string().optional(),
+    workgroup: yup.string().optional(),
+    output_location: yup.string().optional(),
+  }),
+
   postgres: yup.object().shape({
     dsn: yup.string().optional(),
     host: yup.string().optional(),

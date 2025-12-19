@@ -134,6 +134,10 @@ export const MULTI_STEP_CONNECTORS = [
   "postgres",
   "mysql",
   "sqlite",
+  "snowflake",
+  "bigquery",
+  "redshift",
+  "athena",
 ];
 
 export const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";

@@ -1,0 +1,116 @@
+import type { MultiStepFormSchema } from "./types";
+
+export const snowflakeSchema: MultiStepFormSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    auth_method: {
+      type: "string",
+      title: "Authentication method",
+      enum: ["password", "keypair", "connection_string"],
+      default: "password",
+      description: "Choose how to authenticate to Snowflake",
+      "x-display": "radio",
+      "x-enum-labels": ["Username & Password", "Key Pair", "Connection String"],
+      "x-enum-descriptions": [
+        "Authenticate with username and password.",
+        "Authenticate with RSA key pair (more secure).",
+        "Provide a complete Snowflake connection string (DSN).",
+      ],
+      "x-grouped-fields": {
+        password: ["account", "user", "password", "warehouse", "database", "schema", "role"],
+        keypair: ["account", "user", "private_key", "private_key_passphrase", "warehouse", "database", "schema", "role"],
+        connection_string: ["dsn"],
+      },
+    },
+    account: {
+      type: "string",
+      title: "Account",
+      description: "Snowflake account identifier (e.g., abc12345.us-east-1)",
+      "x-placeholder": "abc12345.us-east-1",
+      "x-visible-if": { auth_method: ["password", "keypair"] },
+    },
+    user: {
+      type: "string",
+      title: "Username",
+      description: "Snowflake username",
+      "x-placeholder": "Enter username",
+      "x-visible-if": { auth_method: ["password", "keypair"] },
+    },
+    password: {
+      type: "string",
+      title: "Password",
+      description: "Snowflake password",
+      "x-placeholder": "Enter password",
+      "x-secret": true,
+      "x-visible-if": { auth_method: "password" },
+    },
+    private_key: {
+      type: "string",
+      title: "Private Key",
+      description: "RSA private key in PEM format",
+      "x-placeholder": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
+      "x-display": "textarea",
+      "x-secret": true,
+      "x-visible-if": { auth_method: "keypair" },
+    },
+    private_key_passphrase: {
+      type: "string",
+      title: "Private Key Passphrase",
+      description: "Optional passphrase for encrypted private key",
+      "x-placeholder": "Enter passphrase if key is encrypted",
+      "x-secret": true,
+      "x-visible-if": { auth_method: "keypair" },
+    },
+    warehouse: {
+      type: "string",
+      title: "Warehouse",
+      description: "Snowflake warehouse name",
+      "x-placeholder": "COMPUTE_WH",
+      "x-visible-if": { auth_method: ["password", "keypair"] },
+    },
+    database: {
+      type: "string",
+      title: "Database",
+      description: "Snowflake database name",
+      "x-placeholder": "MY_DATABASE",
+      "x-visible-if": { auth_method: ["password", "keypair"] },
+    },
+    schema: {
+      type: "string",
+      title: "Schema",
+      description: "Snowflake schema name",
+      "x-placeholder": "PUBLIC",
+      "x-visible-if": { auth_method: ["password", "keypair"] },
+    },
+    role: {
+      type: "string",
+      title: "Role",
+      description: "Optional Snowflake role to assume",
+      "x-placeholder": "ANALYST",
+      "x-visible-if": { auth_method: ["password", "keypair"] },
+    },
+    dsn: {
+      type: "string",
+      title: "Connection String",
+      description: "Snowflake connection string (DSN)",
+      "x-placeholder": "user:password@account/database/schema?warehouse=wh",
+      "x-secret": true,
+      "x-visible-if": { auth_method: "connection_string" },
+    },
+  },
+  allOf: [
+    {
+      if: { properties: { auth_method: { const: "password" } } },
+      then: { required: ["account", "user", "password"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "keypair" } } },
+      then: { required: ["account", "user", "private_key"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "connection_string" } } },
+      then: { required: ["dsn"] },
+    },
+  ],
+};

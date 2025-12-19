@@ -37,7 +37,7 @@ var spec = drivers.Spec{
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
 			DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
-			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
+			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&private_key=<private_key_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
 		},
@@ -95,6 +95,22 @@ var spec = drivers.Spec{
 			Placeholder: "your_role",
 			Hint:        "The Snowflake role to use (defaults to your default role if not specified)",
 		},
+		{
+			Key:         "private_key",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Private Key",
+			Description: "RSA private key in PEM format for key pair authentication",
+			Placeholder: "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----",
+			Secret:      true,
+		},
+		{
+			Key:         "private_key_passphrase",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Private Key Passphrase",
+			Description: "Passphrase for encrypted private key (if applicable)",
+			Placeholder: "Enter passphrase if key is encrypted",
+			Secret:      true,
+		},
 	},
 	ImplementsWarehouse: true,
 }
@@ -108,11 +124,12 @@ type configProperties struct {
 	Password           string         `mapstructure:"password"`
 	Database           string         `mapstructure:"database"`
 	Schema             string         `mapstructure:"schema"`
-	Warehouse          string         `mapstructure:"warehouse"`
-	Role               string         `mapstructure:"role"`
-	Authenticator      string         `mapstructure:"authenticator"`
-	PrivateKey         string         `mapstructure:"privateKey"`
-	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
+	Warehouse              string         `mapstructure:"warehouse"`
+	Role                   string         `mapstructure:"role"`
+	Authenticator          string         `mapstructure:"authenticator"`
+	PrivateKey             string         `mapstructure:"private_key"`
+	PrivateKeyPassphrase   string         `mapstructure:"private_key_passphrase"`
+	ParallelFetchLimit     int            `mapstructure:"parallel_fetch_limit"`
 	Extras             map[string]any `mapstructure:",remain"`
 
 	// LogQueries controls whether to log the raw SQL passed to OLAP.
@@ -146,7 +163,7 @@ func (c *configProperties) validate() error {
 		set = append(set, "authenticator")
 	}
 	if c.PrivateKey != "" {
-		set = append(set, "privateKey")
+		set = append(set, "private_key")
 	}
 	if c.DSN != "" && len(set) > 0 {
 		return fmt.Errorf("snowflake: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
@@ -164,7 +181,7 @@ func (c *configProperties) resolveDSN() (string, error) {
 	}
 
 	if c.Password == "" && c.PrivateKey == "" {
-		return "", errors.New("either password or privateKey must be provided")
+		return "", errors.New("either password or private_key must be provided")
 	}
 
 	cfg := &gosnowflake.Config{
