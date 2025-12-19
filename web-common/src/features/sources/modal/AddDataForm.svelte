@@ -22,7 +22,7 @@
   import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
-  import JSONSchemaFormRenderer from "./JSONSchemaFormRenderer.svelte";
+  import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";

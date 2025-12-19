@@ -1,9 +1,12 @@
 <script lang="ts">
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
-  import JSONSchemaFieldControl from "./JSONSchemaFieldControl.svelte";
-  import type { JSONSchemaField, MultiStepFormSchema } from "./types";
-  import { isVisibleForValues } from "../../templates/schema-utils";
-  import { isStepMatch } from "./connector-schemas";
+  import JSONSchemaFieldControl from "../sources/modal/JSONSchemaFieldControl.svelte";
+  import type {
+    JSONSchemaField,
+    MultiStepFormSchema,
+  } from "../sources/modal/types";
+  import { isVisibleForValues } from "./schema-utils";
+  import { isStepMatch } from "../sources/modal/connector-schemas";
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;
