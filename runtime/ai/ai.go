@@ -248,19 +248,20 @@ func (r *Runner) ForkSession(ctx context.Context, opts *SessionOptions) (string,
 		}
 	}
 
-	session = &drivers.AISession{
-		ID:         uuid.NewString(),
-		InstanceID: opts.InstanceID,
-		OwnerID:    opts.Claims.UserID,
-		Title:      session.Title + " (forked)",
-		UserAgent:  opts.UserAgent,
-		CreatedOn:  time.Now(),
-		UpdatedOn:  time.Now(),
+	forked := &drivers.AISession{
+		ID:                  uuid.NewString(),
+		InstanceID:          opts.InstanceID,
+		OwnerID:             opts.Claims.UserID,
+		Title:               session.Title + " (forked)",
+		UserAgent:           opts.UserAgent,
+		ForkedFromSessionID: session.ID,
+		CreatedOn:           time.Now(),
+		UpdatedOn:           time.Now(),
 	}
 
-	err = catalog.InsertAISession(ctx, session)
+	err = catalog.InsertAISession(ctx, forked)
 	if err != nil {
-		return "", fmt.Errorf("failed to create cloned session: %w", err)
+		return "", fmt.Errorf("failed to fork session: %w", err)
 	}
 	// Map of old message IDs to new message IDs
 	oldToNewMessageID := make(map[string]string)
@@ -276,7 +277,7 @@ func (r *Runner) ForkSession(ctx context.Context, opts *SessionOptions) (string,
 		newMsg := &drivers.AIMessage{
 			ID:          id,
 			ParentID:    pid,
-			SessionID:   session.ID,
+			SessionID:   forked.ID,
 			CreatedOn:   time.Now(),
 			UpdatedOn:   time.Now(),
 			Index:       m.Index,
@@ -292,7 +293,7 @@ func (r *Runner) ForkSession(ctx context.Context, opts *SessionOptions) (string,
 		}
 	}
 
-	return session.ID, nil
+	return forked.ID, nil
 }
 
 // Tool is an interface for an AI tool.
@@ -635,6 +636,10 @@ func (s *BaseSession) Title() string {
 
 func (s *BaseSession) Shareable() bool {
 	return s.dto.SharedUntilMessageID != ""
+}
+
+func (s *BaseSession) Forked() bool {
+	return s.dto.ForkedFromSessionID != ""
 }
 
 func (s *BaseSession) UpdateTitle(ctx context.Context, title string) error {

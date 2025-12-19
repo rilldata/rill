@@ -113,6 +113,7 @@ type AISession struct {
 	Title                string    `db:"title"`
 	UserAgent            string    `db:"user_agent"`
 	SharedUntilMessageID string    `db:"shared_until_message_id"`
+	ForkedFromSessionID  string    `db:"forked_from_session_id"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
 }

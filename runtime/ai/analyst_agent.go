@@ -200,6 +200,12 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 		}
 	}
 
+	if session.Forked() {
+		data["fork_instructions"] = "This conversation has been transferred and the new owner may have different access permissions. " +
+			"If you start seeing access errors like `action not allowed`, `resource not found` (for resources earlier available) etc., consider repeating metadata listings and lookups. " +
+			"If you run into these issues, explicitly mention to user that this may be due to conversation forking and user may not have access to metrics view that previous user had."
+	}
+
 	// Generate the system prompt
 	return executeTemplate(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights.
@@ -235,6 +241,11 @@ Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets
 2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view  
 3. **Scope**: Use "query_metrics_view_summary" to determine the span of available data
+{{ end }}
+
+{{ if .fork_instructions }}
+Important instructions regarding access permissions:
+{{ .fork_instructions }}
 {{ end }}
 
 **Phase 2: analysis (loop)**
