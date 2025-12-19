@@ -1,6 +1,6 @@
 import type { V1AnalyzedConnector } from "../../runtime-client";
 
-export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse","druid","pinot"];
+export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
 
 export function makeFullyQualifiedTableName(
   driver: string,
