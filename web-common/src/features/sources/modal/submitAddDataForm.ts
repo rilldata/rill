@@ -265,7 +265,7 @@ async function saveConnectorAnyway(
         runtimeServiceGetFile(resolvedInstanceId, { path: ".env" }),
     });
     existingEnvBlob = envFile.blob || "";
-  } catch (error) {
+  } catch {
     // File doesn't exist yet
   }
 

@@ -419,7 +419,6 @@ export class AddDataFormManager {
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseParamsValues?: Record<string, unknown>;
     clickhouseDsnValues?: Record<string, unknown>;
-    connectorName?: string;
     existingEnvBlob?: string;
   }): string {
     const connector = this.connector;
@@ -436,7 +435,6 @@ export class AddDataFormManager {
       clickhouseConnectorType,
       clickhouseParamsValues,
       clickhouseDsnValues,
-      connectorName,
       existingEnvBlob,
     } = ctx;
 

@@ -277,9 +277,8 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 			return "", fmt.Errorf(`"env" function requires a non-empty variable name`)
 		}
 		// Case-insensitive lookup: search through all keys
-		varNameLower := strings.ToLower(varName)
 		for k, v := range data.Variables {
-			if strings.ToLower(k) == varNameLower {
+			if strings.EqualFold(k, varName) {
 				return v, nil
 			}
 		}

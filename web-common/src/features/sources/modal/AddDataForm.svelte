@@ -151,7 +151,7 @@
         queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
       });
       existingEnvBlob = envFile.blob || "";
-    } catch (error) {
+    } catch {
       // .env doesn't exist yet
       existingEnvBlob = "";
     }
@@ -307,7 +307,6 @@
     clickhouseConnectorType,
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
-    connectorName: $connectorName,
     existingEnvBlob,
   });
   $: isClickhouse = connector.name === "clickhouse";
