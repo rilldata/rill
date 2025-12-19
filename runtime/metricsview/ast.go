@@ -1128,7 +1128,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			}
 		}
 
-		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz)
+		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}
