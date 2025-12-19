@@ -12,7 +12,6 @@ func DeploymentsCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deploymentCmd.AddCommand(DeploymentsListCmd(ch))
-	deploymentCmd.AddCommand(DeploymentShowCmd(ch))
 	deploymentCmd.AddCommand(DeploymentCreateCmd(ch))
 	deploymentCmd.AddCommand(DeploymentDeleteCmd(ch))
 	deploymentCmd.AddCommand(DeploymentStartCmd(ch))
