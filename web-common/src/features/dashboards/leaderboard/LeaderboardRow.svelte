@@ -1,6 +1,7 @@
 <script lang="ts">
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import CopyShortcutTooltip from "@rilldata/web-common/components/tooltip/CopyShortcutTooltip.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -51,6 +52,8 @@
       measureName === leaderboardSortByMeasureName
     );
   }
+
+  const COPY_SHORTCUT_HIDE_MS = 3000;
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
@@ -211,197 +214,232 @@
       selectionIndex={itemData?.selectedIndex}
     />
   </td>
-  <td
-    role="button"
-    tabindex="0"
-    data-dimension-cell
-    class:ui-copy={!atLeastOneActive}
-    class:ui-copy-disabled={excluded}
-    class:ui-copy-strong={!excluded && selected}
-    on:click={modified({
-      shift: () => shiftClickHandler(dimensionValue),
-    })}
-    on:pointerover={() => {
-      if (dimensionValue) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString());
-      }
-    }}
-    on:focus={() => {
-      if (dimensionValue) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString());
-      }
-    }}
-    class="relative size-full flex flex-none justify-between items-center leaderboard-label"
-    style:background={dimensionGradients}
+  <CopyShortcutTooltip
+    copyLabel="dimension value"
+    hideAfter={COPY_SHORTCUT_HIDE_MS}
+    location="top"
+    distance={8}
   >
-    <span class="truncate select-text">
-      <FormattedDataType value={dimensionValue} truncate />
-    </span>
-
-    {#if previousValueString && hovered}
-      <span
-        class="opacity-50 whitespace-nowrap font-normal"
-        transition:slide={{ axis: "x", duration: 200 }}
-      >
-        {previousValueString} →
-      </span>
-    {/if}
-
-    {#if href}
-      <span class="external-link-wrapper">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          {href}
-          title={href}
-          on:click|stopPropagation
-          class:hovered
-        >
-          <ExternalLink className="fill-primary-600" />
-        </a>
-      </span>
-    {/if}
-  </td>
-
-  {#each Object.keys(values) as measureName}
     <td
       role="button"
       tabindex="0"
-      data-measure-cell
+      data-dimension-cell
+      class:ui-copy={!atLeastOneActive}
+      class:ui-copy-disabled={excluded}
+      class:ui-copy-strong={!excluded && selected}
       on:click={modified({
-        shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
+        shift: () => shiftClickHandler(dimensionValue),
       })}
-      style:background={leaderboardMeasureNames.length === 1
-        ? measureGradients
-        : measureGradientMap?.[measureName]}
       on:pointerover={() => {
-        const value = values[measureName]?.toString() || "";
-        if (value) {
-          cellInspectorStore.updateValue(value);
+        if (dimensionValue) {
+          // Always update the value in the store, but don't change visibility
+          cellInspectorStore.updateValue(dimensionValue.toString());
         }
       }}
       on:focus={() => {
-        const value = values[measureName]?.toString() || "";
-        if (value) {
-          cellInspectorStore.updateValue(value);
+        if (dimensionValue) {
+          // Always update the value in the store, but don't change visibility
+          cellInspectorStore.updateValue(dimensionValue.toString());
         }
       }}
+      class="relative size-full flex flex-none justify-between items-center leaderboard-label"
+      style:background={dimensionGradients}
     >
-      <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
-        <FormattedDataType
-          type="INTEGER"
-          value={values[measureName]
-            ? formatters[measureName]?.(values[measureName])
-            : null}
-        />
-      </div>
+      <span class="truncate select-text">
+        <FormattedDataType value={dimensionValue} truncate />
+      </span>
 
-      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
-        <LongBarZigZag />
+      {#if previousValueString && hovered}
+        <span
+          class="opacity-50 whitespace-nowrap font-normal"
+          transition:slide={{ axis: "x", duration: 200 }}
+        >
+          {previousValueString} →
+        </span>
+      {/if}
+
+      {#if href}
+        <span class="external-link-wrapper">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            {href}
+            title={href}
+            on:click|stopPropagation
+            class:hovered
+          >
+            <ExternalLink className="fill-primary-600" />
+          </a>
+        </span>
       {/if}
     </td>
+  </CopyShortcutTooltip>
+
+  {#each Object.keys(values) as measureName}
+    <CopyShortcutTooltip
+      copyLabel="measure value"
+      hideAfter={COPY_SHORTCUT_HIDE_MS}
+      location="top"
+      distance={8}
+    >
+      <td
+        role="button"
+        tabindex="0"
+        data-measure-cell
+        on:click={modified({
+          shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
+        })}
+        style:background={leaderboardMeasureNames.length === 1
+          ? measureGradients
+          : measureGradientMap?.[measureName]}
+        on:pointerover={() => {
+          const value = values[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
+        on:focus={() => {
+          const value = values[measureName]?.toString() || "";
+          if (value) {
+            cellInspectorStore.updateValue(value);
+          }
+        }}
+      >
+        <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
+          <FormattedDataType
+            type="INTEGER"
+            value={values[measureName]
+              ? formatters[measureName]?.(values[measureName])
+              : null}
+          />
+        </div>
+
+        {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
+          <LongBarZigZag />
+        {/if}
+      </td>
+    </CopyShortcutTooltip>
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
-      <td
-        role="button"
-        tabindex="0"
-        data-comparison-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = pctOfTotals[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = pctOfTotals[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
+      <CopyShortcutTooltip
+        copyLabel="percent of total"
+        hideAfter={COPY_SHORTCUT_HIDE_MS}
+        location="top"
+        distance={8}
       >
-        <PercentageChange
-          value={pctOfTotals[measureName]}
-          color="text-gray-500"
-        />
-        {#if showZigZags[measureName]}
-          <LongBarZigZag />
-        {/if}
-      </td>
+        <td
+          role="button"
+          tabindex="0"
+          data-comparison-cell
+          on:click={modified({
+            shift: () =>
+              shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
+          })}
+          on:pointerover={() => {
+            const value = pctOfTotals[measureName]?.toString() || "";
+            if (value) {
+              cellInspectorStore.updateValue(value);
+            }
+          }}
+          on:focus={() => {
+            const value = pctOfTotals[measureName]?.toString() || "";
+            if (value) {
+              cellInspectorStore.updateValue(value);
+            }
+          }}
+        >
+          <PercentageChange
+            value={pctOfTotals[measureName]}
+            color="text-gray-500"
+          />
+          {#if showZigZags[measureName]}
+            <LongBarZigZag />
+          {/if}
+        </td>
+      </CopyShortcutTooltip>
     {/if}
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-      <td
-        role="button"
-        tabindex="0"
-        data-comparison-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = deltaAbsMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = deltaAbsMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
+      <CopyShortcutTooltip
+        copyLabel="absolute delta"
+        hideAfter={COPY_SHORTCUT_HIDE_MS}
+        location="top"
+        distance={8}
       >
-        <FormattedDataType
-          color="text-gray-500"
-          type="INTEGER"
-          value={deltaAbsMap[measureName]
-            ? formatters[measureName]?.(deltaAbsMap[measureName])
-            : null}
-          customStyle={deltaAbsMap[measureName] !== null &&
-          deltaAbsMap[measureName] < 0
-            ? "text-red-500"
-            : ""}
-          truncate={true}
-        />
-      </td>
+        <td
+          role="button"
+          tabindex="0"
+          data-comparison-cell
+          on:click={modified({
+            shift: () =>
+              shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
+          })}
+          on:pointerover={() => {
+            const value = deltaAbsMap[measureName]?.toString() || "";
+            if (value) {
+              cellInspectorStore.updateValue(value);
+            }
+          }}
+          on:focus={() => {
+            const value = deltaAbsMap[measureName]?.toString() || "";
+            if (value) {
+              cellInspectorStore.updateValue(value);
+            }
+          }}
+        >
+          <FormattedDataType
+            color="text-gray-500"
+            type="INTEGER"
+            value={deltaAbsMap[measureName]
+              ? formatters[measureName]?.(deltaAbsMap[measureName])
+              : null}
+            customStyle={deltaAbsMap[measureName] !== null &&
+            deltaAbsMap[measureName] < 0
+              ? "text-red-500"
+              : ""}
+            truncate={true}
+          />
+        </td>
+      </CopyShortcutTooltip>
     {/if}
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-      <td
-        data-comparison-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = deltaRels[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = deltaRels[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
+      <CopyShortcutTooltip
+        copyLabel="relative delta"
+        hideAfter={COPY_SHORTCUT_HIDE_MS}
+        location="top"
+        distance={8}
       >
-        <PercentageChange
-          value={deltaRels[measureName]
-            ? formatMeasurePercentageDifference(deltaRels[measureName])
-            : null}
-          color="text-gray-500"
-        />
-        {#if showZigZags[measureName]}
-          <LongBarZigZag />
-        {/if}
-      </td>
+        <td
+          data-comparison-cell
+          on:click={modified({
+            shift: () =>
+              shiftClickHandler(deltaRels[measureName]?.toString() || ""),
+          })}
+          on:pointerover={() => {
+            const value = deltaRels[measureName]?.toString() || "";
+            if (value) {
+              cellInspectorStore.updateValue(value);
+            }
+          }}
+          on:focus={() => {
+            const value = deltaRels[measureName]?.toString() || "";
+            if (value) {
+              cellInspectorStore.updateValue(value);
+            }
+          }}
+        >
+          <PercentageChange
+            value={deltaRels[measureName]
+              ? formatMeasurePercentageDifference(deltaRels[measureName])
+              : null}
+            color="text-gray-500"
+          />
+          {#if showZigZags[measureName]}
+            <LongBarZigZag />
+          {/if}
+        </td>
+      </CopyShortcutTooltip>
     {/if}
   {/each}
 </tr>
