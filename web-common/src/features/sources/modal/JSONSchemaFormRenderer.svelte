@@ -1,9 +1,6 @@
 <script lang="ts">
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
-  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
-  import { normalizeErrors } from "./utils";
+  import JSONSchemaFieldControl from "./JSONSchemaFieldControl.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./types";
   import { isVisibleForValues } from "./multi-step-auth-configs";
 
@@ -239,43 +236,20 @@
             {#if groupedFields.get(key)}
               {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if childProp["x-display"] === "file" || childProp.format === "file"}
-                    <CredentialsInput
-                      id={childKey}
-                      hint={childProp.description ?? childProp["x-hint"]}
-                      optional={!isRequired(childKey)}
-                      bind:value={$form[childKey]}
-                      uploadFile={handleFileUpload}
-                      accept={childProp["x-accept"]}
-                    />
-                  {:else if childProp.type === "boolean"}
-                    <Checkbox
-                      id={childKey}
-                      bind:checked={$form[childKey]}
-                      label={childProp.title ?? childKey}
-                      hint={childProp.description ?? childProp["x-hint"]}
-                      optional={!isRequired(childKey)}
-                    />
-                  {:else if isRadioEnum(childProp)}
-                    <Radio
-                      bind:value={$form[childKey]}
-                      options={radioOptions(childProp)}
-                      name={`${childKey}-radio`}
-                    />
-                  {:else}
-                    <Input
-                      id={childKey}
-                      label={childProp.title ?? childKey}
-                      placeholder={childProp["x-placeholder"]}
-                      optional={!isRequired(childKey)}
-                      secret={childProp["x-secret"]}
-                      hint={childProp.description ?? childProp["x-hint"]}
-                      errors={normalizeErrors(errors?.[childKey])}
-                      bind:value={$form[childKey]}
-                      onInput={(_, e) => onStringInputChange(e)}
-                      alwaysShowError
-                    />
-                  {/if}
+                  <JSONSchemaFieldControl
+                    id={childKey}
+                    prop={childProp}
+                    optional={!isRequired(childKey)}
+                    errors={errors?.[childKey]}
+                    bind:value={$form[childKey]}
+                    bind:checked={$form[childKey]}
+                    {onStringInputChange}
+                    {handleFileUpload}
+                    options={isRadioEnum(childProp)
+                      ? radioOptions(childProp)
+                      : undefined}
+                    name={`${childKey}-radio`}
+                  />
                 </div>
               {/each}
             {/if}
@@ -284,43 +258,18 @@
       </div>
     {:else}
       <div class="py-1.5 first:pt-0 last:pb-0">
-        {#if prop["x-display"] === "file" || prop.format === "file"}
-          <CredentialsInput
-            id={key}
-            hint={prop.description ?? prop["x-hint"]}
-            optional={!isRequired(key)}
-            bind:value={$form[key]}
-            uploadFile={handleFileUpload}
-            accept={prop["x-accept"]}
-          />
-        {:else if prop.type === "boolean"}
-          <Checkbox
-            id={key}
-            bind:checked={$form[key]}
-            label={prop.title ?? key}
-            hint={prop.description ?? prop["x-hint"]}
-            optional={!isRequired(key)}
-          />
-        {:else if isRadioEnum(prop)}
-          <Radio
-            bind:value={$form[key]}
-            options={radioOptions(prop)}
-            name={`${key}-radio`}
-          />
-        {:else}
-          <Input
-            id={key}
-            label={prop.title ?? key}
-            placeholder={prop["x-placeholder"]}
-            optional={!isRequired(key)}
-            secret={prop["x-secret"]}
-            hint={prop.description ?? prop["x-hint"]}
-            errors={normalizeErrors(errors?.[key])}
-            bind:value={$form[key]}
-            onInput={(_, e) => onStringInputChange(e)}
-            alwaysShowError
-          />
-        {/if}
+        <JSONSchemaFieldControl
+          id={key}
+          {prop}
+          optional={!isRequired(key)}
+          errors={errors?.[key]}
+          bind:value={$form[key]}
+          bind:checked={$form[key]}
+          {onStringInputChange}
+          {handleFileUpload}
+          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          name={`${key}-radio`}
+        />
       </div>
     {/if}
   {/each}
