@@ -2,9 +2,13 @@ import type { MultiStepFormSchema } from "../../templates/schemas/types";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
+import { druidSchema } from "../../templates/schemas/druid";
+import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { httpsSchema } from "../../templates/schemas/https";
+import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { mysqlSchema } from "../../templates/schemas/mysql";
+import { pinotSchema } from "../../templates/schemas/pinot";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { s3Schema } from "../../templates/schemas/s3";
@@ -23,6 +27,10 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   bigquery: bigquerySchema,
   redshift: redshiftSchema,
   athena: athenaSchema,
+  duckdb: duckdbSchema,
+  motherduck: motherduckSchema,
+  druid: druidSchema,
+  pinot: pinotSchema,
 };
 
 export function getConnectorSchema(

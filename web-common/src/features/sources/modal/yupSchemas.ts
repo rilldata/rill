@@ -201,6 +201,47 @@ export const getYupSchema = {
     output_location: yup.string().optional(),
   }),
 
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  duckdb_connector: yup.object().shape({
+    path: yup.string().optional(),
+    attach: yup.string().optional(),
+    mode: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  motherduck_connector: yup.object().shape({
+    path: yup.string().optional(),
+    token: yup.string().optional(),
+    schema_name: yup.string().optional(),
+    mode: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  druid_connector: yup.object().shape({
+    host: yup.string().optional(),
+    port: yup.number().optional(),
+    username: yup.string().optional(),
+    password: yup.string().optional(),
+    ssl: yup.boolean().optional(),
+    dsn: yup.string().optional(),
+  }),
+
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  pinot_connector: yup.object().shape({
+    broker_host: yup.string().optional(),
+    broker_port: yup.number().optional(),
+    controller_host: yup.string().optional(),
+    controller_port: yup.number().optional(),
+    username: yup.string().optional(),
+    password: yup.string().optional(),
+    ssl: yup.boolean().optional(),
+    dsn: yup.string().optional(),
+  }),
+
   postgres: yup.object().shape({
     dsn: yup.string().optional(),
     host: yup.string().optional(),
