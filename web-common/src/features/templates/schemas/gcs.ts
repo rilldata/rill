@@ -17,6 +17,11 @@ export const gcsSchema: MultiStepFormSchema = {
         "Use HMAC access key and secret for S3-compatible authentication.",
         "Access publicly readable buckets without credentials.",
       ],
+      "x-grouped-fields": {
+        credentials: ["google_application_credentials"],
+        hmac: ["key_id", "secret"],
+        public: [],
+      },
       "x-step": "connector",
     },
     google_application_credentials: {
