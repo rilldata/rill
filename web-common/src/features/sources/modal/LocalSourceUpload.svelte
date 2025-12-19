@@ -6,7 +6,6 @@
   import { uploadTableFiles } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
@@ -16,12 +15,18 @@
   import { defaults, superForm, filesProxy } from "sveltekit-superforms";
   import { object, array, mixed } from "yup";
   import ShadcnInput from "@rilldata/web-common/components/forms/ShadcnInput.svelte";
-  import { GithubSizeLimitInBytes } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
+  import { UploadFileSizeLimitInBytes } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
   import {
     PossibleFileExtensions,
     PossibleZipExtensions,
   } from "@rilldata/web-common/features/sources/modal/possible-file-extensions.ts";
+  import { onMount } from "svelte";
+
+  export let initFiles: File[] = [];
+  export let onClose: () => void = () => {};
+  export let onBack: () => void = () => {};
+  export let showBack = false;
 
   const FORM_ID = "upload-files-form";
   const schema = yup(
@@ -32,7 +37,7 @@
           "Local files over 100 MB can’t be deployed to Rill Cloud. Please upload to S3 or another external storage first if you want to deploy to Rill Could.",
           (value) => {
             // Check if value exists and its size is within the limit
-            return value && value.size <= GithubSizeLimitInBytes;
+            return value && value.size <= UploadFileSizeLimitInBytes;
           },
         ),
       ),
@@ -40,7 +45,7 @@
   );
 
   const { form, submit, enhance, errors } = superForm(
-    defaults({ files: [] }, schema),
+    defaults({ files: initFiles }, schema),
     {
       SPA: true,
       validators: schema,
@@ -50,13 +55,12 @@
         const values = form.data;
         await handleUpload(values.files);
       },
+      validationMethod: "oninput",
     },
   );
 
   const files = filesProxy(form, "files");
   $: filesError = Object.values($errors.files ?? {})[0] ?? "";
-
-  const dispatch = createEventDispatcher();
 
   $: ({ instanceId } = $runtime);
 
@@ -95,9 +99,15 @@
       }
 
       overlay.set(null);
-      dispatch("close");
+      onClose();
     }
   }
+
+  onMount(() => {
+    if (initFiles?.length) {
+      submit();
+    }
+  });
 </script>
 
 <form
@@ -135,7 +145,9 @@
   </div>
   <div class="flex p-6 gap-x-1">
     <div class="grow" />
-    <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
+    {#if showBack}
+      <Button onClick={onBack} type="secondary">Back</Button>
+    {/if}
     <Button form={FORM_ID} submitForm type="primary">Upload</Button>
   </div>
 </form>

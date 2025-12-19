@@ -187,8 +187,8 @@ export function useDirectoryNamesInDirectorySelector(
   return directoryNames;
 }
 
-export const GithubSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
-// export const GithubSizeLimitInBytes = 100;
+// export const UploadFileSizeLimitInBytes = 100 * 1024 * 1024; // 100MB limit
+export const UploadFileSizeLimitInBytes = 100;
 export function getFilesExceedingGithubPushLimit(instanceId: string) {
   return createRuntimeServiceListFiles(
     instanceId,
@@ -198,7 +198,7 @@ export function getFilesExceedingGithubPushLimit(instanceId: string) {
         select: (data) =>
           data.files?.filter(
             (f) =>
-              !f.isDir && f.size && Number(f.size) > GithubSizeLimitInBytes,
+              !f.isDir && f.size && Number(f.size) > UploadFileSizeLimitInBytes,
           ) ?? [],
       },
     },
@@ -208,7 +208,7 @@ export function getFilesExceedingGithubPushLimit(instanceId: string) {
 
 export function maybeSendLargeFileNotification(file: V1WatchFilesResponse) {
   const size = Number(file.size ?? "0");
-  if (size < GithubSizeLimitInBytes) return;
+  if (size < UploadFileSizeLimitInBytes) return;
 
   eventBus.emit("notification", {
     type: "default",

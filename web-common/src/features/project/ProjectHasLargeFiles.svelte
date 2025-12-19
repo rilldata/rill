@@ -10,7 +10,6 @@
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size.ts";
-  import { AlertCircleIcon } from "lucide-svelte";
   import type { V1DirEntry } from "@rilldata/web-common/runtime-client";
   import Rocket from "svelte-radix/Rocket.svelte";
   import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";

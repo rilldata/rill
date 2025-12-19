@@ -229,7 +229,7 @@
             <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
           </div>
         {:else if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close={resetModal} on:back={back} />
+          <LocalSourceUpload onClose={resetModal} onBack={back} />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
