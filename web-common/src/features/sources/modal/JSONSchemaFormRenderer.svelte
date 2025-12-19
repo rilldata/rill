@@ -17,12 +17,12 @@
   const radioDisplay = "radio";
 
   $: stepFilter = step;
-  $: dependentMap = schema
-    ? buildDependentMap(schema, stepFilter)
-    : new Map<string, Array<[string, JSONSchemaField]>>();
-  $: dependentKeys = new Set(
-    Array.from(dependentMap.values()).flatMap((entries) =>
-      entries.map(([key]) => key),
+  $: groupedFields = schema
+    ? buildGroupedFields(schema, stepFilter)
+    : new Map<string, Record<string, string[]>>();
+  $: groupedChildKeys = new Set(
+    Array.from(groupedFields.values()).flatMap((group) =>
+      Object.values(group).flat(),
     ),
   );
   $: visibleEntries = schema
@@ -32,10 +32,11 @@
     ? computeRequiredFields(schema, $form, stepFilter)
     : new Set<string>();
   $: renderOrder = schema
-    ? computeRenderOrder(visibleEntries, dependentMap, dependentKeys)
+    ? computeRenderOrder(visibleEntries, groupedChildKeys)
     : [];
 
-  // Seed defaults once when schema-provided defaults exist.
+  // Seed defaults for initial render: use explicit defaults, and for radio enums
+  // fall back to first option when no value is set.
   $: if (schema) {
     form.update(
       ($form) => {
@@ -43,11 +44,13 @@
         for (const [key, prop] of Object.entries(properties)) {
           if (!matchesStep(prop, stepFilter)) continue;
           const current = $form[key];
-          if (
-            (current === undefined || current === null) &&
-            prop.default !== undefined
-          ) {
+          const isUnset =
+            current === undefined || current === null || current === "";
+
+          if (isUnset && prop.default !== undefined) {
             $form[key] = prop.default;
+          } else if (isUnset && isRadioEnum(prop) && prop.enum?.length) {
+            $form[key] = String(prop.enum[0]);
           }
         }
         return $form;
@@ -145,67 +148,64 @@
 
   function computeRenderOrder(
     entries: Array<[string, JSONSchemaField]>,
-    dependents: Map<string, Array<[string, JSONSchemaField]>>,
-    dependentKeySet: Set<string>,
+    groupedChildKeySet: Set<string>,
   ) {
     const result: Array<[string, JSONSchemaField]> = [];
-    const rendered = new Set<string>();
-
     for (const [key, prop] of entries) {
-      if (rendered.has(key)) continue;
-
-      if (isRadioEnum(prop)) {
-        rendered.add(key);
-        dependents.get(key)?.forEach(([childKey]) => rendered.add(childKey));
-        result.push([key, prop]);
-        continue;
-      }
-
-      if (dependentKeySet.has(key)) continue;
-
-      rendered.add(key);
+      if (groupedChildKeySet.has(key)) continue;
       result.push([key, prop]);
     }
 
     return result;
   }
 
-  function buildDependentMap(
+  function buildGroupedFields(
     currentSchema: MultiStepFormSchema,
     currentStep: string | undefined,
-  ) {
+  ): Map<string, Record<string, string[]>> {
     const properties = currentSchema.properties ?? {};
-    const map = new Map<string, Array<[string, JSONSchemaField]>>();
+    const map = new Map<string, Record<string, string[]>>();
 
     for (const [key, prop] of Object.entries(properties)) {
-      const visibleIf = prop["x-visible-if"];
-      if (!visibleIf) continue;
+      const grouped = prop["x-grouped-fields"];
+      if (!grouped) continue;
+      if (!matchesStep(prop, currentStep)) continue;
 
-      for (const controllerKey of Object.keys(visibleIf)) {
-        const controller = properties[controllerKey];
-        if (!controller) continue;
-        if (!matchesStep(controller, currentStep)) continue;
-        if (!matchesStep(prop, currentStep)) continue;
-
-        const entries = map.get(controllerKey) ?? [];
-        entries.push([key, prop]);
-        map.set(controllerKey, entries);
+      const filteredOptions: Record<string, string[]> = {};
+      const groupedEntries = Object.entries(grouped) as Array<
+        [string, string[]]
+      >;
+      for (const [optionValue, childKeys] of groupedEntries) {
+        filteredOptions[optionValue] = childKeys.filter((childKey) => {
+          const childProp = properties[childKey];
+          if (!childProp) return false;
+          return matchesStep(childProp, currentStep);
+        });
       }
+      map.set(key, filteredOptions);
     }
 
     return map;
   }
 
-  function getDependentFieldsForOption(
+  function getGroupedFieldsForOption(
     controllerKey: string,
     optionValue: string | number | boolean,
   ) {
     if (!schema) return [];
-    const dependents = dependentMap.get(controllerKey) ?? [];
+    const properties = schema.properties ?? {};
+    const childKeys =
+      groupedFields.get(controllerKey)?.[String(optionValue)] ?? [];
     const values = { ...$form, [controllerKey]: optionValue };
-    return dependents.filter(([key]) =>
-      isVisibleForValues(schema, key, values),
-    );
+
+    return childKeys
+      .map<
+        [string, JSONSchemaField | undefined]
+      >((childKey) => [childKey, properties[childKey]])
+      .filter(
+        (entry): entry is [string, JSONSchemaField] =>
+          Boolean(entry[1]) && isVisibleForValues(schema, entry[0], values),
+      );
   }
 
   function radioOptions(prop: JSONSchemaField) {
@@ -236,8 +236,8 @@
           name={`${key}-radio`}
         >
           <svelte:fragment slot="custom-content" let:option>
-            {#if dependentMap.get(key)?.length}
-              {#each getDependentFieldsForOption(key, option.value) as [childKey, childProp]}
+            {#if groupedFields.get(key)}
+              {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if childProp["x-display"] === "file" || childProp.format === "file"}
                     <CredentialsInput

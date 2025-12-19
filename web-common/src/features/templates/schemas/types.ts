@@ -24,6 +24,11 @@ export type JSONSchemaField = {
   "x-placeholder"?: string;
   "x-hint"?: string;
   "x-accept"?: string;
+  /**
+   * Explicit grouping for radio/select options: maps an option value to the
+   * child field keys that should render beneath that option.
+   */
+  "x-grouped-fields"?: Record<string, string[]>;
 };
 
 export type JSONSchemaCondition = {
