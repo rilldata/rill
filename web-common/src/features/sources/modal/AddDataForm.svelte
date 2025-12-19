@@ -265,10 +265,10 @@
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
   });
-  $: isCustomForm = connector.name === "clickhouse";
+  $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =
     isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
-  $: saveAnywayLoading = isCustomForm
+  $: saveAnywayLoading = isClickhouse
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
 

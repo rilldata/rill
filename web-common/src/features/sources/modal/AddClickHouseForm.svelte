@@ -266,15 +266,11 @@
         details = e.details !== e.message ? e.details : undefined;
       } else if (e?.response?.data) {
         const originalMessage = e.response.data.message;
-        const humanReadableResult = humanReadableErrorMessage(
+        const humanReadable = humanReadableErrorMessage(
           connector.name,
           e.response.data.code,
           originalMessage,
         );
-        const humanReadable =
-          typeof humanReadableResult === "string"
-            ? humanReadableResult
-            : originalMessage;
         error = humanReadable;
         details =
           humanReadable !== originalMessage ? originalMessage : undefined;
