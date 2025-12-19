@@ -27,6 +27,7 @@ import {
   connectorStepStore,
   setConnectorConfig,
   setStep,
+  type ConnectorStepState,
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
@@ -35,16 +36,18 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
 import type { ActionResult } from "@sveltejs/kit";
+import { getConnectorSchema } from "./connector-schemas";
+import { findRadioEnumKey } from "../../templates/schema-utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
   form: SuperValidated<Record<string, unknown>, any, Record<string, unknown>>;
 };
 
-// Shape of the step store for multi-step connectors
-type ConnectorStepState = {
-  step: "connector" | "source";
-  connectorConfig: Record<string, unknown> | null;
+const BUTTON_LABELS = {
+  public: { idle: "Continue", submitting: "Continuing..." },
+  connector: { idle: "Test and Connect", submitting: "Testing connection..." },
+  source: { idle: "Import Data", submitting: "Importing data..." },
 };
 
 export class AddDataFormManager {
@@ -69,15 +72,25 @@ export class AddDataFormManager {
     return normalizeConnectorError(this.connector.name ?? "", e);
   }
 
+  private getSelectedAuthMethod?: () => string | undefined;
+
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
     onDsnUpdate: (event: SuperFormUpdateEvent) => void;
+    getSelectedAuthMethod?: () => string | undefined;
   }) {
-    const { connector, formType, onParamsUpdate, onDsnUpdate } = args;
+    const {
+      connector,
+      formType,
+      onParamsUpdate,
+      onDsnUpdate,
+      getSelectedAuthMethod,
+    } = args;
     this.connector = connector;
     this.formType = formType;
+    this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Layout height
     this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
@@ -127,6 +140,11 @@ export class AddDataFormManager {
     // Superforms: params
     const paramsSchemaDef = getValidationSchemaForConnector(
       connector.name as string,
+      formType,
+      {
+        isMultiStepConnector: this.isMultiStepConnector,
+        authMethodGetter: this.getSelectedAuthMethod,
+      },
     );
     const paramsAdapter = yup(paramsSchemaDef);
     type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
@@ -143,6 +161,7 @@ export class AddDataFormManager {
       validators: paramsAdapter,
       onUpdate: onParamsUpdate,
       resetForm: false,
+      validationMethod: "onsubmit",
     });
 
     // Superforms: dsn
@@ -154,6 +173,7 @@ export class AddDataFormManager {
       validators: dsnAdapter,
       onUpdate: onDsnUpdate,
       resetForm: false,
+      validationMethod: "onsubmit",
     });
   }
 
@@ -169,6 +189,40 @@ export class AddDataFormManager {
     return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
   }
 
+  /**
+   * Determines whether the "Save Anyway" button should be shown for the current submission.
+   */
+  private shouldShowSaveAnywayButton(args: {
+    isConnectorForm: boolean;
+    event?:
+      | {
+          result?: Extract<ActionResult, { type: "success" | "failure" }>;
+        }
+      | undefined;
+    stepState: ConnectorStepState | undefined;
+    selectedAuthMethod?: string;
+  }): boolean {
+    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
+
+    // Only show for connector forms (not sources)
+    if (!isConnectorForm) return false;
+
+    // ClickHouse has its own error handling
+    if (this.connector.name === "clickhouse") return false;
+
+    // Need a submission result to show the button
+    if (!event?.result) return false;
+
+    // Multi-step connectors: don't show on source step (final step)
+    if (stepState?.step === "source") return false;
+
+    // Public auth bypasses connection test, so no "Save Anyway" needed
+    if (stepState?.step === "connector" && selectedAuthMethod === "public")
+      return false;
+
+    return true;
+  }
+
   getActiveFormId(args: {
     connectionTab: "parameters" | "dsn";
     onlyDsn: boolean;
@@ -182,7 +236,7 @@ export class AddDataFormManager {
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig(get(this.params.form) as Record<string, unknown>);
+    setConnectorConfig({});
     setStep("source");
   }
 
@@ -201,6 +255,7 @@ export class AddDataFormManager {
     submitting: boolean;
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseSubmitting?: boolean;
+    selectedAuthMethod?: string;
   }): string {
     const {
       isConnectorForm,
@@ -208,6 +263,7 @@ export class AddDataFormManager {
       submitting,
       clickhouseConnectorType,
       clickhouseSubmitting,
+      selectedAuthMethod,
     } = args;
     const isClickhouse = this.connector.name === "clickhouse";
 
@@ -222,12 +278,23 @@ export class AddDataFormManager {
 
     if (isConnectorForm) {
       if (this.isMultiStepConnector && step === "connector") {
-        return submitting ? "Testing connection..." : "Test and Connect";
+        if (selectedAuthMethod === "public") {
+          return submitting
+            ? BUTTON_LABELS.public.submitting
+            : BUTTON_LABELS.public.idle;
+        }
+        return submitting
+          ? BUTTON_LABELS.connector.submitting
+          : BUTTON_LABELS.connector.idle;
       }
       if (this.isMultiStepConnector && step === "source") {
-        return submitting ? "Creating model..." : "Test and Add data";
+        return submitting
+          ? BUTTON_LABELS.source.submitting
+          : BUTTON_LABELS.source.idle;
       }
-      return submitting ? "Testing connection..." : "Test and Connect";
+      return submitting
+        ? BUTTON_LABELS.connector.submitting
+        : BUTTON_LABELS.connector.idle;
     }
 
     return "Test and Add data";
@@ -237,6 +304,7 @@ export class AddDataFormManager {
     onClose: () => void;
     queryClient: any;
     getConnectionTab: () => "parameters" | "dsn";
+    getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
     setDsnError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
@@ -245,6 +313,7 @@ export class AddDataFormManager {
       onClose,
       queryClient,
       getConnectionTab,
+      getSelectedAuthMethod,
       setParamsError,
       setDsnError,
       setShowSaveAnyway,
@@ -263,26 +332,61 @@ export class AddDataFormManager {
       >;
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
     }) => {
-      // For non-ClickHouse connectors, expose Save Anyway when a submission starts
+      const values = event.form.data;
+      const schema = getConnectorSchema(this.connector.name ?? "");
+      const authKey = schema ? findRadioEnumKey(schema) : null;
+      const selectedAuthMethod =
+        (authKey && values && values[authKey] != null
+          ? String(values[authKey])
+          : undefined) ||
+        getSelectedAuthMethod?.() ||
+        "";
+      const stepState = get(connectorStepStore) as ConnectorStepState;
+
+      // Fast-path: public auth skips validation/test and goes straight to source step.
       if (
-        isConnectorForm &&
-        connector.name !== "clickhouse" &&
+        isMultiStepConnector &&
+        stepState.step === "connector" &&
+        selectedAuthMethod === "public"
+      ) {
+        setConnectorConfig(values);
+        setStep("source");
+        return;
+      }
+
+      // When in the source step of a multi-step flow, the superform still uses
+      // the connector schema, so it can appear invalid because connector fields
+      // were intentionally skipped. Allow submission in that case and rely on
+      // the UI-level required checks for source fields.
+      if (
+        !event.form.valid &&
+        !(isMultiStepConnector && stepState.step === "source")
+      )
+        return;
+
+      if (
         typeof setShowSaveAnyway === "function" &&
-        event?.result
+        this.shouldShowSaveAnywayButton({
+          isConnectorForm,
+          event,
+          stepState,
+          selectedAuthMethod,
+        })
       ) {
         setShowSaveAnyway(true);
       }
 
-      if (!event.form.valid) return;
-
-      const values = event.form.data;
-
       try {
-        const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
+          // For public auth, skip Test & Connect and go straight to the next step.
+          if (selectedAuthMethod === "public") {
+            setConnectorConfig(values);
+            setStep("source");
+            return;
+          }
           await submitAddConnectorForm(queryClient, connector, values, false);
           setConnectorConfig(values);
           setStep("source");
@@ -392,16 +496,22 @@ export class AddDataFormManager {
       clickhouseDsnValues,
     } = ctx;
 
+    const connectorPropertiesForPreview =
+      isMultiStepConnector && stepState?.step === "connector"
+        ? (connector.configProperties ?? [])
+        : filteredParamsProperties;
+
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
+      const orderedProperties =
+        onlyDsn || connectionTab === "dsn"
+          ? filteredDsnProperties
+          : connectorPropertiesForPreview;
       return compileConnectorYAML(connector, values, {
         fieldFilter: (property) => {
           if (onlyDsn || connectionTab === "dsn") return true;
           return !property.noPrompt;
         },
-        orderedProperties:
-          onlyDsn || connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
+        orderedProperties,
       });
     };
 

@@ -2,12 +2,16 @@ import { writable } from "svelte/store";
 
 export type ConnectorStep = "connector" | "source";
 
-export const connectorStepStore = writable<{
+export type ConnectorStepState = {
   step: ConnectorStep;
   connectorConfig: Record<string, unknown> | null;
-}>({
+  selectedAuthMethod: string | null;
+};
+
+export const connectorStepStore = writable<ConnectorStepState>({
   step: "connector",
   connectorConfig: null,
+  selectedAuthMethod: null,
 });
 
 export function setStep(step: ConnectorStep) {
@@ -18,9 +22,17 @@ export function setConnectorConfig(config: Record<string, unknown>) {
   connectorStepStore.update((state) => ({ ...state, connectorConfig: config }));
 }
 
+export function setAuthMethod(method: string | null) {
+  connectorStepStore.update((state) => ({
+    ...state,
+    selectedAuthMethod: method,
+  }));
+}
+
 export function resetConnectorStep() {
   connectorStepStore.set({
     step: "connector",
     connectorConfig: null,
+    selectedAuthMethod: null,
   });
 }

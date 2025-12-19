@@ -26,14 +26,22 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_access_key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS access key ID",
+			Description: "AWS access key ID for explicit credentials",
+			Placeholder: "Enter your AWS access key ID",
+			Secret:      true,
+			Required:    true,
 		},
 		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_secret_access_key",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS secret access key",
+			Description: "AWS secret access key for explicit credentials",
+			Placeholder: "Enter your AWS secret access key",
+			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "region",
