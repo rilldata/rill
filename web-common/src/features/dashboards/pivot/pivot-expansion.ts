@@ -1,4 +1,8 @@
-import { SHOW_MORE_BUTTON } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  LOADING_CELL,
+  MAX_ROW_EXPANSION_LIMIT,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -218,7 +222,7 @@ export function queryExpandedRowMeasureValues(
       if (
         !anchorDimension ||
         !values.length ||
-        values.some((v) => v === undefined || v === "LOADING_CELL")
+        values.some((v) => v === undefined || v === LOADING_CELL)
       )
         return readable({
           isFetching: true,
@@ -283,7 +287,8 @@ export function queryExpandedRowMeasureValues(
 
       // Get effective limit (local limit overrides global limit)
       const localLimit = config.pivot.nestedRowLimits?.[expandIndex];
-      const effectiveLimit = localLimit ?? config.pivot.rowLimit ?? 100;
+      const effectiveLimit =
+        localLimit ?? config.pivot.rowLimit ?? MAX_ROW_EXPANSION_LIMIT;
 
       // Query for limit+1 to detect if more data is available
       const queryLimit = (effectiveLimit + 1).toString();
@@ -497,7 +502,7 @@ export function addExpandedDataToPivot(
       const anchorDimension = rowDimensions[indices.length];
 
       let skeletonSubTable: PivotDataRow[] = [
-        { [anchorDimension]: "LOADING_CELL" },
+        { [anchorDimension]: LOADING_CELL },
       ];
       if (expandedRowData?.totals?.length) {
         skeletonSubTable = expandedRowData?.totals as PivotDataRow[];
@@ -529,7 +534,7 @@ export function addExpandedDataToPivot(
            * for the last level
            */
           if (numRowDimensions - 1 > indices.length) {
-            newRow.subRows = [{ [rowDimensions[0]]: "LOADING_CELL" }];
+            newRow.subRows = [{ [rowDimensions[0]]: LOADING_CELL }];
           }
           return newRow;
         }) || [];
@@ -538,7 +543,7 @@ export function addExpandedDataToPivot(
       if (
         expandedRowData.hasMore &&
         expandedRowData.effectiveLimit &&
-        expandedRowData.effectiveLimit < 100
+        expandedRowData.effectiveLimit < MAX_ROW_EXPANSION_LIMIT
       ) {
         mappedSubRows.push({
           [rowDimensions[0]]: SHOW_MORE_BUTTON,

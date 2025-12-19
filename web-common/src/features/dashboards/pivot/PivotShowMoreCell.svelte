@@ -13,7 +13,7 @@
 <div class="show-more-cell" style:padding-left="{row?.depth * 14}px">
   <Spacer size="16px" />
   <Tooltip distance={8} location="right">
-    <span class="text-primary-600 {assembled ? 'ui-copy' : 'ui-copy-inactive'}">
+    <span class={assembled ? "ui-copy" : "ui-copy-inactive"}>
       Show more ...
     </span>
     <TooltipContent slot="tooltip-content">
@@ -24,7 +24,7 @@
 
 <style lang="postcss">
   .show-more-cell {
-    @apply flex items-center h-full;
+    @apply flex items-center gap-x-0.5 h-full;
   }
 
   .show-more-cell span {

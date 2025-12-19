@@ -1,4 +1,7 @@
-export const SHOW_MORE_BUTTON = "SHOW_MORE_BUTTON";
+export const SHOW_MORE_BUTTON = "__rill_type_SHOW_MORE_BUTTON";
+export const LOADING_CELL = "__rill_type_LOADING_CELL";
+
+export const MAX_ROW_EXPANSION_LIMIT = 100;
 
 /**
  * Allowed row limit values for the pivot table.

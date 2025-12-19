@@ -3,6 +3,7 @@ import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-tabl
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import {
   getNextLimitLabel,
+  LOADING_CELL,
   SHOW_MORE_BUTTON,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -164,7 +165,7 @@ function formatDimensionValue(
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
     if (
       value === "Total" ||
-      value === "LOADING_CELL" ||
+      value === LOADING_CELL ||
       value === undefined ||
       value === null
     )
