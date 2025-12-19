@@ -391,11 +391,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *adminv1.CreateDeploy
 		return nil, err
 	}
 
-<<<<<<< HEAD
 	if depl.Environment == "prod" && proj.PrimaryBranch == branch {
-=======
-	if depl.Environment == "prod" && proj.ProdBranch == branch {
->>>>>>> c7c4960e4 (feat: Support multiple prod deployments)
 		// If this is a prod deployment, we update the prod deployment on project
 		_, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 			Name:                 proj.Name,
