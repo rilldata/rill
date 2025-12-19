@@ -254,11 +254,23 @@ async function saveConnectorAnyway(
   // Mark to avoid rollback by concurrent submissions
   savedAnywayPaths.add(newConnectorFilePath);
 
+  // Get existing .env first to determine unique keys
+  let existingEnvBlob = "";
+  try {
+    const envFile = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(resolvedInstanceId, { path: ".env" }),
+      queryFn: () => runtimeServiceGetFile(resolvedInstanceId, { path: ".env" }),
+    });
+    existingEnvBlob = envFile.blob || "";
+  } catch (error) {
+    // File doesn't exist yet
+  }
+
   // Always create/overwrite to ensure the file is created immediately
   await runtimeServicePutFile(resolvedInstanceId, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
-      connectorInstanceName: newConnectorName,
+      existingEnvBlob,
     }),
     create: true,
     createOnly: false,
@@ -270,7 +282,6 @@ async function saveConnectorAnyway(
     connector,
     formValues,
     "connector",
-    newConnectorName,
   );
 
   await runtimeServicePutFile(resolvedInstanceId, {
@@ -367,6 +378,9 @@ export async function submitAddConnectorForm(
        * 2. Create/update the `.env` file with connector secrets
        */
 
+      // Get existing .env first to determine unique keys
+      const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
+
       // Make a new `<connector>.yaml` file
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
@@ -385,7 +399,7 @@ export async function submitAddConnectorForm(
           {
             path: newConnectorFilePath,
             blob: compileConnectorYAML(connector, formValues, {
-              connectorInstanceName: newConnectorName,
+              existingEnvBlob: originalEnvBlob,
             }),
             create: true,
             createOnly: false,
@@ -394,15 +408,12 @@ export async function submitAddConnectorForm(
         );
       }
 
-      const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-
       // Create or update the `.env` file
       const newEnvBlob = await updateDotEnvWithSecrets(
         queryClient,
         connector,
         formValues,
         "connector",
-        newConnectorName,
       );
 
       if (!saveAnyway) {

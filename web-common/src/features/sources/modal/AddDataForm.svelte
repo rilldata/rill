@@ -3,9 +3,16 @@
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import {
+    type V1ConnectorDriver,
+    getRuntimeServiceGetFileQueryKey,
+    runtimeServiceGetFile,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
@@ -131,6 +138,29 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+  let existingEnvBlob: string = "";
+
+  // Fetch existing .env file for preview
+  async function fetchEnvBlob() {
+    try {
+      const instanceId = get(runtime).instanceId;
+      const envFile = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+        queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      });
+      existingEnvBlob = envFile.blob || "";
+    } catch (error) {
+      // .env doesn't exist yet
+      existingEnvBlob = "";
+    }
+  }
+
+  onMount(fetchEnvBlob);
+
+  // Refetch when connector name changes (for preview updates)
+  $: if ($connectorName) {
+    fetchEnvBlob();
+  }
 
   $: isSubmitDisabled = (() => {
     // For connector forms, validate connector name
@@ -276,6 +306,7 @@
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
     connectorName: $connectorName,
+    existingEnvBlob,
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =

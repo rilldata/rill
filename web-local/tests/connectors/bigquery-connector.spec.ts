@@ -101,14 +101,14 @@ test.describe("BigQuery connector", () => {
       `project_id: "${credentials.project_id}"`,
     );
     await expect(codeEditor).toContainText(
-      'google_application_credentials: "{{ .env.connector.bigquery.google_application_credentials }}"',
+      'google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"',
     );
 
     // Go to the `.env` file and verify the credentials are stored
     await page.getByRole("link", { name: ".env" }).click();
     const envEditor = page.getByLabel("codemirror editor").getByRole("textbox");
     await expect(envEditor).toContainText(
-      "connector.bigquery.google_application_credentials=",
+      "GOOGLE_APPLICATION_CREDENTIALS=",
     );
 
     // Verify the credentials JSON is properly stored in .env

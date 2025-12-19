@@ -276,9 +276,12 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 		if varName == "" {
 			return "", fmt.Errorf(`"env" function requires a non-empty variable name`)
 		}
-		// Look up the variable directly
-		if val, ok := data.Variables[varName]; ok {
-			return val, nil
+		// Case-insensitive lookup: search through all keys
+		varNameLower := strings.ToLower(varName)
+		for k, v := range data.Variables {
+			if strings.ToLower(k) == varNameLower {
+				return v, nil
+			}
 		}
 		// Error if variable not found and errOnMissingTemplKeys is true (consistent with .env.name behavior)
 		if errOnMissingTemplKeys {
@@ -302,26 +305,38 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 	}
 
 	// Split variables that contain dots into nested maps.
+	// Also add lowercase versions of all keys for case-insensitive lookups.
 	var vars map[string]any
 	if len(data.Variables) > 0 {
 		vars = map[string]any{}
 	}
 	for k, v := range data.Variables {
-		// Note: We always add the full variable name (including dots) at the top level.
+		// Add the original key
 		vars[k] = v
 
-		// Split variable into parts
+		// Add lowercase version for case-insensitive access
+		kLower := strings.ToLower(k)
+		if kLower != k {
+			vars[kLower] = v
+		}
+
+		// Split variable into parts for nested map access
 		parts := strings.Split(k, ".")
 		if len(parts) <= 1 {
 			continue
 		}
 
-		// Build nested maps
+		// Build nested maps with original case
 		curr := vars
 		for i, part := range parts {
 			// We reached the leaf, set the value
 			if i == len(parts)-1 {
 				curr[part] = v
+				// Also add lowercase leaf
+				partLower := strings.ToLower(part)
+				if partLower != part {
+					curr[partLower] = v
+				}
 				break
 			}
 

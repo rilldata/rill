@@ -91,7 +91,7 @@ test.describe("ClickHouse connector", () => {
     );
     await expect(codeEditor).toContainText('username: "default"');
     await expect(codeEditor).toContainText(
-      'password: "{{ .env.connector.clickhouse.password }}"',
+      'password: "{{ .env.CLICKHOUSE_PASSWORD }}"',
     );
 
     // Assert that the connector explorer now has a ClickHouse connector
@@ -138,14 +138,14 @@ test.describe("ClickHouse connector", () => {
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
     await expect(codeEditor).toContainText(
-      'dsn: "{{ .env.connector.clickhouse.dsn }}"',
+      'dsn: "{{ .env.CLICKHOUSE_DSN }}"',
     );
 
     // Go to the `.env` file and verify the connector.clickhouse.dsn is set
     await page.getByRole("link", { name: ".env" }).click();
     const envEditor = page.getByLabel("codemirror editor").getByRole("textbox");
     await expect(envEditor).toContainText(
-      `connector.clickhouse.dsn=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
+      `CLICKHOUSE_DSN=http://${clickhouse.getHost()}:${clickhouse.getPort().toString()}?username=default&password=password`,
     );
 
     // Go to the `rill.yaml` and verify the OLAP connector is set

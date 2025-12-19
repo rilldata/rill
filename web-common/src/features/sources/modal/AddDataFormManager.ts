@@ -420,6 +420,7 @@ export class AddDataFormManager {
     clickhouseParamsValues?: Record<string, unknown>;
     clickhouseDsnValues?: Record<string, unknown>;
     connectorName?: string;
+    existingEnvBlob?: string;
   }): string {
     const connector = this.connector;
     const {
@@ -436,6 +437,7 @@ export class AddDataFormManager {
       clickhouseParamsValues,
       clickhouseDsnValues,
       connectorName,
+      existingEnvBlob,
     } = ctx;
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
@@ -448,7 +450,7 @@ export class AddDataFormManager {
           onlyDsn || connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
-        connectorInstanceName: connectorName,
+        existingEnvBlob,
       });
     };
 
@@ -473,7 +475,7 @@ export class AddDataFormManager {
           connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
-        connectorInstanceName: connectorName,
+        existingEnvBlob,
       });
     };
 

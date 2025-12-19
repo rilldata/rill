@@ -5,7 +5,7 @@ import {
   type V1ConnectorDriver,
   type V1Source,
 } from "@rilldata/web-common/runtime-client";
-import { makeDotEnvConnectorKey } from "../connectors/code-utils";
+import { makeDotEnvConnectorKeyDeprecated } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
 // Helper text that we put at the top of every Model YAML file
@@ -56,7 +56,7 @@ export function compileSourceYAML(
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         // For source files, we include secret properties
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeDotEnvConnectorKeyDeprecated(
           connector.name as string,
           key,
         )} }}"`;
