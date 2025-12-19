@@ -133,7 +133,6 @@ export const MULTI_STEP_CONNECTORS = [
   "https",
   "postgres",
   "mysql",
-  "sqlite",
   "snowflake",
   "bigquery",
   "redshift",

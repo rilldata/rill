@@ -13,7 +13,6 @@ import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { s3Schema } from "../../templates/schemas/s3";
 import { snowflakeSchema } from "../../templates/schemas/snowflake";
-import { sqliteSchema } from "../../templates/schemas/sqlite";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
@@ -22,7 +21,6 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   https: httpsSchema,
   postgres: postgresSchema,
   mysql: mysqlSchema,
-  sqlite: sqliteSchema,
   snowflake: snowflakeSchema,
   bigquery: bigquerySchema,
   redshift: redshiftSchema,

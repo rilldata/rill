@@ -153,12 +153,6 @@ export const getYupSchema = {
 
   // Keep base auth fields optional; per-method required fields come from
   // multi-step auth configs. This schema is a safe fallback.
-  sqlite_connector: yup.object().shape({
-    db: yup.string().optional(),
-  }),
-
-  // Keep base auth fields optional; per-method required fields come from
-  // multi-step auth configs. This schema is a safe fallback.
   snowflake_connector: yup.object().shape({
     account: yup.string().optional(),
     user: yup.string().optional(),
