@@ -3,9 +3,9 @@
   import { themeControl } from "./theme-control";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
-  $: ({ _preference } = themeControl);
+  $: ({ preference } = themeControl);
 
-  $: preference = $_preference;
+  $: preferenceValue = $preference;
 </script>
 
 <DropdownMenu.Sub>
@@ -13,14 +13,14 @@
   <DropdownMenu.SubContent>
     <DropdownMenu.CheckboxItem
       checkRight
-      checked={preference === "light"}
+      checked={preferenceValue === "light"}
       on:click={themeControl.set.light}
     >
       Light
     </DropdownMenu.CheckboxItem>
     <DropdownMenu.CheckboxItem
       checkRight
-      checked={preference === "dark"}
+      checked={preferenceValue === "dark"}
       on:click={themeControl.set.dark}
     >
       <Tag text="Beta" height={16} />
@@ -28,7 +28,7 @@
     </DropdownMenu.CheckboxItem>
     <DropdownMenu.CheckboxItem
       checkRight
-      checked={preference === "system"}
+      checked={preferenceValue === "system"}
       on:click={themeControl.set.system}
     >
       System

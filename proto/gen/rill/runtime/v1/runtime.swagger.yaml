@@ -929,6 +929,9 @@ paths:
                 description: |-
                   If true, the AI will be used to generate the metrics view file.
                   Otherwise, it falls back to a simpler heuristic approach.
+              prompt:
+                type: string
+                description: Optional prompt to guide AI generation.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -3051,10 +3054,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: level
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:

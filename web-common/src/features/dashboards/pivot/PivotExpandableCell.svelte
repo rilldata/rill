@@ -23,14 +23,14 @@
   {#if value === LOADING_CELL}
     <span class="loading-cell" />
   {:else if assembledAndCanExpand}
-    <div class="caret opacity-100" class:expanded>
+    <div class="caret opacity-100 shrink-0" class:expanded>
       <ChevronRight size="16px" color="#9CA3AF" />
     </div>
   {:else if row.depth >= 1}
-    <Spacer size="16px" />
+    <span class="shrink-0"><Spacer size="16px" /></span>
   {/if}
 
-  <span class="truncate">
+  <span class="truncate min-w-0">
     {#if value === LOADING_CELL}
       {""}
     {:else if value === ""}

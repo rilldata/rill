@@ -2183,6 +2183,13 @@ export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsVie
    */
   useAi = false;
 
+  /**
+   * Optional prompt to guide AI generation.
+   *
+   * @generated from field: string prompt = 9;
+   */
+  prompt = "";
+
   constructor(data?: PartialMessage<GenerateMetricsViewFileRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2199,6 +2206,7 @@ export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsVie
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileRequest {
@@ -3105,11 +3113,6 @@ export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
    */
   replay = false;
 
-  /**
-   * @generated from field: string level = 4;
-   */
-  level = "";
-
   constructor(data?: PartialMessage<WatchResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3121,7 +3124,6 @@ export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "level", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchResourcesRequest {
