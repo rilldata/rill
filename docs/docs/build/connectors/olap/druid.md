@@ -83,14 +83,8 @@ Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-ola
 
 When deploying a Druid-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
 1. If you have followed the UI to create your Druid connector, the password or DSN should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
-2. Use the `rill env configure` command to set `connector.druid.dsn` after deploying the project.
-3. If `connector.druid.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
+2. If `connector.druid.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
-:::info
-
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
-
-:::
 
 ## Supported Versions
 

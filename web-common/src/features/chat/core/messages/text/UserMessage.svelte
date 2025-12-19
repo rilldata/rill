@@ -21,7 +21,6 @@
       element,
       editable: false,
       extensions: getEditorPlugins({
-        enableMention: true,
         placeholder: "",
         onSubmit: () => {},
       }),

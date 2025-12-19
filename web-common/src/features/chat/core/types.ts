@@ -65,4 +65,5 @@ export type ChatConfig = {
   >;
   emptyChatLabel: string;
   placeholder: string;
+  minChatHeight: string;
 };

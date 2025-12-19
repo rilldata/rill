@@ -6,13 +6,13 @@ import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-cl
 import { derived, type Readable } from "svelte/store";
 import { page } from "$app/stores";
 
-export const developerChatConfig = <ChatConfig>{
+export const developerChatConfig = {
   agent: ToolName.DEVELOPER_AGENT,
   additionalContextStoreGetter: () => getActiveFileContext(),
   emptyChatLabel: "Happy to assist you make changes to the project",
   placeholder: "What change can I help you make...",
-  enableMention: true,
-};
+  minChatHeight: "min-h-[2.5rem]",
+} satisfies ChatConfig;
 
 /**
  * Creates a store that contains the active file context sent to the Complete API.
