@@ -6,7 +6,7 @@ export const bigquerySchema: MultiStepFormSchema = {
   properties: {
     google_application_credentials: {
       type: "string",
-      title: "Service Account Key",
+      title: "GCP Credentials",
       description: "Upload a JSON key file for a service account with BigQuery access",
       format: "file",
       "x-display": "file",
