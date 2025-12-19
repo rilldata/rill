@@ -1,34 +1,17 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    fileWatcher,
-    resourceWatcher,
-  } from "@rilldata/web-common/features/entity-management/watchers";
+  import { fileAndResourceWatcher } from "./file-and-resource-watcher";
   import { Tooltip } from "bits-ui";
+  import { ConnectionStatus } from "@rilldata/web-common/runtime-client/sse-connection-manager";
 
-  const { retryAttempts: fileAttempts, closed: fileWatcherClosed } =
-    fileWatcher;
-  const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
-    resourceWatcher;
+  const { status: statusStore } = fileAndResourceWatcher;
 
-  let state: "connected" | "closed" | "reconnecting" = "connected";
   let showIndicator: boolean = true;
-
   let connectedTimer: ReturnType<typeof setTimeout>;
 
-  $: reconnecting = $fileAttempts > 0 || $resourceAttempts > 0;
+  $: status = $statusStore;
 
-  $: closed = $fileWatcherClosed || $resourceWatcherClosed;
-
-  $: if (reconnecting) {
-    state = "reconnecting";
-  } else if (closed) {
-    state = "closed";
-  } else {
-    state = "connected";
-  }
-
-  $: if (state !== "connected") {
+  $: if (status !== ConnectionStatus.OPEN) {
     clearTimeout(connectedTimer);
     showIndicator = true;
   } else {
@@ -41,16 +24,18 @@
 {#if showIndicator}
   <Tooltip.Root>
     <Tooltip.Trigger>
-      <div class="{state}  flex-none size-[9px] rounded-full opacity-75"></div>
+      <div class="{status}  flex-none size-[9px] rounded-full opacity-75"></div>
     </Tooltip.Trigger>
 
-    <Tooltip.Content side="right" sideOffset={8}>
+    <Tooltip.Content side="right" sideOffset={8} class="z-50">
       <TooltipContent>
-        {#if state === "reconnecting"}
+        {#if status === ConnectionStatus.CONNECTING}
           Attempting to reconnect
-        {:else if state === "closed"}
-          Connection closed due to inactivity
-        {:else}
+        {:else if status === ConnectionStatus.CLOSED}
+          Disconnected from Rill engine
+        {:else if status === ConnectionStatus.PAUSED}
+          Connection paused due to inactivity
+        {:else if status === ConnectionStatus.OPEN}
           Connected to Rill engine
         {/if}
       </TooltipContent>
@@ -59,15 +44,16 @@
 {/if}
 
 <style lang="postcss">
-  .closed {
+  .closed,
+  .paused {
     @apply bg-red-600 animate-pulse;
   }
 
-  .reconnecting {
+  .connecting {
     @apply bg-yellow-600 animate-pulse;
   }
 
-  .connected {
+  .open {
     @apply bg-emerald-600;
   }
 </style>
