@@ -616,9 +616,9 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	}
 }
 
-func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location) (string, []any, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
-	start = timeutil.TruncateTime(start, g, tz, 1, 1)
+	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
 	var args []any
 	switch d {
 	case DialectDuckDB:
