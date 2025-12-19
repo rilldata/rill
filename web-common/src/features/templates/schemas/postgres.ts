@@ -68,7 +68,7 @@ export const postgresSchema: MultiStepFormSchema = {
       type: "string",
       title: "SSL Mode",
       description: "SSL connection mode",
-      enum: ["disable", "require", "verify-ca", "verify-full"],
+      enum: ["disable", "allow", "prefer", "require"],
       default: "prefer",
       "x-display": "select",
       "x-step": "connector",
@@ -83,15 +83,31 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
     },
+    sql: {
+      type: "string",
+      title: "SQL Query",
+      description: "SQL query to extract data from PostgreSQL",
+      "x-placeholder": "SELECT * FROM my_table;",
+      "x-display": "textarea",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
+    },
   },
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["host", "database", "user", "password"] },
+      then: { required: ["host", "database", "user", "password", "sql", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn"] },
+      then: { required: ["dsn", "sql", "name"] },
     },
   ],
 };

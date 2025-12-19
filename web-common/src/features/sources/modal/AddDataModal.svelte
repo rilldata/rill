@@ -21,7 +21,7 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES, MULTI_STEP_CONNECTORS } from "./constants";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
@@ -121,6 +121,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
+    MULTI_STEP_CONNECTORS.includes(selectedConnector?.name ?? "") ||
     selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||

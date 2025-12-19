@@ -35,6 +35,12 @@
   $: renderOrder = schema
     ? computeRenderOrder(visibleEntries, groupedChildKeys)
     : [];
+  $: regularFields = renderOrder.filter(
+    ([_, prop]) => !prop["x-advanced"],
+  );
+  $: advancedFields = renderOrder.filter(
+    ([_, prop]) => prop["x-advanced"],
+  );
 
   // Seed defaults for initial render: use explicit defaults, and for radio enums
   // fall back to first option when no value is set.
@@ -91,6 +97,14 @@
 
   function isRadioEnum(prop: JSONSchemaField) {
     return Boolean(prop.enum && prop["x-display"] === radioDisplay);
+  }
+
+  function isSelectEnum(prop: JSONSchemaField) {
+    return Boolean(prop.enum && prop["x-display"] === "select");
+  }
+
+  function hasEnumOptions(prop: JSONSchemaField) {
+    return isRadioEnum(prop) || isSelectEnum(prop);
   }
 
   function computeVisibleEntries(
@@ -217,7 +231,7 @@
 </script>
 
 {#if schema}
-  {#each renderOrder as [key, prop]}
+  {#each regularFields as [key, prop]}
     {#if isRadioEnum(prop)}
       <div class="py-1.5 first:pt-0 last:pb-0">
         {#if prop.title}
@@ -241,7 +255,7 @@
                     bind:checked={$form[childKey]}
                     {onStringInputChange}
                     {handleFileUpload}
-                    options={isRadioEnum(childProp)
+                    options={hasEnumOptions(childProp)
                       ? radioOptions(childProp)
                       : undefined}
                     name={`${childKey}-radio`}
@@ -263,10 +277,72 @@
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          options={hasEnumOptions(prop) ? radioOptions(prop) : undefined}
           name={`${key}-radio`}
         />
       </div>
     {/if}
   {/each}
+
+  {#if advancedFields.length > 0}
+    <details class="py-1.5">
+      <summary class="text-sm font-medium cursor-pointer select-none hover:text-gray-700">
+        Advanced Configuration
+      </summary>
+      <div class="mt-2 space-y-1.5">
+        {#each advancedFields as [key, prop]}
+          {#if isRadioEnum(prop)}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if prop.title}
+                <div class="text-sm font-medium mb-3">{prop.title}</div>
+              {/if}
+              <Radio
+                bind:value={$form[key]}
+                options={radioOptions(prop)}
+                name={`${key}-radio`}
+              >
+                <svelte:fragment slot="custom-content" let:option>
+                  {#if groupedFields.get(key)}
+                    {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
+                      <div class="py-1.5 first:pt-0 last:pb-0">
+                        <JSONSchemaFieldControl
+                          id={childKey}
+                          prop={childProp}
+                          optional={!isRequired(childKey)}
+                          errors={errors?.[childKey]}
+                          bind:value={$form[childKey]}
+                          bind:checked={$form[childKey]}
+                          {onStringInputChange}
+                          {handleFileUpload}
+                          options={hasEnumOptions(childProp)
+                            ? radioOptions(childProp)
+                            : undefined}
+                          name={`${childKey}-radio`}
+                        />
+                      </div>
+                    {/each}
+                  {/if}
+                </svelte:fragment>
+              </Radio>
+            </div>
+          {:else}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              <JSONSchemaFieldControl
+                id={key}
+                {prop}
+                optional={!isRequired(key)}
+                errors={errors?.[key]}
+                bind:value={$form[key]}
+                bind:checked={$form[key]}
+                {onStringInputChange}
+                {handleFileUpload}
+                options={hasEnumOptions(prop) ? radioOptions(prop) : undefined}
+                name={`${key}-radio`}
+              />
+            </div>
+          {/if}
+        {/each}
+      </div>
+    </details>
+  {/if}
 {/if}

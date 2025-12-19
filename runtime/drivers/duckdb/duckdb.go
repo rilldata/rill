@@ -64,7 +64,6 @@ var spec = drivers.Spec{
 			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
 			Placeholder: modeReadOnly,
 			Default:     modeReadOnly,
-			NoPrompt:    true,
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -110,7 +109,6 @@ var motherduckSpec = drivers.Spec{
 			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
 			Placeholder: modeReadOnly,
 			Default:     modeReadOnly,
-			NoPrompt:    true,
 		},
 		{
 			Key:         "schema_name",

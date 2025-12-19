@@ -9,6 +9,7 @@ export const motherduckSchema: MultiStepFormSchema = {
       title: "Database Path",
       description: "Path to MotherDuck database (must be prefixed with 'md:')",
       "x-placeholder": "md:my_db",
+      "x-step": "connector",
     },
     token: {
       type: "string",
@@ -16,12 +17,14 @@ export const motherduckSchema: MultiStepFormSchema = {
       description: "Your MotherDuck authentication token",
       "x-placeholder": "Enter your MotherDuck token",
       "x-secret": true,
+      "x-step": "connector",
     },
     schema_name: {
       type: "string",
       title: "Schema Name",
       description: "Default schema used by the MotherDuck database",
       "x-placeholder": "main",
+      "x-step": "connector",
     },
     mode: {
       type: "string",
@@ -35,7 +38,24 @@ export const motherduckSchema: MultiStepFormSchema = {
         "Only read operations are allowed (recommended for security)",
         "Enable model creation and table mutations",
       ],
+      "x-step": "connector",
+    },
+    sql: {
+      type: "string",
+      title: "SQL Query",
+      description: "SQL query to extract data from MotherDuck",
+      "x-placeholder": "SELECT * FROM my_table;",
+      "x-display": "textarea",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
     },
   },
-  required: ["path", "token", "schema_name"],
+  required: ["path", "token", "schema_name", "sql", "name"],
 };

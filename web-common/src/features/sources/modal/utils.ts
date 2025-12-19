@@ -98,6 +98,7 @@ export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
   paramsFormValue: Record<string, unknown>,
   paramsFormErrors: Record<string, unknown>,
+  currentStep: "connector" | "source" = "connector",
 ) {
   if (!schema || !paramsFormValue) return true;
 
@@ -106,7 +107,7 @@ export function isMultiStepConnectorDisabled(
   // Handle schemas without auth method radio selector (e.g., BigQuery, Athena)
   if (!authInfo) {
     const requiredFields = (schema.required ?? []).filter((fieldId) =>
-      isStepMatch(schema, fieldId, "connector"),
+      isStepMatch(schema, fieldId, currentStep),
     );
     if (!requiredFields.length) return false;
 
@@ -137,17 +138,41 @@ export function isMultiStepConnectorDisabled(
   // Selecting "public" should always enable the button for multi-step auth flows.
   if (method === "public") return false;
 
+  // When on source step and auth method isn't set (user skipped connector step),
+  // validate all source step required fields regardless of auth method
+  if (currentStep === "source" && !methodFromForm) {
+    const allSourceRequired = new Set<string>();
+    const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
+      step: currentStep,
+    });
+
+    // Collect all source step required fields across all auth methods
+    for (const fields of Object.values(requiredByMethod)) {
+      fields.forEach((field) => allSourceRequired.add(field));
+    }
+
+    const sourceRequiredFields = Array.from(allSourceRequired);
+    if (!sourceRequiredFields.length) return false;
+
+    return !sourceRequiredFields.every((fieldId) => {
+      const value = paramsFormValue[fieldId];
+      const errorsForField = paramsFormErrors[fieldId] as any;
+      const hasErrors = Boolean(errorsForField?.length);
+      return !isEmpty(value) && !hasErrors;
+    });
+  }
+
   const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
-    step: "connector",
+    step: currentStep,
   });
   const requiredFields = requiredByMethod[method] ?? [];
 
-  // If no required fields found, button should be disabled (something is wrong)
-  if (!requiredFields.length) return true;
+  // If no required fields found for this step, button should be enabled
+  if (!requiredFields.length) return false;
 
   // Check if all required fields are filled and have no errors
   return !requiredFields.every((fieldId) => {
-    if (!isStepMatch(schema, fieldId, "connector")) return true;
+    if (!isStepMatch(schema, fieldId, currentStep)) return true;
     const value = paramsFormValue[fieldId];
     const errorsForField = paramsFormErrors[fieldId] as any;
     const hasErrors = Boolean(errorsForField?.length);

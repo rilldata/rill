@@ -17,7 +17,6 @@ export const httpsSchema: MultiStepFormSchema = {
         "Provide custom HTTP headers for authentication (e.g., Authorization, API keys).",
       ],
       "x-grouped-fields": {
-        public: [],
         headers: ["headers"],
       },
       "x-step": "connector",
@@ -32,11 +31,31 @@ export const httpsSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "headers" },
     },
+    path: {
+      type: "string",
+      title: "URL",
+      description: "HTTP(S) URL to fetch data from",
+      pattern: "^https?://",
+      "x-placeholder": "https://api.example.com/data",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
+    },
   },
   allOf: [
     {
       if: { properties: { auth_method: { const: "headers" } } },
-      then: { required: ["headers"] },
+      then: { required: ["headers", "path", "name"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: { required: ["path", "name"] },
     },
   ],
 };

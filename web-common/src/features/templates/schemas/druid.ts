@@ -20,12 +20,14 @@ export const druidSchema: MultiStepFormSchema = {
         parameters: ["host", "port", "username", "password", "ssl"],
         connection_string: ["dsn"],
       },
+      "x-step": "connector",
     },
     host: {
       type: "string",
       title: "Host",
       description: "Hostname or IP address of the Druid server",
       "x-placeholder": "localhost",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     port: {
@@ -33,6 +35,7 @@ export const druidSchema: MultiStepFormSchema = {
       title: "Port",
       description: "Port number of the Druid server",
       "x-placeholder": "8888",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     username: {
@@ -40,6 +43,7 @@ export const druidSchema: MultiStepFormSchema = {
       title: "Username",
       description: "Username to connect to the Druid server (optional)",
       "x-placeholder": "default",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     password: {
@@ -48,6 +52,7 @@ export const druidSchema: MultiStepFormSchema = {
       description: "Password to connect to the Druid server (optional)",
       "x-placeholder": "Enter password",
       "x-secret": true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     ssl: {
@@ -55,6 +60,7 @@ export const druidSchema: MultiStepFormSchema = {
       title: "Use SSL",
       description: "Use SSL to connect to the Druid server",
       default: true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     dsn: {
@@ -63,17 +69,34 @@ export const druidSchema: MultiStepFormSchema = {
       description: "Druid connection string (DSN)",
       "x-placeholder": "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
       "x-secret": true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
+    },
+    sql: {
+      type: "string",
+      title: "SQL Query",
+      description: "SQL query to extract data from Druid",
+      "x-placeholder": "SELECT * FROM my_table;",
+      "x-display": "textarea",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
     },
   },
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["host", "ssl"] },
+      then: { required: ["host", "ssl", "sql", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn"] },
+      then: { required: ["dsn", "sql", "name"] },
     },
   ],
 };

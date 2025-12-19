@@ -20,12 +20,14 @@ export const pinotSchema: MultiStepFormSchema = {
         parameters: ["broker_host", "broker_port", "controller_host", "controller_port", "username", "password", "ssl"],
         connection_string: ["dsn"],
       },
+      "x-step": "connector",
     },
     broker_host: {
       type: "string",
       title: "Broker Host",
       description: "Hostname or IP address of the Pinot broker server",
       "x-placeholder": "localhost",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     broker_port: {
@@ -33,6 +35,7 @@ export const pinotSchema: MultiStepFormSchema = {
       title: "Broker Port",
       description: "Port number of the Pinot broker server",
       "x-placeholder": "8000",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     controller_host: {
@@ -40,6 +43,7 @@ export const pinotSchema: MultiStepFormSchema = {
       title: "Controller Host",
       description: "Hostname or IP address of the Pinot controller server",
       "x-placeholder": "localhost",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     controller_port: {
@@ -47,6 +51,7 @@ export const pinotSchema: MultiStepFormSchema = {
       title: "Controller Port",
       description: "Port number of the Pinot controller server",
       "x-placeholder": "9000",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     username: {
@@ -54,6 +59,7 @@ export const pinotSchema: MultiStepFormSchema = {
       title: "Username",
       description: "Username to connect to the Pinot server (optional)",
       "x-placeholder": "default",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     password: {
@@ -62,6 +68,7 @@ export const pinotSchema: MultiStepFormSchema = {
       description: "Password to connect to the Pinot server (optional)",
       "x-placeholder": "Enter password",
       "x-secret": true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     ssl: {
@@ -69,6 +76,7 @@ export const pinotSchema: MultiStepFormSchema = {
       title: "Use SSL",
       description: "Use SSL to connect to the Pinot server",
       default: true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     dsn: {
@@ -77,17 +85,34 @@ export const pinotSchema: MultiStepFormSchema = {
       description: "Pinot connection string (DSN)",
       "x-placeholder": "http(s)://username:password@localhost:8000?controller=localhost:9000",
       "x-secret": true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
+    },
+    sql: {
+      type: "string",
+      title: "SQL Query",
+      description: "SQL query to extract data from Pinot",
+      "x-placeholder": "SELECT * FROM my_table;",
+      "x-display": "textarea",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
     },
   },
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["broker_host", "controller_host", "ssl"] },
+      then: { required: ["broker_host", "controller_host", "ssl", "sql", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn"] },
+      then: { required: ["dsn", "sql", "name"] },
     },
   ],
 };

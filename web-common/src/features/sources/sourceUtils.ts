@@ -57,11 +57,12 @@ export function compileSourceYAML(
       }
 
       if (key === "sql") {
-        // For SQL, we want to use a multi-line string
-        return `${key}: |\n  ${value
+        // For SQL, we want to use a multi-line string and add a dev section
+        const sqlLines = value
           .split("\n")
-          .map((line) => `${line}`)
-          .join("\n")}`;
+          .map((line) => `  ${line}`)
+          .join("\n");
+        return `${key}: |\n${sqlLines}\n\ndev:\n  ${key}: |\n${sqlLines}\n    limit 10000`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -212,35 +213,37 @@ export function prepareSourceFormData(
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
 
+  // Apply DuckDB rewrite logic FIRST (before stripping connector properties)
+  // This is important for connectors like SQLite that need connector properties
+  // to build the SQL query before they're removed.
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+    connector,
+    processedValues,
+  );
+
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
   if (connector.configProperties) {
     const connectorPropertyKeys = new Set(
       connector.configProperties.map((p) => p.key).filter(Boolean),
     );
-    for (const key of Object.keys(processedValues)) {
+    for (const key of Object.keys(rewrittenFormValues)) {
       if (connectorPropertyKeys.has(key)) {
-        delete processedValues[key];
+        delete rewrittenFormValues[key];
       }
     }
   }
 
   // Handle placeholder values for required source properties
-  if (connector.sourceProperties) {
-    for (const prop of connector.sourceProperties) {
-      if (prop.key && prop.required && !(prop.key in processedValues)) {
+  if (rewrittenConnector.sourceProperties) {
+    for (const prop of rewrittenConnector.sourceProperties) {
+      if (prop.key && prop.required && !(prop.key in rewrittenFormValues)) {
         if (prop.placeholder) {
-          processedValues[prop.key] = prop.placeholder;
+          rewrittenFormValues[prop.key] = prop.placeholder;
         }
       }
     }
   }
-
-  // Apply DuckDB rewrite logic
-  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
-    connector,
-    processedValues,
-  );
 
   return [rewrittenConnector, rewrittenFormValues];
 }

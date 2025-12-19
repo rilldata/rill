@@ -32,12 +32,15 @@ import {
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
-import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
+import {
+  ConnectorDriverPropertyType,
+  type ConnectorDriverProperty,
+} from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
-import { findRadioEnumKey } from "../../templates/schema-utils";
+import { findRadioEnumKey, isVisibleForValues } from "../../templates/schema-utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -502,10 +505,38 @@ export class AddDataFormManager {
         : filteredParamsProperties;
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
-      const orderedProperties =
+      let orderedProperties =
         onlyDsn || connectionTab === "dsn"
           ? filteredDsnProperties
           : connectorPropertiesForPreview;
+
+      // For multi-step connectors with schemas, build properties from schema
+      if (isMultiStepConnector && stepState?.step === "connector") {
+        const schema = getConnectorSchema(connector.name);
+        if (schema) {
+          // Build ordered properties from schema fields that are visible and on connector step
+          const schemaProperties: ConnectorDriverProperty[] = [];
+          const properties = schema.properties ?? {};
+
+          for (const [key, prop] of Object.entries(properties)) {
+            // Only include connector step fields that are currently visible
+            if (prop["x-step"] === "connector" && isVisibleForValues(schema, key, values)) {
+              schemaProperties.push({
+                key,
+                type: prop.type === "number"
+                  ? ConnectorDriverPropertyType.TYPE_NUMBER
+                  : prop.type === "boolean"
+                  ? ConnectorDriverPropertyType.TYPE_BOOLEAN
+                  : ConnectorDriverPropertyType.TYPE_STRING,
+                secret: prop["x-secret"] || false,
+              });
+            }
+          }
+
+          orderedProperties = schemaProperties;
+        }
+      }
+
       return compileConnectorYAML(connector, values, {
         fieldFilter: (property) => {
           if (onlyDsn || connectionTab === "dsn") return true;
@@ -557,6 +588,12 @@ export class AddDataFormManager {
         connector,
         filteredValues,
       );
+
+      // For multi-step connectors on source step, always show model YAML
+      if (isMultiStepConnector && stepState?.step === "source") {
+        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+      }
+
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
       if (isRewrittenToDuckDb) {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues);

@@ -76,19 +76,13 @@
   }
 
   // Restore defaults (and persisted auth) when returning to connector step.
-  $: if (stepState.step === "connector") {
+  // For schema-based connectors, JSONSchemaFormRenderer handles defaults
+  $: if (stepState.step === "connector" && !activeSchema) {
     paramsForm.update(
       ($current) => {
         const base = getInitialFormValuesFromProperties(
           connector.configProperties ?? [],
         );
-        if (activeSchema) {
-          const authKey = findRadioEnumKey(activeSchema);
-          const persisted = stepState.selectedAuthMethod;
-          if (authKey && persisted) {
-            base[authKey] = persisted;
-          }
-        }
         return { ...base, ...$current };
       },
       { taint: false },
@@ -102,7 +96,7 @@
   $: activeAuthInfo = activeSchema ? getRadioEnumOptions(activeSchema) : null;
 
   // Ensure we always have a valid auth method selection for the active schema.
-  $: if (activeSchema && activeAuthInfo) {
+  $: if (activeSchema && activeAuthInfo && stepState.step === "connector") {
     const options = activeAuthInfo.options ?? [];
     const fallback = activeAuthInfo.defaultValue || options[0]?.value || null;
     const authKey = activeAuthInfo.key || findRadioEnumKey(activeSchema);
@@ -114,13 +108,15 @@
         setAuthMethod(fallback ?? null);
         if (fallback && authKey) {
           paramsForm.update(($form) => {
-            if ($form[authKey] !== fallback) $form[authKey] = fallback;
+            if ($form[authKey] !== fallback) {
+              $form[authKey] = fallback;
+            }
             return $form;
-          });
+          }, { taint: false });
         }
       }
     }
-  } else if (stepState.selectedAuthMethod) {
+  } else if (stepState.selectedAuthMethod && !activeAuthInfo) {
     setAuthMethod(null);
   }
 
@@ -151,6 +147,7 @@
     activeSchema,
     $paramsForm,
     $paramsErrors,
+    stepState.step,
   );
   $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
     isConnectorForm: formManager.isConnectorForm,

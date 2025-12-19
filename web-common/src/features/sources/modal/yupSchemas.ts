@@ -79,12 +79,38 @@ export const getYupSchema = {
   duckdb: yup.object().shape({
     path: yup.string().required("path is required"),
     attach: yup.string().optional(),
+    sql: yup.string().optional(),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .optional(),
+  }),
+
+  duckdb_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
   }),
 
   motherduck: yup.object().shape({
     token: yup.string().required("Token is required"),
     path: yup.string().required("Path is required"),
     schema_name: yup.string().required("Schema name is required"),
+    sql: yup.string().optional(),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .optional(),
+  }),
+
+  motherduck_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
   }),
 
   sqlite: yup.object().shape({
@@ -139,6 +165,14 @@ export const getYupSchema = {
     dsn: yup.string().optional(),
   }),
 
+  postgres_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
+  }),
+
   // Keep base auth fields optional; per-method required fields come from
   // multi-step auth configs. This schema is a safe fallback.
   mysql_connector: yup.object().shape({
@@ -149,6 +183,14 @@ export const getYupSchema = {
     password: yup.string().optional(),
     sslmode: yup.string().optional(),
     dsn: yup.string().optional(),
+  }),
+
+  mysql_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
   }),
 
   // Keep base auth fields optional; per-method required fields come from
@@ -166,11 +208,27 @@ export const getYupSchema = {
     dsn: yup.string().optional(),
   }),
 
+  snowflake_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
+  }),
+
   // Keep base auth fields optional; per-method required fields come from
   // multi-step auth configs. This schema is a safe fallback.
   bigquery_connector: yup.object().shape({
     google_application_credentials: yup.string().optional(),
     project_id: yup.string().optional(),
+  }),
+
+  bigquery_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
   }),
 
   // Keep base auth fields optional; per-method required fields come from
@@ -184,6 +242,14 @@ export const getYupSchema = {
     cluster_identifier: yup.string().optional(),
   }),
 
+  redshift_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
+  }),
+
   // Keep base auth fields optional; per-method required fields come from
   // multi-step auth configs. This schema is a safe fallback.
   athena_connector: yup.object().shape({
@@ -193,6 +259,14 @@ export const getYupSchema = {
     region: yup.string().optional(),
     workgroup: yup.string().optional(),
     output_location: yup.string().optional(),
+  }),
+
+  athena_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
   }),
 
   // Keep base auth fields optional; per-method required fields come from
@@ -223,6 +297,14 @@ export const getYupSchema = {
     dsn: yup.string().optional(),
   }),
 
+  druid_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
+  }),
+
   // Keep base auth fields optional; per-method required fields come from
   // multi-step auth configs. This schema is a safe fallback.
   pinot_connector: yup.object().shape({
@@ -234,6 +316,14 @@ export const getYupSchema = {
     password: yup.string().optional(),
     ssl: yup.boolean().optional(),
     dsn: yup.string().optional(),
+  }),
+
+  pinot_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
   }),
 
   postgres: yup.object().shape({
