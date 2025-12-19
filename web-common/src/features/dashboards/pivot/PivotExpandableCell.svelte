@@ -1,6 +1,7 @@
 <script lang="ts">
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import type { Row } from "@tanstack/svelte-table";
   import type { PivotDataRow } from "./types";
 
@@ -17,10 +18,9 @@
   role="presentation"
   class="dimension-cell pointer-events-none"
   style:padding-left="{row.depth * 14}px"
-  class:-ml-1={assembledAndCanExpand}
   class:cursor-pointer={assembledAndCanExpand}
 >
-  {#if value === "LOADING_CELL"}
+  {#if value === LOADING_CELL}
     <span class="loading-cell" />
   {:else if assembledAndCanExpand}
     <div class="caret opacity-100 shrink-0" class:expanded>
@@ -31,7 +31,7 @@
   {/if}
 
   <span class="truncate min-w-0">
-    {#if value === "LOADING_CELL"}
+    {#if value === LOADING_CELL}
       {""}
     {:else if value === ""}
       {"\u00A0"}
