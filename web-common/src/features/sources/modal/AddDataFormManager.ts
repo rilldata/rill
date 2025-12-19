@@ -36,10 +36,8 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
 import type { ActionResult } from "@sveltejs/kit";
-import {
-  findAuthMethodKey,
-  getConnectorSchema,
-} from "./multi-step-auth-configs";
+import { getConnectorSchema } from "./connector-schemas";
+import { findRadioEnumKey } from "../../templates/schema-utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -336,7 +334,7 @@ export class AddDataFormManager {
     }) => {
       const values = event.form.data;
       const schema = getConnectorSchema(this.connector.name ?? "");
-      const authKey = schema ? findAuthMethodKey(schema) : null;
+      const authKey = schema ? findRadioEnumKey(schema) : null;
       const selectedAuthMethod =
         (authKey && values && values[authKey] != null
           ? String(values[authKey])

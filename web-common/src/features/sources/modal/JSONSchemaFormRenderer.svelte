@@ -2,7 +2,8 @@
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import JSONSchemaFieldControl from "./JSONSchemaFieldControl.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./types";
-  import { isVisibleForValues } from "./multi-step-auth-configs";
+  import { isVisibleForValues } from "../../templates/schema-utils";
+  import { isStepMatch } from "./connector-schemas";
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;
@@ -39,7 +40,7 @@
       ($form) => {
         const properties = schema.properties ?? {};
         for (const [key, prop] of Object.entries(properties)) {
-          if (!matchesStep(prop, stepFilter)) continue;
+          if (!isStepMatch(schema, key, stepFilter)) continue;
           const current = $form[key];
           const isUnset =
             current === undefined || current === null || current === "";
@@ -62,8 +63,8 @@
     const currentValues = $form;
     const properties = schema.properties ?? {};
 
-    const shouldClear = Object.entries(properties).some(([key, prop]) => {
-      if (!matchesStep(prop, stepFilter)) return false;
+    const shouldClear = Object.entries(properties).some(([key]) => {
+      if (!isStepMatch(schema, key, stepFilter)) return false;
       const visible = isVisibleForValues(schema, key, currentValues);
       return !visible && key in currentValues && currentValues[key] !== "";
     });
@@ -72,7 +73,7 @@
       form.update(
         ($form) => {
           for (const [key, prop] of Object.entries(properties)) {
-            if (!matchesStep(prop, stepFilter)) continue;
+            if (!isStepMatch(schema, key, stepFilter)) continue;
             const visible = isVisibleForValues(schema, key, $form);
             if (!visible && key in $form && $form[key] !== "") {
               $form[key] = "";
@@ -85,13 +86,6 @@
     }
   }
 
-  function matchesStep(prop: JSONSchemaField | undefined, stepValue?: string) {
-    if (!stepValue) return true;
-    const propStep = prop?.["x-step"];
-    if (!propStep) return true;
-    return propStep === stepValue;
-  }
-
   function isRadioEnum(prop: JSONSchemaField) {
     return Boolean(prop.enum && prop["x-display"] === radioDisplay);
   }
@@ -102,8 +96,8 @@
     values: Record<string, unknown>,
   ) {
     const properties = currentSchema.properties ?? {};
-    return Object.entries(properties).filter(([key, prop]) => {
-      if (!matchesStep(prop, currentStep)) return false;
+    return Object.entries(properties).filter(([key]) => {
+      if (!isStepMatch(currentSchema, key, currentStep)) return false;
       return isVisibleForValues(currentSchema, key, values);
     });
   }
@@ -129,7 +123,7 @@
     const properties = currentSchema.properties ?? {};
     const required = new Set<string>();
     (currentSchema.required ?? []).forEach((key) => {
-      if (matchesStep(properties[key], currentStep)) required.add(key);
+      if (isStepMatch(currentSchema, key, currentStep)) required.add(key);
     });
 
     for (const conditional of currentSchema.allOf ?? []) {
@@ -137,7 +131,7 @@
       const matches = matchesCondition(condition, values);
       const branch = matches ? conditional.then : conditional.else;
       branch?.required?.forEach((key) => {
-        if (matchesStep(properties[key], currentStep)) required.add(key);
+        if (isStepMatch(currentSchema, key, currentStep)) required.add(key);
       });
     }
     return required;
@@ -166,7 +160,7 @@
     for (const [key, prop] of Object.entries(properties)) {
       const grouped = prop["x-grouped-fields"];
       if (!grouped) continue;
-      if (!matchesStep(prop, currentStep)) continue;
+      if (!isStepMatch(currentSchema, key, currentStep)) continue;
 
       const filteredOptions: Record<string, string[]> = {};
       const groupedEntries = Object.entries(grouped) as Array<
@@ -176,7 +170,7 @@
         filteredOptions[optionValue] = childKeys.filter((childKey) => {
           const childProp = properties[childKey];
           if (!childProp) return false;
-          return matchesStep(childProp, currentStep);
+          return isStepMatch(currentSchema, childKey, currentStep);
         });
       }
       map.set(key, filteredOptions);
