@@ -72,7 +72,7 @@
     if (shouldClear) {
       form.update(
         ($form) => {
-          for (const [key, prop] of Object.entries(properties)) {
+          for (const key of Object.keys(properties)) {
             if (!isStepMatch(schema, key, stepFilter)) continue;
             const visible = isVisibleForValues(schema, key, $form);
             if (!visible && key in $form && $form[key] !== "") {
@@ -120,7 +120,6 @@
     values: Record<string, unknown>,
     currentStep: string | undefined,
   ) {
-    const properties = currentSchema.properties ?? {};
     const required = new Set<string>();
     (currentSchema.required ?? []).forEach((key) => {
       if (isStepMatch(currentSchema, key, currentStep)) required.add(key);
