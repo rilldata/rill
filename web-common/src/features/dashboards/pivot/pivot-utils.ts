@@ -19,6 +19,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { Row } from "@tanstack/svelte-table";
+import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
@@ -675,4 +677,12 @@ export function splitPivotChips(data: PivotChipData[]): {
     dimension: data?.filter((c) => c.type !== PivotChipType.Measure) || [],
     measure: data?.filter((c) => c.type === PivotChipType.Measure) || [],
   };
+}
+
+/**
+ * Check if a row is a "show more" button row by inspecting the first cell value
+ */
+export function isShowMoreRow(row: Row<PivotDataRow>): boolean {
+  const firstCell = row?.getVisibleCells()?.[0];
+  return firstCell?.getValue() === SHOW_MORE_BUTTON;
 }

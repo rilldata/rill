@@ -26,6 +26,7 @@ import {
   createIndexMap,
   getAccessorForCell,
   getTimeGrainFromDimension,
+  isShowMoreRow,
   isTimeDimension,
 } from "./pivot-utils";
 import {
@@ -324,6 +325,9 @@ function getFlatColumnDef(
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
+        const row = info.row;
+        const isShowMore = isShowMoreRow(row);
+
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
@@ -342,7 +346,8 @@ function getFlatColumnDef(
         }
         const value = m.formatter(measureValue);
 
-        if (value == null) return cellComponent(PivotMeasureCell, {});
+        if (value == null)
+          return cellComponent(PivotMeasureCell, { isShowMoreRow: isShowMore });
         return value;
       },
     };
@@ -490,6 +495,13 @@ function getNestedColumnDef(
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
+          const row = info.row;
+          const isShowMore = isShowMoreRow(row);
+
+          if (isShowMore) {
+            return cellComponent(PivotMeasureCell, { isShowMoreRow: true });
+          }
+
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
@@ -508,7 +520,10 @@ function getNestedColumnDef(
           }
           const value = m.formatter(measureValue);
 
-          if (value == null) return cellComponent(PivotMeasureCell, {});
+          if (value == null)
+            return cellComponent(PivotMeasureCell, {
+              isShowMoreRow: isShowMore,
+            });
           return value;
         },
       };
