@@ -440,7 +440,7 @@ function getNestedColumnDef(
               rowDimensions?.[row.depth]?.label ||
               rowDimensions?.[row.depth]?.name;
             const currentLimit = rowData.__currentLimit as number;
-            const label = `Increase limit to ${getNextLimitLabel(currentLimit)} on '${dimensionLabel}'`;
+            const label = `Increase limit to ${getNextLimitLabel(currentLimit)} on "${dimensionLabel}"`;
             return cellComponent(PivotShowMoreCell, {
               value: label,
               row,
