@@ -48,6 +48,23 @@ export const getYupSchema = {
       .required(),
   }),
 
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  https_connector: yup.object().shape({
+    headers: yup.string().optional(),
+  }),
+
+  https_source: yup.object().shape({
+    path: yup
+      .string()
+      .matches(/^https?:\/\//, 'Path must start with "http(s)://"')
+      .required("Path is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Source name is required"),
+  }),
+
   https: yup.object().shape({
     path: yup
       .string()
