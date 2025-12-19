@@ -4,10 +4,10 @@ title: rill org upload-logo
 ---
 ## rill org upload-logo
 
-Upload a custom logo (use --dark for dark-mode variant; omit path only with --remove)
+Upload a custom logo
 
 ```
-rill org upload-logo <org-name> <path-to-image> [flags]
+rill org upload-logo [<org-name> [<path-to-image>]] [flags]
 ```
 
 ### Flags

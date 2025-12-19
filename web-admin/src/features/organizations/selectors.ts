@@ -18,7 +18,7 @@ export function areAllProjectsHibernating(organization: string) {
         enabled: !!organization,
         select: (data) =>
           data.projects?.length &&
-          data.projects.every((p) => !p.prodDeploymentId),
+          data.projects.every((p) => !p.primaryDeploymentId),
       },
     },
   );
@@ -30,7 +30,7 @@ export async function fetchAllProjectsHibernating(organization: string) {
     queryFn: () => adminServiceListProjectsForOrganization(organization),
     staleTime: Infinity,
   });
-  return projectsResp.projects?.every((p) => !p.prodDeploymentId) ?? false;
+  return projectsResp.projects?.every((p) => !p.primaryDeploymentId) ?? false;
 }
 
 export function getFetchOrganizationQueryOptions(organization: string) {

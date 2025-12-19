@@ -637,7 +637,7 @@ components:
                 gitPasswordExpiresAt:
                     format: date-time
                     type: string
-                gitProdBranch:
+                gitPrimaryBranch:
                     type: string
                 gitRepoUrl:
                     type: string
@@ -1422,9 +1422,9 @@ components:
                     type: string
                 orgName:
                     type: string
-                prodBranch:
+                primaryBranch:
                     type: string
-                prodDeploymentId:
+                primaryDeploymentId:
                     type: string
                 prodSlots:
                     format: int64
@@ -2272,7 +2272,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.77.2
+    version: v0.77.8
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
@@ -2665,7 +2665,7 @@ paths:
                                         It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
                                         Either git_remote or archive_asset_id should be set.
                                     type: string
-                                prodBranch:
+                                primaryBranch:
                                     type: string
                                 prodSlots:
                                     format: int64
@@ -2799,7 +2799,7 @@ paths:
                                     type: string
                                 newName:
                                     type: string
-                                prodBranch:
+                                primaryBranch:
                                     type: string
                                 prodSlots:
                                     format: int64

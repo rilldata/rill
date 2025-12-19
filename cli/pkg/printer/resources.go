@@ -75,7 +75,7 @@ func toProjectRow(o *adminv1.Project) *project {
 	if o.ManagedGitId == "" {
 		githubURL = strings.TrimSuffix(o.GitRemote, ".git")
 		if o.Subpath != "" {
-			githubURL = filepath.Join(githubURL, "tree", o.ProdBranch, o.Subpath)
+			githubURL = filepath.Join(githubURL, "tree", o.PrimaryBranch, o.Subpath)
 		}
 	}
 

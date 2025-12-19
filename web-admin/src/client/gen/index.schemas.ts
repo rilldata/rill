@@ -509,7 +509,7 @@ export interface V1GetCloneCredentialsResponse {
   gitPassword?: string;
   gitPasswordExpiresAt?: string;
   gitSubpath?: string;
-  gitProdBranch?: string;
+  gitPrimaryBranch?: string;
   gitManagedRepo?: boolean;
   archiveDownloadUrl?: string;
 }
@@ -986,10 +986,10 @@ export interface V1Project {
   /** managed_git_id is set if the project is connected to a rill-managed git repo. */
   managedGitId?: string;
   subpath?: string;
-  prodBranch?: string;
+  primaryBranch?: string;
   archiveAssetId?: string;
   prodSlots?: string;
-  prodDeploymentId?: string;
+  primaryDeploymentId?: string;
   devSlots?: string;
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
@@ -1790,7 +1790,7 @@ See ListProjectsForFingerprint for more context. */
   provisioner?: string;
   prodSlots?: string;
   subpath?: string;
-  prodBranch?: string;
+  primaryBranch?: string;
   /** git_remote is set for projects whose project files are stored in Git.
 It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
 Either git_remote or archive_asset_id should be set. */
@@ -1817,7 +1817,7 @@ export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
   directoryName?: string;
-  prodBranch?: string;
+  primaryBranch?: string;
   gitRemote?: string;
   subpath?: string;
   archiveAssetId?: string;
