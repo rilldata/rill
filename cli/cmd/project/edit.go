@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodVersion, primaryBranch, prodBranch, subpath, path, provisioner, gitRemote string
+	var name, description, prodVersion, primaryBranch, subpath, path, provisioner, gitRemote string
 	var public bool
 	var prodTTL int64
 
@@ -49,10 +49,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			if cmd.Flags().Changed("prod-version") {
 				flagSet = true
 				req.ProdVersion = &prodVersion
-			}
-			if cmd.Flags().Changed("prod-branch") {
-				flagSet = true
-				req.PrimaryBranch = &prodBranch
 			}
 			if cmd.Flags().Changed("primary-branch") {
 				flagSet = true
@@ -94,12 +90,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
-
-	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
-	_ = editCmd.Flags().MarkDeprecated("prod-branch", "use --primary-branch instead")
 	editCmd.Flags().StringVar(&primaryBranch, "primary-branch", "", "Primary branch name")
-	editCmd.MarkFlagsMutuallyExclusive("prod-branch", "primary-branch")
-
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	editCmd.Flags().StringVar(&gitRemote, "remote-url", "", "Github remote URL")
