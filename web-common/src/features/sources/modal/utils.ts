@@ -102,6 +102,22 @@ export function isMultiStepConnectorDisabled(
   if (!schema) return true;
 
   const authInfo = getRadioEnumOptions(schema);
+
+  // Handle schemas without auth method radio selector (e.g., BigQuery, Athena)
+  if (!authInfo) {
+    const requiredFields = (schema.required ?? []).filter((fieldId) =>
+      isStepMatch(schema, fieldId, "connector"),
+    );
+    if (!requiredFields.length) return false;
+
+    return !requiredFields.every((fieldId) => {
+      const value = paramsFormValue[fieldId];
+      const errorsForField = paramsFormErrors[fieldId] as any;
+      const hasErrors = Boolean(errorsForField?.length);
+      return !isEmpty(value) && !hasErrors;
+    });
+  }
+
   const options = authInfo?.options ?? [];
   const authKey = authInfo?.key || findRadioEnumKey(schema);
   const methodFromForm =

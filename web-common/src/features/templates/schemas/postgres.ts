@@ -20,12 +20,14 @@ export const postgresSchema: MultiStepFormSchema = {
         parameters: ["host", "port", "database", "user", "password", "sslmode"],
         connection_string: ["dsn"],
       },
+      "x-step": "connector",
     },
     host: {
       type: "string",
       title: "Host",
       description: "Database server hostname or IP address",
       "x-placeholder": "localhost",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     port: {
@@ -34,6 +36,7 @@ export const postgresSchema: MultiStepFormSchema = {
       description: "Database server port",
       default: 5432,
       "x-placeholder": "5432",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     database: {
@@ -41,6 +44,7 @@ export const postgresSchema: MultiStepFormSchema = {
       title: "Database",
       description: "Database name",
       "x-placeholder": "my_database",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     user: {
@@ -48,6 +52,7 @@ export const postgresSchema: MultiStepFormSchema = {
       title: "Username",
       description: "Database user",
       "x-placeholder": "postgres",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     password: {
@@ -56,6 +61,7 @@ export const postgresSchema: MultiStepFormSchema = {
       description: "Database password",
       "x-placeholder": "Enter password",
       "x-secret": true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     sslmode: {
@@ -65,6 +71,7 @@ export const postgresSchema: MultiStepFormSchema = {
       enum: ["disable", "require", "verify-ca", "verify-full"],
       default: "prefer",
       "x-display": "select",
+      "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
     dsn: {
@@ -73,6 +80,7 @@ export const postgresSchema: MultiStepFormSchema = {
       description: "PostgreSQL connection string (DSN)",
       "x-placeholder": "postgres://user:password@host:5432/dbname?sslmode=require",
       "x-secret": true,
+      "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
     },
   },
