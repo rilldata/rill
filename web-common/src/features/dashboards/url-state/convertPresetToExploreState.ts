@@ -487,6 +487,11 @@ function fromPivotUrlParams(
     }
   }
 
+  let rowLimit: number | undefined = undefined;
+  if (preset.pivotRowLimit !== undefined) {
+    rowLimit = preset.pivotRowLimit;
+  }
+
   return {
     partialExploreState: {
       pivot: {
@@ -500,6 +505,7 @@ function fromPivotUrlParams(
         enableComparison: true,
         activeCell: null,
         tableMode,
+        rowLimit,
       },
     },
     errors,

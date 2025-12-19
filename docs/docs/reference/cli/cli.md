@@ -41,6 +41,7 @@ Work with Rill projects directly from the command line.
 * [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
 * [rill user](user/user.md)	 - Manage users
 * [rill usergroup](usergroup/usergroup.md)	 - Manage user groups
+* [rill validate](validate.md)	 - Validate project resources
 * [rill version](version.md)	 - Show Rill version
 * [rill whoami](whoami.md)	 - Show current user
 

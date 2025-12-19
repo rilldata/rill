@@ -12,13 +12,15 @@ import { createStableTimeControlStoreFromName } from "@rilldata/web-common/featu
 import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { derived, type Readable } from "svelte/store";
 
-export const dashboardChatConfig = <ChatConfig>{
+export const dashboardChatConfig = {
   agent: ToolName.ANALYST_AGENT,
   additionalContextStoreGetter: () => getActiveExploreContext(), // TODO: add canvas context as well
   emptyChatLabel: "Happy to help explore your data",
-  placeholder: "Ask about your data...",
+  placeholder:
+    "Type a question, or press @ to insert a metric, dimension, or measure.",
+  minChatHeight: "min-h-[4rem]",
   enableMention: true,
-};
+} satisfies ChatConfig;
 
 /**
  * Creates a store that contains the active explore context sent to the Complete API.

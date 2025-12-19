@@ -105,6 +105,121 @@ iframe.contentWindow.postMessage({
 { "id": 2, "result": {"state": "<rill state string>"} }
 ```
 
+
+### `getThemeMode()`
+
+Fetches the current theme mode of the iframe.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 3,
+  method: "getThemeMode"
+}, "*");
+```
+
+**Response:**
+
+```json
+{ "id": 3, "result": {"themeMode": "light"} }
+```
+
+The `themeMode` value will be one of: `"light"`, `"dark"`, or `"system"`.
+
+
+### `setThemeMode(themeMode)`
+
+Sets the theme mode inside the iframe.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 4,
+  method: "setThemeMode",
+  params: "dark"
+}, "*");
+```
+
+**Parameters:**
+- `themeMode` (string): The theme mode to set. Must be one of: `"light"`, `"dark"`, or `"system"`.
+
+**Response:**
+
+```json
+{ "id": 4, "result": true }
+```
+
+**Error Response (if invalid themeMode):**
+
+```json
+{
+  "id": 4,
+  "error": {
+    "code": -32603,
+    "message": "Expected themeMode to be one of \"dark\", \"light\", or \"system\""
+  }
+}
+```
+
+### `getTheme()`
+
+Fetches the current theme name applied to the dashboard.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 5,
+  method: "getTheme"
+}, "*");
+```
+
+**Response:**
+
+```json
+{ "id": 5, "result": {"theme": "my-custom-theme"} }
+```
+
+If no theme is set, the response will be:
+
+```json
+{ "id": 5, "result": {"theme": "default"} }
+```
+
+The `theme` value will be the name of the theme resource, or `"default"` if no theme is set.
+
+
+### `setTheme(theme)`
+
+Sets the theme name to apply to the dashboard.
+
+```js
+iframe.contentWindow.postMessage({
+  id: 6,
+  method: "setTheme",
+  params: "my-custom-theme"
+}, "*");
+```
+
+**Parameters:**
+- `theme` (string | null): The theme name to set. Must be the name of an existing theme resource. To clear the theme and use the default, pass `null` or `"default"`.
+
+**Response:**
+
+```json
+{ "id": 6, "result": true }
+```
+
+**Error Response (if invalid theme):**
+
+```json
+{
+  "id": 6,
+  "error": {
+    "code": -32603,
+    "message": "Expected theme to be a string or null"
+  }
+}
+```
+
+**Note:** The theme name must correspond to an existing theme resource in your Rill project. Setting an invalid theme name will not cause an error, but the theme will not be applied.
+
 ## Notifications
 
 Notifications are sent **from the iframe** to the parent window. These do not include an `id`.
@@ -215,6 +330,14 @@ window.addEventListener("message", async (event) => {
     await sendRequest("setState", "view=pivot&tr=PT24H&grain=hour");
     const currentState = await sendRequest("getState");
     console.log("Current state:", currentState);
+
+    const currentThemeMode = await sendRequest("getThemeMode");
+    console.log("Current theme mode:", currentThemeMode.themeMode);
+    await sendRequest("setThemeMode", "dark");
+
+    const currentTheme = await sendRequest("getTheme");
+    console.log("Current theme:", currentTheme.theme);
+    await sendRequest("setTheme", "my-custom-theme");
   }
 
   if (event.data?.method === "stateChanged") {

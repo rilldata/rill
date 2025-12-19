@@ -93,10 +93,12 @@ export class SSEFetchClient {
     message: ((message: SSEMessage) => void)[];
     error: ((error: Error) => void)[];
     close: (() => void)[];
+    open: (() => void)[];
   } = {
     message: [],
     error: [],
     close: [],
+    open: [],
   };
 
   /**
@@ -105,6 +107,7 @@ export class SSEFetchClient {
   public on(event: "message", listener: (message: SSEMessage) => void): void;
   public on(event: "error", listener: (error: Error) => void): void;
   public on(event: "close", listener: () => void): void;
+  public on(event: "open", listener: () => void): void;
   public on(event: string, listener: any): void {
     if (this.listeners[event as keyof typeof this.listeners]) {
       this.listeners[event as keyof typeof this.listeners].push(listener);
@@ -117,6 +120,7 @@ export class SSEFetchClient {
   public off(event: "message", listener: (message: SSEMessage) => void): void;
   public off(event: "error", listener: (error: Error) => void): void;
   public off(event: "close", listener: () => void): void;
+  public off(event: "open", listener: () => void): void;
   public off(event: string, listener: any): void {
     const eventListeners = this.listeners[event as keyof typeof this.listeners];
     if (eventListeners) {
@@ -177,6 +181,8 @@ export class SSEFetchClient {
         throw new Error("No response body");
       }
 
+      this.listeners.open.forEach((listener) => listener());
+
       // Process the SSE stream
       await this.processSSEStream(response.body);
     } catch (error) {
@@ -186,6 +192,7 @@ export class SSEFetchClient {
         );
       }
     } finally {
+      this.stop();
       this.listeners.close.forEach((listener) => listener());
     }
   }

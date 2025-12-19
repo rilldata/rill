@@ -929,6 +929,9 @@ paths:
                 description: |-
                   If true, the AI will be used to generate the metrics view file.
                   Otherwise, it falls back to a simpler heuristic approach.
+              prompt:
+                type: string
+                description: Optional prompt to guide AI generation.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -1515,6 +1518,34 @@ paths:
                 type: string
                 format: date-time
                 description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/filter-expression/resolve:
+    post:
+      summary: ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+      operationId: QueryService_ConvertExpressionToMetricsSQL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConvertExpressionToMetricsSQLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              expression:
+                $ref: '#/definitions/v1Expression'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -3023,10 +3054,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: level
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:
@@ -3278,6 +3305,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       column:
         type: string
       expression:
@@ -3330,6 +3361,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       expression:
         type: string
       type:
@@ -3830,6 +3865,14 @@ definitions:
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      filterExpr:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1DefaultMetricsSQLFilter'
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Valid Metrics SQL expression
   v1CanvasRow:
     type: object
     properties:
@@ -3917,6 +3960,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        title: Array of dimension or measure names
   v1CanvasState:
     type: object
     properties:
@@ -4454,6 +4502,12 @@ definitions:
           $ref: '#/definitions/v1Message'
         description: 'NOTE: Deprecated.'
     title: Conversation metadata and messages
+  v1ConvertExpressionToMetricsSQLResponse:
+    type: object
+    properties:
+      sql:
+        type: string
+        description: The SQL filter string representation of the expression.
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -4505,6 +4559,11 @@ definitions:
         type: string
       databaseSchema:
         type: string
+  v1DefaultMetricsSQLFilter:
+    type: object
+    properties:
+      expression:
+        $ref: '#/definitions/v1Expression'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -4660,6 +4719,9 @@ definitions:
         type: boolean
       pivotTableMode:
         type: string
+      pivotRowLimit:
+        type: integer
+        format: int32
   v1ExploreSortType:
     type: string
     enum:
@@ -5808,6 +5870,13 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      queryAttributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+          Keys and values are stored as templates and will be resolved at query time.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:

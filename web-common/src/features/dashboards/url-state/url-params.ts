@@ -30,6 +30,7 @@ export enum ExploreStateURLParams {
   PivotRows = "rows",
   PivotColumns = "cols",
   PivotTableMode = "table_mode",
+  PivotRowLimit = "row_limit",
 
   GzippedParams = "gzipped_state",
   TemporaryFilters = "temp",

@@ -13,7 +13,6 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { onMount } from "svelte";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import {
     createIframeRPCHandler,
     emitNotification,
@@ -24,8 +23,7 @@
   export let data: PageData;
   const {
     instanceId,
-    runtimeHost,
-    accessToken,
+
     missingRequireParams,
     navigationEnabled,
   } = data;
@@ -111,32 +109,25 @@
     fatal
   />
 {:else}
-  <RuntimeProvider
-    host={runtimeHost}
-    {instanceId}
-    jwt={accessToken}
-    authContext="embed"
-  >
-    {#if showTopBar}
-      <div
-        class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
-        class:border-b={!onProjectPage}
-      >
-        <TopNavigationBarEmbed
-          {instanceId}
-          {activeResource}
-          {navigationEnabled}
-        />
-      </div>
-    {/if}
-
-    <div class="flex h-full overflow-hidden">
-      <div class="flex-1 overflow-hidden">
-        <slot />
-      </div>
-      {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-        <ExploreChat />
-      {/if}
+  {#if showTopBar}
+    <div
+      class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
+      class:border-b={!onProjectPage}
+    >
+      <TopNavigationBarEmbed
+        {instanceId}
+        {activeResource}
+        {navigationEnabled}
+      />
     </div>
-  </RuntimeProvider>
+  {/if}
+
+  <div class="flex h-full overflow-hidden">
+    <div class="flex-1 overflow-hidden">
+      <slot />
+    </div>
+    {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
+      <ExploreChat />
+    {/if}
+  </div>
 {/if}

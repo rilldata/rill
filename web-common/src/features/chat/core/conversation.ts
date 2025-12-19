@@ -17,12 +17,13 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import { transformToBlocks, type Block } from "./messages/block-transform";
+import { MessageContentType, MessageType, ToolName } from "./types";
 import {
   getOptimisticMessageId,
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
-import { MessageContentType, MessageType, ToolName } from "./types";
 
 /**
  * Individual conversation state management.
@@ -88,6 +89,22 @@ export class Conversation {
       ($getConversationQuery) =>
         ($getConversationQuery.error as HTTPError)?.response?.data?.message ??
         null,
+    );
+  }
+
+  /**
+   * Get message blocks for rendering this conversation.
+   * Transforms raw messages into a structured list of blocks (text, thinking blocks, charts).
+   */
+  public getBlocks(): Readable<Block[]> {
+    return derived(
+      [this.getConversationQuery(), this.isStreaming],
+      ([$query, $isStreaming]) => {
+        const messages = $query.data?.messages ?? [];
+        const isLoading = !!$query.isLoading;
+
+        return transformToBlocks(messages, $isStreaming, isLoading);
+      },
     );
   }
 

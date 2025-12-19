@@ -104,7 +104,17 @@ export interface DimensionComputeTimeFloor {
   /**
    * Time grain for flooring
    */
-  grain: "" | "millisecond" | "second" | "minute" | "hour" | "day" | "week" | "month" | "quarter" | "year";
+  grain:
+    | ""
+    | "millisecond"
+    | "second"
+    | "minute"
+    | "hour"
+    | "day"
+    | "week"
+    | "month"
+    | "quarter"
+    | "year";
   [k: string]: unknown;
 }
 
@@ -203,7 +213,20 @@ export interface Condition {
   /**
    * Operator for the condition
    */
-  op: "" | "eq" | "neq" | "lt" | "lte" | "gt" | "gte" | "in" | "nin" | "ilike" | "nilike" | "or" | "and";
+  op:
+    | ""
+    | "eq"
+    | "neq"
+    | "lt"
+    | "lte"
+    | "gt"
+    | "gte"
+    | "in"
+    | "nin"
+    | "ilike"
+    | "nilike"
+    | "or"
+    | "and";
   /**
    * Expressions in the condition
    */
@@ -231,7 +254,17 @@ export interface TimeSpine {
   /**
    * Time grain for the spine
    */
-  grain: "" | "millisecond" | "second" | "minute" | "hour" | "day" | "week" | "month" | "quarter" | "year";
+  grain:
+    | ""
+    | "millisecond"
+    | "second"
+    | "minute"
+    | "hour"
+    | "day"
+    | "week"
+    | "month"
+    | "quarter"
+    | "year";
   [k: string]: unknown;
 }
 
@@ -273,6 +306,16 @@ export interface TimeRange {
   /**
    * Time grain to round to
    */
-  round_to_grain?: "" | "millisecond" | "second" | "minute" | "hour" | "day" | "week" | "month" | "quarter" | "year";
+  round_to_grain?:
+    | ""
+    | "millisecond"
+    | "second"
+    | "minute"
+    | "hour"
+    | "day"
+    | "week"
+    | "month"
+    | "quarter"
+    | "year";
   [k: string]: unknown;
 }
