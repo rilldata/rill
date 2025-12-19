@@ -482,8 +482,8 @@ type Project struct {
 	Subpath string `db:"subpath"`
 	// ProdVersion is the runtime version to use for the production deployment.
 	ProdVersion string `db:"prod_version"`
-	// ProdBranch is the Git branch to use for the production deployment for Git-connected projects.
-	ProdBranch string `db:"prod_branch"`
+	// PrimaryBranch is the Git branch to use for the primary production deployment for Git-connected projects.
+	PrimaryBranch string `db:"primary_branch"`
 	// Deprecated: See the ProjectVariable type instead.
 	ProdVariables map[string]string `db:"prod_variables"`
 	// Deprecated: See the ProjectVariable type instead.
@@ -494,8 +494,8 @@ type Project struct {
 	// ProdTTLSeconds is the time-to-live for the production deployment.
 	// If the project has not been accessed in this time, its deployment(s) will be hibernated.
 	ProdTTLSeconds *int64 `db:"prod_ttl_seconds"`
-	// ProdDeploymentID is the ID of the current production deployment.
-	ProdDeploymentID *string `db:"prod_deployment_id"`
+	// PrimaryDeploymentID is the ID of the current primary deployment.
+	PrimaryDeploymentID *string `db:"primary_deployment_id"`
 	// DevSlots is the number of slots to use for dev deployments.
 	DevSlots int `db:"dev_slots"`
 	// DevTTLSeconds is the time-to-live for dev deployments.
@@ -525,7 +525,7 @@ type InsertProjectOptions struct {
 	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
-	ProdBranch           string
+	PrimaryBranch        string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	DevSlots             int
@@ -546,8 +546,8 @@ type UpdateProjectOptions struct {
 	ManagedGitRepoID     *string
 	Subpath              string
 	ProdVersion          string
-	ProdBranch           string
-	ProdDeploymentID     *string
+	PrimaryBranch        string
+	PrimaryDeploymentID  *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	DevSlots             int

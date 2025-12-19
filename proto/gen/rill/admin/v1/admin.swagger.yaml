@@ -1024,7 +1024,7 @@ paths:
                 format: int64
               subpath:
                 type: string
-              prodBranch:
+              primaryBranch:
                 type: string
               gitRemote:
                 type: string
@@ -1164,7 +1164,7 @@ paths:
                 type: boolean
               directoryName:
                 type: string
-              prodBranch:
+              primaryBranch:
                 type: string
               gitRemote:
                 type: string
@@ -5016,7 +5016,7 @@ definitions:
         format: date-time
       gitSubpath:
         type: string
-      gitProdBranch:
+      gitPrimaryBranch:
         type: string
       gitManagedRepo:
         type: boolean
@@ -5825,14 +5825,14 @@ definitions:
         description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
-      prodBranch:
+      primaryBranch:
         type: string
       archiveAssetId:
         type: string
       prodSlots:
         type: string
         format: int64
-      prodDeploymentId:
+      primaryDeploymentId:
         type: string
       devSlots:
         type: string
