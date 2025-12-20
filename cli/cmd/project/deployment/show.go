@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func StartCmd(ch *cmdutil.Helper) *cobra.Command {
+func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
-	startCmd := &cobra.Command{
-		Use:   "start [<project>] <branch>",
+	showCmd := &cobra.Command{
+		Use:   "show [<project>] <branch>",
 		Args:  cobra.RangeArgs(1, 2),
-		Short: "Start a deployment by branch",
+		Short: "Show details of a deployment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var branch string
 			if len(args) == 1 {
@@ -56,31 +56,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(resp.Deployments) > 1 {
-				// should not happen in normal circumstances
-				return fmt.Errorf("multiple deployments found for branch %q in project %q, cannot proceed. Delete existing deployments first", branch, project)
+				return fmt.Errorf("multiple deployments found for branch %q in project %q", branch, project)
 			}
 
-			deployment := resp.Deployments[0]
-
-			ch.PrintfBold("Starting deployment for branch %q (ID: %s)...\n", branch, deployment.Id)
-
-			startResp, err := client.StartDeployment(cmd.Context(), &adminv1.StartDeploymentRequest{
-				DeploymentId: deployment.Id,
-			})
-			if err != nil {
-				return err
-			}
-
-			ch.Printf("Deployment started for branch %q\n", startResp.Deployment.Branch)
-			ch.Printf("Provisioning runtime (this may take a moment)")
-
-			// Poll for deployment status and print result
-			return pollDeploymentStatus(cmd.Context(), client, ch, startResp.Deployment.Id, project, branch, deployment.Environment)
+			ch.PrintDeployment(resp.Deployments[0])
+			return nil
 		},
 	}
 
-	startCmd.Flags().StringVar(&project, "project", "", "Project name")
-	startCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	showCmd.Flags().StringVar(&project, "project", "", "Project name")
+	showCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
-	return startCmd
+	return showCmd
 }

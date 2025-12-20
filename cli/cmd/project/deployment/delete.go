@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentDeleteCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
 	deleteCmd := &cobra.Command{

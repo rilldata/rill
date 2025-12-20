@@ -1,14 +1,16 @@
 package deployment
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func DeploymentCreateCmd(ch *cmdutil.Helper) *cobra.Command {
+func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, environment string
 	var editable bool
 
@@ -58,11 +60,11 @@ func DeploymentCreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfSuccess("Deployment created successfully!\n\n")
-			ch.Printf("Deployment ID: %s\n", resp.Deployment.Id)
-			ch.Printf("Branch: %s\n", resp.Deployment.Branch)
-			ch.Printf("Status: %s\n", resp.Deployment.Status.String())
-			return nil
+			ch.Printf("Deployment created with branch %q\n", resp.Deployment.Branch)
+			ch.Printf("Provisioning runtime (this may take a moment)")
+
+			// Poll for deployment status and print result
+			return pollDeploymentStatus(cmd.Context(), client, ch, resp.Deployment.Id, project, branch, environment)
 		},
 	}
 
@@ -72,4 +74,55 @@ func DeploymentCreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().BoolVar(&editable, "editable", false, "Make the deployment editable (changes are persisted back to git repo)")
 
 	return createCmd
+}
+
+// pollDeploymentStatus polls the deployment status until it's either running or errored, then prints the result
+func pollDeploymentStatus(ctx context.Context, client adminv1.AdminServiceClient, ch *cmdutil.Helper, deploymentID, project, branch, environment string) error {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			ch.Printf(".")
+
+			// Fetch the deployment status using ListDeployments filtered by branch
+			resp, err := client.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
+				Org:         ch.Org,
+				Project:     project,
+				Environment: environment,
+				Branch:      branch,
+			})
+			if err != nil {
+				return err
+			}
+
+			// Find the deployment with matching ID - usually there's only one per branch
+			var deployment *adminv1.Deployment
+			for _, d := range resp.Deployments {
+				if d.Id == deploymentID {
+					deployment = d
+					break
+				}
+			}
+
+			if deployment == nil {
+				return fmt.Errorf("deployment not found")
+			}
+
+			// Check if deployment is in a terminal state and print result
+			switch deployment.Status {
+			case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING:
+				ch.PrintfSuccess("\n\nRuntime provisioned successfully!\n\n")
+				ch.Printf("Runtime Host: %s\n", deployment.RuntimeHost)
+				return nil
+			case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+				ch.Printf("\n\n")
+				return fmt.Errorf("runtime provisioning failed: %s", deployment.StatusMessage)
+			}
+			// Continue polling for other statuses (PENDING, UPDATING, etc.)
+		}
+	}
 }

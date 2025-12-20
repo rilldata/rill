@@ -716,6 +716,26 @@ func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment) {
 	p.PrintData(toDeploymentsTable(deployments))
 }
 
+func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+
+	p.Printf("Deployment ID: %s\n", d.Id)
+	p.Printf("Environment: %s\n", d.Environment)
+	p.Printf("Branch: %s\n", d.Branch)
+	p.Printf("Status: %s\n", status)
+	if d.RuntimeHost != "" {
+		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
+	}
+	if d.Editable {
+		p.Printf("Editable: true\n")
+	}
+	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
+	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
+}
+
 func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
 	res := make([]*deployment, 0, len(deployments))
 	for _, d := range deployments {
@@ -725,30 +745,44 @@ func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
 }
 
 func toDeploymentRow(d *adminv1.Deployment) *deployment {
-	var updatedOn string
-	if d.UpdatedOn != nil {
-		updatedOn = d.UpdatedOn.AsTime().Local().Format(time.DateTime)
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
 	}
-
 	return &deployment{
-		ID:            d.Id,
-		Environment:   d.Environment,
-		Branch:        d.Branch,
-		Status:        d.Status.String(),
-		RuntimeHost:   d.RuntimeHost,
-		StatusMessage: d.StatusMessage,
-		UpdatedOn:     updatedOn,
+		Environment: d.Environment,
+		Branch:      d.Branch,
+		Status:      status,
+	}
+}
+
+func formatDeploymentStatus(status adminv1.DeploymentStatus) string {
+	switch status {
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
+		return "Pending"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING:
+		return "Running"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+		return "Errored"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED:
+		return "Stopped"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING:
+		return "Updating"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING:
+		return "Stopping"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING:
+		return "Deleting"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED:
+		return "Deleted"
+	default:
+		return "Unknown"
 	}
 }
 
 type deployment struct {
-	ID            string `header:"id" json:"id"`
-	Environment   string `header:"environment" json:"environment"`
-	Branch        string `header:"branch" json:"branch"`
-	Status        string `header:"status" json:"status"`
-	RuntimeHost   string `header:"runtime_host" json:"runtime_host"`
-	StatusMessage string `header:"message" json:"message"`
-	UpdatedOn     string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+	Environment string `header:"environment" json:"environment"`
+	Branch      string `header:"branch" json:"branch"`
+	Status      string `header:"status" json:"status"`
 }
 
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)

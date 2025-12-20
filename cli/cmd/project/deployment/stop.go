@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentStopCmd(ch *cmdutil.Helper) *cobra.Command {
+func StopCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
 	stopCmd := &cobra.Command{

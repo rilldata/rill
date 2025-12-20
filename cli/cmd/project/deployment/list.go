@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentsListCmd(ch *cmdutil.Helper) *cobra.Command {
+func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path, environment string
 
 	listCmd := &cobra.Command{

@@ -11,11 +11,11 @@ func DeploymentsCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Manage project deployments",
 	}
 
-	deploymentCmd.AddCommand(DeploymentsListCmd(ch))
-	deploymentCmd.AddCommand(DeploymentCreateCmd(ch))
-	deploymentCmd.AddCommand(DeploymentDeleteCmd(ch))
-	deploymentCmd.AddCommand(DeploymentStartCmd(ch))
-	deploymentCmd.AddCommand(DeploymentStopCmd(ch))
-
+	deploymentCmd.AddCommand(ListCmd(ch))
+	deploymentCmd.AddCommand(ShowCmd(ch))
+	deploymentCmd.AddCommand(CreateCmd(ch))
+	deploymentCmd.AddCommand(DeleteCmd(ch))
+	deploymentCmd.AddCommand(StartCmd(ch))
+	deploymentCmd.AddCommand(StopCmd(ch))
 	return deploymentCmd
 }
