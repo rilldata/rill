@@ -8,16 +8,12 @@
   import type { SuperValidated } from "sveltekit-superforms";
 
   import type { AddDataFormType, ConnectorType } from "./types";
-  import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { hasOnlyDsn, isEmpty } from "./utils";
-  import {
-    CONNECTION_TAB_OPTIONS,
-    type ClickHouseConnectorType,
-  } from "./constants";
+  import { CONNECTION_TAB_OPTIONS } from "./constants";
 
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
@@ -107,16 +103,6 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  let clickhouseError: string | null = null;
-  let clickhouseErrorDetails: string | undefined = undefined;
-  let clickhouseFormId: string = "";
-  let clickhouseSubmitting: boolean;
-  let clickhouseIsSubmitDisabled: boolean;
-  let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
-  let clickhouseParamsForm;
-  let clickhouseDsnForm;
-  let clickhouseShowSaveAnyway: boolean = false;
-
   // Hide Save Anyway once we advance to the model step in multi-step flows.
   $: if (isMultiStepConnector && stepState.step === "source") {
     showSaveAnyway = false;
@@ -176,13 +162,10 @@
         isConnectorForm,
         step: stepState.step,
         submitting,
-        clickhouseConnectorType,
-        clickhouseSubmitting,
         selectedAuthMethod: activeAuthMethod ?? undefined,
       });
 
   $: primaryLoadingCopy = (() => {
-    if (connector.name === "clickhouse") return "Connecting...";
     if (isMultiStepConnector) return multiStepLoadingCopy;
     return activeAuthMethod === "public"
       ? "Continuing..."
@@ -229,33 +212,15 @@
     // For other connectors, use manager helper
     saveAnyway = true;
     const values =
-      connector.name === "clickhouse"
-        ? connectionTab === "dsn"
-          ? $clickhouseDsnForm
-          : $clickhouseParamsForm
-        : onlyDsn || connectionTab === "dsn"
-          ? $dsnForm
-          : $paramsForm;
-    if (connector.name === "clickhouse") {
-      clickhouseSubmitting = true;
-    }
+      onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
     const result = await formManager.saveConnectorAnyway({
       queryClient,
       values,
-      clickhouseConnectorType,
     });
     if (result.ok) {
       onClose();
     } else {
-      if (connector.name === "clickhouse") {
-        if (connectionTab === "dsn") {
-          dsnError = result.message;
-          dsnErrorDetails = result.details;
-        } else {
-          paramsError = result.message;
-          paramsErrorDetails = result.details;
-        }
-      } else if (onlyDsn || connectionTab === "dsn") {
+      if (onlyDsn || connectionTab === "dsn") {
         dsnError = result.message;
         dsnErrorDetails = result.details;
       } else {
@@ -264,9 +229,6 @@
       }
     }
     saveAnyway = false;
-    if (connector.name === "clickhouse") {
-      clickhouseSubmitting = false;
-    }
   }
 
   $: yamlPreview = formManager.computeYamlPreview({
@@ -279,16 +241,9 @@
     isConnectorForm,
     paramsFormValues: $paramsForm,
     dsnFormValues: $dsnForm,
-    clickhouseConnectorType,
-    clickhouseParamsValues: $clickhouseParamsForm,
-    clickhouseDsnValues: $clickhouseDsnForm,
   });
-  $: isClickhouse = connector.name === "clickhouse";
-  $: shouldShowSaveAnywayButton =
-    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
-  $: saveAnywayLoading = isClickhouse
-    ? clickhouseSubmitting && saveAnyway
-    : submitting && saveAnyway;
+  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
+  $: saveAnywayLoading = submitting && saveAnyway;
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -328,24 +283,7 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if connector.name === "clickhouse"}
-        <AddClickHouseForm
-          {connector}
-          {onClose}
-          setError={(error, details) => {
-            clickhouseError = error;
-            clickhouseErrorDetails = details;
-          }}
-          bind:formId={clickhouseFormId}
-          bind:isSubmitting={clickhouseSubmitting}
-          bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:connectorType={clickhouseConnectorType}
-          bind:connectionTab
-          bind:paramsForm={clickhouseParamsForm}
-          bind:dsnForm={clickhouseDsnForm}
-          bind:showSaveAnyway={clickhouseShowSaveAnyway}
-        />
-      {:else if hasDsnFormOption}
+      {#if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}
           options={CONNECTION_TAB_OPTIONS}
@@ -457,14 +395,10 @@
         {/if}
 
         <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
-          loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting
-            : submitting}
+          disabled={submitting || isSubmitDisabled}
+          loading={submitting}
           loadingCopy={primaryLoadingCopy}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          form={formId}
           submitForm
           type="primary"
         >
@@ -479,13 +413,11 @@
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-      {#if dsnError || paramsError || clickhouseError}
+      {#if dsnError || paramsError}
         <SubmissionError
-          message={clickhouseError ??
-            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+          message={(onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
             ""}
-          details={clickhouseErrorDetails ??
-            (onlyDsn || connectionTab === "dsn"
+          details={(onlyDsn || connectionTab === "dsn"
               ? dsnErrorDetails
               : paramsErrorDetails) ??
             ""}

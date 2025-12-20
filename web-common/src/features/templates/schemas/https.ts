@@ -27,7 +27,6 @@ export const httpsSchema: MultiStepFormSchema = {
       description:
         'HTTP headers as JSON object. Example: {"Authorization": "Bearer my-token", "X-API-Key": "value"}',
       "x-placeholder": '{"Authorization": "Bearer my-token"}',
-      "x-display": "textarea",
       "x-step": "connector",
       "x-visible-if": { auth_method: "headers" },
     },
@@ -51,7 +50,7 @@ export const httpsSchema: MultiStepFormSchema = {
   allOf: [
     {
       if: { properties: { auth_method: { const: "headers" } } },
-      then: { required: ["headers" },
+      then: { required: ["headers"] },
     },
     {
       if: { properties: { auth_method: { const: "public" } } },

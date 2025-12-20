@@ -56,6 +56,7 @@ export const MULTI_STEP_CONNECTORS = [
   "bigquery",
   "redshift",
   "athena",
+  "clickhouse",
   "duckdb",
   "motherduck",
   "druid",

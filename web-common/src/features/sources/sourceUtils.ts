@@ -207,6 +207,33 @@ export function maybeRewriteToDuckDb(
 }
 
 /**
+ * Prepare connector form values before submission.
+ * Handles special transformations like ClickHouse auth_method → managed.
+ */
+export function prepareConnectorFormData(
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+): Record<string, unknown> {
+  const processedValues = { ...formValues };
+
+  // ClickHouse: translate auth_method to managed boolean
+  if (connector.name === "clickhouse" && processedValues.auth_method) {
+    const authMethod = processedValues.auth_method as string;
+    processedValues.managed = authMethod === "rill-managed";
+
+    // Set mode to readwrite for managed ClickHouse
+    if (processedValues.managed) {
+      processedValues.mode = "readwrite";
+    }
+
+    // Remove the UI-only auth_method field
+    delete processedValues.auth_method;
+  }
+
+  return processedValues;
+}
+
+/**
  * Process form data for sources, including DuckDB rewrite logic and placeholder handling.
  * This serves as a single source of truth for both preview and submission.
  */
