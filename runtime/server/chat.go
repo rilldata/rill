@@ -120,9 +120,13 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 	}
 
 	// validate that the requested message id exists
-	// TODO should we make sure the requested shared until message is of type result from router agent? if not then go up the chain and use the last result message id?
-	foundMsg := false
+	foundMsg := req.SharedUntilMessageId == ""
+	lastRouterResultMsgID := ""
 	for _, msg := range session.Messages() {
+		// only allow sharing until the last router agent result message
+		if msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult {
+			lastRouterResultMsgID = msg.ID
+		}
 		if msg.ID == req.SharedUntilMessageId {
 			// found the message, proceed
 			foundMsg = true
@@ -132,9 +136,12 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 	if !foundMsg {
 		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.SharedUntilMessageId, req.ConversationId)
 	}
+	if lastRouterResultMsgID == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation %q without any router agent result messages", req.ConversationId)
+	}
 
 	// now save the session with the shared until message id and flush immediately
-	err = session.UpdateSharedUntilMessageID(ctx, req.SharedUntilMessageId)
+	err = session.UpdateSharedUntilMessageID(ctx, lastRouterResultMsgID)
 	if err != nil {
 		return nil, err
 	}

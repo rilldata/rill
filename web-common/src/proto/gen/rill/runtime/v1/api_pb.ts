@@ -4758,7 +4758,7 @@ export class ShareConversationRequest extends Message$1<ShareConversationRequest
   conversationId = "";
 
   /**
-   * should ideally be the latest message of "type": "result"
+   * optional message ID up to which to share otherwise share all current messages, only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared
    *
    * @generated from field: string shared_until_message_id = 3;
    */
