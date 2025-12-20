@@ -219,11 +219,23 @@ export function prepareConnectorFormData(
   // ClickHouse: translate auth_method to managed boolean
   if (connector.name === "clickhouse" && processedValues.auth_method) {
     const authMethod = processedValues.auth_method as string;
-    processedValues.managed = authMethod === "rill-managed";
 
-    // Set mode to readwrite for managed ClickHouse
-    if (processedValues.managed) {
+    if (authMethod === "rill-managed") {
+      // Rill-managed: set managed=true, mode=readwrite
+      processedValues.managed = true;
       processedValues.mode = "readwrite";
+    } else if (authMethod === "clickhouse-cloud") {
+      // ClickHouse Cloud: set managed=false, ssl=true, normalize port field
+      processedValues.managed = false;
+      processedValues.ssl = true;
+      // Port field for ClickHouse Cloud is just "port" (no rename needed)
+    } else if (authMethod === "self-managed") {
+      // Self-managed: set managed=false, normalize port_self_managed -> port
+      processedValues.managed = false;
+      if (processedValues.port_self_managed !== undefined) {
+        processedValues.port = processedValues.port_self_managed;
+        delete processedValues.port_self_managed;
+      }
     }
 
     // Remove the UI-only auth_method field

@@ -55,8 +55,14 @@
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
   let stepProperties: ConnectorDriverProperty[] | undefined = undefined;
   let selectedAuthMethod = "";
+  let previousAuthMethod: string | null = null;
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
+
+  // Initialize previousAuthMethod on first load
+  $: if (previousAuthMethod === null && selectedAuthMethod) {
+    previousAuthMethod = selectedAuthMethod;
+  }
 
   // Compute which properties to show for the current step.
   $: stepProperties =
@@ -130,6 +136,49 @@
         setAuthMethod(normalized);
       }
     }
+  }
+
+  // Clear form when auth method changes (e.g., switching from parameters to DSN).
+  $: if (activeSchema && selectedAuthMethod !== previousAuthMethod && previousAuthMethod !== null && previousAuthMethod !== "") {
+    const authKey = findRadioEnumKey(activeSchema);
+    if (authKey) {
+      // Get default values for the new auth method
+      const defaults: Record<string, any> = {};
+
+      // Set auth_method to the new value
+      defaults[authKey] = selectedAuthMethod;
+
+      // Add default values from schema for fields visible in this auth method
+      if (activeSchema.properties) {
+        for (const [key, prop] of Object.entries(activeSchema.properties)) {
+          if (key === authKey) continue; // Already set
+
+          // Check if this field is visible for the current auth method
+          const visibleIf = prop["x-visible-if"];
+          if (visibleIf && authKey in visibleIf) {
+            const expectedValue = visibleIf[authKey];
+            const matches = Array.isArray(expectedValue)
+              ? expectedValue.includes(selectedAuthMethod)
+              : expectedValue === selectedAuthMethod;
+
+            if (matches && prop.default !== undefined) {
+              defaults[key] = prop.default;
+            }
+          }
+        }
+      }
+
+      // Update form with cleared values
+      paramsForm.update(() => defaults, { taint: false });
+
+      // Clear any form errors
+      paramsErrors.update(() => ({}));
+    }
+  }
+
+  // Track previous auth method for comparison
+  $: if (selectedAuthMethod) {
+    previousAuthMethod = selectedAuthMethod;
   }
 
   // Active auth method for UI (button labels/loading).
