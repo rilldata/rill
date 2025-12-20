@@ -17,7 +17,7 @@ export const postgresSchema: MultiStepFormSchema = {
         "Provide a complete PostgreSQL connection string (DSN).",
       ],
       "x-grouped-fields": {
-        parameters: ["host", "port", "database", "user", "password", "sslmode"],
+        parameters: ["host", "port", "dbname", "user", "password", "sslmode"],
         connection_string: ["dsn"],
       },
       "x-step": "connector",
@@ -39,7 +39,7 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
-    database: {
+    dbname: {
       type: "string",
       title: "Database",
       description: "Database name",
@@ -103,11 +103,11 @@ export const postgresSchema: MultiStepFormSchema = {
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["host", "database", "user", "password", "sql", "name"] },
+      then: { required: ["host", "dbname", "user", "password"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn", "sql", "name"] },
+      then: { required: ["dsn"] },
     },
   ],
 };

@@ -129,15 +129,15 @@ export const snowflakeSchema: MultiStepFormSchema = {
   allOf: [
     {
       if: { properties: { auth_method: { const: "password" } } },
-      then: { required: ["account", "user", "password", "sql", "name"] },
+      then: { required: ["account", "user", "password"] },
     },
     {
       if: { properties: { auth_method: { const: "keypair" } } },
-      then: { required: ["account", "user", "private_key", "sql", "name"] },
+      then: { required: ["account", "user", "private_key"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn", "sql", "name"] },
+      then: { required: ["dsn"] },
     },
   ],
 };

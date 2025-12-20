@@ -17,7 +17,7 @@ export const mysqlSchema: MultiStepFormSchema = {
         "Provide a complete MySQL connection string (DSN).",
       ],
       "x-grouped-fields": {
-        parameters: ["host", "port", "database", "user", "password", "sslmode"],
+        parameters: ["host", "port", "database", "user", "password", "ssl-mode"],
         connection_string: ["dsn"],
       },
       "x-step": "connector",
@@ -64,7 +64,7 @@ export const mysqlSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
-    sslmode: {
+    "ssl-mode": {
       type: "string",
       title: "SSL Mode",
       description: "SSL connection mode",
@@ -88,6 +88,7 @@ export const mysqlSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from MySQL",
       "x-placeholder": "SELECT * FROM my_table;",
+      "x-display": "textarea",
       "x-step": "source",
     },
     name: {

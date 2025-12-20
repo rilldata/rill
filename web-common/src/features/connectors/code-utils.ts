@@ -62,16 +62,17 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     properties = properties.filter(options.fieldFilter);
   }
 
-  // Get the secret property keys
+  // Get the secret property keys from the properties being used (orderedProperties or configProperties)
+  const propertiesForTypeChecking = options?.orderedProperties ?? connector.configProperties ?? [];
   const secretPropertyKeys =
-    connector.configProperties
-      ?.filter((property) => property.secret)
+    propertiesForTypeChecking
+      .filter((property) => property.secret)
       .map((property) => property.key) || [];
 
-  // Get the string property keys
+  // Get the string property keys from the properties being used
   const stringPropertyKeys =
-    connector.configProperties
-      ?.filter(
+    propertiesForTypeChecking
+      .filter(
         (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
       )
       .map((property) => property.key) || [];

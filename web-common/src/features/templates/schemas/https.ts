@@ -11,7 +11,7 @@ export const httpsSchema: MultiStepFormSchema = {
       default: "public",
       description: "Choose how to authenticate to the REST API",
       "x-display": "radio",
-      "x-enum-labels": ["Public", "Custom Headers"],
+      "x-enum-labels": ["Custom Headers", "Public"],
       "x-enum-descriptions": [
         "Access publicly available APIs without authentication.",
         "Provide custom HTTP headers for authentication (e.g., Authorization, API keys).",

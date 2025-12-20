@@ -62,7 +62,11 @@ export function compileSourceYAML(
           .split("\n")
           .map((line) => `  ${line}`)
           .join("\n");
-        return `${key}: |\n${sqlLines}\n\ndev:\n  ${key}: |\n${sqlLines}\n    limit 10000`;
+        const devSqlLines = value
+          .split("\n")
+          .map((line) => `    ${line}`)
+          .join("\n");
+        return `${key}: |\n${sqlLines}\n\ndev:\n  ${key}: |\n${devSqlLines}\n      limit 10000`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
