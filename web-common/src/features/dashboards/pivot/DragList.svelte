@@ -318,7 +318,7 @@
           ? "measure"
           : "dimension"}
         data-index={index}
-        class="drag-item"
+        class="drag-item w-full max-w-fit truncate"
         class:hidden={dragChip?.id === item.id && zoneStartedDrag}
         class:rounded-full={item.type !== PivotChipType.Measure}
       >
@@ -461,11 +461,11 @@
   }
 
   .icons {
-    @apply flex gap-x-2 opacity-0 transition-opacity duration-200;
+    @apply gap-x-2 hidden transition-opacity duration-200;
   }
 
   .item-wrapper:hover .icons {
-    @apply opacity-100;
+    @apply flex;
   }
 
   .icon-wrapper {

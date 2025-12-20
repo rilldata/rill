@@ -1,4 +1,5 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import { calculateEffectiveRowLimit } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -248,6 +249,7 @@ export function createPivotDataStore(
       colDimensionNames,
       measureBody,
       config.whereFilter,
+      [],
     );
 
     return derived(
@@ -297,6 +299,13 @@ export function createPivotDataStore(
           readable(null);
 
         if (!isFlat) {
+          // Calculate the effective limit based on rowLimit, offset, and page size
+          const limitToApply = calculateEffectiveRowLimit(
+            config.pivot.rowLimit,
+            rowOffset,
+            NUM_ROWS_PER_PAGE,
+          );
+
           // Get sort order for the anchor dimension
           rowDimensionAxisQuery = getAxisForDimensions(
             ctx,
@@ -306,7 +315,7 @@ export function createPivotDataStore(
             whereFilter,
             sortPivotBy,
             timeRange,
-            NUM_ROWS_PER_PAGE.toString(),
+            limitToApply,
             rowOffset.toString(),
           );
         }
@@ -612,10 +621,23 @@ export function createPivotDataStore(
                     lastPivotColumnDef = columnDef;
                     lastTotalColumns = totalColumns;
 
-                    const reachedEndForRowData =
-                      (isFlat
-                        ? isCellDataEmpty
-                        : rowDimensionValues.length === 0) && rowPage > 1;
+                    let reachedEndForRowData = false;
+
+                    if (isFlat) {
+                      reachedEndForRowData = isCellDataEmpty && rowPage > 1;
+                    } else {
+                      const rowLimit = config.pivot.rowLimit;
+                      if (rowLimit !== undefined) {
+                        // Check if we've fetched all rows allowed by rowLimit
+                        // This includes both the current page data and any previous pages
+                        const totalRowsFetched =
+                          rowOffset + rowDimensionValues.length;
+                        reachedEndForRowData = totalRowsFetched >= rowLimit;
+                      } else {
+                        reachedEndForRowData =
+                          rowDimensionValues.length === 0 && rowPage > 1;
+                      }
+                    }
                     return {
                       isFetching: false,
                       data: tableDataExpanded,

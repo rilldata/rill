@@ -1,6 +1,11 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import {
+  getNextLimitLabel,
+  LOADING_CELL,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -15,11 +20,13 @@ import type { ComponentType, SvelteComponent } from "svelte";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
+import PivotShowMoreCell from "./PivotShowMoreCell.svelte";
 import {
   cellComponent,
   createIndexMap,
   getAccessorForCell,
   getTimeGrainFromDimension,
+  isShowMoreRow,
   isTimeDimension,
 } from "./pivot-utils";
 import {
@@ -159,7 +166,7 @@ function formatDimensionValue(
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
     if (
       value === "Total" ||
-      value === "LOADING_CELL" ||
+      value === LOADING_CELL ||
       value === undefined ||
       value === null
     )
@@ -318,6 +325,9 @@ function getFlatColumnDef(
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
+        const row = info.row;
+        const isShowMore = isShowMoreRow(row);
+
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
@@ -336,7 +346,8 @@ function getFlatColumnDef(
         }
         const value = m.formatter(measureValue);
 
-        if (value == null) return cellComponent(PivotMeasureCell, {});
+        if (value == null)
+          return cellComponent(PivotMeasureCell, { isShowMoreRow: isShowMore });
         return value;
       },
     };
@@ -426,8 +437,24 @@ function getNestedColumnDef(
         accessorFn: (row) => row[d.name],
         header: nestedLabel,
         cell: ({ row, getValue }) => {
+          const value = getValue() as string;
+
+          // Handle Show More button
+          if (value === SHOW_MORE_BUTTON) {
+            const rowData = row.original;
+            const dimensionLabel =
+              rowDimensions?.[row.depth]?.label ||
+              rowDimensions?.[row.depth]?.name;
+            const currentLimit = rowData.__currentLimit as number;
+            const label = `Increase limit to ${getNextLimitLabel(currentLimit)} on "${dimensionLabel}"`;
+            return cellComponent(PivotShowMoreCell, {
+              value: label,
+              row,
+            });
+          }
+
           const formattedDimensionValue = formatDimensionValue(
-            getValue() as string,
+            value,
             row.depth,
             config.time,
             rowDimensionNames,
@@ -468,6 +495,13 @@ function getNestedColumnDef(
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
+          const row = info.row;
+          const isShowMore = isShowMoreRow(row);
+
+          if (isShowMore) {
+            return cellComponent(PivotMeasureCell, { isShowMoreRow: true });
+          }
+
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
@@ -486,7 +520,10 @@ function getNestedColumnDef(
           }
           const value = m.formatter(measureValue);
 
-          if (value == null) return cellComponent(PivotMeasureCell, {});
+          if (value == null)
+            return cellComponent(PivotMeasureCell, {
+              isShowMoreRow: isShowMore,
+            });
           return value;
         },
       };
