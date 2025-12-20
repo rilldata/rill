@@ -1,6 +1,5 @@
 import { humanReadableErrorMessage } from "../errors/errors";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import type { ClickHouseConnectorType } from "./constants";
 import type { MultiStepFormSchema } from "./types";
 import {
   findRadioEnumKey,
@@ -180,25 +179,4 @@ export function isMultiStepConnectorDisabled(
   });
 }
 
-/**
- * Applies ClickHouse Cloud-specific default requirements for connector values.
- * - For ClickHouse Cloud: enforces `ssl: true`
- * - Otherwise returns values unchanged
- */
-export function applyClickHouseCloudRequirements(
-  connectorName: string | undefined,
-  connectorType: ClickHouseConnectorType,
-  values: Record<string, unknown>,
-): Record<string, unknown> {
-  // Only force SSL for ClickHouse Cloud when the user is using individual params.
-  // DSN strings encapsulate their own protocol, so we should not inject `ssl` there.
-  const isDsnBased = "dsn" in values;
-  const shouldEnforceSSL =
-    connectorName === "clickhouse" &&
-    connectorType === "clickhouse-cloud" &&
-    !isDsnBased;
-  if (shouldEnforceSSL) {
-    return { ...values, ssl: true } as Record<string, unknown>;
-  }
-  return values;
-}
+

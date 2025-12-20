@@ -408,6 +408,39 @@ export const getYupSchema = {
     //   .required("Connector name is required"),
   }),
 
+  // Keep base auth fields optional; per-method required fields come from
+  // multi-step auth configs. This schema is a safe fallback.
+  clickhousecloud_connector: yup.object().shape({
+    host: yup.string().optional(),
+    port: yup.number().optional(),
+    username: yup.string().optional(),
+    password: yup.string().optional(),
+    database: yup.string().optional(),
+    cluster: yup.string().optional(),
+    mode: yup.string().optional(),
+  }),
+
+  clickhousecloud_source: yup.object().shape({
+    sql: yup.string().required("SQL query is required"),
+    name: yup
+      .string()
+      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+      .required("Model name is required"),
+  }),
+
+  clickhousecloud: yup.object().shape({
+    host: yup.string(),
+    port: yup
+      .string() // Purposefully using a string input, not a numeric input
+      .matches(/^\d+$/, "Port must be a number"),
+    username: yup.string(),
+    password: yup.string(),
+    database: yup.string(),
+    cluster: yup.string(),
+    mode: yup.string(),
+    name: yup.string(), // Required for typing
+  }),
+
   druid: yup.object().shape({
     host: yup
       .string()
