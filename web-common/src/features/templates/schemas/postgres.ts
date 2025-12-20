@@ -17,8 +17,8 @@ export const postgresSchema: MultiStepFormSchema = {
         "Provide a complete PostgreSQL connection string (DSN).",
       ],
       "x-grouped-fields": {
-        parameters: ["host", "port", "dbname", "user", "password", "sslmode"],
-        connection_string: ["dsn"],
+        parameters: ["host", "port", "dbname", "user", "password", "sslmode", "log_queries"],
+        connection_string: ["dsn", "log_queries"],
       },
       "x-step": "connector",
     },
@@ -82,6 +82,14 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log Queries",
+      description: "Enable logging of all SQL queries (useful for debugging)",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
     },
     sql: {
       type: "string",

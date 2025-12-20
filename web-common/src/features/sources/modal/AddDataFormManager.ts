@@ -505,36 +505,57 @@ export class AddDataFormManager {
         : filteredParamsProperties;
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
-      let orderedProperties =
-        onlyDsn || connectionTab === "dsn"
-          ? filteredDsnProperties
-          : connectorPropertiesForPreview;
+      let orderedProperties: ConnectorDriverProperty[] = [];
 
       // For multi-step connectors with schemas, build properties from schema
-      if (isMultiStepConnector && stepState?.step === "connector") {
-        const schema = getConnectorSchema(connector.name);
-        if (schema) {
-          // Build ordered properties from schema fields that are visible and on connector step
-          const schemaProperties: ConnectorDriverProperty[] = [];
-          const properties = schema.properties ?? {};
+      const schema = isMultiStepConnector && stepState?.step === "connector"
+        ? getConnectorSchema(connector.name)
+        : null;
 
-          for (const [key, prop] of Object.entries(properties)) {
-            // Only include connector step fields that are currently visible
-            if (prop["x-step"] === "connector" && isVisibleForValues(schema, key, values)) {
-              schemaProperties.push({
-                key,
-                type: prop.type === "number"
-                  ? ConnectorDriverPropertyType.TYPE_NUMBER
-                  : prop.type === "boolean"
-                  ? ConnectorDriverPropertyType.TYPE_BOOLEAN
-                  : ConnectorDriverPropertyType.TYPE_STRING,
-                secret: prop["x-secret"] || false,
-              });
-            }
+      if (schema) {
+        // Build ordered properties from schema fields that are visible and on connector step
+        const schemaProperties: ConnectorDriverProperty[] = [];
+        const properties = schema.properties ?? {};
+
+        // Find the auth method radio field key (e.g., "auth_method") - we don't want to include this in YAML
+        const authMethodKey = findRadioEnumKey(schema);
+
+        // Ensure auth_method has a value for visibility checks (use actual value or fallback to default)
+        let valuesForVisibility = { ...values };
+        if (authMethodKey && !valuesForVisibility[authMethodKey]) {
+          const authProp = properties[authMethodKey];
+          if (authProp?.default) {
+            valuesForVisibility[authMethodKey] = authProp.default;
+          } else if (authProp?.enum?.length) {
+            valuesForVisibility[authMethodKey] = authProp.enum[0];
           }
-
-          orderedProperties = schemaProperties;
         }
+
+        for (const [key, prop] of Object.entries(properties)) {
+          // Skip the auth_method field itself - it's just a UI control field
+          if (key === authMethodKey) continue;
+
+          // Only include connector step fields that are currently visible
+          if (prop["x-step"] === "connector" && isVisibleForValues(schema, key, valuesForVisibility)) {
+            schemaProperties.push({
+              key,
+              type: prop.type === "number"
+                ? ConnectorDriverPropertyType.TYPE_NUMBER
+                : prop.type === "boolean"
+                ? ConnectorDriverPropertyType.TYPE_BOOLEAN
+                : ConnectorDriverPropertyType.TYPE_STRING,
+              secret: prop["x-secret"] || false,
+            });
+          }
+        }
+
+        orderedProperties = schemaProperties;
+      } else {
+        // Non-schema connectors use the old DSN/parameters tab system
+        orderedProperties =
+          onlyDsn || connectionTab === "dsn"
+            ? filteredDsnProperties
+            : connectorPropertiesForPreview;
       }
 
       return compileConnectorYAML(connector, values, {

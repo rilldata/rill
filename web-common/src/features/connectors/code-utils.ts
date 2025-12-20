@@ -82,6 +82,11 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     .filter((property) => {
       if (!property.key) return false;
       const value = formValues[property.key];
+
+      // Secret fields should always be shown (with env variable placeholder) even if empty
+      const isSecretProperty = secretPropertyKeys.includes(property.key);
+      if (isSecretProperty) return true;
+
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;

@@ -49,6 +49,14 @@ export const redshiftSchema: MultiStepFormSchema = {
       "x-hint": "Provide either workgroup (for serverless) or cluster identifier (for provisioned)",
       "x-step": "connector",
     },
+    log_queries: {
+      type: "boolean",
+      title: "Log Queries",
+      description: "Enable logging of all SQL queries (useful for debugging)",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL Query",

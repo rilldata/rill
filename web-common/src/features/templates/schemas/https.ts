@@ -7,7 +7,7 @@ export const httpsSchema: MultiStepFormSchema = {
     auth_method: {
       type: "string",
       title: "Authentication method",
-      enum: ["public", "headers"],
+      enum: ["headers", "public"],
       default: "public",
       description: "Choose how to authenticate to the REST API",
       "x-display": "radio",
@@ -51,11 +51,11 @@ export const httpsSchema: MultiStepFormSchema = {
   allOf: [
     {
       if: { properties: { auth_method: { const: "headers" } } },
-      then: { required: ["headers", "path", "name"] },
+      then: { required: ["headers" },
     },
     {
       if: { properties: { auth_method: { const: "public" } } },
-      then: { required: ["path", "name"] },
+      then: { required: [] },
     },
   ],
 };

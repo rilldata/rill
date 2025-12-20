@@ -20,6 +20,14 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-placeholder": "my-project-id",
       "x-step": "connector",
     },
+    log_queries: {
+      type: "boolean",
+      title: "Log Queries",
+      description: "Enable logging of all SQL queries (useful for debugging)",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL Query",
