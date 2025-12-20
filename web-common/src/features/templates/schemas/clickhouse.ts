@@ -17,7 +17,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "Use a managed ClickHouse instance (starts embedded ClickHouse in development).",
       ],
       "x-grouped-fields": {
-        "self-managed": ["host", "port_self_managed", "username", "password", "database", "ssl", "cluster", "mode"],
+        "self-managed": ["host", "port", "username", "password", "database", "ssl", "cluster", "mode"],
         "rill-managed": ["mode"],
       },
       "x-step": "connector",
@@ -26,9 +26,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       type: "string",
       title: "Host",
       description: "Hostname or IP address of the ClickHouse server",
-      "x-placeholder": "your-instance.clickhouse.cloud",
+      "x-placeholder": "your-server.clickhouse.com",
       "x-step": "connector",
-      "x-visible-if": { auth_method: [ "self-managed"] },
+      "x-visible-if": { auth_method: "self-managed" },
     },
     port: {
       type: "number",
@@ -47,7 +47,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["self-managed"] },
+      "x-visible-if": { auth_method: "self-managed" },
     },
     password: {
       type: "string",
@@ -56,7 +56,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter password",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["self-managed"] },
+      "x-visible-if": { auth_method: "self-managed" },
     },
     database: {
       type: "string",
@@ -65,7 +65,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["self-managed"] },
+      "x-visible-if": { auth_method: "self-managed" },
     },
     ssl: {
       type: "boolean",
@@ -83,7 +83,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Cluster name",
       "x-hint": "If set, Rill will create models as distributed tables in the cluster",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["self-managed"] },
+      "x-visible-if": { auth_method: "self-managed" },
       "x-advanced": true,
     },
     mode: {
@@ -127,10 +127,6 @@ export const clickhouseSchema: MultiStepFormSchema = {
     },
   },
   allOf: [
-    {
-      if: { properties: { auth_method: { const: "clickhouse-cloud" } } },
-      then: { required: ["host", "port", "username", "password", "database"] },
-    },
     {
       if: { properties: { auth_method: { const: "self-managed" } } },
       then: { required: ["host", "username"] },

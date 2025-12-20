@@ -55,6 +55,7 @@ export const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
 export const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
 export const TALL_FORM_CONNECTORS = new Set([
   "clickhouse",
+  "clickhousecloud",
   "snowflake",
   "salesforce",
   "postgres"

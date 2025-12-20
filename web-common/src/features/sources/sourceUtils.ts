@@ -6,6 +6,7 @@ import {
   type V1Source,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
+import { getDriverNameForConnector } from "../connectors/connectors-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 
 // Helper text that we put at the top of every Model YAML file
@@ -51,7 +52,7 @@ export function compileSourceYAML(
       if (isSecretProperty) {
         // For source files, we include secret properties
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          connector.name as string,
+          getDriverNameForConnector(connector.name as string),
           key,
         )} }}"`;
       }
@@ -79,7 +80,7 @@ export function compileSourceYAML(
     .join("\n");
 
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${getDriverNameForConnector(connector.name as string)}\n\n` +
     compiledKeyValues
   );
 }
@@ -224,22 +225,19 @@ export function prepareConnectorFormData(
       // Rill-managed: set managed=true, mode=readwrite
       processedValues.managed = true;
       processedValues.mode = "readwrite";
-    } else if (authMethod === "clickhouse-cloud") {
-      // ClickHouse Cloud: set managed=false, ssl=true, normalize port field
-      processedValues.managed = false;
-      processedValues.ssl = true;
-      // Port field for ClickHouse Cloud is just "port" (no rename needed)
     } else if (authMethod === "self-managed") {
-      // Self-managed: set managed=false, normalize port_self_managed -> port
+      // Self-managed: set managed=false
       processedValues.managed = false;
-      if (processedValues.port_self_managed !== undefined) {
-        processedValues.port = processedValues.port_self_managed;
-        delete processedValues.port_self_managed;
-      }
     }
 
     // Remove the UI-only auth_method field
     delete processedValues.auth_method;
+  }
+
+  // ClickHouse Cloud: always use managed=false and ssl=true
+  if (connector.name === "clickhousecloud") {
+    processedValues.managed = false;
+    processedValues.ssl = true;
   }
 
   return processedValues;

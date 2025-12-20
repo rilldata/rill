@@ -139,8 +139,12 @@ export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
 
 /**
  * Determines the driver name for a connector.
- * Special case: MotherDuck connectors use "duckdb" as the driver name.
+ * Special cases:
+ * - MotherDuck connectors use "duckdb" as the driver name.
+ * - ClickHouse Cloud connectors use "clickhouse" as the driver name.
  */
 export function getDriverNameForConnector(connectorName: string): string {
-  return connectorName === "motherduck" ? "duckdb" : connectorName;
+  if (connectorName === "motherduck") return "duckdb";
+  if (connectorName === "clickhousecloud") return "clickhouse";
+  return connectorName;
 }
