@@ -15,5 +15,8 @@ Extend Rill's capabilities by integrating dashboards and data into your existing
 ### Custom APIs
 - **[Integrate with Custom APIs](/integrate/custom-api)** - Integrate and use your custom APIs in external applications 
 
+### Dashboard URL Parameters
+- **[URL Parameters Reference](/integrate/url-parameters)** - Complete reference guide for all dashboard URL parameters
+
 
 
