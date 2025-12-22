@@ -32,7 +32,7 @@
 
 <Tooltip
   distance={8}
-  location="right"
+  location="top"
   suppress={!item.description}
   activeDelay={200}
 >
@@ -51,14 +51,17 @@
     on:click
     {onRemove}
   >
-    <div slot="body" class="flex gap-x-1 items-center justify-start text-left">
+    <div
+      slot="body"
+      class="flex gap-x-1 items-center justify-start text-left truncate"
+    >
       {#if item.type === PivotChipType.Time}
         <b>Time</b>
         {#if capitalizedLabel}
-          <p class="grain-label">{capitalizedLabel}</p>
+          <p class="grain-label truncate">{capitalizedLabel}</p>
         {/if}
       {:else}
-        <p class="font-semibold">{item.title}</p>
+        <p class="font-semibold truncate">{item.title}</p>
       {/if}
       <slot name="body" />
     </div>

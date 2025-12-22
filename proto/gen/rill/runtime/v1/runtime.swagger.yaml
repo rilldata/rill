@@ -4785,6 +4785,9 @@ definitions:
         type: boolean
       pivotTableMode:
         type: string
+      pivotRowLimit:
+        type: integer
+        format: int32
   v1ExploreSortType:
     type: string
     enum:

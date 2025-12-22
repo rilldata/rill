@@ -9573,7 +9573,7 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Subpath
 
-	// no validation rules for ProdBranch
+	// no validation rules for PrimaryBranch
 
 	// no validation rules for GitRemote
 
@@ -10062,8 +10062,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for DirectoryName
 	}
 
-	if m.ProdBranch != nil {
-		// no validation rules for ProdBranch
+	if m.PrimaryBranch != nil {
+		// no validation rules for PrimaryBranch
 	}
 
 	if m.GitRemote != nil {
@@ -31710,7 +31710,7 @@ func (m *GetCloneCredentialsResponse) validate(all bool) error {
 
 	// no validation rules for GitSubpath
 
-	// no validation rules for GitProdBranch
+	// no validation rules for GitPrimaryBranch
 
 	// no validation rules for GitManagedRepo
 
@@ -42523,13 +42523,13 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Subpath
 
-	// no validation rules for ProdBranch
+	// no validation rules for PrimaryBranch
 
 	// no validation rules for ArchiveAssetId
 
 	// no validation rules for ProdSlots
 
-	// no validation rules for ProdDeploymentId
+	// no validation rules for PrimaryDeploymentId
 
 	// no validation rules for DevSlots
 

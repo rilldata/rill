@@ -154,11 +154,11 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -211,11 +211,11 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -272,7 +272,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	claims := auth.GetClaims(ctx)
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -407,11 +407,11 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -462,11 +462,11 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

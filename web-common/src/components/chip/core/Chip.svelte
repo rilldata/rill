@@ -112,7 +112,7 @@
   }
 
   .chip {
-    @apply flex  gap-x-1;
+    @apply flex gap-x-1;
     @apply items-center justify-center;
     @apply px-2 py-[3px] border w-full max-w-fit truncate;
   }
@@ -242,6 +242,6 @@
   }
 
   .fullWidth {
-    @apply w-full;
+    @apply w-full max-w-full;
   }
 </style>
