@@ -61,6 +61,23 @@ export const gcsSchema: MultiStepFormSchema = {
       "x-placeholder": "gs://bucket/path",
       "x-step": "source",
     },
+    path_prefixes: {
+      type: "string",
+      title: "Path prefixes",
+      description:
+        "List of prefixes to filter the files in the GCS bucket. Leave empty to include all files.",
+      "x-step": "source",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow host access",
+      description:
+        "Allow access to the GCS bucket from the host machine. This is useful for debugging and testing.",
+      default: false,
+      "x-step": "source",
+      "x-advanced": true,
+    },
     name: {
       type: "string",
       title: "Model name",

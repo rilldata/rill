@@ -112,6 +112,15 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { connection_method: "parameters" },
     },
+    authenticator: {
+      type: "string",
+      title: "Authenticator",
+      description: "Optional authenticator method (e.g., 'externalbrowser')",
+      "x-placeholder": "externalbrowser",
+      "x-step": "connector",
+      "x-advanced": true,
+      "x-visible-if": { connection_method: "parameters" },
+    },
     dsn: {
       type: "string",
       title: "Connection String",

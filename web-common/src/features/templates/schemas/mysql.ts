@@ -69,6 +69,7 @@ export const mysqlSchema: MultiStepFormSchema = {
       "x-display": "select",
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
+      "x-advanced": true,
     },
     dsn: {
       type: "string",

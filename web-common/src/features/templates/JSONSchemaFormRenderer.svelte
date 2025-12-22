@@ -259,7 +259,10 @@
         >
           <svelte:fragment slot="custom-content" let:option>
             {#if groupedFields.get(key)}
-              {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
+              {@const allGroupedForOption = getGroupedFieldsForOption(key, option.value)}
+              {@const regularGrouped = allGroupedForOption.filter(([_, prop]) => !prop["x-advanced"])}
+              {@const advancedGrouped = allGroupedForOption.filter(([_, prop]) => prop["x-advanced"])}
+              {#each regularGrouped as [childKey, childProp]}
                 {#if isTabsEnum(childProp)}
                   <div class="py-1.5 first:pt-0 last:pb-0">
                     {#if childProp.title}
@@ -311,6 +314,33 @@
                   </div>
                 {/if}
               {/each}
+              {#if advancedGrouped.length > 0}
+                <details class="py-1.5">
+                  <summary class="text-sm font-medium cursor-pointer select-none hover:text-gray-700">
+                    Advanced Configuration
+                  </summary>
+                  <div class="mt-2 space-y-1.5">
+                    {#each advancedGrouped as [childKey, childProp]}
+                      <div class="py-1.5 first:pt-0 last:pb-0">
+                        <JSONSchemaFieldControl
+                          id={childKey}
+                          prop={childProp}
+                          optional={!isRequired(childKey)}
+                          errors={errors?.[childKey]}
+                          bind:value={$form[childKey]}
+                          bind:checked={$form[childKey]}
+                          {onStringInputChange}
+                          {handleFileUpload}
+                          options={hasEnumOptions(childProp)
+                            ? radioOptions(childProp)
+                            : undefined}
+                          name={`${childKey}-radio`}
+                        />
+                      </div>
+                    {/each}
+                  </div>
+                </details>
+              {/if}
             {/if}
           </svelte:fragment>
         </Radio>
@@ -324,7 +354,10 @@
           {#if groupedFields.get(key)}
             {#each tabOptions(prop) as option}
               <TabsContent value={option.value}>
-                {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
+                {@const allGroupedForTabOption = getGroupedFieldsForOption(key, option.value)}
+                {@const regularGroupedTab = allGroupedForTabOption.filter(([_, prop]) => !prop["x-advanced"])}
+                {@const advancedGroupedTab = allGroupedForTabOption.filter(([_, prop]) => prop["x-advanced"])}
+                {#each regularGroupedTab as [childKey, childProp]}
                   {#if isRadioEnum(childProp)}
                     <div class="py-1.5 first:pt-0 last:pb-0">
                       {#if childProp.title}
@@ -378,6 +411,33 @@
                     </div>
                   {/if}
                 {/each}
+                {#if advancedGroupedTab.length > 0}
+                  <details class="py-1.5">
+                    <summary class="text-sm font-medium cursor-pointer select-none hover:text-gray-700">
+                      Advanced Configuration
+                    </summary>
+                    <div class="mt-2 space-y-1.5">
+                      {#each advancedGroupedTab as [childKey, childProp]}
+                        <div class="py-1.5 first:pt-0 last:pb-0">
+                          <JSONSchemaFieldControl
+                            id={childKey}
+                            prop={childProp}
+                            optional={!isRequired(childKey)}
+                            errors={errors?.[childKey]}
+                            bind:value={$form[childKey]}
+                            bind:checked={$form[childKey]}
+                            {onStringInputChange}
+                            {handleFileUpload}
+                            options={hasEnumOptions(childProp)
+                              ? radioOptions(childProp)
+                              : undefined}
+                            name={`${childKey}-radio`}
+                          />
+                        </div>
+                      {/each}
+                    </div>
+                  </details>
+                {/if}
               </TabsContent>
             {/each}
           {/if}

@@ -67,6 +67,23 @@ export const azureSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "sas_token" },
     },
+    path_prefixes: {
+      type: "string",
+      title: "Prefixes",
+      description:
+        "List of prefixes to filter the blobs (e.g., ['logs/', 'data/'])",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow host access",
+      description:
+        "Allow access to the source from the host, useful for local development",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     path: {
       type: "string",
       title: "Blob URI",

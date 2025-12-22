@@ -52,6 +52,14 @@ export const redshiftSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-advanced": true,
     },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow Host Access",
+      description: "Allow the connector to access the host's network (useful for private clusters)",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     log_queries: {
       type: "boolean",
       title: "Log Queries",

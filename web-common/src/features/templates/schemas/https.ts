@@ -38,6 +38,17 @@ export const httpsSchema: MultiStepFormSchema = {
       "x-placeholder": "https://api.example.com/data",
       "x-step": "source",
     },
+    format: {
+      type: "string",
+      title: "Data Format",
+      description: "Format of the data returned by the API",
+      enum: ["json", "csv"],
+      default: "json",
+      "x-display": "radio", 
+      "x-enum-labels": ["JSON", "CSV"],
+      "x-enum-descriptions": ["JSON format", "CSV format"],
+      "x-step": "source",
+    },
     name: {
       type: "string",
       title: "Model Name",

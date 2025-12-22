@@ -70,6 +70,22 @@ export const athenaSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-advanced": true,
     },
+    aws_access_token: {
+      type: "string",
+      title: "AWS Access Token",
+      description: "AWS access token for authentication (optional)",
+      "x-placeholder": "Enter AWS access token",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow Host Access",
+      description: "Allow the connector to access the host's network (optional)",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
     sql: {
       type: "string",
       title: "SQL Query",

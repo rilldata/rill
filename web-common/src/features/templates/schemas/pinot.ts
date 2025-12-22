@@ -41,6 +41,7 @@ export const pinotSchema: MultiStepFormSchema = {
       "x-placeholder": "localhost",
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
+      "x-advanced": true,
     },
     controller_port: {
       type: "number",
@@ -49,6 +50,7 @@ export const pinotSchema: MultiStepFormSchema = {
       "x-placeholder": "9000",
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
+      "x-advanced": true,
     },
     username: {
       type: "string",

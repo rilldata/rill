@@ -65,6 +65,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-placeholder": "https://s3.example.com",
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
     },
     aws_role_arn: {
       type: "string",
@@ -74,6 +75,7 @@ export const s3Schema: MultiStepFormSchema = {
       "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
     },
     aws_role_session_name: {
       type: "string",
