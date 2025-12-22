@@ -58,7 +58,7 @@ var spec = drivers.Spec{
 			Description: "Set the mode for the ClickHouse connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
 			Placeholder: modeReadOnly,
 			Default:     modeReadOnly,
-			NoPrompt: true,
+			NoPrompt:    true,
 		},
 		{
 			Key:         "dsn",
