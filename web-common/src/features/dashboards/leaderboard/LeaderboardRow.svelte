@@ -1,6 +1,7 @@
 <script lang="ts">
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import CopyShortcutTooltip from "@rilldata/web-common/components/tooltip/CopyShortcutTooltip.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -51,6 +52,8 @@
       measureName === leaderboardSortByMeasureName
     );
   }
+
+  const COPY_SHORTCUT_HIDE_MS = 3000;
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COLUMN_WIDTH);
@@ -233,36 +236,46 @@
         cellInspectorStore.updateValue(dimensionValue.toString());
       }
     }}
-    class="relative size-full flex flex-none justify-between items-center leaderboard-label"
     style:background={dimensionGradients}
   >
-    <span class="truncate select-text">
-      <FormattedDataType value={dimensionValue} truncate />
-    </span>
-
-    {#if previousValueString && hovered}
-      <span
-        class="opacity-50 whitespace-nowrap font-normal"
-        transition:slide={{ axis: "x", duration: 200 }}
+    <CopyShortcutTooltip
+      copyLabel="dimension value"
+      hideAfter={COPY_SHORTCUT_HIDE_MS}
+      location="top"
+      distance={8}
+    >
+      <div
+        class="leaderboard-copy-target relative size-full flex flex-none justify-between items-center leaderboard-label"
       >
-        {previousValueString} →
-      </span>
-    {/if}
+        <span class="truncate select-text">
+          <FormattedDataType value={dimensionValue} truncate />
+        </span>
 
-    {#if href}
-      <span class="external-link-wrapper">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          {href}
-          title={href}
-          on:click|stopPropagation
-          class:hovered
-        >
-          <ExternalLink className="fill-primary-600" />
-        </a>
-      </span>
-    {/if}
+        {#if previousValueString && hovered}
+          <span
+            class="opacity-50 whitespace-nowrap font-normal"
+            transition:slide={{ axis: "x", duration: 200 }}
+          >
+            {previousValueString} →
+          </span>
+        {/if}
+
+        {#if href}
+          <span class="external-link-wrapper">
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              {href}
+              title={href}
+              on:click|stopPropagation
+              class:hovered
+            >
+              <ExternalLink className="fill-primary-600" />
+            </a>
+          </span>
+        {/if}
+      </div>
+    </CopyShortcutTooltip>
   </td>
 
   {#each Object.keys(values) as measureName}
@@ -289,18 +302,32 @@
         }
       }}
     >
-      <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
-        <FormattedDataType
-          type="INTEGER"
-          value={values[measureName]
-            ? formatters[measureName]?.(values[measureName])
-            : null}
-        />
-      </div>
+      <CopyShortcutTooltip
+        copyLabel="measure value"
+        hideAfter={COPY_SHORTCUT_HIDE_MS}
+        location="top"
+        distance={8}
+      >
+        <div
+          class="leaderboard-copy-target flex items-center justify-end gap-x-1"
+        >
+          <div
+            class="w-fit ml-auto bg-transparent"
+            bind:contentRect={valueRect}
+          >
+            <FormattedDataType
+              type="INTEGER"
+              value={values[measureName]
+                ? formatters[measureName]?.(values[measureName])
+                : null}
+            />
+          </div>
 
-      {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
-        <LongBarZigZag />
-      {/if}
+          {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
+            <LongBarZigZag />
+          {/if}
+        </div>
+      </CopyShortcutTooltip>
     </td>
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
@@ -325,13 +352,22 @@
           }
         }}
       >
-        <PercentageChange
-          value={pctOfTotals[measureName]}
-          color="text-gray-500"
-        />
-        {#if showZigZags[measureName]}
-          <LongBarZigZag />
-        {/if}
+        <CopyShortcutTooltip
+          copyLabel="percent of total"
+          hideAfter={COPY_SHORTCUT_HIDE_MS}
+          location="top"
+          distance={8}
+        >
+          <div class="leaderboard-copy-target flex items-center justify-end">
+            <PercentageChange
+              value={pctOfTotals[measureName]}
+              color="text-gray-500"
+            />
+            {#if showZigZags[measureName]}
+              <LongBarZigZag />
+            {/if}
+          </div>
+        </CopyShortcutTooltip>
       </td>
     {/if}
 
@@ -357,18 +393,27 @@
           }
         }}
       >
-        <FormattedDataType
-          color="text-gray-500"
-          type="INTEGER"
-          value={deltaAbsMap[measureName]
-            ? formatters[measureName]?.(deltaAbsMap[measureName])
-            : null}
-          customStyle={deltaAbsMap[measureName] !== null &&
-          deltaAbsMap[measureName] < 0
-            ? "text-red-500"
-            : ""}
-          truncate={true}
-        />
+        <CopyShortcutTooltip
+          copyLabel="absolute delta"
+          hideAfter={COPY_SHORTCUT_HIDE_MS}
+          location="top"
+          distance={8}
+        >
+          <div class="leaderboard-copy-target flex items-center justify-end">
+            <FormattedDataType
+              color="text-gray-500"
+              type="INTEGER"
+              value={deltaAbsMap[measureName]
+                ? formatters[measureName]?.(deltaAbsMap[measureName])
+                : null}
+              customStyle={deltaAbsMap[measureName] !== null &&
+              deltaAbsMap[measureName] < 0
+                ? "text-red-500"
+                : ""}
+              truncate={true}
+            />
+          </div>
+        </CopyShortcutTooltip>
       </td>
     {/if}
 
@@ -392,15 +437,24 @@
           }
         }}
       >
-        <PercentageChange
-          value={deltaRels[measureName]
-            ? formatMeasurePercentageDifference(deltaRels[measureName])
-            : null}
-          color="text-gray-500"
-        />
-        {#if showZigZags[measureName]}
-          <LongBarZigZag />
-        {/if}
+        <CopyShortcutTooltip
+          copyLabel="relative delta"
+          hideAfter={COPY_SHORTCUT_HIDE_MS}
+          location="top"
+          distance={8}
+        >
+          <div class="leaderboard-copy-target flex items-center justify-end">
+            <PercentageChange
+              value={deltaRels[measureName]
+                ? formatMeasurePercentageDifference(deltaRels[measureName])
+                : null}
+              color="text-gray-500"
+            />
+            {#if showZigZags[measureName]}
+              <LongBarZigZag />
+            {/if}
+          </div>
+        </CopyShortcutTooltip>
       </td>
     {/if}
   {/each}
@@ -420,6 +474,10 @@
 
   tr:hover {
     @apply bg-gray-100;
+  }
+
+  .leaderboard-copy-target {
+    @apply w-full h-full;
   }
 
   td[data-comparison-cell] {

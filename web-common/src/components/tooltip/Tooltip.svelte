@@ -76,3 +76,9 @@ FIXME: In the future, we should also be listening to focus events from the child
     <slot name="tooltip-content" />
   </FloatingElement>
 {/if}
+
+<style>
+  .contents {
+    display: contents;
+  }
+</style>
