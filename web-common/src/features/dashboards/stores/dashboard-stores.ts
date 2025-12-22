@@ -476,6 +476,12 @@ const metricsViewReducers = {
     });
   },
 
+  setTimeColumn(name: string, column: string) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedTimeColumn = column;
+    });
+  },
+
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.showTimeComparison = showTimeComparison;

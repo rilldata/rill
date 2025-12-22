@@ -121,6 +121,7 @@ export function convertURLToExplorePreset(
     searchParams,
     dimensions,
   );
+
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
@@ -390,6 +391,16 @@ export function fromTimeRangesParams(
     } else {
       errors.push(getSingleFieldError("highlighted time range", selectTr));
     }
+  }
+
+  if (searchParams.has(ExploreStateURLParams.TimeColumn)) {
+    const timeColumn = searchParams.get(
+      ExploreStateURLParams.TimeColumn,
+    ) as string;
+
+    console.log("okay");
+
+    preset.timeColumn = timeColumn;
   }
   return { preset, errors };
 }

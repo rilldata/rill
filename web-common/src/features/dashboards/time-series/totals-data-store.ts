@@ -47,6 +47,7 @@ export function createTotalsForMeasure(
             end: isComparison
               ? timeControls?.comparisonTimeEnd
               : timeControls.timeEnd,
+            timeDimension: dashboard.selectedTimeColumn,
           },
         },
         {
