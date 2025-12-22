@@ -73,14 +73,6 @@ var spec = drivers.Spec{
 			Placeholder: "dev",
 			Required:    true,
 		},
-		{
-			Key:         "cluster_identifier",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Cluster Identifier",
-			Description: "Redshift provisioned cluster identifier (for provisioned clusters)",
-			Placeholder: "my-redshift-cluster",
-			Hint:        "Provide either workgroup (for serverless) or cluster identifier (for provisioned clusters)",
-		},
 	},
 	ImplementsWarehouse: true,
 }
