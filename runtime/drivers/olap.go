@@ -621,8 +621,6 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
 	var args []any
 	switch d {
-	case DialectDuckDB:
-		return fmt.Sprintf("SELECT timezone('%s', range) AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", tz.String(), d.EscapeIdentifier(alias), start.In(tz).Format(time.DateTime), end.In(tz).Format(time.DateTime), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
@@ -636,7 +634,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		sb.WriteString(")")
 		return sb.String(), args, nil
-	case DialectDruid, DialectPinot:
+	case DialectDuckDB, DialectDruid, DialectPinot:
 		// generate select like - SELECT * FROM (
 		//  VALUES
 		//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
