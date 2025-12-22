@@ -25,6 +25,8 @@ export const s3Schema: MultiStepFormSchema = {
           "aws_role_arn",
           "aws_role_session_name",
           "aws_external_id",
+          "path_prefixes",
+          "allow_host_access",
         ],
         public: [],
       },
@@ -96,6 +98,24 @@ export const s3Schema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "access_keys" },
       "x-advanced": true,
+    },
+    path_prefixes: {
+      type: "string",
+      title: "Path prefixes",
+      description: "Prefixes to include in the model",
+      "x-step": "connector",
+      "x-advanced": true,
+      "x-visible-if": { auth_method: "access_keys" },
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow host access",
+      description:
+        "Allow the Rill instance to access the S3 bucket from the host machine.",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+      "x-visible-if": { auth_method: "access_keys" },
     },
     path: {
       type: "string",

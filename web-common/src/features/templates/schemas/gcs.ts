@@ -53,20 +53,12 @@ export const gcsSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "hmac" },
     },
-    path: {
-      type: "string",
-      title: "GCS URI",
-      description: "Path to your GCS bucket or prefix",
-      pattern: "^gs://",
-      "x-placeholder": "gs://bucket/path",
-      "x-step": "source",
-    },
     path_prefixes: {
       type: "string",
       title: "Path prefixes",
       description:
         "List of prefixes to filter the files in the GCS bucket. Leave empty to include all files.",
-      "x-step": "source",
+      "x-step": "connector",
       "x-advanced": true,
     },
     allow_host_access: {
@@ -75,8 +67,16 @@ export const gcsSchema: MultiStepFormSchema = {
       description:
         "Allow access to the GCS bucket from the host machine. This is useful for debugging and testing.",
       default: false,
-      "x-step": "source",
+      "x-step": "connector",
       "x-advanced": true,
+    },
+    path: {
+      type: "string",
+      title: "GCS URI",
+      description: "Path to your GCS bucket or prefix",
+      pattern: "^gs://",
+      "x-placeholder": "gs://bucket/path",
+      "x-step": "source",
     },
     name: {
       type: "string",
