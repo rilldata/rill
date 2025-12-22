@@ -1,7 +1,6 @@
 <script lang="ts">
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -9,10 +8,12 @@
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { onDestroy } from "svelte";
   import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { activeDashboardTheme } from "../../themes/active-dashboard-theme";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -43,7 +44,7 @@
     dashboardStore,
   } = StateManagers;
 
-  const { cloudDataViewer, dashboardChat, readOnly } = featureFlags;
+  const { cloudDataViewer, readOnly } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -124,139 +125,131 @@
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
   $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
+
+  // Publish the resolved theme to the shared store for external components (e.g., chat in layout)
+  $: activeDashboardTheme.set($theme);
+
+  // Clear the active theme when this dashboard is destroyed
+  onDestroy(() => activeDashboardTheme.set(undefined));
 </script>
 
 <ThemeProvider theme={$theme}>
-  <div class="flex h-full overflow-hidden">
-    <div class="flex-1 overflow-hidden">
-      <article
-        class="flex flex-col overflow-y-hidden"
-        bind:clientWidth={exploreContainerWidth}
+  <article
+    class="flex flex-col overflow-y-hidden"
+    bind:clientWidth={exploreContainerWidth}
+    class:w-full={$dynamicHeight}
+    class:size-full={!$dynamicHeight}
+  >
+    <div
+      id="header"
+      class="border-b w-fit min-w-full flex flex-col bg-background slide"
+      class:left-shift={extraLeftPadding}
+    >
+      {#if mockUserHasNoAccess}
+        <div class="mb-3" />
+      {:else}
+        {#key exploreName}
+          <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+            <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
+            <div class="absolute bottom-0 flex flex-col right-0">
+              <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
+            </div>
+          </section>
+        {/key}
+      {/if}
+    </div>
+
+    {#if mockUserHasNoAccess}
+      <!-- Additional safeguard for mock users without dashboard access. -->
+      <ErrorPage
+        statusCode={exploreError?.response?.status}
+        header="This user can't access this dashboard"
+        body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
+      />
+    {:else if $showPivot}
+      <PivotDisplay {isEmbedded} />
+    {:else}
+      <div
+        class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
+        class:flex-col={showTimeDimensionDetail}
+        class:flex-row={!showTimeDimensionDetail}
+        class:left-shift={extraLeftPadding}
         class:w-full={$dynamicHeight}
         class:size-full={!$dynamicHeight}
       >
         <div
-          id="header"
-          class="border-b w-fit min-w-full flex flex-col bg-background slide"
-          class:left-shift={extraLeftPadding}
+          class="pt-2 flex-none"
+          style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
         >
-          {#if mockUserHasNoAccess}
-            <div class="mb-3" />
-          {:else}
-            {#key exploreName}
-              <section
-                class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
-              >
-                <Filters {timeRanges} {metricsViewName} {hasTimeSeries} />
-                <div class="absolute bottom-0 flex flex-col right-0">
-                  <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
-                </div>
-              </section>
-            {/key}
-          {/if}
-        </div>
-
-        {#if mockUserHasNoAccess}
-          <!-- Additional safeguard for mock users without dashboard access. -->
-          <ErrorPage
-            statusCode={exploreError?.response?.status}
-            header="This user can't access this dashboard"
-            body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
-          />
-        {:else if $showPivot}
-          <PivotDisplay {isEmbedded} />
-        {:else}
-          <div
-            class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
-            class:flex-col={showTimeDimensionDetail}
-            class:flex-row={!showTimeDimensionDetail}
-            class:left-shift={extraLeftPadding}
-            class:w-full={$dynamicHeight}
-            class:size-full={!$dynamicHeight}
-          >
-            <div
-              class="pt-2 flex-none"
-              style:width={showTimeDimensionDetail
-                ? "auto"
-                : `${metricsWidth}px`}
-            >
-              {#key exploreName}
-                {#if hasTimeSeries}
-                  <MetricsTimeSeriesCharts
-                    {exploreName}
-                    timeSeriesWidth={metricsWidth}
-                    workspaceWidth={exploreContainerWidth}
-                    hideStartPivotButton={hidePivot}
-                  />
-                {:else}
-                  <MeasuresContainer
-                    {exploreContainerWidth}
-                    {metricsViewName}
-                  />
-                {/if}
-              {/key}
-            </div>
-
-            {#if showTimeDimensionDetail && expandedMeasureName}
-              <hr class="border-t -ml-4" />
-              <TimeDimensionDisplay
+          {#key exploreName}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
                 {exploreName}
-                {expandedMeasureName}
+                timeSeriesWidth={metricsWidth}
+                workspaceWidth={exploreContainerWidth}
                 hideStartPivotButton={hidePivot}
               />
             {:else}
-              <div class="relative flex-none bg-gray-200 w-[1px]">
-                <Resizer
-                  dimension={metricsWidth}
-                  min={MIN_TIMESERIES_WIDTH}
-                  max={exploreContainerWidth - 500}
-                  basis={DEFAULT_TIMESERIES_WIDTH}
-                  bind:resizing
-                  side="right"
-                  onUpdate={(width) => {
-                    metricsWidth = width;
-                  }}
-                />
-              </div>
-              <div class="pt-2 pl-1 overflow-auto w-full">
-                {#if showDimensionTable && selectedDimension}
-                  <DimensionDisplay
-                    dimension={selectedDimension}
-                    {metricsViewName}
-                    {whereFilter}
-                    {dimensionThresholdFilters}
-                    {timeRange}
-                    {comparisonTimeRange}
-                    {timeControlsReady}
-                    {visibleMeasureNames}
-                    hideStartPivotButton={hidePivot}
-                  />
-                {:else}
-                  <LeaderboardDisplay
-                    {metricsViewName}
-                    {whereFilter}
-                    {dimensionThresholdFilters}
-                    {timeRange}
-                    {comparisonTimeRange}
-                    {timeControlsReady}
-                  />
-                {/if}
-              </div>
+              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+            {/if}
+          {/key}
+        </div>
+
+        {#if showTimeDimensionDetail && expandedMeasureName}
+          <hr class="border-t -ml-4" />
+          <TimeDimensionDisplay
+            {exploreName}
+            {expandedMeasureName}
+            hideStartPivotButton={hidePivot}
+          />
+        {:else}
+          <div class="relative flex-none bg-gray-200 w-[1px]">
+            <Resizer
+              dimension={metricsWidth}
+              min={MIN_TIMESERIES_WIDTH}
+              max={exploreContainerWidth - 500}
+              basis={DEFAULT_TIMESERIES_WIDTH}
+              bind:resizing
+              side="right"
+              onUpdate={(width) => {
+                metricsWidth = width;
+              }}
+            />
+          </div>
+          <div class="pt-2 pl-1 overflow-auto w-full">
+            {#if showDimensionTable && selectedDimension}
+              <DimensionDisplay
+                dimension={selectedDimension}
+                {metricsViewName}
+                {whereFilter}
+                {dimensionThresholdFilters}
+                {timeRange}
+                {comparisonTimeRange}
+                {timeControlsReady}
+                {visibleMeasureNames}
+                hideStartPivotButton={hidePivot}
+              />
+            {:else}
+              <LeaderboardDisplay
+                {metricsViewName}
+                {whereFilter}
+                {dimensionThresholdFilters}
+                {timeRange}
+                {comparisonTimeRange}
+                {timeControlsReady}
+              />
             {/if}
           </div>
         {/if}
-
-        <CellInspector />
-
-        {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
-          <RowsViewerAccordion {metricsViewName} {exploreName} />
-        {/if}
-      </article>
-    </div>
-    {#if $dashboardChat}
-      <ExploreChat />
+      </div>
     {/if}
-  </div>
+
+    <CellInspector />
+
+    {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
+      <RowsViewerAccordion {metricsViewName} {exploreName} />
+    {/if}
+  </article>
 </ThemeProvider>
 
 <style lang="postcss">
