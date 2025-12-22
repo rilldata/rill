@@ -150,16 +150,9 @@ const config = {
               { to: '/reference/project-files', label: 'Project Files' },
               { to: '/reference/cli', label: 'CLI' },
               { to: '/api/admin/', label: 'REST API' },
-              { to: '/reference/rill-iso-extensions', label: 'Time Syntax' },
+
             ],
           },
-          // {
-          //   to: "/api/admin/",
-          //   label: "API",
-          //   position: "left",
-          //   className: "navbar-api-link",
-          //   activeBasePath: "/api/admin",
-          // },
           {
             to: "/contact",
             label: "Contact Us",
