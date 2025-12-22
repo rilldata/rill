@@ -137,7 +137,7 @@ optimize_temporary_tables_before_partition_replace: true # default: false
 When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
 1. If you have followed the UI to create your ClickHouse connector, the password or DSN should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
 2. If `connector.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
-3. If you manually passed the connector when running `rill start`, you will need to use the `rill env configure` command to set `connector.clickhouse.dsn` onto Rill Cloud as well.
+
 
 :::warning Local ClickHouse Server
 

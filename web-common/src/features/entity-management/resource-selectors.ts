@@ -3,16 +3,22 @@ import {
   createRuntimeServiceListResources,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
+  type V1ExploreSpec,
   type V1GetResourceResponse,
   type V1ListResourcesResponse,
+  type V1MetricsViewSpec,
   V1ReconcileStatus,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import type { ErrorType } from "../../runtime-client/http-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { derived } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -201,6 +207,7 @@ export function useFilteredResources<T = Array<V1Resource>>(
         select: selector,
       },
     },
+    queryClient,
   );
 }
 
@@ -259,4 +266,39 @@ export async function fetchResources(
     queryFn: () => runtimeServiceListResources(instanceId, {}),
   });
   return resp.resources ?? [];
+}
+
+export function getMetricsViewAndExploreSpecsQueryOptions() {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
+      query: {
+        select: (data) => {
+          const metricsViewSpecsMap = new Map<string, V1MetricsViewSpec>();
+          const exploreSpecsMap = new Map<string, V1ExploreSpec>();
+          const exploreForMetricViewsMap = new Map<string, string>();
+
+          data.resources?.forEach((res) => {
+            if (res.metricsView?.state?.validSpec) {
+              metricsViewSpecsMap.set(
+                res.meta?.name?.name ?? "",
+                res.metricsView.state.validSpec,
+              );
+            } else if (res.explore?.state?.validSpec) {
+              const metricsViewName =
+                res.explore.state.validSpec.metricsView ?? "";
+              const exploreName = res.meta?.name?.name ?? "";
+              exploreForMetricViewsMap.set(metricsViewName, exploreName);
+              exploreSpecsMap.set(exploreName, res.explore.state.validSpec);
+            }
+          });
+
+          return {
+            metricsViewSpecsMap,
+            exploreSpecsMap,
+            exploreForMetricViewsMap,
+          };
+        },
+      },
+    }),
+  );
 }

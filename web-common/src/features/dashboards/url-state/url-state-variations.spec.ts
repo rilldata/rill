@@ -17,24 +17,34 @@ import {
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   AD_BIDS_APPLY_DOMAIN_CONTAINS_FILTER,
+  AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
+  AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER,
   AD_BIDS_APPLY_LARGE_FILTERS,
   AD_BIDS_APPLY_PUBLISHER_INLIST_FILTER,
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_FLAT_PIVOT_TABLE,
   AD_BIDS_LARGE_FILTER,
+  AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
   AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
   AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
   AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
   AD_BIDS_SET_ALL_TIME_RANGE_FILTER,
+  AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
   AD_BIDS_SET_KATHMANDU_TIMEZONE,
   AD_BIDS_SET_LA_TIMEZONE,
+  AD_BIDS_SET_MINUTE_TIME_GRAIN,
   AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+  AD_BIDS_SET_PIVOT_ROW_LIMIT_10,
+  AD_BIDS_SET_PIVOT_ROW_LIMIT_50,
+  AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED,
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
   AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
   AD_BIDS_SORT_BY_DELTA_ABS_VALUE,
@@ -51,14 +61,9 @@ import {
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
   AD_BIDS_FLAT_PIVOT_TABLE,
+  AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES,
   applyMutationsToDashboard,
   type TestDashboardMutation,
-  AD_BIDS_SET_PUBLISHER_COMPARE_DIMENSION,
-  AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
-  AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
-  AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
-  AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER,
-  AD_BIDS_SET_MINUTE_TIME_GRAIN,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
@@ -330,6 +335,11 @@ const TestCases: {
     mutations: [AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS],
     expectedSearch: "leaderboard_measures=bid_price%2Cimpressions",
   },
+  {
+    title: "Leaderboard show context toggle persists",
+    mutations: [AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES],
+    expectedSearch: "lb_ctx=true",
+  },
 
   {
     title: "Dimension table with no preset and dimension table active in state",
@@ -445,6 +455,41 @@ const TestCases: {
     mutations: [AD_BIDS_TOGGLE_PIVOT],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedSearch: "",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Pivot with row limit set to 10",
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_SET_PIVOT_ROW_LIMIT_10,
+    ],
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&row_limit=10",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Pivot with row limit set to unlimited (All)",
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_SET_PIVOT_ROW_LIMIT_10,
+      AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED,
+    ],
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Pivot with valid row limit in preset",
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_SET_PIVOT_ROW_LIMIT_50,
+    ],
+    preset: {
+      ...AD_BIDS_PIVOT_PRESET,
+      pivotRowLimit: 50,
+    },
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&row_limit=50",
     legacyNotSupported: true,
   },
 ];

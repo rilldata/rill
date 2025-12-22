@@ -1,19 +1,19 @@
 ---
 title: Managing Project Errors
-description: Troubleshoot and configure alerts for project errors
+description: Configure alerts and manage errors for deployed projects in Rill Cloud
 sidebar_label: Managing Project Errors
 sidebar_position: 25
 ---
 
-When you deploy to Rill Cloud, projects can encounter errors—from missing credentials to data type mismatches. This guide will help you:
+When you deploy to Rill Cloud, projects can encounter errors—from missing credentials to data type mismatches. This guide focuses on managing errors in deployed projects and setting up automated alerts.
 
-- **Troubleshoot common errors** in models and dashboards
-- **Understand error messages** and their solutions
-- **Set up automated alerts** to catch issues early
+:::info General Troubleshooting
+For general troubleshooting guidance, error message explanations, and debugging techniques, see the [Debugging Rill Projects](/build/debugging) documentation.
+:::
 
 ## How Rill Handles Errors
 
-Before diving into troubleshooting, it's helpful to understand Rill's error management approach:
+Rill's error management approach ensures visibility and isolation:
 
 - **Visibility:** View project status at the resource level via the `Status` tab or [`rill project status`](/reference/cli/project/status) CLI command
 - **Isolation:** Errors are contained to individual resource trees—if one dashboard fails, others remain available
@@ -23,37 +23,18 @@ Before diving into troubleshooting, it's helpful to understand Rill's error mana
 The surfaced error might not be the root cause. A dashboard error could stem from an underlying model timeout. Always check the [project status page](/manage/project-management#checking-deployment-status) to trace errors to their source.
 :::
 
-## Model Errors
+## Deployment-Specific Error Scenarios
 
-Model errors typically occur when there are issues with [production credentials](/build/connectors/templating), data processing, SQL syntax, or data type mismatches. Most of these errors will have surfaced in Rill Developer but a few possible issues after deploying to Rill Cloud are:
+Most errors will surface during local development in Rill Developer. However, after deploying to Rill Cloud, you may encounter additional issues:
 
 1. **Production configuration missing** - Your YAML files reference `prod:` parameters that have been defined incorrectly. Verify your [dev/prod setup](/build/connectors/templating).
-2. **Timeouts, OOM** - Assuming the data in Rill Cloud is a lot larger, timeouts and OOM issues can occur. [Contact us](/contact) if you see any related error messages.
+2. **Timeouts, OOM** - Production data volumes may be larger than local development data, leading to timeouts and out-of-memory issues. [Contact us](/contact) if you see any related error messages.
 
-To troubleshoot model errors:
+To troubleshoot deployment errors:
 
-1. **Check the model's status** in the [project status page](/manage/project-management#checking-deployment-status)
-2. **Review the error message** for specific details about what failed. Common error messages and their solutions:
-   - **`Failed to connect to ...`**: Issue with your connector. If it worked locally, check your production credentials and [firewall settings](/build/connectors/data-source#externally-hosted-services)
-   - **`Table with name ... does not exist!`**: Verify the table exists by running `rill query --sql "select * from {table_name} limit 1" --project {project_name}` or `rill project tables --project {project_name}`
-   - **`IO Error: No files found that match the pattern...`**: Check that your production cloud storage folder path is correct and files exist
-   - **`some partitions have errors`**: Run `rill project refresh --model {model_name} --errored-partitions` from your authenticated CLI
-   - **`Out of Memory Error: ...`**: [Contact support](/contact) for assistance with memory issues 
-
-If after going through the above steps, you are still unable to resolve the issue, [contact us!](/contact)
-
-## Metrics View / Dashboard Errors
-
-Metrics view and dashboard errors often stem from issues with the underlying models or configuration problems. Common issues include:
-
-- **Model Dependencies:** Dashboards failing because their underlying models have errors
-- **Missing Dimensions/Measures:** References to fields that don't exist in the underlying model
-
-To resolve metrics view and dashboard errors:
-
-1. Verify that all referenced models are building successfully
-2. Check the measures and dimensions in your metrics YAML in GitHub or Rill Developer matches an existing column in your data
-3. Check that any changes to the metrics dimensions and measures are reflected in the explore YAML.
+1. **Check the resource status** in the [project status page](/manage/project-management#checking-deployment-status)
+2. **Review project logs** using `rill project logs` or the Rill Cloud UI
+3. **Compare with local behavior** - If it worked locally, check production-specific configuration differences
 
 ## Setting Up Error Alerts
 

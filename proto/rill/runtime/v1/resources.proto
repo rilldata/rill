@@ -200,6 +200,7 @@ message MetricsViewSpec {
     DimensionType type = 14;
     string display_name = 3;
     string description = 4;
+    repeated string tags = 16;
     string column = 2;
     string expression = 6;
     bool unnest = 5;
@@ -246,6 +247,7 @@ message MetricsViewSpec {
     string name = 1;
     string display_name = 3;
     string description = 4;
+    repeated string tags = 16;
     string expression = 2;
     MeasureType type = 8;
     MeasureWindow window = 9;
@@ -330,6 +332,9 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
+  // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+  // Keys and values are stored as templates and will be resolved at query time.
+  map<string, string> query_attributes = 33;
 }
 
 message SecurityRule {
@@ -520,6 +525,7 @@ message ExplorePreset {
   optional string pivot_sort_by = 26;
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
+  optional int32 pivot_row_limit = 33;
 }
 
 enum ExploreComparisonMode {
@@ -809,6 +815,8 @@ message CanvasSpec {
   repeated CanvasRow rows = 18;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
+  // Array of dimension or measure names
+  repeated string pinned_filters = 16;
 }
 
 message CanvasState {
@@ -849,6 +857,14 @@ message CanvasPreset {
   ExploreComparisonMode comparison_mode = 2;
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   optional string comparison_dimension = 8;
+  // Filter expressions as key-value pairs for the canvas.
+  // Key: Metrics view name
+  // Value: Valid Metrics SQL expression
+  map<string, DefaultMetricsSQLFilter> filter_expr = 19;
+}
+
+message DefaultMetricsSQLFilter {
+  Expression expression = 1;
 }
 
 // API defines a custom operation for querying data stored in Rill.

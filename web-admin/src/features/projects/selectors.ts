@@ -133,6 +133,7 @@ export async function fetchProjectDeploymentDetails(
     queryKey,
     queryFn,
   });
+
   return {
     projectPermissions: projResp.projectPermissions,
     project: projResp.project,
@@ -141,7 +142,7 @@ export async function fetchProjectDeploymentDetails(
       instanceId: projResp.prodDeployment?.runtimeInstanceId,
       jwt: {
         token: projResp.jwt,
-        authContext: "magic",
+        authContext: token ? "magic" : "user",
       },
     },
   };

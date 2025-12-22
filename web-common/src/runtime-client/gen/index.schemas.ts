@@ -53,6 +53,7 @@ export interface MetricsViewSpecDimension {
   type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
+  tags?: string[];
   column?: string;
   expression?: string;
   unnest?: boolean;
@@ -87,6 +88,7 @@ export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
   description?: string;
+  tags?: string[];
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
@@ -402,6 +404,10 @@ export interface V1CanvasItem {
   widthUnit?: string;
 }
 
+export type V1CanvasPresetFilterExpr = {
+  [key: string]: V1DefaultMetricsSQLFilter;
+};
+
 export interface V1CanvasPreset {
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -410,6 +416,7 @@ If not found in `time_ranges`, it should be added to the list. */
   comparisonMode?: V1ExploreComparisonMode;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
+  filterExpr?: V1CanvasPresetFilterExpr;
 }
 
 export interface V1CanvasRow {
@@ -452,6 +459,7 @@ The values should be valid IANA location identifiers. */
   rows?: V1CanvasRow[];
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+  pinnedFilters?: string[];
 }
 
 export interface V1CanvasState {
@@ -747,6 +755,11 @@ export interface V1Conversation {
   messages?: V1Message[];
 }
 
+export interface V1ConvertExpressionToMetricsSQLResponse {
+  /** The SQL filter string representation of the expression. */
+  sql?: string;
+}
+
 export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
@@ -783,6 +796,10 @@ export interface V1CreateTriggerResponse {
 export interface V1DatabaseSchemaInfo {
   database?: string;
   databaseSchema?: string;
+}
+
+export interface V1DefaultMetricsSQLFilter {
+  expression?: V1Expression;
 }
 
 export interface V1DeleteFileResponse {
@@ -884,6 +901,7 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotSortBy?: string;
   pivotSortAsc?: boolean;
   pivotTableMode?: string;
+  pivotRowLimit?: number;
 }
 
 export type V1ExploreSortType =
@@ -1521,6 +1539,12 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+/**
+ * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+Keys and values are stored as templates and will be resolved at query time.
+ */
+export type V1MetricsViewSpecQueryAttributes = { [key: string]: string };
+
 export interface V1MetricsViewSpec {
   /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
   parent?: string;
@@ -1552,6 +1576,9 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+Keys and values are stored as templates and will be resolved at query time. */
+  queryAttributes?: V1MetricsViewSpecQueryAttributes;
 }
 
 /**
@@ -2649,6 +2676,8 @@ If you set this, do NOT set model. */
   /** If true, the AI will be used to generate the metrics view file.
 Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
+  /** Optional prompt to guide AI generation. */
+  prompt?: string;
 };
 
 export type RuntimeServiceRenameFileBody = {
@@ -2801,6 +2830,10 @@ Only used if include_header is true. */
   originUrl?: string;
   /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
   executionTime?: string;
+};
+
+export type QueryServiceConvertExpressionToMetricsSQLBody = {
+  expression?: V1Expression;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -3130,7 +3163,6 @@ export type RuntimeServiceListResourcesParams = {
 export type RuntimeServiceWatchResourcesParams = {
   kind?: string;
   replay?: boolean;
-  level?: string;
 };
 
 export type RuntimeServiceWatchResources200 = {

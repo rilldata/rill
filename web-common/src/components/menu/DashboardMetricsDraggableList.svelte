@@ -36,12 +36,24 @@
   // Convert selectedItems to DraggableItem format
   $: selectedDraggableItems = selectedItems
     .filter((id) => id)
-    .map((id) => ({ id }));
+    .map((id) => {
+      const itemData = allItemsMap.get(id);
+      return {
+        id: id!,
+        displayName: itemData?.displayName ?? id!,
+      };
+    });
 
   // Convert hidden items to DraggableItem format
-  $: hiddenDraggableItems = Array.from(allItemsMap.entries())
-    .filter(([id]) => id && !selectedItems.includes(id))
-    .map(([id]) => ({ id: id! }));
+  $: hiddenDraggableItems = Array.from(allItemsMap.keys())
+    .filter((id) => id && !selectedItems.includes(id))
+    .map((id) => {
+      const itemData = allItemsMap.get(id);
+      return {
+        id: id!,
+        displayName: itemData?.displayName ?? id!,
+      };
+    });
 
   function handleSelectedReorder(data: {
     items: Array<{ id: string }>;
