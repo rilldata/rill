@@ -14,16 +14,14 @@
 
   let stateManagers: StateManagers | undefined = undefined;
 
-  onMount(() => {
-    if (metricsViewName) {
-      stateManagers = createStateManagers({
-        queryClient,
-        metricsViewName,
-        exploreName,
-      });
-      setContext(DEFAULT_STORE_KEY, stateManagers);
-    }
-  });
+  if (metricsViewName) {
+    stateManagers = createStateManagers({
+      queryClient,
+      metricsViewName,
+      exploreName,
+    });
+    setContext(DEFAULT_STORE_KEY, stateManagers);
+  }
 
   // Our state management was not built around the ability to arbitrarily change the explore or metrics view name
   // This needs to change, but this is a workaround for now
