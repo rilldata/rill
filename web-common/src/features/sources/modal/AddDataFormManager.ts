@@ -590,6 +590,7 @@ export class AddDataFormManager {
             // Skip if value is undefined/null/empty string
             if (value === undefined || value === null || value === "") continue;
 
+            // Should we add other properties, like Array for list of strings, Ie path_prefix, etc.
             schemaProperties.push({
               key,
               type:

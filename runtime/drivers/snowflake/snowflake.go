@@ -102,7 +102,7 @@ var spec = drivers.Spec{
 			Description: "RSA private key in PEM format for key pair authentication",
 			Placeholder: "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----",
 			Secret:      true,
-		}
+		},
 	},
 	ImplementsWarehouse: true,
 }

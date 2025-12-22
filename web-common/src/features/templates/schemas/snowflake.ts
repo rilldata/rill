@@ -154,10 +154,10 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-advanced": true,
     },
     log_queries: {
-      type: "boolean",
+      type: "string",
       title: "Log Queries",
       description: "Enable logging of all SQL queries (useful for debugging)",
-      default: false,
+      "x-placeholder": "false",
       "x-step": "connector",
       "x-advanced": true,
     },
