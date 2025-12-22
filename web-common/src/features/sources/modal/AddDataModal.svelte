@@ -126,6 +126,8 @@
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce");
+
+  $: fitWidth = step == 2 && selectedConnector?.name === "local_file";
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -142,6 +144,7 @@
     <Dialog.Content
       class={cn(
         "overflow-hidden max-w-4xl",
+        fitWidth ? "w-fit md:w-fit" : "",
         step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
@@ -229,7 +232,7 @@
             <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
           </div>
         {:else if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close={resetModal} on:back={back} />
+          <LocalSourceUpload onClose={resetModal} onBack={back} />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}

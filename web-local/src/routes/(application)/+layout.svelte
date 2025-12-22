@@ -26,9 +26,7 @@
   <slot />
 </main>
 
-{#if showDropOverlay}
-  <FileDrop bind:showDropOverlay />
-{/if}
+<FileDrop bind:showDropOverlay />
 
 <AddDataModal />
 <SourceImportedModal sourcePath={$sourceImportedPath} />

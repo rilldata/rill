@@ -4591,6 +4591,9 @@ definitions:
         type: string
       isDir:
         type: boolean
+      size:
+        type: string
+        format: int64
   v1EditInstanceResponse:
     type: object
     properties:
@@ -7393,6 +7396,9 @@ definitions:
         type: string
       isDir:
         type: boolean
+      size:
+        type: string
+        format: int64
     title: Response message for RuntimeService.WatchFiles
   v1WatchLogsResponse:
     type: object

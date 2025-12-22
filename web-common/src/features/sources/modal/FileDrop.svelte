@@ -10,12 +10,17 @@
   import { compileLocalFileSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
+  import { UploadFileSizeLimitInBytes } from "@rilldata/web-common/features/entity-management/file-selectors.ts";
+  import * as Dialog from "@rilldata/web-common/components/dialog/index.ts";
+  import LocalSourceUpload from "@rilldata/web-common/features/sources/modal/LocalSourceUpload.svelte";
 
   export let showDropOverlay: boolean;
 
   $: ({ instanceId } = $runtime);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  let uploadedFiles: File[] = [];
+  let showLargeFilesDialog = false;
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -25,10 +30,19 @@
     // no-op if no files are dropped
     if (files === undefined) return;
 
-    const uploadedFiles = uploadTableFiles(Array.from(files), instanceId);
+    const someFilesAreLarge = Array.from(files).some(
+      (file) => file.size >= UploadFileSizeLimitInBytes,
+    );
+    if (someFilesAreLarge) {
+      uploadedFiles = Array.from(files);
+      showLargeFilesDialog = true;
+      return;
+    }
+
+    const uploadFilePromises = uploadTableFiles(Array.from(files), instanceId);
 
     const initialized = await isProjectInitialized(instanceId);
-    for await (const { tableName, filePath } of uploadedFiles) {
+    for await (const { tableName, filePath } of uploadFilePromises) {
       try {
         // If project is uninitialized, initialize an empty project
         if (!initialized) {
@@ -60,25 +74,41 @@
   };
 </script>
 
-<Overlay bg="rgba(0,0,0,.6)">
-  <div
-    class="w-screen h-screen grid place-content-center"
-    on:dragenter|preventDefault|stopPropagation
-    on:dragleave|preventDefault|stopPropagation
-    on:dragover|preventDefault|stopPropagation
-    on:drag|preventDefault|stopPropagation
-    on:drop|preventDefault|stopPropagation={handleSourceDrop}
-    on:mouseup|preventDefault|stopPropagation={() => {
-      showDropOverlay = false;
-    }}
-    role="presentation"
-  >
+{#if showDropOverlay}
+  <Overlay bg="rgba(0,0,0,.6)">
     <div
-      class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"
+      class="w-screen h-screen grid place-content-center"
+      on:dragenter|preventDefault|stopPropagation
+      on:dragleave|preventDefault|stopPropagation
+      on:dragover|preventDefault|stopPropagation
+      on:drag|preventDefault|stopPropagation
+      on:drop|preventDefault|stopPropagation={handleSourceDrop}
+      on:mouseup|preventDefault|stopPropagation={() => {
+        showDropOverlay = false;
+      }}
+      role="presentation"
     >
-      <span class="place-content-center">
-        drop your files to add new source
-      </span>
+      <div
+        class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"
+      >
+        <span class="place-content-center">
+          drop your files to add new source
+        </span>
+      </div>
     </div>
-  </div>
-</Overlay>
+  </Overlay>
+{/if}
+
+<Dialog.Root bind:open={showLargeFilesDialog}>
+  <Dialog.Trigger asChild>
+    <div class="hidden"></div>
+  </Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Title>Local file</Dialog.Title>
+    <LocalSourceUpload
+      initFiles={uploadedFiles}
+      onClose={() => (showLargeFilesDialog = false)}
+      showBack={false}
+    />
+  </Dialog.Content>
+</Dialog.Root>
