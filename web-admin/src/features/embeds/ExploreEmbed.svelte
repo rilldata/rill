@@ -2,9 +2,14 @@
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
+  import { derived } from "svelte/store";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../../components/errors/error-store";
   import { EmbedStorageNamespacePrefix } from "@rilldata/web-admin/features/embeds/constants.ts";
+  import {
+    getEmbedThemeStoreInstance,
+    resolveEmbedTheme,
+  } from "@rilldata/web-common/features/embeds/embed-theme";
 
   export let instanceId: string;
   export let exploreName: string;
@@ -21,6 +26,11 @@
   $: isExploreErrored = !data?.explore?.explore?.state?.validSpec;
 
   $: metricsViewName = data?.metricsView?.meta?.name?.name;
+
+  const embedThemeStore = getEmbedThemeStoreInstance();
+  const embedResolvedTheme = derived([embedThemeStore], () =>
+    resolveEmbedTheme(),
+  );
 
   // If no dashboard is found, show a 404 page
   $: if (isExploreNotFound) {
@@ -43,7 +53,12 @@
           storageNamespacePrefix={EmbedStorageNamespacePrefix}
           disableMostRecentDashboardState
         >
-          <Dashboard {exploreName} {metricsViewName} isEmbedded />
+          <Dashboard
+            {exploreName}
+            {metricsViewName}
+            isEmbedded
+            embedThemeName={embedResolvedTheme}
+          />
         </DashboardStateManager>
       </StateManagersProvider>
     {/key}

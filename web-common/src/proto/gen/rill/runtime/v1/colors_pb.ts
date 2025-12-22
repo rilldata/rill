@@ -3,7 +3,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
+import type {
+  BinaryReadOptions,
+  FieldList,
+  JsonReadOptions,
+  JsonValue,
+  PartialMessage,
+  PlainMessage,
+} from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
@@ -44,20 +51,31 @@ export class Color extends Message<Color> {
     { no: 4, name: "alpha", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Color {
+  static fromBinary(
+    bytes: Uint8Array,
+    options?: Partial<BinaryReadOptions>,
+  ): Color {
     return new Color().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Color {
+  static fromJson(
+    jsonValue: JsonValue,
+    options?: Partial<JsonReadOptions>,
+  ): Color {
     return new Color().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Color {
+  static fromJsonString(
+    jsonString: string,
+    options?: Partial<JsonReadOptions>,
+  ): Color {
     return new Color().fromJsonString(jsonString, options);
   }
 
-  static equals(a: Color | PlainMessage<Color> | undefined, b: Color | PlainMessage<Color> | undefined): boolean {
+  static equals(
+    a: Color | PlainMessage<Color> | undefined,
+    b: Color | PlainMessage<Color> | undefined,
+  ): boolean {
     return proto3.util.equals(Color, a, b);
   }
 }
-

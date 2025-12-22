@@ -73,6 +73,9 @@ type Statement struct {
 	// Unlike a timeout on ctx, it will be enforced only for query execution, not for time spent waiting in queues.
 	// It may not be supported by all drivers.
 	ExecutionTimeout time.Duration
+	// QueryAttributes provides additional attributes for the query (if supported by the driver).
+	// These can be used to customize the behavior of the query "{{ .user.partnerId }}"
+	QueryAttributes map[string]string
 }
 
 // Rows is an iterator for rows returned by a query. It mimics the behavior of sqlx.Rows.
@@ -564,9 +567,9 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 
 		if tz == "" {
 			if shift == "" {
-				return fmt.Sprintf("date_trunc('%s', %s)::DateTime64", specifier, expr), nil
+				return fmt.Sprintf("date_trunc('%s', %s, 'UTC')::DateTime64", specifier, expr), nil
 			}
-			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s)::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
+			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s, 'UTC')::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
 		}
 
 		if shift == "" {
@@ -613,16 +616,20 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 	}
 }
 
-func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location) (string, []any, error) {
+func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
+	g := timeutil.TimeGrainFromAPI(grain)
+	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
 	var args []any
 	switch d {
 	case DialectDuckDB:
-		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+		// first convert start and end to the target timezone as the application sends UTC representation of the time, so it will send `2024-03-12T18:30:00Z` for the 13th day of March in Asia/Kolkata timezone (`2024-03-13T00:00:00Z`)
+		// then let duckdb range over it and then convert back to the target timezone
+		return fmt.Sprintf("SELECT timezone('%s', range) AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", tz.String(), d.EscapeIdentifier(alias), start.In(tz).Format(time.DateTime), end.In(tz).Format(time.DateTime), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -639,7 +646,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// ) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}

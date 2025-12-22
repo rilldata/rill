@@ -91,7 +91,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		LastUpdatedOn: timestamppb.New(proj.UpdatedOn),
 		GitUrl:        gitURL,
 		GitSubpath:    proj.Subpath,
-		GitBranch:     proj.ProdBranch,
+		GitBranch:     depl.Branch,
 		GitEditBranch: editBranch,
 	}, nil
 }
@@ -110,7 +110,8 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus && !permissions.ReadDevStatus {
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !permissions.ReadProdStatus && !permissions.ReadDevStatus && !forceAccess {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -156,6 +157,87 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		Files:         dtos,
 		NextPageToken: nextToken,
 	}, nil
+}
+
+func (s *Server) GetVirtualFile(ctx context.Context, req *adminv1.GetVirtualFileRequest) (*adminv1.GetVirtualFileResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.path", req.Path),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !permissions.ReadProdStatus && !permissions.ReadDevStatus && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+	}
+
+	environment := req.Environment
+	if environment == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.NotFound, "deployment not found")
+			}
+			environment = depl.Environment
+		} else {
+			environment = "prod"
+		}
+	}
+
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, environment, req.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.GetVirtualFileResponse{
+		File: virtualFileToDTO(vf),
+	}, nil
+}
+
+func (s *Server) DeleteVirtualFile(ctx context.Context, req *adminv1.DeleteVirtualFileRequest) (*adminv1.DeleteVirtualFileResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.path", req.Path),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+	if !permissions.ManageProd && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete virtual files")
+	}
+
+	environment := req.Environment
+	if environment == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.NotFound, "deployment not found")
+			}
+			environment = depl.Environment
+		} else {
+			environment = "prod"
+		}
+	}
+
+	// Directly mark the virtual file as deleted without parsing
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, environment, req.Path)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %v", err)
+	}
+
+	return &adminv1.DeleteVirtualFileResponse{}, nil
 }
 
 func virtualFileToDTO(vf *database.VirtualFile) *adminv1.VirtualFile {

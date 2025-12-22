@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/r3labs/sse/v2"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -21,7 +20,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -34,7 +32,10 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 		return nil, ErrForbidden
 	}
 
-	if claims.UserID == "" {
+	if claims.UserID == "" && !claims.SkipChecks {
+		// This case matches anonymous users on runtimes with auth enabled (i.e. on Rill Cloud).
+		// This prevents anonymous users from seeing previous/other anonymous users' conversations.
+		// (In Rill Developer, auth is disabled so SkipChecks is true for anonymous users.)
 		return &runtimev1.ListConversationsResponse{}, nil
 	}
 
@@ -89,6 +90,27 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}, nil
 }
 
+func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest) (*runtimev1.ListToolsResponse, error) {
+	// Access check
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	// List all registered tools
+	var pbs []*aiv1.Tool
+	for _, tool := range s.ai.Tools {
+		pb, err := tool.AsProto()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert tool %q to proto: %w", tool.Name, err)
+		}
+		pbs = append(pbs, pb)
+	}
+	return &runtimev1.ListToolsResponse{
+		Tools: pbs,
+	}, nil
+}
+
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, resErr error) {
 	// Access check
@@ -130,25 +152,36 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
-	if req.Explore != "" {
+	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.Explore,
-			Dimensions: req.Dimensions,
-			Measures:   req.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.Where),
-			TimeStart:  req.TimeStart.AsTime(),
-			TimeEnd:    req.TimeEnd.AsTime(),
+			Explore:    req.AnalystAgentContext.Explore,
+			Dimensions: req.AnalystAgentContext.Dimensions,
+			Measures:   req.AnalystAgentContext.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+		}
+	}
+	var developerAgentArgs *ai.DeveloperAgentArgs
+	if req.DeveloperAgentContext != nil {
+		developerAgentArgs = &ai.DeveloperAgentArgs{
+			InitProject:     req.DeveloperAgentContext.InitProject,
+			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
-	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt:           req.Prompt,
-		AnalystAgentArgs: analystAgentArgs,
+	msg, err := session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt:             req.Prompt,
+		Agent:              req.Agent,
+		AnalystAgentArgs:   analystAgentArgs,
+		DeveloperAgentArgs: developerAgentArgs,
 	})
-	if err != nil {
+	if err != nil && msg == nil {
+		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return nil, err
 	}
 
@@ -240,25 +273,36 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
+	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
-	if req.Explore != "" {
+	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.Explore,
-			Dimensions: req.Dimensions,
-			Measures:   req.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.Where),
-			TimeStart:  req.TimeStart.AsTime(),
-			TimeEnd:    req.TimeEnd.AsTime(),
+			Explore:    req.AnalystAgentContext.Explore,
+			Dimensions: req.AnalystAgentContext.Dimensions,
+			Measures:   req.AnalystAgentContext.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+		}
+	}
+	var developerAgentArgs *ai.DeveloperAgentArgs
+	if req.DeveloperAgentContext != nil {
+		developerAgentArgs = &ai.DeveloperAgentArgs{
+			InitProject:     req.DeveloperAgentContext.InitProject,
+			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
-	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt:           req.Prompt,
-		AnalystAgentArgs: analystAgentArgs,
+	msg, err := session.CallTool(ctx, ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt:             req.Prompt,
+		Agent:              req.Agent,
+		AnalystAgentArgs:   analystAgentArgs,
+		DeveloperAgentArgs: developerAgentArgs,
 	})
-	if err != nil && !errors.Is(err, context.Canceled) {
+	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
+		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return err
 	}
 	return nil
@@ -267,16 +311,13 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	instanceID := req.PathValue("instance_id")
-
 	// Add timeout for AI completion
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
+	ctx, cancel := context.WithTimeout(req.Context(), time.Minute*5)
 	defer cancel()
+	req = req.WithContext(ctx) // Replace request context with the timed context
 
-	// Replace request context with the timed context
-	req = req.WithContext(ctx)
-
+	// Observability
+	instanceID := req.PathValue("instance_id")
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),
 	)
@@ -307,83 +348,46 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	}
 	completeReq.InstanceId = instanceID // Set instance ID from path
 
-	// Initialize SSE server
-	eventServer := sse.New()
-	eventServer.CreateStream("messages")
-	eventServer.Headers = map[string]string{
-		"Content-Type":  "text/event-stream",
-		"Cache-Control": "no-cache",
-		"Connection":    "keep-alive",
-	}
-
-	// Create the shim that implements RuntimeService_CompleteStreamingServer
-	shim := &completeStreamingServerShim{
-		r: req,
-		s: eventServer,
-	}
-
-	// Create a goroutine to handle the streaming
+	// Start goroutine that calls CompleteStreaming and publishes responses to a channel
+	events := make(chan *sseEvent)
 	go func() {
+		// We must close the events channel when done to make sure the SSE handler returns
+		defer close(events)
+
+		// Create the shim that implements RuntimeService_CompleteStreamingServer
+		shim := &grpcStreamingShim[*runtimev1.CompleteStreamingResponse]{
+			ctx: ctx,
+			fn: func(data []byte) error {
+				events <- &sseEvent{Data: data}
+				return nil
+			},
+		}
+
 		// Call the existing CompleteStreaming implementation with our shim
 		err := s.CompleteStreaming(completeReq, shim)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				s.logger.Warn("complete streaming error", zap.String("instance_id", instanceID), zap.Error(err))
+			code := codes.Unknown
+			msg := err.Error()
+			if s, ok := status.FromError(err); ok {
+				code = s.Code()
+				msg = s.Message()
 			}
 
-			errJSON, err := json.Marshal(map[string]string{"error": err.Error()})
+			errJSON, err := json.Marshal(map[string]string{"code": code.String(), "error": msg})
 			if err != nil {
 				s.logger.Error("failed to marshal error as json", zap.Error(err))
 			}
 
-			eventServer.Publish("messages", &sse.Event{
+			events <- &sseEvent{
+				Event: "error",
 				Data:  errJSON,
-				Event: []byte("error"),
-			})
+			}
 		}
-		eventServer.Close()
 	}()
 
-	// Serve the SSE stream
-	eventServer.ServeHTTP(w, req)
-}
-
-// completeStreamingServerShim is a shim for runtimev1.RuntimeService_CompleteStreamingServer
-type completeStreamingServerShim struct {
-	r *http.Request
-	s *sse.Server
-}
-
-func (ss *completeStreamingServerShim) Context() context.Context {
-	return ss.r.Context()
-}
-
-func (ss *completeStreamingServerShim) Send(e *runtimev1.CompleteStreamingResponse) error {
-	data, err := protojson.Marshal(e)
-	if err != nil {
-		return err
-	}
-
-	ss.s.Publish("messages", &sse.Event{Data: data})
-	return nil
-}
-
-func (ss *completeStreamingServerShim) SetHeader(metadata.MD) error {
-	return errors.New("not implemented")
-}
-
-func (ss *completeStreamingServerShim) SendHeader(metadata.MD) error {
-	return errors.New("not implemented")
-}
-
-func (ss *completeStreamingServerShim) SetTrailer(metadata.MD) {}
-
-func (ss *completeStreamingServerShim) SendMsg(m any) error {
-	return errors.New("not implemented")
-}
-
-func (ss *completeStreamingServerShim) RecvMsg(m any) error {
-	return errors.New("not implemented")
+	// Serve the SSE stream.
+	// This will only return when the background goroutine calls close(events).
+	serveSSEUntilClose(w, events)
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.

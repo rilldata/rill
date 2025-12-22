@@ -126,7 +126,7 @@ external_id: "MyExternalID" # External ID for cross-account access
 workgroup: "primary" # Athena workgroup (defaults to 'primary')  
 output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
 aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')  
-allow_host_access: true # Allow host environment access _(default: true)_
+allow_host_access: true # Allow host environment access _(default: true)_            
 ```
 
 ## Azure
@@ -143,10 +143,6 @@ _[string]_ - Azure storage account name _(required)_
 
 _[string]_ - Azure storage access key _(required)_
 
-### `azure_storage_bucket`
-
-_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) 
-
 ### `azure_storage_sas_token`
 
 _[string]_ - Optional azure SAS token for authentication 
@@ -154,6 +150,14 @@ _[string]_ - Optional azure SAS token for authentication
 ### `azure_storage_connection_string`
 
 _[string]_ - Optional azure connection string for storage account 
+
+### `path_prefixes`
+
+_[string, array]_ - A list of container or virtual directory prefixes that this connector is allowed to access.
+Useful when different containers or paths use different credentials, allowing the system
+to route access through the appropriate connector based on the blob path.
+Example: `azure://my-bucket/`, ` azure://my-bucket/path/` ,`azure://my-bucket/path/prefix`
+ 
 
 ### `allow_host_access`
 
@@ -165,7 +169,6 @@ type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
 azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
 azure_storage_key: "credentialstring" # Azure storage access key   _(required)_
-azure_storage_bucket: "azure://..." # Azure Blob Storage container name  
 ```
 
 ## BigQuery
@@ -365,7 +368,7 @@ _[string]_ - Must be "duckdb" _(required)_
 
 ### `mode`
 
-_[string]_ - Connection mode 
+_[string]_ - Set the mode for the DuckDB connection. 
 
 ### `path`
 
@@ -411,9 +414,9 @@ _[string]_ - Deprecated - Use init_sql instead
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
-### `secrets`
+### `create_secrets_from_connectors`
 
-_[string]_ - Comma-separated list of connector names to create temporary secrets for 
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
 
 ### `database_name`
 
@@ -422,10 +425,6 @@ _[string]_ - Name of the attached DuckDB database (auto-detected if not set)
 ### `schema_name`
 
 _[string]_ - Default schema used by the DuckDB database 
-
-### `mode`
-
-_[no type]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB connector configuration
@@ -473,14 +472,6 @@ _[string]_ - Refers to the driver type and must be driver `gcs` _(required)_
 
 _[string]_ - Google Cloud credentials JSON string 
 
-### `bucket`
-
-_[string]_ - Name of gcs bucket _(required)_
-
-### `allow_host_access`
-
-_[boolean]_ - Allow access to host environment configuration 
-
 ### `key_id`
 
 _[string]_ - Optional S3-compatible Key ID when used in compatibility mode 
@@ -489,12 +480,23 @@ _[string]_ - Optional S3-compatible Key ID when used in compatibility mode
 
 _[string]_ - Optional S3-compatible Secret when used in compatibility mode 
 
+### `path_prefixes`
+
+_[string, array]_ - A list of bucket path prefixes that this connector is allowed to access. 
+Useful when different buckets or bucket prefixes use different credentials, 
+allowing the system to select the appropriate connector based on the bucket path.
+Example: `gs://my-bucket/`, ` gs://my-bucket/path/` ,`gs://my-bucket/path/prefix`
+ 
+
+### `allow_host_access`
+
+_[boolean]_ - Allow access to host environment configuration 
+
 ```yaml
 # Example: GCS connector configuration
 type: connector # Must be `connector` (required)
 driver: gcs # Must be `gcs` _(required)_
-google_application_credentials: "credentialjsonstring" # Google Cloud credentials JSON string  
-bucket: "my-gcs-bucket" # Name of gcs bucket  
+google_application_credentials: "credentialjsonstring" # Google Cloud credentials JSON string   
 ```
 
 ## HTTPS
@@ -506,6 +508,14 @@ _[string]_ - Refers to the driver type and must be driver `https` _(required)_
 ### `headers`
 
 _[object]_ - HTTP headers to include in the request 
+
+### `path_prefixes`
+
+_[string, array]_ - A list of HTTP/HTTPS URL prefixes that this connector is allowed to access.
+Useful when different URL namespaces use different credentials, enabling the
+system to choose the appropriate connector based on the URL path.
+Example: `https://example.com/`, ` https://example.com/path/` ,`https://example.com/path/prefix`
+ 
 
 ```yaml
 # Example: HTTPS connector configuration
@@ -540,6 +550,10 @@ _[string]_ - SQL executed during database initialization.
 ### `mode`
 
 _[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
+
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
 
 ```yaml
 # Example: MotherDuck connector configuration
@@ -864,10 +878,6 @@ _[string]_ - AWS Secret Access Key used for authentication
 
 _[string]_ - Optional AWS session token for temporary credentials 
 
-### `bucket`
-
-_[string]_ - Name of s3 bucket _(required)_
-
 ### `endpoint`
 
 _[string]_ - Optional custom endpoint URL for S3-compatible storage 
@@ -876,13 +886,17 @@ _[string]_ - Optional custom endpoint URL for S3-compatible storage
 
 _[string]_ - AWS region of the S3 bucket 
 
+### `path_prefixes`
+
+_[string, array]_ - A list of bucket path prefixes that this connector is allowed to access.
+Useful when different buckets or bucket prefixes use different credentials,
+allowing the system to select the appropriate connector based on the bucket path.
+Example: `s3://my-bucket/`, ` s3://my-bucket/path/` ,`s3://my-bucket/path/prefix`
+ 
+
 ### `allow_host_access`
 
 _[boolean]_ - Allow access to host environment configuration 
-
-### `retain_files`
-
-_[boolean]_ - Whether to retain intermediate files after processing 
 
 ```yaml
 # Example: S3 connector configuration
@@ -891,7 +905,6 @@ driver: s3 # Must be `s3` _(required)_
 aws_access_key_id: "my-access-key-id" # AWS Access Key ID used for authentication  
 aws_secret_access_key: "my-secret-access-key" # AWS Secret Access Key used for authentication  
 aws_access_token: "my-access-token" # Optional AWS session token for temporary credentials  
-bucket: "my-s3-bucket" # Name of s3 bucket  
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage  
 region: "us-east-1" # AWS region of the S3 bucket  
 ```

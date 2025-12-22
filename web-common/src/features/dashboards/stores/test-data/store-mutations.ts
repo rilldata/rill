@@ -49,11 +49,13 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   setLeaderboardMeasureNames,
   setLeaderboardSortByMeasureName,
+  toggleLeaderboardShowContextForAllMeasures,
 } from "../../state-managers/actions/leaderboard";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
@@ -272,6 +274,11 @@ export const AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS: TestDashboardMutat
     ]);
   };
 
+export const AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES: TestDashboardMutation =
+  (mut) => {
+    toggleLeaderboardShowContextForAllMeasures(mut);
+  };
+
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
   toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
 };
@@ -381,6 +388,15 @@ export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
 
+export const AD_BIDS_SET_PIVOT_ROW_LIMIT_10: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 10);
+
+export const AD_BIDS_SET_PIVOT_ROW_LIMIT_50: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, 50);
+
+export const AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED: TestDashboardMutation =
+  () => metricsExplorerStore.setPivotRowLimit(AD_BIDS_EXPLORE_NAME, undefined);
+
 export const AD_BIDS_FLAT_PIVOT_TABLE: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTableMode(
     AD_BIDS_EXPLORE_NAME,
@@ -455,14 +471,20 @@ export const AD_BIDS_SET_TIME_PIVOT_FILTER = (field: string) => {
     ])) as TestDashboardMutation;
 };
 
-export function applyMutationsToDashboard(
+export async function applyMutationsToDashboard(
   name: string,
   mutations: TestDashboardMutation[],
 ) {
-  updateMetricsExplorerByName(name, (dashboard) => {
-    const dashboardMutables = {
-      dashboard,
-    } as DashboardMutables;
-    mutations.forEach((mutation) => mutation(dashboardMutables));
-  });
+  for (const mutation of mutations) {
+    updateMetricsExplorerByName(name, (dashboard) => {
+      const dashboardMutables = {
+        dashboard,
+      } as DashboardMutables;
+      mutation(dashboardMutables);
+    });
+    // DashboardStateSync.gotoNewState that listens to changes to the dashboard store is an async function.
+    // So go through the mutations individually and wait for 1ms for that to finish.
+    // Without this the lock in gotoNewState will stop the very quick successive changes to dashboard.
+    await asyncWait(1);
+  }
 }

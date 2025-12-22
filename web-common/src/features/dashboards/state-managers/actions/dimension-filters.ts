@@ -3,7 +3,6 @@ import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filte
 import {
   createInExpression,
   createLikeExpression,
-  getValueIndexInExpression,
   getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -277,20 +276,25 @@ export function toggleDimensionFilterValue(
 ) {
   if (!expr.cond?.exprs) return -1;
 
-  const inIdx = getValueIndexInExpression(expr, dimensionValue);
+  const ident = expr.cond.exprs[0];
+  const values = getValuesInExpression(expr);
+
+  const inIdx = values.findIndex((v) => v === dimensionValue);
+
   if (inIdx === -1) {
     if (isExclusiveFilter) {
-      expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
-        val: dimensionValue,
-      });
+      expr.cond.exprs = [ident, { val: dimensionValue }];
+      return -1;
     } else {
-      expr.cond.exprs.push({ val: dimensionValue });
+      values.push(dimensionValue);
     }
-    return -1;
   } else {
-    expr.cond.exprs.splice(inIdx, 1);
-    return inIdx;
+    values.splice(inIdx, 1);
   }
+
+  expr.cond.exprs = [ident, ...values.map((v) => ({ val: v }))];
+
+  return inIdx;
 }
 
 export const dimensionFilterActions = {

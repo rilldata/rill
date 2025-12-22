@@ -2,7 +2,7 @@ version: "3.8"
 
 # Service template
 x-service: &service
-  restart: always
+  restart: unless-stopped
   deploy:
     # Default resource limits for services
     resources:

@@ -1769,6 +1769,80 @@ paths:
             properties:
               role:
                 type: string
+  /v1/orgs/{org}/projects/{project}/members/{email}/resources:
+    post:
+      summary: AddProjectMemberUserResources grants resource-scoped access to an existing or invited user (viewer role implied).
+      operationId: AdminService_AddProjectMemberUserResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUserResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/members/{email}/resources:remove:
+    post:
+      summary: RemoveProjectMemberUserResources revokes resource-scoped access for a project member.
+      operationId: AdminService_RemoveProjectMemberUserResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUserResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -2281,6 +2355,80 @@ paths:
             properties:
               role:
                 type: string
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:
+    post:
+      summary: AddProjectMemberUsergroupResources grants resource-scoped access to an existing project user group.
+      operationId: AdminService_AddProjectMemberUsergroupResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUsergroupResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:remove:
+    post:
+      summary: RemoveProjectMemberUsergroupResources revokes resource-scoped access for a project user group.
+      operationId: AdminService_RemoveProjectMemberUsergroupResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUsergroupResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -4257,11 +4405,18 @@ definitions:
         type: boolean
   v1AddOrganizationMemberUsergroupResponse:
     type: object
+  v1AddProjectMemberUserResourcesResponse:
+    type: object
+    properties:
+      pendingSignup:
+        type: boolean
   v1AddProjectMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
+  v1AddProjectMemberUsergroupResourcesResponse:
+    type: object
   v1AddProjectMemberUsergroupResponse:
     type: object
   v1AddUsergroupMemberUserResponse:
@@ -5418,6 +5573,11 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1Organization:
     type: object
     properties:
@@ -5649,6 +5809,11 @@ definitions:
         type: string
       invitedBy:
         type: string
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectMemberService:
     type: object
     properties:
@@ -5697,6 +5862,11 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectPermissions:
     type: object
     properties:
@@ -5849,7 +6019,11 @@ definitions:
     type: object
   v1RemoveProjectMemberServiceResponse:
     type: object
+  v1RemoveProjectMemberUserResourcesResponse:
+    type: object
   v1RemoveProjectMemberUserResponse:
+    type: object
+  v1RemoveProjectMemberUsergroupResourcesResponse:
     type: object
   v1RemoveProjectMemberUsergroupResponse:
     type: object

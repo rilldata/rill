@@ -18,8 +18,8 @@ import {
   ToProtoPivotTableModeMap,
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import type {
@@ -330,6 +330,7 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotColumnPage: pivotState.columnPage,
     pivotEnableComparison: pivotState.enableComparison,
     pivotTableMode: ToProtoPivotTableModeMap[pivotState.tableMode],
+    pivotRowLimit: pivotState.rowLimit,
   };
 }
 

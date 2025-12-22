@@ -3,16 +3,22 @@ import {
   createRuntimeServiceListResources,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   runtimeServiceGetResource,
   runtimeServiceListResources,
+  type V1ExploreSpec,
   type V1GetResourceResponse,
   type V1ListResourcesResponse,
+  type V1MetricsViewSpec,
   V1ReconcileStatus,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions, QueryClient } from "@tanstack/svelte-query";
 import type { ErrorType } from "../../runtime-client/http-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { derived } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -73,6 +79,35 @@ export const SingletonProjectParserName = "parser";
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
 export function prettyResourceKind(kind: string) {
   return kind.replace(/^rill\.runtime\.v1\./, "");
+}
+
+/**
+ * Coerce resource kind to match UI representation.
+ * Models that are defined-as-source are displayed as Sources in the sidebar and graph.
+ * This ensures consistent representation across the application.
+ *
+ * @param res - The resource to check
+ * @returns The coerced ResourceKind, or undefined if the resource has no kind
+ *
+ * @example
+ * // A model that is defined-as-source
+ * coerceResourceKind(modelResource) // Returns ResourceKind.Source
+ *
+ * // A normal model
+ * coerceResourceKind(normalModel) // Returns ResourceKind.Model
+ */
+export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
+  const raw = res.meta?.name?.kind as ResourceKind | undefined;
+  if (raw === ResourceKind.Model) {
+    // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
+    const name = res.meta?.name?.name;
+    const resultTable = res.model?.state?.resultTable;
+    const definedAsSource = res.model?.spec?.definedAsSource;
+    if (name && resultTable === name && definedAsSource === true) {
+      return ResourceKind.Source;
+    }
+  }
+  return raw;
 }
 
 export function useResource<T = V1Resource>(
@@ -172,6 +207,7 @@ export function useFilteredResources<T = Array<V1Resource>>(
         select: selector,
       },
     },
+    queryClient,
   );
 }
 
@@ -230,4 +266,39 @@ export async function fetchResources(
     queryFn: () => runtimeServiceListResources(instanceId, {}),
   });
   return resp.resources ?? [];
+}
+
+export function getMetricsViewAndExploreSpecsQueryOptions() {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
+      query: {
+        select: (data) => {
+          const metricsViewSpecsMap = new Map<string, V1MetricsViewSpec>();
+          const exploreSpecsMap = new Map<string, V1ExploreSpec>();
+          const exploreForMetricViewsMap = new Map<string, string>();
+
+          data.resources?.forEach((res) => {
+            if (res.metricsView?.state?.validSpec) {
+              metricsViewSpecsMap.set(
+                res.meta?.name?.name ?? "",
+                res.metricsView.state.validSpec,
+              );
+            } else if (res.explore?.state?.validSpec) {
+              const metricsViewName =
+                res.explore.state.validSpec.metricsView ?? "";
+              const exploreName = res.meta?.name?.name ?? "";
+              exploreForMetricViewsMap.set(metricsViewName, exploreName);
+              exploreSpecsMap.set(exploreName, res.explore.state.validSpec);
+            }
+          });
+
+          return {
+            metricsViewSpecsMap,
+            exploreSpecsMap,
+            exploreForMetricViewsMap,
+          };
+        },
+      },
+    }),
+  );
 }

@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
-import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 
 /**
@@ -2183,6 +2183,13 @@ export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsVie
    */
   useAi = false;
 
+  /**
+   * Optional prompt to guide AI generation.
+   *
+   * @generated from field: string prompt = 9;
+   */
+  prompt = "";
+
   constructor(data?: PartialMessage<GenerateMetricsViewFileRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2199,6 +2206,7 @@ export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsVie
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileRequest {
@@ -2256,6 +2264,111 @@ export class GenerateMetricsViewFileResponse extends Message$1<GenerateMetricsVi
 
   static equals(a: GenerateMetricsViewFileResponse | PlainMessage<GenerateMetricsViewFileResponse> | undefined, b: GenerateMetricsViewFileResponse | PlainMessage<GenerateMetricsViewFileResponse> | undefined): boolean {
     return proto3.util.equals(GenerateMetricsViewFileResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GenerateCanvasFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasFileRequest
+ */
+export class GenerateCanvasFileRequest extends Message$1<GenerateCanvasFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Metrics view name to base the canvas on.
+   *
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * Path to save the canvas file to.
+   *
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  /**
+   * If true, the AI will be used to generate the canvas file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
+   * @generated from field: bool use_ai = 4;
+   */
+  useAi = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasFileRequest | PlainMessage<GenerateCanvasFileRequest> | undefined, b: GenerateCanvasFileRequest | PlainMessage<GenerateCanvasFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasFileRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateCanvasFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasFileResponse
+ */
+export class GenerateCanvasFileResponse extends Message$1<GenerateCanvasFileResponse> {
+  /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasFileResponse | PlainMessage<GenerateCanvasFileResponse> | undefined, b: GenerateCanvasFileResponse | PlainMessage<GenerateCanvasFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasFileResponse, a, b);
   }
 }
 
@@ -3000,11 +3113,6 @@ export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
    */
   replay = false;
 
-  /**
-   * @generated from field: string level = 4;
-   */
-  level = "";
-
   constructor(data?: PartialMessage<WatchResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3016,7 +3124,6 @@ export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "level", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchResourcesRequest {
@@ -4327,6 +4434,138 @@ export class Message extends Message$1<Message> {
 }
 
 /**
+ * Context for prompts handled by the analyst_agent.
+ *
+ * @generated from message rill.runtime.v1.AnalystAgentContext
+ */
+export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
+  /**
+   * Optional explore dashboard.
+   *
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * Optional dimensions.
+   *
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * Optional measures.
+   *
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * Optional filters.
+   *
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * Optional start of a time range.
+   *
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * Optional end of a time range.
+   *
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
+
+  constructor(data?: PartialMessage<AnalystAgentContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalystAgentContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalystAgentContext {
+    return new AnalystAgentContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalystAgentContext {
+    return new AnalystAgentContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalystAgentContext {
+    return new AnalystAgentContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalystAgentContext | PlainMessage<AnalystAgentContext> | undefined, b: AnalystAgentContext | PlainMessage<AnalystAgentContext> | undefined): boolean {
+    return proto3.util.equals(AnalystAgentContext, a, b);
+  }
+}
+
+/**
+ * Context for prompts handled by the developer_agent.
+ *
+ * @generated from message rill.runtime.v1.DeveloperAgentContext
+ */
+export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
+  /**
+   * Set to true if the prompt is provided as part of project initialization.
+   * This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
+   *
+   * @generated from field: bool init_project = 1;
+   */
+  initProject = false;
+
+  /**
+   * Optional path to the file that the user is currently viewing/editing.
+   * This helps the agent understand which file the user is referring to in their request.
+   *
+   * @generated from field: string current_file_path = 2;
+   */
+  currentFilePath = "";
+
+  constructor(data?: PartialMessage<DeveloperAgentContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeveloperAgentContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "init_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "current_file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeveloperAgentContext {
+    return new DeveloperAgentContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeveloperAgentContext {
+    return new DeveloperAgentContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeveloperAgentContext {
+    return new DeveloperAgentContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeveloperAgentContext | PlainMessage<DeveloperAgentContext> | undefined, b: DeveloperAgentContext | PlainMessage<DeveloperAgentContext> | undefined): boolean {
+    return proto3.util.equals(DeveloperAgentContext, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.ListConversations
  *
  * @generated from message rill.runtime.v1.ListConversationsRequest
@@ -4503,57 +4742,133 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 }
 
 /**
+ * Request message for RuntimeService.ListTools
+ *
+ * @generated from message rill.runtime.v1.ListToolsRequest
+ */
+export class ListToolsRequest extends Message$1<ListToolsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ListToolsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListToolsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListToolsRequest | PlainMessage<ListToolsRequest> | undefined, b: ListToolsRequest | PlainMessage<ListToolsRequest> | undefined): boolean {
+    return proto3.util.equals(ListToolsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListTools
+ *
+ * @generated from message rill.runtime.v1.ListToolsResponse
+ */
+export class ListToolsResponse extends Message$1<ListToolsResponse> {
+  /**
+   * @generated from field: repeated rill.ai.v1.Tool tools = 1;
+   */
+  tools: Tool[] = [];
+
+  constructor(data?: PartialMessage<ListToolsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListToolsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tools", kind: "message", T: Tool, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListToolsResponse | PlainMessage<ListToolsResponse> | undefined, b: ListToolsResponse | PlainMessage<ListToolsResponse> | undefined): boolean {
+    return proto3.util.equals(ListToolsResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.Complete
  *
  * @generated from message rill.runtime.v1.CompleteRequest
  */
 export class CompleteRequest extends Message$1<CompleteRequest> {
   /**
+   * Instance to run the completion against.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * If not provided, creates a new conversation
+   * Conversation ID to continue. If empty, a new conversation is created.
    *
    * @generated from field: string conversation_id = 2;
    */
   conversationId = "";
 
   /**
+   * The prompt to complete.
+   *
    * @generated from field: string prompt = 3;
    */
   prompt = "";
 
   /**
-   * @generated from field: string explore = 4;
+   * Optional agent to use for the completion.
+   * If not set, it will infer an agent based on the prompt and conversation history.
+   *
+   * @generated from field: string agent = 10;
    */
-  explore = "";
+  agent = "";
 
   /**
-   * @generated from field: repeated string dimensions = 5;
+   * Optional context for prompts handled by the analyst_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.AnalystAgentContext analyst_agent_context = 11;
    */
-  dimensions: string[] = [];
+  analystAgentContext?: AnalystAgentContext;
 
   /**
-   * @generated from field: repeated string measures = 6;
+   * Optional context for prompts handled by the developer_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.DeveloperAgentContext developer_agent_context = 12;
    */
-  measures: string[] = [];
-
-  /**
-   * @generated from field: rill.runtime.v1.Expression where = 7;
-   */
-  where?: Expression;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_start = 8;
-   */
-  timeStart?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_end = 9;
-   */
-  timeEnd?: Timestamp;
+  developerAgentContext?: DeveloperAgentContext;
 
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
@@ -4566,12 +4881,9 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "time_start", kind: "message", T: Timestamp },
-    { no: 9, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
+    { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4643,51 +4955,49 @@ export class CompleteResponse extends Message$1<CompleteResponse> {
  */
 export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest> {
   /**
+   * Instance to run the completion against.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * If not provided, creates a new conversation
+   * Conversation ID to continue. If empty, a new conversation is created.
    *
    * @generated from field: string conversation_id = 2;
    */
   conversationId = "";
 
   /**
+   * The prompt to complete.
+   *
    * @generated from field: string prompt = 3;
    */
   prompt = "";
 
   /**
-   * @generated from field: string explore = 4;
+   * Optional agent to use for the completion.
+   * If not set, it will infer an agent based on the prompt and conversation history.
+   *
+   * @generated from field: string agent = 10;
    */
-  explore = "";
+  agent = "";
 
   /**
-   * @generated from field: repeated string dimensions = 5;
+   * Optional context for prompts handled by the analyst_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.AnalystAgentContext analyst_agent_context = 11;
    */
-  dimensions: string[] = [];
+  analystAgentContext?: AnalystAgentContext;
 
   /**
-   * @generated from field: repeated string measures = 6;
+   * Optional context for prompts handled by the developer_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.DeveloperAgentContext developer_agent_context = 12;
    */
-  measures: string[] = [];
-
-  /**
-   * @generated from field: rill.runtime.v1.Expression where = 7;
-   */
-  where?: Expression;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_start = 8;
-   */
-  timeStart?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_end = 9;
-   */
-  timeEnd?: Timestamp;
+  developerAgentContext?: DeveloperAgentContext;
 
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
@@ -4700,12 +5010,9 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "time_start", kind: "message", T: Timestamp },
-    { no: 9, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
+    { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
