@@ -186,7 +186,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "true",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     log_queries: {
       type: "string",
@@ -195,7 +195,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "false",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     query_settings_override: {
       type: "object",
@@ -204,7 +204,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "key1=value1,key2=value2",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     query_settings: {
       type: "object",
@@ -213,7 +213,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "key1=value1,key2=value2",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     embed_port: {
       type: "string",
@@ -222,7 +222,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "8443",
       "x-step": "connector",
       "x-advanced": true,
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     can_scale_to_zero: {
       type: "string",
@@ -231,7 +231,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "false",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     max_open_conns: {
       type: "string",
@@ -240,7 +240,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "100",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     max_idle_conns: {
       type: "string",
@@ -249,7 +249,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "10",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     dial_timeout: {
       type: "string",
@@ -258,7 +258,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "30s",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     conn_max_lifetime: {
       type: "string",
@@ -267,7 +267,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "30m",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     read_timeout: {
       type: "string",
@@ -276,7 +276,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "30s",
       "x-advanced": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "self-managed" }
+      "x-visible-if": { connection_method: "self-managed" },
     },
     sql: {
       type: "string",
