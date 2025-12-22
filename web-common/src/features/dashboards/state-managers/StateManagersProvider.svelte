@@ -1,10 +1,6 @@
 <script lang="ts">
-  import { onMount, setContext } from "svelte";
-  import {
-    createStateManagers,
-    DEFAULT_STORE_KEY,
-    type StateManagers,
-  } from "./state-managers";
+  import { setContext } from "svelte";
+  import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
   import { useExploreState } from "../stores/dashboard-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
@@ -12,7 +8,7 @@
   export let exploreName: string;
   export let visualEditing = false;
 
-  $: stateManagers = metricsViewName
+  const stateManagers = metricsViewName
     ? createStateManagers({
         queryClient,
         metricsViewName,
@@ -20,7 +16,7 @@
       })
     : undefined;
 
-  $: if (stateManagers) setContext(DEFAULT_STORE_KEY, stateManagers);
+  if (stateManagers) setContext(DEFAULT_STORE_KEY, stateManagers);
 
   // Our state management was not built around the ability to arbitrarily change the explore or metrics view name
   // This needs to change, but this is a workaround for now

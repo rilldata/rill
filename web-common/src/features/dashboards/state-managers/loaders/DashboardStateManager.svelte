@@ -18,7 +18,6 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy } from "svelte";
-  import { getStateManagers } from "../state-managers";
 
   export let exploreName: string;
   export let storageNamespacePrefix: string | undefined = undefined;
@@ -26,8 +25,6 @@
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
   export let disableMostRecentDashboardState: boolean = false;
-
-  const StateManagers = getStateManagers();
 
   $: ({ instanceId } = $runtime);
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
@@ -114,6 +111,6 @@
     header="Failed to load dashboard"
     detail={error.response?.data?.message ?? error.message}
   />
-{:else if $exploreStore && StateManagers}
+{:else if $exploreStore}
   <slot />
 {/if}

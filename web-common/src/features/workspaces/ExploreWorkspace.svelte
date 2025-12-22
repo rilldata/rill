@@ -123,9 +123,11 @@
               statusCode={404}
             />
           {:else if exploreName && metricsViewName}
-            <DashboardStateManager {exploreName}>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardStateManager>
+            {#if ready}
+              <DashboardStateManager {exploreName}>
+                <Dashboard {metricsViewName} {exploreName} />
+              </DashboardStateManager>
+            {/if}
           {:else}
             <Spinner status={1} size="48px" />
           {/if}
