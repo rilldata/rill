@@ -38,8 +38,8 @@ export const duckdbSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from DuckDB",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
     name: {
       type: "string",
@@ -48,7 +48,17 @@ export const duckdbSchema: MultiStepFormSchema = {
       pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "x-placeholder": "my_model",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
   },
-  required: ["path", "sql", "name"],
+  allOf: [
+    {
+      if: { properties: { mode: { const: "readwrite" } } },
+      then: { required: ["path", "sql", "name"] },
+    },
+    {
+      if: { properties: { mode: { const: "read" } } },
+      then: { required: ["path"] },
+    },
+  ],
 };

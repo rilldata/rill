@@ -6,16 +6,12 @@ export const postgresSchema: MultiStepFormSchema = {
   properties: {
     auth_method: {
       type: "string",
-      title: "Authentication method",
+      title: "Connection method",
       enum: ["parameters", "connection_string"],
       default: "parameters",
       description: "Choose how to connect to PostgreSQL",
-      "x-display": "radio",
-      "x-enum-labels": ["Username & Password", "Connection String"],
-      "x-enum-descriptions": [
-        "Provide individual connection parameters (host, port, database, username, password).",
-        "Provide a complete PostgreSQL connection string (DSN).",
-      ],
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
         parameters: ["host", "port", "dbname", "user", "password", "sslmode", "log_queries"],
         connection_string: ["dsn", "log_queries"],
@@ -68,8 +64,8 @@ export const postgresSchema: MultiStepFormSchema = {
       type: "string",
       title: "SSL Mode",
       description: "SSL connection mode",
-      enum: ["disable", "allow", "prefer", "require"],
-      default: "prefer",
+      enum: ["", "disable", "allow", "prefer", "require"],
+      default: "",
       "x-display": "select",
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
@@ -96,7 +92,6 @@ export const postgresSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from PostgreSQL",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
     },
     name: {

@@ -1,5 +1,7 @@
 <script lang="ts">
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
   import JSONSchemaFieldControl from "../sources/modal/JSONSchemaFieldControl.svelte";
   import type {
     JSONSchemaField,
@@ -99,12 +101,16 @@
     return Boolean(prop.enum && prop["x-display"] === radioDisplay);
   }
 
+  function isTabsEnum(prop: JSONSchemaField) {
+    return Boolean(prop.enum && prop["x-display"] === "tabs");
+  }
+
   function isSelectEnum(prop: JSONSchemaField) {
     return Boolean(prop.enum && prop["x-display"] === "select");
   }
 
   function hasEnumOptions(prop: JSONSchemaField) {
-    return isRadioEnum(prop) || isSelectEnum(prop);
+    return isRadioEnum(prop) || isSelectEnum(prop) || isTabsEnum(prop);
   }
 
   function computeVisibleEntries(
@@ -225,6 +231,15 @@
     );
   }
 
+  function tabOptions(prop: JSONSchemaField) {
+    return (
+      prop.enum?.map((value, idx) => ({
+        value: String(value),
+        label: prop["x-enum-labels"]?.[idx] ?? String(value),
+      })) ?? []
+    );
+  }
+
   function isRequired(key: string) {
     return requiredFields.has(key);
   }
@@ -245,26 +260,128 @@
           <svelte:fragment slot="custom-content" let:option>
             {#if groupedFields.get(key)}
               {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  <JSONSchemaFieldControl
-                    id={childKey}
-                    prop={childProp}
-                    optional={!isRequired(childKey)}
-                    errors={errors?.[childKey]}
-                    bind:value={$form[childKey]}
-                    bind:checked={$form[childKey]}
-                    {onStringInputChange}
-                    {handleFileUpload}
-                    options={hasEnumOptions(childProp)
-                      ? radioOptions(childProp)
-                      : undefined}
-                    name={`${childKey}-radio`}
-                  />
-                </div>
+                {#if isTabsEnum(childProp)}
+                  <div class="py-1.5 first:pt-0 last:pb-0">
+                    {#if childProp.title}
+                      <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                    {/if}
+                    <Tabs bind:value={$form[childKey]} options={tabOptions(childProp)} disableMarginTop>
+                      {#if groupedFields.get(childKey)}
+                        {#each tabOptions(childProp) as tabOption}
+                          <TabsContent value={tabOption.value}>
+                            {#each getGroupedFieldsForOption(childKey, tabOption.value) as [grandchildKey, grandchildProp]}
+                              <div class="py-1.5 first:pt-0 last:pb-0">
+                                <JSONSchemaFieldControl
+                                  id={grandchildKey}
+                                  prop={grandchildProp}
+                                  optional={!isRequired(grandchildKey)}
+                                  errors={errors?.[grandchildKey]}
+                                  bind:value={$form[grandchildKey]}
+                                  bind:checked={$form[grandchildKey]}
+                                  {onStringInputChange}
+                                  {handleFileUpload}
+                                  options={hasEnumOptions(grandchildProp)
+                                    ? radioOptions(grandchildProp)
+                                    : undefined}
+                                  name={`${grandchildKey}-radio`}
+                                />
+                              </div>
+                            {/each}
+                          </TabsContent>
+                        {/each}
+                      {/if}
+                    </Tabs>
+                  </div>
+                {:else}
+                  <div class="py-1.5 first:pt-0 last:pb-0">
+                    <JSONSchemaFieldControl
+                      id={childKey}
+                      prop={childProp}
+                      optional={!isRequired(childKey)}
+                      errors={errors?.[childKey]}
+                      bind:value={$form[childKey]}
+                      bind:checked={$form[childKey]}
+                      {onStringInputChange}
+                      {handleFileUpload}
+                      options={hasEnumOptions(childProp)
+                        ? radioOptions(childProp)
+                        : undefined}
+                      name={`${childKey}-radio`}
+                    />
+                  </div>
+                {/if}
               {/each}
             {/if}
           </svelte:fragment>
         </Radio>
+      </div>
+    {:else if isTabsEnum(prop)}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        {#if prop.title}
+          <div class="text-sm font-medium mb-3">{prop.title}</div>
+        {/if}
+        <Tabs bind:value={$form[key]} options={tabOptions(prop)} disableMarginTop>
+          {#if groupedFields.get(key)}
+            {#each tabOptions(prop) as option}
+              <TabsContent value={option.value}>
+                {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
+                  {#if isRadioEnum(childProp)}
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      {#if childProp.title}
+                        <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                      {/if}
+                      <Radio
+                        bind:value={$form[childKey]}
+                        options={radioOptions(childProp)}
+                        name={`${childKey}-radio`}
+                      >
+                        <svelte:fragment slot="custom-content" let:option={radioOption}>
+                          {#if groupedFields.get(childKey)}
+                            {#each getGroupedFieldsForOption(childKey, radioOption.value) as [grandchildKey, grandchildProp]}
+                              <div class="py-1.5 first:pt-0 last:pb-0">
+                                <JSONSchemaFieldControl
+                                  id={grandchildKey}
+                                  prop={grandchildProp}
+                                  optional={!isRequired(grandchildKey)}
+                                  errors={errors?.[grandchildKey]}
+                                  bind:value={$form[grandchildKey]}
+                                  bind:checked={$form[grandchildKey]}
+                                  {onStringInputChange}
+                                  {handleFileUpload}
+                                  options={hasEnumOptions(grandchildProp)
+                                    ? radioOptions(grandchildProp)
+                                    : undefined}
+                                  name={`${grandchildKey}-radio`}
+                                />
+                              </div>
+                            {/each}
+                          {/if}
+                        </svelte:fragment>
+                      </Radio>
+                    </div>
+                  {:else}
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      <JSONSchemaFieldControl
+                        id={childKey}
+                        prop={childProp}
+                        optional={!isRequired(childKey)}
+                        errors={errors?.[childKey]}
+                        bind:value={$form[childKey]}
+                        bind:checked={$form[childKey]}
+                        {onStringInputChange}
+                        {handleFileUpload}
+                        options={hasEnumOptions(childProp)
+                          ? radioOptions(childProp)
+                          : undefined}
+                        name={`${childKey}-radio`}
+                      />
+                    </div>
+                  {/if}
+                {/each}
+              </TabsContent>
+            {/each}
+          {/if}
+        </Tabs>
       </div>
     {:else}
       <div class="py-1.5 first:pt-0 last:pb-0">
@@ -304,26 +421,128 @@
                 <svelte:fragment slot="custom-content" let:option>
                   {#if groupedFields.get(key)}
                     {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
-                      <div class="py-1.5 first:pt-0 last:pb-0">
-                        <JSONSchemaFieldControl
-                          id={childKey}
-                          prop={childProp}
-                          optional={!isRequired(childKey)}
-                          errors={errors?.[childKey]}
-                          bind:value={$form[childKey]}
-                          bind:checked={$form[childKey]}
-                          {onStringInputChange}
-                          {handleFileUpload}
-                          options={hasEnumOptions(childProp)
-                            ? radioOptions(childProp)
-                            : undefined}
-                          name={`${childKey}-radio`}
-                        />
-                      </div>
+                      {#if isTabsEnum(childProp)}
+                        <div class="py-1.5 first:pt-0 last:pb-0">
+                          {#if childProp.title}
+                            <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                          {/if}
+                          <Tabs bind:value={$form[childKey]} options={tabOptions(childProp)} disableMarginTop>
+                            {#if groupedFields.get(childKey)}
+                              {#each tabOptions(childProp) as tabOption}
+                                <TabsContent value={tabOption.value}>
+                                  {#each getGroupedFieldsForOption(childKey, tabOption.value) as [grandchildKey, grandchildProp]}
+                                    <div class="py-1.5 first:pt-0 last:pb-0">
+                                      <JSONSchemaFieldControl
+                                        id={grandchildKey}
+                                        prop={grandchildProp}
+                                        optional={!isRequired(grandchildKey)}
+                                        errors={errors?.[grandchildKey]}
+                                        bind:value={$form[grandchildKey]}
+                                        bind:checked={$form[grandchildKey]}
+                                        {onStringInputChange}
+                                        {handleFileUpload}
+                                        options={hasEnumOptions(grandchildProp)
+                                          ? radioOptions(grandchildProp)
+                                          : undefined}
+                                        name={`${grandchildKey}-radio`}
+                                      />
+                                    </div>
+                                  {/each}
+                                </TabsContent>
+                              {/each}
+                            {/if}
+                          </Tabs>
+                        </div>
+                      {:else}
+                        <div class="py-1.5 first:pt-0 last:pb-0">
+                          <JSONSchemaFieldControl
+                            id={childKey}
+                            prop={childProp}
+                            optional={!isRequired(childKey)}
+                            errors={errors?.[childKey]}
+                            bind:value={$form[childKey]}
+                            bind:checked={$form[childKey]}
+                            {onStringInputChange}
+                            {handleFileUpload}
+                            options={hasEnumOptions(childProp)
+                              ? radioOptions(childProp)
+                              : undefined}
+                            name={`${childKey}-radio`}
+                          />
+                        </div>
+                      {/if}
                     {/each}
                   {/if}
                 </svelte:fragment>
               </Radio>
+            </div>
+          {:else if isTabsEnum(prop)}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if prop.title}
+                <div class="text-sm font-medium mb-3">{prop.title}</div>
+              {/if}
+              <Tabs bind:value={$form[key]} options={tabOptions(prop)} disableMarginTop>
+                {#if groupedFields.get(key)}
+                  {#each tabOptions(prop) as option}
+                    <TabsContent value={option.value}>
+                      {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
+                        {#if isRadioEnum(childProp)}
+                          <div class="py-1.5 first:pt-0 last:pb-0">
+                            {#if childProp.title}
+                              <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                            {/if}
+                            <Radio
+                              bind:value={$form[childKey]}
+                              options={radioOptions(childProp)}
+                              name={`${childKey}-radio`}
+                            >
+                              <svelte:fragment slot="custom-content" let:option={radioOption}>
+                                {#if groupedFields.get(childKey)}
+                                  {#each getGroupedFieldsForOption(childKey, radioOption.value) as [grandchildKey, grandchildProp]}
+                                    <div class="py-1.5 first:pt-0 last:pb-0">
+                                      <JSONSchemaFieldControl
+                                        id={grandchildKey}
+                                        prop={grandchildProp}
+                                        optional={!isRequired(grandchildKey)}
+                                        errors={errors?.[grandchildKey]}
+                                        bind:value={$form[grandchildKey]}
+                                        bind:checked={$form[grandchildKey]}
+                                        {onStringInputChange}
+                                        {handleFileUpload}
+                                        options={hasEnumOptions(grandchildProp)
+                                          ? radioOptions(grandchildProp)
+                                          : undefined}
+                                        name={`${grandchildKey}-radio`}
+                                      />
+                                    </div>
+                                  {/each}
+                                {/if}
+                              </svelte:fragment>
+                            </Radio>
+                          </div>
+                        {:else}
+                          <div class="py-1.5 first:pt-0 last:pb-0">
+                            <JSONSchemaFieldControl
+                              id={childKey}
+                              prop={childProp}
+                              optional={!isRequired(childKey)}
+                              errors={errors?.[childKey]}
+                              bind:value={$form[childKey]}
+                              bind:checked={$form[childKey]}
+                              {onStringInputChange}
+                              {handleFileUpload}
+                              options={hasEnumOptions(childProp)
+                                ? radioOptions(childProp)
+                                : undefined}
+                              name={`${childKey}-radio`}
+                            />
+                          </div>
+                        {/if}
+                      {/each}
+                    </TabsContent>
+                  {/each}
+                {/if}
+              </Tabs>
             </div>
           {:else}
             <div class="py-1.5 first:pt-0 last:pb-0">

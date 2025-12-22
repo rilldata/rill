@@ -45,8 +45,8 @@ export const motherduckSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from MotherDuck",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
     name: {
       type: "string",
@@ -55,7 +55,17 @@ export const motherduckSchema: MultiStepFormSchema = {
       pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "x-placeholder": "my_model",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
   },
-  required: ["path", "token", "schema_name", "sql", "name"],
+  allOf: [
+    {
+      if: { properties: { mode: { const: "readwrite" } } },
+      then: { required: ["path", "token", "schema_name", "sql", "name"] },
+    },
+    {
+      if: { properties: { mode: { const: "read" } } },
+      then: { required: ["path", "token", "schema_name"] },
+    },
+  ],
 };

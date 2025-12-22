@@ -6,18 +6,14 @@ export const mysqlSchema: MultiStepFormSchema = {
   properties: {
     auth_method: {
       type: "string",
-      title: "Authentication method",
+      title: "Connection method",
       enum: ["parameters", "connection_string"],
       default: "parameters",
       description: "Choose how to connect to MySQL",
-      "x-display": "radio",
-      "x-enum-labels": ["Username & Password", "Connection String"],
-      "x-enum-descriptions": [
-        "Provide individual connection parameters (host, port, database, username, password).",
-        "Provide a complete MySQL connection string (DSN).",
-      ],
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
-        parameters: ["host", "port", "database", "user", "password", "ssl-mode", "log_queries"],
+        parameters: ["", "host", "port", "database", "user", "password", "ssl-mode", "log_queries"],
         connection_string: ["dsn", "log_queries"],
       },
       "x-step": "connector",
@@ -68,8 +64,8 @@ export const mysqlSchema: MultiStepFormSchema = {
       type: "string",
       title: "SSL Mode",
       description: "SSL connection mode",
-      enum: ["disabled", "preferred", "required"],
-      default: "preferred",
+      enum: ["", "disabled", "preferred", "required"],
+      default: "",
       "x-display": "select",
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
@@ -96,7 +92,6 @@ export const mysqlSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from MySQL",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
     },
     name: {

@@ -17,10 +17,25 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "Use a managed ClickHouse instance (starts embedded ClickHouse in development).",
       ],
       "x-grouped-fields": {
-        "self-managed": ["host", "port", "username", "password", "database", "ssl", "cluster", "mode"],
-        "rill-managed": ["mode"],
+        "self-managed": ["connection_method"],
+        "rill-managed": [],
       },
       "x-step": "connector",
+    },
+    connection_method: {
+      type: "string",
+      title: "Connection method",
+      enum: ["parameters", "connection_string"],
+      default: "parameters",
+      description: "Choose how to provide connection details",
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-grouped-fields": {
+        parameters: ["host", "port", "username", "password", "database", "ssl", "cluster", "mode"],
+        connection_string: ["dsn", "mode"],
+      },
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "self-managed" },
     },
     host: {
       type: "string",
@@ -28,7 +43,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Hostname or IP address of the ClickHouse server",
       "x-placeholder": "your-server.clickhouse.com",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
     },
     port: {
       type: "number",
@@ -38,7 +53,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "9000",
       "x-hint": "Default: 9000 (native TCP), 8123 (HTTP). Secure: 9440 (TCP+TLS), 8443 (HTTPS)",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
     },
     username: {
       type: "string",
@@ -47,7 +62,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
     },
     password: {
       type: "string",
@@ -56,7 +71,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter password",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
     },
     database: {
       type: "string",
@@ -65,7 +80,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
     },
     ssl: {
       type: "boolean",
@@ -74,7 +89,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: true,
       "x-hint": "Enable SSL for secure connections",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
     },
     cluster: {
       type: "string",
@@ -83,8 +98,17 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Cluster name",
       "x-hint": "If set, Rill will create models as distributed tables in the cluster",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed" },
+      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
       "x-advanced": true,
+    },
+    dsn: {
+      type: "string",
+      title: "Connection String",
+      description: "ClickHouse connection string (DSN)",
+      "x-placeholder": "clickhouse://username:password@host:port/database",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "self-managed", connection_method: "connection_string" },
     },
     mode: {
       type: "string",
@@ -99,23 +123,15 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "Enable model creation and table mutations",
       ],
       "x-step": "connector",
-    },
-    managed: {
-      type: "boolean",
-      title: "Managed",
-      description: "Use a managed ClickHouse instance",
-      default: true,
-      "x-hint": "Starts an embedded ClickHouse server in development",
-      "x-step": "connector",
-      "x-visible-if": { auth_method: ["rill-managed"] },
+      "x-visible-if": { auth_method: "self-managed" },
     },
     sql: {
       type: "string",
       title: "SQL Query",
       description: "SQL query to extract data from ClickHouse",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
     name: {
       type: "string",
@@ -124,12 +140,27 @@ export const clickhouseSchema: MultiStepFormSchema = {
       pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "x-placeholder": "my_model",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
   },
   allOf: [
     {
-      if: { properties: { auth_method: { const: "self-managed" } } },
+      if: {
+        properties: {
+          auth_method: { const: "self-managed" },
+          connection_method: { const: "parameters" },
+        },
+      },
       then: { required: ["host", "username"] },
+    },
+    {
+      if: {
+        properties: {
+          auth_method: { const: "self-managed" },
+          connection_method: { const: "connection_string" },
+        },
+      },
+      then: { required: ["dsn"] },
     },
   ],
 };

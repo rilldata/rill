@@ -33,7 +33,6 @@ export const bigquerySchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from BigQuery",
       "x-placeholder": "SELECT * FROM `project.dataset.table`;",
-      "x-display": "textarea",
       "x-step": "source",
     },
     name: {

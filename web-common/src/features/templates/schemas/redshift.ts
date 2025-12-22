@@ -62,7 +62,6 @@ export const redshiftSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from Redshift",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
     },
     name: {

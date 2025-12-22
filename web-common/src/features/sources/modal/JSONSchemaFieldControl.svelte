@@ -41,8 +41,6 @@
     hint={prop.description ?? prop["x-hint"]}
     {optional}
   />
-{:else if options?.length}
-  <Radio bind:value {options} {name} />
 {:else if isSelectEnum && options}
   <Select
     {id}
@@ -52,6 +50,8 @@
     {options}
     bind:value
   />
+{:else if options?.length}
+  <Radio bind:value {options} {name} />
 {:else}
   <Input
     {id}

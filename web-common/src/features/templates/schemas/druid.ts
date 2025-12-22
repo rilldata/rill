@@ -10,12 +10,8 @@ export const druidSchema: MultiStepFormSchema = {
       enum: ["parameters", "connection_string"],
       default: "parameters",
       description: "Choose how to connect to Druid",
-      "x-display": "radio",
-      "x-enum-labels": ["Connection Parameters", "Connection String"],
-      "x-enum-descriptions": [
-        "Provide individual connection parameters (host, port, etc.)",
-        "Provide a complete Druid connection string (DSN)",
-      ],
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
         parameters: ["host", "port", "username", "password", "ssl"],
         connection_string: ["dsn"],
@@ -72,31 +68,15 @@ export const druidSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
     },
-    sql: {
-      type: "string",
-      title: "SQL Query",
-      description: "SQL query to extract data from Druid",
-      "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
-      "x-step": "source",
-    },
-    name: {
-      type: "string",
-      title: "Model Name",
-      description: "Name for the source model",
-      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
-      "x-placeholder": "my_model",
-      "x-step": "source",
-    },
   },
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["host", "ssl", "sql", "name"] },
+      then: { required: ["host", "ssl"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn", "sql", "name"] },
+      then: { required: ["dsn"] },
     },
   ],
 };

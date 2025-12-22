@@ -61,12 +61,12 @@
   let activeAuthMethod: string | null = null;
   let prevAuthMethod: string | null = null;
   let stepState = $connectorStepStore;
-  let multiStepSubmitDisabled = false;
-  let multiStepButtonLabel = "";
-  let multiStepLoadingCopy = "";
+  let multiStepSubmitDisabled = true;
+  let multiStepButtonLabel = "Test and Connect";
+  let multiStepLoadingCopy = "Testing connection...";
   let shouldShowSkipLink = false;
-  let primaryButtonLabel = "";
-  let primaryLoadingCopy = "";
+  let primaryButtonLabel = "Test and Connect";
+  let primaryLoadingCopy = "Testing connection...";
 
   $: stepState = $connectorStepStore;
 
@@ -283,7 +283,28 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if hasDsnFormOption}
+      {#if isMultiStepConnector}
+        <MultiStepConnectorFlow
+          {connector}
+          {formManager}
+          {properties}
+          {filteredParamsProperties}
+          {paramsForm}
+          {paramsErrors}
+          {paramsEnhance}
+          {paramsSubmit}
+          {paramsFormId}
+          {onStringInputChange}
+          {handleFileUpload}
+          submitting={$paramsSubmitting}
+          bind:activeAuthMethod
+          bind:isSubmitDisabled={multiStepSubmitDisabled}
+          bind:primaryButtonLabel={multiStepButtonLabel}
+          bind:primaryLoadingCopy={multiStepLoadingCopy}
+          bind:formId={multiStepFormId}
+          bind:shouldShowSkipLink
+        />
+      {:else if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}
           options={CONNECTION_TAB_OPTIONS}
@@ -335,27 +356,6 @@
             uploadFile={handleFileUpload}
           />
         </AddDataFormSection>
-      {:else if isMultiStepConnector}
-        <MultiStepConnectorFlow
-          {connector}
-          {formManager}
-          {properties}
-          {filteredParamsProperties}
-          {paramsForm}
-          {paramsErrors}
-          {paramsEnhance}
-          {paramsSubmit}
-          {paramsFormId}
-          {onStringInputChange}
-          {handleFileUpload}
-          submitting={$paramsSubmitting}
-          bind:activeAuthMethod
-          bind:isSubmitDisabled={multiStepSubmitDisabled}
-          bind:primaryButtonLabel={multiStepButtonLabel}
-          bind:primaryLoadingCopy={multiStepLoadingCopy}
-          bind:formId={multiStepFormId}
-          bind:shouldShowSkipLink
-        />
       {:else}
         <AddDataFormSection
           id={paramsFormId}

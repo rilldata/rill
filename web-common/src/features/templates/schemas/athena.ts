@@ -65,13 +65,13 @@ export const athenaSchema: MultiStepFormSchema = {
       description: "Athena workgroup name (optional)",
       "x-placeholder": "primary",
       "x-step": "connector",
+      "x-advanced": true,
     },
     sql: {
       type: "string",
       title: "SQL Query",
       description: "SQL query to extract data from Athena",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
     },
     name: {

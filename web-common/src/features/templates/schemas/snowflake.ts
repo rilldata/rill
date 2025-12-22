@@ -4,25 +4,38 @@ export const snowflakeSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   properties: {
+    connection_method: {
+      type: "string",
+      title: "Connection method",
+      enum: ["parameters", "connection_string"],
+      default: "parameters",
+      description: "Choose how to connect to Snowflake",
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-grouped-fields": {
+        parameters: ["auth_method"],
+        connection_string: ["dsn", "log_queries", "parallel_fetch_limit"],
+      },
+      "x-step": "connector",
+    },
     auth_method: {
       type: "string",
       title: "Authentication method",
-      enum: ["password", "keypair", "connection_string"],
+      enum: ["password", "keypair"],
       default: "password",
       description: "Choose how to authenticate to Snowflake",
       "x-display": "radio",
-      "x-enum-labels": ["Username & Password", "Key Pair", "Connection String"],
+      "x-enum-labels": ["Username & Password", "Key Pair"],
       "x-enum-descriptions": [
         "Authenticate with username and password.",
         "Authenticate with RSA key pair (more secure).",
-        "Provide a complete Snowflake connection string (DSN).",
       ],
       "x-grouped-fields": {
         password: ["account", "user", "password", "warehouse", "database", "schema", "role", "log_queries", "parallel_fetch_limit"],
         keypair: ["account", "user", "private_key", "private_key_passphrase", "warehouse", "database", "schema", "role", "log_queries", "parallel_fetch_limit"],
-        connection_string: ["dsn", "log_queries", "parallel_fetch_limit"],
       },
       "x-step": "connector",
+      "x-visible-if": { connection_method: "parameters" },
     },
     account: {
       type: "string",
@@ -30,7 +43,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake account identifier (e.g., abc12345.us-east-1)",
       "x-placeholder": "abc12345.us-east-1",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["password", "keypair"] },
+      "x-visible-if": { connection_method: "parameters" },
     },
     user: {
       type: "string",
@@ -38,7 +51,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake username",
       "x-placeholder": "Enter username",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["password", "keypair"] },
+      "x-visible-if": { connection_method: "parameters" },
     },
     password: {
       type: "string",
@@ -47,17 +60,16 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter password",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "password" },
+      "x-visible-if": { connection_method: "parameters", auth_method: "password" },
     },
     private_key: {
       type: "string",
       title: "Private Key",
       description: "RSA private key in PEM format",
       "x-placeholder": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
-      "x-display": "textarea",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "keypair" },
+      "x-visible-if": { connection_method: "parameters", auth_method: "keypair" },
     },
     private_key_passphrase: {
       type: "string",
@@ -66,7 +78,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter passphrase if key is encrypted",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "keypair" },
+      "x-visible-if": { connection_method: "parameters", auth_method: "keypair" },
     },
     warehouse: {
       type: "string",
@@ -74,7 +86,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake warehouse name",
       "x-placeholder": "COMPUTE_WH",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["password", "keypair"] },
+      "x-visible-if": { connection_method: "parameters" },
     },
     database: {
       type: "string",
@@ -82,7 +94,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake database name",
       "x-placeholder": "MY_DATABASE",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["password", "keypair"] },
+      "x-visible-if": { connection_method: "parameters" },
     },
     schema: {
       type: "string",
@@ -90,7 +102,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake schema name",
       "x-placeholder": "PUBLIC",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["password", "keypair"] },
+      "x-visible-if": { connection_method: "parameters" },
     },
     role: {
       type: "string",
@@ -98,7 +110,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Optional Snowflake role to assume",
       "x-placeholder": "ANALYST",
       "x-step": "connector",
-      "x-visible-if": { auth_method: ["password", "keypair"] },
+      "x-visible-if": { connection_method: "parameters" },
     },
     dsn: {
       type: "string",
@@ -107,7 +119,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder": "user:password@account/database/schema?warehouse=wh",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "connection_string" },
+      "x-visible-if": { connection_method: "connection_string" },
     },
     log_queries: {
       type: "boolean",
@@ -130,7 +142,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       title: "SQL Query",
       description: "SQL query to extract data from Snowflake",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
     },
     name: {
@@ -144,15 +155,25 @@ export const snowflakeSchema: MultiStepFormSchema = {
   },
   allOf: [
     {
-      if: { properties: { auth_method: { const: "password" } } },
+      if: {
+        properties: {
+          connection_method: { const: "parameters" },
+          auth_method: { const: "password" },
+        },
+      },
       then: { required: ["account", "user", "password"] },
     },
     {
-      if: { properties: { auth_method: { const: "keypair" } } },
+      if: {
+        properties: {
+          connection_method: { const: "parameters" },
+          auth_method: { const: "keypair" },
+        },
+      },
       then: { required: ["account", "user", "private_key"] },
     },
     {
-      if: { properties: { auth_method: { const: "connection_string" } } },
+      if: { properties: { connection_method: { const: "connection_string" } } },
       then: { required: ["dsn"] },
     },
   ],

@@ -2,7 +2,6 @@
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import FormRenderer from "./FormRenderer.svelte";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
@@ -53,7 +52,6 @@
   $: stepState = $connectorStepStore as ConnectorStepState;
   let activeSchema: MultiStepFormSchema | null = null;
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
-  let stepProperties: ConnectorDriverProperty[] | undefined = undefined;
   let selectedAuthMethod = "";
   let previousAuthMethod: string | null = null;
 
@@ -63,12 +61,6 @@
   $: if (previousAuthMethod === null && selectedAuthMethod) {
     previousAuthMethod = selectedAuthMethod;
   }
-
-  // Compute which properties to show for the current step.
-  $: stepProperties =
-    stepState.step === "source"
-      ? (connector.sourceProperties ?? [])
-      : properties;
 
   // Initialize source step values from stored connector config.
   $: if (stepState.step === "source" && stepState.connectorConfig) {
@@ -229,14 +221,6 @@
         {onStringInputChange}
         {handleFileUpload}
       />
-    {:else}
-      <FormRenderer
-        properties={filteredParamsProperties}
-        form={paramsForm}
-        errors={$paramsErrors}
-        {onStringInputChange}
-        uploadFile={handleFileUpload}
-      />
     {/if}
   </AddDataFormSection>
 {:else}
@@ -253,14 +237,6 @@
         errors={$paramsErrors}
         {onStringInputChange}
         {handleFileUpload}
-      />
-    {:else}
-      <FormRenderer
-        properties={stepProperties ?? []}
-        form={paramsForm}
-        errors={$paramsErrors}
-        {onStringInputChange}
-        uploadFile={handleFileUpload}
       />
     {/if}
   </AddDataFormSection>

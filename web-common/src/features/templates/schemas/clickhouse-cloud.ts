@@ -4,15 +4,30 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   properties: {
+    auth_method: {
+      type: "string",
+      title: "Connection method",
+      enum: ["parameters", "connection_string"],
+      default: "parameters",
+      description: "Choose how to connect to ClickHouse Cloud",
+      "x-display": "tabs",
+      "x-enum-labels": ["Username & Password", "Connection String"],
+      "x-grouped-fields": {
+        parameters: ["host", "port", "database", "username", "password", "cluster", "mode"],
+        connection_string: ["dsn", "mode"],
+      },
+      "x-step": "connector",
+    },
     host: {
       type: "string",
       title: "Host",
       description: "Hostname or IP address of the ClickHouse Cloud server",
       "x-placeholder": "your-instance.clickhouse.cloud",
       "x-step": "connector",
+      "x-visible-if": { auth_method: "parameters" },
     },
     port: {
-      type: "number",
+      type: "string",
       title: "Port",
       description: "Port number of the ClickHouse Cloud server",
       enum: [8443, 9440],
@@ -21,6 +36,7 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       "x-enum-labels": ["8443 (HTTPS)", "9440 (Native Secure)"],
       "x-hint": "ClickHouse Cloud uses secure ports only",
       "x-step": "connector",
+      "x-visible-if": { auth_method: "parameters" },
     },
     username: {
       type: "string",
@@ -29,6 +45,7 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
+      "x-visible-if": { auth_method: "parameters" },
     },
     password: {
       type: "string",
@@ -37,6 +54,7 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter password",
       "x-secret": true,
       "x-step": "connector",
+      "x-visible-if": { auth_method: "parameters" },
     },
     database: {
       type: "string",
@@ -45,6 +63,7 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
+      "x-visible-if": { auth_method: "parameters" },
     },
     cluster: {
       type: "string",
@@ -53,6 +72,7 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       "x-placeholder": "Cluster name",
       "x-hint": "If set, Rill will create models as distributed tables in the cluster",
       "x-step": "connector",
+      "x-visible-if": { auth_method: "parameters" },
       "x-advanced": true,
     },
     mode: {
@@ -69,13 +89,22 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       ],
       "x-step": "connector",
     },
+    dsn: {
+      type: "string",
+      title: "Connection String",
+      description: "ClickHouse connection string (DSN)",
+      "x-placeholder": "https://default@your-instance.clickhouse.cloud:8443/default",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "connection_string" },
+    },
     sql: {
       type: "string",
       title: "SQL Query",
       description: "SQL query to extract data from ClickHouse",
       "x-placeholder": "SELECT * FROM my_table;",
-      "x-display": "textarea",
       "x-step": "source",
+      "x-visible-if": { mode: "readwrite" },
     },
     name: {
       type: "string",
@@ -84,7 +113,17 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
       "x-placeholder": "my_model",
       "x-step": "source",
-    },
+      "x-visible-if": { mode: "readwrite" },
+    }
   },
-  required: ["host", "port", "username", "password", "database"],
+  allOf: [
+    {
+      if: { properties: { auth_method: { const: "parameters" } } },
+      then: { required: ["host", "database", "user", "password"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "connection_string" } } },
+      then: { required: ["dsn"] },
+    },
+  ],
 };

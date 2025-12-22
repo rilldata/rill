@@ -209,7 +209,7 @@ export class AddDataFormManager {
     if (!isConnectorForm) return false;
 
     // ClickHouse and ClickHouse Cloud have their own error handling
-    if (this.connector.name === "clickhouse" || this.connector.name === "clickhousecloud") return false;
+    if (this.connector.name === "clickhouse" || this.connector.name === "clickhouse-cloud") return false;
 
     // Need a submission result to show the button
     if (!event?.result) return false;
@@ -517,6 +517,18 @@ export class AddDataFormManager {
 
           // Only include connector step fields that are currently visible
           if (prop["x-step"] === "connector" && isVisibleForValues(schema, key, valuesForVisibility)) {
+            const value = values[key];
+            const isSecret = prop["x-secret"] || false;
+            const hasDefault = prop.default !== undefined;
+            const matchesDefault = hasDefault && value === prop.default;
+
+            // Skip fields that match their default value unless they're secret
+            // Secret fields should always be shown
+            if (!isSecret && matchesDefault) continue;
+
+            // Also skip if value is undefined/null/empty string (unless secret)
+            if (!isSecret && (value === undefined || value === null || value === "")) continue;
+
             schemaProperties.push({
               key,
               type: prop.type === "number"
@@ -524,7 +536,7 @@ export class AddDataFormManager {
                 : prop.type === "boolean"
                 ? ConnectorDriverPropertyType.TYPE_BOOLEAN
                 : ConnectorDriverPropertyType.TYPE_STRING,
-              secret: prop["x-secret"] || false,
+              secret: isSecret,
             });
           }
         }
