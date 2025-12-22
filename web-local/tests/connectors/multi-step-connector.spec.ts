@@ -39,4 +39,45 @@ test.describe("Multi-step connector wrapper", () => {
     ).toBeVisible();
     await expect(page.getByRole("textbox", { name: "GS URI" })).toHaveCount(0);
   });
+
+  test("GCS connector - renders source step schema via wrapper", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+
+    // Choose a multi-step connector (GCS).
+    await page.locator("#gcs").click();
+    await page.waitForSelector('form[id*="gcs"]');
+
+    // Connector step visible with CTA.
+    await expect(page.getByText("Connector preview")).toBeVisible();
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Test and Connect" }),
+    ).toBeVisible();
+
+    // Switch to Public auth (no required fields) and continue via CTA.
+    await page.getByRole("radio", { name: "Public" }).click();
+    const connectorCta = page.getByRole("button", {
+      name: /Test and Connect|Continue/i,
+    });
+    await connectorCta.click();
+
+    // Source step should now render with source schema fields and CTA.
+    await expect(page.getByText("Model preview")).toBeVisible();
+    const sourceCta = page.getByRole("button", {
+      name: /Test and Add data|Importing data|Add data/i,
+    });
+    await expect(sourceCta).toBeVisible();
+
+    // Source fields should be present; connector-only auth fields should not be required to show.
+    await expect(page.getByRole("textbox", { name: "GCS URI" })).toBeVisible(
+      {},
+    );
+    await expect(
+      page.getByRole("textbox", { name: "Model name" }),
+    ).toBeVisible();
+  });
 });
