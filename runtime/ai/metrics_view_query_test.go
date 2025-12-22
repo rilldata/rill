@@ -37,7 +37,7 @@ explore:
 
 	// Query the metrics view and check it returns a valid OpenURL
 	var res *ai.QueryMetricsViewResult
-	_, err := s.CallTool(t.Context(), ai.RoleUser, "query_metrics_view", &res, ai.QueryMetricsViewArgs{
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
 		"metrics_view": "test_metrics",
 		"dimensions":   []map[string]any{{"name": "country"}},
 		"measures":     []map[string]any{{"name": "total_revenue"}},
@@ -46,4 +46,44 @@ explore:
 	require.NotEmpty(t, res.Data)
 	require.Contains(t, res.OpenURL, "https://ui.rilldata.com/test-org/test-project")
 	require.Contains(t, res.OpenURL, "/-/open-query?query=")
+}
+
+func TestMetricsViewQueryNaN(t *testing.T) {
+	// Setup a basic project with a metrics view that can produce NaN
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			// Create a simple model
+			"test_data.sql": `SELECT 1`,
+			// Create a metrics view
+			"test_metrics.yaml": `
+type: metrics_view
+model: test_data
+measures:
+- name: inf
+  expression: 1.0/0.0
+- name: nan
+  expression: ANY_VALUE('nan'::FLOAT)
+explore:
+  skip: true
+cache:
+  enabled: false
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	// Initialize test session
+	s := newSession(t, rt, instanceID)
+
+	// Query the metrics view and check it returns NaN values correctly
+	var res *ai.QueryMetricsViewResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
+		"metrics_view": "test_metrics",
+		"measures":     []map[string]any{{"name": "inf"}, {"name": "nan"}},
+	})
+	require.NoError(t, err)
+	require.Len(t, res.Data, 1)
+	row := res.Data[0]
+	require.Equal(t, nil, row["inf"])
+	require.Equal(t, nil, row["nan"])
 }

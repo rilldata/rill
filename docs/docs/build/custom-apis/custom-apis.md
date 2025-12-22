@@ -1,5 +1,5 @@
 ---
-title: Create Custom APIs
+title: Create Custom APIs with SQL
 description: Create custom APIs to retrieve aggregated data from Rill
 sidebar_label: Custom APIs
 ---

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
@@ -10,7 +9,7 @@
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { writable, type Writable } from "svelte/store";
+  import { readable, type Readable } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -30,6 +29,7 @@
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
+  export let embedThemeName: Readable<string | null> | null = null;
 
   const DEFAULT_TIMESERIES_WIDTH = 580;
   const MIN_TIMESERIES_WIDTH = 440;
@@ -113,10 +113,17 @@
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
-  const urlThemeName: Writable<string | null> = writable(null);
-  $: urlThemeName.set($page.url.searchParams.get("theme"));
+  // For non-embedded dashboards, theme can come from URL params.
+  // For embedded dashboards, embedThemeName prop takes precedence.
+  const urlThemeName = readable<string | null>(null, (set) => {
+    set(null);
+    return () => {};
+  });
 
-  $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
+  let themeSource: Readable<string | null> = urlThemeName;
+  $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
+
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
 </script>
 
 <ThemeProvider theme={$theme}>

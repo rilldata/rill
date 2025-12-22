@@ -85,7 +85,7 @@ var spec = drivers.Spec{
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
-			Hint:        "Default port is 9000 for native protocol. Also commonly used: 8443 for ClickHouse Cloud (HTTPS), 8123 for HTTP",
+			Hint:        "Default ClickHouse ports: 9000 (native TCP), 8123 (HTTP). Secure/common alternatives: 9440 (native TCP + TLS) and 8443 (HTTPS, often used in ClickHouse Cloud/managed setups).",
 			Default:     "9000",
 		},
 		{
@@ -551,8 +551,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
 		return &objectStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
-	if opts.InputHandle.Driver() == "local_file" {
-		return &localFileToSelfExecutor{opts.InputHandle, c}, nil
+	if opts.InputHandle.Driver() == "local_file" || opts.InputHandle.Driver() == "https" {
+		return &fileStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
 	return nil, drivers.ErrNotImplemented
 }
@@ -837,7 +837,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
 	if conf.Host != "" && conf.Port != 0 {
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
-		conn, err := net.DialTimeout("tcp", target, 25*time.Second)
+		conn, err := net.DialTimeout("tcp", target, 10*time.Second)
 		if err != nil {
 			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
 		}

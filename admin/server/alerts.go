@@ -54,12 +54,12 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 	if req.QueryFor != nil {
 		switch forVal := req.QueryFor.(type) {
 		case *adminv1.GetAlertMetaRequest_QueryForUserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
+			attr, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetAlertMetaRequest_QueryForUserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
+			attr, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -146,11 +146,11 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -206,11 +206,11 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -274,11 +274,11 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -419,11 +419,11 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -493,7 +493,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 

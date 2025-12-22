@@ -4,10 +4,8 @@ import { generateExploreLink } from "@rilldata/web-common/features/explore-mappe
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
   runtimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
@@ -151,25 +149,9 @@ async function convertQueryToExploreState(
 
   const metricsViewSpec = metricsViewResource?.metricsView?.state?.validSpec;
   const exploreSpec = exploreResource.explore.state.validSpec;
-  const metricsViewName = exploreSpec.metricsView ?? "";
-
-  const metricsViewTimeRangeResp = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-      instanceId,
-      metricsViewName,
-      {},
-    ),
-    queryFn: () =>
-      queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
-  });
 
   const partialExploreState: Partial<ExploreState> =
-    mapMetricsResolverQueryToDashboard(
-      metricsViewSpec,
-      exploreSpec,
-      metricsViewTimeRangeResp.timeRangeSummary,
-      query,
-    );
+    mapMetricsResolverQueryToDashboard(metricsViewSpec, exploreSpec, query);
 
   return partialExploreState;
 }

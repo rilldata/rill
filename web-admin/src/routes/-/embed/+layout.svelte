@@ -1,22 +1,29 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
+  import {
+    getDashboardFromEmbedRoute,
+    isDifferentDashboard,
+  } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
+  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import {
+    createIframeRPCHandler,
+    emitNotification,
+  } from "@rilldata/web-common/lib/rpc";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { onMount } from "svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
   const {
     instanceId,
-    runtimeHost,
-    accessToken,
+
     missingRequireParams,
     navigationEnabled,
   } = data;
@@ -27,10 +34,13 @@
   // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
   featureFlags.set(false, "adminServer");
 
-  $: activeResource = {
-    kind: $page.route.id?.includes("explore")
-      ? ResourceKind.Explore
-      : ResourceKind.Canvas,
+  // Extract active resource info from current route
+  // Falls back to Canvas if route doesn't match a dashboard pattern (e.g., project page)
+  $: activeResource = getDashboardFromEmbedRoute(
+    $page.route.id,
+    $page.params,
+  ) ?? {
+    kind: ResourceKind.Canvas,
     name: $page.params.name,
   };
 
@@ -40,6 +50,40 @@
       (activeResource?.kind === ResourceKind.Explore.toString() ||
         activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
+
+  onNavigate(({ from, to }) => {
+    if (!navigationEnabled) return;
+
+    const fromDashboard = from
+      ? getDashboardFromEmbedRoute(from.route.id, from.params)
+      : null;
+    const toDashboard = to
+      ? getDashboardFromEmbedRoute(to.route.id, to.params)
+      : null;
+
+    if (
+      fromDashboard &&
+      toDashboard &&
+      isDifferentDashboard(fromDashboard, toDashboard)
+    ) {
+      emitNotification("navigation", {
+        from: fromDashboard.name,
+        to: toDashboard.name,
+      });
+    } else if (!fromDashboard && toDashboard) {
+      // Navigating from listing page to a dashboard
+      emitNotification("navigation", {
+        from: "dashboardListing",
+        to: toDashboard.name,
+      });
+    } else if (fromDashboard && !toDashboard) {
+      // Navigating from a dashboard to the listing page
+      emitNotification("navigation", {
+        from: fromDashboard.name,
+        to: "dashboardListing",
+      });
+    }
+  });
 
   onMount(() => {
     createIframeRPCHandler();
@@ -65,27 +109,25 @@
     fatal
   />
 {:else}
-  <RuntimeProvider
-    host={runtimeHost}
-    {instanceId}
-    jwt={accessToken}
-    authContext="embed"
-  >
-    {#if showTopBar}
-      <div
-        class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
-        class:border-b={!onProjectPage}
-      >
-        <TopNavigationBarEmbed
-          {instanceId}
-          {activeResource}
-          {navigationEnabled}
-        />
-      </div>
-    {/if}
+  {#if showTopBar}
+    <div
+      class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
+      class:border-b={!onProjectPage}
+    >
+      <TopNavigationBarEmbed
+        {instanceId}
+        {activeResource}
+        {navigationEnabled}
+      />
+    </div>
+  {/if}
 
-    <div class="flex h-full overflow-hidden">
+  <div class="flex h-full overflow-hidden">
+    <div class="flex-1 overflow-hidden">
       <slot />
     </div>
-  </RuntimeProvider>
+    {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
+      <ExploreChat />
+    {/if}
+  </div>
 {/if}

@@ -11,76 +11,6 @@ consumes:
 produces:
   - application/json
 paths:
-  /v1/bigquery/datasets:
-    get:
-      summary: BigQueryListDatasets list all datasets in a bigquery project
-      operationId: ConnectorService_BigQueryListDatasets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1BigQueryListDatasetsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/bigquery/tables:
-    get:
-      summary: BigQueryListTables list all tables in a bigquery project:dataset
-      operationId: ConnectorService_BigQueryListTables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1BigQueryListTablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: dataset
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
   /v1/connectors/database_schemas:
     get:
       summary: ListDatabaseSchemas list all schemas across databases
@@ -280,116 +210,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/gcs/bucket/{bucket}/objects:
-    get:
-      summary: GCSListObjects lists objects for the given bucket.
-      operationId: ConnectorService_GCSListObjects
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GCSListObjectsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-        - name: prefix
-          in: query
-          required: false
-          type: string
-        - name: startOffset
-          in: query
-          required: false
-          type: string
-        - name: endOffset
-          in: query
-          required: false
-          type: string
-        - name: delimiter
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/gcs/buckets:
-    get:
-      summary: GCSListBuckets lists buckets accessible with the configured credentials.
-      operationId: ConnectorService_GCSListBuckets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GCSListBucketsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/gcs/credentials_info:
-    get:
-      summary: GCSGetCredentialsInfo returns metadata for the given bucket.
-      operationId: ConnectorService_GCSGetCredentialsInfo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GCSGetCredentialsInfoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
   /v1/health:
     get:
       summary: Health runs a health check on the runtime.
@@ -592,6 +412,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to run the completion against.
           in: path
           required: true
           type: string
@@ -603,27 +424,25 @@ paths:
             properties:
               conversationId:
                 type: string
-                title: If not provided, creates a new conversation
+                description: Conversation ID to continue. If empty, a new conversation is created.
               prompt:
                 type: string
-              explore:
+                description: The prompt to complete.
+              agent:
                 type: string
-              dimensions:
-                type: array
-                items:
-                  type: string
-              measures:
-                type: array
-                items:
-                  type: string
-              where:
-                $ref: '#/definitions/v1Expression'
-              timeStart:
-                type: string
-                format: date-time
-              timeEnd:
-                type: string
-                format: date-time
+                description: |-
+                  Optional agent to use for the completion.
+                  If not set, it will infer an agent based on the prompt and conversation history.
+              analystAgentContext:
+                $ref: '#/definitions/v1AnalystAgentContext'
+                description: |-
+                  Optional context for prompts handled by the analyst_agent.
+                  The field is ignored if another agent is selected.
+              developerAgentContext:
+                $ref: '#/definitions/v1DeveloperAgentContext'
+                description: |-
+                  Optional context for prompts handled by the developer_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -648,6 +467,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
+          description: Instance to run the completion against.
           in: path
           required: true
           type: string
@@ -659,27 +479,25 @@ paths:
             properties:
               conversationId:
                 type: string
-                title: If not provided, creates a new conversation
+                description: Conversation ID to continue. If empty, a new conversation is created.
               prompt:
                 type: string
-              explore:
+                description: The prompt to complete.
+              agent:
                 type: string
-              dimensions:
-                type: array
-                items:
-                  type: string
-              measures:
-                type: array
-                items:
-                  type: string
-              where:
-                $ref: '#/definitions/v1Expression'
-              timeStart:
-                type: string
-                format: date-time
-              timeEnd:
-                type: string
-                format: date-time
+                description: |-
+                  Optional agent to use for the completion.
+                  If not set, it will infer an agent based on the prompt and conversation history.
+              analystAgentContext:
+                $ref: '#/definitions/v1AnalystAgentContext'
+                description: |-
+                  Optional context for prompts handled by the analyst_agent.
+                  The field is ignored if another agent is selected.
+              developerAgentContext:
+                $ref: '#/definitions/v1DeveloperAgentContext'
+                description: |-
+                  Optional context for prompts handled by the developer_agent.
+                  The field is ignored if another agent is selected.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -732,6 +550,106 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/tools:
+    get:
+      summary: |-
+        ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+        Note that it covers all registered tools, but the current user may not have access to all of them.
+      operationId: RuntimeService_ListTools
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListToolsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/connectors/{connector}/buckets:
+    get:
+      summary: ListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_ListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/instances/{instanceId}/connectors/{connector}/buckets/{bucket}/objects:
+    get:
+      summary: ListObjects lists objects for the given bucket.
+      operationId: ConnectorService_ListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -918,6 +836,44 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-canvas:
+    post:
+      summary: GenerateCanvasFile generates a canvas YAML file from a metrics view
+      operationId: RuntimeService_GenerateCanvasFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateCanvasFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              metricsViewName:
+                type: string
+                description: Metrics view name to base the canvas on.
+              path:
+                type: string
+                description: Path to save the canvas file to.
+              useAi:
+                type: boolean
+                description: |-
+                  If true, the AI will be used to generate the canvas file.
+                  Otherwise, it falls back to a simpler heuristic approach.
+            title: Request message for RuntimeService.GenerateCanvasFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -975,6 +931,9 @@ paths:
                 description: |-
                   If true, the AI will be used to generate the metrics view file.
                   Otherwise, it falls back to a simpler heuristic approach.
+              prompt:
+                type: string
+                description: Optional prompt to guide AI generation.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -1561,6 +1520,34 @@ paths:
                 type: string
                 format: date-time
                 description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/filter-expression/resolve:
+    post:
+      summary: ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+      operationId: QueryService_ConvertExpressionToMetricsSQL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConvertExpressionToMetricsSQLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              expression:
+                $ref: '#/definitions/v1Expression'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -2390,6 +2377,46 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/resolve-templated-string:
+    post:
+      summary: ResolveTemplatedString resolves a templated strings.
+      operationId: QueryService_ResolveTemplatedString
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveTemplatedStringResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              body:
+                type: string
+                title: Any string with Go templating
+              useFormatTokens:
+                type: boolean
+                description: If true, output format tokens instead of raw values.
+              additionalWhereByMetricsView:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
+                title: Additional filters to inject into metrics SQL queries by metrics view name
+              additionalTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Additional time range to add to metrics SQL queries
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
       summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -3029,10 +3056,6 @@ paths:
           in: query
           required: false
           type: boolean
-        - name: level
-          in: query
-          required: false
-          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/explore:
@@ -3193,140 +3216,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/s3/bucket/{bucket}/metadata:
-    get:
-      summary: S3GetBucketMetadata returns metadata for the given bucket.
-      operationId: ConnectorService_S3GetBucketMetadata
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3GetBucketMetadataResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/s3/bucket/{bucket}/objects:
-    get:
-      summary: S3ListBuckets lists objects for the given bucket.
-      operationId: ConnectorService_S3ListObjects
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3ListObjectsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-        - name: prefix
-          in: query
-          required: false
-          type: string
-        - name: startAfter
-          in: query
-          required: false
-          type: string
-        - name: delimiter
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/s3/buckets:
-    get:
-      summary: S3ListBuckets lists buckets accessible with the configured credentials.
-      operationId: ConnectorService_S3ListBuckets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3ListBucketsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/s3/credentials_info:
-    get:
-      summary: S3GetCredentialsInfo returns metadata for the given bucket.
-      operationId: ConnectorService_S3GetCredentialsInfo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3GetCredentialsInfoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -3418,6 +3307,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       column:
         type: string
       expression:
@@ -3470,6 +3363,10 @@ definitions:
         type: string
       description:
         type: string
+      tags:
+        type: array
+        items:
+          type: string
       expression:
         type: string
       type:
@@ -3803,6 +3700,34 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1AnalystAgentContext:
+    type: object
+    properties:
+      explore:
+        type: string
+        description: Optional explore dashboard.
+      dimensions:
+        type: array
+        items:
+          type: string
+        description: Optional dimensions.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Optional measures.
+      where:
+        $ref: '#/definitions/v1Expression'
+        description: Optional filters.
+      timeStart:
+        type: string
+        format: date-time
+        description: Optional start of a time range.
+      timeEnd:
+        type: string
+        format: date-time
+        description: Optional end of a time range.
+    description: Context for prompts handled by the analyst_agent.
   v1AnalyzeConnectorsResponse:
     type: object
     properties:
@@ -3895,24 +3820,6 @@ definitions:
       - ASSERTION_STATUS_FAIL
       - ASSERTION_STATUS_ERROR
     default: ASSERTION_STATUS_UNSPECIFIED
-  v1BigQueryListDatasetsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-  v1BigQueryListTablesResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
   v1BuiltinMeasure:
     type: string
     enum:
@@ -3960,6 +3867,14 @@ definitions:
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      filterExpr:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1DefaultMetricsSQLFilter'
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Valid Metrics SQL expression
   v1CanvasRow:
     type: object
     properties:
@@ -4047,6 +3962,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        title: Array of dimension or measure names
   v1CanvasState:
     type: object
     properties:
@@ -4584,6 +4504,12 @@ definitions:
           $ref: '#/definitions/v1Message'
         description: 'NOTE: Deprecated.'
     title: Conversation metadata and messages
+  v1ConvertExpressionToMetricsSQLResponse:
+    type: object
+    properties:
+      sql:
+        type: string
+        description: The SQL filter string representation of the expression.
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -4637,12 +4563,31 @@ definitions:
         type: string
       databaseSchema:
         type: string
+  v1DefaultMetricsSQLFilter:
+    type: object
+    properties:
+      expression:
+        $ref: '#/definitions/v1Expression'
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1DeveloperAgentContext:
+    type: object
+    properties:
+      initProject:
+        type: boolean
+        description: |-
+          Set to true if the prompt is provided as part of project initialization.
+          This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
+      currentFilePath:
+        type: string
+        description: |-
+          Optional path to the file that the user is currently viewing/editing.
+          This helps the agent understand which file the user is referring to in their request.
+    description: Context for prompts handled by the developer_agent.
   v1DirEntry:
     type: object
     properties:
@@ -4778,6 +4723,9 @@ definitions:
         type: boolean
       pivotTableMode:
         type: string
+      pivotRowLimit:
+        type: integer
+        format: int32
   v1ExploreSortType:
     type: string
     enum:
@@ -4955,45 +4903,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
-  v1GCSGetCredentialsInfoResponse:
+  v1GenerateCanvasFileResponse:
     type: object
     properties:
-      exist:
+      aiSucceeded:
         type: boolean
-      projectId:
-        type: string
-  v1GCSListBucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      buckets:
-        type: array
-        items:
-          type: string
-  v1GCSListObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1GCSObject'
-  v1GCSObject:
-    type: object
-    properties:
-      name:
-        type: string
-      modifiedOn:
-        type: string
-        format: date-time
-      size:
-        type: string
-        format: int64
-      isDir:
-        type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+    title: Response message for RuntimeService.GenerateCanvasFile
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
@@ -5211,6 +5127,15 @@ definitions:
       jwt:
         type: string
     title: Response message for RuntimeService.IssueDevJWT
+  v1ListBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      buckets:
+        type: array
+        items:
+          type: string
   v1ListConnectorDriversResponse:
     type: object
     properties:
@@ -5278,6 +5203,16 @@ definitions:
           $ref: '#/definitions/v1Connector'
         description: 'Note: In this list, the Connector.config property will always be empty.'
     title: Response message for RuntimeService.ListNotifierConnectors
+  v1ListObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Object'
   v1ListResourcesResponse:
     type: object
     properties:
@@ -5296,6 +5231,15 @@ definitions:
           $ref: '#/definitions/v1TableInfo'
       nextPageToken:
         type: string
+  v1ListToolsResponse:
+    type: object
+    properties:
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Tool'
+    title: Response message for RuntimeService.ListTools
   v1Log:
     type: object
     properties:
@@ -5932,6 +5876,13 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      queryAttributes:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+          Keys and values are stored as templates and will be resolved at query time.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -6454,6 +6405,19 @@ definitions:
           $ref: '#/definitions/v1OlapTableInfo'
       nextPageToken:
         type: string
+  v1Object:
+    type: object
+    properties:
+      name:
+        type: string
+      modifiedOn:
+        type: string
+        format: date-time
+      size:
+        type: string
+        format: int64
+      isDir:
+        type: boolean
   v1OlapTableInfo:
     type: object
     properties:
@@ -6831,6 +6795,11 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+  v1ResolveTemplatedStringResponse:
+    type: object
+    properties:
+      body:
+        type: string
   v1ResolvedTimeRange:
     type: object
     properties:
@@ -6950,50 +6919,6 @@ definitions:
         type: string
       name:
         type: string
-  v1S3GetBucketMetadataResponse:
-    type: object
-    properties:
-      region:
-        type: string
-  v1S3GetCredentialsInfoResponse:
-    type: object
-    properties:
-      exist:
-        type: boolean
-      provider:
-        type: string
-  v1S3ListBucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      buckets:
-        type: array
-        items:
-          type: string
-  v1S3ListObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1S3Object'
-  v1S3Object:
-    type: object
-    properties:
-      name:
-        type: string
-      modifiedOn:
-        type: string
-        format: date-time
-      size:
-        type: string
-        format: int64
-      isDir:
-        type: boolean
   v1Schedule:
     type: object
     properties:
@@ -7408,6 +7333,28 @@ definitions:
       records:
         type: object
         title: Not optional, not null
+  v1Tool:
+    type: object
+    properties:
+      name:
+        type: string
+        title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
+      description:
+        type: string
+        title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
+      inputSchema:
+        type: string
+        title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
+    title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
     properties:

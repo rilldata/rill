@@ -121,6 +121,12 @@ export default defineConfig({
               useMutation: false,
             },
           },
+          QueryService_ResolveTemplatedString: {
+            query: {
+              useQuery: true,
+              useMutation: false,
+            },
+          },
           RuntimeService_IssueDevJWT: {
             query: {
               useQuery: true,

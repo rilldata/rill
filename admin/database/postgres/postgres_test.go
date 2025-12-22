@@ -391,13 +391,13 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	proj1, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "beta"})
 	require.NoError(t, err)
 	require.Equal(t, "beta", proj1.Name)
-	require.NoError(t, db.InsertProjectMemberUser(ctx, proj1.ID, user.ID, role.ID))
+	require.NoError(t, db.InsertProjectMemberUser(ctx, proj1.ID, user.ID, role.ID, false, nil))
 
 	// public project and user added as collaborator
 	proj2, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "gamma", Public: true})
 	require.NoError(t, err)
 	require.Equal(t, "gamma", proj2.Name)
-	require.NoError(t, db.InsertProjectMemberUser(ctx, proj2.ID, user.ID, role.ID))
+	require.NoError(t, db.InsertProjectMemberUser(ctx, proj2.ID, user.ID, role.ID, false, nil))
 
 	// internal project
 	proj3, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "internal"})

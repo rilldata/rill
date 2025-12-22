@@ -12,12 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata
-// as per RFC 8414 and MCP OAuth specification.
-// This endpoint helps MCP clients discover the authorization server for this protected resource.
+// handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata as per RFC 9728 and MCP OAuth specification.
+// This endpoint helps MCP clients discover the authorization server for this protected resource. https://www.rfc-editor.org/rfc/rfc9728.html
 func (a *Authenticator) handleOAuthProtectedResourceMetadata(w http.ResponseWriter, r *http.Request) {
 	metadata := oauth.ProtectedResourceMetadata{
-		Resource:             a.admin.URLs.External(),
+		Resource:             a.admin.URLs.OAuthExternalResourceURL(r),
 		AuthorizationServers: []string{a.admin.URLs.External()},
 		BearerMethodsSupported: []string{
 			"header", // Authorization: Bearer <token>

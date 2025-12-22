@@ -13,17 +13,17 @@ rill project connect-github [<path>] [flags]
 ### Flags
 
 ```
-      --path string           Path to project repository (default: current directory) (default ".")
-      --subpath string        Relative path to project in the repository (for monorepos)
-      --remote string         Remote name (default: origin) (default "origin")
-      --org string            Org to deploy project in
-      --name string           Project name (default: Git repo name)
-      --description string    Project description
-      --public                Make dashboards publicly accessible
-      --provisioner string    Project provisioner
-      --prod-version string   Rill version (default: the latest release version) (default "latest")
-      --prod-branch string    Git branch to deploy from (default: the default Git branch)
-      --push-env              Push local .env file to Rill Cloud (default true)
+      --path string             Path to project repository (default: current directory) (default ".")
+      --subpath string          Relative path to project in the repository (for monorepos)
+      --remote string           Remote name (default: origin) (default "origin")
+      --org string              Org to deploy project in
+      --name string             Project name (default: Git repo name)
+      --description string      Project description
+      --public                  Make dashboards publicly accessible
+      --provisioner string      Project provisioner
+      --prod-version string     Rill version (default: the latest release version) (default "latest")
+      --primary-branch string   Git branch to deploy from (default: the default Git branch)
+      --push-env                Push local .env file to Rill Cloud (default true)
 ```
 
 ### Global flags

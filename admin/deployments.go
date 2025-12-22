@@ -29,6 +29,7 @@ type CreateDeploymentOptions struct {
 	OwnerUserID *string
 	Environment string
 	Branch      string
+	Editable    bool
 }
 
 func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOptions) (*database.Deployment, error) {
@@ -38,6 +39,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		OwnerUserID:       opts.OwnerUserID,
 		Environment:       opts.Environment,
 		Branch:            opts.Branch,
+		Editable:          opts.Editable,
 		RuntimeHost:       "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeInstanceID: "",                               // Will be populated after provisioning in startDeploymentInner
 		RuntimeAudience:   "",                               // Will be populated after provisioning in startDeploymentInner
@@ -90,9 +92,17 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 	return nil
 }
 
-func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the desired deployment status to running
-	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
+func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, branch string) error {
+	// Update the deployment with the new branch (or existing branch) and set desired status to running
+	var err error
+	if branch != depl.Branch {
+		_, err = s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
+			DesiredStatus: database.DeploymentStatusRunning,
+			Branch:        branch,
+		})
+	} else {
+		_, err = s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
+	}
 	if err != nil {
 		return err
 	}
@@ -123,10 +133,9 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 }
 
 // UpdateDeploymentsForProject updates the deployments of a project.
-// In normal operation, projects only have one deployment. But during (re)deployment and in various error scenarios, there may be multiple deployments.
 // Care must be taken to avoid one broken deployment from blocking updates to other healthy deployments.
 func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
 	if err != nil {
 		return err
 	}
@@ -137,12 +146,17 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	for _, d := range ds {
 		d := d
 		grp.Go(func() error {
-			err := s.UpdateDeployment(ctx, d)
+			// If this is the primary prod deployment and the primary branch has changed, update the deployment branch too.
+			branch := d.Branch
+			if p.PrimaryDeploymentID != nil && *p.PrimaryDeploymentID == d.ID && p.PrimaryBranch != d.Branch {
+				branch = p.PrimaryBranch
+			}
+			err := s.UpdateDeployment(ctx, d, branch)
 			if err != nil {
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID {
+				if p.PrimaryDeploymentID != nil && *p.PrimaryDeploymentID == d.ID {
 					prodErr = err
 				}
 				s.Logger.Warn("failed to update deployment", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
@@ -215,8 +229,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Update the deployment with the runtime details
 	instanceID := strings.ReplaceAll(r.ID, "-", "") // Use the provisioned resource ID without dashes as the instance ID
-	depl, err = s.DB.UpdateDeployment(ctx, depl.ID, &database.UpdateDeploymentOptions{
-		Branch:            depl.Branch,
+	depl, err = s.DB.UpdateDeploymentUnsafe(ctx, depl.ID, &database.UpdateDeploymentUnsafeOptions{
 		RuntimeHost:       cfg.Host,
 		RuntimeInstanceID: instanceID,
 		RuntimeAudience:   cfg.Audience,
@@ -333,28 +346,27 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 	// Delete all provisioned resources for the deployment
 	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
 	if err != nil {
-		s.Logger.Error("failed to find provisioner resources for deployment", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-	} else {
-		for _, pr := range prs {
-			p, ok := s.ProvisionerSet[pr.Provisioner]
-			if !ok {
-				s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
-			} else {
-				err = p.Deprovision(ctx, &provisioner.Resource{
-					ID:     pr.ID,
-					Type:   provisioner.ResourceType(pr.Type),
-					State:  pr.State,
-					Config: pr.Config,
-				})
-				if err != nil {
-					s.Logger.Error("provisioner: failed to deprovision", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), zap.Error(err), observability.ZapCtx(ctx))
-				}
-			}
-
-			err = s.DB.DeleteProvisionerResource(ctx, pr.ID)
+		return err
+	}
+	for _, pr := range prs {
+		p, ok := s.ProvisionerSet[pr.Provisioner]
+		if !ok {
+			s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
+		} else {
+			err = p.Deprovision(ctx, &provisioner.Resource{
+				ID:     pr.ID,
+				Type:   provisioner.ResourceType(pr.Type),
+				State:  pr.State,
+				Config: pr.Config,
+			})
 			if err != nil {
-				s.Logger.Error("failed to delete provisioner resource", zap.String("deployment_id", depl.ID), zap.String("provisioner_resource_id", pr.ID), zap.Error(err), observability.ZapCtx(ctx))
+				return err
 			}
+		}
+
+		err = s.DB.DeleteProvisionerResource(ctx, pr.ID)
+		if err != nil {
+			return err
 		}
 	}
 
