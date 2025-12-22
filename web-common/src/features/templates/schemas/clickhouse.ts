@@ -59,7 +59,6 @@ export const clickhouseSchema: MultiStepFormSchema = {
       type: "string",
       title: "Username",
       description: "Username to connect to the ClickHouse server",
-      default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
       "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },

@@ -18,6 +18,7 @@ export type JSONSchemaField = {
   "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
   "x-step"?: "connector" | "source";
   "x-secret"?: boolean;
+  "x-readonly"?: boolean;
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
   "x-enum-labels"?: string[];
   "x-enum-descriptions"?: string[];

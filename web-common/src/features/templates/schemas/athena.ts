@@ -33,6 +33,15 @@ export const athenaSchema: MultiStepFormSchema = {
       description: "AWS IAM role ARN to assume (optional)",
       "x-placeholder": "arn:aws:iam::123456789012:role/MyRole",
       "x-step": "connector",
+      "x-advanced": true,
+    },
+    region: {
+      type: "string",
+      title: "AWS Region",
+      description: "AWS region where Athena is configured",
+      "x-placeholder": "us-east-1",
+      "x-step": "connector",
+      "x-advanced": true,
     },
     role_session_name: {
       type: "string",
@@ -52,13 +61,7 @@ export const athenaSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-advanced": true,
     },
-    region: {
-      type: "string",
-      title: "AWS Region",
-      description: "AWS region where Athena is configured",
-      "x-placeholder": "us-east-1",
-      "x-step": "connector",
-    },
+
     workgroup: {
       type: "string",
       title: "Workgroup",

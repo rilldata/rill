@@ -13,6 +13,9 @@ import { isStepMatch } from "./connector-schemas";
  * Useful for validating optional text inputs.
  */
 export function isEmpty(val: any) {
+  // Booleans are never empty (false is a valid value)
+  if (typeof val === "boolean") return false;
+
   return (
     val === undefined ||
     val === null ||

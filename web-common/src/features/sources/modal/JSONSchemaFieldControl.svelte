@@ -40,6 +40,7 @@
     label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
     {optional}
+    disabled={prop["x-readonly"]}
   />
 {:else if isSelectEnum && options}
   <Select

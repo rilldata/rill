@@ -26,6 +26,7 @@ export const redshiftSchema: MultiStepFormSchema = {
       description: "AWS region where the Redshift cluster is located",
       "x-placeholder": "us-east-1",
       "x-step": "connector",
+      "x-advanced": true,
     },
     database: {
       type: "string",
@@ -40,6 +41,7 @@ export const redshiftSchema: MultiStepFormSchema = {
       description: "Redshift Serverless workgroup name (for serverless)",
       "x-placeholder": "default-workgroup",
       "x-step": "connector",
+      "x-advanced": true,
     },
     cluster_identifier: {
       type: "string",
@@ -48,6 +50,7 @@ export const redshiftSchema: MultiStepFormSchema = {
       "x-placeholder": "my-redshift-cluster",
       "x-hint": "Provide either workgroup (for serverless) or cluster identifier (for provisioned)",
       "x-step": "connector",
+      "x-advanced": true,
     },
     log_queries: {
       type: "boolean",

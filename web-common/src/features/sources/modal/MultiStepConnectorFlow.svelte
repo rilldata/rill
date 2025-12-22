@@ -18,8 +18,8 @@
 
   export let connector: V1ConnectorDriver;
   export let formManager: AddDataFormManager;
-  export let properties: ConnectorDriverProperty[];
-  export let filteredParamsProperties: ConnectorDriverProperty[];
+  // export let properties: ConnectorDriverProperty[];
+  // export let filteredParamsProperties: ConnectorDriverProperty[];
   export let paramsForm: any;
   export let paramsErrors: any;
   export let paramsEnhance: any;
@@ -190,18 +190,22 @@
     $paramsErrors,
     stepState.step,
   );
+  $: currentMode = $paramsForm?.mode as string | undefined;
   $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
     isConnectorForm: formManager.isConnectorForm,
     step: stepState.step,
     submitting,
     selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
+    mode: currentMode,
   });
   $: primaryLoadingCopy =
     stepState.step === "source"
       ? "Importing data..."
       : activeAuthMethod === "public"
         ? "Continuing..."
-        : "Testing connection...";
+        : currentMode === "read"
+          ? "Adding connector..."
+          : "Testing connection...";
   $: formId = paramsFormId;
   $: shouldShowSkipLink = stepState.step === "connector";
 </script>

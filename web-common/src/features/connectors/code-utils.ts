@@ -83,9 +83,10 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
       if (!property.key) return false;
       const value = formValues[property.key];
 
-      // Secret fields should always be shown (with env variable placeholder) even if empty
+      // Secret fields should be shown with env variable placeholder if they exist in formValues
+      // Don't include secrets that weren't provided (e.g., password when using DSN)
       const isSecretProperty = secretPropertyKeys.includes(property.key);
-      if (isSecretProperty) return true;
+      if (isSecretProperty && value !== undefined) return true;
 
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
@@ -102,7 +103,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
@@ -113,12 +114,14 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
         )} }}"`;
       }
 
+      // At this point, value is guaranteed to be defined due to the filter above
+      const stringValue = value as string;
       const isStringProperty = stringPropertyKeys.includes(key);
       if (isStringProperty) {
-        return `${key}: "${value}"`;
+        return `${key}: "${stringValue}"`;
       }
 
-      return `${key}: ${value}`;
+      return `${key}: ${stringValue}`;
     })
     .join("\n");
 

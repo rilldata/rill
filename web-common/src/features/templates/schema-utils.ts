@@ -36,10 +36,28 @@ export function getFieldLabel(
   return schema.properties?.[key]?.title || key;
 }
 
+/**
+ * Find all enum keys (radio or tabs) that have grouped fields.
+ * These are UI control fields (like auth_method, connection_method) that shouldn't appear in YAML.
+ */
+export function findGroupedEnumKeys(schema: MultiStepFormSchema): string[] {
+  if (!schema.properties) return [];
+  const keys: string[] = [];
+  for (const [key, value] of Object.entries(schema.properties)) {
+    if (value.enum && value["x-grouped-fields"]) {
+      keys.push(key);
+    }
+  }
+  return keys;
+}
+
 export function findRadioEnumKey(schema: MultiStepFormSchema): string | null {
   if (!schema.properties) return null;
   for (const [key, value] of Object.entries(schema.properties)) {
-    if (value.enum && value["x-display"] === "radio") {
+    // Return radio or tabs fields that have grouped fields - those are auth/connection method selectors
+    // Standalone radio fields (like "mode") should not be considered auth method keys
+    const display = value["x-display"];
+    if (value.enum && (display === "radio" || display === "tabs") && value["x-grouped-fields"]) {
       return key;
     }
   }

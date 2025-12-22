@@ -38,7 +38,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
-import { findRadioEnumKey, isVisibleForValues } from "../../templates/schema-utils";
+import { findRadioEnumKey, findGroupedEnumKeys, isVisibleForValues } from "../../templates/schema-utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -48,6 +48,7 @@ type SuperFormUpdateEvent = {
 const BUTTON_LABELS = {
   public: { idle: "Continue", submitting: "Continuing..." },
   connector: { idle: "Test and Connect", submitting: "Testing connection..." },
+  connectorReadOnly: { idle: "Test and Add Connector", submitting: "Testing connection..." },
   source: { idle: "Import Data", submitting: "Importing data..." },
 };
 
@@ -150,9 +151,27 @@ export class AddDataFormManager {
     const paramsAdapter = yup(paramsSchemaDef);
     type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
     type ParamsIn = YupInferIn<typeof paramsSchemaDef, "yup">;
-    const initialFormValues = getInitialFormValuesFromProperties(
-      this.properties,
-    );
+
+    // For schema-based connectors, use schema defaults instead of backend properties
+    // to avoid pulling defaults from the backend driver
+    const schema = connector.name ? getConnectorSchema(connector.name) : null;
+    let initialFormValues: Record<string, unknown>;
+
+    if (schema?.properties) {
+      // Extract defaults from schema
+      initialFormValues = {};
+      for (const [key, prop] of Object.entries(schema.properties)) {
+        if (prop.default !== undefined) {
+          initialFormValues[key] = prop.default;
+        }
+      }
+    } else {
+      // Fall back to backend properties for non-schema connectors
+      initialFormValues = getInitialFormValuesFromProperties(
+        this.properties,
+      );
+    }
+
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
@@ -208,9 +227,6 @@ export class AddDataFormManager {
     // Only show for connector forms (not sources)
     if (!isConnectorForm) return false;
 
-    // ClickHouse and ClickHouse Cloud have their own error handling
-    if (this.connector.name === "clickhouse" || this.connector.name === "clickhouse-cloud") return false;
-
     // Need a submission result to show the button
     if (!event?.result) return false;
 
@@ -255,12 +271,14 @@ export class AddDataFormManager {
     step: "connector" | "source" | string;
     submitting: boolean;
     selectedAuthMethod?: string;
+    mode?: string;
   }): string {
     const {
       isConnectorForm,
       step,
       submitting,
       selectedAuthMethod,
+      mode,
     } = args;
 
     if (isConnectorForm) {
@@ -269,6 +287,12 @@ export class AddDataFormManager {
           return submitting
             ? BUTTON_LABELS.public.submitting
             : BUTTON_LABELS.public.idle;
+        }
+        // For read-only mode, show "Test and Add Connector" instead of "Test and Connect"
+        if (mode === "read") {
+          return submitting
+            ? BUTTON_LABELS.connectorReadOnly.submitting
+            : BUTTON_LABELS.connectorReadOnly.idle;
         }
         return submitting
           ? BUTTON_LABELS.connector.submitting
@@ -376,6 +400,15 @@ export class AddDataFormManager {
           }
           const preparedValues = prepareConnectorFormData(connector, values);
           await submitAddConnectorForm(queryClient, connector, preparedValues, false);
+
+          // If mode is "read" (read-only), close without going to source step
+          // Only advance to source step when mode is "readwrite"
+          const mode = values?.mode as string | undefined;
+          if (mode === "read") {
+            onClose();
+            return;
+          }
+
           setConnectorConfig(preparedValues);
           setStep("source");
           return;
@@ -488,7 +521,7 @@ export class AddDataFormManager {
       let orderedProperties: ConnectorDriverProperty[] = [];
 
       // For multi-step connectors with schemas, build properties from schema
-      const schema = isMultiStepConnector && stepState?.step === "connector"
+      const schema = isMultiStepConnector && stepState?.step === "connector" && connector.name
         ? getConnectorSchema(connector.name)
         : null;
 
@@ -497,37 +530,34 @@ export class AddDataFormManager {
         const schemaProperties: ConnectorDriverProperty[] = [];
         const properties = schema.properties ?? {};
 
-        // Find the auth method radio field key (e.g., "auth_method") - we don't want to include this in YAML
+        // Find all grouped enum keys (radio or tabs with grouped fields) - these are UI control fields we don't want in YAML
+        const groupedEnumKeys = findGroupedEnumKeys(schema);
         const authMethodKey = findRadioEnumKey(schema);
 
-        // Ensure auth_method has a value for visibility checks (use actual value or fallback to default)
+        // Ensure all grouped enum keys have values for visibility checks (use actual value or fallback to default)
         let valuesForVisibility = { ...values };
-        if (authMethodKey && !valuesForVisibility[authMethodKey]) {
-          const authProp = properties[authMethodKey];
-          if (authProp?.default) {
-            valuesForVisibility[authMethodKey] = authProp.default;
-          } else if (authProp?.enum?.length) {
-            valuesForVisibility[authMethodKey] = authProp.enum[0];
+        for (const enumKey of groupedEnumKeys) {
+          if (!valuesForVisibility[enumKey]) {
+            const enumProp = properties[enumKey];
+            if (enumProp?.default) {
+              valuesForVisibility[enumKey] = enumProp.default;
+            } else if (enumProp?.enum?.length) {
+              valuesForVisibility[enumKey] = enumProp.enum[0];
+            }
           }
         }
 
         for (const [key, prop] of Object.entries(properties)) {
-          // Skip the auth_method field itself - it's just a UI control field
-          if (key === authMethodKey) continue;
+          // Skip grouped enum keys (auth_method, connection_method, etc.) - they're just UI control fields
+          if (groupedEnumKeys.includes(key)) continue;
 
           // Only include connector step fields that are currently visible
           if (prop["x-step"] === "connector" && isVisibleForValues(schema, key, valuesForVisibility)) {
             const value = values[key];
             const isSecret = prop["x-secret"] || false;
-            const hasDefault = prop.default !== undefined;
-            const matchesDefault = hasDefault && value === prop.default;
 
-            // Skip fields that match their default value unless they're secret
-            // Secret fields should always be shown
-            if (!isSecret && matchesDefault) continue;
-
-            // Also skip if value is undefined/null/empty string (unless secret)
-            if (!isSecret && (value === undefined || value === null || value === "")) continue;
+            // Skip if value is undefined/null/empty string
+            if (value === undefined || value === null || value === "") continue;
 
             schemaProperties.push({
               key,
