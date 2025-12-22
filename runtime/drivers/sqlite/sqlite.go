@@ -85,6 +85,7 @@ func (d driver) Spec() drivers.Spec {
 		DisplayName: "SQLite",
 		Description: "Import data from SQLite into DuckDB.",
 		DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/sqlite",
+		// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 		SourceProperties: []*drivers.PropertySpec{
 			{
 				Key:         "db",
