@@ -103,6 +103,7 @@ export const s3Schema: MultiStepFormSchema = {
       type: "string",
       title: "Path prefixes",
       description: "Prefixes to include in the model",
+      "x-placeholder": "['logs/', 'data/']",
       "x-step": "connector",
       "x-advanced": true,
       "x-visible-if": { auth_method: "access_keys" },

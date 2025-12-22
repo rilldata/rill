@@ -58,6 +58,7 @@ export const gcsSchema: MultiStepFormSchema = {
       title: "Path prefixes",
       description:
         "List of prefixes to filter the files in the GCS bucket. Leave empty to include all files.",
+      "x-placeholder": "['logs/', 'data/']",
       "x-step": "connector",
       "x-advanced": true,
     },

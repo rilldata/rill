@@ -72,6 +72,7 @@ export const azureSchema: MultiStepFormSchema = {
       title: "Prefixes",
       description:
         "List of prefixes to filter the blobs (e.g., ['logs/', 'data/'])",
+      "x-placeholder": "['logs/', 'data/']",
       "x-step": "connector",
       "x-advanced": true,
     },
