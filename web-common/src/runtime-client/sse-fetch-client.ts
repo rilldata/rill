@@ -2,29 +2,112 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
 /**
- * A clean, reusable client for handling Server-Sent Events (SSE) streams.
- *
- * This client properly handles the SSE protocol with "data: " prefixes and provides
- * a simple event-based interface for consuming streaming responses.
+ * Represents a Server-Sent Event message
  */
-export class SSEFetchClient<T> {
+export interface SSEMessage {
+  /** Event type (undefined means default 'message' type) */
+  type?: string;
+  /** Raw event data */
+  data: string;
+}
+
+/**
+ * HTTP error thrown by SSEFetchClient
+ */
+export class SSEHttpError extends Error {
+  public readonly status: number;
+  public readonly statusText: string;
+
+  constructor(status: number, statusText: string) {
+    super(`HTTP ${status}: ${statusText}`);
+    this.name = "SSEHttpError";
+    this.status = status;
+    this.statusText = statusText;
+
+    // Maintains proper stack trace for where error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, SSEHttpError);
+    }
+  }
+}
+
+// ===== SSE PROTOCOL PARSING =====
+// These functions handle SSE format parsing and could be extracted
+// to a separate module if needed for reuse.
+
+/**
+ * Parse a single SSE line and update the accumulating event
+ * Mutates the event object for efficiency during streaming
+ */
+function parseSSELine(line: string, event: Partial<SSEMessage>): void {
+  const trimmedLine = line.trim();
+
+  // Skip empty lines (handled separately as event boundaries)
+  if (!trimmedLine) return;
+
+  // Skip comments
+  if (trimmedLine.startsWith(":")) return;
+
+  // Parse event type
+  if (trimmedLine.startsWith("event:")) {
+    event.type = trimmedLine.slice(6).trim();
+    return;
+  }
+
+  // Parse data (can span multiple lines)
+  if (trimmedLine.startsWith("data:")) {
+    const data = trimmedLine.slice(5).trim();
+    event.data = event.data ? event.data + "\n" + data : data;
+    return;
+  }
+
+  // Note: Could extend to handle "id:" and "retry:" fields if needed
+}
+
+/**
+ * Check if a line represents an event boundary (empty line)
+ */
+function isEventComplete(line: string): boolean {
+  return line.trim() === "";
+}
+
+/**
+ * Check if an event has the minimum required data to be emitted
+ */
+function isValidEvent(event: Partial<SSEMessage>): event is SSEMessage {
+  return event.data !== undefined && event.data !== "";
+}
+
+// ===== SSE FETCH CLIENT =====
+
+/**
+ * A generic, reusable client for handling Server-Sent Events (SSE) streams.
+ *
+ * This client handles the SSE protocol (parsing events, data, etc.) but does NOT
+ * interpret the semantic meaning of events. Consumers decide how to handle
+ * different event types and data formats.
+ */
+export class SSEFetchClient {
   private abortController: AbortController | undefined;
   private listeners: {
-    data: ((data: T) => void)[];
+    message: ((message: SSEMessage) => void)[];
     error: ((error: Error) => void)[];
     close: (() => void)[];
+    open: (() => void)[];
   } = {
-    data: [],
+    message: [],
     error: [],
     close: [],
+    open: [],
   };
 
   /**
    * Add event listener for SSE events
    */
-  public on(event: "data", listener: (data: T) => void): void;
+  public on(event: "message", listener: (message: SSEMessage) => void): void;
   public on(event: "error", listener: (error: Error) => void): void;
   public on(event: "close", listener: () => void): void;
+  public on(event: "open", listener: () => void): void;
   public on(event: string, listener: any): void {
     if (this.listeners[event as keyof typeof this.listeners]) {
       this.listeners[event as keyof typeof this.listeners].push(listener);
@@ -34,9 +117,10 @@ export class SSEFetchClient<T> {
   /**
    * Remove event listener
    */
-  public off(event: "data", listener: (data: T) => void): void;
+  public off(event: "message", listener: (message: SSEMessage) => void): void;
   public off(event: "error", listener: (error: Error) => void): void;
   public off(event: "close", listener: () => void): void;
+  public off(event: "open", listener: () => void): void;
   public off(event: string, listener: any): void {
     const eventListeners = this.listeners[event as keyof typeof this.listeners];
     if (eventListeners) {
@@ -90,12 +174,14 @@ export class SSEFetchClient<T> {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new SSEHttpError(response.status, response.statusText);
       }
 
       if (!response.body) {
         throw new Error("No response body");
       }
+
+      this.listeners.open.forEach((listener) => listener());
 
       // Process the SSE stream
       await this.processSSEStream(response.body);
@@ -106,6 +192,7 @@ export class SSEFetchClient<T> {
         );
       }
     } finally {
+      this.stop();
       this.listeners.close.forEach((listener) => listener());
     }
   }
@@ -115,7 +202,7 @@ export class SSEFetchClient<T> {
    */
   public stop(): void {
     if (this.abortController) {
-      this.abortController.abort();
+      this.abortController.abort("SSE stream stopped by client");
       this.abortController = undefined;
     }
   }
@@ -128,7 +215,7 @@ export class SSEFetchClient<T> {
     this.stop();
 
     // Clear all event listeners
-    this.listeners.data = [];
+    this.listeners.message = [];
     this.listeners.error = [];
     this.listeners.close = [];
   }
@@ -149,26 +236,38 @@ export class SSEFetchClient<T> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    let currentEvent: Partial<SSEMessage> = {};
 
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
+        // Decode chunk and add to buffer
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
 
         // Keep the last incomplete line in the buffer
         buffer = lines.pop() || "";
 
+        // Process each complete line
         for (const line of lines) {
-          await this.processSSELine(line.trim());
+          if (isEventComplete(line)) {
+            // Empty line signals end of event - emit if valid
+            if (isValidEvent(currentEvent)) {
+              this.emitMessage(currentEvent);
+            }
+            currentEvent = {};
+          } else {
+            // Parse line and accumulate into current event
+            parseSSELine(line, currentEvent);
+          }
         }
       }
 
-      // Process any remaining data in the buffer
-      if (buffer.trim()) {
-        await this.processSSELine(buffer.trim());
+      // Emit any remaining event in the buffer
+      if (isValidEvent(currentEvent)) {
+        this.emitMessage(currentEvent);
       }
     } finally {
       reader.releaseLock();
@@ -176,27 +275,9 @@ export class SSEFetchClient<T> {
   }
 
   /**
-   * Process a single SSE line
+   * Emit a message to all registered listeners
    */
-  private async processSSELine(line: string): Promise<void> {
-    // Skip empty lines and comments
-    if (!line || line.startsWith(":")) {
-      return;
-    }
-
-    // Handle SSE data lines
-    if (line.startsWith("data: ")) {
-      try {
-        const jsonData = line.slice(6); // Remove "data: " prefix
-        const data: T = JSON.parse(jsonData);
-        this.listeners.data.forEach((listener) => listener(data));
-      } catch (error) {
-        this.listeners.error.forEach((listener) =>
-          listener(new Error(`Failed to parse SSE data: ${error.message}`)),
-        );
-      }
-    }
-
-    // Note: We could extend this to handle other SSE fields like "event:", "id:", "retry:" if needed
+  private emitMessage(message: SSEMessage): void {
+    this.listeners.message.forEach((listener) => listener(message));
   }
 }

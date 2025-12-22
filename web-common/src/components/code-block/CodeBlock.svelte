@@ -37,7 +37,7 @@
       type="secondary"
       onClick={copyCode}
       small
-      class="absolute top-2 right-2"
+      class="absolute top-2 right-2 z-10"
     >
       {#if copied}Copied!{:else}Copy{/if}
     </Button>
@@ -57,5 +57,6 @@
     border-radius: 4px;
     padding: 1em;
     overflow: auto;
+    margin: 0;
   }
 </style>

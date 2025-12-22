@@ -1,11 +1,13 @@
 package metricsview
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/pkg/sqlstring"
 )
 
 func ExpressionToSQL(e *Expression) (string, error) {
@@ -41,23 +43,16 @@ func (b exprSQLBuilder) writeExpression(e *Expression) error {
 }
 
 func (b exprSQLBuilder) writeName(name string) error {
-	if strings.Contains(name, `"`) {
-		_, err := strings.NewReplacer(`"`, `""`).WriteString(b.Builder, name)
-		return err
+	escaped := name
+	if !safeSQLIdentifierRegexp.MatchString(name) {
+		escaped = fmt.Sprintf(`"%s"`, strings.ReplaceAll(name, `"`, `""`)) // nolint:gocritic
 	}
-	b.writeString(name)
+	b.writeString(escaped)
 	return nil
 }
 
 func (b exprSQLBuilder) writeValue(val any) error {
-	res, err := json.Marshal(val)
-	if err != nil {
-		return err
-	}
-	if len(res) > 0 && res[len(res)-1] == '\n' {
-		res = res[:len(res)-1]
-	}
-	_, err = b.WriteString(string(res))
+	_, err := b.WriteString(sqlstring.ToLiteral(val))
 	return err
 }
 
@@ -79,7 +74,7 @@ func (b exprSQLBuilder) writeSubquery(s *Subquery) error {
 		if err != nil {
 			return err
 		}
-		err = b.writeCondition(s.Where.Condition)
+		err = b.writeExpression(s.Where)
 		if err != nil {
 			return err
 		}
@@ -89,7 +84,7 @@ func (b exprSQLBuilder) writeSubquery(s *Subquery) error {
 		if err != nil {
 			return err
 		}
-		err = b.writeCondition(s.Having.Condition)
+		err = b.writeExpression(s.Having)
 		if err != nil {
 			return err
 		}
@@ -238,3 +233,6 @@ func (b exprSQLBuilder) writeString(s string) {
 func hasNilValue(expr *Expression) bool {
 	return expr != nil && expr.Value == nil && expr.Condition == nil && expr.Subquery == nil
 }
+
+// safeSQLIdentifierRegexp matches SQL identifiers that don't need to be escaped (alphanumeric and underscores, not starting with a digit).
+var safeSQLIdentifierRegexp = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)

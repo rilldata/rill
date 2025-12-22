@@ -1,31 +1,67 @@
 <script lang="ts">
-  import { DateTime } from "luxon";
+  import { DateTime, Interval } from "luxon";
+
+  enum OverlapType {
+    IN_RANGE = "in-range",
+    START = "start",
+    END = "end",
+    FULL_INTERVAL = "full-interval",
+  }
 
   export let date: DateTime<true>;
-  export let inclusiveEnd: DateTime<true> | undefined;
-  export let start: DateTime<true> | undefined;
+  export let interval: Interval<true>;
   export let outOfMonth: boolean;
   export let disabled: boolean;
-  export let selectingStart: boolean;
-  export let singleDaySelection: boolean;
-  export let potentialStart: DateTime | undefined;
-  export let potentialEnd: DateTime | undefined;
+  export let singleDaySelection: boolean = false;
+  export let potentialInterval: Interval<true> | undefined = undefined;
+  export let anchorDay: DateTime<true> | undefined;
   export let resetPotentialDates: () => void;
   export let onSelectDay: (date: DateTime<true>) => void;
+  export let onHoverDay: (date: DateTime<true>) => void;
 
-  $: isEnd = areSameDay(inclusiveEnd, date);
-  $: isStart = areSameDay(start, date);
-  $: afterEnd = inclusiveEnd && date > inclusiveEnd;
-  $: beforeStart = start && date < start;
-  $: inPotentialRange = Boolean(
-    (start && potentialEnd && date > start && date < potentialEnd) ||
-      (inclusiveEnd &&
-        potentialStart &&
-        date > potentialStart &&
-        date < inclusiveEnd),
-  );
-  $: isNextDay = areSameDay(potentialStart?.plus({ day: 1 }), date);
-  $: inRange = start && inclusiveEnd && !afterEnd && !beforeStart;
+  $: overlapClass = getOverlapClass(date, potentialInterval, interval);
+
+  function getOrderedInterval(
+    date1: DateTime<true>,
+    date2: DateTime<true>,
+  ): Interval<true> | undefined {
+    if (!date1 || !date2) return undefined;
+    if (date1 < date2) {
+      return Interval.fromDateTimes(
+        date1.startOf("day"),
+        date2.plus({ day: 1 }).startOf("day"),
+      ) as Interval<true>;
+    } else {
+      return Interval.fromDateTimes(
+        date2.startOf("day"),
+        date1.plus({ day: 1 }).startOf("day"),
+      ) as Interval<true>;
+    }
+  }
+
+  function getOverlapClass(
+    date: DateTime<true>,
+    potentialInterval: Interval<true> | undefined,
+    interval: Interval<true>,
+  ): OverlapType | undefined {
+    const evaluatedInterval = potentialInterval ?? interval;
+
+    if (areSameDay(evaluatedInterval.start, date)) {
+      if (areSameDay(evaluatedInterval.end.minus({ millisecond: 1 }), date))
+        return OverlapType.FULL_INTERVAL;
+      return OverlapType.START;
+    }
+
+    if (areSameDay(evaluatedInterval.end.minus({ millisecond: 1 }), date)) {
+      return OverlapType.END;
+    }
+
+    if (evaluatedInterval.contains(date)) {
+      return OverlapType.IN_RANGE;
+    }
+
+    return undefined;
+  }
 
   function areSameDay(
     a: DateTime | undefined | null,
@@ -38,89 +74,73 @@
 
 <button
   type="button"
-  class="day"
+  class="py-0.5 wrapper size-full"
   {disabled}
-  class:text-gray-400={outOfMonth ||
-    (!singleDaySelection && beforeStart && !selectingStart)}
-  class:in-range={inRange}
-  class:in-potential-range={inPotentialRange}
-  class:is-start={isStart}
-  class:is-end={isEnd}
-  class:before-start={beforeStart}
-  class:after-end={afterEnd}
-  class:end-cap={!selectingStart && !beforeStart}
-  class:start-cap={selectingStart || (!selectingStart && beforeStart)}
-  class:next-day={isNextDay}
-  class:single-day-selection={singleDaySelection}
   on:click={() => {
     onSelectDay(date);
     resetPotentialDates();
   }}
-  on:mouseleave={resetPotentialDates}
   on:mouseenter={() => {
     if (singleDaySelection) return;
 
-    if (selectingStart || (start && date < start)) {
-      potentialStart = date;
-    } else {
-      potentialEnd = date;
-    }
+    onHoverDay(date);
+
+    if (!anchorDay) return;
+
+    potentialInterval = getOrderedInterval(anchorDay, date);
   }}
 >
-  {date.day}
+  <div
+    class="day {overlapClass}"
+    class:text-gray-400={outOfMonth}
+    class:potential={!!potentialInterval}
+    class:anchor={areSameDay(anchorDay, date)}
+  >
+    {date.day}
+  </div>
 </button>
 
 <style lang="postcss">
   .day {
-    @apply font-medium;
     @apply w-full aspect-square;
-    @apply p-0.5 bg-transparent;
-    @apply flex items-center justify-center;
-    @apply border border-transparent border-l-0 border-r-0;
+    @apply bg-transparent;
+    @apply flex flex-none items-center justify-center;
   }
 
   .day:disabled {
     @apply pointer-events-none text-gray-300;
   }
 
-  .day:hover {
-    @apply bg-primary-100 border-l border-r;
-    @apply border-primary-300 font-semibold;
+  button:hover .day:not(.potential) {
+    @apply bg-primary-300 text-white;
   }
 
-  .end-cap:hover {
-    @apply rounded-r-md;
+  button:hover .day:not(.in-range, .start, .end) {
+    @apply rounded-full;
   }
 
-  .start-cap:hover {
-    @apply rounded-l-md;
+  .in-range.potential,
+  .start.potential,
+  .end.potential,
+  .full-interval.potential {
+    @apply bg-gray-200 text-foreground;
   }
 
-  .in-range {
-    @apply bg-primary-50 border-primary-300;
+  .in-range,
+  .start,
+  .end,
+  .full-interval,
+  .anchor.potential {
+    @apply bg-primary-400 text-white;
   }
 
-  :not(.in-range).in-potential-range {
-    @apply bg-primary-50 border-dashed border-primary-200;
+  .end,
+  .full-interval {
+    @apply rounded-r-full;
   }
 
-  .is-end {
-    @apply bg-primary-200;
-    @apply rounded-r-md border border-l;
-  }
-
-  .is-start {
-    @apply bg-primary-200;
-    @apply rounded-l-md border-r;
-    @apply border-l;
-  }
-
-  .single-day-selection {
-    @apply rounded-md;
-  }
-
-  :not(.single-day-selection).next-day:not(.in-potential-range) {
-    @apply border-dashed border-t border-b border-primary-200;
-    @apply bg-gradient-to-r from-primary-100 to-transparent;
+  .start,
+  .full-interval {
+    @apply rounded-l-full;
   }
 </style>

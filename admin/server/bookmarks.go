@@ -112,7 +112,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
 		DisplayName:  req.DisplayName,
 		Description:  req.Description,
-		Data:         req.Data,
+		URLSearch:    req.UrlSearch,
 		ResourceKind: req.ResourceKind,
 		ResourceName: req.ResourceName,
 		ProjectID:    req.ProjectId,
@@ -163,7 +163,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 		BookmarkID:  bookmark.ID,
 		DisplayName: req.DisplayName,
 		Description: req.Description,
-		Data:        req.Data,
+		URLSearch:   req.UrlSearch,
 		Shared:      req.Shared,
 	})
 	if err != nil {
@@ -217,6 +217,7 @@ func bookmarkToPB(u *database.Bookmark) *adminv1.Bookmark {
 		DisplayName:  u.DisplayName,
 		Description:  u.Description,
 		Data:         u.Data,
+		UrlSearch:    u.URLSearch,
 		ResourceKind: u.ResourceKind,
 		ResourceName: u.ResourceName,
 		ProjectId:    u.ProjectID,

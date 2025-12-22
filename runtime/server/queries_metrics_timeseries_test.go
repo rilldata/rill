@@ -41,6 +41,181 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
 }
 
+func TestServer_MetricsViewTimeSeries_PushDown_UTC(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_dst_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-10T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T00:00:00Z"),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 3, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2024-03-10T00:00:00Z"), tr.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-11T00:00:00Z"), tr.Data[1].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-12T00:00:00Z"), tr.Data[2].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
+
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
+	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_dst_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-10T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T00:00:00Z"),
+	})
+	// results should be same as above
+	require.NoError(t, err)
+	require.Equal(t, 3, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2024-03-10T00:00:00Z"), tr.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-11T00:00:00Z"), tr.Data[1].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-12T00:00:00Z"), tr.Data[2].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTimeSeries_PushDown_PST(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_dst_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-10T08:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T07:00:00Z"),
+		TimeZone:        "America/Los_Angeles",
+	})
+	require.NoError(t, err)
+	require.Equal(t, 3, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2024-03-10T08:00:00Z"), tr.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-11T07:00:00Z"), tr.Data[1].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 3.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-12T07:00:00Z"), tr.Data[2].Ts.AsTime())
+	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
+
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
+	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_dst_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-10T08:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T07:00:00Z"),
+		TimeZone:        "America/Los_Angeles",
+	})
+	// results should be same as above
+	require.NoError(t, err)
+	require.Equal(t, 3, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2024-03-10T08:00:00Z"), tr.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-11T07:00:00Z"), tr.Data[1].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 3.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-12T07:00:00Z"), tr.Data[2].Ts.AsTime())
+	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTimeSeries_PushDown_IST(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_dst_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-09T18:30:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-12T18:30:00Z"),
+		TimeZone:        "Asia/Kolkata",
+	})
+	require.NoError(t, err)
+	require.Equal(t, 3, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2024-03-09T18:30:00Z"), tr.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-10T18:30:00Z"), tr.Data[1].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-11T18:30:00Z"), tr.Data[2].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
+
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
+	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_dst_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-09T18:30:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-12T18:30:00Z"),
+		TimeZone:        "Asia/Kolkata",
+	})
+	// results should be same as above
+	require.NoError(t, err)
+	require.Equal(t, 3, len(tr.Data))
+	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
+
+	require.Equal(t, parseTime(t, "2024-03-09T18:30:00Z"), tr.Data[0].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-10T18:30:00Z"), tr.Data[1].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, parseTime(t, "2024-03-11T18:30:00Z"), tr.Data[2].Ts.AsTime())
+	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
+}
+
 func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
@@ -103,6 +278,29 @@ func TestServer_Timeseries(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.Data
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records.Fields["max_clicks"].GetNumberValue())
+
+	// repeat the test with pushdown null filling
+	server, instanceID = getMetricsTestServerWithDefaultInstanceConfigs(t, "timeseries", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
+
+	response, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "timeseries",
+		MeasureNames:    []string{"max_clicks"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-12-02T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		Where: expressionpb.In(
+			expressionpb.Identifier("device"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("android")), expressionpb.Value(structpb.NewStringValue("iphone"))},
+		),
+	})
+
+	require.NoError(t, err)
+	results = response.Data
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["max_clicks"].GetNumberValue())
 }
@@ -792,7 +990,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, 3, strings.Count(string(buf.Bytes()), "\n"))
+	require.Equal(t, 3, strings.Count(buf.String(), "\n"))
 }
 
 func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity) {
@@ -808,7 +1006,7 @@ func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metrics
 	mv := mvRes.State.ValidSpec
 	require.NoError(t, err)
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx, instanceID), res)
 	require.NoError(t, err)
 
 	return mv, resolvedSecurity

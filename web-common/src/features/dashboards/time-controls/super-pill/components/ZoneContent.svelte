@@ -12,8 +12,7 @@
 
   const browserIANA = getLocalIANA();
 
-  // watermark indicates the latest reference point in the dashboard
-  export let watermark: DateTime;
+  export let referencePoint: DateTime;
   export let availableTimeZones: string[];
   export let activeTimeZone: string;
   export let context: string;
@@ -23,9 +22,12 @@
 
   let searchValue = "";
 
-  $: ianaMap = formatIANAs(allTimeZones, watermark);
+  $: ianaMap = formatIANAs(allTimeZones, referencePoint);
 
-  $: pinnedTimeZones = formatIANAs([...availableTimeZones, "UTC"], watermark);
+  $: pinnedTimeZones = formatIANAs(
+    [...availableTimeZones, "UTC"],
+    referencePoint,
+  );
 
   $: filteredPinnedTimeZones = filterTimeZones(pinnedTimeZones, searchValue);
 

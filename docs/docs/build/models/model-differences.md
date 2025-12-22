@@ -35,7 +35,7 @@ When using the UI to create a new model, you'll see something similar to the bel
 
 ## YAML Models
 
-Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows users to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and provide insight into specific issues per partition. Another use case is when using [multiple OLAP engines](/connect/olap/multiple-olap), which allows you to define where a SQL query is run.
+Unlike SQL models, YAML file models allow you to fine-tune a model to perform additional capabilities such as pre-exec, post-exec SQL, partitioning, and incremental modeling. This is an important addition to modeling, as it allows users to customize the model's build process. In the case of partitions and incremental modeling, this will reduce the amount of data ingested into Rill at each interval and provide insight into specific issues per partition. Another use case is when using [multiple OLAP engines](/build/connectors/olap/multiple-olap), which allows you to define where a SQL query is run.
 
 ### When to use YAML Models
 

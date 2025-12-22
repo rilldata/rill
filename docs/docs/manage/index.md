@@ -17,5 +17,7 @@ Administer your Rill Cloud project, manage users, and configure access controls.
 
 ### Access Control
 
+- **[User Tokens](/manage/user-tokens)** - Create and manage personal access tokens for development and scripting
+- **[Service Tokens](/manage/service-tokens)** - Create and manage service tokens for programmatic access
 - **[Roles and Permissions](/manage/roles-permissions)** - Set up user roles and define permission levels
 

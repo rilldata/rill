@@ -147,7 +147,7 @@ describe("Most recent explore state", () => {
       const initState = getCleanMetricsExploreForAssertion();
 
       pageMock.gotoSearch(urlSearch);
-      applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
       // clear the old dashboard to simulate closing the tab
       unmount();

@@ -23,6 +23,26 @@ _[object]_ - Color palette for the theme
 
   - **`secondary`** - _[string]_ - Secondary color 
 
+### `light`
+
+_[object]_ - Light theme color configuration 
+
+  - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+  - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+  - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+
+### `dark`
+
+_[object]_ - Dark theme color configuration 
+
+  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+  - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
+
 ## Common Properties
 
 ### `name`
@@ -44,9 +64,33 @@ _[object]_ - Overrides any properties in production environment.
 ## Examples
 
 ```yaml
-# Example: You can copy this directly into your <theme_name>.yaml file
+# Example: Basic theme with light and dark mode colors
 type: theme
-colors:
-    primary: plum
-    secondary: violet
+light:
+    primary: "#4F46E5" # Indigo-600
+    secondary: "#8B5CF6" # Purple-500
+dark:
+    primary: "#818CF8" # Indigo-400
+    secondary: "#A78BFA" # Purple-400
+```
+
+```yaml
+# Example: Advanced theme with custom color palettes
+type: theme
+light:
+    primary: "#14B8A6" # Teal
+    secondary: "#10B981" # Emerald
+    variables:
+        color-sequential-1: "hsl(180deg 80% 95%)"
+        color-sequential-5: "hsl(180deg 80% 50%)"
+        color-sequential-9: "hsl(180deg 80% 25%)"
+        color-qualitative-1: "hsl(156deg 56% 52%)"
+        color-qualitative-2: "hsl(27deg 100% 65%)"
+dark:
+    primary: "2DD4BF"
+    secondary: "34D399"
+    variables:
+        color-sequential-1: "hsl(180deg 40% 30%)"
+        color-sequential-5: "hsl(180deg 50% 50%)"
+        color-sequential-9: "hsl(180deg 60% 70%)"
 ```

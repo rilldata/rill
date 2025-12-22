@@ -900,6 +900,7 @@ func (g *GrainDurationPart) offset(tm time.Time, dir int, tz *time.Location) (ti
 func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
+		grainAlias := reverseGrainMap[parseOpts.SmallestGrain]
 		return &Expression{
 			Interval: &Interval{
 				StartEnd: &StartEndInterval{
@@ -918,13 +919,14 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 								Labeled: &LabeledPointInTime{
 									Latest: true,
 								},
+								Snap: &grainAlias,
 							},
 							{
 								Grain: &GrainPointInTime{
 									Parts: []*GrainPointInTimePart{
 										{
 											Prefix:   "+",
-											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: reverseGrainMap[parseOpts.SmallestGrain], Num: 1}}},
+											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: grainAlias, Num: 1}}},
 										},
 									},
 								},

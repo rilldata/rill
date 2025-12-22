@@ -45,11 +45,12 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
+				// don't set restrict_resources and resources to keep current restrictions
 				_, err = client.SetProjectMemberUserRole(cmd.Context(), &adminv1.SetProjectMemberUserRoleRequest{
-					Organization: ch.Org,
-					Project:      projectName,
-					Email:        email,
-					Role:         role,
+					Org:     ch.Org,
+					Project: projectName,
+					Email:   email,
+					Role:    &role,
 				})
 				if err != nil {
 					return err
@@ -57,9 +58,9 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("Updated role of user %q to %q in the project \"%s/%s\"\n", email, role, ch.Org, projectName)
 			} else {
 				_, err = client.SetOrganizationMemberUserRole(cmd.Context(), &adminv1.SetOrganizationMemberUserRoleRequest{
-					Organization: ch.Org,
-					Email:        email,
-					Role:         role,
+					Org:   ch.Org,
+					Email: email,
+					Role:  role,
 				})
 				if err != nil {
 					return err

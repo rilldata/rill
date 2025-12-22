@@ -72,7 +72,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, fmt.Errorf("no time dimension specified for metrics view %q", tr.MetricsView)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,12 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	var userAttrs map[string]any
+	if opts.Claims != nil {
+		userAttrs = opts.Claims.UserAttributes
+	}
+
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +150,10 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
 }
 
 func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {

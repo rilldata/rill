@@ -46,6 +46,8 @@ class FeatureFlags {
     !!import.meta.env.VITE_PLAYWRIGHT_TEST,
   );
 
+  // These are fallback defaults in case of issues in parsing rill.yaml.
+  // Full defaults are in defaultFeatureFlags in runtime/drivers/registry.go
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);
   cloudDataViewer = new FeatureFlag("user", false);
@@ -56,9 +58,12 @@ class FeatureFlags {
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
-  darkMode = new FeatureFlag("user", false);
-  chat = new FeatureFlag("user", false);
+  darkMode = new FeatureFlag("user", true);
+  chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
+  developerChat = new FeatureFlag("user", false);
+  deploy = new FeatureFlag("user", true);
+  generateCanvas = new FeatureFlag("user", false);
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {

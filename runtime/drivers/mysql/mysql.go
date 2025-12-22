@@ -7,6 +7,7 @@ import (
 	"maps"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -25,7 +27,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MySQL",
 	Description: "Connect to MySQL.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/mysql",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/mysql",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -85,20 +87,29 @@ var spec = drivers.Spec{
 			Placeholder: "require",
 			Hint:        "Options include disabled, preferred or required",
 		},
+		{
+			Key:         "log_queries",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "Log Queries",
+			Default:     "false",
+			Hint:        "Enable logging of all SQL queries (useful for debugging)",
+		},
 	},
 	ImplementsSQLStore: true,
+	ImplementsOLAP:     true,
 }
 
 type driver struct{}
 
 type ConfigProperties struct {
-	DSN      string `mapstructure:"dsn"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Database string `mapstructure:"database"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	SSLMode  string `mapstructure:"ssl-mode"`
+	DSN        string `mapstructure:"dsn"`
+	Host       string `mapstructure:"host"`
+	Port       int    `mapstructure:"port"`
+	Database   string `mapstructure:"database"`
+	User       string `mapstructure:"user"`
+	Password   string `mapstructure:"password"`
+	SSLMode    string `mapstructure:"ssl-mode"`
+	LogQueries bool   `mapstructure:"log_queries"`
 }
 
 func (c *ConfigProperties) ResolveDSN() (string, error) {
@@ -209,8 +220,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("mysql driver can't be shared")
 	}
 
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(config, conf); err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
 	return &connection{
-		config: config,
+		config:     config,
+		logger:     logger,
+		logQueries: conf.LogQueries,
+		dbMu:       semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -227,17 +246,21 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config map[string]any
+	config     map[string]any
+	logger     *zap.Logger
+	logQueries bool
+
+	db    *sqlx.DB // lazily populated using getDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	// Open DB handle
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to open connection: %w", err)
+		return fmt.Errorf("failed to open MySQL connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -263,6 +286,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		return c.db.Close()
+	}
 	return nil
 }
 
@@ -293,7 +319,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -331,19 +357,35 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-	dsn, err := conf.resolveGoFormatDSN()
+// getDB lazily initializes and returns a database connection.
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
-	db, err := sqlx.Open("mysql", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
+	defer c.dbMu.Release(1)
+
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
 	}
-	return db, nil
+
+	conf := &ConfigProperties{}
+	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
+		c.dbErr = fmt.Errorf("failed to decode config: %w", err)
+		return nil, c.dbErr
+	}
+
+	dsn, err := conf.resolveGoFormatDSN()
+	if err != nil {
+		c.dbErr = err
+		return nil, c.dbErr
+	}
+
+	c.db, c.dbErr = sqlx.Open("mysql", dsn)
+	if c.dbErr != nil {
+		return nil, c.dbErr
+	}
+	c.db.SetConnMaxIdleTime(time.Minute)
+
+	return c.db, nil
 }

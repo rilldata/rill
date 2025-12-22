@@ -1,24 +1,25 @@
 <script lang="ts">
   import { Search } from "@rilldata/web-common/components/search";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
+  import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
+  import type { PivotState } from "web-common/src/features/dashboards/pivot/types.ts";
   import PivotDrag from "./PivotDrag.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
 
-  const CHIP_HEIGHT = 34;
+  export let pivotState: PivotState;
+  export let measures: PivotChipData[];
+  export let dimensions: PivotChipData[];
+  export let timeControlsForPillActions: Pick<
+    TimeControlState,
+    "timeStart" | "timeEnd" | "minTimeGrain"
+  >;
 
-  const stateManagers = getStateManagers();
-  const {
-    selectors: {
-      pivot: { measures, dimensions, columns, rows, isFlat },
-    },
-  } = stateManagers;
-
-  const timeControlsStore = useTimeControlStore(stateManagers);
+  $: ({ rows, columns, tableMode } = pivotState);
+  $: splitColumns = splitPivotChips(columns);
 
   let sidebarHeight = 0;
   let searchText = "";
@@ -27,16 +28,19 @@
     timePillActions.initTimeDimension("time", "Time");
   });
 
-  $: if ($timeControlsStore.timeStart && $timeControlsStore.timeEnd) {
+  $: if (
+    timeControlsForPillActions.timeStart &&
+    timeControlsForPillActions.timeEnd
+  ) {
     timePillActions.setTimeControls(
-      $timeControlsStore.timeStart,
-      $timeControlsStore.timeEnd,
-      $timeControlsStore.minTimeGrain,
+      timeControlsForPillActions.timeStart,
+      timeControlsForPillActions.timeEnd,
+      timeControlsForPillActions.minTimeGrain,
     );
   }
 
-  $: if ($rows && $columns) {
-    timePillActions.updateUsedGrains("time", $rows, $columns.dimension);
+  $: if (rows && columns) {
+    timePillActions.updateUsedGrains("time", rows, splitColumns.dimension);
   }
 
   // Get reactive values from the store
@@ -52,21 +56,8 @@
       ]
     : [];
 
-  $: filteredMeasures = filterBasedOnSearch($measures, searchText);
-  $: filteredDimensions = filterBasedOnSearch($dimensions, searchText);
-
-  // All of the following reactive statements can be avoided
-  // If and when Chrome/Firefox supports max-height with flex-basis
-  $: availableChipSpaces = Math.floor((sidebarHeight - 120) / CHIP_HEIGHT);
-
-  $: totalChips =
-    filteredMeasures.length +
-    filteredDimensions.length +
-    timeGrainOptions.length;
-
-  $: chipsPerSection = Math.floor(availableChipSpaces / 3);
-
-  $: extraSpace = availableChipSpaces - totalChips > 0;
+  $: filteredMeasures = filterBasedOnSearch(measures, searchText);
+  $: filteredDimensions = filterBasedOnSearch(dimensions, searchText);
 
   function filterBasedOnSearch(fullList: PivotChipData[], search: string) {
     return fullList.filter((d) =>
@@ -80,40 +71,20 @@
   bind:clientHeight={sidebarHeight}
   transition:slide={{ axis: "x" }}
 >
-  <div class="input-wrapper">
+  <div class="input-wrapper sticky top-0 bg-surface z-10">
     <Search theme bind:value={searchText} />
   </div>
 
-  <PivotDrag
-    title="Time"
-    {extraSpace}
-    {chipsPerSection}
-    items={timeGrainOptions}
-    tableMode={$isFlat ? "flat" : "nest"}
-    otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
-  />
+  <PivotDrag title="Time" items={timeGrainOptions} {tableMode} />
 
-  <PivotDrag
-    title="Measures"
-    {extraSpace}
-    {chipsPerSection}
-    items={filteredMeasures}
-    otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
-  />
+  <PivotDrag title="Measures" items={filteredMeasures} />
 
-  <PivotDrag
-    title="Dimensions"
-    {extraSpace}
-    {chipsPerSection}
-    items={filteredDimensions}
-    tableMode={$isFlat ? "flat" : "nest"}
-    otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
-  />
+  <PivotDrag title="Dimensions" items={filteredDimensions} {tableMode} />
 </div>
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply flex flex-col relative overflow-y-scroll;
     @apply h-full border-r z-0 w-60;
     transition-property: width;
     will-change: width;

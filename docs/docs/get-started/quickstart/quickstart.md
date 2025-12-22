@@ -42,12 +42,12 @@ This will:
 
 <br/>
 :::note Rill Developer vs Rill Cloud
-Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/get-started/concepts/cloud-vs-developer).
+Rill Developer is your local development environment where you build and test your analytics projects. Once ready, you can deploy to Rill Cloud for team collaboration and production use. For more details, see our [Developer vs Cloud comparison](/deploy/cloud-vs-developer).
 :::
 
 ### Step 2: Connect Your Data
 
-Rill supports a wide range of data sources through our [connector library](/connect). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage. Select Add Data in the dropdown, GCS, and use the following dataset:
+Rill supports a wide range of data sources through our [connector library](/build/connectors). For this tutorial, we'll use a sample dataset hosted on Google Cloud Storage. Select Add Data in the dropdown, GCS, and use the following dataset:
 ```
 gs://rilldata-public/auction_data.parquet
 ```

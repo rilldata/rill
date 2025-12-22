@@ -65,10 +65,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      projectName,
-				Environment:  environment,
-				Variables:    variables,
+				Org:         ch.Org,
+				Project:     projectName,
+				Environment: environment,
+				Variables:   variables,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)

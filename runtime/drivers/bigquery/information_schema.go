@@ -12,11 +12,10 @@ import (
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	client, err := c.createClient(ctx, "")
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	it := client.Datasets(ctx)
 	pi := it.PageInfo()
@@ -84,11 +83,10 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, bigquery.QueryParameter{Name: "limit", Value: limit + 1})
 	}
 
-	client, err := c.createClient(ctx, database)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 
 	cq := client.Query(q)
 	cq.Parameters = args
@@ -129,18 +127,20 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
 	SELECT 
-		column_name,
-		data_type
-	FROM `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+`
-	WHERE  table_name = @table
-	ORDER BY ordinal_position
-	`, database, databaseSchema)
+		CASE t.table_type WHEN 'VIEW' THEN true else false END AS is_view,
+		c.column_name,
+		c.data_type
+	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+` AS t
+	JOIN `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+` AS c
+	ON t.table_name = c.table_name
+	WHERE c.table_name = @table
+	ORDER BY c.ordinal_position
+	`, database, databaseSchema, database, databaseSchema)
 
-	client, err := c.createClient(ctx, database)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 	cq := client.Query(q)
 	cq.Parameters = []bigquery.QueryParameter{
 		{Name: "table", Value: table},
@@ -151,8 +151,11 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		return nil, fmt.Errorf("failed to run INFORMATION_SCHEMA query: %w", err)
 	}
 
-	schemaMap := make(map[string]string)
+	r := &drivers.TableMetadata{
+		Schema: make(map[string]string),
+	}
 	var row struct {
+		IsView     bool   `bigquery:"is_view"`
 		ColumnName string `bigquery:"column_name"`
 		DataType   string `bigquery:"data_type"`
 	}
@@ -164,10 +167,9 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		if err != nil {
 			return nil, fmt.Errorf("failed to iterate over schema rows: %w", err)
 		}
-		schemaMap[row.ColumnName] = row.DataType
+		r.Schema[row.ColumnName] = row.DataType
+		r.View = row.IsView
 	}
 
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-	}, nil
+	return r, nil
 }

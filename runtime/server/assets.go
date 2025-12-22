@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -22,7 +23,7 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 		attribute.String("args.path", path),
 	)
 
-	if !auth.GetClaims(req.Context()).CanInstance(instanceID, auth.ReadObjects) {
+	if !auth.GetClaims(req.Context(), instanceID).Can(runtime.ReadObjects) {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to assets")
 	}
 

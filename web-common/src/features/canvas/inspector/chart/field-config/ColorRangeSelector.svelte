@@ -8,16 +8,18 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import type {
-    ChartFieldInput,
-    ColorRangeMapping,
-  } from "@rilldata/web-common/features/canvas/inspector/types";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type {
+    ColorRangeMapping,
+    FieldConfig,
+  } from "@rilldata/web-common/features/components/charts/types";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "@rilldata/web-common/features/themes/color-config";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import type { ColorScheme } from "vega-typings";
@@ -29,7 +31,12 @@
 
   // Available Vega-Lite color schemes
   // https://vega.github.io/vega/docs/schemes/
-  const colorSchemes: { label: string; value: ColorScheme }[] = [
+  const colorSchemes: {
+    label: string;
+    value: ColorScheme | "sequential" | "diverging";
+  }[] = [
+    { label: "Sequential (Theme)", value: "sequential" },
+    { label: "Diverging (Theme)", value: "diverging" },
     { label: "Teal blues", value: "tealblues" },
     { label: "Viridis", value: "viridis" },
     { label: "Magma", value: "magma" },
@@ -52,6 +59,9 @@
     canvasEntity: { theme },
   } = getCanvasStore(canvasName, instanceId));
 
+  $: isThemeModeDark = $themeControl === "dark";
+  $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);
+
   $: currentColorRange =
     colorRange ||
     ({
@@ -67,12 +77,15 @@
     return colorRange.mode === "gradient";
   }
 
-  const resolveColor = (color: string): string => {
+  $: resolveColor = (color: string): string => {
     if (color === "primary") {
-      return $theme.primary?.css("hsl") || `hsl(${defaultPrimaryColors[500]})`;
+      return (
+        resolvedTheme.primary?.css("hsl") || `hsl(${defaultPrimaryColors[500]})`
+      );
     } else if (color === "secondary") {
       return (
-        $theme.secondary?.css("hsl") || `hsl(${defaultSecondaryColors[500]})`
+        resolvedTheme.secondary?.css("hsl") ||
+        `hsl(${defaultSecondaryColors[500]})`
       );
     }
     return color;
@@ -97,7 +110,9 @@
     onChange("colorRange", updatedRange);
   }
 
-  function handleSchemeChange(scheme: ColorScheme) {
+  function handleSchemeChange(
+    scheme: ColorScheme | "sequential" | "diverging",
+  ) {
     const updatedRange: ColorRangeMapping = {
       mode: "scheme",
       scheme,
@@ -149,7 +164,7 @@
       <!-- Mode Switcher -->
       <FieldSwitcher
         small
-        fields={["Scheme", "Graident"]}
+        fields={["Scheme", "Gradient"]}
         selected={currentMode === "scheme" ? 0 : 1}
         onClick={(i, value) =>
           handleModeSwitch(value === "Scheme" ? "scheme" : "gradient")}
@@ -168,32 +183,36 @@
           onChange={handleSchemeChange}
         />
       {:else}
-        <!-- Custom Graident Selectors -->
-        <ColorInput
-          small
-          stringColor={resolveColor(
-            isGradientMode(currentColorRange)
-              ? currentColorRange.start
-              : "primary",
-          )}
-          labelFirst
-          allowLightnessControl
-          label="Start color"
-          onChange={handleStartColorChange}
-        />
+        <!-- Custom Gradient Selectors -->
+        {#key `${isThemeModeDark}-${resolvedTheme.primary.hex()}`}
+          <ColorInput
+            small
+            stringColor={resolveColor(
+              isGradientMode(currentColorRange)
+                ? currentColorRange.start
+                : "primary",
+            )}
+            labelFirst
+            allowLightnessControl
+            label="Start color"
+            onChange={handleStartColorChange}
+          />
+        {/key}
 
-        <ColorInput
-          small
-          stringColor={resolveColor(
-            isGradientMode(currentColorRange)
-              ? currentColorRange.end
-              : "secondary",
-          )}
-          labelFirst
-          allowLightnessControl
-          label="End color"
-          onChange={handleEndColorChange}
-        />
+        {#key `${isThemeModeDark}-${resolvedTheme.secondary.hex()}`}
+          <ColorInput
+            small
+            stringColor={resolveColor(
+              isGradientMode(currentColorRange)
+                ? currentColorRange.end
+                : "secondary",
+            )}
+            labelFirst
+            allowLightnessControl
+            label="End color"
+            onChange={handleEndColorChange}
+          />
+        {/key}
       {/if}
 
       <div class="px-1 flex items-center justify-end">

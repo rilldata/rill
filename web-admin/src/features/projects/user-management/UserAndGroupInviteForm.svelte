@@ -2,10 +2,12 @@
   import {
     createAdminServiceAddProjectMemberUser,
     createAdminServiceAddProjectMemberUsergroup,
+    getAdminServiceListOrganizationMemberUsersQueryOptions,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
+    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -21,6 +23,7 @@
   const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
   const addUsergroup = createAdminServiceAddProjectMemberUsergroup();
+  const currentUser = createAdminServiceGetCurrentUser();
 
   async function processInvitations(emailsAndGroups: string[], role: string) {
     const succeededEmails = [];
@@ -35,7 +38,7 @@
           // Handle as email
           try {
             await $userInvite.mutateAsync({
-              organization,
+              org: organization,
               project,
               data: {
                 email: input,
@@ -50,7 +53,7 @@
           // Handle as group name
           try {
             await $addUsergroup.mutateAsync({
-              organization,
+              org: organization,
               project,
               usergroup: input,
               data: {
@@ -139,12 +142,40 @@
   }
 
   async function handleSearch(query: string) {
-    if (!query) return [];
+    // Server-side user search (top 5). Use prefix search when query provided; otherwise, omit searchPattern.
+    const options = getAdminServiceListOrganizationMemberUsersQueryOptions(
+      organization,
+      {
+        // Request one extra to keep a consistent 5 after filtering out self
+        pageSize: 6,
+        ...(query ? { searchPattern: `${query}%` } : {}),
+      },
+    );
 
-    const lower = query.toLowerCase();
-    return searchList
-      .filter((user) => user.identifier.toLowerCase().includes(lower))
-      .slice(0, 5); // Limit to 5 results to match previous behavior
+    const usersResp = await queryClient.fetchQuery(options);
+    const users = (usersResp?.members ?? []) as Array<{
+      userEmail: string;
+      userName: string;
+      roleName?: string;
+      userPhotoUrl?: string;
+    }>;
+
+    // Exclude the current user from suggestions
+    const myEmail = $currentUser.data?.user?.email?.toLowerCase();
+    const filtered = myEmail
+      ? users.filter((u) => u.userEmail?.toLowerCase() !== myEmail)
+      : users;
+
+    const trimmed = filtered.length > 5 ? filtered.slice(0, 5) : filtered;
+
+    // Return only remote user results; SearchAndInviteInput merges with local searchList
+    return trimmed.map((u) => ({
+      identifier: u.userEmail,
+      type: "user" as const,
+      name: u.userName,
+      orgRoleName: u.roleName,
+      photoUrl: u.userPhotoUrl,
+    }));
   }
 
   async function onInviteHandler(emailsAndGroups: string[], role: string) {

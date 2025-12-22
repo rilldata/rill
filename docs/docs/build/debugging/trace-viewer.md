@@ -1,6 +1,6 @@
 ---
 title: "Trace Viewer in Rill Developer"
-description: Alter dashboard look and feel
+description: Visualize resource reconciliation and trace execution
 sidebar_label: "Trace Viewer in Rill Developer"
 sidebar_position: 00
 ---

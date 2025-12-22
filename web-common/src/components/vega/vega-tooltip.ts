@@ -10,6 +10,7 @@ import type { View } from "svelte-vega";
 import type { VLTooltipFormatter } from "./types";
 
 const TOOLTIP_ID = "rill-vg-tooltip";
+const VEGA_TOOLTIP_ID = "vg-tooltip-element";
 
 export class VegaLiteTooltipHandler {
   location: Location = "left";
@@ -21,6 +22,17 @@ export class VegaLiteTooltipHandler {
 
   constructor(valueFormatter: VLTooltipFormatter) {
     this.valueFormatter = valueFormatter;
+  }
+
+  /**
+   * There is an element for vega tooltip that does not have a position.
+   * So it can add to the height, especially when dynamic height is set.
+   */
+  public static resetElement() {
+    const el = document.getElementById(VEGA_TOOLTIP_ID);
+    if (!el) return false;
+    el.setAttribute("style", `top:0;left:0;`);
+    return true;
   }
 
   removeTooltip = () => {

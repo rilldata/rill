@@ -73,6 +73,9 @@ type Statement struct {
 	// Unlike a timeout on ctx, it will be enforced only for query execution, not for time spent waiting in queues.
 	// It may not be supported by all drivers.
 	ExecutionTimeout time.Duration
+	// QueryAttributes provides additional attributes for the query (if supported by the driver).
+	// These can be used to customize the behavior of the query "{{ .user.partnerId }}"
+	QueryAttributes map[string]string
 }
 
 // Rows is an iterator for rows returned by a query. It mimics the behavior of sqlx.Rows.
@@ -183,9 +186,10 @@ type OlapTable struct {
 	IsDefaultDatabaseSchema bool
 	Name                    string
 	View                    bool
-	Schema                  *runtimev1.StructType
-	UnsupportedCols         map[string]string
-	PhysicalSizeBytes       int64
+	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
+	Schema            *runtimev1.StructType
+	UnsupportedCols   map[string]string
+	PhysicalSizeBytes int64
 }
 
 // Dialect enumerates OLAP query languages.
@@ -197,6 +201,14 @@ const (
 	DialectDruid
 	DialectClickHouse
 	DialectPinot
+
+	// Below dialects are not fully supported dialects.
+	DialectBigQuery
+	DialectSnowflake
+	DialectAthena
+	DialectRedshift
+	DialectMySQL
+	DialectPostgres
 )
 
 func (d Dialect) String() string {
@@ -211,6 +223,18 @@ func (d Dialect) String() string {
 		return "clickhouse"
 	case DialectPinot:
 		return "pinot"
+	case DialectBigQuery:
+		return "bigquery"
+	case DialectSnowflake:
+		return "snowflake"
+	case DialectAthena:
+		return "athena"
+	case DialectRedshift:
+		return "redshift"
+	case DialectMySQL:
+		return "mysql"
+	case DialectPostgres:
+		return "postgres"
 	default:
 		panic("not implemented")
 	}
@@ -225,7 +249,18 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
+
+	switch d {
+	case DialectMySQL, DialectBigQuery:
+		// MySQL uses backticks for quoting identifiers
+		// Replace any backticks inside the identifier with double backticks.
+		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
+
+	default:
+		// Most other dialects follow ANSI SQL: use double quotes.
+		// Replace any internal double quotes with escaped double quotes.
+		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+	}
 }
 
 func (d Dialect) EscapeStringValue(s string) string {
@@ -532,9 +567,9 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 
 		if tz == "" {
 			if shift == "" {
-				return fmt.Sprintf("date_trunc('%s', %s)::DateTime64", specifier, expr), nil
+				return fmt.Sprintf("date_trunc('%s', %s, 'UTC')::DateTime64", specifier, expr), nil
 			}
-			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s)::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
+			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s, 'UTC')::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
 		}
 
 		if shift == "" {
@@ -582,15 +617,17 @@ func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeG
 }
 
 func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location) (string, []any, error) {
+	g := timeutil.TimeGrainFromAPI(grain)
+	start = timeutil.TruncateTime(start, g, tz, 1, 1)
 	var args []any
 	switch d {
 	case DialectDuckDB:
-		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+		return fmt.Sprintf("SELECT timezone('%s', range) AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", tz.String(), d.EscapeIdentifier(alias), start.In(tz).Format(time.DateTime), end.In(tz).Format(time.DateTime), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("SELECT c1 AS %s FROM VALUES(", d.EscapeIdentifier(alias)))
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}
@@ -607,7 +644,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		// ) t (time)
 		var sb strings.Builder
 		sb.WriteString("SELECT * FROM (VALUES ")
-		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, g, 1, tz) {
 			if t != start {
 				sb.WriteString(", ")
 			}

@@ -1,18 +1,17 @@
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
-  type V1OlapTableInfo,
   createConnectorServiceListDatabaseSchemas,
-  createConnectorServiceListTables,
   createConnectorServiceGetTable,
-  createConnectorServiceOLAPListTables,
   createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
   type RpcStatus,
 } from "../../runtime-client";
+import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
@@ -70,11 +69,6 @@ function createModelingSupportQueryOptions(
 }
 
 /**
- * LEGACY OLAP SELECTORS
- * These use the legacy OLAP-specific APIs and should be migrated to the new generic APIs above
- */
-
-/**
  * Check if modeling is supported for a specific connector based on its properties
  */
 export function useIsModelingSupportedForConnectorOLAP(
@@ -105,109 +99,15 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
   return createQuery(queryOptions);
 }
 
-export function useDatabasesOLAP(instanceId: string, connector: string) {
-  return createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => {
-          // Get the unique databases
-          return (
-            data.tables
-              ?.map((tableInfo) => tableInfo.database ?? "")
-              .filter((value, index, self) => self.indexOf(value) === index) ??
-            []
-          );
-        },
-      },
-    },
-  );
-}
-
-export function useDatabaseSchemasOLAP(
+/**
+ * List databases (when `database` is undefined) or schemas for a given database (when provided).
+ * The backend returns all schemas across databases; filtering is applied client-side.
+ */
+export function useListDatabaseSchemas(
   instanceId: string,
   connector: string,
-  database: string,
+  database?: string,
 ) {
-  return createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => {
-          return (
-            data.tables
-              ?.filter((table) => table.database === database)
-              .map((table) => table.databaseSchema)
-              .filter((value, index, self) => self.indexOf(value) === index) ??
-            []
-          );
-        },
-      },
-    },
-  );
-}
-
-export function useTablesOLAP(
-  instanceId: string,
-  connector: string,
-  database: string,
-  databaseSchema: string,
-  enabled: boolean = true,
-): CreateQueryResult<V1OlapTableInfo[]> {
-  return createConnectorServiceOLAPListTables(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: enabled && !!instanceId && !!connector,
-        select: (data) => {
-          return (
-            data.tables?.filter(
-              (table) =>
-                table.database === database &&
-                table.databaseSchema === databaseSchema,
-            ) ?? []
-          );
-        },
-      },
-    },
-  );
-}
-
-/**
- * Fetches database schemas for any connector type
- * Replaces the need to filter OLAPListTables client-side
- */
-export function useDatabaseSchemas(instanceId: string, connector: string) {
-  return createConnectorServiceListDatabaseSchemas(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => data.databaseSchemas ?? [],
-      },
-    },
-  );
-}
-
-/**
- * Extracts unique databases from database schemas
- * More efficient than the old approach
- */
-export function useDatabasesFromSchemas(instanceId: string, connector: string) {
   return createConnectorServiceListDatabaseSchemas(
     {
       instanceId,
@@ -219,24 +119,28 @@ export function useDatabasesFromSchemas(instanceId: string, connector: string) {
         select: (data) => {
           const allSchemas = data.databaseSchemas ?? [];
 
-          // Check if all databases are empty (flat schema structure like MySQL)
+          if (database !== undefined) {
+            const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+            return hasEmptyDatabases
+              ? [database]
+              : allSchemas
+                  .filter((s) => s.database === database)
+                  .map((s) => s.databaseSchema ?? "");
+          }
+
+          // Derive databases (top-level)
           const hasEmptyDatabases = allSchemas.every(
             (schema) => !schema.database,
           );
-
-          const databases = hasEmptyDatabases
-            ? // For flat structures, use databaseSchema as the primary level
-              Array.from(
+          return hasEmptyDatabases
+            ? Array.from(
                 new Set(
                   allSchemas.map((schema) => schema.databaseSchema ?? ""),
                 ),
               )
-            : // For hierarchical structures, use database as the primary level
-              Array.from(
+            : Array.from(
                 new Set(allSchemas.map((schema) => schema.database ?? "")),
               ).filter(Boolean);
-
-          return databases;
         },
       },
     },
@@ -244,81 +148,59 @@ export function useDatabasesFromSchemas(instanceId: string, connector: string) {
 }
 
 /**
- * Fetches schemas for a specific database
+ * Infinite tables loader using pageToken cursor
  */
-export function useSchemasForDatabase(
-  instanceId: string,
-  connector: string,
-  database: string,
-) {
-  return createConnectorServiceListDatabaseSchemas(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => {
-          const allSchemas = data.databaseSchemas ?? [];
-
-          // Check if this is a flat schema structure (like MySQL)
-          const hasEmptyDatabases = allSchemas.every(
-            (schema) => !schema.database,
-          );
-
-          const schemas = hasEmptyDatabases
-            ? // For flat structures, the "database" parameter is actually a schema name
-              [database]
-            : // For hierarchical structures, filter by actual database
-              allSchemas
-                .filter((schema) => schema.database === database)
-                .map((schema) => schema.databaseSchema ?? "");
-
-          return schemas;
-        },
-      },
-    },
-  );
-}
-
-/**
- * Fetches tables for a specific database and schema
- * This is called on-demand when a schema is expanded
- */
-export function useTablesForSchema(
+export function useInfiniteListTables(
   instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
+  pageSize = 5,
   enabled: boolean = true,
-): CreateQueryResult<V1TableInfo[]> {
-  return createConnectorServiceListTables(
-    {
-      instanceId,
-      connector,
-      database,
-      databaseSchema,
-    },
-    {
-      query: {
-        enabled:
-          enabled &&
-          !!instanceId &&
-          !!connector &&
-          !!database &&
-          databaseSchema !== undefined,
-        select: (data) => data.tables ?? [],
-      },
-    },
-  );
+) {
+  return createInfiniteQuery({
+    queryKey: [
+      "/v1/connectors/tables",
+      { instanceId, connector, database, databaseSchema, pageSize },
+    ],
+    enabled:
+      enabled &&
+      !!instanceId &&
+      !!connector &&
+      (!!database || database === "") &&
+      databaseSchema !== undefined,
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage: { nextPageToken?: string }) =>
+      lastPage?.nextPageToken || undefined,
+    queryFn: ({ pageParam, signal }) =>
+      connectorServiceListTables(
+        {
+          instanceId,
+          connector,
+          database,
+          databaseSchema,
+          pageSize,
+          pageToken: pageParam,
+        },
+        signal,
+      ),
+    select: (data: any) => ({
+      tables: data.pages.flatMap(
+        (p: { tables?: V1TableInfo[] }) => p.tables ?? [],
+      ),
+      nextPageToken:
+        data.pages.length > 0
+          ? data.pages[data.pages.length - 1].nextPageToken
+          : undefined,
+    }),
+  });
 }
 
 /**
- * Fetches detailed metadata for a specific table
+ * Get metadata about a table or view
  * Called when a table is selected/expanded
  */
-export function useTableMetadata(
+export function useGetTable(
   instanceId: string,
   connector: string,
   database: string,

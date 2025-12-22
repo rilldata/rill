@@ -58,7 +58,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.IssueMagicAuthToken(cmd.Context(), &adminv1.IssueMagicAuthTokenRequest{
-				Organization: ch.Org,
+				Org:          ch.Org,
 				Project:      project,
 				TtlMinutes:   int64(ttlMinutes),
 				ResourceType: runtime.ResourceKindExplore,
@@ -92,8 +92,8 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 	}
 
 	proj, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             project,
+		Org:     ch.Org,
+		Project: project,
 	})
 	if err != nil {
 		return err

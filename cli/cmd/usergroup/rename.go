@@ -29,9 +29,9 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.RenameUsergroup(cmd.Context(), &adminv1.RenameUsergroupRequest{
-				Organization: ch.Org,
-				Usergroup:    name,
-				Name:         newName,
+				Org:       ch.Org,
+				Usergroup: name,
+				Name:      newName,
 			})
 			if err != nil {
 				return err

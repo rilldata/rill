@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
+import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
@@ -139,6 +140,14 @@ service RuntimeService {
     };
   }
 
+  // GenerateCanvasFile generates a canvas YAML file from a metrics view
+  rpc GenerateCanvasFile(GenerateCanvasFileRequest) returns (GenerateCanvasFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/generate-canvas",
+      body: "*"
+    };
+  }
+
   // GenerateResolver generates resolver and resolver properties from a table or a metrics view
   rpc GenerateResolver(GenerateResolverRequest) returns (GenerateResolverResponse) {
     option (google.api.http) = {
@@ -230,6 +239,22 @@ service RuntimeService {
 
   // AI
 
+  // ListConversations lists all AI chat conversations for an instance.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  }
+
+  // GetConversation returns a specific AI chat conversation.
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+  }
+
+  // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+  // Note that it covers all registered tools, but the current user may not have access to all of them.
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/tools"};
+  }
+
   // Complete runs a language model completion (LLM chat) using the configured AI connector.
   rpc Complete(CompleteRequest) returns (CompleteResponse) {
     option (google.api.http) = {
@@ -244,16 +269,6 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/ai/complete/stream",
       body: "*"
     };
-  }
-
-  // ListConversations lists all AI chat conversations for an instance.
-  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
-  }
-
-  // GetConversation returns a specific AI chat conversation.
-  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
   // Access management
@@ -326,6 +341,7 @@ message InstanceHealth {
 message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string environment = 20;
+  string project_display_name = 25;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 19;
@@ -348,7 +364,7 @@ message Connector {
   // Name of the connector
   string name = 2;
   // Config for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Properties in config that use templating
   repeated string templated_properties = 5;
   // Provision settings if its a managed connector
@@ -587,10 +603,30 @@ message GenerateMetricsViewFileRequest {
   // If true, the AI will be used to generate the metrics view file.
   // Otherwise, it falls back to a simpler heuristic approach.
   bool use_ai = 5;
+  // Optional prompt to guide AI generation.
+  string prompt = 9;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
+  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+  bool ai_succeeded = 1;
+}
+
+// Request message for RuntimeService.GenerateCanvasFile
+message GenerateCanvasFileRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Metrics view name to base the canvas on.
+  string metrics_view_name = 2;
+  // Path to save the canvas file to.
+  string path = 3;
+  // If true, the AI will be used to generate the canvas file.
+  // Otherwise, it falls back to a simpler heuristic approach.
+  bool use_ai = 4;
+}
+
+// Response message for RuntimeService.GenerateCanvasFile
+message GenerateCanvasFileResponse {
   // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
 }
@@ -712,7 +748,6 @@ message WatchResourcesRequest {
   string instance_id = 1;
   string kind = 2;
   bool replay = 3;
-  string level = 4;
 }
 
 message WatchResourcesResponse {
@@ -849,11 +884,11 @@ message AnalyzedConnector {
   // Connector driver metadata
   ConnectorDriver driver = 2;
   // Combined config properties for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Config properties preset by the runtime or when the instance was created
-  map<string, string> preset_config = 4;
+  google.protobuf.Struct preset_config = 4;
   // Config properties set in project YAML files
-  map<string, string> project_config = 5;
+  google.protobuf.Struct project_config = 5;
   // Config properties set as dynamic variables
   map<string, string> env_config = 6;
   // Provision indicates if its a managed connector
@@ -901,68 +936,63 @@ message ListNotifierConnectorsResponse {
 // AI
 // **********
 
-// Message exchanged in a conversation
-message Message {
-  string id = 1;
-  string role = 2;
-  repeated rill.ai.v1.ContentBlock content = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
-}
-
-// Application context for AI conversations
-enum AppContextType {
-  APP_CONTEXT_TYPE_UNSPECIFIED = 0;
-  APP_CONTEXT_TYPE_PROJECT_CHAT = 1;
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD = 2;
-}
-
-message AppContext {
-  AppContextType context_type = 1;
-  google.protobuf.Struct context_metadata = 2;
-}
-
 // Conversation metadata and messages
 message Conversation {
   string id = 1;
   string owner_id = 2;
   string title = 3;
+  string user_agent = 6;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
-  repeated Message messages = 6;
+  repeated Message messages = 7; // NOTE: Deprecated.
 }
 
-// Request message for RuntimeService.Complete
-message CompleteRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string conversation_id = 2; // If not provided, creates a new conversation
-  repeated Message messages = 3;
-  repeated string tool_names = 4;
-  optional AppContext app_context = 5;
+// Message exchanged in a conversation
+message Message {
+  string id = 1;
+  string parent_id = 2;
+  google.protobuf.Timestamp created_on = 3;
+  google.protobuf.Timestamp updated_on = 4;
+  uint32 index = 5;
+  string role = 6;
+  string type = 7;
+  string tool = 8;
+  string content_type = 9;
+  string content_data = 10;
+  repeated rill.ai.v1.ContentBlock content = 11; // Convenience field
 }
 
-// Response message for RuntimeService.Complete
-message CompleteResponse {
-  string conversation_id = 1;
-  repeated Message messages = 2;
+// Context for prompts handled by the analyst_agent.
+message AnalystAgentContext {
+  // Optional explore dashboard.
+  string explore = 4;
+  // Optional dimensions.
+  repeated string dimensions = 5;
+  // Optional measures.
+  repeated string measures = 6;
+  // Optional filters.
+  rill.runtime.v1.Expression where = 7;
+  // Optional start of a time range.
+  google.protobuf.Timestamp time_start = 8;
+  // Optional end of a time range.
+  google.protobuf.Timestamp time_end = 9;
 }
 
-// Request message for RuntimeService.CompleteStreaming
-message CompleteStreamingRequest {
-  string instance_id = 1;
-  string conversation_id = 2; // If not provided, creates a new conversation
-  string prompt = 3;
-}
-
-// Response message for RuntimeService.CompleteStreaming
-message CompleteStreamingResponse {
-  string conversation_id = 1;
-  Message message = 2;
+// Context for prompts handled by the developer_agent.
+message DeveloperAgentContext {
+  // Set to true if the prompt is provided as part of project initialization.
+  // This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
+  bool init_project = 1;
+  // Optional path to the file that the user is currently viewing/editing.
+  // This helps the agent understand which file the user is referring to in their request.
+  string current_file_path = 2;
 }
 
 // Request message for RuntimeService.ListConversations
 message ListConversationsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Optional search pattern for filtering by user agent.
+  string user_agent_pattern = 2;
 }
 
 // Response message for RuntimeService.ListConversations
@@ -974,13 +1004,72 @@ message ListConversationsResponse {
 message GetConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2;
-  // Whether to include system messages in the response (defaults to false for UI use)
-  bool include_system_messages = 3;
 }
 
 // Response message for RuntimeService.GetConversation
 message GetConversationResponse {
   Conversation conversation = 1;
+  repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.ListTools
+message ListToolsRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.ListTools
+message ListToolsResponse {
+  repeated rill.ai.v1.Tool tools = 1;
+}
+
+// Request message for RuntimeService.Complete
+message CompleteRequest {
+  // Instance to run the completion against.
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Conversation ID to continue. If empty, a new conversation is created.
+  string conversation_id = 2;
+  // The prompt to complete.
+  string prompt = 3;
+  // Optional agent to use for the completion.
+  // If not set, it will infer an agent based on the prompt and conversation history.
+  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent"]}];
+  // Optional context for prompts handled by the analyst_agent.
+  // The field is ignored if another agent is selected.
+  AnalystAgentContext analyst_agent_context = 11;
+  // Optional context for prompts handled by the developer_agent.
+  // The field is ignored if another agent is selected.
+  DeveloperAgentContext developer_agent_context = 12;
+}
+
+// Response message for RuntimeService.Complete
+message CompleteResponse {
+  string conversation_id = 1;
+  repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.CompleteStreaming
+message CompleteStreamingRequest {
+  // Instance to run the completion against.
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Conversation ID to continue. If empty, a new conversation is created.
+  string conversation_id = 2;
+  // The prompt to complete.
+  string prompt = 3;
+  // Optional agent to use for the completion.
+  // If not set, it will infer an agent based on the prompt and conversation history.
+  string agent = 10 [(validate.rules).string = {ignore_empty: true, in: ["analyst_agent", "developer_agent"]}];
+  // Optional context for prompts handled by the analyst_agent.
+  // The field is ignored if another agent is selected.
+  AnalystAgentContext analyst_agent_context = 11;
+  // Optional context for prompts handled by the developer_agent.
+  // The field is ignored if another agent is selected.
+  DeveloperAgentContext developer_agent_context = 12;
+}
+
+// Response message for RuntimeService.CompleteStreaming
+message CompleteStreamingResponse {
+  string conversation_id = 1;
+  Message message = 2;
 }
 
 // **********

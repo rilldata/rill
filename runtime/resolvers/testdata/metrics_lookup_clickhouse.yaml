@@ -22,8 +22,8 @@ project_files:
       connector: clickhouse
       type: DICTIONARY
       primary_key: code
-      dictionary_source_user: 'clickhouse'
-      dictionary_source_password: 'clickhouse'
+      dictionary_source_user: default
+      dictionary_source_password: default
   clickhouse_metrics.yaml:
     type: metrics_view
     model: clickhouse_data

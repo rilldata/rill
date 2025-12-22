@@ -1,5 +1,5 @@
 export const load = ({ params }) => {
-  return {
-    canvasName: params.name,
-  };
+  const canvasName = params.name;
+
+  return { canvasName };
 };

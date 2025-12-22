@@ -1,8 +1,6 @@
 import {
   type V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewSchema,
   createQueryServiceMetricsViewTimeRange,
-  type V1MetricsViewSchemaResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
@@ -25,22 +23,6 @@ export function createTimeRangeSummary(
               !validSpec.error && !!validSpec.data?.metricsView?.timeDimension,
           },
         },
-        ctx.queryClient,
-      ).subscribe(set),
-  );
-}
-
-export function createMetricsViewSchema(
-  ctx: StateManagers,
-): CreateQueryResult<V1MetricsViewSchemaResponse, HTTPError> {
-  return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricsViewName], set) =>
-      createQueryServiceMetricsViewSchema(
-        runtime.instanceId,
-        metricsViewName,
-        {},
-        {},
         ctx.queryClient,
       ).subscribe(set),
   );

@@ -42,15 +42,19 @@ sequenceDiagram
 ### Create a service token
 Use the Rill CLI to create a service token for your current organization using the following command:
 ```bash
-rill service create <service_name>
+# Create with organization role
+rill service create <service_name> --org-role viewer
+
+# Or create with project-specific role
+rill service create <service_name> --project <project_name> --project-role viewer
 ```
 
 :::info
-See our CLI reference docs for more details on managing a [service account and token](../reference/cli/service).
+For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/manage/service-tokens). Also see the [CLI reference](../reference/cli/service) for command details.
 :::
 
 :::caution
-The service account _provides admin-level access to your organization_ and should be handled confidentially. Therefore, the service account itself should **not** be integrated directly in frontend or other user-facing code that can be exposed publicly.
+Service tokens can have broad permissions and should be handled confidentially. Therefore, the service token itself should **not** be integrated directly in frontend or other user-facing code that can be exposed publicly.
 :::
 
 ### Backend: Build an iframe URL
@@ -103,6 +107,9 @@ app.post('/api/rill/iframe', async (req, res) => {
         resource: dashboardName,
         // Optionally include the current user's email address for row-level security enforcement:
         // user_email: '<CURRENT USER'S EMAIL ADDRES>',
+        // Optionally set theme and theme mode:
+        // theme: 'my-custom-theme',
+        // theme_mode: 'dark', // Options: 'light', 'dark', 'system'
       }),
     });
     const data = await response.json();
@@ -146,6 +153,9 @@ def get_rill_iframe():
                 'resource': dashboard_name,
                 'type': 'explore',
                 'user_email': '<user-email>',
+                # Optionally set theme and theme mode:
+                # 'theme': 'my-custom-theme',
+                # 'theme_mode': 'dark',  # Options: 'light', 'dark', 'system'
             }
         )
         response.raise_for_status()
@@ -279,6 +289,7 @@ The API accepts the following parameters:
 | type        | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                                                                                                                                                        | No (defaults to `explore`)                                                    |
 | navigation  | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation)                                                                                                                          | No (defaults to `false`)                                                      |
 | theme       | If [themes](/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                                                | No (set to the name of the theme)                                             |
+| theme_mode  | The theme mode to use for the embedded dashboard. Valid values: `light`, `dark`, `system`. When set to `system`, the dashboard will follow the user's system preference.                                                                                                                               | No (defaults to `light`)                                                      |
 | user_id     | The id of the user to embed the dashboard for                                                                                                                                                                                                                                                            | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
 | user_email  | The email of the user to embed the dashboard for                                                                                                                                                                                                                                                         | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
 | attributes  | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` and any other custom attributes such as `tenantId`, `customerId`, etc. | No (It is also possible to add custom attributes here)                        |
@@ -319,7 +330,7 @@ The response of the above POST request will then contain an `iframeSrc` value th
 
 ```json
 {
-  "iframeSrc": "https://ui.rilldata.com/-/embed?access_token=<token>&instance_id=<id>&kind=MetricsView&resource=<dashboard-name>&runtime_host=<runtime_host>&state=&theme=",
+  "iframeSrc": "https://ui.rilldata.com/-/embed?access_token=<token>&instance_id=<id>&kind=MetricsView&resource=<dashboard-name>&runtime_host=<runtime_host>&state=&theme=&theme_mode=dark",
   "runtimeHost": "<runtime_host>",
   "instanceId": "<id>",
   "accessToken": "<token>",

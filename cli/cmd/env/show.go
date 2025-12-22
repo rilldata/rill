@@ -33,7 +33,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				Organization:       ch.Org,
+				Org:                ch.Org,
 				Project:            projectName,
 				Environment:        environment,
 				ForAllEnvironments: !cmd.Flags().Changed("environment"),

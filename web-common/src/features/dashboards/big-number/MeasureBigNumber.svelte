@@ -154,7 +154,7 @@
       on:focus={handleFocus}
       tabindex="0"
     >
-      {#if value !== null && status === EntityStatus.Idle}
+      {#if value !== null && value !== undefined && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
           {measureValueFormatter(output)}
         </WithTween>
@@ -233,6 +233,8 @@
         </div>
       {:else if value === null}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+      {:else if value === undefined}
+        <span class="ui-copy-disabled-faint italic text-sm">n/a</span>
       {/if}
     </div>
   </svelte:element>

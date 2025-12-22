@@ -11,13 +11,14 @@
     resourceColorMapping,
     resourceIconMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { Settings } from "lucide-svelte";
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { workspaces } from "./workspace-stores";
+  import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -37,8 +38,9 @@
   $: workspaceLayout = workspaces.get(filePath);
   $: inspectorVisible = workspaceLayout.inspector.visible;
   $: tableVisible = workspaceLayout.table.visible;
-
   $: view = workspaceLayout.view;
+
+  $: isConnector = resourceKind === ResourceKind.Connector;
 </script>
 
 <header bind:clientWidth={width}>
@@ -80,6 +82,10 @@
         showIndicator={hasUnsavedChanges}
       />
     </div>
+
+    {#if isConnector}
+      <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
+    {/if}
 
     <div class="flex items-center gap-x-2 w-fit flex-none">
       <slot name="workspace-controls" {width} />

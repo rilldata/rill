@@ -75,7 +75,7 @@ definitions:
       - [**Slack**](#slack) - Slack data
 
       :::warning Security Recommendation
-      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials/) for complete setup instructions.
+      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
       :::
     allOf:
       - title: Properties
@@ -143,8 +143,7 @@ definitions:
               workgroup: "primary"                             # Athena workgroup (defaults to 'primary')  
               output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
               aws_region: "us-east-1"                          # AWS region (defaults to 'us-east-1')  
-              allow_host_access: true                          # Allow host environment access _(default: true)_
-            
+              allow_host_access: true                          # Allow host environment access _(default: true)_            
           required:
             - driver
         - type: object
@@ -160,15 +159,19 @@ definitions:
             azure_storage_key:
               type: string
               description: Azure storage access key
-            azure_storage_bucket:
-              type: string
-              description: Name of the Azure Blob Storage container (equivalent to an S3 bucket)
             azure_storage_sas_token:
               type: string
               description: Optional azure SAS token for authentication
             azure_storage_connection_string:
               type: string
               description: Optional azure connection string for storage account
+            path_prefixes:
+               type: [string, array]
+               description: |
+                A list of container or virtual directory prefixes that this connector is allowed to access.
+                Useful when different containers or paths use different credentials, allowing the system
+                to route access through the appropriate connector based on the blob path.
+                Example: `azure://my-bucket/`, ` azure://my-bucket/path/` ,`azure://my-bucket/path/prefix`
             allow_host_access:
               type: boolean
               description: Allow access to host environment configuration
@@ -179,7 +182,6 @@ definitions:
 
               azure_storage_account: "mystorageaccount"        # Azure storage account name   _(required)_
               azure_storage_key: "credentialstring"            # Azure storage access key   _(required)_
-              azure_storage_bucket: "azure://..."              # Azure Blob Storage container name  
           required:
             - driver
             - azure_storage_account
@@ -358,7 +360,7 @@ definitions:
               const: duckdb
             mode:
               type: string
-              description: Connection mode
+              description: Set the mode for the DuckDB connection. 
               enum: ["read", "readwrite"]
               default: "read"
             path:
@@ -403,19 +405,17 @@ definitions:
             log_queries:
               type: boolean
               description: Whether to log raw SQL queries executed through OLAP
-            secrets:
-              type: string
-              description: Comma-separated list of connector names to create temporary secrets for
+            create_secrets_from_connectors:
+              type:
+                - string
+                - array
+              description: List of connector names for which temporary secrets should be created before executing the SQL.
             database_name:
               type: string
               description: Name of the attached DuckDB database (auto-detected if not set)
             schema_name:
               type: string
               description: Default schema used by the DuckDB database
-            mode:
-              description: Set the mode for the DuckDB connection. 
-              enum: ["read", "readwrite"]
-              default: "read"
           examples:
             - # Example: DuckDB connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -465,25 +465,28 @@ definitions:
             google_application_credentials:
               type: string
               description: Google Cloud credentials JSON string
-            bucket:
-              type: string
-              description: Name of gcs bucket
-            allow_host_access:
-              type: boolean
-              description: Allow access to host environment configuration
             key_id:
               type: string
               description: Optional S3-compatible Key ID when used in compatibility mode
             secret:
               type: string
               description: Optional S3-compatible Secret when used in compatibility mode
+            path_prefixes:
+               type: [string, array]
+               description: |
+                A list of bucket path prefixes that this connector is allowed to access. 
+                Useful when different buckets or bucket prefixes use different credentials, 
+                allowing the system to select the appropriate connector based on the bucket path.
+                Example: `gs://my-bucket/`, ` gs://my-bucket/path/` ,`gs://my-bucket/path/prefix`
+            allow_host_access:
+              type: boolean
+              description: Allow access to host environment configuration
           examples:
             - # Example: GCS connector configuration
               type: connector                                  # Must be `connector` (required)
               driver: gcs                                      # Must be `gcs` _(required)_
-
-              google_application_credentials: "credentialjsonstring"     # Google Cloud credentials JSON string  
-              bucket: "my-gcs-bucket"                            # Name of gcs bucket  
+              
+              google_application_credentials: "credentialjsonstring"     # Google Cloud credentials JSON string   
           required:
             - driver
             - bucket
@@ -494,20 +497,23 @@ definitions:
               type: string
               description: Refers to the driver type and must be driver `https`
               const: https
-            path:
-              type: string
-              description: The full HTTPS URI to fetch data from
             headers:
               type: object
               description: HTTP headers to include in the request
               additionalProperties:
                 type: string
+            path_prefixes:
+               type: [string, array]
+               description: |
+                A list of HTTP/HTTPS URL prefixes that this connector is allowed to access.
+                Useful when different URL namespaces use different credentials, enabling the
+                system to choose the appropriate connector based on the URL path.
+                Example: `https://example.com/`, ` https://example.com/path/` ,`https://example.com/path/prefix`
           examples:
             - # Example: HTTPS connector configuration
               type: connector                                  # Must be `connector` (required)
               driver: https                                    # Must be `https` _(required)_
-
-              path: "https://api.example.com/data.csv"         # The full HTTPS URI to fetch data from  
+              
               headers:
                 "Authorization": "Bearer my-token"            # HTTP headers to include in the request
           required:
@@ -537,6 +543,11 @@ definitions:
               description: Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.
               enum: ["read", "readwrite"]
               default: "read"
+            create_secrets_from_connectors:
+              type:
+                - string
+                - array
+              description: List of connector names for which temporary secrets should be created before executing the SQL.
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -825,21 +836,22 @@ definitions:
             aws_access_token:
               type: string
               description: Optional AWS session token for temporary credentials
-            bucket:
-              type: string
-              description: Name of s3 bucket 
             endpoint:
               type: string
               description: Optional custom endpoint URL for S3-compatible storage
             region:
               type: string
               description: AWS region of the S3 bucket
+            path_prefixes:
+               type: [string, array]
+               description: |
+                A list of bucket path prefixes that this connector is allowed to access.
+                Useful when different buckets or bucket prefixes use different credentials,
+                allowing the system to select the appropriate connector based on the bucket path.
+                Example: `s3://my-bucket/`, ` s3://my-bucket/path/` ,`s3://my-bucket/path/prefix`
             allow_host_access:
               type: boolean
               description: Allow access to host environment configuration
-            retain_files:
-              type: boolean
-              description: Whether to retain intermediate files after processing
           examples:
             - # Example: S3 connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -848,7 +860,6 @@ definitions:
               aws_access_key_id: "my-access-key-id"            # AWS Access Key ID used for authentication  
               aws_secret_access_key: "my-secret-access-key"    # AWS Secret Access Key used for authentication  
               aws_access_token: "my-access-token"              # Optional AWS session token for temporary credentials  
-              bucket: "my-s3-bucket"                           # Name of s3 bucket  
               endpoint: "https://my-s3-endpoint.com"           # Optional custom endpoint URL for S3-compatible storage  
               region: "us-east-1"                              # AWS region of the S3 bucket  
             
@@ -1412,7 +1423,7 @@ definitions:
       - type: object
         allOf:
           - if:
-              title: Additional properties when `connector` is `athena` or [named connector](./connectors.md#athena) for athena
+              title: Additional properties when `connector` is `athena` or [named connector](./connectors#athena) for athena
               properties:
                 connector:
                   const: athena
@@ -1421,7 +1432,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/athena'
           - if:
-              title: Additional properties when `connector` is `azure` or [named connector](./connectors.md#azure) of azure
+              title: Additional properties when `connector` is `azure` or [named connector](./connectors#azure) of azure
               properties:
                 connector:
                   const: azure
@@ -1430,7 +1441,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/azure'
           - if:
-              title: Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#bigquery) of bigquery
+              title: Additional properties when `connector` is `bigquery` or [named connector](./connectors#bigquery) of bigquery
               properties:
                 connector:
                   const: bigquery
@@ -1439,7 +1450,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/bigquery'
           - if:
-              title: Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#duckdb) of duckdb
+              title: Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
               properties:
                 connector:
                   const: duckdb
@@ -1448,7 +1459,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/duckdb'
           - if:
-              title: Additional properties when `connector` is `gcs` or [named connector](./connectors.md#gcs) of gcs
+              title: Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
               properties:
                 connector:
                   const: gcs
@@ -1457,7 +1468,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](/connect/data-source/local-file) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/build/connectors/data-source/local-file) of local_file
               properties:
                 connector:
                   const: local_file
@@ -1466,7 +1477,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/local_file'
           - if:
-              title: Additional properties when `connector` is `redshift` or [named connector](./connectors.md#redshift) of redshift
+              title: Additional properties when `connector` is `redshift` or [named connector](./connectors#redshift) of redshift
               properties:
                 connector:
                   const: redshift
@@ -1475,7 +1486,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/redshift'
           - if:
-              title: Additional properties when `connector` is `s3` or [named connector](./connectors.md#s3) of s3
+              title: Additional properties when `connector` is `s3` or [named connector](./connectors#s3) of s3
               properties:
                 connector:
                   const: s3
@@ -1484,7 +1495,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/s3'
           - if:
-              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#salesforce) of salesforce
+              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
               properties:
                 connector:
                   const: salesforce
@@ -1565,6 +1576,11 @@ definitions:
             - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
               sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
               post_exec: DETACH DATABASE IF EXISTS postgres_db 
+          create_secrets_from_connectors:
+            type:
+              - string
+              - array
+            description: List of connector names for which temporary secrets should be created before executing the SQL.
       gcs:
         type: object
         properties:
@@ -1774,7 +1790,7 @@ definitions:
             description: Refers to the resource type and must be `metrics_view`
           connector:
             type: string
-            description: Refers to the connector type for the metrics view, see [OLAP engines](/connect/olap) for more information
+            description: Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1784,6 +1800,9 @@ definitions:
           ai_instructions:
             type: string
             description: Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing.
+          parent:
+            type: string
+            description: Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view
           model:
             type: string
             description: Refers to the model powering the dashboard (either model or table is required)
@@ -1826,6 +1845,11 @@ definitions:
                 description:
                   type: string
                   description: a freeform text description of the dimension
+                tags:
+                  type: array
+                  description: optional list of tags for categorizing the dimension (defaults to empty)
+                  items:
+                    type: string
                 column:
                   type: string
                   description: a categorical column
@@ -1863,6 +1887,11 @@ definitions:
                 description:
                   type: string
                   description: a freeform text description of the measure
+                tags:
+                  type: array
+                  description: optional list of tags for categorizing the measure (defaults to empty)
+                  items:
+                    type: string
                 type:
                   type: string
                   description: 'Measure calculation type: "simple" for basic aggregations, "derived" for calculations using other measures, or "time_comparison" for period-over-period analysis. Defaults to "simple" unless dependencies exist.'
@@ -1943,6 +1972,12 @@ definitions:
                 - display_name
                 - expression
 
+          parent_dimensions:
+            description: Optional field selectors for dimensions to inherit from the parent metrics view.
+            $ref: '#/definitions/field_selector_properties'
+          parent_measures:
+            description: Optional field selectors for measures to inherit from the parent metrics view.
+            $ref: '#/definitions/field_selector_properties'
           annotations:
             type: array
             description: Used to define annotations that can be displayed on charts
@@ -2012,10 +2047,12 @@ definitions:
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
-        required:
-          - type
-          - model
-      
+          explore:
+            $ref: '#/definitions/explore_properties'
+            description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
+            required:
+              - type
+
       - $ref: '#/definitions/common_properties'
 
   # Canvas Dashboards
@@ -2239,6 +2276,11 @@ definitions:
           security:
             description: Security rules to apply for access to the canvas dashboard
             $ref: '#/definitions/dashboard_security_policy_properties'
+          variables:
+            type: array
+            description: Variables that can be used in the canvas
+            items:
+              $ref: '#/definitions/component_variable_properties'
         required:
           - type
           - display_name
@@ -2548,9 +2590,9 @@ definitions:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
-          openai:
+          openapi:
             type: object
-            description: OpenAI specification for the API endpoint
+            description: OpenAPI specification for the API endpoint
             properties:
               summary:
                 type: string
@@ -2589,13 +2631,34 @@ definitions:
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
       To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
-    examples: 
-      - # Example: You can copy this directly into your <theme_name>.yaml file
+    examples:
+      - # Example: Basic theme with light and dark mode colors
         type: theme
-        
-        colors:
-          primary: plum
-          secondary: violet
+        light:
+          primary: "#4F46E5"  # Indigo-600
+          secondary: "#8B5CF6"  # Purple-500
+        dark:
+          primary: "#818CF8"  # Indigo-400
+          secondary: "#A78BFA"  # Purple-400
+
+      - # Example: Advanced theme with custom color palettes
+        type: theme
+        light:
+          primary: "#14B8A6"  # Teal
+          secondary: "#10B981"  # Emerald
+          variables:
+            color-sequential-1: "hsl(180deg 80% 95%)"
+            color-sequential-5: "hsl(180deg 80% 50%)"
+            color-sequential-9: "hsl(180deg 80% 25%)"
+            color-qualitative-1: "hsl(156deg 56% 52%)"
+            color-qualitative-2: "hsl(27deg 100% 65%)"
+        dark:
+          primary: "2DD4BF"
+          secondary: "34D399"
+          variables:
+            color-sequential-1: "hsl(180deg 40% 30%)"
+            color-sequential-5: "hsl(180deg 50% 50%)"
+            color-sequential-9: "hsl(180deg 60% 70%)"
     allOf:
       - title: Properties
         type: object
@@ -2615,7 +2678,37 @@ definitions:
                 type: string
                 description: Secondary color
             additionalProperties: true
-      
+          light:
+            type: object
+            description: Light theme color configuration
+            properties:
+              primary:
+                type: string
+                description: Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              secondary:
+                type: string
+                description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              variables:
+                type: object
+                description: Custom CSS variables for light theme
+                additionalProperties:
+                  type: string
+          dark:
+            type: object
+            description: Dark theme color configuration
+            properties:
+              primary:
+                type: string
+                description: Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              secondary:
+                type: string
+                description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              variables:
+                type: object
+                description: Custom CSS variables for dark theme
+                additionalProperties:
+                  type: string
+
         required:
           - type
           - display_name
@@ -2906,15 +2999,45 @@ definitions:
         properties:
           primary:
             type: string
-            description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+            description: Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
           secondary:
             type: string
-            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
         anyOf:
           - required:
               - primary
           - required:
               - secondary
+      light:
+        type: object
+        description: Light theme color configuration
+        properties:
+          primary:
+            type: string
+            description: Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          secondary:
+            type: string
+            description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          variables:
+            type: object
+            description: Custom CSS variables for light theme
+            additionalProperties:
+              type: string
+      dark:
+        type: object
+        description: Dark theme color configuration
+        properties:
+          primary:
+            type: string
+            description: Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          secondary:
+            type: string
+            description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          variables:
+            type: object
+            description: Custom CSS variables for dark theme
+            additionalProperties:
+              type: string
   api_data_properties:
     oneOf:
       - title: SQL Query
@@ -3358,6 +3481,75 @@ definitions:
               - expr
           - required:
               - exclude
-  
+  explore_properties:
+        type: object
+        properties:
+          skip:
+            type: boolean
+            description: If true, disables the explore view for this metrics view.
+          name:
+            type: string
+            description: Name of the explore view.
+          display_name:
+            type: string
+            description: Display name for the explore view.
+          description:
+            type: string
+            description: Description for the explore view.
+          banner:
+            type: string
+            description: Custom banner displayed at the header of the explore view.
+          theme:
+            oneOf:
+              - type: string
+                description: Name of an existing theme to apply to the explore view.
+              - $ref: '#/definitions/theme_properties'
+                description: Inline theme configuration.
+            description: Name of the theme to use or define a theme inline. Either theme name or inline theme can be set.
+          time_ranges:
+            type: array
+            description: Overrides the list of default time range selections available in the dropdown. It can be string or an object with a 'range' and optional 'comparison_offsets'.
+            items:
+              $ref: '#/definitions/explore_time_range_properties'
+          time_zones:
+            type: array
+            description: List of time zones to pin to the top of the time zone selector. Should be a list of IANA time zone identifiers.
+            items:
+              type: string
+          lock_time_zone:
+            type: boolean
+            description: When true, the explore view will be locked to the first time zone provided in the time_zones list. If no time_zones are provided, it will be locked to UTC.
+          allow_custom_time_range:
+            type: boolean
+            description: Defaults to true. When set to false, hides the ability to set a custom time range for the user.
+          defaults:
+            type: object
+            description: Preset UI state to show by default.
+            properties:
+              dimensions:
+                $ref: '#/definitions/field_selector_properties'
+                description: Default dimensions to load on viewing the explore view.
+              measures:
+                $ref: '#/definitions/field_selector_properties'
+                description: Default measures to load on viewing the explore view.
+              time_range:
+                type: string
+                description: Default time range to display when the explore view loads.
+              comparison_mode:
+                type: string
+                description: Default comparison mode for metrics (none, time, or dimension).
+              comparison_dimension:
+                type: string
+                description: Default dimension to use for comparison when comparison_mode is 'dimension'.
+            additionalProperties: false
+          embeds:
+            type: object
+            description: Configuration options for embedded explore views.
+            properties:
+              hide_pivot:
+                type: boolean
+                description: When true, hides the pivot table view in embedded mode.
+            additionalProperties: false
+        additionalProperties: false
   
 

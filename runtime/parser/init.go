@@ -35,7 +35,7 @@ display_name: %s
 olap_connector: %s
 
 # These are example mock users to test your security policies.
-# Learn more: https://docs.rilldata.com/build/rill-project-file#mock-users
+# Learn more: https://docs.rilldata.com/build/rill-project-file#test-access-policies-in-rill-developer
 mock_users:
 - email: john@yourcompany.com
 - email: jane@partnercompany.com
@@ -51,10 +51,13 @@ mock_users:
 	switch olap {
 	case "duckdb":
 		connectorYAML = `type: connector
+
 driver: duckdb
+managed: true
 `
 	case "clickhouse":
 		connectorYAML = `type: connector
+
 driver: clickhouse
 managed: true
 `

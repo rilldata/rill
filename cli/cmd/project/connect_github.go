@@ -52,7 +52,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
-	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
@@ -116,7 +116,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Error if the repository is not in sync with the remote
-	ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, opts.RemoteName)
+	ok, err := repoInSyncFlow(ch, localGitPath, opts.SubPath, opts.RemoteName)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Extract Github account and repo name from the gitRemote
-	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
+	_, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
 	if !ok {
 		return fmt.Errorf("remote %q is not a valid github.com remote", opts.remoteURL)
 	}
@@ -137,8 +137,8 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
 
-	if opts.ProdBranch == "" {
-		opts.ProdBranch = ghRes.DefaultBranch
+	if opts.PrimaryBranch == "" {
+		opts.PrimaryBranch = ghRes.DefaultBranch
 	}
 
 	// If no project name was provided, default to Git repo name
@@ -149,7 +149,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	// If no default org is set by now, it means the user is not in an org yet.
 	// We create a default org based on their Github account name.
 	if ch.Org == "" {
-		err := createOrgFlow(ctx, ch, ghAccount)
+		err := createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
@@ -158,19 +158,20 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
-	// Create the project (automatically deploys prod branch)
+	// Create the project (automatically deploys primary branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             opts.Name,
-		Description:      opts.Description,
-		Provisioner:      opts.Provisioner,
-		ProdVersion:      opts.ProdVersion,
-		ProdSlots:        int64(opts.Slots),
-		Subpath:          opts.SubPath,
-		ProdBranch:       opts.ProdBranch,
-		Public:           opts.Public,
-		DirectoryName:    filepath.Base(localProjectPath),
-		GitRemote:        opts.remoteURL,
+		Org:           ch.Org,
+		Project:       opts.Name,
+		Description:   opts.Description,
+		Provisioner:   opts.Provisioner,
+		ProdVersion:   opts.ProdVersion,
+		ProdSlots:     int64(opts.Slots),
+		Subpath:       opts.SubPath,
+		PrimaryBranch: opts.PrimaryBranch,
+		Public:        opts.Public,
+		DirectoryName: filepath.Base(localProjectPath),
+		GitRemote:     opts.remoteURL,
+		SkipDeploy:    opts.SkipDeploy,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -195,9 +196,9 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 				return err
 			}
 			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -210,8 +211,12 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 		if ch.Interactive {
 			ch.PrintfSuccess("Opening project in browser...\n")
-			time.Sleep(3 * time.Second)
-			_ = browser.Open(res.Project.FrontendUrl)
+			select {
+			case <-time.After(3 * time.Second):
+				_ = browser.Open(res.Project.FrontendUrl)
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 
@@ -237,7 +242,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 		if res.GrantAccessUrl != "" {
 			// Print instructions to grant access
-			time.Sleep(3 * time.Second)
 			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
@@ -331,7 +335,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		Password:      pollRes.AccessToken,
 		DefaultBranch: branch,
 	}
-	err = gitutil.CommitAndForcePush(ctx, localGitPath, config, "", author)
+	err = gitutil.CommitAndPush(ctx, localGitPath, config, "", author)
 	if err != nil {
 		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
@@ -424,7 +428,13 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 		// Print instructions to grant access
 		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 		ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
-		time.Sleep(3 * time.Second)
+
+		// Wait three seconds before opening the browser
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 		ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 		ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
@@ -475,7 +485,7 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		return nil, err
 	}
 
-	// Create the project (automatically deploys prod branch)
+	// Create the project (automatically deploys primary branch)
 	res, err := c.CreateProject(ctx, req)
 	if err != nil {
 		if !errMsgContains(err, "a project with that name already exists in the org") {
@@ -483,35 +493,34 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		}
 
 		ch.PrintfWarn("Rill project names are derived from your Github repository name.\n")
-		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Name, req.OrganizationName)
+		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Project, req.Org)
 
 		// project name already exists, prompt for project name and create project with new name again
-		name, err := projectNamePrompt(ctx, ch, req.OrganizationName)
+		name, err := projectNamePrompt(ctx, ch, req.Org)
 		if err != nil {
 			return nil, err
 		}
 
-		req.Name = name
+		req.Project = name
 		return c.CreateProject(ctx, req)
 	}
 	return res, err
 }
 
-func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) (bool, error) {
-	syncStatus, err := gitutil.GetSyncStatus(gitPath, branch, remoteName)
+func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bool, error) {
+	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName)
 	if err != nil {
-		// ignore errors since check is best effort and can fail in multiple cases
+		return false, err
+	}
+
+	if !st.LocalChanges && st.LocalCommits == 0 {
 		return true, nil
 	}
 
-	switch syncStatus {
-	case gitutil.SyncStatusUnspecified:
-		return true, nil
-	case gitutil.SyncStatusSynced:
-		return true, nil
-	case gitutil.SyncStatusModified:
+	if st.LocalChanges {
 		ch.PrintfWarn("Some files have been locally modified. These changes will not be present in the deployed project.\n")
-	case gitutil.SyncStatusAhead:
+	}
+	if st.LocalCommits > 0 {
 		ch.PrintfWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.\n")
 	}
 

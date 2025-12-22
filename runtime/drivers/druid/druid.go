@@ -32,7 +32,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Druid",
 	Description: "Connect to Apache Druid.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/druid",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/druid",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -285,7 +285,7 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Handle.
 func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // Migrate implements drivers.Handle.

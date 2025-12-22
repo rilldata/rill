@@ -1,4 +1,8 @@
-import type { BannerEvent, NotificationMessage } from "./events";
+import type {
+  BannerEvent,
+  PageContentResized,
+  NotificationMessage,
+} from "./events";
 
 class EventBus {
   private listeners: EventMap = new Map();
@@ -17,6 +21,15 @@ class EventBus {
     }
 
     const unsubscribe = () => this.listeners.get(event)?.delete(key);
+
+    return unsubscribe;
+  }
+
+  once<Event extends T>(event: Event, callback: Listener<Event>) {
+    const unsubscribe = this.on(event, (payload) => {
+      callback(payload);
+      unsubscribe();
+    });
 
     return unsubscribe;
   }
@@ -58,6 +71,9 @@ export interface Events {
   "command-click": null;
   click: null;
   "shift-command-click": null;
+  "page-content-resized": PageContentResized;
+  "start-chat": string;
+  "rill-yaml-updated": null;
 }
 
 type T = keyof Events;

@@ -1,14 +1,10 @@
-import type {
-  CreateQueryOptions,
-  CreateQueryResult,
-  QueryClient,
-} from "@tanstack/svelte-query";
 import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createQueryServiceResolveCanvas,
+  getQueryServiceResolveCanvasQueryOptions,
   type RpcStatus,
   type V1CanvasSpec,
   type V1MetricsView,
@@ -16,7 +12,20 @@ import {
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type {
+  CreateQueryOptions,
+  CreateQueryResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
+import { derived, type Readable } from "svelte/store";
 
+/**
+ * Returns the default metrics view for a given instance, prioritizing in order:
+ * 1. A specific metrics view by name if provided
+ * 2. The first metrics view with a time dimension
+ * 3. The first available metrics view
+ */
 export function useDefaultMetrics(
   instanceId: string,
   metricsViewName?: string,
@@ -121,5 +130,37 @@ export function useCanvas(
       },
     },
     queryClient,
+  );
+}
+
+export function getCanvasQueryOptions(canvasNameStore: Readable<string>) {
+  return derived([runtime, canvasNameStore], ([{ instanceId }, canvasName]) =>
+    getQueryServiceResolveCanvasQueryOptions(
+      instanceId,
+      canvasName,
+      {},
+      {
+        query: {
+          select: (data) => {
+            const metricsViews: Record<string, V1MetricsView | undefined> = {};
+            const refMetricsViews = data?.referencedMetricsViews;
+            if (refMetricsViews) {
+              Object.keys(refMetricsViews).forEach((key) => {
+                metricsViews[key] = refMetricsViews?.[key]?.metricsView;
+              });
+            }
+
+            return {
+              canvas: data.canvas?.canvas?.state?.validSpec,
+              components: data.resolvedComponents,
+              metricsViews,
+              filePath: data.canvas?.meta?.filePaths?.[0],
+            };
+          },
+
+          enabled: !!canvasName,
+        },
+      },
+    ),
   );
 }
