@@ -80,4 +80,53 @@ test.describe("Multi-step connector wrapper", () => {
       page.getByRole("textbox", { name: "Model name" }),
     ).toBeVisible();
   });
+
+  test("GCS connector - preserves auth selection across steps", async ({
+    page,
+  }) => {
+    const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
+    const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
+    if (!hmacKey || !hmacSecret) {
+      test.skip(
+        true,
+        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET is not set",
+      );
+    }
+
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+
+    await page.locator("#gcs").click();
+    await page.waitForSelector('form[id*="gcs"]');
+
+    // Pick HMAC auth and fill required fields.
+    await page.getByRole("radio", { name: "HMAC keys" }).click();
+    await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
+    await page
+      .getByRole("textbox", { name: "Secret Access Key" })
+      .fill(hmacSecret!);
+
+    // Submit connector step via CTA to transition to source step.
+    const connectorCta = page.getByRole("button", {
+      name: /Test and Connect|Continue/i,
+    });
+    await expect(connectorCta).toBeEnabled();
+    await connectorCta.click();
+    await expect(page.getByText("Model preview")).toBeVisible();
+
+    // Go back to connector step.
+    await page.getByRole("button", { name: "Back" }).click();
+
+    // Auth selection and values should persist.
+    await expect(page.getByText("Connector preview")).toBeVisible();
+    await expect(page.getByRole("radio", { name: "HMAC keys" })).toBeChecked({
+      timeout: 5000,
+    });
+    await expect(
+      page.getByRole("textbox", { name: "Access Key ID" }),
+    ).toHaveValue(hmacKey!);
+    await expect(
+      page.getByRole("textbox", { name: "Secret Access Key" }),
+    ).toHaveValue(hmacSecret!);
+  });
 });
