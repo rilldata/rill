@@ -24,7 +24,6 @@ import {
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
   AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
-  AD_BIDS_FLAT_PIVOT_TABLE,
   AD_BIDS_LARGE_FILTER,
   AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS,
   AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
@@ -60,6 +59,8 @@ import {
   AD_BIDS_TOGGLE_BID_PUBLISHER_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_IMPRESSIONS_MEASURE_VISIBILITY,
   AD_BIDS_TOGGLE_PIVOT,
+  AD_BIDS_FLAT_PIVOT_TABLE,
+  AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES,
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
@@ -332,6 +333,11 @@ const TestCases: {
     title: "Leaderboard configs with multiple measures",
     mutations: [AD_BIDS_MEASURE_NAMES_BID_PRICE_AND_IMPRESSIONS],
     expectedSearch: "leaderboard_measures=bid_price%2Cimpressions",
+  },
+  {
+    title: "Leaderboard show context toggle persists",
+    mutations: [AD_BIDS_TOGGLE_LEADERBOARD_SHOW_CONTEXT_FOR_ALL_MEASURES],
+    expectedSearch: "lb_ctx=true",
   },
 
   {
