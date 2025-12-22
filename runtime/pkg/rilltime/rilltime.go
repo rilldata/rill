@@ -15,8 +15,9 @@ import (
 
 var (
 	infPattern             = regexp.MustCompile("^(?i)inf$")
-	iso8601DurationPattern = `P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?`
+	iso8601DurationPattern = `(?i)P((\d+[YMWD])+(T(\d+[HMS])+)?|T(\d+[HMS])+)` // Ensures atleast one part is present
 	iso8601DurationRegex   = regexp.MustCompile(iso8601DurationPattern)
+	iso8601PartsRegex      = regexp.MustCompile(`(?i)(\d+)([YMWDHMS])`)
 	isoTimePattern         = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})(\.((?P<milli>\d{3})|(?P<micro>\d{6})|(?P<nano>\d{9})))?Z)?)?)?)?)?`
 	isoTimeRegex           = regexp.MustCompile(isoTimePattern)
 	// nolint:govet // This is suggested usage by the docs.
@@ -174,9 +175,8 @@ type IsoInterval struct {
 }
 
 type LegacyIsoInterval struct {
-	AbsISO *AbsISOPointInTime          `parser:"( @@"`
-	RelISO *RelativeISO8601PointInTime `parser:"| @@)"`
-	Snap   *string                     `parser:"(Snap @Grain)?"`
+	ISO  string  `parser:"@ISO8601Duration"`
+	Snap *string // Not supported in parsing yet
 }
 
 type PointInTime struct {
@@ -225,18 +225,6 @@ type AbsISOPointInTime struct {
 	nano   int
 
 	tg timeutil.TimeGrain
-}
-
-type RelativeISO8601PointInTime struct {
-	ISO string `parser:"@ISO8601Duration"`
-
-	year   int
-	month  int
-	week   int
-	day    int
-	hour   int
-	minute int
-	second int
 }
 
 type Offset struct {
@@ -367,16 +355,14 @@ func ParseISO(duration, offset string, end time.Time, snap timeutil.TimeGrain, p
 			return nil, fmt.Errorf("invalid ISO offset %q: cannot have non-iso for offset", duration)
 		}
 
-		oi := &RelativeISO8601PointInTime{ISO: offset}
-		err = oi.parse()
+		oi := &LegacyIsoInterval{ISO: offset}
+		offsetPoint, _, err := oi.toPointInTime()
 		if err != nil {
 			return nil, err
 		}
 
 		rt.AnchorOverrides = append(rt.AnchorOverrides, &PointInTime{
-			Points: []*PointInTimeWithSnap{
-				{RelISO: oi},
-			},
+			Points: []*PointInTimeWithSnap{offsetPoint},
 		})
 	}
 
@@ -479,7 +465,9 @@ func (i *Interval) parse() error {
 		// Period-to-date syntax maps to StartEndInterval as well.
 		i.StartEnd = i.PeriodToGrain.expand()
 	} else if i.LegacyIso != nil {
-		return i.LegacyIso.parse()
+		var err error
+		i.StartEnd, err = i.LegacyIso.expand()
+		return err
 	} else if i.Iso != nil {
 		return i.Iso.parse()
 	}
@@ -604,8 +592,83 @@ func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Loc
 	return start, end, tg
 }
 
-func (l *LegacyIsoInterval) parse() error {
-	if l.AbsISO
+func (l *LegacyIsoInterval) expand() (*StartEndInterval, error) {
+	isoPointInTime, offsetPoint, err := l.toPointInTime()
+	if err != nil {
+		return nil, err
+	}
+
+	start := &PointInTime{Points: []*PointInTimeWithSnap{
+		{Labeled: &LabeledPointInTime{Watermark: true}},
+		isoPointInTime,
+	}}
+	end := &PointInTime{Points: []*PointInTimeWithSnap{
+		{Labeled: &LabeledPointInTime{Watermark: true}}},
+	}
+
+	if offsetPoint != nil {
+		start.Points = append(start.Points, offsetPoint)
+		end.Points = append(end.Points, offsetPoint)
+	}
+
+	return &StartEndInterval{
+		Start: start,
+		End:   end,
+	}, nil
+}
+
+func (l *LegacyIsoInterval) toPointInTime() (*PointInTimeWithSnap, *PointInTimeWithSnap, error) {
+	matches := iso8601PartsRegex.FindAllStringSubmatchIndex(l.ISO, -1)
+	parts := make([]*GrainDurationPart, len(matches))
+	for i, match := range matches {
+		if len(match) != 6 {
+			return nil, nil, fmt.Errorf("invalid ISO duration %q", l.ISO)
+		}
+		numStr := l.ISO[match[2]:match[3]]
+		grain := l.ISO[match[4]:match[5]]
+
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		parts[i] = &GrainDurationPart{
+			Num:   num,
+			Grain: grain,
+		}
+	}
+	mainPoint := &PointInTimeWithSnap{
+		Grain: &GrainPointInTime{
+			Parts: []*GrainPointInTimePart{
+				{
+					Prefix:   "-",
+					Duration: &GrainDuration{Parts: parts},
+				},
+			},
+		},
+	}
+
+	var offsetPoint *PointInTimeWithSnap
+	if l.Snap != nil {
+		// ref-iso+1grain/grain to ref+1grain/grain
+		offsetPoint = &PointInTimeWithSnap{
+			Grain: &GrainPointInTime{
+				Parts: []*GrainPointInTimePart{
+					{
+						Prefix: "+",
+						Duration: &GrainDuration{
+							Parts: []*GrainDurationPart{
+								{Grain: *l.Snap, Num: 1},
+							},
+						},
+					},
+				},
+			},
+			Snap: l.Snap,
+		}
+	}
+
+	return mainPoint, offsetPoint, nil
 }
 
 func (i *IsoInterval) parse() error {
@@ -671,8 +734,6 @@ func (p *PointInTime) truncates() bool {
 func (p *PointInTimeWithSnap) parse() error {
 	if p.AbsISO != nil {
 		return p.AbsISO.parse()
-	} else if p.RelISO != nil {
-		return p.RelISO.parse()
 	}
 	return nil
 }
@@ -685,8 +746,6 @@ func (p *PointInTimeWithSnap) eval(evalOpts EvalOptions, tm time.Time, tz *time.
 		tm = p.Labeled.eval(evalOpts)
 	} else if p.AbsISO != nil {
 		tm, _, tg = p.AbsISO.eval(tz)
-	} else if p.RelISO != nil {
-		tm = p.RelISO.eval(tm)
 	}
 
 	if p.Snap != nil {
@@ -801,52 +860,6 @@ func (a *AbsISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeu
 	absEnd := timeutil.OffsetTime(absStart, a.tg, 1, tz)
 
 	return absStart, absEnd, a.tg
-}
-
-func (s *RelativeISO8601PointInTime) parse() error {
-	match := iso8601DurationRegex.FindStringSubmatch(s.ISO)
-	for i, name := range iso8601DurationRegex.SubexpNames() {
-		part := match[i]
-		if i == 0 || name == "" || part == "" {
-			continue
-		}
-
-		val, err := strconv.Atoi(part)
-		if err != nil {
-			return err
-		}
-		switch name {
-		case "year":
-			s.year = val
-		case "month":
-			s.minute = val
-		case "week":
-			s.week = val
-		case "day":
-			s.day = val
-		case "hour":
-			s.hour = val
-		case "minute":
-			s.minute = val
-		case "second":
-			s.second = val
-		default:
-			return fmt.Errorf("unexpected field %q in duration", name)
-		}
-	}
-
-	return nil
-}
-
-func (s *RelativeISO8601PointInTime) eval(tm time.Time) time.Time {
-	// This reflects the old duration package. It does not correct for daylight savings.
-	days := 7*s.week + s.day
-	tm = tm.AddDate(-s.year, -s.month, -days)
-
-	td := time.Duration(s.second)*time.Second + time.Duration(s.minute)*time.Minute + time.Duration(s.hour)*time.Hour
-	tm = tm.Add(-td)
-
-	return tm
 }
 
 func (o *Offset) eval(evalOpts EvalOptions, start, end time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {

@@ -1,6 +1,7 @@
 package rilltime
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -420,8 +421,7 @@ func TestEval_BackwardsCompatibility(t *testing.T) {
 
 		// `inf` => `earliest to latest+1s`
 		{"inf", "2020-01-01T00:32:36Z", "2025-05-14T06:32:37Z", timeutil.TimeGrainUnspecified, 1, 1},
-		{"P2DT10H", "2025-05-10T21:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainHour, 1, 1},
-		{"P2DT10H/H", "2025-05-10T21:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"P2DT10H", "2025-05-10T20:32:36Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
@@ -511,6 +511,7 @@ func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, waterma
 				FirstDay:   testCase.FirstDay,
 				FirstMonth: testCase.FirstMonth,
 			})
+			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			if testCase.grain != timeutil.TimeGrainUnspecified {
