@@ -174,94 +174,109 @@ export const clickhouseSchema: MultiStepFormSchema = {
       type: "string",
       title: "Database Whitelist",
       description: "List of allowed databases",
+      "x-placeholder": "db1,db2",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "parameters" },
+      "x-visible-if": { connection_method: "self-managed" },
       "x-advanced": true,
     },
     optimize_temporary_tables_before_partition_replace: {
-      type: "boolean",
+      type: "string",
       title: "Optimize Temporary Tables",
       description: "Optimize temporary tables before partition replace",
-      default: false,
+      "x-placeholder": "true",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     log_queries: {
-      type: "boolean",
+      type: "string",
       title: "Log Queries",
       description: "Log all queries executed by Rill",
-      default: false,
+      "x-placeholder": "false",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     query_settings_override: {
       type: "object",
       title: "Query Settings Override",
       description: "Override default query settings",
+      "x-placeholder": "key1=value1,key2=value2",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     query_settings: {
       type: "object",
       title: "Query Settings",
       description: "Custom query settings",
+      "x-placeholder": "key1=value1,key2=value2",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     embed_port: {
       type: "string",
       title: "Embed Port",
       description: "Port number for embedding the ClickHouse Cloud server",
+      "x-placeholder": "8443",
       "x-step": "connector",
       "x-advanced": true,
+      "x-visible-if": { connection_method: "self-managed" }
     },
     can_scale_to_zero: {
-      type: "boolean",
+      type: "string",
       title: "Can Scale to Zero",
       description: "Enable scaling to zero",
-      default: false,
+      "x-placeholder": "false",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     max_open_conns: {
-      type: "number",
+      type: "string",
       title: "Max Open Connections",
       description: "Maximum number of open connections",
-      default: 100,
+      "x-placeholder": "100",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     max_idle_conns: {
-      type: "number",
+      type: "string",
       title: "Max Idle Connections",
       description: "Maximum number of idle connections",
-      default: 10,
+      "x-placeholder": "10",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     dial_timeout: {
       type: "string",
       title: "Dial Timeout",
       description: "Timeout for establishing a connection",
-      default: "30s",
+      "x-placeholder": "30s",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     conn_max_lifetime: {
       type: "string",
       title: "Connection Max Lifetime",
       description: "Maximum lifetime of a connection",
-      default: "30m",
+      "x-placeholder": "30m",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     read_timeout: {
       type: "string",
       title: "Read Timeout",
       description: "Timeout for reading from the connection",
-      default: "30s",
+      "x-placeholder": "30s",
       "x-advanced": true,
       "x-step": "connector",
+      "x-visible-if": { connection_method: "self-managed" }
     },
     sql: {
       type: "string",
