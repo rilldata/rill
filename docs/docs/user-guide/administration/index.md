@@ -11,15 +11,15 @@ Configure your organization and project settings in Rill Cloud, including organi
 
 ### Organization Management
 
-- **[Organization Management](/user-guide/settings/organization-management)** - Manage your organization settings, billing, branding, and configuration.
+- **[Organization Management](/user-guide/administration/organization-settings)** - Manage your organization settings, billing, branding, and configuration.
 
 ### Project Management Topics
 
-- **[Project Management](/user-guide/settings/project-management)** - Overview of project management features
-- **[GitHub Integration](/user-guide/settings/project-management/github-integration)** - Connect and manage GitHub repository integration
-- **[Variables & Credentials](/user-guide/settings/project-management/variables-and-credentials)** - Store sensitive credentials and configure environment-specific variables
+- **[Project Management](/user-guide/administration/project-settings)** - Overview of project management features
+- **[GitHub Integration](/user-guide/administration/project-settings/github-integration)** - Connect and manage GitHub repository integration
+- **[Variables & Credentials]( /user-guide/administration/project-settings/variables-and-credentials)** - Store sensitive credentials and configure environment-specific variables
 
 ### Service Tokens
 
-- **[Service Tokens](/user-guide/settings/service-tokens)** - Create and manage service tokens for programmatic access to Rill Cloud.
+- **[Service Tokens](/user-guide/administration/access-tokens/service-tokens)** - Create and manage service tokens for programmatic access to Rill Cloud.
 

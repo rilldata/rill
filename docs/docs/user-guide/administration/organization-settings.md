@@ -38,7 +38,7 @@ Organization
 
 ### User Management
 
-From the User page, you can view and manage your users with organizational. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](/user-guide/users/user-management).
+From the User page, you can view and manage your users with organizational. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](/user-guide/administration/users-and-access/user-management).
 
 
 ### Org Settings via Rill Cloud
@@ -78,7 +78,7 @@ Global Flags:
 
 :::tip
 
-Access to Rill can be granted on the [organization level](/user-guide/users/user-management#how-to-add-an-organization-user), [project level](/user-guide/users/user-management#how-to-add-a-project-user), and [user group level](/user-guide/users/user-management#how-to-add-a-user-to-a-usergroup).
+Access to Rill can be granted on the [organization level](/user-guide/administration/users-and-access/user-management#how-to-add-an-organization-user), [project level](/user-guide/administration/users-and-access/user-management#how-to-add-a-project-user), and [user group level](/user-guide/administration/users-and-access/user-management#how-to-add-a-user-to-a-usergroup).
 
 :::
 

@@ -54,7 +54,7 @@ rill start --port 10010 --port-grpc 10011
 
 ### How do I share my dashboard with my colleagues?
 
-To share your dashboards with your colleagues, you need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project). Once deployed, you have various ways to share this dashboard with your team. Since Rill does not charge by number of users, you can simply [add them to your organization](/user-guide/users/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard include [public URLs](/user-guide/dashboards/public-url) for a limited view and [project invites](/user-guide/users/user-management#how-to-add-a-project-user).
+To share your dashboards with your colleagues, you need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/deploy/existing-project). Once deployed, you have various ways to share this dashboard with your team. Since Rill does not charge by number of users, you can simply [add them to your organization](/user-guide/administration/users-and-access/user-management#how-to-add-an-organization-user) and have them sign up to view the dashboard! Other ways to share the dashboard include [public URLs](/user-guide/dashboards/public-url) for a limited view and [project invites](/user-guide/administration/users-and-access/user-management#how-to-add-a-project-user).
 
 ## Rill Cloud
 
@@ -79,7 +79,7 @@ You can follow the same steps as above. After deploying to Rill Cloud, if you re
 
 ### How do I share my dashboard to other users?
 
-You will need to [invite users to your organization](/user-guide/users/user-management#how-to-add-an-organization-user) or [project](/user-guide/users/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](/user-guide/users/user-management#user-requests-access-via-url), or if you just want them to see the contents of your dashboard, you can look into using [public URLs](/user-guide/dashboards/public-url).
+You will need to [invite users to your organization](/user-guide/administration/users-and-access/user-management#how-to-add-an-organization-user) or [project](/user-guide/administration/users-and-access/user-management#how-to-add-a-project-user), send them a URL for them to [request access to your dashboard](/user-guide/administration/users-and-access/user-management#user-requests-access-via-url), or if you just want them to see the contents of your dashboard, you can look into using [public URLs](/user-guide/dashboards/public-url).
 
 
 ## Rill Cloud Trial

@@ -20,7 +20,7 @@ Rill's error management approach ensures visibility and isolation:
 - **Fallback:** Rill attempts to serve from the most recent valid state when possible
 
 :::tip Check upstream dependencies
-The surfaced error might not be the root cause. A dashboard error could stem from an underlying model timeout. Always check the [project status page](/user-guide/settings/project-management#checking-deployment-status) to trace errors to their source.
+The surfaced error might not be the root cause. A dashboard error could stem from an underlying model timeout. Always check the [project status page](/user-guide/administration/project-settings#checking-deployment-status) to trace errors to their source.
 :::
 
 ## Deployment-Specific Error Scenarios
@@ -32,7 +32,7 @@ Most errors will surface during local development in Rill Developer. However, af
 
 To troubleshoot deployment errors:
 
-1. **Check the resource status** in the [project status page](/user-guide/settings/project-management#checking-deployment-status)
+1. **Check the resource status** in the [project status page](/user-guide/administration/project-settings#checking-deployment-status)
 2. **Review project logs** using `rill project logs` or the Rill Cloud UI
 3. **Compare with local behavior** - If it worked locally, check production-specific configuration differences
 
@@ -65,7 +65,7 @@ notify:
     recipients: [john@example.com]
 ```
 
-This will give you a good idea of what object has an issue, and you can browse the [status page](/user-guide/settings/project-management#checking-deployment-status) for more information.
+This will give you a good idea of what object has an issue, and you can browse the [status page](/user-guide/administration/project-settings#checking-deployment-status) for more information.
 
 After making these changes, you should commit and [push these changes](/developer/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 

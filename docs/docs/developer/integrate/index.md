@@ -8,15 +8,15 @@ Extend Rill's capabilities by integrating dashboards and data into your existing
 
 ### Embed Rill into your Application
 
-- **[Embed Dashboards](/integrate/embedding)** - Embed Rill dashboards directly into your applications using iframes
-- **[Control your Embedded Dashboards](/integrate/embed-iframe-api)** - Programmatically control embedded dashboards from your application
+- **[Embed Dashboards](/developer/integrate/embedding)** - Embed Rill dashboards directly into your applications using iframes
+- **[Control your Embedded Dashboards](/developer/integrate/embed-iframe-api)** - Programmatically control embedded dashboards from your application
 - **[See it Live](https://rill-embedding-example.netlify.app/)** - View a live example of embedded Rill dashboards
 
 ### Custom APIs
-- **[Integrate with Custom APIs](/integrate/custom-api)** - Integrate and use your custom APIs in external applications 
+- **[Integrate with Custom APIs](/developer/integrate/custom-api)** - Integrate and use your custom APIs in external applications 
 
 ### Dashboard URL Parameters
-- **[URL Parameters Reference](/integrate/url-parameters)** - Complete reference guide for all dashboard URL parameters
+- **[URL Parameters Reference](/developer/integrate/url-parameters)** - Complete reference guide for all dashboard URL parameters
 
 
 

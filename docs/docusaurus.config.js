@@ -296,11 +296,11 @@ const config = {
           },
           {
             from: '/share/user-management',
-            to: '/user-guide/users/user-management'
+            to: '/user-guide/administration/users-and-access/user-management'
           },
           {
             from: '/share/roles-permissions',
-            to: '/user-guide/users/roles-permissions'
+            to: '/user-guide/administration/users-and-access/roles-permissions'
           },
           {
             from: '/share/scheduled-reports',

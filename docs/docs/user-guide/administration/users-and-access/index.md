@@ -11,11 +11,7 @@ Manage users, user groups, and access controls for your Rill Cloud projects.
 
 ## User Management
 
-- **[User Management](/user-guide/users/user-management)** - Invite team members, assign roles, and manage user access to your projects
-- **[User Group Management](/user-guide/users/usergroup-management)** - Create and manage user groups for easier permission management
-
-## Access Control
-
-- **[Roles and Permissions](/user-guide/users/roles-permissions)** - Understand and configure user roles and permission levels
-- **[User Tokens](/user-guide/users/user-tokens)** - Create and manage personal access tokens for development and scripting
+- **[User Management](/user-guide/administration/users-and-access/user-management)** - Invite team members, assign roles, and manage user access to your projects
+- **[User Group Management](/user-guide/administration/users-and-access/usergroup-management)** - Create and manage user groups for easier permission management
+- **[Roles and Permissions](/user-guide/administration/users-and-access/roles-permissions)** - Understand and configure user roles and permission levels
 

@@ -9,7 +9,7 @@ tags:
 ---
 
 :::note prerequisites
-You will need to [install Rill](https://docs.rilldata.com/get-started/install).
+You will need to [install Rill](https://docs.rilldata.com/developer/get-started/install).
 
 ```bash
 curl https://rill.sh | sh

@@ -35,7 +35,7 @@
           changes directly to GitHub and the project in Rill Cloud will
           automatically be updated.
           <a
-            href="https://docs.rilldata.com/deploy/deploy-dashboard/github-101"
+            href="https://docs.rilldata.com/developer/deploy/deploy-dashboard/github-101"
             target="_blank"
           >
             Learn more ->

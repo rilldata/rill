@@ -13,11 +13,11 @@ This will ensure that your shared dashboard will be decoupled from your local Ri
 
 :::
 
-When deploying a project, credentials that have been defined in your `.env` file will be automatically passed into your Rill Cloud project. However, for [remote sources](/developer/build/connectors) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file](/user-guide/settings/project-management/variables-and-credentials#credentials-naming-schema). 
+When deploying a project, credentials that have been defined in your `.env` file will be automatically passed into your Rill Cloud project. However, for [remote sources](/developer/build/connectors) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file]( /user-guide/administration/project-settings/variables-and-credentials#credentials-naming-schema). 
 
 [Local credentials](/developer/build/connectors/credentials#setting-credentials-for-rill-developer) are used by Rill Developer to connect to sources from your local machine, while deployment credentials are what is used by Rill Cloud for production workloads. There are a [few ways to set up credentials in Rill Developer](/developer/build/connectors/credentials/#setting-credentials-for-rill-developer), however you will need to ensure that they are set up in your `.env` file for a seamless experience.
 
-If you have defined your connector's credentials in your `.env` file, these will be deployed along with your project. You should see the credentials in [your project's settings page](/user-guide/settings/project-management/variables-and-credentials#modifying-variables-and-credentials-via-the-settings-page).
+If you have defined your connector's credentials in your `.env` file, these will be deployed along with your project. You should see the credentials in [your project's settings page]( /user-guide/administration/project-settings/variables-and-credentials#modifying-variables-and-credentials-via-the-settings-page).
 
 <img src='/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
 <br />

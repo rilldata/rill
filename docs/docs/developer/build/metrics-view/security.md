@@ -58,7 +58,7 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 Metrics views limit data access for all requests, including MCP integrations and custom APIs. When creating a token or copying from the AI tab, the user's attributes (such as email, domain, groups, and custom attributes) are automatically included in the request context. This ensures that the same security policies that apply to dashboard users also apply to programmatic access, maintaining consistent data governance across all access methods.
 
-For more details, see [Service Tokens](/user-guide/settings/service-tokens).
+For more details, see [Service Tokens](/user-guide/administration/access-tokens/service-tokens).
 :::
 Typical use cases include:
 
@@ -70,7 +70,7 @@ Typical use cases include:
 
 :::tip Project Access Required
 
-Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/user-guide/users/user-management) and [Project Management](/user-guide/settings/project-management) documentation.
+Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/user-guide/administration/users-and-access/user-management) and [Project Management](/user-guide/administration/project-settings) documentation.
 
 :::
 
@@ -139,7 +139,7 @@ Access Policies can get quite complicated as your use case grows and having to n
 A few recommendations:
 1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
 2. Dashboard access can be derived from the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets combined with the metrics view using logical AND operations anyway.
-3. Solve project access issues higher up in the [user](/user-guide/users/user-management) / [usergroup](/user-guide/users/usergroup-management) settings, and keep default project security rules.
+3. Solve project access issues higher up in the [user](/user-guide/administration/users-and-access/user-management) / [usergroup](/user-guide/administration/users-and-access/usergroup-management) settings, and keep default project security rules.
 
 :::
 

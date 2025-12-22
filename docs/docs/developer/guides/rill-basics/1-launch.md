@@ -11,7 +11,7 @@ tags:
   - Getting Started
 ---
 :::note prerequisites
-You need to [install Rill](https://docs.rilldata.com/get-started/install). 
+You need to [install Rill](https://docs.rilldata.com/developer/get-started/install). 
 
 ```bash
 curl https://rill.sh | sh
@@ -29,7 +29,7 @@ rill start my-rill-tutorial
 ```
 
 :::tip
-While we support macOS and Linux, you can also get Rill Developer running on a [Windows machine via WSL](https://docs.rilldata.com/get-started/install#rill-on-windows-using-wsl). If you are having any issues installing or starting Rill, please see our [installation page](https://docs.rilldata.com/get-started/install). 
+While we support macOS and Linux, you can also get Rill Developer running on a [Windows machine via WSL](https://docs.rilldata.com/developer/get-started/install#rill-on-windows-using-wsl). If you are having any issues installing or starting Rill, please see our [installation page](https://docs.rilldata.com/developer/get-started/install). 
 
 :::
 

@@ -33,7 +33,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Overview
 
-After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/user-guide/settings/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
+After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/user-guide/administration/organization-settings#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
 <img src = '/img/explore/dashboard101/rill-cloud-landing-page.png' class='rounded-gif' />
 <br />
@@ -60,7 +60,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/user-guide/dashboards/dashboard-101/pivot) by selecting either from the UI (see `pink` box)
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/user-guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/user-guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/user-guide/users/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/user-guide/dashboards/public-url)) .
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/user-guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/user-guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/user-guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/user-guide/dashboards/public-url)) .
 
 
 ### KPI Widget (Measures) Panel

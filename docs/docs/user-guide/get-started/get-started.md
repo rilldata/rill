@@ -78,7 +78,7 @@ Rill Cloud is organized hierarchically to help you manage access and resources e
 
 ### Organizations
 
-**[Organizations](/user-guide/settings/organization-management)** are the top-level container for your team. They contain:
+**[Organizations](/user-guide/administration/organization-settings)** are the top-level container for your team. They contain:
 - Projects and their dashboards
 - Users and user groups
 - Billing and subscription settings
@@ -88,7 +88,7 @@ When you log into [Rill Cloud](https://ui.rilldata.com), you'll see all projects
 
 ### Projects
 
-**[Projects](/user-guide/settings/project-management)** are individual Rill deployments within an organization. Each project contains:
+**[Projects](/user-guide/administration/project-settings)** are individual Rill deployments within an organization. Each project contains:
 - Data sources and connectors
 - Models and transformations
 - Metrics views and dashboards
@@ -98,9 +98,9 @@ When you log into [Rill Cloud](https://ui.rilldata.com), you'll see all projects
 ### Users and Access
 
 Access in Rill Cloud is managed through:
-- **[Users](/user-guide/users/user-management)** - Individual team members with specific roles
-- **[User Groups](/user-guide/users/usergroup-management)** - Collections of users for easier permission management
-- **[Roles and Permissions](/user-guide/users/roles-permissions)** - Define what users can do (view, edit, admin)
+- **[Users](/user-guide/administration/users-and-access/user-management)** - Individual team members with specific roles
+- **[User Groups](/user-guide/administration/users-and-access/usergroup-management)** - Collections of users for easier permission management
+- **[Roles and Permissions](/user-guide/administration/users-and-access/roles-permissions)** - Define what users can do (view, edit, admin)
 
 ## AI-Powered Features
 
@@ -153,15 +153,15 @@ Rill Cloud provides comprehensive management tools for administrators:
 
 ### User Management
 
-- **[User Management](/user-guide/users/user-management)** - Invite team members, assign roles, and manage access
-- **[User Groups](/user-guide/users/usergroup-management)** - Organize users into groups for easier permission management
-- **[Roles and Permissions](/user-guide/users/roles-permissions)** - Understand and configure what users can do
+- **[User Management](/user-guide/administration/users-and-access/user-management)** - Invite team members, assign roles, and manage access
+- **[User Groups](/user-guide/administration/users-and-access/usergroup-management)** - Organize users into groups for easier permission management
+- **[Roles and Permissions](/user-guide/administration/users-and-access/roles-permissions)** - Understand and configure what users can do
 
 ### Organization Settings
 
-- **[Organization Management](/user-guide/settings/organization-management)** - Configure organization-wide settings, billing, and branding
-- **[Project Management](/user-guide/settings/project-management)** - Manage project settings, credentials, and variables
-- **[Service Tokens](/user-guide/settings/service-tokens)** - Create tokens for programmatic access
+- **[Organization Management](/user-guide/administration/organization-settings)** - Configure organization-wide settings, billing, and branding
+- **[Project Management](/user-guide/administration/project-settings)** - Manage project settings, credentials, and variables
+- **[Service Tokens](/user-guide/administration/access-tokens/service-tokens)** - Create tokens for programmatic access
 
 ## Additional Resources
 
