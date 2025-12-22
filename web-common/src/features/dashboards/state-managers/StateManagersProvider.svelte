@@ -25,8 +25,8 @@
     }
   });
 
-  // // Our state management was not built around the ability to arbitrarily change the explore or metrics view name
-  // // This needs to change, but this is a workaround for now
+  // Our state management was not built around the ability to arbitrarily change the explore or metrics view name
+  // This needs to change, but this is a workaround for now
   $: if (visualEditing && stateManagers && metricsViewName) {
     stateManagers?.metricsViewName.set(metricsViewName);
   }
