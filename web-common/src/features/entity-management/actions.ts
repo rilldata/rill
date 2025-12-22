@@ -8,6 +8,7 @@ import { fileIsMainEntity } from "@rilldata/web-common/features/entity-managemen
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   runtimeServiceDeleteFile,
+  runtimeServiceGetFile,
   runtimeServiceGetResource,
   runtimeServicePutFile,
   runtimeServiceRenameFile,
@@ -46,16 +47,12 @@ export async function waitForResourceReconciliation(
   instanceId: string,
   resourceName: string,
   resourceKind: ResourceKind,
-  connectorType?: string,
 ) {
-  // Use longer timeout for OLAP connectors since they take longer to establish connections
-  const isOLAP =
-    connectorType &&
-    ["clickhouse", "motherduck", "druid", "pinot"].includes(connectorType);
-  const maxAttempts = isOLAP ? 30 : 10; // 60 seconds for OLAP, 20 seconds for others
-  const pollInterval = 2000; // 2 seconds
+  const pollInterval = 2_000; // 2 seconds
+  let attempt = 0;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  while (true) {
+    attempt++;
     try {
       const resource = await runtimeServiceGetResource(instanceId, {
         "name.kind": resourceKind,
@@ -76,15 +73,8 @@ export async function waitForResourceReconciliation(
       }
 
       // Still reconciling, continue polling
-      if (attempt < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
-        continue;
-      }
-
-      // Last attempt and still not idle
-      throw new Error(
-        `Resource reconciliation timeout. Current status: ${reconcileStatus || "unknown"}`,
-      );
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      continue;
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
       if (error?.status === 404 || error?.response?.status === 404) {
@@ -104,6 +94,29 @@ export async function waitForResourceReconciliation(
       throw error;
     }
   }
+}
+
+/**
+ * Polls for file creation until the file exists or the operation is cancelled.
+ * Returns true if file was found, false if cancelled.
+ */
+export async function pollForFileCreation(
+  instanceId: string,
+  filePath: string,
+  abortSignal: AbortSignal,
+  pollIntervalMs: number = 1000,
+): Promise<boolean> {
+  while (!abortSignal.aborted) {
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+
+    try {
+      await runtimeServiceGetFile(instanceId, { path: filePath });
+      return true; // success, file exists
+    } catch {
+      // 404 error, file is not ready yet, continue polling
+    }
+  }
+  return false; // cancelled
 }
 
 export async function renameFileArtifact(

@@ -23,19 +23,7 @@
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
       if (entry.target instanceof HTMLElement) {
-        // Get position relative to the nav container's parent (the div with border-b)
-        const navElement = entry.target.parentElement;
-        const containerElement = navElement?.parentElement;
-
-        if (containerElement) {
-          const containerRect = containerElement.getBoundingClientRect();
-          const targetRect = entry.target.getBoundingClientRect();
-          left = targetRect.left - containerRect.left;
-        } else {
-          // Fallback to original calculation
-          left = entry.target.offsetLeft;
-        }
-
+        left = entry.target.offsetLeft;
         size = entry.target.clientWidth;
       }
     }

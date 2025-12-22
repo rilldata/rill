@@ -5,10 +5,12 @@
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
   import {
     TimeComparisonOption,
@@ -19,6 +21,7 @@
     V1ExploreTimeRange,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
+  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -73,6 +76,7 @@
         removeDimensionFilter,
         toggleDimensionFilterMode,
       },
+
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters, setTemporaryFilterName },
     },
@@ -82,7 +86,6 @@
         dimensionHasFilter,
         getDimensionFilterItems,
         getAllDimensionFilterItems,
-        isFilterExcludeMode,
       },
       measures: { allMeasures, filteredSimpleMeasures },
       measureFilters: {
@@ -104,11 +107,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: timeRangeQuery = createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-  );
+  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
 
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 
@@ -174,14 +173,16 @@
     ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
     : Interval.invalid("Invalid interval");
 
-  $: interval = selectedTimeRange
+  $: maybeInterval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : allTimeRange
       ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
+      : undefined;
+
+  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -220,6 +221,16 @@
   $: timeColumns = columns
     .filter(({ type }) => type && TIMESTAMPS.has(type))
     .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+
+  $: maybeMinDate = allTimeRange?.start
+    ? DateTime.fromJSDate(allTimeRange.start)
+    : undefined;
+  $: maybeMaxDate = allTimeRange?.end
+    ? DateTime.fromJSDate(allTimeRange.end)
+    : undefined;
+
+  $: minDate = maybeMinDate?.isValid ? maybeMinDate : undefined;
+  $: maxDate = maybeMaxDate?.isValid ? maybeMaxDate : undefined;
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -275,12 +286,14 @@
       if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
     }
 
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
     const { interval, grain } = await deriveInterval(
       alias,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate(allTimeRange.start),
-        DateTime.fromJSDate(allTimeRange.end),
-      ),
+
       metricsViewName,
       activeTimeZone,
     );
@@ -337,7 +350,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -404,7 +417,8 @@
       </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          {allTimeRange}
+          {minDate}
+          {maxDate}
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
@@ -422,7 +436,6 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
-          showPan
           {primaryTimeDimension}
           {selectedTimeDimension}
           {showDefaultItem}
@@ -436,6 +449,7 @@
           {onPan}
         />
         <ComparisonPill
+          {minTimeGrain}
           {allTimeRange}
           {selectedTimeRange}
           showTimeComparison={!!showTimeComparison}
@@ -485,53 +499,47 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, mode, selectedValues, inputText } (name)}
-          {@const dimension = dimensions.find(
-            (d) => d.name === name || d.column === name,
-          )}
-          {@const dimensionName = dimension?.name || dimension?.column}
+        {#each allDimensionFilters as filterData (filterData.name)}
           <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName}
-              <DimensionFilter
-                {whereFilter}
-                metricsViewNames={[metricsViewName]}
-                {readOnly}
-                {name}
-                {label}
-                {mode}
-                {selectedValues}
-                {inputText}
-                {timeStart}
-                {timeEnd}
-                {timeControlsReady}
-                excludeMode={$isFilterExcludeMode(name)}
-                onRemove={() => removeDimensionFilter(name)}
-                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                onSelect={(value) =>
-                  toggleMultipleDimensionValueSelections(name, [value], true)}
-                onMultiSelect={(values) =>
-                  toggleMultipleDimensionValueSelections(name, values, true)}
-                onApplyInList={(values) =>
-                  applyDimensionInListMode(name, values)}
-                onApplyContainsMode={(searchText) =>
-                  applyDimensionContainsMode(name, searchText)}
-                isUrlTooLongAfterInListFilter={(values) =>
-                  isUrlTooLongAfterInListFilter(name, values)}
-              />
-            {/if}
+            <DimensionFilter
+              expressionMap={new Map([
+                [metricsViewName, $dashboardStore.whereFilter],
+              ])}
+              {filterData}
+              {readOnly}
+              {timeStart}
+              {timeEnd}
+              {timeControlsReady}
+              removeDimensionFilter={async (name) =>
+                removeDimensionFilter(name)}
+              toggleDimensionFilterMode={async (name) => {
+                toggleDimensionFilterMode(name);
+              }}
+              toggleDimensionValueSelections={async (name, values) =>
+                toggleMultipleDimensionValueSelections(name, values, true)}
+              applyDimensionInListMode={async (name, values) =>
+                applyDimensionInListMode(name, values)}
+              applyDimensionContainsMode={async (name, searchText) =>
+                applyDimensionContainsMode(name, searchText)}
+              isUrlTooLongAfterInListFilter={(values) =>
+                isUrlTooLongAfterInListFilter(filterData.name, values)}
+            />
           </div>
         {/each}
-        {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
+        {#each allMeasureFilters as filterData (filterData.name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
+              {filterData}
               allDimensions={dimensions}
-              {name}
-              {label}
-              {dimensionName}
-              {filter}
-              onRemove={() => removeMeasureFilter(dimensionName, name)}
+              onRemove={() =>
+                removeMeasureFilter(filterData.dimensionName, filterData.name)}
               onApply={({ dimension, oldDimension, filter }) =>
-                handleMeasureFilterApply(dimension, name, oldDimension, filter)}
+                handleMeasureFilterApply(
+                  dimension,
+                  filterData.name,
+                  oldDimension,
+                  filter,
+                )}
             />
           </div>
         {/each}

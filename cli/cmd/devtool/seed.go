@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -34,10 +35,25 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			// create org if not exists
+			if ch.Org == "" {
+				client, err := ch.Client()
+				if err != nil {
+					return err
+				}
+				_, err = client.CreateOrganization(cmd.Context(), &adminv1.CreateOrganizationRequest{
+					Name: "rilldata",
+				})
+				if err != nil {
+					return err
+				}
+			}
+			ch.Interactive = false // disable interactive prompts for seeding
 			return project.ConnectGithubFlow(cmd.Context(), ch, &project.DeployOpts{
 				GitPath:     temp,
 				SubPath:     "rill-openrtb-prog-ads",
 				Name:        "rill-openrtb-prog-ads",
+				RemoteName:  "origin",
 				ProdVersion: "latest",
 				Slots:       2,
 				Github:      true,

@@ -2,11 +2,38 @@
 title: "Time Series Filter"
 sidebar_label: "Time Series Filter"
 hide_table_of_contents: false
-sidebar_position: 07
+sidebar_position: 20
 tags:
     - Quickstart
     - Tutorial
 ---
+
+<div style={{ 
+  position: "relative", 
+  width: "100%", 
+  paddingTop: "56.25%", 
+  borderRadius: "15px",  /* Softer corners */
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
+}}>
+  <iframe credentialless="true"
+    src="https://www.youtube.com/embed/PDFp5hXVFb4?si=Xvi0kmubJuzEnHOz"
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      borderRadius: "10px", 
+    }}
+  ></iframe>
+</div>
+<br/>
+Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) for a quick start!
+
+## Overview
 
 Once you've [built your metrics view](/build/metrics-view) and assigned a time series column, you'll be able to start visualizing your measures and dimensions in either an Explore dashboard or Canvas dashboard. This guide will discuss all the features in the time navigator that exists at the top of all dashboards and how to customize it to your needs.
 

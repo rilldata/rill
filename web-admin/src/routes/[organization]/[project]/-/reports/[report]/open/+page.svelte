@@ -33,8 +33,12 @@
     },
     {
       exploreProtoState:
-        reportResource?.report?.spec?.annotations?.web_open_path,
+        reportResource?.report?.spec?.annotations?.web_open_state,
       forceOpenPivot: true,
+      // When opening a report from a link with token we should remove the filters from request.
+      // The filters are already baked into the token, each query will have them added in the backend.
+      // So adding them again will essentially apply filters twice. It will lead to incorrect results for threshold filters.
+      ignoreFilters: !!token,
     },
   );
 
@@ -49,17 +53,17 @@
     exploreName: string,
     exploreState: ExploreState,
   ) {
+    const exploreStateParams = await getExplorePageUrlSearchParams(
+      exploreName,
+      exploreState,
+    );
+
     const url = new URL(window.location.origin);
     if (token) {
       url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
     } else {
       url.pathname = `/${organization}/${project}/explore/${exploreName}`;
     }
-
-    const exploreStateParams = await getExplorePageUrlSearchParams(
-      exploreName,
-      exploreState,
-    );
 
     url.search = exploreStateParams.toString();
 

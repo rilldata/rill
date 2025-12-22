@@ -50,16 +50,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			continue
 		}
 
-		// Check if this dimension is a time dimension (has timestamp data type)
-		isTimeDimension := false
-		if dim.DataType != nil {
-			switch dim.DataType.Code {
-			case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
-				isTimeDimension = true
-			}
-		}
-
-		if isTimeDimension {
+		if dim.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME {
 			timeDimensions = append(timeDimensions, dim)
 		} else {
 			dimensions = append(dimensions, dim)
@@ -70,7 +61,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	if e.metricsView.TimeDimension != "" {
 		var found bool
 		for _, dim := range timeDimensions {
-			if dim.Name == e.metricsView.TimeDimension {
+			if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 				found = true
 				break
 			}
@@ -115,7 +106,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			summary.MaxValue = timeRange.Max
 		}
 		summaries = append(summaries, summary)
-		if dim.Name == e.metricsView.TimeDimension {
+		if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 			defaultTimeDimensionSummary = summary
 		}
 	}
@@ -149,7 +140,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	// Determine the default time dimension expression
 	var timeDimExpr string
 	for _, dim := range timeDimensions {
-		if dim.Name == e.metricsView.TimeDimension {
+		if strings.EqualFold(dim.Name, e.metricsView.TimeDimension) {
 			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
 			if err == nil {
 				timeDimExpr = expr
@@ -188,6 +179,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 		Args:             args,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultExecutionTimeout,
+		QueryAttributes:  e.queryAttributes,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute dimension summary query: %w", err)

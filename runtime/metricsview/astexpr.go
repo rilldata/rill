@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // SQLForExpression generates a SQL expression for a query expression.
@@ -54,7 +56,7 @@ func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e.Condition != nil {
 		return b.writeCondition(e.Condition)
 	}
-	return errors.New("invalid expression")
+	return errors.New("invalid expression (must contain one of name, val, cond, subquery)")
 }
 
 func (b *sqlExprBuilder) writeName(name string) error {
@@ -100,7 +102,11 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery
-	innerAST, err := NewAST(b.ast.MetricsView, b.ast.Security, inner, b.ast.Dialect)
+	innerSecurity := b.ast.Security
+	if !b.visible {
+		innerSecurity = skipMetricsViewSecurity{}
+	}
+	innerAST, err := NewAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect)
 	if err != nil {
 		return fmt.Errorf("failed to create AST for subquery: %w", err)
 	}
@@ -714,4 +720,21 @@ type lookupMeta struct {
 	keyExpr  string
 	keyCol   string
 	valueCol string
+}
+
+// skipMetricsViewSecurity implements the MetricsViewSecurity interface in a way that allows all access.
+type skipMetricsViewSecurity struct{}
+
+var _ MetricsViewSecurity = skipMetricsViewSecurity{}
+
+func (s skipMetricsViewSecurity) CanAccessField(field string) bool {
+	return true
+}
+
+func (s skipMetricsViewSecurity) RowFilter() string {
+	return ""
+}
+
+func (s skipMetricsViewSecurity) QueryFilter() *runtimev1.Expression {
+	return nil
 }

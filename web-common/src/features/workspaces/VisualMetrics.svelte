@@ -568,7 +568,7 @@
               class="!min-w-64  overflow-hidden p-1"
             >
               <div class="size-full overflow-y-auto max-h-72">
-                <ConnectorExplorer {store} />
+                <ConnectorExplorer {store} olapOnly />
               </div>
             </DropdownMenu.Content>
           </DropdownMenu.Root>

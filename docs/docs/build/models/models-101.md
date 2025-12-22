@@ -13,11 +13,11 @@ Data models are built using SQL SELECT statements applied to your source data. T
 
 By default, data transformations in Rill Developer are powered by DuckDB and its dialect of SQL (DuckDB SQL). Please visit the [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn how to write your queries.
 
-You can change the default [OLAP engine](https://docs.rilldata.com/connect/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
+You can change the default [OLAP engine](https://docs.rilldata.com/build/connectors/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
 :::tip Supported OLAP engines for modeling
 
-We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/connect/olap/duckdb), and [MotherDuck\*](/connect/olap/motherduck). For more information, see each OLAP engine page for further details.
+We support modeling on [ClickHouse\*](/build/connectors/olap/clickhouse), [DuckDB](/build/connectors/olap/duckdb), and [MotherDuck\*](/build/connectors/olap/motherduck). For more information, see each OLAP engine page for further details.
 
 \* indicates some caveats with modeling, and we encourage you to read the documentation before getting started.
 

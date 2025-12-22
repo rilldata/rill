@@ -1,5 +1,8 @@
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
-import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
+import {
+  type MetricsViewSpecMeasure,
+  MetricsViewSpecMeasureType,
+} from "@rilldata/web-common/runtime-client";
 import { visibleMeasures } from "./measures";
 import type { DashboardDataSources } from "./types";
 
@@ -9,7 +12,7 @@ export const leaderboardSortByMeasureName = ({
   return dashboard.leaderboardSortByMeasureName;
 };
 
-export const leaderboardMeasureNames = ({
+export const leaderboardMeasures = ({
   dashboard,
   ...rest
 }: DashboardDataSources) => {
@@ -20,9 +23,9 @@ export const leaderboardMeasureNames = ({
   );
 
   // Filter and sort the leaderboard measure names based on the order in visibleMeasures
-  const filteredNames = dashboard.leaderboardMeasureNames
-    ?.filter((name) => {
-      const measure = visibleMeasuresMap.get(name);
+  const filteredMeasures = dashboard.leaderboardMeasureNames
+    ?.map((name) => visibleMeasuresMap.get(name))
+    ?.filter((measure) => {
       if (!measure) return false;
       return (
         measure.type !==
@@ -31,14 +34,29 @@ export const leaderboardMeasureNames = ({
       );
     })
     .sort((a, b) => {
-      const aIndex = visibleMeasuresList.findIndex((m) => m.name === a);
-      const bIndex = visibleMeasuresList.findIndex((m) => m.name === b);
+      const aIndex = visibleMeasuresList.findIndex((m) => m.name === a?.name);
+      const bIndex = visibleMeasuresList.findIndex((m) => m.name === b?.name);
       return aIndex - bIndex;
-    });
+    }) as MetricsViewSpecMeasure[];
 
-  return filteredNames?.length
-    ? filteredNames
-    : [dashboard.leaderboardSortByMeasureName];
+  if (filteredMeasures?.length) return filteredMeasures;
+
+  if (visibleMeasuresMap.has(dashboard.leaderboardSortByMeasureName))
+    return [
+      visibleMeasuresMap.get(
+        dashboard.leaderboardSortByMeasureName,
+      ) as MetricsViewSpecMeasure,
+    ];
+
+  return [];
+};
+
+export const leaderboardMeasureNames = ({
+  dashboard,
+  ...rest
+}: DashboardDataSources) => {
+  const measures = leaderboardMeasures({ dashboard, ...rest });
+  return measures.map((m) => m.name!);
 };
 
 export const leaderboardShowContextForAllMeasures = ({
@@ -49,6 +67,7 @@ export const leaderboardShowContextForAllMeasures = ({
 
 export const leaderboardSelectors = {
   leaderboardSortByMeasureName,
+  leaderboardMeasures,
   leaderboardMeasureNames,
   leaderboardShowContextForAllMeasures,
 };

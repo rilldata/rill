@@ -366,7 +366,7 @@ _[object]_ - Overrides any properties in development environment.
 
 _[object]_ - Overrides any properties in production environment. 
 
-## Additional properties when `connector` is `athena` or [named connector](./connectors.md#athena) for athena
+## Additional properties when `connector` is `athena` or [named connector](./connectors#athena) for athena
 
 ### `output_location`
 
@@ -380,7 +380,7 @@ _[string]_ - AWS Athena workgroup to use for queries.
 
 _[string]_ - AWS region to connect to Athena and the output location. 
 
-## Additional properties when `connector` is `azure` or [named connector](./connectors.md#azure) of azure
+## Additional properties when `connector` is `azure` or [named connector](./connectors#azure) of azure
 
 ### `path`
 
@@ -414,13 +414,13 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#bigquery) of bigquery
+## Additional properties when `connector` is `bigquery` or [named connector](./connectors#bigquery) of bigquery
 
 ### `project_id`
 
 _[string]_ - ID of the BigQuery project. 
 
-## Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#duckdb) of duckdb
+## Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
 
 ### `path`
 
@@ -444,7 +444,11 @@ sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
-## Additional properties when `connector` is `gcs` or [named connector](./connectors.md#gcs) of gcs
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
+
+## Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
 
 ### `path`
 
@@ -474,7 +478,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `local_file` or [named connector](/connect/data-source/local-file) of local_file
+## Additional properties when `connector` is `local_file` or [named connector](/build/connectors/data-source/local-file) of local_file
 
 ### `path`
 
@@ -484,7 +488,7 @@ _[string]_ - Path to the data source.
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
 
-## Additional properties when `connector` is `redshift` or [named connector](./connectors.md#redshift) of redshift
+## Additional properties when `connector` is `redshift` or [named connector](./connectors#redshift) of redshift
 
 ### `output_location`
 
@@ -510,7 +514,7 @@ _[string]_ - ARN of the IAM role to assume for Redshift access.
 
 _[string]_ - AWS region of the Redshift deployment. 
 
-## Additional properties when `connector` is `s3` or [named connector](./connectors.md#s3) of s3
+## Additional properties when `connector` is `s3` or [named connector](./connectors#s3) of s3
 
 ### `region`
 
@@ -548,7 +552,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#salesforce) of salesforce
+## Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
 
 ### `soql`
 

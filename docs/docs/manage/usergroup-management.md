@@ -60,7 +60,7 @@ rill usergroup add --project <project_name>
 ```
 You will be prompted for the role and the name of the group you are editing. If you want to specify a specific project, please use the --project flag. If no project flag is defined, you will be setting permission on the organization level.
 
-If you have any questions on permission levels, please review the [Roles and Permissions page](roles-permissions.md).
+If you have any questions on permission levels, please review the [Roles and Permissions page](roles-permissions).
 
 ### Add a member to the group
 

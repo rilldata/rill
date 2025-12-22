@@ -24,7 +24,9 @@ export function getExploreFields(
   visibleDimensions: MetricsViewSpecDimension[],
   visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
-  const hasFilter = hasDashboardWhereFilter(exploreState);
+  const hasFilter =
+    hasDashboardWhereFilter(exploreState) ||
+    hasDashboardDimensionThresholdFilter(exploreState);
 
   const everythingIsVisible =
     exploreState.allDimensionsVisible &&
@@ -33,7 +35,13 @@ export function getExploreFields(
 
   if (everythingIsVisible) return undefined; // Not specifying any fields means all fields are visible
 
-  const filteredDimensions = getAllIdentifiers(exploreState.whereFilter);
+  // Check both where and threshold filters for dimensions
+  const dimensionsWithThresholdFilters = exploreState.dimensionThresholdFilters
+    .filter((dt) => dt.filters.length > 0)
+    .map((dt) => dt.name);
+  const filteredDimensions = getAllIdentifiers(exploreState.whereFilter).concat(
+    dimensionsWithThresholdFilters,
+  );
 
   return [
     ...visibleDimensions
@@ -83,10 +91,12 @@ export function getSanitizedExploreStateParam(
     leaderboardSortByMeasureName: exploreState.leaderboardSortByMeasureName,
     dashboardSortType: exploreState.dashboardSortType,
     sortDirection: exploreState.sortDirection,
-    // Remove the where filter
+
+    // Remove the filters
     // whereFilter: dashboard.whereFilter,
-    dimensionThresholdFilters: exploreState.dimensionThresholdFilters,
-    dimensionFilterExcludeMode: exploreState.dimensionFilterExcludeMode,
+    // dimensionThresholdFilters: exploreState.dimensionThresholdFilters,
+    // dimensionFilterExcludeMode: exploreState.dimensionFilterExcludeMode,
+
     // There's no need to share filters-in-progress
     // temporaryFilterName: dashboard.temporaryFilterName,
     selectedTimeRange: exploreState.selectedTimeRange,

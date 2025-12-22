@@ -1,0 +1,4 @@
+id,timestamp,publisher,domain,bid_price,volume,impressions,ad words,clicks,device
+0,2024-03-10T00:00:00Z,,msn.com,2,4,2,cars,,iphone
+1,2024-03-11T00:00:00Z,Yahoo,yahoo.com,2,4,1,cars,1,
+2,2024-03-12T00:00:00Z,Facebook,facebook.com,1,2,3,cars,1,android

@@ -17,8 +17,8 @@ import (
 // QueryResolver enables superusers and project admins to query a resolver within a project
 func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolverRequest) (*runtimev1.QueryResolverResponse, error) {
 	// Validate the caller has the ReadResolvers permission
-	claims := auth.GetClaims(ctx)
-	if !claims.CanInstance(req.InstanceId, auth.ReadResolvers) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadResolvers) {
 		return nil, status.Error(codes.PermissionDenied, "only project admins can query resolvers")
 	}
 
@@ -42,7 +42,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		InstanceID: req.InstanceId,
 		Properties: props,
 		Args:       req.ResolverArgs.AsMap(),
-		Claims:     claims.SecurityClaims(),
+		Claims:     claims,
 		ForExport:  false,
 	})
 	if err != nil {

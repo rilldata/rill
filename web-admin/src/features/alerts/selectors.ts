@@ -139,7 +139,6 @@ export function useAlertDashboardState(
             webState,
             data.metricsView?.metricsView?.state?.validSpec ?? {},
             data.explore?.explore?.state?.validSpec,
-            {}, // We dont really need schema right now since this a legacy thing only
           ),
       },
     },

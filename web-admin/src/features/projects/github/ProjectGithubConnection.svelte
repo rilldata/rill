@@ -17,7 +17,7 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: ({
-    project: { gitRemote, managedGitId, subpath, prodBranch },
+    project: { gitRemote, managedGitId, subpath, primaryBranch },
   } = $proj.data);
 
   $: isGithubConnected = !!gitRemote;
@@ -65,7 +65,7 @@
         <div class="flex items-center">
           <span class="font-mono">branch</span>
           <span class="text-gray-800">
-            : {prodBranch}
+            : {primaryBranch}
           </span>
         </div>
         {#if lastUpdated}

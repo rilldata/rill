@@ -34,8 +34,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
 		attribute.String("args.web_open_mode", req.WebOpenMode),
-		attribute.String("args.where_filter_json", req.WhereFilterJson),
-		attribute.StringSlice("args.accessible_fields", req.AccessibleFields),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -71,15 +69,27 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	var tokens map[string]string
-	var ownerEmail string
 	if webOpenMode == WebOpenModeRecipient {
-		// in this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
-		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
+		// This is the default mode for existing reports, this also implies that reports will break for users who don't have access to the project.
+		// But we agree this is acceptable and report owner needs to change to creator mode if they want to share with users who don't have access.
+		// In this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
+		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
 	} else {
-		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
+		// whereFilterJSON and accessibleFields is only needed for backwards compatibility during runtime rollout after admin upgrade, can be removed in next version
+		// nolint:staticcheck // needed during rollout for backwards compatibility
+		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
+	}
+
+	var ownerEmail string
+	if req.OwnerId != "" {
+		owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
+		if err != nil {
+			return nil, err
+		}
+		ownerEmail = owner.Email
 	}
 
 	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
@@ -90,10 +100,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
-			// no token needed for owner and no unsubscribe link
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
-				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 			}
 			continue
@@ -126,11 +135,11 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequest) (*adminv1.CreateReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -145,11 +154,11 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -186,12 +195,12 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest) (*adminv1.EditReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -202,11 +211,11 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -251,19 +260,19 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.UnsubscribeReportRequest) (*adminv1.UnsubscribeReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -293,9 +302,13 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
-		reportTkn, err := s.admin.DB.FindReportTokenForMagicAuthToken(ctx, claims.OwnerID())
+		reportTkn, err := s.admin.DB.FindNotificationTokenForMagicAuthToken(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to find report token: %s", err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "failed to find notification token: %s", err.Error())
+		}
+
+		if reportTkn.ResourceKind != runtime.ResourceKindReport || reportTkn.ResourceName != req.Name {
+			return nil, status.Error(codes.InvalidArgument, "token is not valid for this report")
 		}
 
 		if reportTkn.RecipientEmail == "" {
@@ -378,12 +391,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequest) (*adminv1.DeleteReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -394,11 +407,11 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -433,12 +446,12 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRequest) (*adminv1.TriggerReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.name", req.Name),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -449,11 +462,11 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -479,7 +492,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateReportYAMLRequest) (*adminv1.GenerateReportYAMLResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
@@ -601,7 +614,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -626,16 +639,15 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 	mgcOpts.Resources = res
 
-	ownerEmail := ""
 	if ownerID != "" {
 		// Get the project-level permissions for the creating user.
 		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, ownerID)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, ownerID, orgPerms)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 
 		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
@@ -645,16 +657,15 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
 		attrs, err := s.jwtAttributesForUser(ctx, ownerID, orgID, projectPermissions)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		mgcOpts.Attributes = attrs
-		ownerEmail = attrs["email"].(string)
 	}
 
 	// issue magic tokens for new external emails
 	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to start transaction: %w", err)
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
@@ -673,27 +684,28 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
+			return nil, fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
 		}
 
 		emailTokens[email] = tkn.Token().String()
 
-		_, err = s.admin.DB.InsertReportToken(cctx, &database.InsertReportTokenOptions{
-			ReportName:       reportName,
+		_, err = s.admin.DB.InsertNotificationToken(cctx, &database.InsertNotificationTokenOptions{
+			ResourceKind:     runtime.ResourceKindReport,
+			ResourceName:     reportName,
 			RecipientEmail:   email,
 			MagicAuthTokenID: tkn.Token().ID.String(),
 		})
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to insert report token for email %s: %w", email, err)
+			return nil, fmt.Errorf("failed to insert report token for email %s: %w", email, err)
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return emailTokens, ownerEmail, nil
+	return emailTokens, nil
 }
 
 var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)

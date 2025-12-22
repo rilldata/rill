@@ -9,11 +9,7 @@ sidebar_position: 00
 ## Overview
 
 
-Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding.md) into other applications, and more!
-
-:::tip Configure credentials
-Cloud datastores will typically require service keys to access data. Make sure you create the necessary key for your service account and either add these credentials to your `.env` file directly or deploy your project and then run ```rill env configure``` with the correct credentials. For more details, please refer to our [connector documentation](/connect/credentials).
-:::
+Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](../../explore/dashboard-101), [embed Rill](/integrate/embedding) into other applications, and more!
 
 The flow diagram below shows two options for deploying an existing project. 
 
@@ -45,7 +41,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />
 
-Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management.md) section. 
+Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](../../manage/user-management) section. 
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Update` button.
 
@@ -60,7 +56,7 @@ You can easily check the version of Rill that you are using in Rill Developer by
 rill --version
 ```
 
-If you are on an older version of Rill, it is **strongly recommended** to [upgrade](get-started/install.md#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade](/get-started/install#upgrade-to-the-newest-version-of-rill-developer) to the latest version.
 
 :::
 
@@ -128,7 +124,7 @@ Your project can be accessed at: https://ui.rilldata.com/Rill_Learn/my-rill-tuto
 Opening project in browser...
 ```
 
-If you have not already [configured your connections' credentials](https://docs.rilldata.com/connect/credentials), you will be reminded here which connections are required.
+If you have not already [configured your connections' credentials](https://docs.rilldata.com/build/connectors/credentials), you will be reminded here which connections are required.
 
 **First deployment**
 
@@ -201,7 +197,7 @@ Likewise, if using the UI by selecting the `Update` button, Rill will detect the
 
 :::tip Interested in using Gitlab?
 
-Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-cli.md)!
+Check out our documentation on deploying a [Rill project using Gitlab](/deploy/deploy-dashboard/deploy-from-cli)!
 
 :::
 

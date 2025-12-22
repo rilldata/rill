@@ -20,6 +20,7 @@ import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
   RILL_ORG_NAME,
+  RILL_PROJECT_DISPLAY_NAME,
   RILL_PROJECT_NAME,
   RILL_SERVICE_NAME,
 } from "./constants";
@@ -202,14 +203,26 @@ setup.describe("global setup", () => {
     // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
-    await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
-
-    // Expect to land on the chat page
-    await adminPage.waitForURL("**/-/chat");
     await expect(
-      adminPage.getByText("How can I help you today?"),
-    ).toBeVisible();
+      adminPage.getByRole("link", { name: RILL_ORG_NAME }),
+    ).toBeVisible(); // Organization breadcrumb
+    await expect(
+      adminPage.getByRole("link", { name: RILL_PROJECT_NAME }),
+    ).toBeVisible(); // Project breadcrumb
+
+    // Expect to land on the project home page
+    await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
+    // Temporary fix to wait for the project to be ready.
+    // TODO: add a refetch to the project API
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          return adminPage.getByLabel("Project title").textContent();
+        },
+        { intervals: Array(4).fill(30_000), timeout: 120_000 },
+      )
+      .toContain(`Welcome to ${RILL_PROJECT_DISPLAY_NAME}`);
 
     // Navigate to the dashboards page to validate the deployment
     await adminPage.getByRole("link", { name: "Dashboards" }).click();

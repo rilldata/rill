@@ -9,7 +9,7 @@ export const defaultNoFormattingOptions: FormatterOptionsCommon &
   numberKind: NumberKind.ANY,
   rangeSpecs: [
     {
-      minMag: -4,
+      minMag: -5,
       supMag: -2,
       maxDigitsRight: 2,
       baseMagnitude: 0,
@@ -47,6 +47,19 @@ export const defaultGenericNumOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
   rangeSpecs: [
     {
+      minMag: -5,
+      supMag: -2,
+      maxDigitsRight: 2,
+      baseMagnitude: 0,
+      overrideValue: {
+        int: "",
+        dot: ".",
+        frac: "00",
+        prefix: "~",
+        suffix: "",
+      },
+    },
+    {
       minMag: -2,
       supMag: 3,
       maxDigitsRight: 2,
@@ -62,7 +75,27 @@ export const defaultPercentOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
   rangeSpecs: [
     {
+      minMag: -6,
+      supMag: -2,
+      maxDigitsRight: 2,
+      baseMagnitude: 0,
+      overrideValue: {
+        int: "",
+        dot: ".",
+        frac: "00",
+        prefix: "~",
+        suffix: "",
+      },
+    },
+    {
       minMag: -2,
+      supMag: -1,
+      maxDigitsRight: 2,
+      baseMagnitude: 0,
+      padWithInsignificantZeros: false,
+    },
+    {
+      minMag: -1,
       supMag: 3,
       maxDigitsRight: 1,
       baseMagnitude: 0,
@@ -77,6 +110,19 @@ export const defaultCurrencyOptions = (
   numberKind: NumberKind,
 ): FormatterOptionsCommon & FormatterRangeSpecsStrategy => ({
   rangeSpecs: [
+    {
+      minMag: -5,
+      supMag: -2,
+      maxDigitsRight: 2,
+      baseMagnitude: 0,
+      overrideValue: {
+        int: "",
+        dot: ".",
+        frac: "00",
+        prefix: "~",
+        suffix: "",
+      },
+    },
     {
       minMag: -2,
       supMag: 3,

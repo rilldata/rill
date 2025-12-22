@@ -52,6 +52,7 @@
     dimensionIdMap,
     whereFilter,
     dimensionsWithInlistFilter,
+    metricsViewName,
   );
   $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
 </script>

@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -37,12 +38,11 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
+	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	dsn, cluster := testclickhouse.StartCluster(t)
 
@@ -66,6 +66,7 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, c, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
+	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
@@ -228,6 +229,10 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 
 	insertOpts := &InsertTableOptions{Strategy: drivers.IncrementalStrategyMerge}
 	_, err = c.insertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts, props)
+	require.NoError(t, err)
+
+	// Force merge/deduplication in ReplacingMergeTree
+	err = c.optimizeTable(context.Background(), "merge_tbl")
 	require.NoError(t, err)
 
 	var result []struct {
@@ -405,12 +410,15 @@ func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, 
 }
 
 func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
-	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
-		Typ:                      "DICTIONARY",
-		PrimaryKey:               "id",
-		DictionarySourceUser:     "clickhouse",
-		DictionarySourcePassword: "clickhouse",
-	})
+	props := &ModelOutputProperties{
+		Typ:        "DICTIONARY",
+		PrimaryKey: "id",
+	}
+	if c.config.Cluster == "" {
+		props.DictionarySourceUser = "default"
+		props.DictionarySourcePassword = "default"
+	}
+	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", props)
 	require.NoError(t, err)
 
 	err = c.renameEntity(context.Background(), "dict", "dict1")
@@ -461,12 +469,26 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	tempTableName := "optimize_basic_test"
 
+	// Determine table names based on cluster mode
+	var localTableName, distTableName string
+	if c.config.Cluster != "" {
+		localTableName = tempTableName + "_local"
+		distTableName = tempTableName
+	} else {
+		localTableName = tempTableName
+		distTableName = tempTableName
+	}
+
 	// Create table with MergeTree engine - handle cluster mode
 	var err error
 	if c.config.Cluster != "" {
-		localTableName := tempTableName + "_local"
 		localCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", localTableName, c.config.Cluster)
 		err = olap.Exec(ctx, &drivers.Statement{Query: localCreateQuery})
+		require.NoError(t, err)
+
+		// Create distributed table
+		distCreateQuery := fmt.Sprintf("CREATE TABLE %s ON CLUSTER %s AS %s ENGINE=Distributed(%s, currentDatabase(), %s, rand())", distTableName, c.config.Cluster, localTableName, c.config.Cluster, localTableName)
+		err = olap.Exec(ctx, &drivers.Statement{Query: distCreateQuery})
 		require.NoError(t, err)
 	} else {
 		createQuery := fmt.Sprintf("CREATE TABLE %s (id INT, value VARCHAR) ENGINE=MergeTree ORDER BY id", tempTableName)
@@ -474,19 +496,18 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 		require.NoError(t, err)
 	}
 
-	// Insert test data
+	// Insert test data via distributed table
 	err = olap.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("INSERT INTO %s VALUES (1, 'test1'), (2, 'test2'), (3, 'test3')", tempTableName),
+		Query: fmt.Sprintf("INSERT INTO %s VALUES (1, 'test1'), (2, 'test2'), (3, 'test3')", distTableName),
 	})
 	require.NoError(t, err)
 
-	// Run OPTIMIZE
 	err = c.optimizeTable(ctx, tempTableName)
 	require.NoError(t, err)
 
-	// Verify data integrity after optimization
+	// Verify data integrity after optimization via distributed table
 	res, err := olap.Query(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("SELECT id, value FROM %s ORDER BY id", tempTableName),
+		Query: fmt.Sprintf("SELECT id, value FROM %s ORDER BY id", distTableName),
 	})
 	require.NoError(t, err)
 
@@ -849,4 +870,118 @@ func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPSt
 	require.Equal(t, "initial", results[0].Status)
 	require.Equal(t, 2, results[1].ID)
 	require.Equal(t, "added", results[1].Status)
+}
+
+func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	t.Run("SingleQueryAttribute", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('max_threads') as max_threads",
+			QueryAttributes: map[string]string{
+				"max_threads": "1",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var maxThreads int
+		require.NoError(t, res.Scan(&maxThreads))
+		require.Equal(t, 1, maxThreads)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("MultipleQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory, getSetting('max_execution_time') as max_exec_time",
+			QueryAttributes: map[string]string{
+				"max_threads":        "1",
+				"max_memory_usage":   "1000000",
+				"max_execution_time": "10",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var maxThreads int
+		var maxMemory int64
+		var maxExecTime int
+		require.NoError(t, res.Scan(&maxThreads, &maxMemory, &maxExecTime))
+		require.Equal(t, 1, maxThreads)
+		require.Equal(t, int64(1000000), maxMemory)
+		require.Equal(t, 10, maxExecTime)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("EmptyQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query:           "SELECT 1",
+			QueryAttributes: map[string]string{},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("NilQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query:           "SELECT 1",
+			QueryAttributes: nil,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("QueryAttributeWithExistingPrefix", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory",
+			QueryAttributes: map[string]string{
+				"max_threads":      "1",
+				"max_memory_usage": "1000000",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var maxThreads int
+		var maxMemory int64
+		require.NoError(t, res.Scan(&maxThreads, &maxMemory))
+		require.Equal(t, 1, maxThreads)
+		require.Equal(t, int64(1000000), maxMemory)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("CustomWithPrefix", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('custom_test')",
+			QueryAttributes: map[string]string{
+				"custom_test": "value", // The testclickhouse has `custom_` configured as a valid custom setting prefix
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var customSetting string
+		require.NoError(t, res.Scan(&customSetting))
+		require.Equal(t, "value", customSetting)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("CustomWithoutPrefix", func(t *testing.T) {
+		_, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT getSetting('foo')",
+			QueryAttributes: map[string]string{
+				"foo": "value",
+			},
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "neither a builtin setting nor")
+	})
 }

@@ -1,58 +1,44 @@
 <script lang="ts">
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import {
     type V1CanvasRow,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onDestroy } from "svelte";
   import { get, writable } from "svelte/store";
   import { parseDocument } from "yaml";
+  import ComponentError from "../components/ComponentError.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { CanvasComponentType } from "./components/types";
+  import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { Transaction, YAMLRow } from "./layout-util";
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
-    mapGuard,
-    rowsGuard,
-    mousePosition,
     generateNewAssets,
+    mapGuard,
+    mousePosition,
+    rowsGuard,
   } from "./layout-util";
-  import { activeDivider } from "./stores/ui-stores";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
-  import { dropZone } from "./stores/ui-stores";
-  import ComponentError from "./components/ComponentError.svelte";
-  import EditableCanvasRow from "./EditableCanvasRow.svelte";
-  import { onDestroy } from "svelte";
-  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { activeDivider, dropZone } from "./stores/ui-stores";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   const activelyEditing = writable(false);
 
   export let fileArtifact: FileArtifact;
   export let canvasName: string;
   export let openSidebar: () => void;
-
-  $: ({
-    canvasEntity: {
-      setSelectedComponent,
-      selectedComponent,
-      components,
-      processRows,
-      specStore,
-      unsubscribe,
-      _rows,
-    },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: layoutRows = $_rows;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
@@ -65,7 +51,26 @@
   let openSidebarAfterSelection = false;
   let pendingComponentDelete: string | undefined = undefined;
 
+  $: ({
+    canvasEntity: {
+      setSelectedComponent,
+      selectedComponent,
+      componentsStore,
+      processRows,
+      specStore,
+      unsubscribe,
+      _rows,
+      firstLoad,
+    },
+  } = getCanvasStore(canvasName, instanceId));
+
+  $: layoutRows = $_rows;
+
   $: ({ instanceId } = $runtime);
+
+  $: components = $componentsStore;
+
+  $: canvasData = $specStore.data;
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
 
   $: metricsViewQuery = useDefaultMetrics(instanceId, metricsViews?.[0]?.[0]);
@@ -73,7 +78,6 @@
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: canvasData = $specStore.data;
   $: resolvedComponents = canvasData?.components;
 
   $: spec = canvasData?.canvas ?? {
@@ -431,8 +435,9 @@
   {canvasName}
   {maxWidth}
   {filtersEnabled}
-  onClick={resetSelection}
   showGrabCursor={activelyDragging}
+  onClick={resetSelection}
+  builder
   bind:clientWidth
 >
   {#each layoutRows as row, rowIndex (rowIndex)}
@@ -476,7 +481,7 @@
       }}
       onComponentMouseDown={({ event, id }) => {
         if (event.button !== 0) return;
-        const component = components.get(id);
+        const component = componentsStore.getNonReactive(id);
         if (!component) return;
 
         initialMousePosition = $mousePosition;
@@ -494,28 +499,34 @@
       }}
     />
   {:else}
-    <RowWrapper
-      gridTemplate="12fr"
-      zIndex={0}
-      {maxWidth}
-      id="add-component-row"
-    >
-      <ItemWrapper zIndex={0}>
-        {#if defaultMetrics}
-          <AddComponentDropdown
-            componentForm
-            onMouseEnter={() => {
-              if (timeout) clearTimeout(timeout);
-            }}
-            onItemClick={(type) => {
-              initializeRow(specCanvasRows.length, type);
-            }}
-          />
-        {:else if canvasData}
-          <ComponentError error="No valid metrics view in project" />
-        {/if}
-      </ItemWrapper>
-    </RowWrapper>
+    {#if $firstLoad}
+      <div class="h-72 flex items-center justify-center">
+        <ReconcilingSpinner />
+      </div>
+    {:else}
+      <RowWrapper
+        gridTemplate="12fr"
+        zIndex={0}
+        {maxWidth}
+        id="add-component-row"
+      >
+        <ItemWrapper type="table" zIndex={0}>
+          {#if defaultMetrics}
+            <AddComponentDropdown
+              componentForm
+              onMouseEnter={() => {
+                if (timeout) clearTimeout(timeout);
+              }}
+              onItemClick={(type) => {
+                initializeRow(specCanvasRows.length, type);
+              }}
+            />
+          {:else if canvasData}
+            <ComponentError error="No valid metrics view in project" />
+          {/if}
+        </ItemWrapper>
+      </RowWrapper>
+    {/if}
   {/each}
 </CanvasDashboardWrapper>
 
@@ -585,7 +596,9 @@
             danger
             onClick={() => {
               if (!pendingComponentDelete) return;
-              const component = components.get(pendingComponentDelete);
+              const component = componentsStore.getNonReactive(
+                pendingComponentDelete,
+              );
               if (!component) return;
               deleteComponent(component);
               pendingComponentDelete = undefined;

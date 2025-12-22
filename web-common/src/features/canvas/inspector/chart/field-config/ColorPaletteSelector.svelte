@@ -1,12 +1,16 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
-  import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import { getColorForValues } from "@rilldata/web-common/features/canvas/components/charts/util";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
-    ChartFieldInput,
     ColorMapping,
-  } from "@rilldata/web-common/features/canvas/inspector/types";
+    FieldConfig,
+  } from "@rilldata/web-common/features/components/charts/types";
+  import {
+    colorToVariableReference,
+    getColorForValues,
+    resolveCSSVariable,
+  } from "@rilldata/web-common/features/components/charts/util";
   import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import { ChevronDown, ChevronRight } from "lucide-svelte";
   import { slide } from "svelte/transition";
@@ -35,12 +39,15 @@
 
   function handleColorChange(value: string, newColor: string) {
     const valueIndex = colorValues.findIndex((v) => v === value);
-    const defaultColor =
+    const defaultColorVar =
       COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
+
+    // Convert the color back to a CSS variable reference if it matches a palette color
+    const colorToSave = colorToVariableReference(newColor);
 
     let updatedMapping: ColorMapping;
 
-    if (newColor === defaultColor) {
+    if (colorToSave === defaultColorVar) {
       // Remove from custom mappings if it's set back to default
       updatedMapping = currentColorMapping.filter(
         (item) => item.value !== value,
@@ -52,10 +59,13 @@
       );
       if (existingIndex >= 0) {
         updatedMapping = currentColorMapping.map((item, index) =>
-          index === existingIndex ? { ...item, color: newColor } : item,
+          index === existingIndex ? { ...item, color: colorToSave } : item,
         );
       } else {
-        updatedMapping = [...currentColorMapping, { value, color: newColor }];
+        updatedMapping = [
+          ...currentColorMapping,
+          { value, color: colorToSave },
+        ];
       }
     }
 
@@ -98,7 +108,7 @@
         {#each displayedColorMappings as { value, color } (value)}
           <ColorInput
             small
-            stringColor={color}
+            stringColor={resolveCSSVariable(color)}
             labelFirst
             allowLightnessControl
             label={value}

@@ -24,7 +24,7 @@
     const lastExecution =
       $reportQuery.data?.resource.report.state.executionHistory[0];
     await $triggerReport.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: report,
       data: undefined,

@@ -223,7 +223,7 @@
       <SelectAllButton
         {areAllTableRowsSelected}
         disabled={isRowsEmpty}
-        on:toggle-all-search-items={onToggleSearchItems}
+        {onToggleSearchItems}
       />
 
       <ExcludeButton {excludeMode} onClick={toggleFilterMode} />

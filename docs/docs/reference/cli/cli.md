@@ -24,6 +24,7 @@ Work with Rill projects directly from the command line.
 ### SEE ALSO
 
 * [rill billing](billing/billing.md)	 - Billing related commands for org
+* [rill chat](chat.md)	 - Chat with the Rill AI
 * [rill deploy](deploy.md)	 - Deploy project to Rill Cloud
 * [rill docs](docs/docs.md)	 - Open docs.rilldata.com
 * [rill env](env/env.md)	 - Manage variables for a project
@@ -40,6 +41,7 @@ Work with Rill projects directly from the command line.
 * [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
 * [rill user](user/user.md)	 - Manage users
 * [rill usergroup](usergroup/usergroup.md)	 - Manage user groups
+* [rill validate](validate.md)	 - Validate project resources
 * [rill version](version.md)	 - Show Rill version
 * [rill whoami](whoami.md)	 - Show current user
 

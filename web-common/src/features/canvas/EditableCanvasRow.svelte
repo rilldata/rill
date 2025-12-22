@@ -1,9 +1,9 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { get, type Unsubscriber, type Writable } from "svelte/store";
   import CanvasComponent from "./CanvasComponent.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import ComponentError from "./components/ComponentError.svelte";
   import DropZone from "./components/DropZone.svelte";
   import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
@@ -17,7 +17,6 @@
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
-  import type { CanvasEntity } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
 
@@ -27,7 +26,7 @@
   export let heightUnit: string = "px";
   export let rowIndex: number;
   export let columnWidth: number;
-  export let components: CanvasEntity["components"];
+  export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (

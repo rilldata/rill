@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
@@ -45,6 +45,8 @@ type GenericOptions struct {
 	DBName string
 	// SchemaName switches the default schema.
 	SchemaName string
+	// ReadOnlyMode is set to true if the connection is read-only.
+	ReadOnlyMode bool
 
 	// LocalDataDir is the path to the local DuckDB database file.
 	LocalDataDir string
@@ -137,7 +139,11 @@ func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error)
 
 	// attach the passed external db
 	if opts.Path != "" {
-		_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", safeSQLString(opts.Path)))
+		if opts.ReadOnlyMode {
+			_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s (READ_ONLY)", safeSQLString(opts.Path)))
+		} else {
+			_, err = db.ExecContext(ctx, fmt.Sprintf("ATTACH %s", safeSQLString(opts.Path)))
+		}
 		if err != nil {
 			return nil, fmt.Errorf("error attaching external db: %w", err)
 		}

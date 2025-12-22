@@ -17,11 +17,11 @@
     DEFAULT_COLUMN_WIDTH,
     valueColumn,
     deltaColumn,
+    MEASURES_PADDING,
   } from "./leaderboard-widths";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
   export let isBeingCompared: boolean;
@@ -33,6 +33,7 @@
   export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let dimensionColumnWidth: number;
+  export let maxValues: Record<string, number> = {};
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -99,11 +100,20 @@
       ? "var(--color-theme-200)"
       : "var(--color-theme-100)";
 
+  // Calculate bar width excluding dimension column
+  $: barWidth =
+    $valueColumn +
+    (leaderboardMeasureNames.length === 1
+      ? dimensionColumnWidth
+      : -MEASURES_PADDING);
+  // Calculate bar lengths based on max value. For percent-of-total measure, this will be the total.
   $: barLengths = Object.fromEntries(
-    Object.entries(pctOfTotals).map(([name, pct]) => [
-      name,
-      pct ? tableWidth * pct : 0,
-    ]),
+    Object.entries(values).map(([name, value]) => {
+      const maxValue = maxValues[name];
+      if (!value || !maxValue || maxValue <= 0) return [name, 0];
+      // Calculate relative magnitude: current value / max value * available bar width
+      return [name, (Math.abs(value) / maxValue) * barWidth];
+    }),
   );
 
   $: totalBarLength = Object.values(barLengths).reduce(
@@ -114,7 +124,7 @@
   $: showZigZags = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
-      length > tableWidth,
+      length > barWidth,
     ]),
   );
 
@@ -144,7 +154,7 @@
             return [
               name,
               length
-                ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+                ? `linear-gradient(to right, transparent ${MEASURES_PADDING}px, ${barColor} ${MEASURES_PADDING}px, ${barColor} ${length + MEASURES_PADDING}px, transparent ${length + MEASURES_PADDING}px)`
                 : undefined,
             ];
           }),

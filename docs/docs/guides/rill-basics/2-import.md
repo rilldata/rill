@@ -15,16 +15,14 @@ Let's start at the beginning of all data pipelines: **the source**.
 
 ### What is a Source?
 
-In Rill, a source model represents your raw data. See our list of [connectors](/connect) or select Add -> Add Data from Rill Developer to see the supported sources.
+In Rill, a source model represents your raw data. See our list of [connectors](/build/connectors) or select Add -> Add Data from Rill Developer to see the supported sources.
 
 <img src = '/img/tutorials/rill-basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
 <br />
 
-Depending on the source type, you will either need to explicitly provide credentials (for Snowflake, Athena, etc.), or Rill can dynamically retrieve them via the CLI (for AWS, GCP, Azure). In either case, the credentials need to be [stored in a `.env` file](/connect/credentials) in order to be pushed to your deployed project. You might need to run `rill env configure` after deploying if your credentials are not pushed properly.
-
 :::tip Where is the data being imported?
 By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/build/olap/' target="_blank">Connect OLAP engines</a>).
-Please see our docs for the <a href="https://docs.rilldata.com/connect/source/" target="_blank">supported list</a> of connectors.
+Please see our docs for the <a href="https://docs.rilldata.com/build/connectors/source/" target="_blank">supported list</a> of connectors.
 
 We support various OLAP engines. If you have a different OLAP engine that you're interested in using, please let us know! Looking for a ClickHouse tutorial? Click [here!](/guides/rill-clickhouse/r_ch_launch)
 :::
@@ -64,7 +62,7 @@ Now we're ready to create a `model`.
 <details>
   <summary>Don't see what you're looking for?</summary>
   
-    We are continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our <a href='https://docs.rilldata.com/connect/source/'>connectors page</a>. Please don't hesitate to <a href='https://docs.rilldata.com/contact'>reach out</a> if there's a connector you'd like us to add!
+    We are continually adding new sources and connectors in our releases. For a comprehensive list, you can refer to our <a href='https://docs.rilldata.com/build/connectors/source/'>connectors page</a>. Please don't hesitate to <a href='https://docs.rilldata.com/contact'>reach out</a> if there's a connector you'd like us to add!
 
     If this is your first time, you may need to refresh the browser for DuckDB to appear in the UI.
     

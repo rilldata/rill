@@ -10,19 +10,13 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { WandIcon } from "lucide-svelte";
-  import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { featureFlags } from "../../feature-flags";
-  import {
-    useCreateMetricsViewFromTableUIAction,
-    createModelAndMetricsViewAndExplore as createModelAndMetricsViewAndExploreFromTable,
-  } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
     createYamlModelFromTable,
   } from "../code-utils";
-  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
+  import GenerateMenuItem from "./GenerateMenuItem.svelte";
 
   export let connector: string;
   export let database: string = "";
@@ -33,29 +27,7 @@
   export let isModelingSupported: boolean | undefined = false;
   export let isOlapConnector: boolean = false;
 
-  const { ai } = featureFlags;
-
   $: ({ instanceId } = $runtime);
-  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    instanceId,
-    connector,
-    database,
-    databaseSchema,
-    table,
-    false,
-    BehaviourEventMedium.Menu,
-    MetricsEventSpace.LeftPanel,
-  );
-  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
-    instanceId,
-    connector,
-    database,
-    databaseSchema,
-    table,
-    true,
-    BehaviourEventMedium.Menu,
-    MetricsEventSpace.LeftPanel,
-  );
 
   async function handleCreateModel(
     modelCreationFn: () => Promise<[string, string]>,
@@ -100,27 +72,28 @@
     }
   }
 
-  // Create both metrics view and explore dashboard
-  async function handleGenerateMetricsAndExplore() {
-    if (isOlapConnector) {
-      // For OLAP connectors, create both in parallel
-      await Promise.all([
-        createMetricsViewFromTable(),
-        createExploreFromTable(),
-      ]);
-    } else {
-      // For non-OLAP connectors, follow Rill architecture:
-      // 1. Create model (ingests from source → OLAP)
-      // 2. Create metrics view (on top of model)
-      // 3. Create explore dashboard (on top of metrics view)
-      await createModelAndMetricsViewAndExploreFromTable(
-        instanceId,
-        connector,
-        database,
-        databaseSchema,
-        table,
-      );
-    }
+  async function handleGenerateMetrics() {
+    await generateMetricsFromTable(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      false, // Don't create explore dashboard
+      isOlapConnector,
+    );
+  }
+
+  async function handleGenerateDashboard() {
+    await generateMetricsFromTable(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      true, // Create explore dashboard
+      isOlapConnector,
+    );
   }
 </script>
 
@@ -131,39 +104,7 @@
   </NavigationMenuItem>
 {/if}
 
-{#if isOlapConnector}
-  <NavigationMenuItem on:click={createMetricsViewFromTable}>
-    <MetricsViewIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate metrics
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-  </NavigationMenuItem>
-
-  <NavigationMenuItem on:click={createExploreFromTable}>
-    <ExploreIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate dashboard
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-  </NavigationMenuItem>
-{/if}
-
-{#if showGenerateMetricsAndDashboard && !isOlapConnector}
-  <NavigationMenuItem on:click={handleGenerateMetricsAndExplore}>
-    <ExploreIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate an Explore dashboard
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-  </NavigationMenuItem>
+{#if isOlapConnector || showGenerateMetricsAndDashboard}
+  <GenerateMenuItem type="metrics" onClick={handleGenerateMetrics} />
+  <GenerateMenuItem type="dashboard" onClick={handleGenerateDashboard} />
 {/if}

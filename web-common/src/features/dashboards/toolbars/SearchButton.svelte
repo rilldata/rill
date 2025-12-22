@@ -27,7 +27,7 @@
   </Button>
 {:else}
   <div transition:slideRight={{}} class="flex items-center gap-x-1">
-    <Search bind:value on:submit={onSubmit} />
+    <Search bind:value {onSubmit} />
     <button
       on:click={_onClose}
       class="p-1.5 rounded hover:bg-gray-100 transition-colors"

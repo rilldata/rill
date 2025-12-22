@@ -1,4 +1,5 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -58,8 +59,10 @@ export function convertURLToExplorePreset(
     (m) => m.name!,
   );
   const dimensions = getMapFromArray(
-    metricsView.dimensions?.filter((d) =>
-      explore.dimensions?.includes(d.name!),
+    metricsView.dimensions?.filter(
+      (d) =>
+        explore.dimensions?.includes(d.name!) &&
+        d.type !== "DIMENSION_TYPE_TIME",
     ) ?? [],
     (d) => d.name!,
   );
@@ -178,6 +181,28 @@ export function convertURLToExplorePreset(
     } else {
       // Unset leaderboard measures if any are invalid
       preset.exploreLeaderboardMeasures = [];
+    }
+  }
+
+  if (
+    searchParams.has(ExploreStateURLParams.LeaderboardShowContextForAllMeasures)
+  ) {
+    const rawValue = searchParams.get(
+      ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+    );
+    const normalized = rawValue?.toLowerCase();
+    if (normalized === "true" || normalized === "1") {
+      preset.exploreLeaderboardShowContextForAllMeasures = true;
+    } else if (
+      normalized === "false" ||
+      normalized === "0" ||
+      normalized === ""
+    ) {
+      preset.exploreLeaderboardShowContextForAllMeasures = false;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard context toggle", rawValue ?? ""),
+      );
     }
   }
 
@@ -571,6 +596,21 @@ function fromPivotUrlParams(
       ExploreStateURLParams.PivotTableMode,
     ) as string;
     preset.pivotTableMode = tableMode;
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotRowLimit)) {
+    const rowLimitStr = searchParams.get(
+      ExploreStateURLParams.PivotRowLimit,
+    ) as string;
+    const rowLimit = parseInt(rowLimitStr, 10);
+    // Use shared constants to validate row limit values
+    if (
+      !isNaN(rowLimit) &&
+      rowLimit > 0 &&
+      (PIVOT_ROW_LIMIT_OPTIONS as readonly number[]).includes(rowLimit)
+    ) {
+      preset.pivotRowLimit = rowLimit;
+    }
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

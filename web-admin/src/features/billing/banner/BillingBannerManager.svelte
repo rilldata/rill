@@ -20,6 +20,6 @@
 
 {#if organizationPermissions.manageOrg}
   <BillingBannerManagerForAdmins {organization} />
-{:else if organizationPermissions.readOrg}
+{:else if organizationPermissions.readOrg && organizationPermissions.readProjects}
   <BillingBannerManagerForViewers {organization} />
 {/if}

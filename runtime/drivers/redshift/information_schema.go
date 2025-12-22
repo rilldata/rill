@@ -34,17 +34,16 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	LIMIT %d 
 	`, condFilter, limit+1)
 
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, "", err
 	}
 
-	client := redshiftdata.NewFromConfig(awsConfig)
-
-	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list schemas: %w", err)
 	}
+	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
 		Id: aws.String(queryExecutionID),
@@ -98,17 +97,16 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	LIMIT %d 
 	`, escapeStringValue(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, "", err
 	}
 
-	client := redshiftdata.NewFromConfig(awsConfig)
-
-	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list schemas: %w", err)
 	}
+	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
 		Id: aws.String(queryExecutionID),
@@ -151,17 +149,16 @@ WHERE database_name = %s AND schema_name = %s AND table_name = %s
 ORDER BY ordinal_position;
 `, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, err
 	}
 
-	client := redshiftdata.NewFromConfig(awsConfig)
-
-	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get table metadata: %w", err)
 	}
+	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
 		Id: aws.String(queryExecutionID),

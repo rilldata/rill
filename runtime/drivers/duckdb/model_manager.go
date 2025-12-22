@@ -16,8 +16,13 @@ type ModelInputProperties struct {
 	InitQueries string `mapstructure:"init_queries"`
 	PreExec     string `mapstructure:"pre_exec"`
 	PostExec    string `mapstructure:"post_exec"`
+	// CreateSecretsFromConnectors is list of connector names to create temporary secrets for before executing models.
+	CreateSecretsFromConnectors []string `mapstructure:"create_secrets_from_connectors"`
 	// Database is set if sql is to be run against an external database
 	Database string `mapstructure:"db"`
+	// InternalCreateSecretSQL and  InternalDropSecretSQL is for internal use only. These properties are only set by objectStore connector for secret sql
+	InternalCreateSecretSQL string `mapstructure:"internal_create_secret_sql"`
+	InternalDropSecretSQL   string `mapstructure:"internal_drop_secret_sql"`
 }
 
 func (p *ModelInputProperties) Validate() error {

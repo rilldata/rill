@@ -37,7 +37,7 @@
   function onRequestAccess() {
     requested = true;
     void $requestAccess.mutateAsync({
-      organization,
+      org: organization,
       project,
       data: {
         role,

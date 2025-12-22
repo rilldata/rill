@@ -1,39 +1,37 @@
 <script lang="ts">
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import { slide } from "svelte/transition";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
-  import { PivotChipType, type PivotChipData } from "./types";
+  import { PivotChipType, type PivotChipData, type PivotState } from "./types";
 
-  const stateManagers = getStateManagers();
-  const {
-    selectors: {
-      pivot: { rows, columns, isFlat, originalColumns },
-    },
-    exploreName,
-  } = stateManagers;
+  export let pivotState: PivotState;
+  export let setRows: (items: PivotChipData[]) => void;
+  export let setColumns: (items: PivotChipData[]) => void;
 
-  $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
+  $: ({ rows, columns, tableMode } = pivotState);
+  $: splitColumns = splitPivotChips(columns);
+  $: fullColumns = splitColumns.dimension.concat(splitColumns.measure);
+  $: isFlat = tableMode === "flat";
 
   function updateColumn(items: PivotChipData[]) {
     // Reset lastNestState when columns are updated
     lastNestState.set(null);
-    metricsExplorerStore.setPivotColumns($exploreName, items);
+    setColumns(items);
   }
 
   function updateRows(items: PivotChipData[]) {
     const filtered = items.filter(
       (item) => item.type !== PivotChipType.Measure,
     );
-    metricsExplorerStore.setPivotRows($exploreName, filtered);
+    setRows(filtered);
   }
 </script>
 
 <div class="header" transition:slide>
-  {#if !$isFlat}
+  {#if !isFlat}
     <div
       class="header-row"
       transition:slide={{
@@ -47,7 +45,7 @@
       <DragList
         zone="rows"
         placeholder="Drag dimensions here"
-        items={$rows}
+        items={rows}
         onUpdate={updateRows}
       />
     </div>
@@ -59,10 +57,8 @@
 
     <DragList
       zone="columns"
-      tableMode={$isFlat ? "flat" : "nest"}
-      items={$isFlat
-        ? $originalColumns
-        : columnsDimensions.concat(columnsMeasures)}
+      {tableMode}
+      items={isFlat ? columns : fullColumns}
       placeholder="Drag dimensions or measures here"
       onUpdate={updateColumn}
     />

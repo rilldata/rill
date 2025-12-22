@@ -10,6 +10,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -30,7 +31,8 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -39,7 +41,7 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 		Resolver:           req.Resolver,
 		ResolverProperties: req.ResolverProperties.AsMap(),
 		Args:               nil,
-		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+		Claims:             claims,
 	})
 	if err != nil {
 		return nil, err
@@ -112,14 +114,16 @@ func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPro
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil)
+	res, err := ai.Complete(ctx, &drivers.CompleteOptions{
+		Messages: msgs,
+	})
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Extract text from content blocks
 	var responseText string
-	for _, block := range res.Content {
+	for _, block := range res.Message.Content {
 		switch blockType := block.GetBlockType().(type) {
 		case *aiv1.ContentBlock_Text:
 			if text := blockType.Text; text != "" {

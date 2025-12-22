@@ -1,30 +1,35 @@
 import { goto } from "$app/navigation";
+import { pollForFileCreation } from "@rilldata/web-common/features/entity-management/actions";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { createResourceFile } from "@rilldata/web-common/features/file-explorer/new-files";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import { waitUntil } from "../../../lib/waitUtils";
 import { behaviourEvent } from "../../../metrics/initMetrics";
-import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 import {
   MetricsEventScreenName,
-  type MetricsEventSpace,
+  MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
   type RuntimeServiceGenerateMetricsViewFileBody,
   type V1GenerateMetricsViewFileResponse,
+  type V1Resource,
+  runtimeServiceGenerateCanvasFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
+import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
-import { createYamlModelFromTable } from "../../connectors/code-utils";
 
 /**
  * TanStack Query does not support mutation cancellation (at least as of v4).
@@ -64,7 +69,6 @@ export function useCreateMetricsViewFromTableUIAction(
 
   // Return a function that can be called to create a dashboard from a table
   return async () => {
-    let isAICancelled = false;
     const abortController = new AbortController();
 
     overlay.set({
@@ -73,8 +77,7 @@ export function useCreateMetricsViewFromTableUIAction(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
-            isAICancelled = true;
+            abortController.abort("AI generation cancelled by user");
           },
         },
       },
@@ -102,24 +105,15 @@ export function useCreateMetricsViewFromTableUIAction(
         abortController.signal,
       );
 
-      // Poll every second until the AI generation is complete or canceled
-      while (!isAICancelled) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        try {
-          await runtimeServiceGetFile(instanceId, {
-            path: newMetricsViewFilePath,
-          });
-
-          // success, AI is done
-          break;
-        } catch {
-          // 404 error, AI is not done
-        }
-      }
+      // Poll until file creation is complete or canceled
+      const fileCreated = await pollForFileCreation(
+        instanceId,
+        newMetricsViewFilePath,
+        abortController.signal,
+      );
 
       // If the user canceled the AI request, submit another request with `useAi=false`
-      if (isAICancelled) {
+      if (!fileCreated) {
         await runtimeServiceGenerateMetricsViewFile(instanceId, {
           connector: connector,
           database: database,
@@ -198,7 +192,7 @@ export async function createDashboardFromTableInMetricsEditor(
       component: OptionToCancelAIGeneration,
       props: {
         onCancel: () => {
-          abortController.abort();
+          abortController.abort("Dashboard generation cancelled by user");
           isAICancelled = true;
         },
       },
@@ -254,30 +248,72 @@ export async function createDashboardFromTableInMetricsEditor(
 }
 
 /**
- * Creates a model from a table, then generates a metrics view and explore dashboard.
- * This is used for non-OLAP connectors that need to follow the Rill architecture:
- * 1. Create model (ingests from source → OLAP)
- * 2. Create metrics view (on top of model)
- * 3. Create explore dashboard (on top of metrics view)
+ * Unified function that generates metrics (and optionally explore dashboard) from a table.
+ * Handles both OLAP and non-OLAP connectors with appropriate logic for each case.
  */
-export async function createModelAndMetricsViewAndExplore(
+export async function generateMetricsFromTable(
   instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
+  createExplore: boolean,
+  isOlapConnector: boolean,
+  behaviourEventMedium: BehaviourEventMedium = BehaviourEventMedium.Menu,
+  metricsEventSpace: MetricsEventSpace = MetricsEventSpace.LeftPanel,
+) {
+  if (isOlapConnector) {
+    // For OLAP connectors, use direct metrics view generation
+    const createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      createExplore,
+      behaviourEventMedium,
+      metricsEventSpace,
+    );
+    await createMetricsViewFromTable();
+  } else {
+    // For non-OLAP connectors, follow Rill architecture: Model → Metrics → (Optional) Explore
+    await createModelAndMetricsAndExplore(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      createExplore,
+    );
+  }
+}
+
+/**
+ * Creates a model from a table, then generates a metrics view and optionally an explore dashboard.
+ * This is used for non-OLAP connectors that need to follow the Rill architecture:
+ * 1. Create model (ingests from source → OLAP)
+ * 2. Create metrics view (on top of model)
+ * 3. Optionally create explore dashboard (on top of metrics view)
+ */
+export async function createModelAndMetricsAndExplore(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  table: string,
+  createExplore: boolean = true,
 ) {
   let isAICancelled = false;
   const abortController = new AbortController();
 
   const isAiEnabled = get(featureFlags.ai);
   overlay.set({
-    title: `Creating your metrics and dashboard${isAiEnabled ? " with AI" : ""}...`,
+    title: `Creating your ${createExplore ? "metrics and dashboard" : "metrics"}${isAiEnabled ? " with AI" : ""}...`,
     detail: {
       component: OptionToCancelAIGeneration,
       props: {
         onCancel: () => {
-          abortController.abort();
+          abortController.abort("Metrics creation cancelled by user");
           isAICancelled = true;
         },
       },
@@ -292,7 +328,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("Model creation cancelled by user");
             isAICancelled = true;
           },
         },
@@ -331,7 +367,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("Metrics view creation cancelled by user");
             isAICancelled = true;
           },
         },
@@ -386,6 +422,22 @@ export async function createModelAndMetricsViewAndExplore(
       throw new Error("Failed to create a Metrics View resource");
     }
 
+    // If we're not creating an Explore, navigate to the Metrics View file
+    if (!createExplore) {
+      const previousScreenName = getScreenNameFromPage();
+      await goto(`/files${metricsViewFilePath}`);
+      void behaviourEvent?.fireNavigationEvent(
+        metricsViewName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousScreenName,
+        MetricsEventScreenName.MetricsDefinition,
+      );
+      return;
+    }
+
+    // If we are creating an Explore...
+
     // Update overlay for explore dashboard creation
     overlay.set({
       title: `Creating explore dashboard...`,
@@ -393,7 +445,9 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort(
+              "Explore dashboard creation cancelled by user",
+            );
             isAICancelled = true;
           },
         },
@@ -405,6 +459,336 @@ export async function createModelAndMetricsViewAndExplore(
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
+  } finally {
+    // Always clean up the overlay
+    overlay.set(null);
+  }
+}
+
+/**
+ * Creates an Explore dashboard file without navigation.
+ * Returns the file path of the created explore.
+ */
+export async function createExploreWithoutNavigation(
+  queryClient: QueryClient,
+  instanceId: string,
+  metricsViewResource: V1Resource,
+): Promise<string> {
+  // Create the Explore file
+  const filePath = await createResourceFile(
+    ResourceKind.Explore,
+    metricsViewResource,
+  );
+
+  // Wait until the Explore resource is ready
+  const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  const resource = fileArtifact.getResource(queryClient, instanceId);
+
+  await waitUntil(() => {
+    return get(resource).data !== undefined;
+  }, 10000);
+
+  const name = get(resource).data?.meta?.name?.name;
+  if (!name) throw new Error("Failed to create an Explore resource");
+
+  return filePath;
+}
+
+/**
+ * Creates a Canvas dashboard from a metrics view using AI, without navigation.
+ * Returns the file path of the created canvas, or null if creation failed.
+ */
+export async function createCanvasDashboardWithoutNavigation(
+  instanceId: string,
+  metricsViewName: string,
+): Promise<string | null> {
+  const isAiEnabled = get(featureFlags.ai);
+  const abortController = new AbortController();
+
+  // Get a unique name for the canvas dashboard
+  const canvasName = getName(
+    `${metricsViewName}_canvas`,
+    fileArtifacts.getNamesForKind(ResourceKind.Canvas),
+  );
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+
+  try {
+    // Request AI-generated canvas dashboard
+    void runtimeServiceGenerateCanvasFile(
+      instanceId,
+      {
+        metricsViewName: metricsViewName,
+        path: canvasFilePath,
+        useAi: isAiEnabled,
+      },
+      abortController.signal,
+    );
+
+    // Poll until file creation is complete or canceled
+    const fileCreated = await pollForFileCreation(
+      instanceId,
+      canvasFilePath,
+      abortController.signal,
+      1000,
+    );
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (!fileCreated) {
+      await runtimeServiceGenerateCanvasFile(instanceId, {
+        metricsViewName: metricsViewName,
+        path: canvasFilePath,
+        useAi: false,
+      });
+    }
+
+    return canvasFilePath;
+  } catch (err) {
+    eventBus.emit("notification", {
+      message: "Failed to create Canvas dashboard for " + metricsViewName,
+      detail: err.response?.data?.message ?? err.message,
+    });
+    return null;
+  }
+}
+
+/**
+ * Wrapper function that creates metrics view, explore dashboard, and canvas dashboard from a table.
+ * Navigates to canvas dashboard if successful, otherwise falls back to explore dashboard.
+ *
+ * This function is to be called from "Generate dashboard" CTA when canvas feature is enabled.
+ */
+export function useCreateMetricsViewWithCanvasAndExploreUIAction(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  tableName: string,
+  behaviourEventMedium: BehaviourEventMedium,
+  metricsEventSpace: MetricsEventSpace,
+) {
+  const isAiEnabled = get(featureFlags.ai);
+
+  // Return a function that can be called to create dashboards from a table
+  return async () => {
+    const abortController = new AbortController();
+
+    overlay.set({
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} building your dashboard`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("AI generation cancelled by user");
+          },
+        },
+      },
+    });
+
+    // Get a unique name
+    const newMetricsViewName = getName(
+      `${tableName}_metrics`,
+      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
+    );
+    const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
+
+    let exploreFilePath: string | null = null;
+    let canvasFilePath: string | null = null;
+
+    try {
+      // Step 1: Request an AI-generated metrics view
+      void runtimeServiceGenerateMetricsViewFileWithSignal(
+        instanceId,
+        {
+          connector: connector,
+          database: database,
+          databaseSchema: databaseSchema,
+          table: tableName,
+          path: newMetricsViewFilePath,
+          useAi: isAiEnabled,
+        },
+        abortController.signal,
+      );
+
+      // Poll until file creation is complete or canceled
+      const fileCreated = await pollForFileCreation(
+        instanceId,
+        newMetricsViewFilePath,
+        abortController.signal,
+      );
+
+      // If the user canceled the AI request, submit another request with `useAi=false`
+      if (!fileCreated) {
+        await runtimeServiceGenerateMetricsViewFile(instanceId, {
+          connector: connector,
+          database: database,
+          databaseSchema: databaseSchema,
+          table: tableName,
+          path: newMetricsViewFilePath,
+          useAi: false,
+        });
+      }
+
+      // Step 2: Get the Metrics View resource
+      const metricsViewResource = fileArtifacts
+        .getFileArtifact(newMetricsViewFilePath)
+        .getResource(queryClient, instanceId);
+
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+      const resource = get(metricsViewResource).data;
+      if (!resource) {
+        throw new Error("Failed to create a Metrics View resource");
+      }
+
+      // Step 3: Create Explore dashboard (without navigation)
+      overlay.set({
+        title: `Creating Explore dashboard...`,
+        detail: {
+          component: OptionToCancelAIGeneration,
+          props: {
+            onCancel: () => {
+              abortController.abort("Dashboard creation cancelled by user");
+            },
+          },
+        },
+      });
+
+      exploreFilePath = await createExploreWithoutNavigation(
+        queryClient,
+        instanceId,
+        resource,
+      );
+
+      // Step 4: Try to create Canvas dashboard
+      overlay.set({
+        title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
+        detail: {
+          component: OptionToCancelAIGeneration,
+          props: {
+            onCancel: () => {
+              abortController.abort("Canvas creation cancelled by user");
+            },
+          },
+        },
+      });
+
+      canvasFilePath = await createCanvasDashboardWithoutNavigation(
+        instanceId,
+        newMetricsViewName,
+      );
+
+      // Step 5: Navigate to Canvas if successful, otherwise Explore
+      if (canvasFilePath) {
+        await goto(`/files${canvasFilePath}`);
+        void behaviourEvent?.fireNavigationEvent(
+          newMetricsViewName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          MetricsEventScreenName.Source,
+          MetricsEventScreenName.Canvas,
+        );
+      } else if (exploreFilePath) {
+        await goto(`/files${exploreFilePath}`);
+        void behaviourEvent?.fireNavigationEvent(
+          newMetricsViewName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          MetricsEventScreenName.Source,
+          MetricsEventScreenName.Explore,
+        );
+        eventBus.emit("notification", {
+          message: "Canvas dashboard creation failed, opened Explore instead",
+        });
+      }
+    } catch (err) {
+      eventBus.emit("notification", {
+        message: "Failed to create dashboards for " + tableName,
+        detail: err.response?.data?.message ?? err.message,
+      });
+
+      // If we have an explore path but canvas failed, navigate to explore
+      if (exploreFilePath) {
+        await goto(`/files${exploreFilePath}`);
+        void behaviourEvent?.fireNavigationEvent(
+          newMetricsViewName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          MetricsEventScreenName.Source,
+          MetricsEventScreenName.Explore,
+        );
+      }
+    }
+
+    // Done, remove the overlay
+    overlay.set(null);
+  };
+}
+
+/**
+ * Creates a Canvas dashboard from a metrics view using AI.
+ * This function is called from the "Create Canvas Dashboard" button on the metrics view page.
+ */
+export async function createCanvasDashboardFromMetricsView(
+  instanceId: string,
+  metricsViewName: string,
+) {
+  const isAiEnabled = get(featureFlags.ai);
+  const abortController = new AbortController();
+
+  overlay.set({
+    title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort("Canvas dashboard creation cancelled by user");
+        },
+      },
+    },
+  });
+
+  // Get a unique name for the canvas dashboard
+  const canvasName = getName(
+    `${metricsViewName}_canvas`,
+    fileArtifacts.getNamesForKind(ResourceKind.Canvas),
+  );
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+
+  try {
+    // Request AI-generated canvas dashboard
+    void runtimeServiceGenerateCanvasFile(
+      instanceId,
+      {
+        metricsViewName: metricsViewName,
+        path: canvasFilePath,
+        useAi: isAiEnabled,
+      },
+      abortController.signal,
+    );
+
+    // Poll until file creation is complete or canceled
+    const fileCreated = await pollForFileCreation(
+      instanceId,
+      canvasFilePath,
+      abortController.signal,
+    );
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (!fileCreated) {
+      await runtimeServiceGenerateCanvasFile(instanceId, {
+        metricsViewName: metricsViewName,
+        path: canvasFilePath,
+        useAi: false,
+      });
+    }
+
+    // Navigate to the Canvas file
+    await goto(`/files${canvasFilePath}`);
+  } catch (err) {
+    eventBus.emit("notification", {
+      message: "Failed to create Canvas dashboard for " + metricsViewName,
+      detail: err.response?.data?.message ?? err.message,
+    });
   } finally {
     // Always clean up the overlay
     overlay.set(null);

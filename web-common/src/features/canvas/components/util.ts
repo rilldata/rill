@@ -1,17 +1,17 @@
 import {
-  getChartComponent,
-  type ChartSpec,
+  getCanvasChartComponent,
+  type CanvasChartSpec,
 } from "@rilldata/web-common/features/canvas/components/charts";
-import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
   V1MetricsViewSpec,
+  V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
@@ -44,6 +44,15 @@ export const commonOptions: Record<
     label: "Description",
     meta: {
       placeholder: "Add additional context for this component",
+    },
+  },
+  show_description_as_tooltip: {
+    type: "boolean",
+    optional: true,
+    showInUI: true,
+    label: "Show description as tooltip",
+    meta: {
+      layout: "grouped",
     },
   },
 };
@@ -115,8 +124,8 @@ const baseComponentMap = {
 } as const;
 
 const chartComponentMap = Object.fromEntries(
-  CHART_TYPES.map((type) => [type, getChartComponent(type)]),
-) as Record<ChartType, BaseCanvasComponentConstructor<ChartSpec>>;
+  CHART_TYPES.map((type) => [type, getCanvasChartComponent(type)]),
+) as Record<ChartType, BaseCanvasComponentConstructor<CanvasChartSpec>>;
 
 export const COMPONENT_CLASS_MAP = {
   ...baseComponentMap,
@@ -186,10 +195,10 @@ export function getHeaderForComponent(
 
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
-  spec: CanvasResponse | undefined,
+  components: V1ResolveCanvasResponseResolvedComponents | undefined,
 ): string | undefined {
   if (!componentName) return undefined;
-  const resource = spec?.components?.[componentName]?.component;
+  const resource = components?.[componentName]?.component;
 
   if (resource) {
     return resource?.state?.validSpec?.rendererProperties?.metrics_view as

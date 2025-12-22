@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -28,12 +30,14 @@ type CanvasYAML struct {
 	TimeRanges           []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
-		Enable *bool `yaml:"enable"`
+		Enable *bool    `yaml:"enable"`
+		Pinned []string `yaml:"pinned"`
 	}
 	Defaults *struct {
-		TimeRange           string `yaml:"time_range"`
-		ComparisonMode      string `yaml:"comparison_mode"`
-		ComparisonDimension string `yaml:"comparison_dimension"`
+		TimeRange           string            `yaml:"time_range"`
+		ComparisonMode      string            `yaml:"comparison_mode"`
+		ComparisonDimension string            `yaml:"comparison_dimension"`
+		Filters             map[string]string `yaml:"filters"`
 	} `yaml:"defaults"`
 	Variables []*ComponentVariableYAML `yaml:"variables"`
 	Rows      []*struct {
@@ -227,10 +231,16 @@ func (p *Parser) parseCanvas(node *Node) error {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
+		filterExpr, err := parseFilterExpressions(tmp.Defaults.Filters)
+		if err != nil {
+			return fmt.Errorf("invalid filter expression in defaults: %w", err)
+		}
+
 		defaultPreset = &runtimev1.CanvasPreset{
 			TimeRange:           pointerIfNotEmpty(tmp.Defaults.TimeRange),
 			ComparisonMode:      mode,
 			ComparisonDimension: pointerIfNotEmpty(tmp.Defaults.ComparisonDimension),
+			FilterExpr:          filterExpr,
 		}
 	}
 
@@ -273,6 +283,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Rows = rows
 	r.CanvasSpec.SecurityRules = rules
+	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
@@ -364,4 +375,23 @@ func pointerIfNotEmpty(v string) *string {
 		return nil
 	}
 	return &v
+}
+
+func parseFilterExpressions(filterMap map[string]string) (map[string]*runtimev1.DefaultMetricsSQLFilter, error) {
+	result := make(map[string]*runtimev1.DefaultMetricsSQLFilter)
+
+	for key, filterStr := range filterMap {
+		expr, err := metricssql.ParseFilter(filterStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid filter expression for key %q: %w", key, err)
+		}
+
+		converted := metricsview.ExpressionToProto(expr)
+
+		result[key] = &runtimev1.DefaultMetricsSQLFilter{
+			Expression: converted,
+		}
+	}
+
+	return result, nil
 }

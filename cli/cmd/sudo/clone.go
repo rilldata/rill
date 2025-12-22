@@ -23,7 +23,7 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-				Organization:         args[0],
+				Org:                  args[0],
 				Project:              args[1],
 				SuperuserForceAccess: true,
 			})
@@ -51,7 +51,7 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("\tUsername: %s\n", res.GitUsername)
 			fmt.Printf("\tPassword: %s\n", res.GitPassword)
 			fmt.Printf("\tSubpath: %s\n", res.GitSubpath)
-			fmt.Printf("\tProd branch: %s\n", res.GitProdBranch)
+			fmt.Printf("\tPrimary branch: %s\n", res.GitPrimaryBranch)
 			fmt.Printf("\nNote the credentials are only valid for a limited duration of time.\n")
 
 			return nil

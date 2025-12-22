@@ -8,7 +8,7 @@ Once you have finished [building your model](/build/models), you can create a me
 
 ## Choosing Your Data Source
 
-Rill supports [multiple OLAP engines](/connect/olap), and the engine you're using determines which YAML property you'll use in your metrics view:
+Rill supports [multiple OLAP engines](/build/connectors/olap), and the engine you're using determines which YAML property you'll use in your metrics view:
 
 - **Use `model`** for DuckDB and Rill-managed ClickHouse
 - **Use `table`** for self-managed live connectors

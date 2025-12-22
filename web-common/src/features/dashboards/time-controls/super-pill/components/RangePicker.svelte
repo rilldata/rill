@@ -11,6 +11,8 @@
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
   import TimeRangeMenu from "./TimeRangeMenu.svelte";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -21,22 +23,19 @@
   export let maxDate: DateTime | undefined = undefined;
   export let showFullRange: boolean;
   export let allowCustomTimeRange = true;
+  export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
 </script>
 
 <DropdownMenu.Root
   bind:open
-  onOpenChange={(open) => {
-    if (open) {
-      firstVisibleMonth = interval.start;
-    }
+  onOpenChange={() => {
     showSelector = selected === "CUSTOM";
   }}
   closeOnItemClick={false}
@@ -78,14 +77,18 @@
         />
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 border-l flex flex-col w-64 p-2 py-1">
+        <div class="bg-slate-50 border-l flex flex-col w-64 p-3">
           <CalendarPlusDateInput
-            {firstVisibleMonth}
             {interval}
             {zone}
             {maxDate}
             {minDate}
-            applyRange={applyCustomRange}
+            minTimeGrain={V1TimeGrainToDateTimeUnit[
+              smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+            ]}
+            onApply={(i) => {
+              applyCustomRange(i);
+            }}
             closeMenu={() => (open = false)}
           />
         </div>

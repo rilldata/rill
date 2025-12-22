@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -25,14 +26,19 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// maxDownloadTokenSize is the maximum allowed size for a download token.
+// This is necessary to prevent large URLs in GET requests, which cause obtuse browser or load balancer errors.
+// It appears 8 KB is a safe HTTP header limit, so setting this to 7.5 KB to leave room for other header components.
+const maxDownloadTokenSize int = 7.5 * 1024 // 7.5 KB
+
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).SecurityClaims())
+	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx, req.InstanceId))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
+		return nil, err
 	}
 
 	out := fmt.Sprintf("/v1/download?token=%s", tkn)
@@ -53,7 +59,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx, req.InstanceId), res)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -92,6 +98,31 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		}
 	}
 
+	// Reports delivered in "creator mode" are accessed using claims that contain AdditionalRules that grant transitive access to the report.
+	// The transitive rule resolves into a RowFilter rule for the underlying metrics view that contains the filters in the query above.
+	// This means that the filters will be applied twice, which can impact the accuracy of subquery filters.
+	// On the frontend, this is handled by not adding the report's filters to the dashboard when it's opened.
+	// On the backend however, since we know the download token is scoped to a specific query, it is easier to just create a download token that doesn't have the transitive access rule.
+	// This ensures the report's filters don't get applied twice in the query.
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	downloadClaims := &runtime.SecurityClaims{
+		UserID:          claims.UserID,
+		UserAttributes:  claims.UserAttributes,
+		Permissions:     claims.Permissions,
+		AdditionalRules: nil, // Will be populated below
+		SkipChecks:      claims.SkipChecks,
+	}
+	for _, r := range claims.AdditionalRules {
+		ta := r.GetTransitiveAccess()
+		if ta == nil {
+			continue
+		}
+		if ta.Resource.Kind == runtime.ResourceKindReport && strings.EqualFold(ta.Resource.Name, req.Report) {
+			continue
+		}
+		downloadClaims.AdditionalRules = append(downloadClaims.AdditionalRules, r)
+	}
+
 	// Note - We are passing caller's user attributes to generateDownloadToken which may not always be the creator's attributes in case of external user's magic token. This is different from the alerts use case.
 	tkn, err := s.generateDownloadToken(&runtimev1.ExportRequest{
 		InstanceId:      req.InstanceId,
@@ -102,9 +133,9 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		OriginDashboard: originDashboard,
 		OriginUrl:       originURL,
 		ExecutionTime:   valOrNullTime(t),
-	}, &runtime.SecurityClaims{UserAttributes: auth.GetClaims(ctx).SecurityClaims().UserAttributes})
+	}, downloadClaims)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
+		return nil, err
 	}
 
 	out := fmt.Sprintf("/v1/download?token=%s", tkn)
@@ -253,7 +284,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	case *runtimev1.Query_TableRowsRequest:
 		r := v.TableRowsRequest
-		if !auth.GetClaims(req.Context()).CanInstance(r.InstanceId, auth.ReadOLAP) {
+		if !auth.GetClaims(req.Context(), r.InstanceId).Can(runtime.ReadOLAP) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
 		}
@@ -327,20 +358,21 @@ func init() {
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
+// NOTE: The error it returns is a gRPC status.Error, so should be propagated as-is in gRPC handlers.
 func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *runtime.SecurityClaims) (string, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to marshal download token: %s", err.Error())
 	}
 
 	r, err = gzipCompress(r)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to compress download token: %s", err.Error())
 	}
 
 	claimsJSON, err := json.Marshal(claims)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to marshal claims: %s", err.Error())
 	}
 
 	tkn := downloadToken{
@@ -351,7 +383,11 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, claims *run
 
 	res, err := s.codec.Encode(tkn)
 	if err != nil {
-		return "", err
+		return "", status.Errorf(codes.Internal, "failed to encode download token: %s", err.Error())
+	}
+
+	if len(res) > maxDownloadTokenSize {
+		return "", status.Errorf(codes.InvalidArgument, "download token size %d exceeds maximum allowed size of %d bytes (hint: this may be due to too many filter values)", len(res), maxDownloadTokenSize)
 	}
 
 	return res, nil

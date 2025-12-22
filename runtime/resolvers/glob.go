@@ -183,7 +183,11 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, fmt.Errorf("connector %q is not an object store", r.props.Connector)
 	}
 
-	entries, err := store.ListObjects(ctx, r.props.Path)
+	url, err := globutil.ParseBucketURL(r.props.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q: %w", r.props.Path, err)
+	}
+	entries, err := store.ListObjectsForGlob(ctx, url.Host, url.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +216,10 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 
 func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
 }
 
 // buildUnpartitioned builds a result consisting of one row per file.

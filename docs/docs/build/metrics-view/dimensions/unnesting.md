@@ -15,7 +15,7 @@ In this example, the data contains an array column that has the value `['deal_on
 <br /> 
 
  ```yaml
-  - label: "Deal Name"
+  - display_name: "Deal Name"
     column: deal_name
     description: "Unnested Column"
     unnest: true

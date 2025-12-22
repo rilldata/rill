@@ -71,7 +71,7 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 		)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,12 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 		return nil, runtime.ErrForbidden
 	}
 
-	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
+	var userAttrs map[string]any
+	if opts.Claims != nil {
+		userAttrs = opts.Claims.UserAttributes
+	}
+
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}
@@ -141,4 +146,8 @@ func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (r
 
 func (r *metricsViewCacheKeyResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsViewCacheKeyResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
 }

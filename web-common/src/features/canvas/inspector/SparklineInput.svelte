@@ -27,7 +27,7 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <div class="flex justify-between">
+  <div class="flex justify-between py-1 items-center">
     <InputLabel small {label} id={key} faint={!showSparkline} />
     <Switch
       checked={showSparkline}

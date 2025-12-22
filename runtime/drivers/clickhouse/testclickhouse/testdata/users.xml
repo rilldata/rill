@@ -6,23 +6,25 @@
     </default>
   </profiles>
 
-  <!-- we replace the default configuration file users.xml - this is the contents of the original users.xml -->
+  <!-- we replace the default configuration file users.xml - this is the contents of the original
+  users.xml -->
   <users>
     <default>
+      <access_management>1</access_management>
     </default>
   </users>
 
   <quotas>
     <default>
-        <interval>
-            <duration>3600</duration>
+      <interval>
+        <duration>3600</duration>
 
-            <queries>0</queries>
-            <errors>0</errors>
-            <result_rows>0</result_rows>
-            <read_rows>0</read_rows>
-            <execution_time>0</execution_time>
-        </interval>
+        <queries>0</queries>
+        <errors>0</errors>
+        <result_rows>0</result_rows>
+        <read_rows>0</read_rows>
+        <execution_time>0</execution_time>
+      </interval>
     </default>
   </quotas>
 </clickhouse>

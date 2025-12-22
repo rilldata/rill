@@ -39,8 +39,8 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Hibernate
 			if !redeploy {
 				_, err = client.HibernateProject(cmd.Context(), &adminv1.HibernateProjectRequest{
-					Organization: ch.Org,
-					Project:      project,
+					Org:     ch.Org,
+					Project: project,
 				})
 				if err != nil {
 					return err
@@ -51,8 +51,8 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Redeploy
 			if !force {
 				res, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-					OrganizationName: ch.Org,
-					Name:             project,
+					Org:     ch.Org,
+					Project: project,
 				})
 				if err != nil {
 					return err
@@ -62,8 +62,8 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 			_, err = client.RedeployProject(cmd.Context(), &adminv1.RedeployProjectRequest{
-				Organization: ch.Org,
-				Project:      project,
+				Org:     ch.Org,
+				Project: project,
 			})
 			if err != nil {
 				return err
