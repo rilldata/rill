@@ -25,22 +25,27 @@
 
   export let initFiles: File[] = [];
   export let onClose: () => void = () => {};
-  export let onBack: () => void = () => {};
-  export let showBack = false;
+  export let onBack: (() => void) | undefined = undefined;
+
+  $: showBack = !!onBack;
 
   const FORM_ID = "upload-files-form";
   const schema = yup(
     object({
-      files: array().of(
-        mixed().test(
-          "fileSize",
-          "Local files over 100 MB can’t be deployed to Rill Cloud. Please upload to S3 or another external storage first if you want to deploy to Rill Could.",
-          (value) => {
-            // Check if value exists and its size is within the limit
-            return value && value.size <= UploadFileSizeLimitInBytes;
-          },
-        ),
-      ),
+      files: array()
+        .of(
+          mixed<File>()
+            .test(
+              "fileSize",
+              "Local files over 100 MB can’t be deployed to Rill Cloud. Please upload to S3 or another external storage first if you want to deploy to Rill Could.",
+              (value) => {
+                // Check if value exists and its size is within the limit
+                return value && value.size <= UploadFileSizeLimitInBytes;
+              },
+            )
+            .required(),
+        )
+        .required(),
     }),
   );
 
@@ -116,9 +121,10 @@
   id={FORM_ID}
   use:enhance
   on:submit|preventDefault={submit}
+  class="min-h-8 w-96"
 >
-  <div class="grid place-items-center h-44">
-    <div class="flex flex-col w-96">
+  <div class="grid place-items-center">
+    <div class="flex flex-col w-full p-5">
       <ShadcnInput
         type="file"
         bind:files={$files}
@@ -127,7 +133,7 @@
         class="h-8 w-full"
       />
       {#if filesError}
-        <div class="text-red-600 text-xs py-px mt-0.5">
+        <div class="text-red-600 text-sm py-px mt-0.5">
           <div>{filesError}</div>
           <ul class="flex flex-col list-disc ml-5 gap-y-1">
             {#each $files as file, i (file.name)}
@@ -143,7 +149,7 @@
       {/if}
     </div>
   </div>
-  <div class="flex p-6 gap-x-1">
+  <div class="flex p-4 gap-x-1">
     <div class="grow" />
     {#if showBack}
       <Button onClick={onBack} type="secondary">Back</Button>

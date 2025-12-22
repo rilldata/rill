@@ -26,8 +26,7 @@
   import type { HTMLInputAttributes } from "svelte/elements";
   import { cn } from "@rilldata/web-common/lib/shadcn.ts";
 
-  type $$Props = HTMLInputAttributes;
-  type $$Events = InputEvents;
+  type $$Props = HTMLInputAttributes & { files?: FileList };
 
   let className: $$Props["class"] = undefined;
   export let value: $$Props["value"] = undefined;
