@@ -21,8 +21,8 @@ export const SOURCES = [
 ];
 
 export const OLAP_ENGINES = [
-  "clickhouse",
   "clickhousecloud",
+  "clickhouse",
   "motherduck",
   "duckdb",
   "druid",
@@ -43,8 +43,8 @@ export const MULTI_STEP_CONNECTORS = [
   "bigquery",
   "redshift",
   "athena",
-  "clickhouse",
   "clickhousecloud",
+  "clickhouse",
   "duckdb",
   "motherduck",
   "druid",
