@@ -4,6 +4,24 @@ export const duckdbSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   properties: {
+    auth_method: {
+      type: "string",
+      title: "Connection type",
+      enum: ["self-managed", "rill-managed"],
+      default: "self-managed",
+      description: "Choose how to connect to DuckDB",
+      "x-display": "radio",
+      "x-enum-labels": ["Self-managed", "Rill-managed"],
+      "x-enum-descriptions": [
+        "Connect to your own self-hosted DuckDB server.",
+        "Use a managed DuckDB instance hosted by Rill.",
+      ],
+      "x-grouped-fields": {
+        "self-managed": ["path", "attach", "mode"],
+        "rill-managed": ["managed"],
+      },
+      "x-step": "connector",
+    },
     path: {
       type: "string",
       title: "Database Path",
@@ -26,7 +44,7 @@ export const duckdbSchema: MultiStepFormSchema = {
       title: "Connection Mode",
       description: "Database access mode",
       enum: ["read", "readwrite"],
-      default: "read",
+      default: "readwrite",
       "x-display": "radio",
       "x-enum-labels": ["Read-only", "Read-write"],
       "x-enum-descriptions": [
@@ -34,6 +52,16 @@ export const duckdbSchema: MultiStepFormSchema = {
         "Enable model creation and table mutations",
       ],
       "x-step": "connector",
+    },
+    managed: {
+      type: "boolean",
+      title: "Managed",
+      description: "Enable managed mode for the ClickHouse server",
+      default: true,
+      "x-readonly": true,
+      "x-hint": "Enable managed mode to manage the server automatically",
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "rill-managed" },
     },
     sql: {
       type: "string",

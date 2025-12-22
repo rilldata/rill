@@ -1,4 +1,3 @@
-import { manual } from "prismjs";
 import type { MultiStepFormSchema } from "./types";
 
 export const clickhouseSchema: MultiStepFormSchema = {
