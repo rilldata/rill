@@ -116,11 +116,11 @@ type configProperties struct {
 	Password           string         `mapstructure:"password"`
 	Database           string         `mapstructure:"database"`
 	Schema             string         `mapstructure:"schema"`
-	Warehouse              string         `mapstructure:"warehouse"`
-	Role                   string         `mapstructure:"role"`
-	Authenticator          string         `mapstructure:"authenticator"`
-	PrivateKey             string         `mapstructure:"privateKey"`
-	ParallelFetchLimit     int            `mapstructure:"parallel_fetch_limit"`
+	Warehouse          string         `mapstructure:"warehouse"`
+	Role               string         `mapstructure:"role"`
+	Authenticator      string         `mapstructure:"authenticator"`
+	PrivateKey         string         `mapstructure:"privateKey"`
+	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
 	Extras             map[string]any `mapstructure:",remain"`
 
 	// LogQueries controls whether to log the raw SQL passed to OLAP.
