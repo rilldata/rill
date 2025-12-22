@@ -153,6 +153,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
+  required: ["sql", "name"],
   allOf: [
     {
       if: {
@@ -161,7 +162,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
           auth_method: { const: "password" },
         },
       },
-      then: { required: ["account", "user", "password"] },
+      then: { required: ["account", "user", "password", "sql", "name"] },
     },
     {
       if: {
@@ -170,11 +171,11 @@ export const snowflakeSchema: MultiStepFormSchema = {
           auth_method: { const: "keypair" },
         },
       },
-      then: { required: ["account", "user", "private_key"] },
+      then: { required: ["account", "user", "private_key", "sql", "name"] },
     },
     {
       if: { properties: { connection_method: { const: "connection_string" } } },
-      then: { required: ["dsn"] },
+      then: { required: ["dsn", "sql", "name"] },
     },
   ],
 };

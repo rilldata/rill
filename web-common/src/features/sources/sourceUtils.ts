@@ -363,6 +363,15 @@ export function prepareSourceFormData(
     }
   }
 
+  // Also strip UI-only grouped enum keys (auth_method, connection_method, mode, etc.)
+  const schema = connector.name ? getConnectorSchema(connector.name) : null;
+  if (schema) {
+    const groupedEnumKeys = findGroupedEnumKeys(schema);
+    for (const key of groupedEnumKeys) {
+      delete rewrittenFormValues[key];
+    }
+  }
+
   // Handle placeholder values for required source properties
   if (rewrittenConnector.sourceProperties) {
     for (const prop of rewrittenConnector.sourceProperties) {

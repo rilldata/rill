@@ -85,20 +85,25 @@ export const azureSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
+  required: ["path", "name"],
   allOf: [
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["azure_storage_connection_string"] },
+      then: { required: ["azure_storage_connection_string", "path", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "account_key" } } },
-      then: { required: ["azure_storage_account", "azure_storage_key"] },
+      then: { required: ["azure_storage_account", "azure_storage_key", "path", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "sas_token" } } },
       then: {
-        required: ["azure_storage_account", "azure_storage_sas_token"],
+        required: ["azure_storage_account", "azure_storage_sas_token", "path", "name"],
       },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: { required: ["path", "name"] },
     },
   ],
 };

@@ -67,8 +67,8 @@
     const sourceProperties = connector.sourceProperties ?? [];
     const initialValues = getInitialFormValuesFromProperties(sourceProperties);
     const combinedValues = {
-      ...stepState.connectorConfig,
       ...initialValues,
+      ...stepState.connectorConfig,
     };
     paramsForm.update(() => combinedValues, { taint: false });
   }

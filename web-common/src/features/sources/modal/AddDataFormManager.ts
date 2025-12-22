@@ -20,7 +20,9 @@ import { normalizeConnectorError } from "./utils";
 import {
   FORM_HEIGHT_DEFAULT,
   FORM_HEIGHT_TALL,
+  FORM_HEIGHT_MEDIUM,
   MULTI_STEP_CONNECTORS,
+  MEDIUM_FORM_CONNECTORS,
   TALL_FORM_CONNECTORS,
 } from "./constants";
 import {
@@ -95,9 +97,14 @@ export class AddDataFormManager {
     this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Layout height
-    this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
-      ? FORM_HEIGHT_TALL
-      : FORM_HEIGHT_DEFAULT;
+    if (TALL_FORM_CONNECTORS.has(connector.name ?? "")) {
+      this.formHeight = FORM_HEIGHT_TALL;
+    } else if (MEDIUM_FORM_CONNECTORS.has(connector.name ?? "")) {
+      this.formHeight = FORM_HEIGHT_MEDIUM;
+    } else {
+      this.formHeight = FORM_HEIGHT_DEFAULT;
+    }
+
 
     // IDs
     this.paramsFormId = `add-data-${connector.name}-form`;
@@ -253,7 +260,12 @@ export class AddDataFormManager {
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig({});
+
+    const formValues = get(this.params.form);
+    const mode = formValues?.mode as string | undefined;
+
+    // Preserve the form values (especially mode) when navigating to source step
+    setConnectorConfig(formValues);
     setStep("source");
   }
 
@@ -596,9 +608,14 @@ export class AddDataFormManager {
         const connectorPropertyKeys = new Set(
           connector.configProperties?.map((p) => p.key).filter(Boolean) || [],
         );
+
+        // Also filter out grouped enum keys (auth_method, connection_method, mode, etc.)
+        const schema = connector.name ? getConnectorSchema(connector.name) : null;
+        const groupedEnumKeys = schema ? findGroupedEnumKeys(schema) : [];
+
         filteredValues = Object.fromEntries(
           Object.entries(values).filter(
-            ([key]) => !connectorPropertyKeys.has(key),
+            ([key]) => !connectorPropertyKeys.has(key) && !groupedEnumKeys.includes(key),
           ),
         );
       }

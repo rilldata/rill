@@ -112,11 +112,18 @@ export const s3Schema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
+  required: ["path", "name"],
   allOf: [
     {
       if: { properties: { auth_method: { const: "access_keys" } } },
       then: {
-        required: ["aws_access_key_id", "aws_secret_access_key"],
+        required: ["aws_access_key_id", "aws_secret_access_key", "path", "name"],
+      },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: {
+        required: ["path", "name"],
       },
     },
   ],

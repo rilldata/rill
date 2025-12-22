@@ -103,14 +103,15 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
+  required: ["sql", "name"],
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["host", "dbname", "user", "password"] },
+      then: { required: ["host", "dbname", "user", "password", "sql", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
-      then: { required: ["dsn"] },
+      then: { required: ["dsn", "sql", "name"] },
     },
   ],
 };

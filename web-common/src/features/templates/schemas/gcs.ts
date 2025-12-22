@@ -70,14 +70,19 @@ export const gcsSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
+  required: ["path", "name"],
   allOf: [
     {
       if: { properties: { auth_method: { const: "credentials" } } },
-      then: { required: ["google_application_credentials"] },
+      then: { required: ["google_application_credentials", "path", "name"] },
     },
     {
       if: { properties: { auth_method: { const: "hmac" } } },
-      then: { required: ["key_id", "secret"] },
+      then: { required: ["key_id", "secret", "path", "name"] },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: { required: ["path", "name"] },
     },
   ],
 };

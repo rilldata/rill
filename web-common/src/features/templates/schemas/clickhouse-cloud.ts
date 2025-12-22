@@ -133,5 +133,9 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       if: { properties: { auth_method: { const: "connection_string" } } },
       then: { required: ["dsn"] },
     },
+    {
+      if: { properties: { mode: { const: "readwrite" } } },
+      then: { required: ["sql", "name"] },
+    },
   ],
 };

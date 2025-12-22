@@ -161,5 +161,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       },
       then: { required: ["dsn"] },
     },
+    {
+      if: { properties: { mode: { const: "readwrite" } } },
+      then: { required: ["sql", "name"] },
+    },
   ],
 };
