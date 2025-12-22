@@ -129,4 +129,59 @@ test.describe("Multi-step connector wrapper", () => {
       page.getByRole("textbox", { name: "Secret Access Key" }),
     ).toHaveValue(hmacSecret!);
   });
+
+  test("GCS connector - disables submit until auth requirements met", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+
+    await page.locator("#gcs").click();
+    await page.waitForSelector('form[id*="gcs"]');
+
+    const connectorCta = page.getByRole("button", {
+      name: /Test and Connect|Continue/i,
+    });
+
+    // Default auth is credentials (file upload); switch to HMAC to check required fields.
+    await page.getByRole("radio", { name: "HMAC keys" }).click();
+    await expect(connectorCta).toBeDisabled();
+
+    // Fill key only -> still disabled.
+    await page
+      .getByRole("textbox", { name: "Access Key ID" })
+      .fill("AKIA_TEST");
+    await expect(connectorCta).toBeDisabled();
+
+    // Fill secret -> enabled.
+    await page
+      .getByRole("textbox", { name: "Secret Access Key" })
+      .fill("SECRET");
+    await expect(connectorCta).toBeEnabled();
+  });
+
+  test("GCS connector - public auth option keeps submit enabled and allows advancing", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+
+    await page.locator("#gcs").click();
+    await page.waitForSelector('form[id*="gcs"]');
+
+    const connectorCta = page.getByRole("button", {
+      name: /Test and Connect|Continue/i,
+    });
+
+    // Switch to Public (no required fields) -> CTA should remain enabled and allow advancing.
+    await page.getByRole("radio", { name: "Public" }).click();
+    await expect(connectorCta).toBeEnabled();
+    await connectorCta.click();
+
+    // Should land on source step without needing connector fields.
+    await expect(page.getByText("Model preview")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Test and Add data|Add data/i }),
+    ).toBeVisible();
+  });
 });
