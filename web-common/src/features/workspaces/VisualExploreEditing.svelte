@@ -46,17 +46,17 @@
   export let viewingDashboard: boolean;
   export let autoSave: boolean;
   export let switchView: () => void;
-  const StateManagers = getStateManagers();
 
+  const StateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  $: ({
+  const {
     selectors: {
       dimensions: { visibleDimensions },
       measures: { visibleMeasures },
     },
     dashboardStore,
-  } = StateManagers);
+  } = StateManagers;
 
   $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 

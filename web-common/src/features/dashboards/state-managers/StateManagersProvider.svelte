@@ -12,16 +12,15 @@
   export let exploreName: string;
   export let visualEditing = false;
 
-  let stateManagers: StateManagers | undefined = undefined;
+  $: stateManagers = metricsViewName
+    ? createStateManagers({
+        queryClient,
+        metricsViewName,
+        exploreName,
+      })
+    : undefined;
 
-  if (metricsViewName) {
-    stateManagers = createStateManagers({
-      queryClient,
-      metricsViewName,
-      exploreName,
-    });
-    setContext(DEFAULT_STORE_KEY, stateManagers);
-  }
+  $: if (stateManagers) setContext(DEFAULT_STORE_KEY, stateManagers);
 
   // Our state management was not built around the ability to arbitrarily change the explore or metrics view name
   // This needs to change, but this is a workaround for now
@@ -31,7 +30,7 @@
 
   $: exploreStore = useExploreState(exploreName);
 
-  $: ready = Boolean($exploreStore);
+  $: ready = Boolean($exploreStore) && Boolean(stateManagers);
 </script>
 
 <slot {ready} />
