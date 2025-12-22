@@ -13,12 +13,32 @@
 
   export let organization: string;
   export let organizationLogoUrl: string | undefined;
+  export let organizationLogoDarkUrl: string | undefined;
 
-  const orgUpdater = createAdminServiceUpdateOrganization();
-  $: ({ error, isPending: isLoading, mutateAsync } = $orgUpdater);
+  const logoUpdater = createAdminServiceUpdateOrganization({
+    mutation: {
+      mutationKey: ["updateOrganization", "logo", organization],
+    },
+  });
+  $: ({
+    error: logoError,
+    isPending: isLogoLoading,
+    mutateAsync: mutateLogoAsync,
+  } = $logoUpdater);
 
-  async function onSave(assetId: string) {
-    await mutateAsync({
+  const logoDarkUpdater = createAdminServiceUpdateOrganization({
+    mutation: {
+      mutationKey: ["updateOrganization", "logoDark", organization],
+    },
+  });
+  $: ({
+    error: logoDarkError,
+    isPending: isLogoDarkLoading,
+    mutateAsync: mutateLogoDarkAsync,
+  } = $logoDarkUpdater);
+
+  async function onSaveLight(assetId: string) {
+    await mutateLogoAsync({
       org: organization,
       data: {
         logoAssetId: assetId,
@@ -30,8 +50,8 @@
     void invalidate("app:root");
   }
 
-  async function onRemove() {
-    await mutateAsync({
+  async function onRemoveLight() {
+    await mutateLogoAsync({
       org: organization,
       data: {
         logoAssetId: "",
@@ -42,36 +62,103 @@
     });
     void invalidate("app:root");
   }
+
+  async function onSaveDark(assetId: string) {
+    await mutateLogoDarkAsync({
+      org: organization,
+      data: {
+        logoDarkAssetId: assetId,
+      },
+    });
+    void queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+    });
+    void invalidate("app:root");
+  }
+
+  async function onRemoveDark() {
+    await mutateLogoDarkAsync({
+      org: organization,
+      data: {
+        logoDarkAssetId: "",
+      },
+    });
+    void queryClient.invalidateQueries({
+      queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+    });
+    void invalidate("app:root");
+  }
+
+  $: hasAnyLogo = organizationLogoUrl || organizationLogoDarkUrl;
 </script>
 
-<SettingsContainer title="Logo" suppressFooter={!organizationLogoUrl}>
-  <div slot="body" class="flex flex-col gap-y-2">
+<SettingsContainer title="Logo" suppressFooter={!hasAnyLogo}>
+  <div slot="body" class="flex flex-col gap-y-4">
     <div>
       Click to upload your logo and customize Rill for your organization.
     </div>
-    <UploadImagePopover
-      imageUrl={organizationLogoUrl}
-      accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
-      label="favicon"
-      {organization}
-      loading={isLoading}
-      error={getRpcErrorMessage(error)}
-      {onSave}
-      {onRemove}
-    >
-      <Rill width="64" height="40" />
-    </UploadImagePopover>
+    <div class="flex flex-row gap-x-6 items-start">
+      <!-- Light Logo -->
+      <div class="flex flex-col gap-y-2">
+        <div class="text-sm font-medium">Light Logo</div>
+        <UploadImagePopover
+          imageUrl={organizationLogoUrl}
+          accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
+          label="logo"
+          {organization}
+          loading={isLogoLoading}
+          error={getRpcErrorMessage(logoError)}
+          onSave={onSaveLight}
+          onRemove={onRemoveLight}
+        >
+          <Rill width="64" height="40" />
+        </UploadImagePopover>
+        {#if organizationLogoUrl}
+          <Button
+            type="secondary"
+            onClick={onRemoveLight}
+            loading={isLogoLoading}
+            disabled={isLogoLoading}
+            class="w-fit"
+          >
+            Remove
+          </Button>
+        {/if}
+      </div>
+
+      <!-- Dark Logo -->
+      <div class="flex flex-col gap-y-2">
+        <div class="text-sm font-medium">
+          {#if organizationLogoDarkUrl}
+            Dark Logo
+          {:else}
+            <span class="text-slate-500">Dark Logo</span>
+          {/if}
+        </div>
+        <UploadImagePopover
+          imageUrl={organizationLogoDarkUrl}
+          accept="image/png, image/ico, image/x-ico, image/icon, image/x-icon"
+          label="dark logo"
+          {organization}
+          loading={isLogoDarkLoading}
+          error={getRpcErrorMessage(logoDarkError)}
+          onSave={onSaveDark}
+          onRemove={onRemoveDark}
+        >
+          <Rill width="64" height="40" />
+        </UploadImagePopover>
+        {#if organizationLogoDarkUrl}
+          <Button
+            type="secondary"
+            onClick={onRemoveDark}
+            loading={isLogoDarkLoading}
+            disabled={isLogoDarkLoading}
+            class="w-fit"
+          >
+            Remove
+          </Button>
+        {/if}
+      </div>
+    </div>
   </div>
-  <svelte:fragment slot="action">
-    {#if organizationLogoUrl}
-      <Button
-        type="secondary"
-        onClick={onRemove}
-        loading={isLoading}
-        disabled={isLoading}
-      >
-        Remove
-      </Button>
-    {/if}
-  </svelte:fragment>
 </SettingsContainer>

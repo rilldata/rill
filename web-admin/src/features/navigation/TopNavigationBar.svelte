@@ -43,8 +43,8 @@
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
   export let readProjects: boolean;
-  export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
+  export let organizationLogoUrl: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
@@ -66,6 +66,7 @@
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
+  $: logoUrl = organizationLogoUrl;
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -197,12 +198,10 @@
   <!-- Left side -->
   <a
     href={rillLogoHref}
-    class="grid place-content-center rounded {organizationLogoUrl
-      ? 'pl-2 pr-2'
-      : 'p-2'}"
+    class="grid place-content-center rounded {logoUrl ? 'pl-2 pr-2' : 'p-2'}"
   >
-    {#if organizationLogoUrl}
-      <img src={organizationLogoUrl} alt="logo" class="h-7" />
+    {#if logoUrl}
+      <img src={logoUrl} alt="logo" class="h-7" />
     {:else}
       <Rill />
     {/if}
