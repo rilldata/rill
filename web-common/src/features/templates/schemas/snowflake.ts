@@ -95,18 +95,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
         auth_method: "keypair",
       },
     },
-    private_key_passphrase: {
-      type: "string",
-      title: "Private Key Passphrase",
-      description: "Optional passphrase for encrypted private key",
-      "x-placeholder": "Enter passphrase if key is encrypted",
-      "x-secret": true,
-      "x-step": "connector",
-      "x-visible-if": {
-        connection_method: "parameters",
-        auth_method: "keypair",
-      },
-    },
     warehouse: {
       type: "string",
       title: "Warehouse",
