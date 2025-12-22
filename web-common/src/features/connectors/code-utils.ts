@@ -39,7 +39,7 @@ export function compileConnectorYAML(
   options?: {
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
-    connectorInstanceName?: string;
+    existingEnvBlob?: string; // Pass existing .env to determine unique keys
   },
 ) {
   // Add instructions to the top of the file
@@ -100,11 +100,13 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          connector.name as string,
-          key,
-          options?.connectorInstanceName,
-        )} }}"`;
+        // Generate base key from driver name only
+        const baseKey = makeDotEnvConnectorKey(connector.name as string, key);
+        // Make it unique based on existing .env keys
+        const uniqueKey = options?.existingEnvBlob
+          ? makeUniqueEnvKey(baseKey, options.existingEnvBlob)
+          : baseKey;
+        return `${key}: "{{ .env.${uniqueKey} }}"`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -125,24 +127,31 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
-  connectorInstanceName?: string,
+  existingEnvBlob?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
-  // Get the existing .env file
+  // Use provided existingEnvBlob if available, otherwise fetch current .env
+  // This prevents race conditions when Save Anyway is clicked during Test and Connect
   let blob: string;
-  try {
-    const file = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    blob = file.blob || "";
-  } catch (error) {
-    // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
-      blob = "";
-    } else {
-      throw error;
+  if (existingEnvBlob !== undefined) {
+    blob = existingEnvBlob;
+  } else {
+    try {
+      const file = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+          path: ".env",
+        }),
+        queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      });
+      blob = file.blob || "";
+    } catch (error) {
+      // Handle the case where the .env file does not exist
+      if (error?.response?.data?.message?.includes("no such file")) {
+        blob = "";
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -166,17 +175,13 @@ export async function updateDotEnvWithSecrets(
       return;
     }
 
-    const connectorSecretKey = makeDotEnvConnectorKey(
-      connector.name as string,
-      key,
-      connectorInstanceName,
-    );
+    // Always generate base key from driver name (not connector instance name)
+    const baseKey = makeDotEnvConnectorKey(connector.name as string, key);
 
-    blob = replaceOrAddEnvVariable(
-      blob,
-      connectorSecretKey,
-      formValues[key] as string,
-    );
+    // Check if this key already exists in .env and make it unique if needed
+    const uniqueKey = makeUniqueEnvKey(baseKey, blob);
+
+    blob = replaceOrAddEnvVariable(blob, uniqueKey, formValues[key] as string);
   });
 
   return blob;
@@ -223,16 +228,43 @@ export function deleteEnvVariable(
 
   return newBlob;
 }
-
-export function makeDotEnvConnectorKey(
+// DEPRECATED: This secret handling is no longer used in practice.
+// Secrets belong in connector.yaml, not source.yaml files.
+export function makeDotEnvConnectorKeyDeprecated(
   driverName: string,
   key: string,
   connectorInstanceName?: string,
 ) {
-  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
-  // This enables configuring multiple connectors that use the same driver with unique env keys.
   const nameToUse = connectorInstanceName || driverName;
   return `connector.${nameToUse}.${key}`;
+}
+
+export function makeDotEnvConnectorKey(driverName: string, key: string) {
+  // Always use driver name, not connector instance name
+  // Uniqueness will be handled by makeUniqueEnvKey() checking existing .env keys
+  if (key === "password" || key === "dsn" || key === "token") {
+    return `${driverName}_${key}`.toUpperCase();
+  }
+  return `${key}`.toUpperCase();
+}
+
+function makeUniqueEnvKey(baseKey: string, existingEnvBlob: string): string {
+  const lines = existingEnvBlob.split("\n");
+  const existingKeys = new Set(
+    lines
+      .filter((line) => line.includes("="))
+      .map((line) => line.split("=")[0]),
+  );
+
+  if (!existingKeys.has(baseKey)) {
+    return baseKey;
+  }
+
+  let counter = 1;
+  while (existingKeys.has(`${baseKey}_${counter}`)) {
+    counter++;
+  }
+  return `${baseKey}_${counter}`;
 }
 
 export async function updateRillYAMLWithOlapConnector(

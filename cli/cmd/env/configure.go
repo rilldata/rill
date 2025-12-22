@@ -162,7 +162,7 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 				continue
 			}
 
-			key := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
+			key := fmt.Sprintf("%s_%s", c.Name, prop.Key)
 			msg := key
 			if prop.Hint != "" {
 				msg = fmt.Sprintf(msg+" (%s)", prop.Hint)

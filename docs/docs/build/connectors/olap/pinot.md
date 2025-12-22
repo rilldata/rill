@@ -21,7 +21,7 @@ When using Rill for local development, there are a few options to configure Rill
     type: connector
     driver: pinot
 
-    dsn: "{{ .env.connector.pinot.dsn }}"
+    dsn: "{{ .env.pinot_dsn }}"
     ```
 
 1. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.

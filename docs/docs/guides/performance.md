@@ -107,13 +107,13 @@ dev:
 
 # Production environment configuration
 prod:
-  host: "{{ .env.connector.clickhouse.host }}"
-  port: "{{ .env.connector.clickhouse.port }}"
-  database: "{{ .env.connector.clickhouse.database }}"
-  username: "{{ .env.connector.clickhouse.username }}"
-  password: "{{ .env.connector.clickhouse.password }}"
+  host: "{{ .env.clickhouse_host }}"
+  port: "{{ .env.clickhouse_port }}"
+  database: "{{ .env.clickhouse_database }}"
+  username: "{{ .env.clickhouse_username }}"
+  password: "{{ .env.clickhouse_password }}"
   ssl: true
-  cluster: "{{ .env.connector.clickhouse.cluster }}"
+  cluster: "{{ .env.clickhouse_cluster }}"
 ```
 #### Limiting the source data to a smaller time range
 

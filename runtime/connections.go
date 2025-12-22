@@ -241,9 +241,9 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		return nil, fmt.Errorf("unknown connector %q", name)
 	}
 
-	// Build res.Env config based on instance variables matching the format "connector.name.var"
+	// Build res.Env config based on instance variables matching the format "name_key"
 	vars := inst.ResolveVariables(true)
-	prefix := fmt.Sprintf("connector.%s.", name)
+	prefix := fmt.Sprintf("%s_", name)
 	for k, v := range vars {
 		if after, found := strings.CutPrefix(k, prefix); found {
 			if res.Env == nil {
@@ -329,7 +329,7 @@ func resolveConnectorProperties(environment string, vars map[string]string, c *r
 // We support three levels of configuration:
 // 1. Preset: provided when creating the instance (or set by the system, such as allow_host_access). Cannot be overridden.
 // 2. Project: defined in the rill.yaml file. Can be overridden by the env.
-// 3. Env: defined in the instance's variables (in the format "connector.name.var").
+// 3. Env: defined in the instance's variables (in the format "name_key").
 type ConnectorConfig struct {
 	Driver  string
 	Preset  map[string]any

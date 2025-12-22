@@ -24,12 +24,12 @@ driver: druid
 host: <HOSTNAME>
 port: <PORT>
 username: <USERNAME>
-password: "{{ .env.connector.druid.password }}"
+password: "{{ .env.druid_password }}"
 ssl: true 
 
 # or 
 
-dsn: "{{ .env.connector.druid.dsn }}"
+dsn: "{{ .env.druid_dsn }}"
 ```
 
 2. You can manually set `connector.druid.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.

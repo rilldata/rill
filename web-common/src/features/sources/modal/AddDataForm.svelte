@@ -3,9 +3,16 @@
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+  import {
+    type V1ConnectorDriver,
+    getRuntimeServiceGetFileQueryKey,
+    runtimeServiceGetFile,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
@@ -26,6 +33,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -130,8 +138,43 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+  let existingEnvBlob: string = "";
+
+  // Fetch existing .env file for preview
+  async function fetchEnvBlob() {
+    try {
+      const instanceId = get(runtime).instanceId;
+      const envFile = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+          path: ".env",
+        }),
+        queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      });
+      existingEnvBlob = envFile.blob || "";
+    } catch {
+      // .env doesn't exist yet
+      existingEnvBlob = "";
+    }
+  }
+
+  onMount(fetchEnvBlob);
+
+  // Refetch when connector name changes (for preview updates)
+  $: if ($connectorName) {
+    fetchEnvBlob();
+  }
 
   $: isSubmitDisabled = (() => {
+    // For connector forms, validate connector name
+    if (
+      isConnectorForm &&
+      (!isMultiStepConnector || stepState.step === "connector")
+    ) {
+      if (!$connectorName || $connectorName.trim() === "") {
+        return true;
+      }
+    }
+
     if (onlyDsn || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
@@ -264,6 +307,7 @@
     clickhouseConnectorType,
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
+    existingEnvBlob,
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =
@@ -299,6 +343,30 @@
       $paramsTainted as Record<string, boolean> | null | undefined,
     );
   }
+
+  // Connector name handling
+  const connectorName = formManager.connectorName;
+  const connectorNameError = formManager.connectorNameError;
+
+  // Debounce timer for connector name validation
+  let connectorNameValidationTimeout: ReturnType<typeof setTimeout> | null =
+    null;
+
+  // Validate connector name as user types
+  $: if (isConnectorForm) {
+    if ($connectorName && $connectorName.trim() !== "") {
+      // Clear existing timeout
+      if (connectorNameValidationTimeout) {
+        clearTimeout(connectorNameValidationTimeout);
+      }
+      // Debounce validation to avoid too many API calls
+      connectorNameValidationTimeout = setTimeout(async () => {
+        await formManager.validateConnectorName();
+      }, 500);
+    } else {
+      $connectorNameError = null;
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -309,6 +377,21 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
+      {#if isConnectorForm && (!isMultiStepConnector || stepState.step === "connector")}
+        <!-- Connector Name Field (only for connector forms, not sources) -->
+        <div class="pb-4">
+          <Input
+            id="connector-name"
+            label="Connector name"
+            placeholder="Enter connector name"
+            hint="Used to name the connector file and environment variables"
+            bind:value={$connectorName}
+            errors={$connectorNameError ? [$connectorNameError] : []}
+            alwaysShowError
+          />
+        </div>
+      {/if}
+
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
@@ -325,6 +408,7 @@
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
           bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          connectorName={$connectorName}
         />
       {:else if hasDsnFormOption}
         <Tabs

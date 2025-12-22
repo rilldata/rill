@@ -35,6 +35,7 @@ import (
 //     ref [`kind`] `name`: register a dependency at parse-time, resolve it to a name at resolve time (parse time and resolve time)
 //     lookup [`kind`] `name`: lookup another resource (resolve time)
 //     .env.name: access a project "environment" variable (resolve time)
+//     env "name": access a project "environment" variable by name (resolve time)
 //     .user.attribute: access an attribute from auth claims (resolve time)
 //     .meta: access the current resource's metadata (resolve time)
 //     .spec: access the current resource's spec (resolve time)
@@ -127,6 +128,11 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		}
 		refs[name] = true
 		return map[string]any{}, nil
+	}
+	funcMap["env"] = func(parts ...string) (string, error) {
+		// For parse-time analysis, just return empty string
+		// Variables will be extracted separately
+		return "", nil
 	}
 
 	// Parse template
@@ -261,6 +267,29 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 		}, nil
 	}
 
+	// Add func to access environment variables by name
+	funcMap["env"] = func(parts ...string) (string, error) {
+		if len(parts) == 0 {
+			return "", fmt.Errorf(`"env" function requires a variable name`)
+		}
+		varName := parts[0]
+		if varName == "" {
+			return "", fmt.Errorf(`"env" function requires a non-empty variable name`)
+		}
+		// Case-insensitive lookup: search through all keys
+		for k, v := range data.Variables {
+			if strings.EqualFold(k, varName) {
+				return v, nil
+			}
+		}
+		// Error if variable not found and errOnMissingTemplKeys is true (consistent with .env.name behavior)
+		if errOnMissingTemplKeys {
+			return "", fmt.Errorf(`map has no entry for key %q`, varName)
+		}
+		// Return empty string if not found and errOnMissingTemplKeys is false
+		return "", nil
+	}
+
 	// Parse template (error on missing keys)
 	// TODO: missingkey=error may be problematic for claims.
 	var opt string
@@ -275,26 +304,38 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 	}
 
 	// Split variables that contain dots into nested maps.
+	// Also add lowercase versions of all keys for case-insensitive lookups.
 	var vars map[string]any
 	if len(data.Variables) > 0 {
 		vars = map[string]any{}
 	}
 	for k, v := range data.Variables {
-		// Note: We always add the full variable name (including dots) at the top level.
+		// Add the original key
 		vars[k] = v
 
-		// Split variable into parts
+		// Add lowercase version for case-insensitive access
+		kLower := strings.ToLower(k)
+		if kLower != k {
+			vars[kLower] = v
+		}
+
+		// Split variable into parts for nested map access
 		parts := strings.Split(k, ".")
 		if len(parts) <= 1 {
 			continue
 		}
 
-		// Build nested maps
+		// Build nested maps with original case
 		curr := vars
 		for i, part := range parts {
 			// We reached the leaf, set the value
 			if i == len(parts)-1 {
 				curr[part] = v
+				// Also add lowercase leaf
+				partLower := strings.ToLower(part)
+				if partLower != part {
+					curr[partLower] = v
+				}
 				break
 			}
 
@@ -489,9 +530,25 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 func extractVariablesFromTemplate(tree *parse.Tree) []string {
 	variablesMap := make(map[string]bool)
 	walkNodes(tree.Root, func(n parse.Node) {
+		// Extract from field nodes (e.g., .env.name)
 		if vn, ok := n.(*parse.FieldNode); ok {
 			v := joinIdentifiers(vn.Ident)
 			variablesMap[v] = true
+		}
+		// Extract from env() function calls (e.g., env "name_key")
+		if cn, ok := n.(*parse.CommandNode); ok {
+			if len(cn.Args) > 0 {
+				if ident, ok := cn.Args[0].(*parse.IdentifierNode); ok {
+					if ident.Ident == "env" && len(cn.Args) > 1 {
+						// Extract the string argument and prefix with "env." for consistency
+						if strNode, ok := cn.Args[1].(*parse.StringNode); ok {
+							varName := strNode.Text
+							// Store as "env.varName" to match the format expected by analyzeTemplatedVariables
+							variablesMap["env."+varName] = true
+						}
+					}
+				}
+			}
 		}
 	})
 
