@@ -70,7 +70,8 @@ export const druidSchema: MultiStepFormSchema = {
     skip_query_priority: {
       type: "boolean",
       title: "Skip query priority",
-      description: "Skip the query priority when connecting to the Druid server",
+      description:
+        "Skip the query priority when connecting to the Druid server",
       default: false,
       "x-step": "connector",
       "x-advanced": true,
@@ -87,7 +88,8 @@ export const druidSchema: MultiStepFormSchema = {
       type: "string",
       title: "Connection String",
       description: "Druid connection string (DSN)",
-      "x-placeholder": "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
+      "x-placeholder":
+        "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
       "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },

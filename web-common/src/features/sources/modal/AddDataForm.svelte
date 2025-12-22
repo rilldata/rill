@@ -211,8 +211,7 @@
 
     // For other connectors, use manager helper
     saveAnyway = true;
-    const values =
-      onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    const values = onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
     const result = await formManager.saveConnectorAnyway({
       queryClient,
       values,
@@ -415,12 +414,12 @@
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
       {#if dsnError || paramsError}
         <SubmissionError
-          message={(onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
-            ""}
+          message={(onlyDsn || connectionTab === "dsn"
+            ? dsnError
+            : paramsError) ?? ""}
           details={(onlyDsn || connectionTab === "dsn"
-              ? dsnErrorDetails
-              : paramsErrorDetails) ??
-            ""}
+            ? dsnErrorDetails
+            : paramsErrorDetails) ?? ""}
         />
       {/if}
 

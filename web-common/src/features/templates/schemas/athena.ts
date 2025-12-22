@@ -46,7 +46,8 @@ export const athenaSchema: MultiStepFormSchema = {
     role_session_name: {
       type: "string",
       title: "Role Session Name",
-      description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+      description:
+        "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
       "x-placeholder": "my-session-name",
       "x-secret": true,
       "x-step": "connector",
@@ -55,7 +56,8 @@ export const athenaSchema: MultiStepFormSchema = {
     external_id: {
       type: "string",
       title: "External ID",
-      description: "Optional external ID to use when assuming an AWS role for cross-account access.",
+      description:
+        "Optional external ID to use when assuming an AWS role for cross-account access.",
       "x-placeholder": "external-id-123",
       "x-secret": true,
       "x-step": "connector",
@@ -82,7 +84,8 @@ export const athenaSchema: MultiStepFormSchema = {
     allow_host_access: {
       type: "boolean",
       title: "Allow Host Access",
-      description: "Allow the connector to access the host's network (optional)",
+      description:
+        "Allow the connector to access the host's network (optional)",
       "x-step": "connector",
       "x-advanced": true,
     },
@@ -102,5 +105,11 @@ export const athenaSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
-  required: ["aws_access_key_id", "aws_secret_access_key", "output_location", "sql", "name"],
+  required: [
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    "output_location",
+    "sql",
+    "name",
+  ],
 };

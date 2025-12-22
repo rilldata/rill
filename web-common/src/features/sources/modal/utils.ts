@@ -181,5 +181,3 @@ export function isMultiStepConnectorDisabled(
     return !isEmpty(value) && !hasErrors;
   });
 }
-
-

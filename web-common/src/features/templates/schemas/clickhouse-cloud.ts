@@ -13,7 +13,16 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Username & Password", "Connection String"],
       "x-grouped-fields": {
-        parameters: ["host", "port", "database", "username", "password", "ssl", "cluster", "mode"],
+        parameters: [
+          "host",
+          "port",
+          "database",
+          "username",
+          "password",
+          "ssl",
+          "cluster",
+          "mode",
+        ],
         connection_string: ["dsn", "mode"],
       },
       "x-step": "connector",
@@ -68,7 +77,8 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       title: "Cluster",
       description: "Cluster name for distributed tables",
       "x-placeholder": "Cluster name",
-      "x-hint": "If set, Rill will create models as distributed tables in the cluster",
+      "x-hint":
+        "If set, Rill will create models as distributed tables in the cluster",
       "x-step": "connector",
       "x-visible-if": { auth_method: "parameters" },
     },
@@ -179,7 +189,8 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       type: "string",
       title: "Connection String",
       description: "ClickHouse connection string (DSN)",
-      "x-placeholder": "https://default@your-instance.clickhouse.cloud:8443/default",
+      "x-placeholder":
+        "https://default@your-instance.clickhouse.cloud:8443/default",
       "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
@@ -214,7 +225,7 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       "x-placeholder": "my_model",
       "x-step": "source",
       "x-visible-if": { mode: "readwrite" },
-    }
+    },
   },
   allOf: [
     {

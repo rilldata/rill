@@ -7,7 +7,8 @@ export const bigquerySchema: MultiStepFormSchema = {
     google_application_credentials: {
       type: "string",
       title: "GCP Credentials",
-      description: "Upload a JSON key file for a service account with BigQuery access",
+      description:
+        "Upload a JSON key file for a service account with BigQuery access",
       format: "file",
       "x-display": "file",
       "x-accept": ".json",
@@ -16,14 +17,16 @@ export const bigquerySchema: MultiStepFormSchema = {
     project_id: {
       type: "string",
       title: "Project ID",
-      description: "Google Cloud project ID (optional if specified in credentials)",
+      description:
+        "Google Cloud project ID (optional if specified in credentials)",
       "x-placeholder": "my-project-id",
       "x-step": "connector",
     },
-    allow_host_access: { 
+    allow_host_access: {
       type: "boolean",
       title: "Allow Host Access",
-      description: "Allow the connector to access the host machine (useful for debugging)",
+      description:
+        "Allow the connector to access the host machine (useful for debugging)",
       default: false,
       "x-step": "connector",
       "x-advanced": true,

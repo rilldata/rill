@@ -32,7 +32,16 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
-        parameters: ["host", "port", "username", "password", "database", "ssl", "cluster", "mode"],
+        parameters: [
+          "host",
+          "port",
+          "username",
+          "password",
+          "database",
+          "ssl",
+          "cluster",
+          "mode",
+        ],
         connection_string: ["dsn", "mode"],
       },
       "x-step": "connector",
@@ -44,7 +53,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Hostname or IP address of the ClickHouse server",
       "x-placeholder": "your-server.clickhouse.com",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
     },
     port: {
       type: "number",
@@ -52,9 +64,13 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Port number of the ClickHouse server",
       default: 9000,
       "x-placeholder": "9000",
-      "x-hint": "Default: 9000 (native TCP), 8123 (HTTP). Secure: 9440 (TCP+TLS), 8443 (HTTPS)",
+      "x-hint":
+        "Default: 9000 (native TCP), 8123 (HTTP). Secure: 9440 (TCP+TLS), 8443 (HTTPS)",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
     },
     username: {
       type: "string",
@@ -62,7 +78,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Username to connect to the ClickHouse server",
       "x-placeholder": "default",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
     },
     password: {
       type: "string",
@@ -71,7 +90,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter password",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
     },
     database: {
       type: "string",
@@ -80,7 +102,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
     },
     ssl: {
       type: "boolean",
@@ -89,16 +114,23 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: true,
       "x-hint": "Enable SSL for secure connections",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
     },
     cluster: {
       type: "string",
       title: "Cluster",
       description: "Cluster name for distributed tables",
       "x-placeholder": "Cluster name",
-      "x-hint": "If set, Rill will create models as distributed tables in the cluster",
+      "x-hint":
+        "If set, Rill will create models as distributed tables in the cluster",
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "parameters" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "parameters",
+      },
       "x-advanced": true,
     },
     dsn: {
@@ -108,7 +140,10 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "clickhouse://username:password@host:port/database",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { auth_method: "self-managed", connection_method: "connection_string" },
+      "x-visible-if": {
+        auth_method: "self-managed",
+        connection_method: "connection_string",
+      },
     },
     mode: {
       type: "string",
@@ -135,7 +170,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "rill-managed" },
     },
-     database_whitelist: {
+    database_whitelist: {
       type: "string",
       title: "Database Whitelist",
       description: "List of allowed databases",

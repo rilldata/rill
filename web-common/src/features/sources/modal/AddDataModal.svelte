@@ -21,7 +21,12 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES, MULTI_STEP_CONNECTORS } from "./constants";
+  import {
+    OLAP_ENGINES,
+    ALL_CONNECTORS,
+    SOURCES,
+    MULTI_STEP_CONNECTORS,
+  } from "./constants";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
@@ -37,7 +42,9 @@
         let connectors = data.connectors || [];
 
         // Clone clickhouse connector to create clickhousecloud (frontend-only)
-        const clickhouseConnector = connectors.find(c => c.name === "clickhouse");
+        const clickhouseConnector = connectors.find(
+          (c) => c.name === "clickhouse",
+        );
         if (clickhouseConnector) {
           const clickhouseCloudConnector: V1ConnectorDriver = {
             ...clickhouseConnector,

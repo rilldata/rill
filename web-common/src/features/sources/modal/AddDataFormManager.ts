@@ -33,14 +33,22 @@ import {
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
-import { compileSourceYAML, prepareSourceFormData, prepareConnectorFormData } from "../sourceUtils";
+import {
+  compileSourceYAML,
+  prepareSourceFormData,
+  prepareConnectorFormData,
+} from "../sourceUtils";
 import {
   ConnectorDriverPropertyType,
   type ConnectorDriverProperty,
 } from "@rilldata/web-common/runtime-client";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
-import { findRadioEnumKey, findGroupedEnumKeys, isVisibleForValues } from "../../templates/schema-utils";
+import {
+  findRadioEnumKey,
+  findGroupedEnumKeys,
+  isVisibleForValues,
+} from "../../templates/schema-utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -50,7 +58,10 @@ type SuperFormUpdateEvent = {
 const BUTTON_LABELS = {
   public: { idle: "Continue", submitting: "Continuing..." },
   connector: { idle: "Test and Connect", submitting: "Testing connection..." },
-  connectorReadOnly: { idle: "Test and Add Connector", submitting: "Testing connection..." },
+  connectorReadOnly: {
+    idle: "Test and Add Connector",
+    submitting: "Testing connection...",
+  },
   source: { idle: "Import Data", submitting: "Importing data..." },
 };
 
@@ -104,7 +115,6 @@ export class AddDataFormManager {
     } else {
       this.formHeight = FORM_HEIGHT_DEFAULT;
     }
-
 
     // IDs
     this.paramsFormId = `add-data-${connector.name}-form`;
@@ -174,9 +184,7 @@ export class AddDataFormManager {
       }
     } else {
       // Fall back to backend properties for non-schema connectors
-      initialFormValues = getInitialFormValuesFromProperties(
-        this.properties,
-      );
+      initialFormValues = getInitialFormValuesFromProperties(this.properties);
     }
 
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
@@ -285,13 +293,8 @@ export class AddDataFormManager {
     selectedAuthMethod?: string;
     mode?: string;
   }): string {
-    const {
-      isConnectorForm,
-      step,
-      submitting,
-      selectedAuthMethod,
-      mode,
-    } = args;
+    const { isConnectorForm, step, submitting, selectedAuthMethod, mode } =
+      args;
 
     if (isConnectorForm) {
       if (this.isMultiStepConnector && step === "connector") {
@@ -411,7 +414,12 @@ export class AddDataFormManager {
             return;
           }
           const preparedValues = prepareConnectorFormData(connector, values);
-          await submitAddConnectorForm(queryClient, connector, preparedValues, false);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            preparedValues,
+            false,
+          );
 
           // If mode is "read" (read-only), close without going to source step
           // Only advance to source step when mode is "readwrite"
@@ -429,7 +437,12 @@ export class AddDataFormManager {
           onClose();
         } else {
           const preparedValues = prepareConnectorFormData(connector, values);
-          await submitAddConnectorForm(queryClient, connector, preparedValues, false);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            preparedValues,
+            false,
+          );
           onClose();
         }
       } catch (e) {
@@ -533,9 +546,12 @@ export class AddDataFormManager {
       let orderedProperties: ConnectorDriverProperty[] = [];
 
       // For multi-step connectors with schemas, build properties from schema
-      const schema = isMultiStepConnector && stepState?.step === "connector" && connector.name
-        ? getConnectorSchema(connector.name)
-        : null;
+      const schema =
+        isMultiStepConnector &&
+        stepState?.step === "connector" &&
+        connector.name
+          ? getConnectorSchema(connector.name)
+          : null;
 
       if (schema) {
         // Build ordered properties from schema fields that are visible and on connector step
@@ -564,7 +580,10 @@ export class AddDataFormManager {
           if (groupedEnumKeys.includes(key)) continue;
 
           // Only include connector step fields that are currently visible
-          if (prop["x-step"] === "connector" && isVisibleForValues(schema, key, valuesForVisibility)) {
+          if (
+            prop["x-step"] === "connector" &&
+            isVisibleForValues(schema, key, valuesForVisibility)
+          ) {
             const value = values[key];
             const isSecret = prop["x-secret"] || false;
 
@@ -573,11 +592,12 @@ export class AddDataFormManager {
 
             schemaProperties.push({
               key,
-              type: prop.type === "number"
-                ? ConnectorDriverPropertyType.TYPE_NUMBER
-                : prop.type === "boolean"
-                ? ConnectorDriverPropertyType.TYPE_BOOLEAN
-                : ConnectorDriverPropertyType.TYPE_STRING,
+              type:
+                prop.type === "number"
+                  ? ConnectorDriverPropertyType.TYPE_NUMBER
+                  : prop.type === "boolean"
+                    ? ConnectorDriverPropertyType.TYPE_BOOLEAN
+                    : ConnectorDriverPropertyType.TYPE_STRING,
               secret: isSecret,
             });
           }
@@ -610,12 +630,15 @@ export class AddDataFormManager {
         );
 
         // Also filter out grouped enum keys (auth_method, connection_method, mode, etc.)
-        const schema = connector.name ? getConnectorSchema(connector.name) : null;
+        const schema = connector.name
+          ? getConnectorSchema(connector.name)
+          : null;
         const groupedEnumKeys = schema ? findGroupedEnumKeys(schema) : [];
 
         filteredValues = Object.fromEntries(
           Object.entries(values).filter(
-            ([key]) => !connectorPropertyKeys.has(key) && !groupedEnumKeys.includes(key),
+            ([key]) =>
+              !connectorPropertyKeys.has(key) && !groupedEnumKeys.includes(key),
           ),
         );
       }

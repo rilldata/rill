@@ -57,7 +57,11 @@ export function findRadioEnumKey(schema: MultiStepFormSchema): string | null {
     // Return radio or tabs fields that have grouped fields - those are auth/connection method selectors
     // Standalone radio fields (like "mode") should not be considered auth method keys
     const display = value["x-display"];
-    if (value.enum && (display === "radio" || display === "tabs") && value["x-grouped-fields"]) {
+    if (
+      value.enum &&
+      (display === "radio" || display === "tabs") &&
+      value["x-grouped-fields"]
+    ) {
       return key;
     }
   }

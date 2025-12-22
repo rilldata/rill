@@ -46,16 +46,19 @@ export const redshiftSchema: MultiStepFormSchema = {
     cluster_identifier: {
       type: "string",
       title: "Cluster Identifier",
-      description: "Redshift provisioned cluster identifier (for provisioned clusters)",
+      description:
+        "Redshift provisioned cluster identifier (for provisioned clusters)",
       "x-placeholder": "my-redshift-cluster",
-      "x-hint": "Provide either workgroup (for serverless) or cluster identifier (for provisioned)",
+      "x-hint":
+        "Provide either workgroup (for serverless) or cluster identifier (for provisioned)",
       "x-step": "connector",
       "x-advanced": true,
     },
     allow_host_access: {
       type: "boolean",
       title: "Allow Host Access",
-      description: "Allow the connector to access the host's network (useful for private clusters)",
+      description:
+        "Allow the connector to access the host's network (useful for private clusters)",
       default: false,
       "x-step": "connector",
       "x-advanced": true,
@@ -84,5 +87,11 @@ export const redshiftSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
-  required: ["aws_access_key_id", "aws_secret_access_key", "database", "sql", "name"],
+  required: [
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    "database",
+    "sql",
+    "name",
+  ],
 };

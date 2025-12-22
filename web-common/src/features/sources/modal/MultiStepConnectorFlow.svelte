@@ -105,12 +105,15 @@
       if (fallback !== stepState.selectedAuthMethod) {
         setAuthMethod(fallback ?? null);
         if (fallback && authKey) {
-          paramsForm.update(($form) => {
-            if ($form[authKey] !== fallback) {
-              $form[authKey] = fallback;
-            }
-            return $form;
-          }, { taint: false });
+          paramsForm.update(
+            ($form) => {
+              if ($form[authKey] !== fallback) {
+                $form[authKey] = fallback;
+              }
+              return $form;
+            },
+            { taint: false },
+          );
         }
       }
     }
@@ -131,7 +134,12 @@
   }
 
   // Clear form when auth method changes (e.g., switching from parameters to DSN).
-  $: if (activeSchema && selectedAuthMethod !== previousAuthMethod && previousAuthMethod !== null && previousAuthMethod !== "") {
+  $: if (
+    activeSchema &&
+    selectedAuthMethod !== previousAuthMethod &&
+    previousAuthMethod !== null &&
+    previousAuthMethod !== ""
+  ) {
     const authKey = findRadioEnumKey(activeSchema);
     if (authKey) {
       // Get default values for the new auth method

@@ -289,13 +289,15 @@ export function prepareConnectorFormData(
       if (connector.name === "clickhousecloud") {
         filteredValues.managed = false;
         // Only set ssl=true if it's in the filtered values (i.e., using parameters tab)
-        if ('ssl' in filteredValues) {
+        if ("ssl" in filteredValues) {
           filteredValues.ssl = true;
         }
       }
 
       // Replace with filtered values
-      Object.keys(processedValues).forEach(key => delete processedValues[key]);
+      Object.keys(processedValues).forEach(
+        (key) => delete processedValues[key],
+      );
       Object.assign(processedValues, filteredValues);
 
       // Remove the grouped enum keys themselves - they're UI-only fields

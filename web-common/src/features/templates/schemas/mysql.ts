@@ -13,7 +13,16 @@ export const mysqlSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
-        parameters: ["", "host", "port", "database", "user", "password", "ssl-mode", "log_queries"],
+        parameters: [
+          "",
+          "host",
+          "port",
+          "database",
+          "user",
+          "password",
+          "ssl-mode",
+          "log_queries",
+        ],
         connection_string: ["dsn", "log_queries"],
       },
       "x-step": "connector",
@@ -108,7 +117,9 @@ export const mysqlSchema: MultiStepFormSchema = {
   allOf: [
     {
       if: { properties: { auth_method: { const: "parameters" } } },
-      then: { required: ["host", "database", "user", "password", "sql", "name"] },
+      then: {
+        required: ["host", "database", "user", "password", "sql", "name"],
+      },
     },
     {
       if: { properties: { auth_method: { const: "connection_string" } } },

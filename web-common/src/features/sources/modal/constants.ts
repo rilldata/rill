@@ -52,7 +52,7 @@ export const MULTI_STEP_CONNECTORS = [
 ];
 
 export const FORM_HEIGHT_TALL = "max-h-[55.5rem] min-h-[38.5rem]";
-export const FORM_HEIGHT_MEDIUM= "max-h-[47.5rem] min-h-[34.5rem]";
+export const FORM_HEIGHT_MEDIUM = "max-h-[47.5rem] min-h-[34.5rem]";
 export const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
 export const MEDIUM_FORM_CONNECTORS = new Set([
   "clickhousecloud",
@@ -62,7 +62,4 @@ export const MEDIUM_FORM_CONNECTORS = new Set([
   "mysql",
   "pinot",
 ]);
-export const TALL_FORM_CONNECTORS = new Set([
-  "clickhouse",
-  "snowflake",
-]);
+export const TALL_FORM_CONNECTORS = new Set(["clickhouse", "snowflake"]);

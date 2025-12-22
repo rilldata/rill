@@ -13,7 +13,15 @@ export const pinotSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
-        parameters: ["broker_host", "broker_port", "controller_host", "controller_port", "username", "password", "ssl"],
+        parameters: [
+          "broker_host",
+          "broker_port",
+          "controller_host",
+          "controller_port",
+          "username",
+          "password",
+          "ssl",
+        ],
         connection_string: ["dsn"],
       },
       "x-step": "connector",
@@ -81,7 +89,8 @@ export const pinotSchema: MultiStepFormSchema = {
       type: "string",
       title: "Connection String",
       description: "Pinot connection string (DSN)",
-      "x-placeholder": "http(s)://username:password@localhost:8000?controller=localhost:9000",
+      "x-placeholder":
+        "http(s)://username:password@localhost:8000?controller=localhost:9000",
       "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },

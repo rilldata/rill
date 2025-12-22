@@ -37,12 +37,8 @@
   $: renderOrder = schema
     ? computeRenderOrder(visibleEntries, groupedChildKeys)
     : [];
-  $: regularFields = renderOrder.filter(
-    ([_, prop]) => !prop["x-advanced"],
-  );
-  $: advancedFields = renderOrder.filter(
-    ([_, prop]) => prop["x-advanced"],
-  );
+  $: regularFields = renderOrder.filter(([_, prop]) => !prop["x-advanced"]);
+  $: advancedFields = renderOrder.filter(([_, prop]) => prop["x-advanced"]);
 
   // Seed defaults for initial render: use explicit defaults, and for radio enums
   // fall back to first option when no value is set.
@@ -259,16 +255,29 @@
         >
           <svelte:fragment slot="custom-content" let:option>
             {#if groupedFields.get(key)}
-              {@const allGroupedForOption = getGroupedFieldsForOption(key, option.value)}
-              {@const regularGrouped = allGroupedForOption.filter(([_, prop]) => !prop["x-advanced"])}
-              {@const advancedGrouped = allGroupedForOption.filter(([_, prop]) => prop["x-advanced"])}
+              {@const allGroupedForOption = getGroupedFieldsForOption(
+                key,
+                option.value,
+              )}
+              {@const regularGrouped = allGroupedForOption.filter(
+                ([_, prop]) => !prop["x-advanced"],
+              )}
+              {@const advancedGrouped = allGroupedForOption.filter(
+                ([_, prop]) => prop["x-advanced"],
+              )}
               {#each regularGrouped as [childKey, childProp]}
                 {#if isTabsEnum(childProp)}
                   <div class="py-1.5 first:pt-0 last:pb-0">
                     {#if childProp.title}
-                      <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                      <div class="text-sm font-medium mb-3">
+                        {childProp.title}
+                      </div>
                     {/if}
-                    <Tabs bind:value={$form[childKey]} options={tabOptions(childProp)} disableMarginTop>
+                    <Tabs
+                      bind:value={$form[childKey]}
+                      options={tabOptions(childProp)}
+                      disableMarginTop
+                    >
                       {#if groupedFields.get(childKey)}
                         {#each tabOptions(childProp) as tabOption}
                           <TabsContent value={tabOption.value}>
@@ -316,7 +325,9 @@
               {/each}
               {#if advancedGrouped.length > 0}
                 <details class="py-1.5">
-                  <summary class="text-sm font-medium cursor-pointer select-none hover:text-gray-700">
+                  <summary
+                    class="text-sm font-medium cursor-pointer select-none hover:text-gray-700"
+                  >
                     Advanced Configuration
                   </summary>
                   <div class="mt-2 space-y-1.5">
@@ -350,25 +361,41 @@
         {#if prop.title}
           <div class="text-sm font-medium mb-3">{prop.title}</div>
         {/if}
-        <Tabs bind:value={$form[key]} options={tabOptions(prop)} disableMarginTop>
+        <Tabs
+          bind:value={$form[key]}
+          options={tabOptions(prop)}
+          disableMarginTop
+        >
           {#if groupedFields.get(key)}
             {#each tabOptions(prop) as option}
               <TabsContent value={option.value}>
-                {@const allGroupedForTabOption = getGroupedFieldsForOption(key, option.value)}
-                {@const regularGroupedTab = allGroupedForTabOption.filter(([_, prop]) => !prop["x-advanced"])}
-                {@const advancedGroupedTab = allGroupedForTabOption.filter(([_, prop]) => prop["x-advanced"])}
+                {@const allGroupedForTabOption = getGroupedFieldsForOption(
+                  key,
+                  option.value,
+                )}
+                {@const regularGroupedTab = allGroupedForTabOption.filter(
+                  ([_, prop]) => !prop["x-advanced"],
+                )}
+                {@const advancedGroupedTab = allGroupedForTabOption.filter(
+                  ([_, prop]) => prop["x-advanced"],
+                )}
                 {#each regularGroupedTab as [childKey, childProp]}
                   {#if isRadioEnum(childProp)}
                     <div class="py-1.5 first:pt-0 last:pb-0">
                       {#if childProp.title}
-                        <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                        <div class="text-sm font-medium mb-3">
+                          {childProp.title}
+                        </div>
                       {/if}
                       <Radio
                         bind:value={$form[childKey]}
                         options={radioOptions(childProp)}
                         name={`${childKey}-radio`}
                       >
-                        <svelte:fragment slot="custom-content" let:option={radioOption}>
+                        <svelte:fragment
+                          slot="custom-content"
+                          let:option={radioOption}
+                        >
                           {#if groupedFields.get(childKey)}
                             {#each getGroupedFieldsForOption(childKey, radioOption.value) as [grandchildKey, grandchildProp]}
                               <div class="py-1.5 first:pt-0 last:pb-0">
@@ -413,7 +440,9 @@
                 {/each}
                 {#if advancedGroupedTab.length > 0}
                   <details class="py-1.5">
-                    <summary class="text-sm font-medium cursor-pointer select-none hover:text-gray-700">
+                    <summary
+                      class="text-sm font-medium cursor-pointer select-none hover:text-gray-700"
+                    >
                       Advanced Configuration
                     </summary>
                     <div class="mt-2 space-y-1.5">
@@ -463,7 +492,9 @@
 
   {#if advancedFields.length > 0}
     <details class="py-1.5">
-      <summary class="text-sm font-medium cursor-pointer select-none hover:text-gray-700">
+      <summary
+        class="text-sm font-medium cursor-pointer select-none hover:text-gray-700"
+      >
         Advanced Configuration
       </summary>
       <div class="mt-2 space-y-1.5">
@@ -484,9 +515,15 @@
                       {#if isTabsEnum(childProp)}
                         <div class="py-1.5 first:pt-0 last:pb-0">
                           {#if childProp.title}
-                            <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                            <div class="text-sm font-medium mb-3">
+                              {childProp.title}
+                            </div>
                           {/if}
-                          <Tabs bind:value={$form[childKey]} options={tabOptions(childProp)} disableMarginTop>
+                          <Tabs
+                            bind:value={$form[childKey]}
+                            options={tabOptions(childProp)}
+                            disableMarginTop
+                          >
                             {#if groupedFields.get(childKey)}
                               {#each tabOptions(childProp) as tabOption}
                                 <TabsContent value={tabOption.value}>
@@ -541,7 +578,11 @@
               {#if prop.title}
                 <div class="text-sm font-medium mb-3">{prop.title}</div>
               {/if}
-              <Tabs bind:value={$form[key]} options={tabOptions(prop)} disableMarginTop>
+              <Tabs
+                bind:value={$form[key]}
+                options={tabOptions(prop)}
+                disableMarginTop
+              >
                 {#if groupedFields.get(key)}
                   {#each tabOptions(prop) as option}
                     <TabsContent value={option.value}>
@@ -549,14 +590,19 @@
                         {#if isRadioEnum(childProp)}
                           <div class="py-1.5 first:pt-0 last:pb-0">
                             {#if childProp.title}
-                              <div class="text-sm font-medium mb-3">{childProp.title}</div>
+                              <div class="text-sm font-medium mb-3">
+                                {childProp.title}
+                              </div>
                             {/if}
                             <Radio
                               bind:value={$form[childKey]}
                               options={radioOptions(childProp)}
                               name={`${childKey}-radio`}
                             >
-                              <svelte:fragment slot="custom-content" let:option={radioOption}>
+                              <svelte:fragment
+                                slot="custom-content"
+                                let:option={radioOption}
+                              >
                                 {#if groupedFields.get(childKey)}
                                   {#each getGroupedFieldsForOption(childKey, radioOption.value) as [grandchildKey, grandchildProp]}
                                     <div class="py-1.5 first:pt-0 last:pb-0">

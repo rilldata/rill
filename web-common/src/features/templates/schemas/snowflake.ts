@@ -31,8 +31,25 @@ export const snowflakeSchema: MultiStepFormSchema = {
         "Authenticate with RSA key pair (more secure).",
       ],
       "x-grouped-fields": {
-        password: ["account", "user", "password", "warehouse", "database", "schema", "role"],
-        keypair: ["account", "user", "private_key", "private_key_passphrase", "warehouse", "database", "schema", "role"],
+        password: [
+          "account",
+          "user",
+          "password",
+          "warehouse",
+          "database",
+          "schema",
+          "role",
+        ],
+        keypair: [
+          "account",
+          "user",
+          "private_key",
+          "private_key_passphrase",
+          "warehouse",
+          "database",
+          "schema",
+          "role",
+        ],
       },
       "x-step": "connector",
       "x-visible-if": { connection_method: "parameters" },
@@ -60,16 +77,23 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter password",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "parameters", auth_method: "password" },
+      "x-visible-if": {
+        connection_method: "parameters",
+        auth_method: "password",
+      },
     },
     private_key: {
       type: "string",
       title: "Private Key",
       description: "RSA private key in PEM format",
-      "x-placeholder": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
+      "x-placeholder":
+        "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "parameters", auth_method: "keypair" },
+      "x-visible-if": {
+        connection_method: "parameters",
+        auth_method: "keypair",
+      },
     },
     private_key_passphrase: {
       type: "string",
@@ -78,7 +102,10 @@ export const snowflakeSchema: MultiStepFormSchema = {
       "x-placeholder": "Enter passphrase if key is encrypted",
       "x-secret": true,
       "x-step": "connector",
-      "x-visible-if": { connection_method: "parameters", auth_method: "keypair" },
+      "x-visible-if": {
+        connection_method: "parameters",
+        auth_method: "keypair",
+      },
     },
     warehouse: {
       type: "string",

@@ -44,7 +44,7 @@ export const httpsSchema: MultiStepFormSchema = {
       description: "Format of the data returned by the API",
       enum: ["json", "csv"],
       default: "json",
-      "x-display": "radio", 
+      "x-display": "radio",
       "x-enum-labels": ["JSON", "CSV"],
       "x-enum-descriptions": ["JSON format", "CSV format"],
       "x-step": "source",

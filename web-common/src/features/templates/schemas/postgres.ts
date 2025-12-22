@@ -13,7 +13,15 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-grouped-fields": {
-        parameters: ["host", "port", "dbname", "user", "password", "sslmode", "log_queries"],
+        parameters: [
+          "host",
+          "port",
+          "dbname",
+          "user",
+          "password",
+          "sslmode",
+          "log_queries",
+        ],
         connection_string: ["dsn", "log_queries"],
       },
       "x-step": "connector",
@@ -75,7 +83,8 @@ export const postgresSchema: MultiStepFormSchema = {
       type: "string",
       title: "Connection String",
       description: "PostgreSQL connection string (DSN)",
-      "x-placeholder": "postgres://user:password@host:5432/dbname?sslmode=require",
+      "x-placeholder":
+        "postgres://user:password@host:5432/dbname?sslmode=require",
       "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },

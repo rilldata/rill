@@ -14,8 +14,10 @@ export const duckdbSchema: MultiStepFormSchema = {
     attach: {
       type: "string",
       title: "Attach",
-      description: "Attach to an existing DuckDB database with options (alternative to path)",
-      "x-placeholder": "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles')",
+      description:
+        "Attach to an existing DuckDB database with options (alternative to path)",
+      "x-placeholder":
+        "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles')",
       "x-step": "connector",
       "x-advanced": true,
     },

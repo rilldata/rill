@@ -63,7 +63,8 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
   }
 
   // Get the secret property keys from the properties being used (orderedProperties or configProperties)
-  const propertiesForTypeChecking = options?.orderedProperties ?? connector.configProperties ?? [];
+  const propertiesForTypeChecking =
+    options?.orderedProperties ?? connector.configProperties ?? [];
   const secretPropertyKeys =
     propertiesForTypeChecking
       .filter((property) => property.secret)

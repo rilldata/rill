@@ -82,7 +82,8 @@ export const s3Schema: MultiStepFormSchema = {
     aws_role_session_name: {
       type: "string",
       title: "Role Session Name",
-      description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+      description:
+        "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
       "x-placeholder": "my-session-name",
       "x-secret": true,
       "x-step": "connector",
@@ -92,7 +93,8 @@ export const s3Schema: MultiStepFormSchema = {
     aws_external_id: {
       type: "string",
       title: "External ID",
-      description: "Optional external ID to use when assuming an AWS role for cross-account access.",
+      description:
+        "Optional external ID to use when assuming an AWS role for cross-account access.",
       "x-placeholder": "external-id-123",
       "x-secret": true,
       "x-step": "connector",
@@ -140,7 +142,12 @@ export const s3Schema: MultiStepFormSchema = {
     {
       if: { properties: { auth_method: { const: "access_keys" } } },
       then: {
-        required: ["aws_access_key_id", "aws_secret_access_key", "path", "name"],
+        required: [
+          "aws_access_key_id",
+          "aws_secret_access_key",
+          "path",
+          "name",
+        ],
       },
     },
     {
