@@ -40,7 +40,7 @@ export function createEmbedOptions({
     renderer,
     tooltip: {
       theme: themeMode,
-      ...(hasComparison || colorMapping.length
+      ...(hasComparison || colorMapping?.length
         ? { formatTooltip: getTooltipFormatter(colorMapping) }
         : {}),
     },

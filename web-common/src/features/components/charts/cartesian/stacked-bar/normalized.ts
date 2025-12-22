@@ -132,7 +132,9 @@ export function generateVLStackedBarNormalizedSpec(
     data,
   );
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  spec.encoding = {
+    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+  };
 
   const hoverRuleLayer = buildHoverRuleLayer({
     xField,
@@ -143,7 +145,6 @@ export function generateVLStackedBarNormalizedSpec(
     xSort: config.x?.sort,
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
-    xBand: config.x?.type === "temporal" ? 0.5 : undefined,
     pivot: createVegaTransformPivotConfig(
       xField,
       yField,
