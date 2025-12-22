@@ -5223,6 +5223,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 
 	// no validation rules for UseAi
 
+	// no validation rules for Prompt
+
 	if len(errors) > 0 {
 		return GenerateMetricsViewFileRequestMultiError(errors)
 	}
@@ -7631,8 +7633,6 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 	// no validation rules for Kind
 
 	// no validation rules for Replay
-
-	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)

@@ -1,3 +1,4 @@
+import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import { createIndexMap, getAccessorForCell } from "./pivot-utils";
@@ -17,7 +18,7 @@ export function prepareNestedPivotData(
   if (dimensions.slice(i).length > 0) {
     data.forEach((row) => {
       if (!row.subRows) {
-        row.subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
+        row.subRows = [{ [dimensions[0]]: LOADING_CELL }];
       }
 
       prepareNestedPivotData(row.subRows, dimensions, i + 1);

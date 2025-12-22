@@ -20,8 +20,6 @@ In Rill, a source model represents your raw data. See our list of [connectors](/
 <img src = '/img/tutorials/rill-basics/add_data.png' class='rounded-gif' style={{maxWidth: '400px', height: 'auto'}} />
 <br />
 
-Depending on the source type, you will either need to explicitly provide credentials (for Snowflake, Athena, etc.), or Rill can dynamically retrieve them via the CLI (for AWS, GCP, Azure). In either case, the credentials need to be [stored in a `.env` file](/developer/build/connectors/credentials) in order to be pushed to your deployed project. You might need to run `rill env configure` after deploying if your credentials are not pushed properly.
-
 :::tip Where is the data being imported?
 By default, Rill uses DuckDB as the underlying OLAP engine (see <a href='https://docs.rilldata.com/build/olap/' target="_blank">Connect OLAP engines</a>).
 Please see our docs for the <a href="https://docs.rilldata.com/build/connectors/source/" target="_blank">supported list</a> of connectors.

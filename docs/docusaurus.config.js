@@ -142,19 +142,24 @@ const config = {
             activeBaseRegex: "^/user-guide.*", // Keep Docs active for all doc pages
           },
           {
-            to: "/reference/project-files",
-            label: "Reference",
-            position: "left",
+            type: 'dropdown',
+            label: 'Reference',
+            position: 'left',
             className: "navbar-reference-link",
-            activeBasePath: "/reference",
+            items: [
+              { to: '/reference/project-files', label: 'Project Files' },
+              { to: '/reference/cli', label: 'CLI' },
+              { to: '/api/admin/', label: 'REST API' },
+              { to: '/reference/rill-iso-extensions', label: 'Time Syntax' },
+            ],
           },
-          {
-            to: "/api/admin/",
-            label: "API",
-            position: "left",
-            className: "navbar-api-link",
-            activeBasePath: "/api/admin",
-          },
+          // {
+          //   to: "/api/admin/",
+          //   label: "API",
+          //   position: "left",
+          //   className: "navbar-api-link",
+          //   activeBasePath: "/api/admin",
+          // },
           {
             to: "/contact",
             label: "Contact Us",

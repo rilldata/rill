@@ -79,13 +79,11 @@ You have now configured Google Cloud access from your local environment. Rill wi
 
 ## Deploy to Rill Cloud
 
-When deploying your project to Rill Cloud, you must provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, your deployment will result in errored dashboards.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#bigquery) for more information.
 
-When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
-
-If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-```bash
-rill env configure
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
 ```
 
 :::tip Did you know?

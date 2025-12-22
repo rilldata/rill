@@ -41,14 +41,7 @@ There might be instances where you've configured the project's `.env` file with 
 :::
 
 **For Rill Cloud:**
-- You can pass in the appropriate DSN connection string for each required OLAP engine by using the `rill env configure` command.
-- Alternatively, if the required `connector.<olap-engine>.dsn` parameters have been set in your project's `.env`, you can "push" these updated variables to your deployed project directly using `rill env push`.
-
-:::info
-
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
-
-:::
+- Add the required `connector.<olap-engine>.dsn` parameters to your project's `.env`, and you can push these updated variables to your deployed project directly using `rill env push`.
 
 ### Configuring DuckDB as the default OLAP engine
 

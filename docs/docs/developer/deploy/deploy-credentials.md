@@ -22,20 +22,6 @@ If you have defined your connector's credentials in your `.env` file, these will
 <img src='/img/tutorials/admin/env-var-ui.png' class='rounded-gif' />
 <br />
 
-If not, after deploying to Rill Cloud, you can run the following in the CLI to configure all of your required credentials: `rill env configure`. When running this command, Rill will detect any connectors that are being used by the project and prompt you to fill in the required fields. When completed, this will be pushed to your Rill Cloud Deployment and automatically refresh the required objects. Once completed, you will see these in your project's environmental variables settings page.
-
-```bash
-$ rill env configure
-Finish deploying your project by providing access to the connectors. Rill requires credentials for the following connectors:
-
- - your connectors here (used by models and sources)
-
-Configuring connector "bigquery":
-...
-
-Updated project variables
-```
-
 ## Service Accounts
 
 :::info Separating development and production credentials

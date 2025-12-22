@@ -4,14 +4,14 @@
   import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { normalizeSizeArray } from "./layout-util";
-  import type { CanvasEntity } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   export let row: Row;
   export let zIndex = 1;
   export let maxWidth: number;
   export let rowIndex: number;
-  export let components: CanvasEntity["components"];
+  export let components: Map<string, BaseCanvasComponent>;
   export let heightUnit: string = "px";
   export let navigationEnabled: boolean = true;
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/server/auth"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -37,10 +38,10 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return httputil.Errorf(http.StatusBadRequest, "no prod deployment for project")
 	}
-	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.ProdDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(r.Context(), *proj.PrimaryDeploymentID)
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
@@ -79,6 +80,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		}
 
 		var attr map[string]any
+		var rules []*runtimev1.SecurityRule
 		switch claims.OwnerType() {
 		case auth.OwnerTypeAnon:
 			// No attributes
@@ -87,6 +89,13 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
+			restrictResources, resources, err := s.getResourceRestrictionsForUser(r.Context(), proj.ID, claims.OwnerID())
+			if err != nil {
+				return httputil.Error(http.StatusInternalServerError, err)
+			}
+
+			// ignore resource level security rules if the user has a full role
+			rules = securityRulesFromResources(restrictResources, resources)
 		case auth.OwnerTypeService:
 			attr, err = s.jwtAttributesForService(r.Context(), claims.OwnerID(), permissions)
 			if err != nil {
@@ -113,7 +122,8 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			InstancePermissions: map[string][]runtime.Permission{
 				depl.RuntimeInstanceID: instancePermissions,
 			},
-			Attributes: attr,
+			Attributes:    attr,
+			SecurityRules: rules,
 		})
 		if err != nil {
 			return httputil.Error(http.StatusInternalServerError, err)

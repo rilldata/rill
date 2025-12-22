@@ -1,16 +1,23 @@
+import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { Throttler } from "@rilldata/web-common/lib/throttler";
 import {
   getConnectorServiceOLAPListTablesQueryKey,
   getQueryServiceResolveCanvasQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetExploreQueryKey,
+  getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceGetModelPartitionsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
+  getRuntimeServiceIssueDevJWTQueryKey,
+  getRuntimeServiceListFilesQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  V1FileEvent,
   type V1Resource,
   V1ResourceEvent,
+  type V1WatchFilesResponse,
   type V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -19,24 +26,189 @@ import {
   invalidateProfilingQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/explorer/connector-explorer-store";
 import { sourceImportedPath } from "../sources/sources-store";
 import { isLeafResource } from "./dag-utils";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { SSEConnectionManager } from "@rilldata/web-common/runtime-client/sse-connection-manager";
 
-export class WatchResourcesClient {
-  public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
-  private readonly instanceId = get(runtime).instanceId;
+const REFETCH_LIST_FILES_THROTTLE_MS = 100;
+
+// Throttling configuration
+const OUT_OF_FOCUS_TIMEOUT = 120000; // 2 minutes
+const OUT_OF_FOCUS_SHORT_TIMEOUT = 20000; // 20 seconds
+const MAX_RETRIES = 3;
+
+export type EventType = "file" | "resource";
+
+interface WatchEventMap {
+  file: V1WatchFilesResponse;
+  resource: V1WatchResourcesResponse;
+}
+
+export interface WatchResponse<K extends keyof WatchEventMap> {
+  type: K;
+  data: WatchEventMap[K];
+}
+
+export type AnyWatchResponse = {
+  [K in keyof WatchEventMap]: WatchResponse<K>;
+}[keyof WatchEventMap];
+
+export class FileAndResourceWatcher {
+  private client = new SSEConnectionManager({
+    autoCloseTimeouts: {
+      short: OUT_OF_FOCUS_SHORT_TIMEOUT,
+      normal: OUT_OF_FOCUS_TIMEOUT,
+    },
+    maxRetryAttempts: MAX_RETRIES,
+    retryOnError: true,
+    retryOnClose: true,
+  });
+
+  public status = this.client.status;
+
   private readonly connectorNames = new Set<string>();
+  private readonly seenFiles = new Set<string>();
+  private refetchListFilesThrottle = new Throttler(
+    REFETCH_LIST_FILES_THROTTLE_MS,
+    REFETCH_LIST_FILES_THROTTLE_MS,
+  );
 
-  public constructor() {
-    this.client = new WatchRequestClient<V1WatchResourcesResponse>();
-    this.client.on("response", (res) => this.handleWatchResourceResponse(res));
-    this.client.on("reconnect", () => this.invalidateAllRuntimeQueries());
+  constructor() {
+    this.setupSSEEventHandlers();
   }
 
-  private async handleWatchResourceResponse(res: V1WatchResourcesResponse) {
+  public watch = (url: string) => {
+    void this.client.start(url);
+  };
+
+  public heartbeat = () => {
+    void this.client.heartbeat();
+  };
+
+  public close = (cleanup = false) => {
+    this.client.close(cleanup);
+  };
+
+  public scheduleAutoClose = (useShortTimeout = false) => {
+    this.client.scheduleAutoClose(useShortTimeout);
+  };
+
+  private setupSSEEventHandlers() {
+    if (!this.client) return;
+
+    this.client.on("message", (event) => {
+      try {
+        const rawData = JSON.parse(event.data);
+        let watchResponse: AnyWatchResponse;
+
+        switch (event.type) {
+          case "file":
+            watchResponse = {
+              type: "file",
+              data: rawData as V1WatchFilesResponse,
+            };
+            break;
+          case "resource":
+            watchResponse = {
+              type: "resource",
+              data: rawData as V1WatchResourcesResponse,
+            };
+            break;
+
+          default:
+            console.warn(`Unknown event type: ${event.type}`);
+            return;
+        }
+
+        void this.handleWatchResponse(watchResponse);
+      } catch (error) {
+        console.error("Error parsing SSE message:", error);
+      }
+    });
+
+    this.client.on("reconnect", () => {
+      void this.invalidateAll();
+    });
+  }
+
+  private get instanceId() {
+    return get(runtime).instanceId;
+  }
+
+  private invalidateAll() {
+    // Invalidate all runtime queries on reconnect
+    return queryClient.invalidateQueries({
+      predicate: (query) =>
+        query.queryHash.includes(`v1/instances/${this.instanceId}`),
+    });
+  }
+
+  private handleWatchResponse = async (event: AnyWatchResponse) => {
+    switch (event.type) {
+      case "file":
+        await this.handleFileEvent(event.data);
+        break;
+      case "resource":
+        await this.handleResourceEvent(event.data);
+        break;
+    }
+  };
+
+  private async handleFileEvent(res: V1WatchFilesResponse) {
+    if (!res?.path || res.path.includes(".db")) return;
+
+    const isNew = !this.seenFiles.has(res.path);
+
+    // invalidations will wait until the re-fetched query is completed
+    // so, we should not `await` here on `refetchQueries`
+    if (!res.isDir) {
+      switch (res.event) {
+        case V1FileEvent.FILE_EVENT_WRITE:
+          await fileArtifacts.getFileArtifact(res.path).fetchContent(true);
+
+          if (res.path === "/rill.yaml") {
+            // If it's a rill.yaml file, invalidate the dev JWT queries
+            void queryClient.invalidateQueries({
+              queryKey: getRuntimeServiceIssueDevJWTQueryKey({}),
+            });
+
+            await invalidate("init");
+
+            eventBus.emit("rill-yaml-updated", null);
+          }
+          this.seenFiles.add(res.path);
+          break;
+
+        case V1FileEvent.FILE_EVENT_DELETE:
+          void queryClient.resetQueries({
+            queryKey: getRuntimeServiceGetFileQueryKey(this.instanceId, {
+              path: res.path,
+            }),
+          });
+          fileArtifacts.removeFile(res.path);
+          this.seenFiles.delete(res.path);
+
+          if (res.path === "/rill.yaml") {
+            await invalidate("init");
+          }
+
+          break;
+      }
+    }
+    // Throttle refetching the list of files. This avoids refetching when many files are added in quick succession.
+    if (isNew || res.event === V1FileEvent.FILE_EVENT_DELETE) {
+      this.refetchListFilesThrottle.throttle(() =>
+        queryClient.refetchQueries({
+          queryKey: getRuntimeServiceListFilesQueryKey(this.instanceId),
+        }),
+      );
+    }
+  }
+
+  private async handleResourceEvent(res: V1WatchResourcesResponse) {
     // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
     // based on these logs. However, the e2e tests really should make UI-based assertions.
     if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
@@ -335,11 +507,6 @@ export class WatchResourcesClient {
         }
     }
   }
-
-  private invalidateAllRuntimeQueries() {
-    return queryClient.invalidateQueries({
-      predicate: (query) =>
-        query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
-    });
-  }
 }
+
+export const fileAndResourceWatcher = new FileAndResourceWatcher();

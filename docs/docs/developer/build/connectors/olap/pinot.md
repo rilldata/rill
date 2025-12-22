@@ -68,8 +68,7 @@ Please see our [Using Multiple OLAP Engines](/developer/build/connectors/olap/mu
 
 When deploying a Pinot-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
 1. If you have followed the UI to create your Pinot connector, the password or DSN should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
-2. Use the `rill env configure` command to set `connector.pinot.dsn` after deploying the project.
-3. If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
+2. If `connector.pinot.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
 
 ## Support for Multi-Valued Dimensions
 

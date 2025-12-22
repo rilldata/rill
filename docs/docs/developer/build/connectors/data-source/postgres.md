@@ -49,9 +49,9 @@ For more details, see our [Dev/Prod setup docs](/developer/build/connectors/temp
 
 ## Deploy to Rill Cloud
 
-When deploying your project to Rill Cloud, you must explicitly provide the PostgreSQL connection string. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide the PostgreSQL connection string used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#postgres) for more information.
 
-To manually configure your environment variables, run:
-```bash
-rill env configure
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
 ```
