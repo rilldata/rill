@@ -7,7 +7,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-  import { Trash2Icon } from "lucide-svelte";
   import RemoveUserFromOrgConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemoveUserFromOrgConfirmDialog.svelte";
   import {
     createAdminServiceRemoveOrganizationMemberUser,
@@ -26,12 +25,14 @@
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onConvertToMember: () => void;
+  export let pendingAcceptance = false;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
   $: isGuest = role === OrgUserRoles.Guest;
+  $: canConvertToMember = isGuest && !pendingAcceptance;
   $: canManageUser =
     // TODO: backend doesnt restrict removing oneself, revisit this UI check.
     !isCurrentUser && canManageOrgUser(organizationPermissions, role);
@@ -82,10 +83,14 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      {#if role === OrgUserRoles.Guest}
+      {#if isGuest}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          on:click={onConvertToMember}
+          disabled={!canConvertToMember}
+          on:click={() => {
+            if (!canConvertToMember) return;
+            onConvertToMember();
+          }}
         >
           Convert to member
         </DropdownMenu.Item>
@@ -95,8 +100,7 @@
         type="destructive"
         on:click={onRemoveClick}
       >
-        <Trash2Icon size="12px" />
-        <span class="ml-2">Remove</span>
+        Remove
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
