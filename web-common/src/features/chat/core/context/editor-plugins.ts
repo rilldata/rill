@@ -76,11 +76,17 @@ const EditorSubmitExtension = Extension.create(() => {
           isShiftEnter = true;
           return this.editor.commands.enter();
         },
-        // Suppress up and down when context picker is open
+        // Suppress arrow keys when context picker is open
         ArrowDown: () => {
           return this.options.sharedEditorStore.contextOpen;
         },
         ArrowUp: () => {
+          return this.options.sharedEditorStore.contextOpen;
+        },
+        ArrowLeft: () => {
+          return this.options.sharedEditorStore.contextOpen;
+        },
+        ArrowRight: () => {
           return this.options.sharedEditorStore.contextOpen;
         },
       };

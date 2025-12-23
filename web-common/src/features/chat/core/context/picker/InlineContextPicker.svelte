@@ -39,6 +39,12 @@
       case "ArrowDown":
         highlightManager.highlightNextContext();
         break;
+      case "ArrowLeft":
+        highlightManager.collapseToClosestParent();
+        break;
+      case "ArrowRight":
+        highlightManager.openCurrentParentOption();
+        break;
       case "Enter":
         if ($highlightedContext) onSelect($highlightedContext);
         event.preventDefault();

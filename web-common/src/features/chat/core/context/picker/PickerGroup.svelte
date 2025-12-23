@@ -8,7 +8,10 @@
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { Readable } from "svelte/store";
   import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
-  import { ensureInView } from "@rilldata/web-common/features/chat/core/context/picker/ensure-in-view.ts";
+  import {
+    ensureInView,
+    ensureIsHighlighted,
+  } from "@rilldata/web-common/features/chat/core/context/picker/ensure-in-view.ts";
   import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
@@ -47,18 +50,14 @@
   $: parentOptionHighlighted =
     highlightedContext !== null &&
     inlineContextsAreEqual(context, highlightedContext);
-  $: withinParentOptionHighlighted =
-    highlightedContext !== null &&
-    inlineContextIsWithin(context, highlightedContext);
 
   $: parentTypeLabel = typeConfig.typeLabel;
   $: parentIcon = typeConfig.getIcon?.(context);
 
-  $: mouseContextHighlightHandler = highlightManager.mouseOverHandler(context);
+  const ensureIsHighlightedHandler = ensureIsHighlighted(highlightManager);
 
   $: shouldForceOpen =
     withinParentOptionSelected ||
-    withinParentOptionHighlighted ||
     recentlyUsed ||
     currentlyActive ||
     $searchTextStore.length > 0;
@@ -77,7 +76,7 @@
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
       use:ensureInView={parentOptionHighlighted}
-      use:mouseContextHighlightHandler
+      use:ensureIsHighlightedHandler={context}
       on:click={focusEditor}
     >
       <input
@@ -87,7 +86,7 @@
         class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
       />
       <div class="min-w-3.5">
-        {#if $openStore}
+        {#if $openStore && resolvedChildren.length}
           <ChevronDownIcon size="12px" strokeWidth={4} />
         {:else if parentIcon}
           <!-- On hover show chevron right icon -->
@@ -100,7 +99,6 @@
       <span class="context-item-label">{context.label}</span>
 
       {#if parentOptionHighlighted}
-        <div class="context-item-keyboard-shortcut">↑/↓</div>
         {#if parentTypeLabel}
           <div class="context-item-type-label">
             {parentTypeLabel}
@@ -125,8 +123,6 @@
           {@const highlighted =
             highlightedContext !== null &&
             inlineContextsAreEqual(child, highlightedContext)}
-          {@const mouseContextHighlightHandler =
-            highlightManager.mouseOverHandler(child)}
           {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
 
           <button
@@ -135,7 +131,7 @@
             type="button"
             on:click={() => onSelect(child)}
             use:ensureInView={highlighted}
-            use:mouseContextHighlightHandler
+            use:ensureIsHighlightedHandler={child}
           >
             <div class="context-item-checkbox">
               {#if selected}
@@ -151,14 +147,8 @@
             {/if}
 
             <span class="context-item-label">{child.label}</span>
-
-            {#if highlighted}
-              <div class="context-item-keyboard-shortcut">↑/↓</div>
-            {/if}
           </button>
         {/each}
-      {:else}
-        <div class="contents-empty">No matches found</div>
       {/each}
     {/if}
   </Collapsible.Content>
@@ -194,11 +184,6 @@
     @apply min-w-3 h-3;
   }
 
-  .context-item-keyboard-shortcut {
-    @apply grow-0 shrink-0;
-    @apply text-accent-foreground/60;
-  }
-
   .context-item-icon {
     @apply min-w-3.5 h-2;
   }
@@ -206,9 +191,5 @@
   .context-item-type-label {
     @apply grow-0 shrink-0;
     @apply text-xs font-normal text-right text-popover-foreground/60;
-  }
-
-  .contents-empty {
-    @apply px-2 py-1.5 w-full ui-copy-inactive;
   }
 </style>

@@ -140,18 +140,20 @@ export function getFilteredPickerOptions(searchTextStore: Readable<string>) {
 
           if (!parentMatches && children.length === 0) return null;
 
-          if (!recentlyUsed && option.recentlyUsed) {
-            recentlyUsed = option;
-          }
-          if (!currentlyActive && option.currentlyActive) {
-            currentlyActive = option;
-          }
-          if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
-
-          return {
+          const filteredOption = {
             ...option,
             children,
           } satisfies InlineContextPickerParentOption;
+
+          if (!recentlyUsed && option.recentlyUsed) {
+            recentlyUsed = filteredOption;
+          }
+          if (!currentlyActive && option.currentlyActive) {
+            currentlyActive = filteredOption;
+          }
+          if (option.recentlyUsed || option.currentlyActive) return null; // these are added explicitly
+
+          return filteredOption;
         })
         .filter(Boolean) as InlineContextPickerParentOption[];
 
