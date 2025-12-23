@@ -59,7 +59,7 @@ export const gcsSchema: MultiStepFormSchema = {
       description: "Path to your GCS bucket or prefix",
       pattern: "^gs://[^/]+(/.*)?$",
       errorMessage: {
-        pattern: "Enter a GCS URI like gs://bucket or gs://bucket/path",
+        pattern: "Must be a GS URI (e.g. gs://bucket/path)",
       },
       "x-placeholder": "gs://bucket/path",
       "x-step": "source",
