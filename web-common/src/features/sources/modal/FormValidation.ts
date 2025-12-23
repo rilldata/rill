@@ -43,11 +43,9 @@ function withJsonSchemaAuthValidation(
   connectorName: string,
   getAuthMethod?: () => string | undefined,
 ) {
-  const connectorKey =
-    `${connectorName}_connector` as keyof typeof getYupSchema;
-  const baseSchema =
-    (getYupSchema[connectorKey] as yup.ObjectSchema<any> | undefined) ||
-    yup.object();
+  // Avoid relying on connector-specific Yup schemas for multi-step flows;
+  // defer entirely to JSON schema-driven validation.
+  const baseSchema = yup.object();
   const schema = getConnectorSchema(connectorName);
   if (!schema) return baseSchema;
 
