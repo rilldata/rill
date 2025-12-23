@@ -24,6 +24,7 @@ import {
   MULTI_STEP_CONNECTORS,
   MEDIUM_FORM_CONNECTORS,
   TALL_FORM_CONNECTORS,
+  OLAP_ENGINES,
 } from "./constants";
 import {
   connectorStepStore,
@@ -421,11 +422,17 @@ export class AddDataFormManager {
             false,
           );
 
-          // If mode is "read" (read-only), close without going to source step
-          // Only advance to source step when mode is "readwrite"
+          // If mode is "read" (read-only), navigate to explorer step.
+          // For OLAP connectors without a mode field (Pinot, Druid), also go to explorer.
+          // Only advance to source step when mode is "readwrite" or undefined (rill-managed).
           const mode = values?.mode as string | undefined;
-          if (mode === "read") {
-            onClose();
+          const schema = getConnectorSchema(connector.name ?? "");
+          const hasModeField = schema?.properties?.mode !== undefined;
+          const isReadOnlyOlap = !hasModeField && OLAP_ENGINES.includes(connector.name ?? "");
+
+          if (mode === "read" || isReadOnlyOlap) {
+            setConnectorConfig(preparedValues);
+            setStep("explorer");
             return;
           }
 

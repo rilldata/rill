@@ -18,6 +18,7 @@
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
+  import AddDataExplorer from "./AddDataExplorer.svelte";
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
@@ -274,20 +275,21 @@
   }
 </script>
 
-<div class="add-data-layout flex flex-col h-full w-full md:flex-row">
-  <!-- LEFT SIDE PANEL -->
-  <div
-    class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
-  >
+{#if stepState.step === "explorer"}
+  <AddDataExplorer {onClose} {connector} />
+{:else}
+  <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
+    <!-- LEFT SIDE PANEL -->
     <div
-      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+      class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
     >
-      {#if isMultiStepConnector}
+      <div
+        class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+      >
+        {#if isMultiStepConnector}
         <MultiStepConnectorFlow
           {connector}
           {formManager}
-          {properties}
-          {filteredParamsProperties}
           {paramsForm}
           {paramsErrors}
           {paramsEnhance}
@@ -450,3 +452,4 @@
     <NeedHelpText {connector} />
   </div>
 </div>
+{/if}

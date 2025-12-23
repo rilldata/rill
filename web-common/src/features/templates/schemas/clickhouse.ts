@@ -294,29 +294,26 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-step": "source",
       "x-visible-if": { mode: "readwrite" },
     },
+    explorer_table: {
+      type: "string",
+      title: "Select a table",
+      description: "Select a table to generate metrics from",
+      "x-step": "explorer",
+      "x-visible-if": { mode: "read" },
+    },
   },
   allOf: [
     {
-      if: {
-        properties: {
-          auth_method: { const: "self-managed" },
-          connection_method: { const: "parameters" },
-        },
-      },
-      then: { required: ["host", "username"] },
+      if: { properties: { auth_method: { const: "self-managed" } } },
+      then: { required: [] },
     },
     {
-      if: {
-        properties: {
-          auth_method: { const: "self-managed" },
-          connection_method: { const: "connection_string" },
-        },
-      },
-      then: { required: ["dsn"] },
+      if: { properties: { auth_method: { const: "rill-managed" } } },
+      then: { required: [] },
     },
     {
       if: { properties: { mode: { const: "readwrite" } } },
-      then: { required: ["managed", "sql", "name"] },
+      then: { required: ["sql", "name"] },
     },
   ],
 };

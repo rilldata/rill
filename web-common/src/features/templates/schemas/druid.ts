@@ -94,6 +94,12 @@ export const druidSchema: MultiStepFormSchema = {
       "x-step": "connector",
       "x-visible-if": { auth_method: "connection_string" },
     },
+    explorer_table: {
+      type: "string",
+      title: "Select a table",
+      description: "Select a table to generate metrics from",
+      "x-step": "explorer",
+    },
   },
   allOf: [
     {

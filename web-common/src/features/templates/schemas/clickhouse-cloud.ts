@@ -230,6 +230,13 @@ export const clickhouseCloudSchema: MultiStepFormSchema = {
       "x-step": "source",
       "x-visible-if": { mode: "readwrite" },
     },
+    explorer_table: {
+      type: "string",
+      title: "Select a table",
+      description: "Select a table to generate metrics from",
+      "x-step": "explorer",
+      "x-visible-if": { mode: "read" },
+    },
   },
   allOf: [
     {
