@@ -1851,6 +1851,7 @@ export type AdminServiceGetDeploymentCredentialsBody = {
 
 export type AdminServiceListDeploymentsParams = {
   environment?: string;
+  branch?: string;
   userId?: string;
 };
 
