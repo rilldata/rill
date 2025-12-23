@@ -2356,25 +2356,6 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListPublicBillingPlans lists all public billing plans
-    /v1/deployment-config:
-        get:
-            operationId: AdminService_GetDeploymentConfig
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
-                    description: A successful response.
-                default:
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/rpcStatus'
-                    description: An unexpected error response.
-            summary: |-
-                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}:
         delete:
             operationId: AdminService_DeleteDeployment
@@ -2614,6 +2595,31 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: StopDeployment stops a deployment.
+    /v1/deployments/{projectId}/deployment-config:
+        get:
+            operationId: AdminService_GetDeploymentConfig
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/github/repositories:
         get:
             operationId: AdminService_GetGithubRepoStatus

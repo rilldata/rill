@@ -43,7 +43,6 @@ const (
 	AdminService_HibernateProject_FullMethodName                       = "/rill.admin.v1.AdminService/HibernateProject"
 	AdminService_ListDeployments_FullMethodName                        = "/rill.admin.v1.AdminService/ListDeployments"
 	AdminService_CreateDeployment_FullMethodName                       = "/rill.admin.v1.AdminService/CreateDeployment"
-	AdminService_GetDeploymentConfig_FullMethodName                    = "/rill.admin.v1.AdminService/GetDeploymentConfig"
 	AdminService_GetDeployment_FullMethodName                          = "/rill.admin.v1.AdminService/GetDeployment"
 	AdminService_StartDeployment_FullMethodName                        = "/rill.admin.v1.AdminService/StartDeployment"
 	AdminService_StopDeployment_FullMethodName                         = "/rill.admin.v1.AdminService/StopDeployment"
@@ -146,6 +145,7 @@ const (
 	AdminService_CreateBookmark_FullMethodName                         = "/rill.admin.v1.AdminService/CreateBookmark"
 	AdminService_UpdateBookmark_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateBookmark"
 	AdminService_RemoveBookmark_FullMethodName                         = "/rill.admin.v1.AdminService/RemoveBookmark"
+	AdminService_GetDeploymentConfig_FullMethodName                    = "/rill.admin.v1.AdminService/GetDeploymentConfig"
 	AdminService_GetRepoMeta_FullMethodName                            = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName                        = "/rill.admin.v1.AdminService/PullVirtualRepo"
 	AdminService_GetVirtualFile_FullMethodName                         = "/rill.admin.v1.AdminService/GetVirtualFile"
@@ -236,9 +236,6 @@ type AdminServiceClient interface {
 	ListDeployments(ctx context.Context, in *ListDeploymentsRequest, opts ...grpc.CallOption) (*ListDeploymentsResponse, error)
 	// CreateDeployment creates a new deployment for a project.
 	CreateDeployment(ctx context.Context, in *CreateDeploymentRequest, opts ...grpc.CallOption) (*CreateDeploymentResponse, error)
-	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-	// This is called by the runtime to pull its Variables and Annotations from the admin service.
-	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error)
 	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeployment(ctx context.Context, in *GetDeploymentRequest, opts ...grpc.CallOption) (*GetDeploymentResponse, error)
 	// StartDeployment starts a deployment.
@@ -459,6 +456,9 @@ type AdminServiceClient interface {
 	UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error)
 	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
+	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+	// This is called by the runtime to pull its Variables and Annotations from the admin service.
+	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
@@ -759,16 +759,6 @@ func (c *adminServiceClient) CreateDeployment(ctx context.Context, in *CreateDep
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateDeploymentResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateDeployment_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetDeploymentConfigResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetDeploymentConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1795,6 +1785,16 @@ func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookm
 	return out, nil
 }
 
+func (c *adminServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeploymentConfigResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeploymentConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetRepoMetaResponse)
@@ -2153,9 +2153,6 @@ type AdminServiceServer interface {
 	ListDeployments(context.Context, *ListDeploymentsRequest) (*ListDeploymentsResponse, error)
 	// CreateDeployment creates a new deployment for a project.
 	CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error)
-	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-	// This is called by the runtime to pull its Variables and Annotations from the admin service.
-	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error)
 	// GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error)
 	// StartDeployment starts a deployment.
@@ -2376,6 +2373,9 @@ type AdminServiceServer interface {
 	UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error)
 	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
+	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+	// This is called by the runtime to pull its Variables and Annotations from the admin service.
+	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
@@ -2513,9 +2513,6 @@ func (UnimplementedAdminServiceServer) ListDeployments(context.Context, *ListDep
 }
 func (UnimplementedAdminServiceServer) CreateDeployment(context.Context, *CreateDeploymentRequest) (*CreateDeploymentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateDeployment not implemented")
-}
-func (UnimplementedAdminServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
 }
 func (UnimplementedAdminServiceServer) GetDeployment(context.Context, *GetDeploymentRequest) (*GetDeploymentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeployment not implemented")
@@ -2822,6 +2819,9 @@ func (UnimplementedAdminServiceServer) UpdateBookmark(context.Context, *UpdateBo
 }
 func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
+}
+func (UnimplementedAdminServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
 }
 func (UnimplementedAdminServiceServer) GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRepoMeta not implemented")
@@ -3362,24 +3362,6 @@ func _AdminService_CreateDeployment_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateDeployment(ctx, req.(*CreateDeploymentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDeploymentConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetDeploymentConfig_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5220,6 +5202,24 @@ func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeploymentConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetRepoMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetRepoMetaRequest)
 	if err := dec(in); err != nil {
@@ -5864,10 +5864,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_CreateDeployment_Handler,
 		},
 		{
-			MethodName: "GetDeploymentConfig",
-			Handler:    _AdminService_GetDeploymentConfig_Handler,
-		},
-		{
 			MethodName: "GetDeployment",
 			Handler:    _AdminService_GetDeployment_Handler,
 		},
@@ -6274,6 +6270,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveBookmark",
 			Handler:    _AdminService_RemoveBookmark_Handler,
+		},
+		{
+			MethodName: "GetDeploymentConfig",
+			Handler:    _AdminService_GetDeploymentConfig_Handler,
 		},
 		{
 			MethodName: "GetRepoMeta",

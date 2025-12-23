@@ -830,6 +830,43 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}, nil
 }
 
+func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploymentConfigRequest) (*adminv1.GetDeploymentConfigResponse, error) {
+	claims := auth.GetClaims(ctx)
+	// TODO: is it sufficient to check only OwnerTypeDeployment here or other permission checks are needed?
+	if claims.OwnerType() != auth.OwnerTypeDeployment {
+		return nil, status.Error(codes.PermissionDenied, "only deployments can get their config")
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &adminv1.GetDeploymentConfigResponse{}
+	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
+	if err != nil {
+		return nil, err
+	}
+	resp.Variables = vars
+
+	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	resp.Annotations = annotations.ToMap()
+
+	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	return resp, nil
+}
+
 // getResourceRestrictionsForUser returns resource restrictions for a given user and project.
 func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, userID string) (bool, []database.ResourceName, error) {
 	mu, err := s.admin.DB.FindProjectMemberUser(ctx, projID, userID)
