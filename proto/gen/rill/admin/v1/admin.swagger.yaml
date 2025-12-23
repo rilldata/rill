@@ -110,6 +110,26 @@ paths:
                 type: string
               attributes:
                 type: object
+  /v1/deployments/{deploymentId}/deployment-config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -251,26 +271,6 @@ paths:
           required: true
           schema:
             type: object
-  /v1/deployments/{projectId}/deployment-config:
-    get:
-      summary: |-
-        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-        This is called by the runtime to pull its Variables and Annotations from the admin service.
-      operationId: AdminService_GetDeploymentConfig
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetDeploymentConfigResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: projectId
-          in: path
-          required: true
-          type: string
   /v1/github/repositories:
     get:
       summary: |-

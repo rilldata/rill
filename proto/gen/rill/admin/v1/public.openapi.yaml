@@ -2296,12 +2296,12 @@ paths:
     /v1/billing/plans: {}
     /v1/deployments/{deploymentId}: {}
     /v1/deployments/{deploymentId}/credentials: {}
+    /v1/deployments/{deploymentId}/deployment-config: {}
     /v1/deployments/{deploymentId}/provision: {}
     /v1/deployments/{deploymentId}/reconcile: {}
     /v1/deployments/{deploymentId}/refresh: {}
     /v1/deployments/{deploymentId}/start: {}
     /v1/deployments/{deploymentId}/stop: {}
-    /v1/deployments/{projectId}/deployment-config: {}
     /v1/github/repositories: {}
     /v1/github/user: {}
     /v1/github/user/repositories: {}

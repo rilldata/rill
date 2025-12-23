@@ -108,7 +108,7 @@ func (h *Handle) ProvisionConnector(ctx context.Context, name, driver string, ar
 
 func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentConfig, error) {
 	res, err := h.admin.GetDeploymentConfig(ctx, &adminv1.GetDeploymentConfigRequest{
-		ProjectId: h.config.ProjectID,
+		DeploymentId: "", // Will default to the deployment ID of the current access token.
 	})
 	if err != nil {
 		return nil, err

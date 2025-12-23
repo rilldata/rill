@@ -722,6 +722,107 @@ export const createAdminServiceGetDeployment = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+This is called by the runtime to pull its Variables and Annotations from the admin service.
+ */
+export const adminServiceGetDeploymentConfig = (
+  deploymentId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetDeploymentConfigResponse>({
+    url: `/v1/deployments/${deploymentId}/deployment-config`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetDeploymentConfigQueryKey = (
+  deploymentId: string,
+) => {
+  return [`/v1/deployments/${deploymentId}/deployment-config`] as const;
+};
+
+export const getAdminServiceGetDeploymentConfigQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+  TError = RpcStatus,
+>(
+  deploymentId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetDeploymentConfigQueryKey(deploymentId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>
+  > = ({ signal }) => adminServiceGetDeploymentConfig(deploymentId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!deploymentId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetDeploymentConfigQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>
+>;
+export type AdminServiceGetDeploymentConfigQueryError = RpcStatus;
+
+/**
+ * @summary GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+This is called by the runtime to pull its Variables and Annotations from the admin service.
+ */
+
+export function createAdminServiceGetDeploymentConfig<
+  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+  TError = RpcStatus,
+>(
+  deploymentId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetDeploymentConfigQueryOptions(
+    deploymentId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary Provision provisions a new resource for a deployment.
 If an existing resource matches the request, it will be returned without provisioning a new resource.
  */
@@ -1164,107 +1265,6 @@ export const createAdminServiceStopDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
-/**
- * @summary GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-This is called by the runtime to pull its Variables and Annotations from the admin service.
- */
-export const adminServiceGetDeploymentConfig = (
-  projectId: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetDeploymentConfigResponse>({
-    url: `/v1/deployments/${projectId}/deployment-config`,
-    method: "GET",
-    signal,
-  });
-};
-
-export const getAdminServiceGetDeploymentConfigQueryKey = (
-  projectId: string,
-) => {
-  return [`/v1/deployments/${projectId}/deployment-config`] as const;
-};
-
-export const getAdminServiceGetDeploymentConfigQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
-  TError = RpcStatus,
->(
-  projectId: string,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetDeploymentConfigQueryKey(projectId);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>
-  > = ({ signal }) => adminServiceGetDeploymentConfig(projectId, signal);
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!projectId,
-    ...queryOptions,
-  } as CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type AdminServiceGetDeploymentConfigQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>
->;
-export type AdminServiceGetDeploymentConfigQueryError = RpcStatus;
-
-/**
- * @summary GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-This is called by the runtime to pull its Variables and Annotations from the admin service.
- */
-
-export function createAdminServiceGetDeploymentConfig<
-  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
-  TError = RpcStatus,
->(
-  projectId: string,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<
-        Awaited<ReturnType<typeof adminServiceGetDeploymentConfig>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getAdminServiceGetDeploymentConfigQueryOptions(
-    projectId,
-    options,
-  );
-
-  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
 /**
  * @summary GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 If the caller has not granted access to the repository, instructions for granting access are returned.

@@ -327,6 +327,12 @@ service AdminService {
     };
   }
 
+  // GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+  // This is called by the runtime to pull its Variables and Annotations from the admin service.
+  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (GetDeploymentConfigResponse) {
+    option (google.api.http) = {get: "/v1/deployments/{deployment_id}/deployment-config"};
+  }
+
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
@@ -965,12 +971,6 @@ service AdminService {
   // RemoveBookmark removes the bookmark for the given user or all users
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
-  }
-
-  // GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-  // This is called by the runtime to pull its Variables and Annotations from the admin service.
-  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (GetDeploymentConfigResponse) {
-    option (google.api.http) = {get: "/v1/deployments/{project_id}/deployment-config"};
   }
 
   // GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -1748,6 +1748,19 @@ message ProvisionRequest {
 
 message ProvisionResponse {
   ProvisionerResource resource = 1;
+}
+
+message GetDeploymentConfigRequest {
+  string deployment_id = 1; 
+}
+
+message GetDeploymentConfigResponse {
+  // Variables for the deployment (connector credentials, etc.)
+  map<string, string> variables = 1;
+  // Annotations for the deployment (org/project metadata, etc.)
+  map<string, string> annotations = 2;
+  // Frontend URL for the deployment.
+  string frontend_url = 3;
 }
 
 message ListRolesRequest {}
@@ -2588,19 +2601,6 @@ message ListProjectWhitelistedDomainsRequest {
 
 message ListProjectWhitelistedDomainsResponse {
   repeated WhitelistedDomain domains = 1;
-}
-
-message GetDeploymentConfigRequest {
-  string project_id = 1;
-}
-
-message GetDeploymentConfigResponse {
-  // Variables for the deployment (connector credentials, etc.)
-  map<string, string> variables = 1;
-  // Annotations for the deployment (org/project metadata, etc.)
-  map<string, string> annotations = 2;
-  // Frontend URL for the deployment.
-  string frontend_url = 3;
 }
 
 message GetRepoMetaRequest {
