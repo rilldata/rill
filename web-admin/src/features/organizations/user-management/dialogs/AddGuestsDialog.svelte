@@ -248,7 +248,10 @@
         {:else if projects.length === 0}
           <div class="text-xs text-slate-500">No projects</div>
         {:else}
-          <Dropdown.Root bind:open={projectDropdownOpen}>
+          <Dropdown.Root
+            bind:open={projectDropdownOpen}
+            closeOnItemClick={false}
+          >
             <Dropdown.Trigger
               class="min-w-[260px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {projectDropdownOpen
                 ? 'bg-slate-200'
