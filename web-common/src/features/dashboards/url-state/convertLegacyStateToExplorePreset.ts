@@ -260,6 +260,11 @@ function fromLegacyExploreFields(
     preset.exploreLeaderboardMeasures = legacyState.leaderboardMeasures;
   }
 
+  if (legacyState.leaderboardShowContextForAllMeasures !== undefined) {
+    preset.exploreLeaderboardShowContextForAllMeasures =
+      legacyState.leaderboardShowContextForAllMeasures;
+  }
+
   if (legacyState.selectedDimension) {
     if (dimensions.has(legacyState.selectedDimension)) {
       preset.exploreExpandedDimension = legacyState.selectedDimension;
