@@ -13,6 +13,14 @@ export type JSONSchemaField = {
   default?: string | number | boolean;
   pattern?: string;
   format?: string;
+  /**
+   * Custom error messages for validation failures.
+   * Use `pattern` key to provide a human-readable message when pattern validation fails.
+   */
+  errorMessage?: {
+    pattern?: string;
+    format?: string;
+  };
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
