@@ -401,8 +401,6 @@
         <MultiStepConnectorFlow
           {connector}
           {formManager}
-          {properties}
-          {filteredParamsProperties}
           {paramsForm}
           {paramsErrors}
           {paramsEnhance}
