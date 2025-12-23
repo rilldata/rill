@@ -242,10 +242,51 @@ func (s *Server) ListBranches(ctx context.Context, r *connect.Request[localv1.Li
 		return nil, err
 	}
 
+	// Try to fetch deployment information if authenticated
+	deploymentsByBranch := make(map[string]*adminv1.Deployment)
+	if s.app.ch.IsAuthenticated() {
+		// Try to get matching projects
+		projects, err := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+		if err == nil && len(projects) > 0 {
+			// Get admin client
+			c, err := s.app.ch.Client()
+			if err == nil {
+				// For now, use the first matching project
+				// In the future, we could aggregate deployments from all matching projects
+				project := projects[0]
+				
+				// List all deployments for this project
+				resp, err := c.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
+					Org:     project.OrgName,
+					Project: project.Name,
+				})
+				if err == nil {
+					// Map deployments to branches
+					// If multiple deployments exist for the same branch (e.g., prod and dev),
+					// prioritize prod over dev over preview
+					for _, d := range resp.Deployments {
+						if d.Branch == "" {
+							continue
+						}
+						existing, exists := deploymentsByBranch[d.Branch]
+						if !exists {
+							deploymentsByBranch[d.Branch] = d
+						} else {
+							// Prioritize: prod > dev > preview
+							if shouldReplaceDeploy(existing.Environment, d.Environment) {
+								deploymentsByBranch[d.Branch] = d
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Convert to proto format
 	branches := make([]*localv1.BranchInfo, len(result.Branches))
 	for i, b := range result.Branches {
-		branches[i] = &localv1.BranchInfo{
+		branchInfo := &localv1.BranchInfo{
 			Name:              b.Name,
 			IsLocal:          b.IsLocal,
 			IsRemote:         b.IsRemote,
@@ -256,6 +297,20 @@ func (s *Server) ListBranches(ctx context.Context, r *connect.Request[localv1.Li
 			Ahead:            b.Ahead,
 			Behind:           b.Behind,
 		}
+		
+		// Add deployment info if available
+		if deployment, exists := deploymentsByBranch[b.Name]; exists {
+			// Get the project from inferred projects to construct the frontend URL
+			projects, _ := s.app.ch.InferProjects(ctx, s.app.ch.Org, s.app.ProjectPath)
+			if len(projects) > 0 {
+				project := projects[0]
+				branchInfo.DeploymentUrl = project.FrontendUrl
+				branchInfo.DeploymentEnvironment = deployment.Environment
+				branchInfo.DeploymentId = deployment.Id
+			}
+		}
+		
+		branches[i] = branchInfo
 	}
 
 	return connect.NewResponse(&localv1.ListBranchesResponse{
@@ -263,6 +318,17 @@ func (s *Server) ListBranches(ctx context.Context, r *connect.Request[localv1.Li
 		CurrentBranch:        result.CurrentBranch,
 		HasUncommittedChanges: result.HasUncommittedChanges,
 	}), nil
+}
+
+// shouldReplaceDeploy determines if we should replace an existing deployment
+// with a new one based on environment priority: prod > dev > preview
+func shouldReplaceDeploy(existingEnv, newEnv string) bool {
+	priority := map[string]int{
+		"prod":    3,
+		"dev":     2,
+		"preview": 1,
+	}
+	return priority[newEnv] > priority[existingEnv]
 }
 
 func (s *Server) CheckoutBranch(ctx context.Context, r *connect.Request[localv1.CheckoutBranchRequest]) (*connect.Response[localv1.CheckoutBranchResponse], error) {

@@ -9,7 +9,13 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { GitBranch, ChevronDown, Plus, Check } from "lucide-svelte";
+  import {
+    GitBranch,
+    ChevronDown,
+    Plus,
+    Check,
+    ExternalLink,
+  } from "lucide-svelte";
 
   let open = false;
   let showCreateBranch = false;
@@ -102,6 +108,26 @@
       }
     }
   }
+
+  function handleDeploymentClick(
+    event: MouseEvent,
+    deploymentUrl: string | undefined,
+  ) {
+    if (!deploymentUrl) return;
+    event.stopPropagation();
+    window.open(deploymentUrl, "_blank");
+  }
+
+  function getDeploymentBadgeClass(environment: string | undefined): string {
+    if (environment === "prod") {
+      return "bg-blue-100 text-blue-700 hover:bg-blue-200";
+    } else if (environment === "dev") {
+      return "bg-amber-100 text-amber-700 hover:bg-amber-200";
+    } else if (environment === "preview") {
+      return "bg-purple-100 text-purple-700 hover:bg-purple-200";
+    }
+    return "bg-slate-100 text-slate-700 hover:bg-slate-200";
+  }
 </script>
 
 <Popover.Root bind:open>
@@ -166,15 +192,35 @@
                 </div>
               {/if}
             </div>
-            <div
-              class="flex items-center gap-x-1 text-[10px] text-slate-400 flex-shrink-0"
-            >
+            <div class="flex items-center gap-x-1 text-[10px] flex-shrink-0">
+              <!-- Show deployment badge if available -->
+              {#if branch.deploymentEnvironment && branch.deploymentUrl}
+                <button
+                  class="px-1.5 py-0.5 rounded flex items-center gap-x-1 transition-colors {getDeploymentBadgeClass(
+                    branch.deploymentEnvironment,
+                  )}"
+                  on:click={(e) =>
+                    handleDeploymentClick(e, branch.deploymentUrl)}
+                  title="Open deployment in new tab"
+                >
+                  <span class="font-medium">{branch.deploymentEnvironment}</span
+                  >
+                  <ExternalLink size={10} />
+                </button>
+              {/if}
+              <!-- Always show local/remote status -->
               {#if branch.isLocal && branch.isRemote}
-                <span class="px-1 py-0.5 bg-slate-100 rounded">synced</span>
+                <span class="px-1 py-0.5 bg-slate-100 rounded text-slate-400"
+                  >synced</span
+                >
               {:else if branch.isLocal}
-                <span class="px-1 py-0.5 bg-slate-100 rounded">local</span>
+                <span class="px-1 py-0.5 bg-slate-100 rounded text-slate-400"
+                  >local</span
+                >
               {:else}
-                <span class="px-1 py-0.5 bg-slate-100 rounded">remote</span>
+                <span class="px-1 py-0.5 bg-slate-100 rounded text-slate-400"
+                  >remote</span
+                >
               {/if}
             </div>
           </button>

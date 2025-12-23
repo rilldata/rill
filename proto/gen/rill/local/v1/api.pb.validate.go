@@ -3991,6 +3991,12 @@ func (m *BranchInfo) validate(all bool) error {
 
 	// no validation rules for Behind
 
+	// no validation rules for DeploymentUrl
+
+	// no validation rules for DeploymentEnvironment
+
+	// no validation rules for DeploymentId
+
 	if len(errors) > 0 {
 		return BranchInfoMultiError(errors)
 	}

@@ -298,6 +298,12 @@ message BranchInfo {
   int32 ahead = 8;
   // Number of commits behind remote
   int32 behind = 9;
+  // Frontend URL for the deployment (if this branch has a deployment)
+  string deployment_url = 10;
+  // Environment of the deployment: "prod", "dev", or "preview"
+  string deployment_environment = 11;
+  // Internal deployment ID
+  string deployment_id = 12;
 }
 
 message ListBranchesRequest {}

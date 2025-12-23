@@ -1615,6 +1615,27 @@ export class BranchInfo extends Message<BranchInfo> {
    */
   behind = 0;
 
+  /**
+   * Frontend URL for the deployment (if this branch has a deployment)
+   *
+   * @generated from field: string deployment_url = 10;
+   */
+  deploymentUrl = "";
+
+  /**
+   * Environment of the deployment: "prod", "dev", or "preview"
+   *
+   * @generated from field: string deployment_environment = 11;
+   */
+  deploymentEnvironment = "";
+
+  /**
+   * Internal deployment ID
+   *
+   * @generated from field: string deployment_id = 12;
+   */
+  deploymentId = "";
+
   constructor(data?: PartialMessage<BranchInfo>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1632,6 +1653,9 @@ export class BranchInfo extends Message<BranchInfo> {
     { no: 7, name: "last_commit_time", kind: "message", T: Timestamp },
     { no: 8, name: "ahead", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 9, name: "behind", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "deployment_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "deployment_environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BranchInfo {
