@@ -448,10 +448,11 @@ export async function submitAddConnectorForm(
         return;
       }
 
-      if (
+      const shouldRollbackConnectorFile =
         !savedAnywayPaths.has(newConnectorFilePath) &&
-        (envWritten || connectorCreated)
-      ) {
+        (envWritten || connectorCreated);
+
+      if (shouldRollbackConnectorFile) {
         await rollbackChanges(
           instanceId,
           newConnectorFilePath,
