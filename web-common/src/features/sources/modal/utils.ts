@@ -105,7 +105,11 @@ export function isMultiStepConnectorDisabled(
   // For source step, gate on required fields from the JSON schema.
   const currentStep = step || (paramsFormValue?.__step as string | undefined);
   if (currentStep === "source") {
-    const required = getRequiredFieldsForStep(schema, paramsFormValue, "source");
+    const required = getRequiredFieldsForStep(
+      schema,
+      paramsFormValue,
+      "source",
+    );
     if (!required.length) return false;
     return !required.every((fieldId) => {
       if (!isStepMatch(schema, fieldId, "source")) return true;

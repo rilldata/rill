@@ -116,10 +116,7 @@ function withJsonSchemaSourceValidation(connectorName: string) {
           continue;
         }
 
-        if (
-          validator.format &&
-          !isFormatValid(validator.format, stringValue)
-        ) {
+        if (validator.format && !isFormatValid(validator.format, stringValue)) {
           errors.push(
             this.createError({
               path: validator.key,
