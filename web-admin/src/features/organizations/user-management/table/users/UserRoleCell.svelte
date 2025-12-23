@@ -57,11 +57,15 @@
 
     const menuWidth =
       dropdownContentEl?.offsetWidth ?? dropdownTriggerEl?.offsetWidth ?? 200;
+    const scrollContainerRight =
+      dropdownTriggerEl?.closest(".scroll-container")?.getBoundingClientRect()
+        .right ?? null;
 
     dropdownAlign = determineDropdownAlign({
       triggerRect: dropdownTriggerEl.getBoundingClientRect(),
       menuWidth,
       viewportWidth: window.innerWidth,
+      boundaryRight: scrollContainerRight,
     });
   }
 
