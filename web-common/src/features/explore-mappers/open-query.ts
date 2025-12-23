@@ -10,16 +10,16 @@ import {
   runtimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect } from "@sveltejs/kit";
-import { get } from "svelte/store";
 
 export async function openQuery({
   url,
   organization,
   project,
+  instanceId,
 }: {
   url: URL;
+  instanceId: string;
   organization?: string;
   project?: string;
 }) {
@@ -49,10 +49,17 @@ export async function openQuery({
     }
 
     // Find an explore dashboard that uses this metrics view
-    const exploreName = await findExploreForMetricsView(metricsViewName);
+    const exploreName = await findExploreForMetricsView(
+      metricsViewName,
+      instanceId,
+    );
 
     // Convert query to ExploreState
-    const exploreState = await convertQueryToExploreState(query, exploreName);
+    const exploreState = await convertQueryToExploreState(
+      query,
+      exploreName,
+      instanceId,
+    );
 
     // Generate the final explore URL
     exploreURL = await generateExploreLink(
@@ -82,9 +89,8 @@ export async function openQuery({
  */
 async function findExploreForMetricsView(
   metricsViewName: string,
+  instanceId: string,
 ): Promise<string> {
-  const instanceId = get(runtime).instanceId;
-
   // List all explore resources
   const exploreResources = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, {
@@ -119,9 +125,8 @@ async function findExploreForMetricsView(
 async function convertQueryToExploreState(
   query: MetricsResolverQuery,
   exploreName: string,
+  instanceId: string,
 ): Promise<Partial<ExploreState>> {
-  const instanceId = get(runtime).instanceId;
-
   // Get explore and metrics view specs
   const getExploreResponse = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetExploreQueryKey(instanceId, {

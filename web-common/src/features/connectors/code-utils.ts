@@ -134,7 +134,7 @@ export async function updateDotEnvWithSecrets(
   try {
     const file = await queryClient.fetchQuery({
       queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+      queryFn: () => runtilayout.meServiceGetFile(instanceId, { path: ".env" }),
     });
     blob = file.blob || "";
   } catch (error) {
