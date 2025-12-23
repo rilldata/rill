@@ -83,14 +83,10 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      {#if isGuest}
+      {#if canConvertToMember}
         <DropdownMenu.Item
           class="font-normal flex items-center"
-          disabled={!canConvertToMember}
-          on:click={() => {
-            if (!canConvertToMember) return;
-            onConvertToMember();
-          }}
+          on:click={onConvertToMember}
         >
           Convert to member
         </DropdownMenu.Item>
