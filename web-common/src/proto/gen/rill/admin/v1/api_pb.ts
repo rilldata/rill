@@ -887,6 +887,11 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
   environment = "";
 
   /**
+   * @generated from field: string branch = 5;
+   */
+  branch = "";
+
+  /**
    * @generated from field: string user_id = 4;
    */
   userId = "";
@@ -902,6 +907,7 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

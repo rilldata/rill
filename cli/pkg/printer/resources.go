@@ -707,6 +707,84 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
+func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment) {
+	if len(deployments) == 0 {
+		p.PrintfWarn("No deployments found\n")
+		return
+	}
+
+	p.PrintData(toDeploymentsTable(deployments))
+}
+
+func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+
+	p.Printf("Deployment ID: %s\n", d.Id)
+	p.Printf("Environment: %s\n", d.Environment)
+	p.Printf("Branch: %s\n", d.Branch)
+	p.Printf("Status: %s\n", status)
+	if d.RuntimeHost != "" {
+		p.Printf("Runtime Host: %s\n", d.RuntimeHost)
+	}
+	if d.Editable {
+		p.Printf("Editable: true\n")
+	}
+	p.Printf("Created: %s\n", d.CreatedOn.AsTime().Local().Format(time.RFC1123))
+	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
+}
+
+func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
+	res := make([]*deployment, 0, len(deployments))
+	for _, d := range deployments {
+		res = append(res, toDeploymentRow(d))
+	}
+	return res
+}
+
+func toDeploymentRow(d *adminv1.Deployment) *deployment {
+	status := formatDeploymentStatus(d.Status)
+	if d.StatusMessage != "" {
+		status = fmt.Sprintf("%s: %s", status, d.StatusMessage)
+	}
+	return &deployment{
+		Environment: d.Environment,
+		Branch:      d.Branch,
+		Status:      status,
+	}
+}
+
+func formatDeploymentStatus(status adminv1.DeploymentStatus) string {
+	switch status {
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
+		return "Pending"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING:
+		return "Running"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED:
+		return "Errored"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED:
+		return "Stopped"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING:
+		return "Updating"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING:
+		return "Stopping"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING:
+		return "Deleting"
+	case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETED:
+		return "Deleted"
+	default:
+		return "Unknown"
+	}
+}
+
+type deployment struct {
+	Environment string `header:"environment" json:"environment"`
+	Branch      string `header:"branch" json:"branch"`
+	Status      string `header:"status" json:"status"`
+}
+
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)
 func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 	if len(res.Data) == 0 {
