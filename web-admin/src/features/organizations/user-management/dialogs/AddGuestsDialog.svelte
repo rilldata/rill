@@ -71,6 +71,12 @@
   $: selectedRoleLabel =
     ORG_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ?? "";
 
+  $: selectedProjectsLabel = (() => {
+    if (selectedProjects.length === 0) return "Select projects";
+    if (selectedProjects.length === 1) return selectedProjects[0];
+    return `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`;
+  })();
+
   $: if (open && !hasAutoSelectedProject && projects.length > 0) {
     const firstProjectName = projects[0]?.name;
     if (firstProjectName) {
@@ -249,9 +255,7 @@
                 : 'hover:bg-slate-100'} px-2 py-1"
             >
               <span>
-                {selectedProjects.length > 0
-                  ? `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`
-                  : "Select projects"}
+                {selectedProjectsLabel}
               </span>
               {#if projectDropdownOpen}
                 <CaretUpIcon size="12px" />
