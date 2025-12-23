@@ -8,7 +8,6 @@
   export let projectId: string | undefined = undefined;
 </script>
 
-<!-- {#key instanceId} -->
 <CanvasInitialization
   {canvasName}
   {instanceId}
@@ -23,4 +22,3 @@
     <slot />
   </CanvasLoadingState>
 </CanvasInitialization>
-<!-- {/key} -->
