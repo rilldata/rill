@@ -86,16 +86,52 @@ function withJsonSchemaSourceValidation(connectorName: string) {
     "Missing required fields for source step",
     function (value) {
       const values = (value || {}) as Record<string, unknown>;
+      const errors: yup.ValidationError[] = [];
       const requiredFields = getRequiredFieldsForStep(schema, values, "source");
 
-      const errors = requiredFields
-        .filter((fieldId) => isEmpty(values[fieldId]))
-        .map((fieldId) =>
-          this.createError({
-            path: fieldId,
-            message: `${getFieldLabel(schema, fieldId)} is required`,
-          }),
-        );
+      errors.push(
+        ...requiredFields
+          .filter((fieldId) => isEmpty(values[fieldId]))
+          .map((fieldId) =>
+            this.createError({
+              path: fieldId,
+              message: `${getFieldLabel(schema, fieldId)} is required`,
+            }),
+          ),
+      );
+
+      const patternValidators = getPatternValidatorsForStep(schema, "source");
+      for (const validator of patternValidators) {
+        const raw = values[validator.key];
+        if (isEmpty(raw)) continue;
+        const stringValue = String(raw);
+
+        if (validator.pattern && !validator.pattern.test(stringValue)) {
+          errors.push(
+            this.createError({
+              path: validator.key,
+              message: patternErrorMessage(schema, validator.key),
+            }),
+          );
+          continue;
+        }
+
+        if (
+          validator.format &&
+          !isFormatValid(validator.format, stringValue)
+        ) {
+          errors.push(
+            this.createError({
+              path: validator.key,
+              message: formatErrorMessage(
+                schema,
+                validator.key,
+                validator.format,
+              ),
+            }),
+          );
+        }
+      }
 
       if (!errors.length) return true;
       return new yup.ValidationError(errors);
@@ -154,4 +190,66 @@ function matchesCondition(
     if (def.const === undefined || def.const === null) return false;
     return String(values?.[depKey]) === String(def.const);
   });
+}
+
+function getPatternValidatorsForStep(
+  schema: MultiStepFormSchema,
+  step: "connector" | "source" | string,
+) {
+  const props = schema.properties ?? {};
+  return Object.entries(props)
+    .filter(([key]) => isStepMatch(schema, key, step))
+    .map(([key, prop]) => ({
+      key,
+      pattern: compilePattern((prop as any).pattern),
+      format: (prop as any).format as string | undefined,
+      errorMessage: ((prop as any).errorMessage || {}) as Record<
+        string,
+        string
+      >,
+    }))
+    .filter((entry) => entry.pattern || entry.format);
+}
+
+function compilePattern(pattern?: string | RegExp | null): RegExp | null {
+  if (!pattern) return null;
+  if (pattern instanceof RegExp) return pattern;
+  try {
+    return new RegExp(pattern);
+  } catch {
+    return null;
+  }
+}
+
+function isFormatValid(format: string, value: string): boolean {
+  if (format === "uri") {
+    try {
+      // URL supports custom schemes such as s3://
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+function patternErrorMessage(schema: MultiStepFormSchema, key: string): string {
+  const prop = schema.properties?.[key] as any;
+  const custom = prop?.errorMessage?.pattern as string | undefined;
+  if (custom) return custom;
+  const label = getFieldLabel(schema, key);
+  return `${label} is invalid`;
+}
+
+function formatErrorMessage(
+  schema: MultiStepFormSchema,
+  key: string,
+  format: string,
+): string {
+  const prop = schema.properties?.[key] as any;
+  const custom = prop?.errorMessage?.format as string | undefined;
+  if (custom) return custom;
+  const label = getFieldLabel(schema, key);
+  return `${label} must be a valid ${format}`;
 }

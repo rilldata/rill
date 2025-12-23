@@ -77,7 +77,10 @@ export const s3Schema: MultiStepFormSchema = {
       type: "string",
       title: "S3 URI",
       description: "Path to your S3 bucket or prefix",
-      pattern: "^s3://",
+      pattern: "^s3://[^/]+(/.*)?$",
+      errorMessage: {
+        pattern: "Must be an S3 URI (e.g. s3://bucket/path)",
+      },
       "x-placeholder": "s3://bucket/path",
       "x-step": "source",
     },
