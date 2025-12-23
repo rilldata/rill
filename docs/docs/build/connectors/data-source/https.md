@@ -121,7 +121,15 @@ connector.https.token=your_api_token_here
 For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
 :::
 
----
+## Deploy to Rill Cloud
+
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide authentication credentials for protected HTTPS endpoints used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#https) for more information.
+
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
+```
+rill env push
+```
+
 
 ## Best Practices
 

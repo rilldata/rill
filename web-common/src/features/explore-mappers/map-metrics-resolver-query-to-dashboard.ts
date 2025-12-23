@@ -26,7 +26,6 @@ import {
   type V1Expression,
   type V1MetricsViewSpec,
   V1Operation,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type {
   Dimension,
@@ -41,7 +40,6 @@ import type { SortingState } from "@tanstack/svelte-table";
 export function mapMetricsResolverQueryToDashboard(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
   query: MetricsResolverQuery,
 ) {
   // Build partial ExploreState directly from Query
@@ -93,11 +91,7 @@ export function mapMetricsResolverQueryToDashboard(
     );
   }
 
-  maybeGetTimeRangeFromFilter(
-    partialExploreState,
-    metricsViewSpec,
-    timeRangeSummary,
-  );
+  maybeGetTimeRangeFromFilter(partialExploreState, metricsViewSpec);
 
   // Convert sort
   if (query.sort) {
@@ -223,20 +217,14 @@ function mapResolverTimeRangeToDashboardControls(
 function maybeGetTimeRangeFromFilter(
   partialExploreState: Partial<ExploreState>,
   metricsViewSpec: V1MetricsViewSpec,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
-  if (
-    !partialExploreState.whereFilter ||
-    !metricsViewSpec.timeDimension ||
-    !timeRangeSummary
-  ) {
+  if (!partialExploreState.whereFilter || !metricsViewSpec.timeDimension) {
     return;
   }
   const tr = parseTimeRangeFromFilters(
     partialExploreState.whereFilter,
     metricsViewSpec.timeDimension,
     partialExploreState.selectedTimezone ?? "UTC",
-    timeRangeSummary,
   );
   if (!tr) return;
   partialExploreState.selectedTimeRange = tr;

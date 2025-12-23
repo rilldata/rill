@@ -26,10 +26,6 @@
         onSubmit: () => {},
       }),
       content,
-      onTransaction: () => {
-        // force re-render so `editor.isActive` works as expected
-        editor = editor;
-      },
     });
 
     return () => {

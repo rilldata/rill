@@ -56,7 +56,7 @@ func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e.Condition != nil {
 		return b.writeCondition(e.Condition)
 	}
-	return errors.New("invalid expression")
+	return errors.New("invalid expression (must contain one of name, val, cond, subquery)")
 }
 
 func (b *sqlExprBuilder) writeName(name string) error {

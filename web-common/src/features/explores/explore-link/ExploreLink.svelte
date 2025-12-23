@@ -14,10 +14,10 @@
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 
   export let exploreName: string;
+  export let displayName: string | undefined = undefined;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
   export let exploreState: Partial<ExploreState> | undefined = undefined;
-  export let isEmbedded: boolean = false;
   export let mode: "inline" | "dropdown-item" | "icon-button" = "inline";
   export let disabled: boolean = false;
 
@@ -36,7 +36,6 @@
         exploreName,
         organization,
         project,
-        isEmbedded,
       );
       await goto(exploreURL);
     } catch (error) {
@@ -56,6 +55,9 @@
   }
 
   $: canNavigate = !isNavigating && !!exploreState && !disabled;
+  $: tooltipText = displayName
+    ? `Go to ${displayName}`
+    : "Go to Explore Dashboard";
 </script>
 
 {#if mode === "dropdown-item"}
@@ -72,7 +74,7 @@
     on:click={gotoExplorePage}
     size={28}
     disabled={!canNavigate}
-    ariaLabel="Go to Explore Dashboard"
+    ariaLabel={tooltipText}
     disableHover={!canNavigate}
   >
     {#if isNavigating}
@@ -80,7 +82,7 @@
     {:else}
       <ExploreIcon size="18px" />
     {/if}
-    <div slot="tooltip-content">Go to Explore Dashboard</div>
+    <div slot="tooltip-content">{tooltipText}</div>
   </IconButton>
 {:else}
   <button
@@ -92,7 +94,7 @@
     {#if isNavigating}
       <Spinner status={EntityStatus.Running} size="1em" />
     {/if}
-    Go to Explore Dashboard
+    {tooltipText}
   </button>
 {/if}
 

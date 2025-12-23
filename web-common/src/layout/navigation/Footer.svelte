@@ -8,6 +8,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { fly } from "svelte/transition";
   import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+  import RuntimeTrafficLights from "@rilldata/web-common/features/entity-management/RuntimeTrafficLights.svelte";
 
   const metadataQuery = createLocalServiceGetMetadata();
 
@@ -52,7 +53,7 @@
     >
   {/each}
   <div
-    class="px-4 py-1 text-gray-600 flex flex-row w-full gap-x-2 truncate line-clamp-1"
+    class="px-4 py-1 text-gray-600 flex items-center flex-row w-full gap-x-2 truncate line-clamp-1"
     style:font-size="10px"
   >
     <span class="text-gray-400">
@@ -81,10 +82,12 @@
         </div>
       </Tooltip>
     </span>
+
     <span class="truncate">
       version {version || "unknown (built from source)"}{commitHash
         ? ` – ${commitHash}`
         : ""}
     </span>
+    <RuntimeTrafficLights />
   </div>
 </div>

@@ -5,6 +5,11 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
+  import { derived } from "svelte/store";
+  import {
+    getEmbedThemeStoreInstance,
+    resolveEmbedTheme,
+  } from "../embeds/embed-theme";
 
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
@@ -18,6 +23,7 @@
       firstLoad,
       _maxWidth,
       filtersEnabledStore,
+      themeName,
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -26,6 +32,17 @@
   $: filtersEnabled = $filtersEnabledStore;
   $: maxWidth = $_maxWidth;
   $: rows = $_rows;
+
+  const embedThemeStore = getEmbedThemeStoreInstance();
+  const embedThemeName = derived([embedThemeStore], () => resolveEmbedTheme());
+
+  // Drive the canvas themeName from the resolved embed theme.
+  $: {
+    const name = $embedThemeName;
+    if (name !== undefined) {
+      themeName.set(name ?? undefined);
+    }
+  }
 </script>
 
 {#if canvasName}
