@@ -4,6 +4,7 @@
     canManageOrgUser,
     invalidateAfterUserDelete,
   } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import { determineDropdownAlign } from "@rilldata/web-admin/features/organizations/user-management/table/dropdownAlignment.ts";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -20,6 +21,8 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import OrgUpgradeGuestConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/OrgUpgradeGuestConfirmDialog.svelte";
   import { ORG_ROLES_DESCRIPTION_MAP } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
+  import { browser } from "$app/environment";
+  import { onDestroy, onMount, tick } from "svelte";
 
   export let email: string;
   export let role: string;
@@ -34,6 +37,9 @@
   let isUpgradeConfirmOpen = false;
   let isRemoveConfirmOpen = false;
   let newRole = "";
+  let dropdownAlign: "start" | "end" = "start";
+  let dropdownTriggerEl: HTMLElement | null = null;
+  let dropdownContentEl: HTMLElement | null = null;
 
   $: organization = $page.params.organization;
   $: isGuest = role === OrgUserRoles.Guest;
@@ -45,6 +51,47 @@
     createAdminServiceSetOrganizationMemberUserRole();
   const removeOrganizationMemberUser =
     createAdminServiceRemoveOrganizationMemberUser();
+  async function updateDropdownAlignment() {
+    if (!browser || !isDropdownOpen || !dropdownTriggerEl) return;
+    await tick();
+
+    const menuWidth =
+      dropdownContentEl?.offsetWidth ??
+      dropdownTriggerEl?.offsetWidth ??
+      200;
+
+    dropdownAlign = determineDropdownAlign({
+      triggerRect: dropdownTriggerEl.getBoundingClientRect(),
+      menuWidth,
+      viewportWidth: window.innerWidth,
+    });
+  }
+
+  function handleWindowResize() {
+    void updateDropdownAlignment();
+  }
+
+  onMount(() => {
+    if (!browser) return;
+    window.addEventListener("resize", handleWindowResize);
+  });
+
+  onDestroy(() => {
+    if (!browser) return;
+    window.removeEventListener("resize", handleWindowResize);
+  });
+
+  $: if (isDropdownOpen) {
+    void updateDropdownAlignment();
+  }
+
+  $: if (isDropdownOpen && dropdownContentEl) {
+    void updateDropdownAlignment();
+  }
+
+  $: if (isDropdownOpen && role) {
+    void updateDropdownAlignment();
+  }
 
   async function handleSetRole(role: string) {
     if (role !== OrgUserRoles.Admin && isBillingContact) {
@@ -145,6 +192,7 @@
 {#if canManageUser}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger
+      bind:this={dropdownTriggerEl}
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
         ? 'bg-slate-200'
         : 'hover:bg-slate-100'} px-2 py-1"
@@ -156,7 +204,11 @@
         <CaretDownIcon size="12px" />
       {/if}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start" class="w-[200px]">
+    <DropdownMenu.Content
+      bind:this={dropdownContentEl}
+      align={dropdownAlign}
+      class="w-[200px]"
+    >
       {#if organizationPermissions.manageOrgAdmins}
         <DropdownMenu.Item
           class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===

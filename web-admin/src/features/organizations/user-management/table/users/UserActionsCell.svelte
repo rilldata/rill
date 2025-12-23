@@ -81,7 +81,7 @@
         <ThreeDot size="16px" />
       </IconButton>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
+    <DropdownMenu.Content align="end">
       {#if role === OrgUserRoles.Guest}
         <DropdownMenu.Item
           class="font-normal flex items-center"
