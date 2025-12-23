@@ -53,9 +53,15 @@
   }
 
   function handleClickOutside(event: MouseEvent) {
-    if (isOpen && container && !container.contains(event.target as Node)) {
-      cellInspectorStore.close();
+    if (!isOpen || !container || container.contains(event.target as Node))
+      return;
+
+    if (isLocked) {
+      // Keep the inspector visible while locked, even when interacting elsewhere
+      return;
     }
+
+    cellInspectorStore.close();
   }
 
   // FIXME: Hoist the keyboard event listener to the top level; centralize the hotkeys
