@@ -10,7 +10,9 @@
 </script>
 
 <div class="size-full justify-center items-center flex flex-col">
-  {#if errorMessage}
+  {#if ready}
+    <slot />
+  {:else if errorMessage}
     <ErrorPage
       statusCode={404}
       header="Canvas not found"
@@ -20,8 +22,6 @@
     <DashboardBuilding />
   {:else if isLoading}
     <DelayedSpinner isLoading={true} size="48px" />
-  {:else if ready}
-    <slot />
   {:else}
     <header
       role="presentation"
