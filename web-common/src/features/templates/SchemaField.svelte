@@ -3,8 +3,8 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
-  import { normalizeErrors } from "./utils";
-  import type { JSONSchemaField } from "./types";
+  import { normalizeErrors } from "../sources/modal/utils";
+  import type { JSONSchemaField } from "./schemas/types";
 
   export let id: string;
   export let prop: JSONSchemaField;
@@ -53,3 +53,5 @@
     alwaysShowError
   />
 {/if}
+
+

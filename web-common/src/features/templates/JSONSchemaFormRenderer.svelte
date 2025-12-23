@@ -1,10 +1,7 @@
 <script lang="ts">
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
-  import JSONSchemaFieldControl from "../sources/modal/JSONSchemaFieldControl.svelte";
-  import type {
-    JSONSchemaField,
-    MultiStepFormSchema,
-  } from "../sources/modal/types";
+  import SchemaField from "./SchemaField.svelte";
+  import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
   import { isStepMatch, isVisibleForValues } from "./schema-utils";
 
   export let schema: MultiStepFormSchema | null = null;
@@ -231,7 +228,7 @@
             {#if groupedFields.get(key)}
               {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp]}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  <JSONSchemaFieldControl
+                  <SchemaField
                     id={childKey}
                     prop={childProp}
                     optional={!isRequired(childKey)}
@@ -253,7 +250,7 @@
       </div>
     {:else}
       <div class="py-1.5 first:pt-0 last:pb-0">
-        <JSONSchemaFieldControl
+        <SchemaField
           id={key}
           {prop}
           optional={!isRequired(key)}
