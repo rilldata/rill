@@ -23,7 +23,6 @@ import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/proj
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
