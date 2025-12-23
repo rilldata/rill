@@ -140,6 +140,7 @@
     activeSchema,
     $paramsForm,
     $paramsErrors,
+    stepState.step,
   );
   $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
     isConnectorForm: formManager.isConnectorForm,

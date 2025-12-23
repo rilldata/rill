@@ -85,6 +85,7 @@ export const azureSchema: MultiStepFormSchema = {
       "x-step": "source",
     },
   },
+  required: ["path", "name"],
   allOf: [
     {
       if: { properties: { auth_method: { const: "connection_string" } } },
