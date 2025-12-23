@@ -2,7 +2,7 @@
 title: "Managing Organizations in Rill Cloud"
 description: Basic managment from projects 
 sidebar_label: "Organizations Settings"
-sidebar_position: 19
+sidebar_position: 00
 ---
 
 Before a project can be deployed onto Rill Cloud, an organization must be created. If you are deploying via the UI Deploy, this will automatically be done for you. As an administrator, you can also create, edit, and delete organizations from the CLI. From the organization page, you will be able to view your projects, users, and overall settings. 
