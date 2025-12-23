@@ -122,6 +122,7 @@
         organizationPermissions,
         isBillingContact: row.original.userEmail === billingContact,
         onAttemptRemoveBillingContactUser,
+        pendingAcceptance: Boolean(row.original.invitedBy),
         onConvertToMember: () => onConvertToMember(row.original),
       }),
     meta: {
