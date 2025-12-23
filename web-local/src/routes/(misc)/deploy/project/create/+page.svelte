@@ -90,7 +90,7 @@
     if (!resp.frontendUrl) return;
 
     // projectUrl: https://ui.rilldata.com/<org>/<project>
-    const projectInviteUrl = getDeployLandingPage(resp.frontendUrl);
+    const projectInviteUrl = getDeployLandingPage(resp.frontendUrl, true);
     window.open(projectInviteUrl, "_self");
   }
 

@@ -3,6 +3,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import {
   DeployingDashboardUrlParam,
   getDeployingDashboard,
+  getDeployingDashboardFromUrl,
 } from "@rilldata/web-common/features/project/deploy/utils.ts";
 import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
 import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service";
@@ -41,14 +42,26 @@ export function getCreateProjectRoute(orgName: string, useGit = false) {
 }
 
 export function getUpdateProjectRoute(
+  page: Page,
   orgName: string,
   projectName: string,
   createManagedRepo = false,
 ) {
-  const createManagedRepoParam = createManagedRepo
-    ? "&create_managed_repo=true"
-    : "";
-  return `/deploy/project/update?org=${orgName}&project=${projectName}${createManagedRepoParam}`;
+  const deployUrl = new URL(page.url);
+  deployUrl.pathname = "/deploy/project/update";
+  deployUrl.search = "";
+
+  deployUrl.searchParams.set("org", orgName);
+  deployUrl.searchParams.set("project", projectName);
+  if (createManagedRepo) {
+    deployUrl.searchParams.set("create_managed_repo", "true");
+  }
+
+  if (isDashboardVizRoute(page)) {
+    deployUrl.searchParams.set(DeployingDashboardUrlParam, page.params.name);
+  }
+
+  return deployUrl.toString();
 }
 
 export function getSelectProjectRoute() {
@@ -67,14 +80,17 @@ export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
 }
 
-export function getDeployLandingPage(frontendUrl: string) {
+export function getDeployLandingPage(frontendUrl: string, isInvite: boolean) {
   const url = new URL(frontendUrl);
-  url.searchParams.set("deploying", "true");
-  const deployingDashboard = getDeployingDashboard();
+  const deployingDashboard = getDeployingDashboardFromUrl();
   if (deployingDashboard) {
-    url.searchParams.set("deploying_dashboard", deployingDashboard);
+    url.searchParams.set(DeployingDashboardUrlParam, deployingDashboard);
   }
-  url.pathname += "/-/invite";
+  if (isInvite) {
+    url.pathname += "/-/invite";
+  } else {
+    url.pathname += "/-/deploy-landing-page";
+  }
   const projectInviteUrlWithSessionId = addPosthogSessionIdToUrl(
     url.toString(),
   );

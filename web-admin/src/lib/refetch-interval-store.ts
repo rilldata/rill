@@ -70,7 +70,7 @@ const queryRefetchStateMap = new WeakMap<
  * @param query The TanStack query object
  * @returns The refetch interval (number in ms or false to disable)
  */
-export function createSmartRefetchInterval(
+export function smartRefetchInterval(
   query: Query<
     V1ListResourcesResponse,
     HTTPError,

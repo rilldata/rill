@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
@@ -22,7 +23,11 @@
   $: enableUpdate = !!selectedProject;
 
   $: deployUrl = selectedProject
-    ? getUpdateProjectRoute(selectedProject.orgName, selectedProject.name)
+    ? getUpdateProjectRoute(
+        $page,
+        selectedProject.orgName,
+        selectedProject.name,
+      )
     : "";
 
   let showRequestProjectAccess = false;

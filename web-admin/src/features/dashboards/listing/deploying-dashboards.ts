@@ -1,4 +1,3 @@
-import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import {
   createRuntimeServiceListResources,
@@ -6,82 +5,75 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 
 export function useDeployingDashboards(
   instanceId: string,
   orgName: string,
   projName: string,
-  deploying: boolean,
   deployingDashboard: string | null,
 ): CreateQueryResult<{
-  redirectToDashboardPath: string | null;
-  dashboardsReconciling: boolean;
+  redirectPath: string | null;
   dashboardsErrored: boolean;
 }> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
-        if (!deploying) {
+        const resources = data.resources ?? [];
+        const dashboards = resources.filter(isDashboard);
+
+        const reconciling = getDashboardsReconciling(
+          dashboards,
+          deployingDashboard,
+        );
+        if (reconciling) {
           return {
-            redirectToDashboardPath: null,
-            dashboardsReconciling: false,
+            redirectPath: null,
             dashboardsErrored: false,
           };
         }
 
-        const resources = data.resources ?? [];
-        const dashboards = resources.filter(isDashboard);
-        const dashboard = getDashboard(dashboards, deployingDashboard) ?? null;
-        const hasValidDashboard = dashboard
-          ? isValidDashboard(dashboard)
-          : false;
-
-        if (!hasValidDashboard || !dashboard?.meta?.name?.name) {
+        const dashboardsErrored = getDashboardsErrored(
+          dashboards,
+          deployingDashboard,
+        );
+        if (dashboardsErrored) {
+          const dashboardsErrored = getDashboardsErrored(
+            dashboards,
+            deployingDashboard,
+          );
           return {
-            redirectToDashboardPath: null,
-            dashboardsReconciling: getDashboardsReconciling(
-              dashboards,
-              deployingDashboard,
-            ),
-            dashboardsErrored: getDashboardsErrored(
-              dashboards,
-              deployingDashboard,
-            ),
+            // Redirect to status page is dashboards errored
+            redirectPath: dashboardsErrored
+              ? `/${orgName}/${projName}/-/status`
+              : null,
+            dashboardsErrored,
           };
         }
 
+        // Redirect to home page if no specific dashboard was deployed
+        if (!deployingDashboard) {
+          return {
+            redirectPath: `/${orgName}/${projName}`,
+            dashboardsErrored: false,
+          };
+        }
+
+        const dashboard = dashboards.find(
+          (res) => res.meta?.name?.name === deployingDashboard,
+        );
         const resourceRoute =
           dashboard.meta?.name?.kind === ResourceKind.Explore
             ? "explore"
             : "canvas";
-        const redirectToDashboardPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
-
+        const redirectPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
         return {
-          redirectToDashboardPath,
-          dashboardsReconciling: false,
+          redirectPath,
           dashboardsErrored: false,
         };
       },
     },
   });
-}
-
-function getDashboard(
-  dashboards: V1Resource[],
-  dashboardName: string | null,
-): V1Resource | undefined {
-  let dashboard: V1Resource | undefined;
-  if (dashboardName) {
-    dashboard = dashboards.find(
-      (res) => res.meta?.name?.name === dashboardName,
-    );
-  } else {
-    dashboard =
-      dashboards.find((res) => res.canvas?.state?.validSpec) ??
-      dashboards.find((res) => res.explore?.state?.validSpec);
-  }
-
-  return dashboard;
 }
 
 function getDashboardsReconciling(

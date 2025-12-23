@@ -7,7 +7,7 @@ import {
   type V1ListResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
+import { smartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -42,7 +42,7 @@ export function useResources(instanceId: string) {
             resources: filtered,
           };
         },
-        refetchInterval: createSmartRefetchInterval,
+        refetchInterval: smartRefetchInterval,
       },
     },
   );
