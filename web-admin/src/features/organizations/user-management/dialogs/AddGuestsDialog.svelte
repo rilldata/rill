@@ -43,6 +43,14 @@
   let projectDropdownOpen = false;
   let selectedRole: "admin" | "editor" | "viewer" = "viewer";
   let roleDropdownOpen = false;
+  let hasAutoSelectedProject = false;
+
+  function resetDialogState() {
+    failedInvites = [];
+    selectedProjects = [];
+    selectedRole = "viewer";
+    hasAutoSelectedProject = false;
+  }
 
   // Projects list
   $: projectsQuery = createAdminServiceListProjectsForOrganization(
@@ -62,6 +70,14 @@
 
   $: selectedRoleLabel =
     ORG_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ?? "";
+
+  $: if (open && !hasAutoSelectedProject && projects.length > 0) {
+    const firstProjectName = projects[0]?.name;
+    if (firstProjectName) {
+      selectedProjects = [firstProjectName];
+      hasAutoSelectedProject = true;
+    }
+  }
 
   function toggleProjectSelection(projectName: string) {
     const idx = selectedProjects.indexOf(projectName);
@@ -153,8 +169,7 @@
 
         if (failedInvites.length === 0) {
           open = false;
-          selectedProjects = [];
-          selectedRole = "viewer";
+          resetDialogState();
         }
       },
       validationMethod: "oninput",
@@ -173,15 +188,11 @@
   onOutsideClick={(e) => {
     e.preventDefault();
     open = false;
-    failedInvites = [];
-    selectedProjects = [];
-    selectedRole = "viewer";
+    resetDialogState();
   }}
-  onOpenChange={(open) => {
-    if (!open) {
-      failedInvites = [];
-      selectedProjects = [];
-      selectedRole = "viewer";
+  onOpenChange={(dialogOpen) => {
+    if (!dialogOpen) {
+      resetDialogState();
     }
   }}
 >
@@ -253,7 +264,7 @@
                 <Dropdown.CheckboxItem
                   class="font-normal flex items-center overflow-hidden"
                   checked={selectedProjects.includes(p.name)}
-                  on:click={() => toggleProjectSelection(p.name)}
+                  onCheckedChange={() => toggleProjectSelection(p.name)}
                 >
                   <span class="truncate w-full" title={p.name}>{p.name}</span>
                 </Dropdown.CheckboxItem>
