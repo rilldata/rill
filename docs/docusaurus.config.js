@@ -135,7 +135,7 @@ const config = {
 
           },
           {
-            to: "/user-guide/get-started",
+            to: "/user-guide/getting-started",
             label: "User Guide",
             position: "left",
             className: "navbar-user-guide-link",
@@ -362,7 +362,7 @@ const config = {
           },
           {
             from: '/build/structure/structure',
-            to: '/developer/build/structure/structure',
+            to: '/developer/build/structure',
           },
           // Build: Advanced Models
           {
@@ -401,7 +401,7 @@ const config = {
           },
           {
             from: '/build/metrics-view/metrics-view',
-            to: '/developer/build/metrics-view/metrics-view',
+            to: '/developer/build/metrics-view',
           },
           {
             from: '/build/metrics-view/customize',
@@ -417,7 +417,7 @@ const config = {
           },
           {
             from: '/build/metrics-view/time-series',
-            to: '/developer/build/metrics-view/time-series/time-series',
+            to: '/developer/build/metrics-view/time-series',
           },
           {
             from: '/build/metrics-view/underlying-model',
@@ -434,7 +434,7 @@ const config = {
           },
           {
             from: '/build/metrics-view/dimensions/dimensions',
-            to: '/developer/build/metrics-view/dimensions/dimensions',
+            to: '/developer/build/metrics-view/dimensions',
           },
           {
             from: '/build/metrics-view/dimensions/dimension-uri',
@@ -455,7 +455,7 @@ const config = {
           },
           {
             from: '/build/metrics-view/measures/measures',
-            to: '/developer/build/metrics-view/measures/measures',
+            to: '/developer/build/metrics-view/measures',
           },
           {
             from: '/build/metrics-view/advanced-expressions/advanced-expressions',
@@ -573,7 +573,7 @@ const config = {
           },
           {
             from: '/build/dashboards/canvas-widgets/canvas-widgets',
-            to: '/developer/build/dashboards/canvas-widgets/canvas-widgets',
+            to: '/developer/build/dashboards/canvas-widgets',
           },
           {
             from: '/build/dashboards/canvas-widgets/chart',
@@ -594,7 +594,7 @@ const config = {
           },
           {
             from: '/build/connectors/connectors',
-            to: '/developer/build/connectors/connectors',
+            to: '/developer/build/connectors',
           },
           {
             from: '/build/connectors/credentials',
@@ -610,7 +610,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/data-source',
-            to: '/developer/build/connectors/data-source/data-source',
+            to: '/developer/build/connectors/data-source',
           },
           {
             from: '/build/connectors/data-source/athena',
@@ -690,7 +690,7 @@ const config = {
           },
           {
             from: '/build/connectors/olap/olap',
-            to: '/developer/build/connectors/olap/olap',
+            to: '/developer/build/connectors/olap',
           },
           {
             from: '/build/connectors/olap/clickhouse',
@@ -723,7 +723,7 @@ const config = {
           },
           {
             from: '/build/custom-apis/custom-apis',
-            to: '/developer/build/custom-apis/custom-apis',
+            to: '/developer/build/custom-apis',
           },
           // Build: Debugging
           {
@@ -745,7 +745,7 @@ const config = {
           },
           {
             from: '/build/ide/ide',
-            to: '/developer/build/ide/ide',
+            to: '/developer/build/ide',
           },
           // ============================================
           // /build/connect/* → /developer/build/connectors/*
@@ -1006,11 +1006,11 @@ const config = {
           },
           {
             from: '/deploy/deploy-dashboard',
-            to: '/developer/deploy/deploy-dashboard/deploy-dashboard',
+            to: '/developer/deploy/deploy-dashboard',
           },
           {
             from: '/deploy/deploy-dashboard/deploy-dashboard',
-            to: '/developer/deploy/deploy-dashboard/deploy-dashboard',
+            to: '/developer/deploy/deploy-dashboard',
           },
           {
             from: '/deploy/deploy-dashboard/deploy-from-cli',
@@ -1081,11 +1081,11 @@ const config = {
           // ============================================
           {
             from: '/get-started',
-            to: '/developer/get-started/get-started',
+            to: '/',
           },
           {
             from: '/get-started/get-started',
-            to: '/developer/get-started/get-started',
+            to: '/',
           },
           {
             from: '/get-started/install',
@@ -1093,11 +1093,11 @@ const config = {
           },
           {
             from: '/get-started/quickstart',
-            to: '/developer/get-started/quickstart/quickstart',
+            to: '/developer/get-started/quickstart',
           },
           {
             from: '/get-started/quickstart/quickstart',
-            to: '/developer/get-started/quickstart/quickstart',
+            to: '/developer/get-started/quickstart',
           },
           {
             from: '/get-started/why-rill',
@@ -1144,31 +1144,31 @@ const config = {
           },
           {
             from: '/guides/rill-basics',
-            to: '/developer/guides/rill-basics/1-launch',
+            to: '/developer/guides/rill-basics/launch',
           },
           {
             from: '/guides/rill-basics/1-launch',
-            to: '/developer/guides/rill-basics/1-launch',
+            to: '/developer/guides/rill-basics/launch',
           },
           {
             from: '/guides/rill-basics/2-import',
-            to: '/developer/guides/rill-basics/2-import',
+            to: '/developer/guides/rill-basics/import',
           },
           {
             from: '/guides/rill-basics/3-model',
-            to: '/developer/guides/rill-basics/3-model',
+            to: '/developer/guides/rill-basics/model',
           },
           {
             from: '/guides/rill-basics/4-metrics-view',
-            to: '/developer/guides/rill-basics/4-metrics-view',
+            to: '/developer/guides/rill-basics/metrics-view',
           },
           {
             from: '/guides/rill-basics/5-dashboard',
-            to: '/developer/guides/rill-basics/5-dashboard',
+            to: '/developer/guides/rill-basics/dashboard',
           },
           {
             from: '/guides/rill-basics/6-deploy',
-            to: '/developer/guides/rill-basics/6-deploy',
+            to: '/developer/guides/rill-basics/deploy',
           },
           {
             from: '/guides/rill-basics/success',
@@ -1184,23 +1184,23 @@ const config = {
           },
           {
             from: '/guides/rill-clickhouse/1-r_ch_launch',
-            to: '/developer/guides/rill-clickhouse/1-r_ch_launch',
+            to: '/developer/guides/rill-clickhouse/r_ch_launch',
           },
           {
             from: '/guides/rill-clickhouse/2-r_ch_connect',
-            to: '/developer/guides/rill-clickhouse/2-r_ch_connect',
+            to: '/developer/guides/rill-clickhouse/r_ch_connect',
           },
           {
             from: '/guides/rill-clickhouse/3-r_ch_metrics-view',
-            to: '/developer/guides/rill-clickhouse/3-r_ch_metrics-view',
+            to: '/developer/guides/rill-clickhouse/r_ch_metrics-view',
           },
           {
             from: '/guides/rill-clickhouse/4-r_ch_dashboard',
-            to: '/developer/guides/rill-clickhouse/4-r_ch_dashboard',
+            to: '/developer/guides/rill-clickhouse/r_ch_dashboard',
           },
           {
             from: '/guides/rill-clickhouse/5-r_ch_deploy',
-            to: '/developer/guides/rill-clickhouse/5-r_ch_deploy',
+            to: '/developer/guides/rill-clickhouse/r_ch_deploy',
           },
           {
             from: '/guides/rill-clickhouse/r_ch_ingest',
@@ -1223,7 +1223,7 @@ const config = {
           },
           {
             from: '/integrate/embed-api',
-            to: '/developer/integrate/embed-api',
+            to: '/developer/integrate/embed-iframe-api',
           },
           {
             from: '/integrate/embedding',
@@ -1249,10 +1249,6 @@ const config = {
           // /other/* → /developer/other/*
           // ============================================
           {
-            from: '/other',
-            to: '/developer/other',
-          },
-          {
             from: '/other/FAQ',
             to: '/developer/other/FAQ',
           },
@@ -1270,7 +1266,7 @@ const config = {
           },
           {
             from: '/other/granting/granting',
-            to: '/developer/other/granting/granting',
+            to: '/developer/other/granting',
           },
           {
             from: '/other/granting/aws-s3-bucket',
@@ -1380,7 +1376,7 @@ const config = {
           },
           {
             from: '/explore/alerts',
-            to: '/user-guide/alert/alerts',
+            to: '/user-guide/alerts',
           },
           {
             from: '/explore/bookmarks',
@@ -1416,11 +1412,11 @@ const config = {
           },
           {
             from: '/explore/dashboard-101',
-            to: '/user-guide/dashboards/dashboard-101/dashboard-101',
+            to: '/user-guide/dashboards/dashboard-101',
           },
           {
             from: '/explore/dashboard-101/dashboard-101',
-            to: '/user-guide/dashboards/dashboard-101/dashboard-101',
+            to: '/user-guide/dashboards/dashboard-101',
           },
           {
             from: '/explore/dashboard-101/multi-metrics',
