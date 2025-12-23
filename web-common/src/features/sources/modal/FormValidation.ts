@@ -2,9 +2,12 @@ import * as yup from "yup";
 import { dsnSchema, getYupSchema } from "./yupSchemas";
 import { getConnectorSchema } from "./connector-schemas";
 import {
+  findRadioEnumKey,
   getFieldLabel,
+  getRadioEnumOptions,
   getRequiredFieldsByEnumValue,
 } from "../../templates/schema-utils";
+import { isEmpty } from "./utils";
 import type { AddDataFormType, MultiStepFormSchema } from "./types";
 
 export { dsnSchema };
@@ -30,59 +33,68 @@ export function getValidationSchemaForConnector(
 
   // For multi-step connector step, prefer connector-specific schema when present.
   if (isMultiStepConnector && formType === "connector") {
-    // Generic dynamic schema based on auth options, driven by config.
-    const dynamicSchema = makeAuthOptionValidationSchema(
-      name,
-      authMethodGetter,
-    );
-    if (dynamicSchema) return dynamicSchema;
-
-    const connectorKey = `${name}_connector`;
-    if (connectorKey in getYupSchema) {
-      return getYupSchema[connectorKey as keyof typeof getYupSchema];
-    }
+    return withJsonSchemaAuthValidation(name, authMethodGetter);
   }
 
   return getYupSchema[name as keyof typeof getYupSchema];
 }
 
-/**
- * Build a yup schema that enforces required fields for the selected auth option
- * using the multi-step auth config. This keeps validation in sync with the UI
- * definitions alongside the schema utilities.
- */
-function makeAuthOptionValidationSchema(
+function withJsonSchemaAuthValidation(
   connectorName: string,
   getAuthMethod?: () => string | undefined,
 ) {
+  const connectorKey =
+    `${connectorName}_connector` as keyof typeof getYupSchema;
+  const baseSchema =
+    (getYupSchema[connectorKey] as yup.ObjectSchema<any> | undefined) ||
+    yup.object();
   const schema = getConnectorSchema(connectorName);
-  if (!schema) return null;
+  if (!schema) return baseSchema;
 
-  const fieldValidations: Record<string, yup.StringSchema> = {};
-  const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
-    step: "connector",
-  });
+  return baseSchema.test(
+    "auth-required-fields",
+    "Missing required fields for selected auth method",
+    function (value) {
+      const values = (value || {}) as Record<string, unknown>;
+      const authMethod = resolveAuthMethod(schema, values, getAuthMethod);
+      if (!authMethod) return true;
 
-  for (const [method, fields] of Object.entries(requiredByMethod || {})) {
-    for (const fieldId of fields) {
-      const label = getFieldLabel(schema as MultiStepFormSchema, fieldId);
-      fieldValidations[fieldId] = (
-        fieldValidations[fieldId] || yup.string()
-      ).test(
-        `required-${fieldId}-${method}`,
-        `${label} is required`,
-        (value) => {
-          if (!getAuthMethod) return true;
-          const current = getAuthMethod();
-          if (current !== method) return true;
-          return !!value;
-        },
-      );
-    }
-  }
+      const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
+        step: "connector",
+      });
+      const requiredFields = requiredByMethod[authMethod] ?? [];
 
-  // If nothing to validate, skip dynamic schema.
-  if (!Object.keys(fieldValidations).length) return null;
+      const errors = requiredFields
+        .filter((fieldId) => isEmpty(values[fieldId]))
+        .map((fieldId) =>
+          this.createError({
+            path: fieldId,
+            message: `${getFieldLabel(schema, fieldId)} is required`,
+          }),
+        );
 
-  return yup.object().shape(fieldValidations);
+      if (!errors.length) return true;
+      return new yup.ValidationError(errors);
+    },
+  );
+}
+
+function resolveAuthMethod(
+  schema: MultiStepFormSchema,
+  values: Record<string, unknown>,
+  getAuthMethod?: () => string | undefined,
+) {
+  const authInfo = getRadioEnumOptions(schema);
+  const options = authInfo?.options ?? [];
+  const normalize = (method?: string | null) =>
+    method && options.some((opt) => opt.value === method) ? method : undefined;
+
+  const fromGetter = normalize(getAuthMethod?.());
+  const authKey = authInfo?.key || findRadioEnumKey(schema);
+  const rawFromForm =
+    authKey && values?.[authKey] != null ? String(values[authKey]) : undefined;
+  const fromForm = normalize(rawFromForm);
+  const fallback = normalize(authInfo?.defaultValue) || options[0]?.value;
+
+  return fromGetter || fromForm || fallback;
 }
