@@ -56,9 +56,7 @@
     await tick();
 
     const menuWidth =
-      dropdownContentEl?.offsetWidth ??
-      dropdownTriggerEl?.offsetWidth ??
-      200;
+      dropdownContentEl?.offsetWidth ?? dropdownTriggerEl?.offsetWidth ?? 200;
 
     dropdownAlign = determineDropdownAlign({
       triggerRect: dropdownTriggerEl.getBoundingClientRect(),

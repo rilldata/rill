@@ -14,7 +14,8 @@ export function determineDropdownAlign({
 }): "start" | "end" {
   if (!triggerRect) return "start";
 
-  const width = typeof menuWidth === "number" ? menuWidth : DEFAULT_MENU_WIDTH_PX;
+  const width =
+    typeof menuWidth === "number" ? menuWidth : DEFAULT_MENU_WIDTH_PX;
   const projectedRightEdge = triggerRect.left + width;
   const safeViewportRight = viewportWidth - margin;
 
