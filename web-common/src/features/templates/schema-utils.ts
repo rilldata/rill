@@ -57,7 +57,7 @@ export function findRadioEnumKey(schema: MultiStepFormSchema): string | null {
       return key;
     }
   }
-  return schema.properties.auth_method ? "auth_method" : null;
+  return null;
 }
 
 export function getRadioEnumOptions(schema: MultiStepFormSchema): {
