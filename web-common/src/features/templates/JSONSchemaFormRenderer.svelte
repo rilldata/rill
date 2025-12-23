@@ -5,8 +5,7 @@
     JSONSchemaField,
     MultiStepFormSchema,
   } from "../sources/modal/types";
-  import { isVisibleForValues } from "./schema-utils";
-  import { isStepMatch } from "../sources/modal/connector-schemas";
+  import { isStepMatch, isVisibleForValues } from "./schema-utils";
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;

@@ -6,8 +6,8 @@ import {
   findRadioEnumKey,
   getRadioEnumOptions,
   getRequiredFieldsByEnumValue,
+  isStepMatch,
 } from "../../templates/schema-utils";
-import { isStepMatch } from "./connector-schemas";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.

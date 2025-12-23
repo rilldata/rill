@@ -10,6 +10,20 @@ export type RadioEnumOption = {
   hint?: string;
 };
 
+export function isStepMatch(
+  schema: MultiStepFormSchema | null,
+  key: string,
+  step?: "connector" | "source" | string,
+): boolean {
+  if (!schema?.properties) return false;
+  const prop = schema.properties[key];
+  if (!prop) return false;
+  if (!step) return true;
+  const propStep = prop["x-step"];
+  if (!propStep) return true;
+  return propStep === step;
+}
+
 export function isVisibleForValues(
   schema: MultiStepFormSchema,
   key: string,
