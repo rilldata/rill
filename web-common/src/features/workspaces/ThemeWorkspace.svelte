@@ -4,6 +4,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ThemeInspector from "@rilldata/web-common/features/themes/ThemeInspector.svelte";
+  import ColorSchemePreviewPanel from "@rilldata/web-common/features/themes/ColorSchemePreviewPanel.svelte";
   import ThemeEditor from "@rilldata/web-common/features/themes/editor/ThemeEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -53,7 +54,12 @@
   />
 
   <svelte:fragment slot="body">
-    <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {errors} />
+    <div class="flex flex-col size-full overflow-hidden">
+      <div class="flex-1 overflow-hidden">
+        <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {errors} />
+      </div>
+      <ColorSchemePreviewPanel {filePath} />
+    </div>
   </svelte:fragment>
 
   <ThemeInspector {filePath} slot="inspector" />

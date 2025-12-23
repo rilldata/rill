@@ -96,6 +96,7 @@
 <Inspector {filePath}>
   <div class="inspector-content">
     <div class="flex flex-col gap-y-2">
+      <h3 class="section-title">Theme Mode</h3>
       <FieldSwitcher
         small
         fields={["Light", "Dark"]}
