@@ -13,6 +13,10 @@ export type JSONSchemaField = {
   default?: string | number | boolean;
   pattern?: string;
   format?: string;
+  errorMessage?: {
+    pattern?: string;
+    format?: string;
+  };
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   "x-display"?: "radio" | "select" | "textarea" | "file";
@@ -29,6 +33,8 @@ export type JSONSchemaField = {
    * child field keys that should render beneath that option.
    */
   "x-grouped-fields"?: Record<string, string[]>;
+  // Allow custom keywords such as errorMessage or future x-extensions.
+  [key: string]: unknown;
 };
 
 export type JSONSchemaCondition = {

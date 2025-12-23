@@ -5,6 +5,7 @@ import {
   type Infer as YupInfer,
   type InferIn as YupInferIn,
 } from "sveltekit-superforms/adapters";
+import { ValidationError } from "yup";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector, dsnSchema } from "./FormValidation";
@@ -331,6 +332,7 @@ export class AddDataFormManager {
         Record<string, unknown>
       >;
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
+      cancel?: () => void;
     }) => {
       const values = event.form.data;
       const schema = getConnectorSchema(this.connector.name ?? "");
@@ -354,15 +356,33 @@ export class AddDataFormManager {
         return;
       }
 
-      // When in the source step of a multi-step flow, the superform still uses
-      // the connector schema, so it can appear invalid because connector fields
-      // were intentionally skipped. Allow submission in that case and rely on
-      // the UI-level required checks for source fields.
-      if (
-        !event.form.valid &&
-        !(isMultiStepConnector && stepState.step === "source")
-      )
+      if (isMultiStepConnector && stepState.step === "source") {
+        const sourceSchema = getValidationSchemaForConnector(
+          connector.name as string,
+          "source",
+          { isMultiStepConnector: true },
+        );
+        try {
+          await sourceSchema.validate(values, { abortEarly: false });
+          // Clear any prior client-side errors
+          (this.params.errors as any).set({});
+        } catch (e) {
+          if (e instanceof ValidationError) {
+            const fieldErrors: Record<string, string[]> = {};
+            for (const issue of e.inner.length ? e.inner : [e]) {
+              const path = issue.path || "_errors";
+              if (!fieldErrors[path]) fieldErrors[path] = [];
+              fieldErrors[path].push(issue.message);
+            }
+            (this.params.errors as any).set(fieldErrors);
+            event.cancel?.();
+            return;
+          }
+          throw e;
+        }
+      } else if (!event.form.valid) {
         return;
+      }
 
       if (
         typeof setShowSaveAnyway === "function" &&

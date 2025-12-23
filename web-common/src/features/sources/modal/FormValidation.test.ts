@@ -44,4 +44,34 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
       ]),
     });
   });
+
+  it("rejects invalid s3 path on source step", async () => {
+    const schema = getValidationSchemaForConnector("s3", "source", {
+      isMultiStepConnector: true,
+    });
+
+    await expect(
+      schema.validate(
+        { path: "s3:/bucket", name: "valid_name" },
+        { abortEarly: false },
+      ),
+    ).rejects.toMatchObject({
+      inner: expect.arrayContaining([
+        expect.objectContaining({ path: "path" }),
+      ]),
+    });
+  });
+
+  it("accepts valid s3 path on source step", async () => {
+    const schema = getValidationSchemaForConnector("s3", "source", {
+      isMultiStepConnector: true,
+    });
+
+    await expect(
+      schema.validate(
+        { path: "s3://bucket/prefix", name: "valid_name" },
+        { abortEarly: false },
+      ),
+    ).resolves.toMatchObject({});
+  });
 });
