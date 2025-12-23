@@ -33,7 +33,9 @@
   }
 
   function scaleY(y: number): number {
-    return height - ((y - minY + yPadding) / (maxY - minY + yPadding * 2)) * height;
+    return (
+      height - ((y - minY + yPadding) / (maxY - minY + yPadding * 2)) * height
+    );
   }
 
   $: linePath = timeSeriesData
@@ -70,8 +72,10 @@
   const barChartWidth = 300;
   const barChartHeight = 140;
   const barChartPadding = { top: 10, right: 10, bottom: 24, left: 35 };
-  const barAreaWidth = barChartWidth - barChartPadding.left - barChartPadding.right;
-  const barAreaHeight = barChartHeight - barChartPadding.top - barChartPadding.bottom;
+  const barAreaWidth =
+    barChartWidth - barChartPadding.left - barChartPadding.right;
+  const barAreaHeight =
+    barChartHeight - barChartPadding.top - barChartPadding.bottom;
 
   // Sequential heatmap data (1-9 intensity scale)
   const seqRows = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -105,11 +109,19 @@
   const heatmapHeight = 130;
   const heatmapPadding = { top: 20, right: 10, bottom: 10, left: 30 };
 
-  $: seqCellWidth = (heatmapWidth - heatmapPadding.left - heatmapPadding.right) / seqCols.length;
-  $: seqCellHeight = (heatmapHeight - heatmapPadding.top - heatmapPadding.bottom) / seqRows.length;
+  $: seqCellWidth =
+    (heatmapWidth - heatmapPadding.left - heatmapPadding.right) /
+    seqCols.length;
+  $: seqCellHeight =
+    (heatmapHeight - heatmapPadding.top - heatmapPadding.bottom) /
+    seqRows.length;
 
-  $: divCellWidth = (heatmapWidth - heatmapPadding.left - heatmapPadding.right) / divCols.length;
-  $: divCellHeight = (heatmapHeight - heatmapPadding.top - heatmapPadding.bottom) / divRows.length;
+  $: divCellWidth =
+    (heatmapWidth - heatmapPadding.left - heatmapPadding.right) /
+    divCols.length;
+  $: divCellHeight =
+    (heatmapHeight - heatmapPadding.top - heatmapPadding.bottom) /
+    divRows.length;
 
   const gradientId = `kpi-gradient-${Math.random().toString(36).substring(2, 11)}`;
 </script>
@@ -128,7 +140,11 @@
       <div class="kpi-label text-gray-400">vs last month</div>
     </div>
     <div class="kpi-sparkline-wrapper">
-      <svg class="kpi-sparkline-svg" viewBox="0 0 10000 100" preserveAspectRatio="none">
+      <svg
+        class="kpi-sparkline-svg"
+        viewBox="0 0 10000 100"
+        preserveAspectRatio="none"
+      >
         <defs>
           <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
             <stop offset="5%" stop-color={primaryColor} stop-opacity="0.3" />
@@ -152,8 +168,13 @@
   </div>
 
   <!-- Bar Chart Component -->
-  <div class="preview-card bar-chart-card" style="background-color: {cardColor};">
-    <div class="chart-title text-gray-800 dark:text-gray-100">Sales by Region</div>
+  <div
+    class="preview-card bar-chart-card"
+    style="background-color: {cardColor};"
+  >
+    <div class="chart-title text-gray-800 dark:text-gray-100">
+      Sales by Region
+    </div>
     <svg
       class="bar-chart-svg"
       viewBox="0 0 {barChartWidth} {barChartHeight}"
@@ -182,7 +203,8 @@
         {@const barWidth = (barAreaWidth / barData.length) * 0.7}
         {@const barGap = (barAreaWidth / barData.length) * 0.15}
         {@const barHeight = (item.value / maxBarValue) * barAreaHeight}
-        {@const x = barChartPadding.left + i * (barAreaWidth / barData.length) + barGap}
+        {@const x =
+          barChartPadding.left + i * (barAreaWidth / barData.length) + barGap}
         {@const y = barChartPadding.top + barAreaHeight - barHeight}
         <rect
           {x}
@@ -192,7 +214,12 @@
           fill={qualitativeColors[i] || primaryColor}
           rx="2"
         />
-        <text x={x + barWidth / 2} y={barChartHeight - 4} text-anchor="middle" class="axis-label">
+        <text
+          x={x + barWidth / 2}
+          y={barChartHeight - 4}
+          text-anchor="middle"
+          class="axis-label"
+        >
           {item.label.split(" ")[0]}
         </text>
       {/each}

@@ -53,8 +53,12 @@
 
   // Extract theme colors
   $: primaryColor = currentModeYaml["primary"] || "var(--color-theme-500)";
-  $: backgroundColor = currentModeYaml["background"] || (previewMode === "light" ? "#f9fafb" : "#111827");
-  $: cardColor = currentModeYaml["card"] || (previewMode === "light" ? "#ffffff" : "#374151");
+  $: backgroundColor =
+    currentModeYaml["background"] ||
+    (previewMode === "light" ? "#f9fafb" : "#111827");
+  $: cardColor =
+    currentModeYaml["card"] ||
+    (previewMode === "light" ? "#ffffff" : "#374151");
 
   async function toggle() {
     isOpen = !isOpen;
