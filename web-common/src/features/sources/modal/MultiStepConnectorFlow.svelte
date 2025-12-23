@@ -2,7 +2,6 @@
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import FormRenderer from "./FormRenderer.svelte";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
@@ -15,12 +14,9 @@
   import type { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
   import type { ConnectorStepState } from "./connectorStepStore";
-  import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 
   export let connector: V1ConnectorDriver;
   export let formManager: AddDataFormManager;
-  export let properties: ConnectorDriverProperty[];
-  export let filteredParamsProperties: ConnectorDriverProperty[];
   export let paramsForm: any;
   export let paramsErrors: any;
   export let paramsEnhance: any;
@@ -53,16 +49,9 @@
   $: stepState = $connectorStepStore as ConnectorStepState;
   let activeSchema: MultiStepFormSchema | null = null;
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
-  let stepProperties: ConnectorDriverProperty[] | undefined = undefined;
   let selectedAuthMethod = "";
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
-
-  // Compute which properties to show for the current step.
-  $: stepProperties =
-    stepState.step === "source"
-      ? (connector.sourceProperties ?? [])
-      : properties;
 
   // Initialize source step values from stored connector config.
   $: if (stepState.step === "source" && stepState.connectorConfig) {
@@ -168,54 +157,17 @@
   $: shouldShowSkipLink = stepState.step === "connector";
 </script>
 
-{#if stepState.step === "connector"}
-  <AddDataFormSection
-    id={paramsFormId}
-    enhance={paramsEnhance}
-    onSubmit={paramsSubmit}
-  >
-    {#if activeSchema}
-      <JSONSchemaFormRenderer
-        schema={activeSchema}
-        step="connector"
-        form={paramsForm}
-        errors={$paramsErrors}
-        {onStringInputChange}
-        {handleFileUpload}
-      />
-    {:else}
-      <FormRenderer
-        properties={filteredParamsProperties}
-        form={paramsForm}
-        errors={$paramsErrors}
-        {onStringInputChange}
-        uploadFile={handleFileUpload}
-      />
-    {/if}
-  </AddDataFormSection>
-{:else}
-  <AddDataFormSection
-    id={paramsFormId}
-    enhance={paramsEnhance}
-    onSubmit={paramsSubmit}
-  >
-    {#if activeSchema}
-      <JSONSchemaFormRenderer
-        schema={activeSchema}
-        step="source"
-        form={paramsForm}
-        errors={$paramsErrors}
-        {onStringInputChange}
-        {handleFileUpload}
-      />
-    {:else}
-      <FormRenderer
-        properties={stepProperties ?? []}
-        form={paramsForm}
-        errors={$paramsErrors}
-        {onStringInputChange}
-        uploadFile={handleFileUpload}
-      />
-    {/if}
-  </AddDataFormSection>
-{/if}
+<AddDataFormSection
+  id={paramsFormId}
+  enhance={paramsEnhance}
+  onSubmit={paramsSubmit}
+>
+  <JSONSchemaFormRenderer
+    schema={activeSchema}
+    step={stepState.step}
+    form={paramsForm}
+    errors={$paramsErrors}
+    {onStringInputChange}
+    {handleFileUpload}
+  />
+</AddDataFormSection>
