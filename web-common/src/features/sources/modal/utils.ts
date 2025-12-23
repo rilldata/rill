@@ -98,8 +98,23 @@ export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
   paramsFormValue: Record<string, unknown>,
   paramsFormErrors: Record<string, unknown>,
+  step?: "connector" | "source" | string,
 ) {
   if (!schema) return true;
+
+  // For source step, gate on required fields from the JSON schema.
+  const currentStep = step || (paramsFormValue?.__step as string | undefined);
+  if (currentStep === "source") {
+    const required = getRequiredFieldsForStep(schema, paramsFormValue, "source");
+    if (!required.length) return false;
+    return !required.every((fieldId) => {
+      if (!isStepMatch(schema, fieldId, "source")) return true;
+      const value = paramsFormValue[fieldId];
+      const errorsForField = paramsFormErrors[fieldId] as any;
+      const hasErrors = Boolean(errorsForField?.length);
+      return !isEmpty(value) && !hasErrors;
+    });
+  }
 
   const authInfo = getRadioEnumOptions(schema);
   const options = authInfo?.options ?? [];
@@ -133,6 +148,39 @@ export function isMultiStepConnectorDisabled(
     const errorsForField = paramsFormErrors[fieldId] as any;
     const hasErrors = Boolean(errorsForField?.length);
     return !isEmpty(value) && !hasErrors;
+  });
+}
+
+function getRequiredFieldsForStep(
+  schema: MultiStepFormSchema,
+  values: Record<string, unknown>,
+  step: "connector" | "source" | string,
+) {
+  const required = new Set<string>();
+  (schema.required ?? []).forEach((key) => {
+    if (isStepMatch(schema, key, step)) required.add(key);
+  });
+
+  for (const conditional of schema.allOf ?? []) {
+    const condition = conditional.if?.properties;
+    const matches = matchesCondition(condition, values);
+    const branch = matches ? conditional.then : conditional.else;
+    branch?.required?.forEach((key) => {
+      if (isStepMatch(schema, key, step)) required.add(key);
+    });
+  }
+
+  return Array.from(required);
+}
+
+function matchesCondition(
+  condition: Record<string, { const?: string | number | boolean }> | undefined,
+  values: Record<string, unknown>,
+) {
+  if (!condition || !Object.keys(condition).length) return false;
+  return Object.entries(condition).every(([depKey, def]) => {
+    if (def.const === undefined || def.const === null) return false;
+    return String(values?.[depKey]) === String(def.const);
   });
 }
 

@@ -71,6 +71,9 @@
   });
 
   function goToConnectorForm(connector: V1ConnectorDriver) {
+    // Reset multi-step state (auth selection, connector config) when switching connectors.
+    resetConnectorStep();
+
     const state = {
       step: 2,
       selectedConnector: connector,

@@ -29,4 +29,19 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
       schema.validate({ auth_method: "public" }, { abortEarly: false }),
     ).resolves.toMatchObject({});
   });
+
+  it("requires source fields from JSON schema for multi-step connectors", async () => {
+    const schema = getValidationSchemaForConnector("s3", "source", {
+      isMultiStepConnector: true,
+    });
+
+    await expect(
+      schema.validate({}, { abortEarly: false }),
+    ).rejects.toMatchObject({
+      inner: expect.arrayContaining([
+        expect.objectContaining({ path: "path" }),
+        expect.objectContaining({ path: "name" }),
+      ]),
+    });
+  });
 });
