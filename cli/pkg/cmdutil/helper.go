@@ -468,7 +468,7 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 			return nil, "", err
 		}
 
-		depl := proj.ProdDeployment
+		depl := proj.Deployment
 		if depl == nil {
 			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
 		}

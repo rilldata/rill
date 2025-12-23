@@ -50,7 +50,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			depl := proj.ProdDeployment
+			depl := proj.Deployment
 			if depl == nil {
 				return fmt.Errorf("project %q is not currently deployed", name)
 			}

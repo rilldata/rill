@@ -45,14 +45,14 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if res.ProdDeployment == nil {
+			if res.Deployment == nil {
 				ch.PrintfWarn("Project does not have a production deployment\n")
 				return nil
 			}
 
 			ch.Printf("Runtime info\n")
-			ch.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
-			ch.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
+			ch.Printf("  Host: %s\n", res.Deployment.RuntimeHost)
+			ch.Printf("  Instance: %s\n", res.Deployment.RuntimeInstanceId)
 			ch.Printf("  JWT: %s\n", res.Jwt)
 
 			return nil

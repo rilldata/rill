@@ -65,7 +65,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 
-				depl := proj.ProdDeployment
+				depl := proj.Deployment
 				if depl == nil {
 					return nil
 				}
