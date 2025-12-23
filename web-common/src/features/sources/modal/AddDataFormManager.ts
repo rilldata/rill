@@ -2,6 +2,7 @@ import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
 import {
   yup,
+  schemasafe,
   type Infer as YupInfer,
   type InferIn as YupInferIn,
 } from "sveltekit-superforms/adapters";
@@ -138,31 +139,51 @@ export class AddDataFormManager {
     );
 
     // Superforms: params
-    const paramsSchemaDef = getValidationSchemaForConnector(
-      connector.name as string,
-      formType,
-      {
-        isMultiStepConnector: this.isMultiStepConnector,
-        authMethodGetter: this.getSelectedAuthMethod,
-      },
-    );
-    const paramsAdapter = yup(paramsSchemaDef);
-    type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
-    type ParamsIn = YupInferIn<typeof paramsSchemaDef, "yup">;
     const initialFormValues = getInitialFormValuesFromProperties(
       this.properties,
     );
-    const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
-      initialFormValues as Partial<ParamsOut>,
-      paramsAdapter,
-    );
-    this.params = superForm<ParamsOut, any, ParamsIn>(paramsDefaults, {
-      SPA: true,
-      validators: paramsAdapter,
-      onUpdate: onParamsUpdate,
-      resetForm: false,
-      validationMethod: "onsubmit",
-    });
+    const multiStepSchema = this.isMultiStepConnector
+      ? getConnectorSchema(connector.name ?? "")
+      : null;
+
+    if (multiStepSchema) {
+      const paramsAdapter = schemasafe(multiStepSchema);
+      type ParamsOut = Record<string, unknown>;
+      type ParamsIn = Record<string, unknown>;
+      const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
+        initialFormValues as Partial<ParamsOut>,
+        paramsAdapter,
+      );
+      this.params = superForm<ParamsOut, any, ParamsIn>(paramsDefaults, {
+        SPA: true,
+        validators: paramsAdapter,
+        onUpdate: onParamsUpdate,
+        resetForm: false,
+        validationMethod: "onsubmit",
+      });
+    } else {
+      const paramsSchemaDef = getValidationSchemaForConnector(
+        connector.name as string,
+        formType,
+        {
+          isMultiStepConnector: this.isMultiStepConnector,
+        },
+      );
+      const paramsAdapter = yup(paramsSchemaDef);
+      type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
+      type ParamsIn = YupInferIn<typeof paramsSchemaDef, "yup">;
+      const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
+        initialFormValues as Partial<ParamsOut>,
+        paramsAdapter,
+      );
+      this.params = superForm<ParamsOut, any, ParamsIn>(paramsDefaults, {
+        SPA: true,
+        validators: paramsAdapter,
+        onUpdate: onParamsUpdate,
+        resetForm: false,
+        validationMethod: "onsubmit",
+      });
+    }
 
     // Superforms: dsn
     const dsnAdapter = yup(dsnSchema);

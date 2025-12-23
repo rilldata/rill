@@ -34,6 +34,9 @@ export default defineConfig(({ mode }) => {
       alias,
     },
     plugins: [sveltekit()],
+    optimizeDeps: {
+      include: ["@exodus/schemasafe"],
+    },
     test: {
       workspace: [
         {
