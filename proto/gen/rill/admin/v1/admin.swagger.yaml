@@ -1493,6 +1493,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
         - name: userId
           in: query
           required: false

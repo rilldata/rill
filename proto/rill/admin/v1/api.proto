@@ -1247,6 +1247,7 @@ message ListDeploymentsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3;
+  string branch = 5;
   string user_id = 4;
 }
 
