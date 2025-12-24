@@ -429,6 +429,9 @@ function getNestedColumnDef(
   const rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
   const nestedLabel = getRowNestedLabel(rowDimensions);
 
+  // Check if there are nested dimensions (more than one row dimension)
+  const hasNestedDimensions = rowDimensions.length > 1;
+
   // Create row dimension columns
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
     rowDimensionsForColumnDef.map((d) => {
@@ -450,6 +453,7 @@ function getNestedColumnDef(
             return cellComponent(PivotShowMoreCell, {
               value: label,
               row,
+              hasNestedDimensions,
             });
           }
 
@@ -463,6 +467,7 @@ function getNestedColumnDef(
           return cellComponent(PivotExpandableCell, {
             value: formattedDimensionValue,
             row,
+            hasNestedDimensions,
           });
         },
       };

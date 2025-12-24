@@ -8,10 +8,13 @@
   export let row: Row<PivotDataRow>;
   export let value: string;
   export let assembled = true;
+  export let hasNestedDimensions = false;
 
   $: canExpand = row.getCanExpand();
   $: expanded = row.getIsExpanded();
   $: assembledAndCanExpand = assembled && canExpand;
+
+  $: needsSpacer = row.depth >= 1 || (hasNestedDimensions && !canExpand);
 </script>
 
 <div
@@ -26,7 +29,7 @@
     <div class="caret opacity-100 shrink-0" class:expanded>
       <ChevronRight size="16px" color="#9CA3AF" />
     </div>
-  {:else if row.depth >= 1}
+  {:else if needsSpacer}
     <span class="shrink-0"><Spacer size="16px" /></span>
   {/if}
 
