@@ -11,7 +11,7 @@ import (
 )
 
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
-	var project, path string
+	var project, path, branch string
 	var local bool
 	var models, modelPartitions, sources, metricViews, alerts, reports, connectors []string
 	var all, full, erroredPartitions, parser bool
@@ -38,7 +38,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Connect to the runtime
-			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, branch, local)
 			if err != nil {
 				return err
 			}
@@ -146,6 +146,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().SortFlags = false
 	refreshCmd.Flags().StringVar(&project, "project", "", "Project name")
 	refreshCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	refreshCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
 	refreshCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 	refreshCmd.Flags().BoolVar(&all, "all", false, "Refresh all resources except alerts and reports (default)")
 	refreshCmd.Flags().BoolVar(&full, "full", false, "Fully reload the targeted models (use with --all or --model)")

@@ -7,7 +7,7 @@ import (
 )
 
 func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name string
+	var name, branch string
 
 	jwtCmd := &cobra.Command{
 		Use:    "jwt [<project-name>]",
@@ -41,6 +41,7 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				Org:     ch.Org,
 				Project: name,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
@@ -61,6 +62,7 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	jwtCmd.Flags().SortFlags = false
 	jwtCmd.Flags().StringVar(&name, "project", "", "Project Name")
+	jwtCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
 
 	return jwtCmd
 }

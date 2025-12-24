@@ -16,7 +16,7 @@ import (
 )
 
 func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, path string
+	var name, path, branch string
 	var follow bool
 	var tail int
 	var level string
@@ -45,6 +45,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				Org:     ch.Org,
 				Project: name,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
@@ -119,6 +120,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 	logsCmd.Flags().SortFlags = false
 	logsCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	logsCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	logsCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
 	logsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow logs")
 	logsCmd.Flags().IntVarP(&tail, "tail", "t", -1, "Number of lines to show from the end of the logs, use -1 for all logs")
 	logsCmd.Flags().StringVar(&level, "level", "INFO", "Minimum log level to show (DEBUG, INFO, WARN, ERROR, FATAL)")
