@@ -13,6 +13,7 @@ rill project status [<project-name>] [flags]
 ### Flags
 
 ```
+      --branch string    Optional git branch (for non-primary deployment)
       --local            Target locally running Rill
       --path string      Project directory (default ".")
       --project string   Project Name

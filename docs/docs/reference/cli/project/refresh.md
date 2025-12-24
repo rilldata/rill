@@ -15,6 +15,7 @@ rill project refresh [<project-name>] [flags]
 ```
       --project string         Project name
       --path string            Project directory (default ".")
+      --branch string          Optional git branch (for non-primary deployment)
       --local                  Target locally running Rill
       --all                    Refresh all resources except alerts and reports (default)
       --full                   Fully reload the targeted models (use with --all or --model)

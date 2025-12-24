@@ -15,6 +15,7 @@ rill project logs [<project-name>] [flags]
 ```
       --project string   Project Name
       --path string      Project directory (default ".")
+      --branch string    Optional git branch (for non-primary deployment)
   -f, --follow           Follow logs
   -t, --tail int         Number of lines to show from the end of the logs, use -1 for all logs (default -1)
       --level string     Minimum log level to show (DEBUG, INFO, WARN, ERROR, FATAL) (default "INFO")
