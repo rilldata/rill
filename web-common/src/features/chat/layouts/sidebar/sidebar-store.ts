@@ -44,13 +44,10 @@ export const sidebarActions = {
     chatOpen.set(true);
   },
 
-  startChat(prompt: string, submit = false): void {
+  startChat(prompt: string): void {
     chatOpen.set(true);
     void waitUntil(() => get(chatMounted)).then(() =>
-      eventBus.emit("start-chat", {
-        prompt,
-        submit,
-      }),
+      eventBus.emit("start-chat", prompt),
     );
   },
 

@@ -603,6 +603,8 @@ message GenerateMetricsViewFileRequest {
   // If true, the AI will be used to generate the metrics view file.
   // Otherwise, it falls back to a simpler heuristic approach.
   bool use_ai = 5;
+  // Optional prompt to guide AI generation.
+  string prompt = 9;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
@@ -746,7 +748,6 @@ message WatchResourcesRequest {
   string instance_id = 1;
   string kind = 2;
   bool replay = 3;
-  string level = 4;
 }
 
 message WatchResourcesResponse {

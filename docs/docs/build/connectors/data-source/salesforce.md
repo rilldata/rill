@@ -45,12 +45,13 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
-Once a project with a Salesforce source has been deployed, Rill requires you to explicitly provide the credentials using the following command:
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide Salesforce credentials used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#salesforce) for more information.
 
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
 ```
-rill env configure
+rill env push
 ```
 
 

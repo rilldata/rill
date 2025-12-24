@@ -9,8 +9,6 @@
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-  import { get } from "svelte/store";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -72,6 +70,12 @@
     editor.commands.startMention();
   }
 
+  function startChat(prompt: string) {
+    editor.commands.setContent(prompt);
+    // Wait for `value` and `canSend` to update before sending the message.`
+    tick().then(sendMessage).catch(console.error);
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
@@ -81,6 +85,12 @@
         onSubmit: () => void sendMessage(),
       }),
       content: "",
+      editorProps: {
+        attributes: {
+          class: config.minChatHeight,
+          style: height ? `height: ${height};` : "",
+        },
+      },
       onTransaction: () => {
         // force re-render so `editor.isActive` works as expected
         editor = editor;
@@ -90,15 +100,7 @@
       },
     });
 
-    const unsubStartChatEvent = eventBus.on(
-      "start-chat",
-      async ({ prompt, submit }) => {
-        editor.commands.setContent(prompt);
-        if (!submit) editor.commands.focus();
-        await waitUntil(() => get(draftMessageStore) === prompt);
-        void sendMessage();
-      },
-    );
+    const unsubStartChatEvent = eventBus.on("start-chat", startChat);
 
     chatMounted.set(true);
 
@@ -115,12 +117,7 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div
-    class="chat-input-container"
-    bind:this={element}
-    class:fixed-height={!!height}
-    style:height
-  />
+  <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
     {#if enableMention}
       <button class="text-base ml-1" type="button" on:click={startMention}>
@@ -164,17 +161,12 @@
   }
 
   :global(.tiptap) {
-    @apply px-2 py-2 min-h-[2.5rem] outline-none;
+    @apply px-2 py-2 outline-none;
     @apply text-sm leading-relaxed;
   }
 
   .chat-input-container {
     @apply w-full max-h-32 overflow-auto;
-  }
-
-  .chat-input-container.fixed-height {
-    min-height: unset;
-    max-height: unset;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {

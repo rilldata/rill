@@ -58,7 +58,7 @@ export async function generateSampleData(
     const developerChatEnabled = get(featureFlags.dashboardChat);
     if (developerChatEnabled) {
       overlay.set(null);
-      sidebarActions.startChat(agentPrompt, true);
+      sidebarActions.startChat(agentPrompt);
       return;
     }
 

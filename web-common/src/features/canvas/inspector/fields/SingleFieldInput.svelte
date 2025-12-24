@@ -66,7 +66,7 @@
       </Chip>
     </DropdownMenu.Trigger>
 
-    <DropdownMenu.Content class="p-0">
+    <DropdownMenu.Content class="p-0" sameWidth>
       <div class="p-3 pb-1">
         <Search bind:value={searchValue} autofocus={false} />
       </div>

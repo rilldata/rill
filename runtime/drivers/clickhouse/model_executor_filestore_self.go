@@ -15,47 +15,60 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-type localInputProps struct {
-	Format string `mapstructure:"format"`
+type fileStoreInputProps struct {
+	Path    string            `mapstructure:"path"`
+	Format  string            `mapstructure:"format"`
+	Headers map[string]string `mapstructure:"headers"`
 }
 
-type localFileToSelfExecutor struct {
+type fileStoreToSelfExecutor struct {
 	fileStore drivers.Handle
 	c         *Connection
 }
 
 var _ drivers.ModelExecutor = &selfToSelfExecutor{}
 
-func (e *localFileToSelfExecutor) Concurrency(desired int) (int, bool) {
+func (e *fileStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 	if desired > 1 {
 		return desired, true
 	}
 	return _defaultConcurrentInserts, true
 }
 
-func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
+func (e *fileStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	from, ok := e.fileStore.AsFileStore()
+
+	driver := opts.InputHandle.Driver()
 	if !ok {
-		return nil, fmt.Errorf("input handle %q does not implement filestore", opts.InputHandle.Driver())
+		return nil, fmt.Errorf("input handle %q does not implement filestore", driver)
 	}
 
 	if opts.IncrementalRun {
-		return nil, fmt.Errorf("clickhouse: incremental models are not supported for local_file connector")
+		return nil, fmt.Errorf("clickhouse: incremental models are not supported for %q connector", driver)
 	}
 
 	// Parse the input and output properties
-	inputProps := &localInputProps{}
+	inputProps := &fileStoreInputProps{}
+	if err := mapstructure.WeakDecode(opts.InputHandle.Config(), inputProps); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
+
+	inputPropsMap := map[string]any{}
+	if err := mapstructure.WeakDecode(inputProps, &inputPropsMap); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 
-	// Require materialization for local_file
+	// Require materialization for fileStore
 	if outputProps.Materialize != nil && !*outputProps.Materialize {
-		return nil, fmt.Errorf("models with input connector `local_file` must be materialized")
+		return nil, fmt.Errorf("models with input connector %q must be materialized", driver)
 	}
 	outputProps.Materialize = boolptr(true)
 
@@ -67,11 +80,11 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 
 	// Extra validation: the model should be a table or dictionary
 	if outputProps.Typ != "TABLE" && outputProps.Typ != "DICTIONARY" {
-		return nil, fmt.Errorf("models with input connector `local_file` must be materialized as `TABLE` or `DICTIONARY`")
+		return nil, fmt.Errorf("models with input connector %q must be materialized as `TABLE` or `DICTIONARY`", driver)
 	}
 
-	// get the local file path
-	localPaths, err := from.FilePaths(ctx, opts.InputProperties)
+	// get the fileStore path
+	localPaths, err := from.FilePaths(ctx, inputPropsMap)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +179,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	}, nil
 }
 
-func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *drivers.ModelExecuteOptions, format string, localPaths []string) (string, error) {
+func (e *fileStoreToSelfExecutor) inferColumns(ctx context.Context, opts *drivers.ModelExecuteOptions, format string, localPaths []string) (string, error) {
 	tempDir, err := os.MkdirTemp(opts.TempDir, "duckdb")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir: %w", err)
@@ -217,13 +230,13 @@ func (e *localFileToSelfExecutor) inferColumns(ctx context.Context, opts *driver
 
 func sourceReader(paths []string, format string) (string, error) {
 	// Generate a "read" statement
-	if containsAny(format, []string{"CSV", "TabSeparated"}) {
+	if containsAny(format, []string{"csv", "CSV", "TabSeparated"}) {
 		// CSV reader
 		return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths)), nil
-	} else if strings.Contains(format, "Parquet") {
+	} else if containsAny(format, []string{"parquet", "Parquet"}) {
 		// Parquet reader
 		return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths)), nil
-	} else if containsAny(format, []string{"JSON", "JSONEachRow"}) {
+	} else if containsAny(format, []string{"json", "JSON", "JSONEachRow"}) {
 		// JSON reader
 		return fmt.Sprintf("read_json_auto(%s)", convertToStatementParamsStr(paths)), nil
 	}

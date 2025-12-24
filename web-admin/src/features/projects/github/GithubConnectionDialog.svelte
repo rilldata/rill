@@ -122,7 +122,7 @@
             project,
             data: {
               gitRemote: values.repo,
-              prodBranch: values.branch,
+              primaryBranch: values.branch,
               subpath: values.subpath,
             },
           });
