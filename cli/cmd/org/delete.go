@@ -15,9 +15,8 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Delete organization",
 		Long: `Delete an organization and all its associated projects.
 This operation cannot be undone. Use --force to skip confirmation.`,
-		Example: `  rill org delete myorg
-  rill org delete myorg --force`,
-		Args: cobra.ExactArgs(1),
+		Example: `rill org delete myorg`,
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
