@@ -346,7 +346,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 	rows := q.Result.Data
 	require.Len(t, rows, 1)
 	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 
 	q = &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
@@ -386,7 +386,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 	rows := q.Result.Data
 	require.Len(t, rows, 1)
 	i := 0
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 
 	q = &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
@@ -424,14 +424,13 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 4)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	i++
+	// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
 	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-05T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
@@ -458,7 +457,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 4)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-11-05T03:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
@@ -466,9 +465,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 	i++
-	require.Equal(t, parseTime(t, "2023-11-05T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
-	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
-	i++
+	// no 05:00 hour since 04:00 to 05:00 UTC are same because of DST fall back
 	require.Equal(t, parseTime(t, "2023-11-05T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 	i++
@@ -585,13 +582,15 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *test
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 6)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	i++
+	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
@@ -619,7 +618,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
-	require.Len(t, rows, 5)
+	require.Len(t, rows, 6)
 	i := 0
 	require.Equal(t, parseTime(t, "2023-03-12T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
@@ -629,6 +628,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T06:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+	i++
+	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T07:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["total_records"])
