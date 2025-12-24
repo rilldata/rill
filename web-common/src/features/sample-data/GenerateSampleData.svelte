@@ -8,7 +8,8 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  export let initializeProject: boolean;
+  export let type: "button" | "modal" = "button";
+  export let initializeProject: boolean = false;
   export let open = false;
 
   $: ({ instanceId } = $runtime);
@@ -47,7 +48,7 @@
 
 <Dialog.Root bind:open>
   <Dialog.Trigger asChild let:builder>
-    {#if initializeProject}
+    {#if type === "button"}
       <Button builders={[builder]} large>
         <SparklesIcon size="14px" />
         <span>Generate sample data</span>

@@ -1,105 +1,113 @@
 <script lang="ts">
-  import { IconSpaceFixer } from "../../components/button";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Button from "../../components/button/Button.svelte";
-  import Add from "../../components/icons/Add.svelte";
-  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import ImportData from "@rilldata/web-common/components/icons/ImportData.svelte";
+  import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { createResourceAndNavigate } from "@rilldata/web-common/features/file-explorer/new-files.ts";
+  import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants.ts";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes.ts";
+  import { PresentationIcon } from "lucide-svelte";
 
   $: ({ instanceId } = $runtime);
 
-  let steps: OnboardingStep[];
-  $: instance = createRuntimeServiceGetInstance(instanceId, {
-    sensitive: true,
-  });
-  $: olapConnector = $instance.data?.instance?.olapConnector;
-  $: if (olapConnector) {
-    steps = olapConnector === "duckdb" ? duckDbSteps : nonDuckDbSteps;
+  const unpackExampleProject = createRuntimeServiceUnpackExample();
+
+  async function unpackProject(example: (typeof EXAMPLES)[number]) {
+    await behaviourEvent?.fireSplashEvent(
+      example
+        ? BehaviourEventAction.ExampleAdd
+        : BehaviourEventAction.ProjectEmpty,
+      BehaviourEventMedium.Card,
+      MetricsEventSpace.Workspace,
+      example?.name,
+    );
+
+    try {
+      await $unpackExampleProject.mutateAsync({
+        instanceId,
+        data: {
+          name: example.name,
+          force: true,
+        },
+      });
+
+      setTimeout(() => {
+        if (window.location.search.includes("redirect=true"))
+          window.location.reload();
+      }, 5000);
+    } catch {
+      // no-op
+    }
   }
-
-  interface OnboardingStep {
-    id: string;
-    heading: string;
-    description: string;
-  }
-
-  // Onboarding steps for DuckDB OLAP driver
-  const duckDbSteps: OnboardingStep[] = [
-    {
-      id: "source",
-      heading: "Import your data source",
-      description:
-        "Click 'Add data' or drag a file (Parquet, NDJSON, or CSV) into this window.",
-    },
-    {
-      id: "model",
-      heading: "Model your sources into one big table",
-      description:
-        "Build intuition about your sources and use SQL to model them into an analytics-ready resource.",
-    },
-    {
-      id: "metrics",
-      heading: "Define your metrics and dimensions",
-      description:
-        "Define aggregate metrics and break out dimensions for your modeled data.",
-    },
-    {
-      id: "dashboard",
-      heading: "Explore your metrics dashboard",
-      description:
-        "Interactively explore line charts and leaderboards to uncover insights.",
-    },
-  ];
-
-  // Onboarding steps for non-DuckDB OLAP drivers (ClickHouse, Druid)
-  const nonDuckDbSteps: OnboardingStep[] = [
-    {
-      id: "table",
-      heading: "Explore your tables",
-      description:
-        "Find your database tables in the left-hand-side navigational sidebar.",
-    },
-    {
-      id: "metrics",
-      heading: "Define your metrics and dimensions",
-      description:
-        "Define aggregate metrics and break out dimensions for your tables.",
-    },
-    {
-      id: "dashboard",
-      heading: "Explore your metrics dashboard",
-      description:
-        "Interactively explore line charts and leaderboards to uncover insights.",
-    },
-  ];
 </script>
 
 <div class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full">
-  <div class="text-center">
-    <div class="font-bold">Getting started</div>
-    <p>Building data intuition at every step of analysis</p>
+  <div class="flex flex-row text-center gap-x-8">
+    <div
+      class="flex flex-col w-64 p-6 gap-y-4 bg-card border rounded-md shadow-sm"
+    >
+      <h3>Import data</h3>
+      <div>Add or drag a file here (Parquet, NDJSON, CSV).</div>
+      <div class="mx-auto">
+        <ImportData />
+      </div>
+      <Button type="primary" onClick={addSourceModal.open}>+ Add Data</Button>
+    </div>
+
+    <div class="flex flex-col w-64 gap-y-8">
+      <GenerateSampleData />
+      <Button
+        type="secondary"
+        onClick={() => createResourceAndNavigate(ResourceKind.Model)}
+        large
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          color={resourceColorMapping[ResourceKind.Model]}
+          size="16px"
+        />
+        Create blank model
+      </Button>
+      <Button
+        type="secondary"
+        onClick={() => createResourceAndNavigate(ResourceKind.MetricsView)}
+        large
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.MetricsView]}
+          color={resourceColorMapping[ResourceKind.MetricsView]}
+          size="16px"
+        />
+        Create a metrics view
+      </Button>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild let:builder>
+          <Button type="secondary" large builders={[builder]}>
+            <PresentationIcon size="16px" />
+            Try demo projects
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content side="right" align="start">
+          {#each EXAMPLES as example (example.name)}
+            <DropdownMenu.Item on:click={() => unpackProject(example)}>
+              {example.name}
+            </DropdownMenu.Item>
+          {/each}
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
   </div>
-  <ol
-    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border"
-  >
-    {#if olapConnector}
-      {#each steps as step, i (step.heading)}
-        <li class="flex gap-x-0.5">
-          <span class="font-bold">{i + 1}.</span>
-          <div class="flex flex-col items-start gap-y-2">
-            <div class="flex flex-col items-start gap-y-0.5">
-              <h5 class="font-bold">{step.heading}</h5>
-              <p>{step.description}</p>
-            </div>
-            {#if step.id === "source"}
-              <Button type="secondary" onClick={addSourceModal.open}>
-                <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                <span>Add data</span>
-              </Button>
-            {/if}
-          </div>
-        </li>
-      {/each}
-    {/if}
-  </ol>
 </div>
