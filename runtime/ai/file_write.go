@@ -26,10 +26,18 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
-	Diff       string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
-	IsNewFile  bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
-	Resources  []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
-	ParseError string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	Diff             string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
+	IsNewFile        bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
+	PreviousContents string           `json:"previous_contents,omitempty" jsonschema:"The previous contents of the file before the write. Usually omitted due to size."`
+	Resources        []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
+	ParseError       string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+}
+
+var _ LLMRedactor = (*WriteFileResult)(nil)
+
+func (r *WriteFileResult) Redact() error {
+	r.PreviousContents = ""
+	return nil
 }
 
 func (t *WriteFile) Spec() *mcp.Tool {
@@ -97,10 +105,11 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 
 	// Done
 	return &WriteFileResult{
-		Diff:       diff,
-		IsNewFile:  isNewFile,
-		Resources:  resources,
-		ParseError: parseErr,
+		Diff:             diff,
+		IsNewFile:        isNewFile,
+		PreviousContents: originalContent,
+		Resources:        resources,
+		ParseError:       parseErr,
 	}, nil
 }
 

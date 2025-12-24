@@ -51,6 +51,8 @@ import type {
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceRevertConversationWritesBody,
+  RuntimeServiceSetConversationCheckpointBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -96,6 +98,8 @@ import type {
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1RenameFileResponse,
+  V1RevertConversationWritesResponse,
+  V1SetConversationCheckpointResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -1393,6 +1397,234 @@ export function createRuntimeServiceGetConversation<
   return query;
 }
 
+/**
+ * @summary SetConversationCheckpoint updates a conversation's checkpoint to after a specified message.
+ */
+export const runtimeServiceSetConversationCheckpoint = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceSetConversationCheckpointBody: RuntimeServiceSetConversationCheckpointBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SetConversationCheckpointResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/checkpoint`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceSetConversationCheckpointBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceSetConversationCheckpointMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceSetConversationCheckpoint>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceSetConversationCheckpointBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceSetConversationCheckpoint>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceSetConversationCheckpointBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceSetConversationCheckpoint"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceSetConversationCheckpoint>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceSetConversationCheckpointBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceSetConversationCheckpoint(
+      instanceId,
+      conversationId,
+      data,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceSetConversationCheckpointMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceSetConversationCheckpoint>>
+>;
+export type RuntimeServiceSetConversationCheckpointMutationBody =
+  RuntimeServiceSetConversationCheckpointBody;
+export type RuntimeServiceSetConversationCheckpointMutationError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary SetConversationCheckpoint updates a conversation's checkpoint to after a specified message.
+ */
+export const createRuntimeServiceSetConversationCheckpoint = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceSetConversationCheckpoint>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceSetConversationCheckpointBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceSetConversationCheckpoint>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceSetConversationCheckpointBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceSetConversationCheckpointMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary RevertConversationWrites reverts file writes made in a conversation with the AI.
+ */
+export const runtimeServiceRevertConversationWrites = (
+  instanceId: string,
+  conversationId: string,
+  runtimeServiceRevertConversationWritesBody: RuntimeServiceRevertConversationWritesBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RevertConversationWritesResponse>({
+    url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}/revert-writes`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRevertConversationWritesBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceRevertConversationWritesMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRevertConversationWrites>>,
+    TError,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceRevertConversationWritesBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceRevertConversationWrites>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceRevertConversationWritesBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceRevertConversationWrites"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRevertConversationWrites>>,
+    {
+      instanceId: string;
+      conversationId: string;
+      data: RuntimeServiceRevertConversationWritesBody;
+    }
+  > = (props) => {
+    const { instanceId, conversationId, data } = props ?? {};
+
+    return runtimeServiceRevertConversationWrites(
+      instanceId,
+      conversationId,
+      data,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceRevertConversationWritesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRevertConversationWrites>>
+>;
+export type RuntimeServiceRevertConversationWritesMutationBody =
+  RuntimeServiceRevertConversationWritesBody;
+export type RuntimeServiceRevertConversationWritesMutationError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary RevertConversationWrites reverts file writes made in a conversation with the AI.
+ */
+export const createRuntimeServiceRevertConversationWrites = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRevertConversationWrites>>,
+      TError,
+      {
+        instanceId: string;
+        conversationId: string;
+        data: RuntimeServiceRevertConversationWritesBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceRevertConversationWrites>>,
+  TError,
+  {
+    instanceId: string;
+    conversationId: string;
+    data: RuntimeServiceRevertConversationWritesBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceRevertConversationWritesMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 Note that it covers all registered tools, but the current user may not have access to all of them.

@@ -249,6 +249,22 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // SetConversationCheckpoint updates a conversation's checkpoint to after a specified message.
+  rpc SetConversationCheckpoint(SetConversationCheckpointRequest) returns (SetConversationCheckpointResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/checkpoint",
+      body: "*"
+    };
+  }
+
+  // RevertConversationWrites reverts file writes made in a conversation with the AI.
+  rpc RevertConversationWrites(RevertConversationWritesRequest) returns (RevertConversationWritesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/revert-writes",
+      body: "*"
+    };
+  }
+
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
@@ -942,6 +958,7 @@ message Conversation {
   string owner_id = 2;
   string title = 3;
   string user_agent = 6;
+  string checkpoint_message_id = 8;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
   repeated Message messages = 7; // NOTE: Deprecated.
@@ -1010,6 +1027,36 @@ message GetConversationRequest {
 message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.SetConversationCheckpoint
+message SetConversationCheckpointRequest {
+  // Instance the conversation belongs to.
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Conversation ID to checkpoint.
+  string conversation_id = 2;
+  // Message ID of the latest message *before* the checkpoint.
+  string message_id = 3;
+}
+
+// Response message for RuntimeService.SetConversationCheckpoint
+message SetConversationCheckpointResponse {}
+
+// Request message for RuntimeService.RevertConversationWrites
+message RevertConversationWritesRequest {
+  // Instance the conversation belongs to.
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Conversation ID to revert writes for.
+  string conversation_id = 2;
+  // Start message ID to revert from (inclusive). If empty, it reverts from after the conversation's checkpoint.
+  string from_message_id = 3;
+  // End message ID to revert to (inclusive). If empty, it reverts to the latest message.
+  string to_message_id = 4;
+}
+
+// Response message for RuntimeService.RevertConversationWrites
+message RevertConversationWritesResponse {
+  repeated string restored_paths = 1;
 }
 
 // Request message for RuntimeService.ListTools

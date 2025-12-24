@@ -10194,6 +10194,8 @@ func (m *Conversation) validate(all bool) error {
 
 	// no validation rules for UserAgent
 
+	// no validation rules for CheckpointMessageId
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -11400,6 +11402,460 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetConversationResponseValidationError{}
+
+// Validate checks the field values on SetConversationCheckpointRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *SetConversationCheckpointRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SetConversationCheckpointRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SetConversationCheckpointRequestMultiError, or nil if none found.
+func (m *SetConversationCheckpointRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SetConversationCheckpointRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_SetConversationCheckpointRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := SetConversationCheckpointRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for ConversationId
+
+	// no validation rules for MessageId
+
+	if len(errors) > 0 {
+		return SetConversationCheckpointRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SetConversationCheckpointRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// SetConversationCheckpointRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SetConversationCheckpointRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SetConversationCheckpointRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SetConversationCheckpointRequestMultiError) AllErrors() []error { return m }
+
+// SetConversationCheckpointRequestValidationError is the validation error
+// returned by SetConversationCheckpointRequest.Validate if the designated
+// constraints aren't met.
+type SetConversationCheckpointRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SetConversationCheckpointRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SetConversationCheckpointRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SetConversationCheckpointRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SetConversationCheckpointRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SetConversationCheckpointRequestValidationError) ErrorName() string {
+	return "SetConversationCheckpointRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SetConversationCheckpointRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSetConversationCheckpointRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SetConversationCheckpointRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SetConversationCheckpointRequestValidationError{}
+
+var _SetConversationCheckpointRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on SetConversationCheckpointResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *SetConversationCheckpointResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SetConversationCheckpointResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// SetConversationCheckpointResponseMultiError, or nil if none found.
+func (m *SetConversationCheckpointResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SetConversationCheckpointResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SetConversationCheckpointResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SetConversationCheckpointResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// SetConversationCheckpointResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SetConversationCheckpointResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SetConversationCheckpointResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SetConversationCheckpointResponseMultiError) AllErrors() []error { return m }
+
+// SetConversationCheckpointResponseValidationError is the validation error
+// returned by SetConversationCheckpointResponse.Validate if the designated
+// constraints aren't met.
+type SetConversationCheckpointResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SetConversationCheckpointResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SetConversationCheckpointResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SetConversationCheckpointResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SetConversationCheckpointResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SetConversationCheckpointResponseValidationError) ErrorName() string {
+	return "SetConversationCheckpointResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SetConversationCheckpointResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSetConversationCheckpointResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SetConversationCheckpointResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SetConversationCheckpointResponseValidationError{}
+
+// Validate checks the field values on RevertConversationWritesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevertConversationWritesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevertConversationWritesRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevertConversationWritesRequestMultiError, or nil if none found.
+func (m *RevertConversationWritesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevertConversationWritesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_RevertConversationWritesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := RevertConversationWritesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for ConversationId
+
+	// no validation rules for FromMessageId
+
+	// no validation rules for ToMessageId
+
+	if len(errors) > 0 {
+		return RevertConversationWritesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevertConversationWritesRequestMultiError is an error wrapping multiple
+// validation errors returned by RevertConversationWritesRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RevertConversationWritesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevertConversationWritesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevertConversationWritesRequestMultiError) AllErrors() []error { return m }
+
+// RevertConversationWritesRequestValidationError is the validation error
+// returned by RevertConversationWritesRequest.Validate if the designated
+// constraints aren't met.
+type RevertConversationWritesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevertConversationWritesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevertConversationWritesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevertConversationWritesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevertConversationWritesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevertConversationWritesRequestValidationError) ErrorName() string {
+	return "RevertConversationWritesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevertConversationWritesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevertConversationWritesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevertConversationWritesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevertConversationWritesRequestValidationError{}
+
+var _RevertConversationWritesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on RevertConversationWritesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *RevertConversationWritesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevertConversationWritesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevertConversationWritesResponseMultiError, or nil if none found.
+func (m *RevertConversationWritesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevertConversationWritesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RevertConversationWritesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevertConversationWritesResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// RevertConversationWritesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RevertConversationWritesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevertConversationWritesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevertConversationWritesResponseMultiError) AllErrors() []error { return m }
+
+// RevertConversationWritesResponseValidationError is the validation error
+// returned by RevertConversationWritesResponse.Validate if the designated
+// constraints aren't met.
+type RevertConversationWritesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevertConversationWritesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevertConversationWritesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevertConversationWritesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevertConversationWritesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevertConversationWritesResponseValidationError) ErrorName() string {
+	return "RevertConversationWritesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevertConversationWritesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevertConversationWritesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevertConversationWritesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevertConversationWritesResponseValidationError{}
 
 // Validate checks the field values on ListToolsRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

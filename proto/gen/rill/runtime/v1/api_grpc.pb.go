@@ -19,47 +19,49 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RuntimeService_Ping_FullMethodName                    = "/rill.runtime.v1.RuntimeService/Ping"
-	RuntimeService_Health_FullMethodName                  = "/rill.runtime.v1.RuntimeService/Health"
-	RuntimeService_InstanceHealth_FullMethodName          = "/rill.runtime.v1.RuntimeService/InstanceHealth"
-	RuntimeService_ListInstances_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListInstances"
-	RuntimeService_GetInstance_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetInstance"
-	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
-	RuntimeService_EditInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/EditInstance"
-	RuntimeService_DeleteInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteInstance"
-	RuntimeService_ListFiles_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListFiles"
-	RuntimeService_WatchFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchFiles"
-	RuntimeService_GetFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetFile"
-	RuntimeService_PutFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PutFile"
-	RuntimeService_CreateDirectory_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateDirectory"
-	RuntimeService_DeleteFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/DeleteFile"
-	RuntimeService_RenameFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/RenameFile"
-	RuntimeService_ListExamples_FullMethodName            = "/rill.runtime.v1.RuntimeService/ListExamples"
-	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
-	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
-	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
-	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
-	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
-	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
-	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
-	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
-	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
-	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
-	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
-	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
-	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
-	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
-	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
-	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
-	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
-	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
-	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
-	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
-	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
-	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
-	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
-	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
-	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
+	RuntimeService_Ping_FullMethodName                      = "/rill.runtime.v1.RuntimeService/Ping"
+	RuntimeService_Health_FullMethodName                    = "/rill.runtime.v1.RuntimeService/Health"
+	RuntimeService_InstanceHealth_FullMethodName            = "/rill.runtime.v1.RuntimeService/InstanceHealth"
+	RuntimeService_ListInstances_FullMethodName             = "/rill.runtime.v1.RuntimeService/ListInstances"
+	RuntimeService_GetInstance_FullMethodName               = "/rill.runtime.v1.RuntimeService/GetInstance"
+	RuntimeService_CreateInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/CreateInstance"
+	RuntimeService_EditInstance_FullMethodName              = "/rill.runtime.v1.RuntimeService/EditInstance"
+	RuntimeService_DeleteInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/DeleteInstance"
+	RuntimeService_ListFiles_FullMethodName                 = "/rill.runtime.v1.RuntimeService/ListFiles"
+	RuntimeService_WatchFiles_FullMethodName                = "/rill.runtime.v1.RuntimeService/WatchFiles"
+	RuntimeService_GetFile_FullMethodName                   = "/rill.runtime.v1.RuntimeService/GetFile"
+	RuntimeService_PutFile_FullMethodName                   = "/rill.runtime.v1.RuntimeService/PutFile"
+	RuntimeService_CreateDirectory_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateDirectory"
+	RuntimeService_DeleteFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/DeleteFile"
+	RuntimeService_RenameFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_ListExamples_FullMethodName              = "/rill.runtime.v1.RuntimeService/ListExamples"
+	RuntimeService_UnpackExample_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackExample"
+	RuntimeService_UnpackEmpty_FullMethodName               = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
+	RuntimeService_GenerateMetricsViewFile_FullMethodName   = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
+	RuntimeService_GenerateCanvasFile_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
+	RuntimeService_GenerateResolver_FullMethodName          = "/rill.runtime.v1.RuntimeService/GenerateResolver"
+	RuntimeService_GenerateRenderer_FullMethodName          = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
+	RuntimeService_QueryResolver_FullMethodName             = "/rill.runtime.v1.RuntimeService/QueryResolver"
+	RuntimeService_GetLogs_FullMethodName                   = "/rill.runtime.v1.RuntimeService/GetLogs"
+	RuntimeService_WatchLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/WatchLogs"
+	RuntimeService_ListResources_FullMethodName             = "/rill.runtime.v1.RuntimeService/ListResources"
+	RuntimeService_WatchResources_FullMethodName            = "/rill.runtime.v1.RuntimeService/WatchResources"
+	RuntimeService_GetResource_FullMethodName               = "/rill.runtime.v1.RuntimeService/GetResource"
+	RuntimeService_GetExplore_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetExplore"
+	RuntimeService_GetModelPartitions_FullMethodName        = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
+	RuntimeService_CreateTrigger_FullMethodName             = "/rill.runtime.v1.RuntimeService/CreateTrigger"
+	RuntimeService_ListConnectorDrivers_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
+	RuntimeService_AnalyzeConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
+	RuntimeService_ListNotifierConnectors_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
+	RuntimeService_ListConversations_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConversations"
+	RuntimeService_GetConversation_FullMethodName           = "/rill.runtime.v1.RuntimeService/GetConversation"
+	RuntimeService_SetConversationCheckpoint_FullMethodName = "/rill.runtime.v1.RuntimeService/SetConversationCheckpoint"
+	RuntimeService_RevertConversationWrites_FullMethodName  = "/rill.runtime.v1.RuntimeService/RevertConversationWrites"
+	RuntimeService_ListTools_FullMethodName                 = "/rill.runtime.v1.RuntimeService/ListTools"
+	RuntimeService_Complete_FullMethodName                  = "/rill.runtime.v1.RuntimeService/Complete"
+	RuntimeService_CompleteStreaming_FullMethodName         = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
+	RuntimeService_IssueDevJWT_FullMethodName               = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
+	RuntimeService_AnalyzeVariables_FullMethodName          = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -145,6 +147,10 @@ type RuntimeServiceClient interface {
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*GetConversationResponse, error)
+	// SetConversationCheckpoint updates a conversation's checkpoint to after a specified message.
+	SetConversationCheckpoint(ctx context.Context, in *SetConversationCheckpointRequest, opts ...grpc.CallOption) (*SetConversationCheckpointResponse, error)
+	// RevertConversationWrites reverts file writes made in a conversation with the AI.
+	RevertConversationWrites(ctx context.Context, in *RevertConversationWritesRequest, opts ...grpc.CallOption) (*RevertConversationWritesResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
@@ -553,6 +559,26 @@ func (c *runtimeServiceClient) GetConversation(ctx context.Context, in *GetConve
 	return out, nil
 }
 
+func (c *runtimeServiceClient) SetConversationCheckpoint(ctx context.Context, in *SetConversationCheckpointRequest, opts ...grpc.CallOption) (*SetConversationCheckpointResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetConversationCheckpointResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_SetConversationCheckpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) RevertConversationWrites(ctx context.Context, in *RevertConversationWritesRequest, opts ...grpc.CallOption) (*RevertConversationWritesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevertConversationWritesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_RevertConversationWrites_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListToolsResponse)
@@ -695,6 +721,10 @@ type RuntimeServiceServer interface {
 	ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error)
+	// SetConversationCheckpoint updates a conversation's checkpoint to after a specified message.
+	SetConversationCheckpoint(context.Context, *SetConversationCheckpointRequest) (*SetConversationCheckpointResponse, error)
+	// RevertConversationWrites reverts file writes made in a conversation with the AI.
+	RevertConversationWrites(context.Context, *RevertConversationWritesRequest) (*RevertConversationWritesResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
@@ -823,6 +853,12 @@ func (UnimplementedRuntimeServiceServer) ListConversations(context.Context, *Lis
 }
 func (UnimplementedRuntimeServiceServer) GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) SetConversationCheckpoint(context.Context, *SetConversationCheckpointRequest) (*SetConversationCheckpointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConversationCheckpoint not implemented")
+}
+func (UnimplementedRuntimeServiceServer) RevertConversationWrites(context.Context, *RevertConversationWritesRequest) (*RevertConversationWritesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevertConversationWrites not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTools not implemented")
@@ -1487,6 +1523,42 @@ func _RuntimeService_GetConversation_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_SetConversationCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetConversationCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).SetConversationCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_SetConversationCheckpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).SetConversationCheckpoint(ctx, req.(*SetConversationCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_RevertConversationWrites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevertConversationWritesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).RevertConversationWrites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_RevertConversationWrites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).RevertConversationWrites(ctx, req.(*RevertConversationWritesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListToolsRequest)
 	if err := dec(in); err != nil {
@@ -1708,6 +1780,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConversation",
 			Handler:    _RuntimeService_GetConversation_Handler,
+		},
+		{
+			MethodName: "SetConversationCheckpoint",
+			Handler:    _RuntimeService_SetConversationCheckpoint_Handler,
+		},
+		{
+			MethodName: "RevertConversationWrites",
+			Handler:    _RuntimeService_RevertConversationWrites_Handler,
 		},
 		{
 			MethodName: "ListTools",

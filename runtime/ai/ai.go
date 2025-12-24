@@ -538,6 +538,14 @@ func (s *BaseSession) UpdateUserAgent(ctx context.Context, userAgent string) err
 	return nil
 }
 
+func (s *BaseSession) UpdateCheckpoint(ctx context.Context, messageID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dto.CheckpointMessageID = messageID
+	s.dtoDirty = true
+	return nil
+}
+
 func (s *BaseSession) Subscribe() chan *Message {
 	ch := make(chan *Message)
 	s.mu.Lock()
@@ -1251,6 +1259,13 @@ type LLMMarshaler interface {
 	ToLLM() *aiv1.ContentBlock
 }
 
+// LLMRedactor is an interface for tool args and results types that want to redact fields before being sent to the LLM.
+// It is called for all tool calls/results, regardless of who invoked them.
+// It is called on a copy of the content and can modify the content in-place.
+type LLMRedactor interface {
+	Redact() error
+}
+
 // UnmarshalMessageContent unmarshals the content of a message based on its content type and tool.
 func (s *Session) UnmarshalMessageContent(m *Message) (any, error) {
 	if m.ContentType != MessageContentTypeJSON {
@@ -1293,10 +1308,36 @@ func (s *Session) UnmarshalMessageContent(m *Message) (any, error) {
 
 // NewCompletionMessage converts the message to an aiv1.CompletionMessage
 func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, error) {
+	// Unmarshal the message if possible
+	var contentVal any
+	if m.ContentType == MessageContentTypeJSON {
+		var err error
+		contentVal, err = s.UnmarshalMessageContent(m)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Apply content redaction if implemented.
+	contentData := m.Content
+	if v, ok := contentVal.(LLMRedactor); ok && v != nil {
+		err := v.Redact()
+		if err != nil {
+			return nil, fmt.Errorf("failed to redact content for message: %w", err)
+		}
+
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal redacted content for message: %w", err)
+		}
+		contentData = string(data)
+	}
+
+	// Create baseline block
 	role := RoleAssistant
 	block := &aiv1.ContentBlock{
 		BlockType: &aiv1.ContentBlock_Text{
-			Text: m.Content,
+			Text: contentData,
 		},
 	}
 
@@ -1308,11 +1349,7 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 			role = RoleUser
 
 			// If the tool args have a custom marshaler, use it.
-			args, err := s.UnmarshalMessageContent(m)
-			if err != nil {
-				return nil, err
-			}
-			if args, ok := args.(LLMMarshaler); ok && args != nil {
+			if args, ok := contentVal.(LLMMarshaler); ok && args != nil {
 				block = args.ToLLM()
 			}
 		} else {
@@ -1346,17 +1383,13 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 			switch m.ContentType {
 			case MessageContentTypeJSON:
 				// If the tool result has a custom marshaler, use it.
-				result, err := s.UnmarshalMessageContent(m)
-				if err != nil {
-					return nil, err
-				}
-				if result, ok := result.(LLMMarshaler); ok && result != nil {
+				if result, ok := contentVal.(LLMMarshaler); ok && result != nil {
 					block = result.ToLLM()
 				}
 			case MessageContentTypeError:
 				block = &aiv1.ContentBlock{
 					BlockType: &aiv1.ContentBlock_Text{
-						Text: fmt.Sprintf("Execution error: %s", m.Content),
+						Text: fmt.Sprintf("Execution error: %s", contentData),
 					},
 				}
 			}
@@ -1366,7 +1399,7 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 				BlockType: &aiv1.ContentBlock_ToolResult{
 					ToolResult: &aiv1.ToolResult{
 						Id:      completionMessageID(m.ParentID),
-						Content: m.Content,
+						Content: contentData,
 						IsError: m.ContentType == MessageContentTypeError,
 					},
 				},
