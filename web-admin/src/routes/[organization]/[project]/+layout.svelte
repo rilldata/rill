@@ -101,7 +101,6 @@
   // ) as AuthContext;
 
   $: if (mockedUserId && mockedUserDeploymentCredentials) {
-   
     void httpClient.updateQuerySettings({
       instanceId: mockedUserDeploymentCredentials.instanceId,
       host: mockedUserDeploymentCredentials.runtimeHost,

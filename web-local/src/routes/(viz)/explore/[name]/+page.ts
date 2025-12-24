@@ -1,7 +1,6 @@
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
-import { get } from "svelte/store";
 
 export const load = async ({ params, depends }) => {
   const instanceId = httpClient.getInstanceId();
