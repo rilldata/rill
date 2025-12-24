@@ -39,9 +39,12 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 		{
-			Key:    "azure_storage_connection_string",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "azure_storage_connection_string",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Azure Connection String",
+			Description: "Azure connection string for storage account",
+			Placeholder: "Paste your Azure connection string here",
+			Secret:      true,
 		},
 	},
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.

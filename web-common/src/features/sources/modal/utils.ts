@@ -1,12 +1,21 @@
 import { humanReadableErrorMessage } from "../errors/errors";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-import type { ClickHouseConnectorType } from "./constants";
+import type { MultiStepFormSchema } from "./types";
+import {
+  findRadioEnumKey,
+  getRadioEnumOptions,
+  getRequiredFieldsByEnumValue,
+} from "../../templates/schema-utils";
+import { isStepMatch } from "./connector-schemas";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.
  * Useful for validating optional text inputs.
  */
 export function isEmpty(val: any) {
+  // Booleans are never empty (false is a valid value)
+  if (typeof val === "boolean") return false;
+
   return (
     val === undefined ||
     val === null ||
@@ -84,24 +93,91 @@ export function hasOnlyDsn(
 }
 
 /**
- * Applies ClickHouse Cloud-specific default requirements for connector values.
- * - For ClickHouse Cloud: enforces `ssl: true`
- * - Otherwise returns values unchanged
+ * Returns true when the active multi-step auth method has missing or invalid
+ * required fields. Falls back to configured default/first auth method.
  */
-export function applyClickHouseCloudRequirements(
-  connectorName: string | undefined,
-  connectorType: ClickHouseConnectorType,
-  values: Record<string, unknown>,
-): Record<string, unknown> {
-  // Only force SSL for ClickHouse Cloud when the user is using individual params.
-  // DSN strings encapsulate their own protocol, so we should not inject `ssl` there.
-  const isDsnBased = "dsn" in values;
-  const shouldEnforceSSL =
-    connectorName === "clickhouse" &&
-    connectorType === "clickhouse-cloud" &&
-    !isDsnBased;
-  if (shouldEnforceSSL) {
-    return { ...values, ssl: true } as Record<string, unknown>;
+export function isMultiStepConnectorDisabled(
+  schema: MultiStepFormSchema | null,
+  paramsFormValue: Record<string, unknown>,
+  paramsFormErrors: Record<string, unknown>,
+  currentStep: "connector" | "source" = "connector",
+) {
+  if (!schema || !paramsFormValue) return true;
+
+  const authInfo = getRadioEnumOptions(schema);
+
+  // Handle schemas without auth method radio selector (e.g., BigQuery, Athena)
+  if (!authInfo) {
+    const requiredFields = (schema.required ?? []).filter((fieldId) =>
+      isStepMatch(schema, fieldId, currentStep),
+    );
+    if (!requiredFields.length) return false;
+
+    return !requiredFields.every((fieldId) => {
+      const value = paramsFormValue[fieldId];
+      const errorsForField = paramsFormErrors[fieldId] as any;
+      const hasErrors = Boolean(errorsForField?.length);
+      return !isEmpty(value) && !hasErrors;
+    });
   }
-  return values;
+
+  const options = authInfo?.options ?? [];
+  const authKey = authInfo?.key || findRadioEnumKey(schema);
+  const methodFromForm =
+    authKey && paramsFormValue?.[authKey] != null
+      ? String(paramsFormValue[authKey])
+      : undefined;
+  const hasValidFormSelection = options.some(
+    (opt) => opt.value === methodFromForm,
+  );
+  const method =
+    (hasValidFormSelection && methodFromForm) ||
+    authInfo?.defaultValue ||
+    options[0]?.value;
+
+  if (!method) return true;
+
+  // Selecting "public" should always enable the button for multi-step auth flows.
+  if (method === "public") return false;
+
+  // When on source step and auth method isn't set (user skipped connector step),
+  // validate all source step required fields regardless of auth method
+  if (currentStep === "source" && !methodFromForm) {
+    const allSourceRequired = new Set<string>();
+    const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
+      step: currentStep,
+    });
+
+    // Collect all source step required fields across all auth methods
+    for (const fields of Object.values(requiredByMethod)) {
+      fields.forEach((field) => allSourceRequired.add(field));
+    }
+
+    const sourceRequiredFields = Array.from(allSourceRequired);
+    if (!sourceRequiredFields.length) return false;
+
+    return !sourceRequiredFields.every((fieldId) => {
+      const value = paramsFormValue[fieldId];
+      const errorsForField = paramsFormErrors[fieldId] as any;
+      const hasErrors = Boolean(errorsForField?.length);
+      return !isEmpty(value) && !hasErrors;
+    });
+  }
+
+  const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
+    step: currentStep,
+  });
+  const requiredFields = requiredByMethod[method] ?? [];
+
+  // If no required fields found for this step, button should be enabled
+  if (!requiredFields.length) return false;
+
+  // Check if all required fields are filled and have no errors
+  return !requiredFields.every((fieldId) => {
+    if (!isStepMatch(schema, fieldId, currentStep)) return true;
+    const value = paramsFormValue[fieldId];
+    const errorsForField = paramsFormErrors[fieldId] as any;
+    const hasErrors = Boolean(errorsForField?.length);
+    return !isEmpty(value) && !hasErrors;
+  });
 }

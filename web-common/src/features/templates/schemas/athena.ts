@@ -1,0 +1,107 @@
+import type { MultiStepFormSchema } from "./types";
+
+export const athenaSchema: MultiStepFormSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    aws_access_key_id: {
+      type: "string",
+      title: "AWS Access Key ID",
+      description: "AWS access key ID",
+      "x-placeholder": "Enter AWS access key ID",
+      "x-secret": true,
+      "x-step": "connector",
+    },
+    aws_secret_access_key: {
+      type: "string",
+      title: "AWS Secret Access Key",
+      description: "AWS secret access key",
+      "x-placeholder": "Enter AWS secret access key",
+      "x-secret": true,
+      "x-step": "connector",
+    },
+    output_location: {
+      type: "string",
+      title: "S3 Output Location",
+      description: "S3 URI for query results",
+      "x-placeholder": "s3://my-bucket/athena-results/",
+      "x-step": "connector",
+    },
+    region: {
+      type: "string",
+      title: "AWS Region",
+      description: "AWS region where Athena is configured",
+      "x-placeholder": "us-east-1",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    role_session_name: {
+      type: "string",
+      title: "Role Session Name",
+      description:
+        "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+      "x-placeholder": "my-session-name",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    external_id: {
+      type: "string",
+      title: "External ID",
+      description:
+        "Optional external ID to use when assuming an AWS role for cross-account access.",
+      "x-placeholder": "external-id-123",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+
+    workgroup: {
+      type: "string",
+      title: "Workgroup",
+      description: "Athena workgroup name (optional)",
+      "x-placeholder": "primary",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    aws_access_token: {
+      type: "string",
+      title: "AWS Access Token",
+      description: "AWS access token for authentication (optional)",
+      "x-placeholder": "Enter AWS access token",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow Host Access",
+      description:
+        "Allow the connector to access the host's network (optional)",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    sql: {
+      type: "string",
+      title: "SQL Query",
+      description: "SQL query to extract data from Athena",
+      "x-placeholder": "SELECT * FROM my_table;",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
+    },
+  },
+  required: [
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    "output_location",
+    "sql",
+    "name",
+  ],
+};

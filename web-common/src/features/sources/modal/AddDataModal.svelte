@@ -21,7 +21,12 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import {
+    OLAP_ENGINES,
+    ALL_CONNECTORS,
+    SOURCES,
+    MULTI_STEP_CONNECTORS,
+  } from "./constants";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
@@ -34,22 +39,35 @@
     query: {
       // arrange connectors in the way we would like to display them
       select: (data) => {
-        data.connectors =
-          data.connectors &&
-          data.connectors
-            .filter(
-              // Only show connectors in SOURCES or OLAP_ENGINES
-              (a) =>
-                a.name &&
-                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
-            )
-            .sort(
-              // CAST SAFETY: we have filtered out any connectors that
-              // don't have a `name` in the previous filter
-              (a, b) =>
-                ALL_CONNECTORS.indexOf(a.name as string) -
-                ALL_CONNECTORS.indexOf(b.name as string),
-            );
+        let connectors = data.connectors || [];
+
+        // Clone clickhouse connector to create clickhousecloud (frontend-only)
+        const clickhouseConnector = connectors.find(
+          (c) => c.name === "clickhouse",
+        );
+        if (clickhouseConnector) {
+          const clickhouseCloudConnector: V1ConnectorDriver = {
+            ...clickhouseConnector,
+            name: "clickhousecloud",
+            displayName: "ClickHouse Cloud",
+          };
+          connectors = [...connectors, clickhouseCloudConnector];
+        }
+
+        data.connectors = connectors
+          .filter(
+            // Only show connectors in SOURCES or OLAP_ENGINES
+            (a) =>
+              a.name &&
+              (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
+          )
+          .sort(
+            // CAST SAFETY: we have filtered out any connectors that
+            // don't have a `name` in the previous filter
+            (a, b) =>
+              ALL_CONNECTORS.indexOf(a.name as string) -
+              ALL_CONNECTORS.indexOf(b.name as string),
+          );
         return data;
       },
     },
@@ -121,7 +139,8 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
-    selectedConnector?.name === "gcs" ||
+    MULTI_STEP_CONNECTORS.includes(selectedConnector?.name ?? "") ||
+    selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&

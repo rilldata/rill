@@ -6,7 +6,10 @@ import {
   type V1Source,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
+import { getDriverNameForConnector } from "../connectors/connectors-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
+import { getConnectorSchema } from "./modal/connector-schemas";
+import { findGroupedEnumKeys } from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
 const SOURCE_MODEL_FILE_TOP = `# Model YAML
@@ -51,17 +54,22 @@ export function compileSourceYAML(
       if (isSecretProperty) {
         // For source files, we include secret properties
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          connector.name as string,
+          getDriverNameForConnector(connector.name as string),
           key,
         )} }}"`;
       }
 
       if (key === "sql") {
-        // For SQL, we want to use a multi-line string
-        return `${key}: |\n  ${value
+        // For SQL, we want to use a multi-line string and add a dev section
+        const sqlLines = value
           .split("\n")
-          .map((line) => `${line}`)
-          .join("\n")}`;
+          .map((line) => `  ${line}`)
+          .join("\n");
+        const devSqlLines = value
+          .split("\n")
+          .map((line) => `    ${line}`)
+          .join("\n");
+        return `${key}: |\n${sqlLines}\n\ndev:\n  ${key}: |\n${devSqlLines}\n      limit 10000`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -74,7 +82,7 @@ export function compileSourceYAML(
     .join("\n");
 
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${getDriverNameForConnector(connector.name as string)}\n\n` +
     compiledKeyValues
   );
 }
@@ -202,6 +210,130 @@ export function maybeRewriteToDuckDb(
 }
 
 /**
+ * Prepare connector form values before submission.
+ * Handles special transformations like ClickHouse auth_method → managed.
+ */
+export function prepareConnectorFormData(
+  connector: V1ConnectorDriver,
+  formValues: Record<string, unknown>,
+): Record<string, unknown> {
+  const processedValues = { ...formValues };
+
+  // Get schema to check for grouped fields
+  const schema = connector.name ? getConnectorSchema(connector.name) : null;
+
+  if (schema) {
+    // Find all grouped enum keys (auth_method, connection_method, etc.)
+    const groupedEnumKeys = findGroupedEnumKeys(schema);
+
+    if (groupedEnumKeys.length > 0) {
+      // Collect all fields that should be included based on active selections
+      const allowedFields = new Set<string>();
+
+      // For each grouped enum, find which fields are in the active option's group
+      for (const enumKey of groupedEnumKeys) {
+        const enumValue = processedValues[enumKey] as string | undefined;
+        const prop = schema.properties?.[enumKey];
+        const groupedFields = prop?.["x-grouped-fields"];
+
+        if (enumValue && groupedFields && groupedFields[enumValue]) {
+          // Add all fields from the active group
+          for (const fieldKey of groupedFields[enumValue]) {
+            allowedFields.add(fieldKey);
+          }
+        }
+      }
+
+      // Also include fields that aren't controlled by any grouped enum (standalone fields)
+      // Collect all fields that ARE controlled by some group
+      const allGroupedFieldKeys = new Set<string>();
+      for (const enumKey of groupedEnumKeys) {
+        const prop = schema.properties?.[enumKey];
+        const groupedFields = prop?.["x-grouped-fields"];
+        if (groupedFields) {
+          for (const fieldArray of Object.values(groupedFields)) {
+            for (const fieldKey of fieldArray) {
+              allGroupedFieldKeys.add(fieldKey);
+            }
+          }
+        }
+      }
+
+      // Filter processedValues to only include allowed fields
+      const filteredValues: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(processedValues)) {
+        // Include if:
+        // - It's in the allowed fields for active groups, OR
+        // - It's not controlled by any group (standalone field), OR
+        // - It's a grouped enum key itself (we'll remove it later if needed)
+        if (allowedFields.has(key) || !allGroupedFieldKeys.has(key)) {
+          filteredValues[key] = value;
+        }
+      }
+
+      // ClickHouse: translate auth_method to managed boolean BEFORE removing grouped enum keys
+      if (connector.name === "clickhouse" && processedValues.auth_method) {
+        const authMethod = processedValues.auth_method as string;
+
+        if (authMethod === "rill-managed") {
+          // Rill-managed: set managed=true, mode=readwrite
+          filteredValues.managed = true;
+          filteredValues.mode = "readwrite";
+        } else if (authMethod === "self-managed") {
+          // Self-managed: set managed=false
+          filteredValues.managed = false;
+        }
+      }
+
+      // ClickHouse Cloud: set managed=false, ssl will be in filteredValues if using parameters tab
+      if (connector.name === "clickhousecloud") {
+        filteredValues.managed = false;
+        // Only set ssl=true if it's in the filtered values (i.e., using parameters tab)
+        if ("ssl" in filteredValues) {
+          filteredValues.ssl = true;
+        }
+      }
+
+      // Replace with filtered values
+      Object.keys(processedValues).forEach(
+        (key) => delete processedValues[key],
+      );
+      Object.assign(processedValues, filteredValues);
+
+      // Remove the grouped enum keys themselves - they're UI-only fields
+      for (const enumKey of groupedEnumKeys) {
+        delete processedValues[enumKey];
+      }
+    }
+  } else {
+    // No schema, handle ClickHouse auth_method the old way
+    if (connector.name === "clickhouse" && processedValues.auth_method) {
+      const authMethod = processedValues.auth_method as string;
+
+      if (authMethod === "rill-managed") {
+        // Rill-managed: set managed=true, mode=readwrite
+        processedValues.managed = true;
+        processedValues.mode = "readwrite";
+      } else if (authMethod === "self-managed") {
+        // Self-managed: set managed=false
+        processedValues.managed = false;
+      }
+
+      // Remove the UI-only auth_method field
+      delete processedValues.auth_method;
+    }
+
+    // ClickHouse Cloud: set managed=false and ssl=true (only in non-schema path)
+    if (connector.name === "clickhousecloud") {
+      processedValues.managed = false;
+      processedValues.ssl = true;
+    }
+  }
+
+  return processedValues;
+}
+
+/**
  * Process form data for sources, including DuckDB rewrite logic and placeholder handling.
  * This serves as a single source of truth for both preview and submission.
  */
@@ -212,35 +344,46 @@ export function prepareSourceFormData(
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
 
+  // Apply DuckDB rewrite logic FIRST (before stripping connector properties)
+  // This is important for connectors like SQLite that need connector properties
+  // to build the SQL query before they're removed.
+  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
+    connector,
+    processedValues,
+  );
+
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
   if (connector.configProperties) {
     const connectorPropertyKeys = new Set(
       connector.configProperties.map((p) => p.key).filter(Boolean),
     );
-    for (const key of Object.keys(processedValues)) {
+    for (const key of Object.keys(rewrittenFormValues)) {
       if (connectorPropertyKeys.has(key)) {
-        delete processedValues[key];
+        delete rewrittenFormValues[key];
       }
+    }
+  }
+
+  // Also strip UI-only grouped enum keys (auth_method, connection_method, mode, etc.)
+  const schema = connector.name ? getConnectorSchema(connector.name) : null;
+  if (schema) {
+    const groupedEnumKeys = findGroupedEnumKeys(schema);
+    for (const key of groupedEnumKeys) {
+      delete rewrittenFormValues[key];
     }
   }
 
   // Handle placeholder values for required source properties
-  if (connector.sourceProperties) {
-    for (const prop of connector.sourceProperties) {
-      if (prop.key && prop.required && !(prop.key in processedValues)) {
+  if (rewrittenConnector.sourceProperties) {
+    for (const prop of rewrittenConnector.sourceProperties) {
+      if (prop.key && prop.required && !(prop.key in rewrittenFormValues)) {
         if (prop.placeholder) {
-          processedValues[prop.key] = prop.placeholder;
+          rewrittenFormValues[prop.key] = prop.placeholder;
         }
       }
     }
   }
-
-  // Apply DuckDB rewrite logic
-  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
-    connector,
-    processedValues,
-  );
 
   return [rewrittenConnector, rewrittenFormValues];
 }

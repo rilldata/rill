@@ -1,0 +1,163 @@
+import type { MultiStepFormSchema } from "./types";
+
+export const s3Schema: MultiStepFormSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    auth_method: {
+      type: "string",
+      title: "Authentication method",
+      description: "Choose how to authenticate to S3",
+      enum: ["access_keys", "public"],
+      default: "access_keys",
+      "x-display": "radio",
+      "x-enum-labels": ["Access keys", "Public"],
+      "x-enum-descriptions": [
+        "Use AWS access key ID and secret access key.",
+        "Access publicly readable buckets without credentials.",
+      ],
+      "x-grouped-fields": {
+        access_keys: [
+          "aws_access_key_id",
+          "aws_secret_access_key",
+          "region",
+          "endpoint",
+          "aws_role_arn",
+          "aws_role_session_name",
+          "aws_external_id",
+          "path_prefixes",
+          "allow_host_access",
+        ],
+        public: [],
+      },
+      "x-step": "connector",
+    },
+    aws_access_key_id: {
+      type: "string",
+      title: "Access Key ID",
+      description: "AWS access key ID for the bucket",
+      "x-placeholder": "Enter AWS access key ID",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+    },
+    aws_secret_access_key: {
+      type: "string",
+      title: "Secret Access Key",
+      description: "AWS secret access key for the bucket",
+      "x-placeholder": "Enter AWS secret access key",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+    },
+    region: {
+      type: "string",
+      title: "Region",
+      description:
+        "Rill uses your default AWS region unless you set it explicitly.",
+      "x-placeholder": "us-east-1",
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+    },
+    endpoint: {
+      type: "string",
+      title: "Endpoint",
+      description:
+        "Override the S3 endpoint (for S3-compatible services like R2/MinIO).",
+      "x-placeholder": "https://s3.example.com",
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
+    },
+    aws_role_arn: {
+      type: "string",
+      title: "AWS Role ARN",
+      description: "AWS Role ARN to assume",
+      "x-placeholder": "arn:aws:iam::123456789012:role/MyRole",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
+    },
+    aws_role_session_name: {
+      type: "string",
+      title: "Role Session Name",
+      description:
+        "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
+      "x-placeholder": "my-session-name",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
+    },
+    aws_external_id: {
+      type: "string",
+      title: "External ID",
+      description:
+        "Optional external ID to use when assuming an AWS role for cross-account access.",
+      "x-placeholder": "external-id-123",
+      "x-secret": true,
+      "x-step": "connector",
+      "x-visible-if": { auth_method: "access_keys" },
+      "x-advanced": true,
+    },
+    path_prefixes: {
+      type: "string",
+      title: "Path prefixes",
+      description: "Prefixes to include in the model",
+      "x-placeholder": "['logs/', 'data/']",
+      "x-step": "connector",
+      "x-advanced": true,
+      "x-visible-if": { auth_method: "access_keys" },
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow host access",
+      description:
+        "Allow the Rill instance to access the S3 bucket from the host machine.",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+      "x-visible-if": { auth_method: "access_keys" },
+    },
+    path: {
+      type: "string",
+      title: "S3 URI",
+      description: "Path to your S3 bucket or prefix",
+      pattern: "^s3://[^/]+(/.*)?$",
+      errorMessage: {
+        pattern: "Enter an S3 URI like s3://bucket or s3://bucket/path",
+      },
+      "x-placeholder": "s3://bucket/path",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
+    },
+  },
+  required: ["path", "name"],
+  allOf: [
+    {
+      if: { properties: { auth_method: { const: "access_keys" } } },
+      then: {
+        required: [
+          "aws_access_key_id",
+          "aws_secret_access_key",
+          "path",
+          "name",
+        ],
+      },
+    },
+    {
+      if: { properties: { auth_method: { const: "public" } } },
+      then: {
+        required: ["path", "name"],
+      },
+    },
+  ],
+};
