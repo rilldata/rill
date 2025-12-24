@@ -552,6 +552,7 @@ const metricsViewReducers = {
         rowLimit: limit,
         expanded: {},
         nestedRowLimits: {},
+        outermostRowLimit: undefined,
         rowPage: 1,
         activeCell: null,
       };
@@ -570,6 +571,16 @@ const metricsViewReducers = {
           ...exploreState.pivot.nestedRowLimits,
           [expandIndex]: limit,
         },
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotOutermostRowLimit(name: string, limit: number) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        outermostRowLimit: limit,
         activeCell: null,
       };
     });

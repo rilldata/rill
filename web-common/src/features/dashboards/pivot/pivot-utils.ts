@@ -54,7 +54,12 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     pivot,
   } = config;
 
-  const { sorting, tableMode: tableModeKey, rowLimit } = pivot;
+  const {
+    sorting,
+    tableMode: tableModeKey,
+    rowLimit,
+    outermostRowLimit,
+  } = pivot;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -63,7 +68,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${rowLimit ?? "all"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
 }
 
 /**

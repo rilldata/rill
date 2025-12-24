@@ -2,6 +2,7 @@ export const SHOW_MORE_BUTTON = "__rill_type_SHOW_MORE_BUTTON";
 export const LOADING_CELL = "__rill_type_LOADING_CELL";
 
 export const MAX_ROW_EXPANSION_LIMIT = 100;
+export const ROW_LIMIT_INCREMENT_AFTER_100 = 50;
 
 /**
  * Allowed row limit values for the pivot table.
@@ -17,12 +18,14 @@ export const PIVOT_ROW_LIMIT_OPTIONS = [5, 10, 25, 50, 100] as const;
  * @param rowLimit - The maximum number of rows to fetch (undefined = unlimited)
  * @param rowOffset - The current row offset (for pagination)
  * @param pageSize - The number of rows per page
+ * @param respectPageSize - Whether to constrain by page size (default: true). Set to false for explicit user-requested limits.
  * @returns The limit to apply as a string for the query
  */
 export function calculateEffectiveRowLimit(
   rowLimit: number | undefined,
   rowOffset: number,
   pageSize: number,
+  respectPageSize: boolean = true,
 ): string {
   if (rowLimit === undefined) {
     return pageSize.toString();
@@ -30,6 +33,11 @@ export function calculateEffectiveRowLimit(
   const remainingRows = rowLimit - rowOffset;
   if (remainingRows <= 0) {
     return "0";
+  }
+  // When respectPageSize is false (e.g., for explicit user-requested limits like "Show more" button),
+  // don't constrain by page size to allow fetching the full requested amount
+  if (!respectPageSize) {
+    return remainingRows.toString();
   }
   return Math.min(remainingRows, pageSize).toString();
 }
