@@ -8,7 +8,6 @@
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let conversationManager: ConversationManager;
@@ -71,6 +70,12 @@
     editor.commands.startMention();
   }
 
+  function startChat(prompt: string) {
+    editor.commands.setContent(prompt);
+    // Wait for `value` and `canSend` to update before sending the message.`
+    tick().then(sendMessage).catch(console.error);
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
@@ -95,10 +100,7 @@
       },
     });
 
-    const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
-      editor.commands.setContent(prompt);
-      editor.commands.focus();
-    });
+    const unsubStartChatEvent = eventBus.on("start-chat", startChat);
 
     chatMounted.set(true);
 
