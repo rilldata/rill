@@ -8,7 +8,7 @@
   import type { SuperForm } from "sveltekit-superforms/client";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
@@ -17,7 +17,7 @@
 
   $: ({ form } = superFormInstance);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
   $: metricsView = useMetricsViewValidSpec(instanceId, metricsViewName);

@@ -28,11 +28,12 @@
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import "@rilldata/web-common/app.css";
+  import type { PageData } from "./$types";
 
-  export let data;
+  export let data: PageData;
 
   $: ({
-    projectPermissions,
+    project,
     organizationPermissions,
     organizationLogoUrl,
     organizationFaviconUrl,
@@ -42,6 +43,8 @@
     params: { organization },
     url: { pathname },
   } = $page);
+
+  $: instanceId = project?.prodDeployment.runtimeInstanceId;
 
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -115,6 +118,8 @@
       },
     };
   }
+
+  $: projectPermissions = project?.projectPermissions;
 </script>
 
 <svelte:head>
@@ -127,36 +132,42 @@
 </svelte:head>
 
 <QueryClientProvider client={queryClient}>
-  <main
-    class="flex flex-col bg-surface"
-    class:min-h-screen={!$dynamicHeight}
-    class:h-screen={!$dynamicHeight}
-    use:pageContentSizeHandler
-  >
-    <BannerCenter />
-    {#if !hideBillingManager}
-      <BillingBannerManager {organization} {organizationPermissions} />
-    {/if}
-    {#if !isEmbed && !hideTopBar}
-      <TopNavigationBar
-        createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
-        manageProjectMembers={projectPermissions?.manageProjectMembers}
-        manageProjectAdmins={projectPermissions?.manageProjectAdmins}
-        manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-        manageOrgMembers={organizationPermissions?.manageOrgMembers}
-        readProjects={organizationPermissions?.readProjects}
-        {organizationLogoUrl}
-        {planDisplayName}
-      />
-
-      {#if withinOnlyOrg}
-        <OrganizationTabs {organization} {organizationPermissions} {pathname} />
+  {#key instanceId}
+    <main
+      class="flex flex-col bg-surface"
+      class:min-h-screen={!$dynamicHeight}
+      class:h-screen={!$dynamicHeight}
+      use:pageContentSizeHandler
+    >
+      <BannerCenter />
+      {#if !hideBillingManager}
+        <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
-    {/if}
-    <ErrorBoundary>
-      <slot />
-    </ErrorBoundary>
-  </main>
+      {#if !isEmbed && !hideTopBar}
+        <TopNavigationBar
+          createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
+          manageProjectMembers={projectPermissions?.manageProjectMembers}
+          manageProjectAdmins={projectPermissions?.manageProjectAdmins}
+          manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
+          manageOrgMembers={organizationPermissions?.manageOrgMembers}
+          readProjects={organizationPermissions?.readProjects}
+          {organizationLogoUrl}
+          {planDisplayName}
+        />
+
+        {#if withinOnlyOrg}
+          <OrganizationTabs
+            {organization}
+            {organizationPermissions}
+            {pathname}
+          />
+        {/if}
+      {/if}
+      <ErrorBoundary>
+        <slot />
+      </ErrorBoundary>
+    </main>
+  {/key}
 </QueryClientProvider>
 
 <NotificationCenter />

@@ -17,7 +17,7 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
@@ -29,7 +29,7 @@
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     autoSave,
@@ -66,7 +66,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      $runtime.instanceId,
+      instanceId,
       newTitle,
       filePath,
       fileName,

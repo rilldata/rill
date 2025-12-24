@@ -1,14 +1,14 @@
 import { dev } from "$app/environment";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 /** INITIALIZE RUNTIME STORE **/
 // When testing, we need to use the relative path to the server
 const HOST = dev ? "http://localhost:9009" : "";
 const INSTANCE_ID = "default";
 
-const runtimeInit = {
-  host: HOST,
+void httpClient.updateQuerySettings({
   instanceId: INSTANCE_ID,
-};
-
-runtime.set(runtimeInit);
+  host: HOST,
+  token: undefined,
+  authContext: "user",
+});

@@ -29,13 +29,12 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/query-core";
 import type {
   CreateQueryOptions,
   CreateQueryResult,
 } from "@tanstack/svelte-query";
-import { derived, get } from "svelte/store";
+import { derived, } from "svelte/store";
 
 export type AlertPreviewResponse = {
   rows: V1MetricsViewAggregationResponseDataItem[];
@@ -47,16 +46,17 @@ export function getAlertPreviewData(
   formValues: AlertFormValues,
   filters: Filters,
   timeControls: TimeControls,
+  instanceId: string,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
     [
-      useExploreValidSpec(get(runtime).instanceId, formValues.exploreName),
+      useExploreValidSpec(instanceId, formValues.exploreName),
       filters.getStore(),
       timeControls.getStore(),
     ],
     ([validExploreSpec, filtersState, timeControlsState], set) =>
       createQueryServiceMetricsViewAggregation(
-        get(runtime).instanceId,
+        instanceId,
         formValues.metricsViewName,
         getAlertPreviewQueryRequest(
           formValues,

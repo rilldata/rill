@@ -24,6 +24,7 @@ import {
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
 import { expect } from "vitest";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 export function resetDashboardStore() {
   metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
@@ -124,6 +125,7 @@ export function initStateManagers(metricsViewName?: string) {
     queryClient,
     metricsViewName,
     exploreName,
+    instanceId: httpClient.getInstanceId(),
   });
 
   return { stateManagers, queryClient };

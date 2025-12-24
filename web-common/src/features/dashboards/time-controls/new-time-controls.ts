@@ -312,7 +312,7 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
   return RILL_PERIOD_TO_DATE.includes(value as RillPeriodToDate);
 }
 
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import {
   getAllowedGrains,
   GrainAliasToV1TimeGrain,
@@ -351,7 +351,7 @@ export async function deriveInterval(
     const parsed = parseRillTime(name);
 
     // We have a RillTime string
-    const instanceId = get(runtime).instanceId;
+    const instanceId = httpClient.getInstanceId();
     const cacheBust = name.includes("now");
 
     const response = await fetchTimeRanges({

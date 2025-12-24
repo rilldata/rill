@@ -1,10 +1,10 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { writable } from "svelte/store";
 import {
-  createRuntimeServiceGetInstance,
+  getRuntimeServiceGetInstanceQueryKey,
+  runtimeServiceGetInstance,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
-import { runtime } from "../runtime-client/runtime-store";
 
 class FeatureFlag {
   private _internal = false;
@@ -69,47 +69,40 @@ class FeatureFlags {
     this.ready = new Promise<void>((resolve) => {
       this._resolveReady = resolve;
     });
-
-    const updateFlags = (userFlags: V1InstanceFeatureFlags) => {
-      this._resolveReady();
-
-      // First, reset all user flags to their defaults
-      const userFlagKeys = Object.keys(this).filter((key) => {
-        const flag = this[key];
-        return flag instanceof FeatureFlag && !flag.internalOnly;
-      });
-
-      for (const key of userFlagKeys) {
-        const flag = this[key] as FeatureFlag;
-        flag.resetToDefault();
-      }
-
-      // Then apply project-specific overrides
-      for (const key in userFlags) {
-        const flag = this[key] as FeatureFlag | undefined;
-        if (!flag || flag.internalOnly) continue;
-        flag.set(userFlags[key]);
-      }
-    };
-
-    // Responsively update flags based rill.yaml
-    runtime.subscribe((runtime) => {
-      if (!runtime?.instanceId) return;
-
-      createRuntimeServiceGetInstance(
-        runtime.instanceId,
-        undefined,
-        {
-          query: {
-            select: (data) => data?.instance?.featureFlags,
-          },
-        },
-        queryClient,
-      ).subscribe((features) => {
-        if (features.data) updateFlags(features.data);
-      });
-    });
   }
+
+  updateFlags = (userFlags: V1InstanceFeatureFlags) => {
+    this._resolveReady();
+
+    // First, reset all user flags to their defaults
+    const userFlagKeys = Object.keys(this).filter((key) => {
+      const flag = this[key];
+      return flag instanceof FeatureFlag && !flag.internalOnly;
+    });
+
+    for (const key of userFlagKeys) {
+      const flag = this[key] as FeatureFlag;
+      flag.resetToDefault();
+    }
+
+    // Then apply project-specific overrides
+    for (const key in userFlags) {
+      const flag = this[key] as FeatureFlag | undefined;
+      if (!flag || flag.internalOnly) continue;
+      flag.set(userFlags[key]);
+    }
+  };
+
+  setInstanceId = async (instanceId: string) => {
+    const response = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetInstanceQueryKey(instanceId),
+      queryFn: () => runtimeServiceGetInstance(instanceId),
+    });
+
+    if (response?.instance?.featureFlags) {
+      this.updateFlags(response?.instance?.featureFlags);
+    }
+  };
 
   get set() {
     return (bool: boolean, ...toggleFlags: FeatureFlagKey[]) => {

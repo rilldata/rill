@@ -100,7 +100,7 @@ import type {
   V1UnpackExampleResponse,
 } from "../index.schemas";
 
-import { httpClient } from "../../http-client";
+import httpClient from "../../http-client";
 import type { ErrorType } from "../../http-client";
 
 type AwaitedInput<T> = PromiseLike<T> | T;

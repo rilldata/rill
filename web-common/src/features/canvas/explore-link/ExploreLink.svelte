@@ -3,7 +3,7 @@
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
   import { useExploreAvailability } from "@rilldata/web-common/features/explore-mappers/explore-validation";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { derived } from "svelte/store";
   import { useTransformCanvasToExploreState } from "./canvas-explore-transformer";
   import ExploreLink from "@rilldata/web-common/features/explores/explore-link/ExploreLink.svelte";
@@ -11,7 +11,7 @@
   export let component: BaseCanvasComponent<ComponentWithMetricsView>;
   export let mode: "inline" | "dropdown-item" | "icon-button" = "inline";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 

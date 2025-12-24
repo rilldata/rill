@@ -18,7 +18,7 @@
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
@@ -27,7 +27,7 @@
 
   export let hasUnsaved: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {

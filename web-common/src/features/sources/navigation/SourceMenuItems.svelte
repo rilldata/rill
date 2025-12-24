@@ -21,10 +21,10 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1Source } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { WandIcon, GitBranch } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     refreshSource,
@@ -37,9 +37,7 @@
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  const queryClient = useQueryClient();
-
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   const { ai } = featureFlags;
 

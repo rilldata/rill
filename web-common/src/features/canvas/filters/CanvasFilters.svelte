@@ -8,7 +8,7 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
   import { Tooltip } from "bits-ui";
@@ -24,7 +24,7 @@
 
   let showDefaultItem = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: ({
     canvasEntity: {
       filterManager: {

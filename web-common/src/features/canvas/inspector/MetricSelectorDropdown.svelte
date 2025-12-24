@@ -8,7 +8,7 @@
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { isString } from "../../workspaces/visual-util";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import type { ComponentSpec } from "../components/types";
@@ -17,7 +17,7 @@
   export let key: AllKeys<ComponentSpec>;
   export let inputParam: ComponentInputParam;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: spec = component.specStore;
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -10,7 +10,7 @@
   export let initializeProject: boolean;
   export let open = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   const FORM_ID = "generate-sample-data-form";
 

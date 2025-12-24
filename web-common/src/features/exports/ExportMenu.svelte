@@ -12,10 +12,10 @@
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
-  import { runtime } from "../../runtime-client/runtime-store";
+
   import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let disabled: boolean = false;
   export let workspace = false;
@@ -24,9 +24,10 @@
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
 
+  const instanceId = httpClient.getInstanceId();
+
   let showScheduledReportDialog = false;
   let open = false;
-
   let exportQuery: V1Query | undefined;
   let scheduledReportQuery: V1Query | undefined;
 
@@ -46,7 +47,7 @@
   }) {
     const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
-      instanceId: get(runtime).instanceId,
+      instanceId,
       data: {
         query: exportQuery,
         format,
@@ -59,7 +60,7 @@
           }),
       },
     });
-    const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
+    const downloadUrl = `${httpClient.getHost()}${result.downloadUrlPath}`;
     window.open(downloadUrl, "_self");
   }
 

@@ -12,7 +12,7 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { runtime } from "../../../runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasureForComparison } from "./pivot-utils";
@@ -176,7 +176,7 @@ export function getPivotAggregationRequest({
   }
 
   return {
-    instanceId: get(runtime).instanceId,
+    instanceId: httpClient.getInstanceId(),
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,

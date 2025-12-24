@@ -12,7 +12,9 @@ import type { FetchQueryOptions } from "@tanstack/query-core";
 export function areAllProjectsHibernating(organization: string) {
   return createAdminServiceListProjectsForOrganization(
     organization,
-    undefined,
+    {
+      pageSize: 100,
+    },
     {
       query: {
         enabled: !!organization,
@@ -26,8 +28,14 @@ export function areAllProjectsHibernating(organization: string) {
 
 export async function fetchAllProjectsHibernating(organization: string) {
   const projectsResp = await queryClient.fetchQuery({
-    queryKey: getAdminServiceListProjectsForOrganizationQueryKey(organization),
-    queryFn: () => adminServiceListProjectsForOrganization(organization),
+    queryKey: getAdminServiceListProjectsForOrganizationQueryKey(organization, {
+      pageSize: 100,
+    }),
+    queryFn: () =>
+      adminServiceListProjectsForOrganization(organization, {
+        pageSize: 100,
+      }),
+
     staleTime: Infinity,
   });
   return projectsResp.projects?.every((p) => !p.primaryDeploymentId) ?? false;

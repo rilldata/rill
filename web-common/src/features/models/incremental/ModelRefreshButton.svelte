@@ -9,14 +9,14 @@
     type V1Resource,
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges: boolean;
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: isIncrementalModel = resource?.model?.spec?.incremental;
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;

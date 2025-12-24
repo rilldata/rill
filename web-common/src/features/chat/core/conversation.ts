@@ -8,7 +8,6 @@ import {
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   SSEFetchClient,
   SSEHttpError,
@@ -24,6 +23,7 @@ import {
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 /**
  * Individual conversation state management.
@@ -266,7 +266,7 @@ export class Conversation {
     this.sseClient.stop();
 
     // Build URL with stream parameter (like other streaming endpoints)
-    const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
+    const baseUrl = `${httpClient.getHost()}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
 
     // Prepare request body for POST request
     const requestBody = {

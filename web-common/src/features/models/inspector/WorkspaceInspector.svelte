@@ -25,7 +25,7 @@
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import InspectorHeaderGrid from "../../../layout/inspector/InspectorHeaderGrid.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
   import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
   import References from "./References.svelte";
@@ -44,7 +44,7 @@
 
   let showColumns = true;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: source = resource?.source;
   $: model = resource?.model;
 

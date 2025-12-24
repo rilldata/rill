@@ -16,7 +16,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { Folder } from "lucide-svelte";
   import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { useDirectoryNamesInDirectory } from "../entity-management/file-selectors";
@@ -35,7 +35,7 @@
   $: id = `${dir.path}-nav-entry`;
   $: expanded = $directoryState[dir.path];
   $: padding = getPaddingFromPath(dir.path);
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 

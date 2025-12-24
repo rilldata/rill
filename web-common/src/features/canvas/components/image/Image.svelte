@@ -1,7 +1,6 @@
 <script lang="ts">
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import type { ImageComponent } from "./";
   import { getImagePosition } from "./util";
@@ -10,7 +9,7 @@
 
   $: ({ specStore } = component);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: imageProperties = $specStore;
 
   $: ({ title, description, show_description_as_tooltip, alignment, url } =

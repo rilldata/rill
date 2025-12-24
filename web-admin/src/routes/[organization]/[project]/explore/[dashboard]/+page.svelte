@@ -16,7 +16,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { PageData } from "./$types";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
@@ -25,7 +25,7 @@
   export let data: PageData;
   $: ({ project } = data);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: ({
     organization: orgName,
     project: projectName,

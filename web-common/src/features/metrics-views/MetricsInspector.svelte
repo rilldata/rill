@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import SimpleMessage from "../../layout/inspector/SimpleMessage.svelte";
   import { createConnectorServiceOLAPGetTable } from "../../runtime-client";
@@ -16,7 +16,7 @@
   export let databaseSchema: string;
   export let table: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ remoteContent } = fileArtifact);

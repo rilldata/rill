@@ -2,10 +2,9 @@ import {
   queryServiceMetricsViewTimeRanges,
   queryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 import { Interval, DateTime, type DateTimeUnit } from "luxon";
 import { GrainAliasToOrder } from "@rilldata/web-common/lib/time/new-grains";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 const GRAINS = ["Y", "Q", "M", "W", "D", "H", "m", "s"] as const;
 
@@ -336,7 +335,7 @@ function generateFirstNPeriodTests(metadata: TimeMetadata, n: number = 3) {
 }
 
 export async function runTests(metricsViewName: string) {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
 
   let failures = 1;
 

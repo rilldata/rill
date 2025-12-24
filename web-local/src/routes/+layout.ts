@@ -1,8 +1,7 @@
 export const ssr = false;
 
 import { redirect } from "@sveltejs/kit";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceListFilesQueryKey,
@@ -17,7 +16,7 @@ Settings.defaultLocale = "en";
 export async function load({ url, depends, untrack }) {
   depends("init");
 
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
 
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),

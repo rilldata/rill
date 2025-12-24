@@ -177,7 +177,10 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.canvasEntity.instanceId,
+      timeAndFilterStore,
+    );
   }
 
   static newComponentSpec(

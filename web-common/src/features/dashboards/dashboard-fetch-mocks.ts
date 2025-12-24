@@ -7,9 +7,9 @@ import type {
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { afterAll, beforeAll, vi } from "vitest";
 import { asyncWait } from "../../lib/waitUtils";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
@@ -19,9 +19,11 @@ export class DashboardFetchMocks {
   }[] = [];
 
   public static useDashboardFetchMocks(): DashboardFetchMocks {
-    runtime.set({
-      host: "http://localhost",
+    void httpClient.updateQuerySettings({
       instanceId: "default",
+      host: "http://localhost",
+      token: undefined,
+      authContext: "user",
     });
 
     const mock = new DashboardFetchMocks();

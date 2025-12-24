@@ -32,74 +32,33 @@
     V1DeploymentStatus,
     createAdminServiceGetCurrentUser,
     createAdminServiceGetDeploymentCredentials,
-    createAdminServiceGetProject,
     type RpcStatus,
     type V1GetProjectResponse,
   } from "@rilldata/web-admin/client";
-  import {
-    isProjectPage,
-    isPublicAlertPage,
-    isPublicReportPage,
-    isPublicURLPage,
-  } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import { isProjectPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
-  import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-  import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { CreateQueryOptions } from "@tanstack/svelte-query";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
+
+  import { type CreateQueryOptions } from "@tanstack/svelte-query";
 
   const user = createAdminServiceGetCurrentUser();
 
+  export let data;
+
   $: ({
     url: { pathname },
-    params: { organization, project, token },
+    params: { organization, project },
   } = $page);
 
   $: onProjectPage = isProjectPage($page);
-  $: onPublicURLPage = isPublicURLPage($page);
-  $: onPublicReportOrAlertPage =
-    isPublicReportPage($page) || isPublicAlertPage($page);
-  $: if (onPublicReportOrAlertPage) {
-    token = $page.url.searchParams.get("token");
-  }
-
-  /**
-   * `GetProject` with default cookie-based auth.
-   * This returns the deployment credentials for the current logged-in user.
-   */
-  $: cookieProjectQuery = createAdminServiceGetProject(
-    organization,
-    project,
-    undefined,
-    {
-      query: baseGetProjectQueryOptions,
-    },
-  );
-
-  /**
-   * `GetProject` with token-based auth.
-   * This returns the deployment credentials for anonymous users who visit a Public URL.
-   * The token is provided via the `[organization]/[project]/-/share/[token]` URL.
-   */
-  $: tokenProjectQuery = createAdminServiceGetProjectWithBearerToken(
-    organization,
-    project,
-    token,
-    undefined,
-    {
-      query: baseGetProjectQueryOptions,
-    },
-  );
-
-  $: projectQuery = onPublicURLPage ? tokenProjectQuery : cookieProjectQuery;
 
   /**
    * `GetDeploymentCredentials`
@@ -120,7 +79,10 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
-  $: ({ data: projectData, error: projectError } = $projectQuery);
+  // $: ({ data: projectData, error: projectError } = $projectQuery);
+
+  $: projectData = data.project;
+
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
     projectData?.prodDeployment?.status ===
@@ -128,15 +90,25 @@
     projectData?.prodDeployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
-  $: error = projectError as HTTPError;
+  let error: HTTPError | null = null;
 
-  $: authContext = (
-    mockedUserId && mockedUserDeploymentCredentials
-      ? "mock"
-      : onPublicURLPage
-        ? "magic"
-        : "user"
-  ) as AuthContext;
+  // $: authContext = (
+  //   mockedUserId && mockedUserDeploymentCredentials
+  //     ? "mock"
+  //     : onPublicURLPage
+  //       ? "magic"
+  //       : "user"
+  // ) as AuthContext;
+
+  $: if (mockedUserId && mockedUserDeploymentCredentials) {
+   
+    void httpClient.updateQuerySettings({
+      instanceId: mockedUserDeploymentCredentials.instanceId,
+      host: mockedUserDeploymentCredentials.runtimeHost,
+      token: mockedUserDeploymentCredentials.accessToken,
+      authContext: "mock",
+    });
+  }
 
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
@@ -180,19 +152,6 @@
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
-    <RuntimeProvider
-      instanceId={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.instanceId
-        : projectData.prodDeployment.runtimeInstanceId}
-      host={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.runtimeHost
-        : projectData.prodDeployment.runtimeHost}
-      jwt={mockedUserId && mockedUserDeploymentCredentials
-        ? mockedUserDeploymentCredentials.accessToken
-        : projectData.jwt}
-      {authContext}
-    >
-      <slot />
-    </RuntimeProvider>
+    <slot />
   {/if}
 {/if}

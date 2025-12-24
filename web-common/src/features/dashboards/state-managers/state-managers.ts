@@ -10,8 +10,7 @@ import {
   type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import {
@@ -39,7 +38,7 @@ import {
 } from "../leaderboard-context-column";
 
 export type StateManagers = {
-  runtime: Writable<Runtime>;
+  instanceId: string;
   metricsViewName: Writable<string>;
   exploreName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
@@ -80,10 +79,12 @@ export function createStateManagers({
   queryClient,
   metricsViewName,
   exploreName,
+  instanceId,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
   exploreName: string;
+  instanceId: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const exploreNameStore = writable(exploreName);
@@ -98,9 +99,9 @@ export function createStateManagers({
 
   const validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
-  > = derived([runtime, exploreNameStore], ([r, exploreName], set) =>
+  > = derived([exploreNameStore], ([exploreName], set) =>
     useExploreValidSpec(
-      r.instanceId,
+      instanceId,
       exploreName,
       undefined,
       queryClient,
@@ -110,10 +111,10 @@ export function createStateManagers({
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   > = derived(
-    [runtime, metricsViewNameStore, validSpecStore],
-    ([runtime, mvName, validSpec], set) =>
+    [metricsViewNameStore, validSpecStore],
+    ([mvName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
-        runtime.instanceId,
+        instanceId,
         mvName,
         {},
         {
@@ -153,7 +154,7 @@ export function createStateManagers({
   );
 
   return {
-    runtime: runtime,
+    instanceId,
     metricsViewName: metricsViewNameStore,
     exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,

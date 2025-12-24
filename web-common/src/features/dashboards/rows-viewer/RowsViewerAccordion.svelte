@@ -7,8 +7,6 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
@@ -37,12 +35,11 @@
 
   const stateManagers = getStateManagers();
   const {
+    instanceId,
     selectors: {
       pivot: { showPivot: showPivotStore },
     },
   } = stateManagers;
-
-  $: ({ instanceId } = $runtime);
 
   $: exploreState = useExploreState(exploreName);
   $: ({ whereFilter, dimensionThresholdFilters } = $exploreState);
@@ -132,7 +129,7 @@
   function getExportQuery() {
     return {
       metricsViewRowsRequest: {
-        instanceId: get(runtime).instanceId,
+        instanceId,
         metricsViewName,
         timeStart: timeRange.start,
         timeEnd: timeRange.end,

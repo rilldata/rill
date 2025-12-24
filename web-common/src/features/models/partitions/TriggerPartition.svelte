@@ -6,7 +6,7 @@
     V1ReconcileStatus,
     createRuntimeServiceCreateTrigger,
   } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { addLeadingSlash } from "../../entity-management/entity-mappers";
   import { fileArtifacts } from "../../entity-management/file-artifacts";
 
@@ -29,7 +29,7 @@
     });
   }
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   // We access the `GetResource` result store from directly within this component
   // This avoids needing to pass down the result through the table & needing to hack reactivity

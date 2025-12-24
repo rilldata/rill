@@ -11,14 +11,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let refs: V1ResourceName[];
   export let modelHasError: boolean;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   let showReferences = true;
 

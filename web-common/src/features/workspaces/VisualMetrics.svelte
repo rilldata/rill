@@ -23,7 +23,7 @@
     type MetricsViewSpecDimension,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
@@ -83,7 +83,7 @@
   };
   let storedProperties: Record<string, unknown> = {};
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,

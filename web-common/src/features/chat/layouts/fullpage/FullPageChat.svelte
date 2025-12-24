@@ -1,7 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import {
     cleanupConversationManager,
     getConversationManager,
@@ -15,7 +15,7 @@
   } from "./fullpage-store";
   import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "url",

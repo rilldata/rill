@@ -5,13 +5,13 @@
     closeResourceGraphQuickView,
     resourceGraphQuickViewState,
   } from "./quick-view-store";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 
   $: currentState = $resourceGraphQuickViewState;
   $: anchorResource = currentState.anchorResource ?? undefined;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: shouldFetchResources = currentState.open && !!instanceId;
 

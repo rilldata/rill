@@ -14,7 +14,6 @@ import {
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -76,7 +75,7 @@ export class FunnelChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    instanceId: string,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -120,10 +119,10 @@ export class FunnelChartProvider {
 
     // Create topN query for stage dimension
     const topNStageQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [ timeAndFilterStore],
+      ([$timeAndFilterStore]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
+   
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!stageDimensionName &&
@@ -155,8 +154,8 @@ export class FunnelChartProvider {
     const topNStageQuery = createQuery(topNStageQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNStageQuery],
-      ([$runtime, $timeAndFilterStore, $topNStageQuery]) => {
+      [timeAndFilterStore, topNStageQuery],
+      ([ $timeAndFilterStore, $topNStageQuery]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
@@ -203,7 +202,7 @@ export class FunnelChartProvider {
         this.combinedWhere.set(combinedWhere);
 
         const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
+      instanceId,
           config.metrics_view,
           {
             measures,

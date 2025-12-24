@@ -6,7 +6,7 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { createEventDispatcher } from "svelte";
   import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
@@ -23,7 +23,7 @@
   export let isLocalFileConnector: boolean;
   export let sourceName: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: modelsQuery = useModels(instanceId);
 

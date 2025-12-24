@@ -6,7 +6,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { useReport } from "../selectors";
 
@@ -14,7 +14,7 @@
   export let project: string;
   export let report: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   const queryClient = useQueryClient();
   const triggerReport = createAdminServiceTriggerReport();

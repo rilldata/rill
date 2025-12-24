@@ -4,7 +4,7 @@
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
@@ -17,7 +17,7 @@
 
   let isConfirmDialogOpen = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: resources = useResources(instanceId);
 

@@ -1,14 +1,13 @@
 <script lang="ts">
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import Check from "../../../components/icons/Check.svelte";
   import EyeIcon from "../../../components/icons/EyeIcon.svelte";
   import Spacer from "../../../components/icons/Spacer.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -18,7 +17,7 @@
   let viewAsMenuOpen = false;
   let open = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: mockUsers = useMockUsers(instanceId);
 </script>

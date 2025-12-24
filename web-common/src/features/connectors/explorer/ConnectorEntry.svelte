@@ -5,7 +5,7 @@
     type V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
   } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { connectorIconMapping } from "../connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors-utils";
@@ -17,7 +17,7 @@
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName);
   $: expanded = $expandedStore;
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
   });

@@ -6,7 +6,7 @@
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -15,7 +15,7 @@
   $: ({
     params: { organization, project },
   } = $page);
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: deployingDashboards = useDeployingDashboards(
     instanceId,

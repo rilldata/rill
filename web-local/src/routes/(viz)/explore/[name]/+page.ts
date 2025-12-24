@@ -1,10 +1,10 @@
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
 export const load = async ({ params, depends }) => {
-  const { instanceId } = get(runtime);
+  const instanceId = httpClient.getInstanceId();
 
   const exploreName = params.name;
 

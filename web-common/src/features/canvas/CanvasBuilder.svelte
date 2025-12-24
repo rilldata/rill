@@ -6,7 +6,7 @@
     type V1CanvasRow,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { onDestroy } from "svelte";
   import { get, writable } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -66,7 +66,7 @@
 
   $: layoutRows = $_rows;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: components = $componentsStore;
 

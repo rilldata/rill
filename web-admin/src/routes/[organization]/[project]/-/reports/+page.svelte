@@ -3,9 +3,9 @@
   import ProjectPage from "@rilldata/web-admin/features/projects/ProjectPage.svelte";
   import ReportsTable from "@rilldata/web-admin/features/scheduled-reports/listing/ReportsTable.svelte";
   import { useReports } from "@rilldata/web-admin/features/scheduled-reports/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     params: { organization, project },

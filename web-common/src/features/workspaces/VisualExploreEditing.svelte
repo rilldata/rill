@@ -20,7 +20,7 @@
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1Explore } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
   import {
@@ -48,7 +48,7 @@
   export let autoSave: boolean;
   export let switchView: () => void;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;

@@ -16,7 +16,6 @@ import {
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -64,7 +63,7 @@ export class CircularChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    instanceId: string,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -89,10 +88,10 @@ export class CircularChartProvider {
 
     // Create topN query for color dimension
     const topNColorQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore],
+      ([$timeAndFilterStore]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
+
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!colorDimensionName &&
@@ -124,8 +123,8 @@ export class CircularChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const totalQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore],
+      ([$timeAndFilterStore]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const enabled =
           !!showTotal &&
@@ -135,7 +134,7 @@ export class CircularChartProvider {
         const totalWhere = getFilterWithNullHandling(where, config.color);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
+          instanceId,
           config.metrics_view,
           {
             measures,
@@ -154,8 +153,8 @@ export class CircularChartProvider {
     const totalQuery = createQuery(totalQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, topNColorQuery, totalQuery],
-      ([$runtime, $timeAndFilterStore, $topNColorQuery, $totalQuery]) => {
+      [timeAndFilterStore, topNColorQuery, totalQuery],
+      ([$timeAndFilterStore, $topNColorQuery, $totalQuery]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
@@ -191,7 +190,7 @@ export class CircularChartProvider {
         this.combinedWhere.set(combinedWhere);
 
         const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
+          instanceId,
           config.metrics_view,
           {
             measures,

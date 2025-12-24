@@ -8,7 +8,7 @@
   import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { flexRender } from "@tanstack/svelte-table";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards } from "./selectors";
@@ -19,7 +19,7 @@
 
   const exploreColor = resourceColorMapping[ResourceKind.Explore];
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: ({
     params: { organization, project },
   } = $page);

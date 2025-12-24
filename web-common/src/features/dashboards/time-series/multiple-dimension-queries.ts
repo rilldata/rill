@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import { type Readable, derived } from "svelte/store";
-
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
@@ -78,13 +77,12 @@ export function getDimensionValuesForComparison(
 ): Readable<DimensionTopList> {
   return derived(
     [
-      ctx.runtime,
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
       dimensionSearchText,
     ],
-    ([runtime, name, dashboardStore, timeControls, searchText], set) => {
+    ([name, dashboardStore, timeControls, searchText], set) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -124,7 +122,7 @@ export function getDimensionValuesForComparison(
 
         return derived(
           createQueryServiceMetricsViewAggregation(
-            runtime.instanceId,
+            ctx.instanceId,
             name,
             {
               measures: measures.map((measure) => ({ name: measure })),
@@ -231,13 +229,8 @@ function getAggregationQueryForTopList(
   isTimeComparison: boolean = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, metricsViewName, dashboardStore, timeStore], set) => {
+    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
+    ([metricsViewName, dashboardStore, timeStore], set) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
@@ -255,7 +248,7 @@ function getAggregationQueryForTopList(
       );
 
       return createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
+        ctx.instanceId,
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),

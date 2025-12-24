@@ -26,6 +26,8 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
+import { type AuthContext } from "@rilldata/web-common/runtime-client/runtime-store.js";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 Settings.defaultLocale = "en";
 
@@ -122,18 +124,25 @@ export const load = async ({ params, url, route, depends }) => {
       organizationFaviconUrl,
       organizationThumbnailUrl,
       planDisplayName,
-      projectPermissions: <V1ProjectPermissions>{},
       token,
       organization,
     };
   }
 
   try {
-    const {
-      projectPermissions,
-      project: proj,
-      runtime: runtimeData,
-    } = await fetchProjectDeploymentDetails(organization, project, token);
+    const resp = await fetchProjectDeploymentDetails(
+      organization,
+      project,
+      token,
+    );
+    const instanceId = resp.prodDeployment?.runtimeInstanceId;
+
+    await httpClient.updateQuerySettings({
+      instanceId,
+      host: resp.prodDeployment?.runtimeHost,
+      token: resp.jwt,
+      authContext: token ? ("magic" as AuthContext) : ("user" as AuthContext),
+    });
 
     return {
       user,
@@ -142,11 +151,10 @@ export const load = async ({ params, url, route, depends }) => {
       organizationFaviconUrl,
       organizationThumbnailUrl,
       planDisplayName,
-      projectPermissions,
       token,
-      project: proj,
-      runtime: runtimeData,
+      project: resp,
       organization,
+      authContext: token ? ("magic" as AuthContext) : ("user" as AuthContext),
     };
   } catch (e) {
     if (!isAxiosError<RpcStatus>(e) || !e.response) {

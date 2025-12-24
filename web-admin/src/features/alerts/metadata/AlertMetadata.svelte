@@ -31,14 +31,14 @@
     getRuntimeServiceListResourcesQueryKey,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let project: string;
   export let alert: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: alertQuery = useAlert(instanceId, alert);
   $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);

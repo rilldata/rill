@@ -58,15 +58,10 @@ export function createMetricsViewTimeSeries(
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
+    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
+    ([metricsViewName, dashboardStore, timeControls], set) => {
       return createQueryServiceMetricsViewTimeSeries(
-        runtime.instanceId,
+        ctx.instanceId,
         metricsViewName,
         {
           measureNames: measures,

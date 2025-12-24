@@ -2,7 +2,7 @@
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import {
     cleanupConversationManager,
     getConversationManager,
@@ -20,7 +20,7 @@
 
   export let config: ChatConfig;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   // Initialize conversation manager with browser storage for conversation management
   $: conversationManager = getConversationManager(instanceId, {

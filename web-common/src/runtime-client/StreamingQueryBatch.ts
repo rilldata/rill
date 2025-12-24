@@ -5,8 +5,7 @@ import type {
   V1QueryBatchResponse,
   V1QueryResult,
 } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 type BatchQueryEntry<Type extends BatchQueryTypes> = {
   query: V1Query;
@@ -54,12 +53,11 @@ export class StreamingQueryBatch {
   }
 
   private async runBatch() {
-    const runtimeState = get(runtime);
     const queries = this.queryEntries;
     this.queryEntries = [];
 
     const headers = { "Content-Type": "application/json" };
-    const jwt = runtimeState.jwt;
+    const jwt = httpClient.getJwt();
     if (jwt) {
       headers["Authorization"] = `Bearer ${jwt.token}`;
     }
@@ -77,7 +75,7 @@ export class StreamingQueryBatch {
     });
 
     const stream = streamingFetchWrapper<{ result: V1QueryBatchResponse }>(
-      `${runtimeState.host}/v1/instances/${runtimeState.instanceId}/query/batch`,
+      `${httpClient.getHost()}/v1/instances/${httpClient.getInstanceId()}/query/batch`,
       "POST",
       body,
       headers,

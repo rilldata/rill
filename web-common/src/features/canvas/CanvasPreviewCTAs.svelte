@@ -1,12 +1,12 @@
 <script lang="ts">
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import { Button } from "../../components/button";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { featureFlags } from "../feature-flags";
 
   export let canvasName: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: canvasQuery = useCanvas(instanceId, canvasName);
   $: canvasFilePath = $canvasQuery.data?.filePath ?? "";

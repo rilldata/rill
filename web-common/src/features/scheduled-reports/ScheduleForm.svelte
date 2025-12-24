@@ -7,13 +7,13 @@
     makeTimeZoneOptions,
     ReportFrequency,
   } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { Readable } from "svelte/store";
 
   export let data: Readable<ReturnType<typeof getInitialScheduleFormValues>>;
   export let exploreName: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   // Pull the time zone options from the dashboard's spec
   $: exploreSpec = useExploreValidSpec(instanceId, exploreName);

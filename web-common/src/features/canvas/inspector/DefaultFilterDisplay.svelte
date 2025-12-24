@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { getCanvasStore } from "../state-managers/state-managers";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
@@ -7,7 +7,7 @@
 
   export let canvasName: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     canvasEntity: {
