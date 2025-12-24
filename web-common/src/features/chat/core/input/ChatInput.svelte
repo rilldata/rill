@@ -72,7 +72,7 @@
 
   function startChat(prompt: string) {
     editor.commands.setContent(prompt);
-    draftMessageStore.set(prompt);
+    // Wait for `value` and `canSend` to update before sending the message.`
     tick().then(sendMessage).catch(console.error);
   }
 
