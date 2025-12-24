@@ -255,7 +255,6 @@ export const getYupSchema = {
   athena_connector: yup.object().shape({
     aws_access_key_id: yup.string().optional(),
     aws_secret_access_key: yup.string().optional(),
-    aws_role_arn: yup.string().optional(),
     region: yup.string().optional(),
     workgroup: yup.string().optional(),
     output_location: yup.string().optional(),

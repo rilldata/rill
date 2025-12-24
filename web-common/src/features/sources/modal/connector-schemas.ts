@@ -8,13 +8,16 @@ import { druidSchema } from "../../templates/schemas/druid";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { httpsSchema } from "../../templates/schemas/https";
+import { localFileSchema } from "../../templates/schemas/local_file";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { mysqlSchema } from "../../templates/schemas/mysql";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { s3Schema } from "../../templates/schemas/s3";
+import { salesforceSchema } from "../../templates/schemas/salesforce";
 import { snowflakeSchema } from "../../templates/schemas/snowflake";
+import { sqliteSchema } from "../../templates/schemas/sqlite";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   s3: s3Schema,
@@ -33,6 +36,10 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   motherduck: motherduckSchema,
   druid: druidSchema,
   pinot: pinotSchema,
+  // Source-only connectors (no multi-step flow)
+  salesforce: salesforceSchema,
+  sqlite: sqliteSchema,
+  local_file: localFileSchema,
 };
 
 export function getConnectorSchema(

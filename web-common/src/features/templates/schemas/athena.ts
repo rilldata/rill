@@ -27,14 +27,6 @@ export const athenaSchema: MultiStepFormSchema = {
       "x-placeholder": "s3://my-bucket/athena-results/",
       "x-step": "connector",
     },
-    aws_role_arn: {
-      type: "string",
-      title: "IAM Role ARN (Optional)",
-      description: "AWS IAM role ARN to assume (optional)",
-      "x-placeholder": "arn:aws:iam::123456789012:role/MyRole",
-      "x-step": "connector",
-      "x-advanced": true,
-    },
     region: {
       type: "string",
       title: "AWS Region",

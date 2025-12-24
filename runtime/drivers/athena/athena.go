@@ -61,13 +61,6 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 		{
-			Key:         "aws_role_arn",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "IAM Role ARN",
-			Description: "AWS IAM role ARN to assume (optional)",
-			Placeholder: "arn:aws:iam::123456789012:role/MyRole",
-		},
-		{
 			Key:         "region",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "AWS Region",
