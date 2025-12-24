@@ -3,6 +3,7 @@
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { generateSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
+  import { SparklesIcon } from "lucide-svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -47,8 +48,9 @@
 <Dialog.Root bind:open>
   <Dialog.Trigger asChild let:builder>
     {#if initializeProject}
-      <Button type="ghost" builders={[builder]} large>
-        or generate sample data using AI (beta)
+      <Button builders={[builder]} large>
+        <SparklesIcon size="14px" />
+        <span>Generate sample data</span>
       </Button>
     {:else}
       <div class="hidden"></div>

@@ -65,15 +65,6 @@
 <section class="flex flex-col items-center gap-y-5">
   <Subheading>Or jump right into a project.</Subheading>
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <Card
-      disabled={!!selectedProjectName}
-      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
-    >
-      <AddCircleOutline size="2em" className="text-slate-600" />
-      <CardTitle position="middle">Start with an empty project</CardTitle>
-    </Card>
-
     {#each EXAMPLES as example (example.name)}
       <Card
         redirect
@@ -84,9 +75,24 @@
           await unpackProject(example);
         }}
       >
+        <div class="absolute top-[160px]">
+          <div class="flex flex-row items-center gap-x-1">
+            <svelte:component this={example.connectorIcon} />
+            <span>{example.connector}</span>
+          </div>
+        </div>
         <CardTitle>{example.title}</CardTitle>
         <CardDescription>{example.description}</CardDescription>
       </Card>
     {/each}
+
+    <Card
+      disabled={!!selectedProjectName}
+      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
+      on:click={() => unpackProject()}
+    >
+      <AddCircleOutline size="2em" className="text-slate-600" />
+      <CardTitle position="middle">Start with an empty project</CardTitle>
+    </Card>
   </div>
 </section>
