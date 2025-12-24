@@ -15,7 +15,7 @@
   const instanceId = httpClient.getInstanceId();
 
   $: ({
-    canvasEntity: { selectedComponent, componentsStore },
+    canvasEntity: { selectedComponent, componentsStore},
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =

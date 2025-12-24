@@ -5,7 +5,6 @@
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";

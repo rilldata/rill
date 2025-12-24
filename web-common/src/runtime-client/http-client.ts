@@ -31,12 +31,12 @@ export const createHttpClient = (
   let _instanceId = "";
 
   const client = async <T>(config: FetchWrapperOptions): Promise<T> => {
-    const interceptedConfig = { ...config };
+    // Naive request interceptors
 
-    if (_host) {
-      interceptedConfig.baseUrl = _host;
-    }
+    // Set host
+    const interceptedConfig = { ...config, baseUrl: _host };
 
+    // Set JWT
     if (_jwt && _jwt.token) {
       _jwt = await maybeWaitForFreshJWT(_jwt);
       interceptedConfig.headers = {
@@ -46,6 +46,11 @@ export const createHttpClient = (
     }
 
     return (await httpRequestQueue.add(interceptedConfig)) as Promise<T>;
+  };
+
+  client.setDefaultsForMocks = () => {
+    _host = "http://localhost";
+    _instanceId = "default";
   };
 
   client.updateQuerySettings = async ({

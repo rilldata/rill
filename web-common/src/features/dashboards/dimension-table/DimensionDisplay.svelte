@@ -16,7 +16,6 @@
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";

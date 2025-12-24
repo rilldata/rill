@@ -9,7 +9,6 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import httpClient from "@rilldata/web-common/runtime-client/http-client";
-import { get } from "svelte/store";
 
 export async function createResourceFile(
   kind: ResourceKind,

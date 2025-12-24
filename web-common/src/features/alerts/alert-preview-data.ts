@@ -34,7 +34,7 @@ import type {
   CreateQueryOptions,
   CreateQueryResult,
 } from "@tanstack/svelte-query";
-import { derived, } from "svelte/store";
+import { derived } from "svelte/store";
 
 export type AlertPreviewResponse = {
   rows: V1MetricsViewAggregationResponseDataItem[];

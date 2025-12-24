@@ -19,12 +19,7 @@ export class DashboardFetchMocks {
   }[] = [];
 
   public static useDashboardFetchMocks(): DashboardFetchMocks {
-    void httpClient.updateQuerySettings({
-      instanceId: "default",
-      host: "http://localhost",
-      token: undefined,
-      authContext: "user",
-    });
+    httpClient.setDefaultsForMocks();
 
     const mock = new DashboardFetchMocks();
 
