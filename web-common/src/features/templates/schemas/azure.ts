@@ -72,7 +72,7 @@ export const azureSchema: MultiStepFormSchema = {
       title: "Blob URI",
       description:
         "URI to the Azure blob container or directory (e.g., https://<account>.blob.core.windows.net/container)",
-      pattern: "^https?://[A-Za-z0-9.-]+\\.blob\\.core\\.windows\\.net/.+",
+      pattern: "^azure://.+",
       errorMessage: {
         pattern: "Must be an Azure URI (e.g. azure://container/path)",
       },
