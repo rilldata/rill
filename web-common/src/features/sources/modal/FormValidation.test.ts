@@ -10,6 +10,7 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
 
     const result = await schema.validate({});
     expect(result.success).toBe(false);
+    if (result.success) throw new Error("expected validation to fail");
     expect(result.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: ["aws_access_key_id"] }),
@@ -34,6 +35,7 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
 
     const result = await schema.validate({});
     expect(result.success).toBe(false);
+    if (result.success) throw new Error("expected validation to fail");
     expect(result.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: ["path"] }),
@@ -52,6 +54,7 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
       name: "valid_name",
     });
     expect(result.success).toBe(false);
+    if (result.success) throw new Error("expected validation to fail");
     expect(result.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: ["path"] })]),
     );
