@@ -17,7 +17,7 @@
     createRuntimeServiceCreateDirectory,
     createRuntimeServicePutFile,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
@@ -44,7 +44,7 @@
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile

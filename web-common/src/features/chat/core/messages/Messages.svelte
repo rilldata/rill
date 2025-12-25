@@ -1,9 +1,8 @@
 <script lang="ts">
   import { createQuery } from "@tanstack/svelte-query";
   import { afterUpdate } from "svelte";
-  import { derived } from "svelte/store";
   import { getRuntimeServiceListToolsQueryOptions } from "../../../../runtime-client";
-  import { runtime } from "../../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import { type ChatConfig } from "../types";
@@ -19,11 +18,13 @@
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
 
+  const instanceId = httpClient.getInstanceId();
+
   // Prefetch tools metadata for tool call display names
-  const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
-    getRuntimeServiceListToolsQueryOptions($runtime.instanceId),
-  );
-  const listToolsQuery = createQuery(listToolsQueryOptionsStore);
+  const listToolsQueryOptions =
+    getRuntimeServiceListToolsQueryOptions(instanceId);
+
+  const listToolsQuery = createQuery(listToolsQueryOptions);
   $: tools = $listToolsQuery.data?.tools;
 
   let messagesContainer: HTMLDivElement;

@@ -4,13 +4,13 @@ import {
   createQueryServiceExportReport,
   type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   createMutation,
   type CreateMutationOptions,
 } from "@tanstack/svelte-query";
 import type { MutationFunction } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 export type DownloadReportRequest = {
   instanceId: string;
@@ -48,7 +48,7 @@ export function createDownloadReportMutation<
         originBaseUrl: data.originBaseUrl,
       },
     });
-    const downloadUrl = `${get(runtime).host}${exportResp.downloadUrlPath}`;
+    const downloadUrl = `${httpClient.getHost()}${exportResp.downloadUrlPath}`;
     window.open(downloadUrl, "_self");
   };
 

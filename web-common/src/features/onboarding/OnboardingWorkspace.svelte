@@ -3,10 +3,10 @@
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   let steps: OnboardingStep[];
   $: instance = createRuntimeServiceGetInstance(instanceId, {

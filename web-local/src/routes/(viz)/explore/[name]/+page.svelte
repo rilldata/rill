@@ -15,7 +15,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -25,7 +25,7 @@
 
   $: metricsViewName = metricsView?.meta?.name?.name as string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: filePaths = [
     ...(explore.meta?.filePaths ?? []),

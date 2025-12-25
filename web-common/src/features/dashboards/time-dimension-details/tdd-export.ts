@@ -14,7 +14,7 @@ import type {
   V1Query,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { get } from "svelte/store";
 import { buildWhereParamForDimensionTableAndTDDExports } from "../../exports/export-filters";
 import { dimensionSearchText as dimensionSearchTextStore } from "../stores/dashboard-stores";
@@ -93,7 +93,7 @@ export function getTDDAggregationRequest({
   const timeDimension = metricsViewSpec.timeDimension ?? "";
 
   return {
-    instanceId: get(runtime).instanceId,
+    instanceId: httpClient.getInstanceId(),
     metricsView: metricsViewName,
     dimensions: [
       { name: dimensionName },

@@ -10,7 +10,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useGetMetricsViewsForModel } from "../../dashboards/selectors";
   import { resourceColorMapping } from "../../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -27,7 +27,7 @@
   export let hasUnsavedChanges: boolean;
   export let connector: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 

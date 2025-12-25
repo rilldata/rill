@@ -15,7 +15,6 @@ import {
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import {
   derived,
@@ -80,7 +79,7 @@ export class ComboChartProvider {
   }
 
   createChartDataQuery(
-    runtime: Writable<Runtime>,
+    instanceId: string,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.spec);
@@ -99,10 +98,10 @@ export class ComboChartProvider {
     const dimensionName = config.x?.field;
 
     const xAxisQueryOptionsStore = derived(
-      [runtime, timeAndFilterStore],
-      ([$runtime, $timeAndFilterStore]) => {
+      [timeAndFilterStore],
+      ([$timeAndFilterStore]) => {
         const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-        const instanceId = $runtime.instanceId;
+
         const enabled =
           (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!dimensionName &&
@@ -150,8 +149,8 @@ export class ComboChartProvider {
     const xAxisQuery = createQuery(xAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [runtime, timeAndFilterStore, xAxisQuery],
-      ([$runtime, $timeAndFilterStore, $xAxisQuery]) => {
+      [timeAndFilterStore, xAxisQuery],
+      ([$timeAndFilterStore, $xAxisQuery]) => {
         const { timeRange, where, timeGrain, hasTimeSeries } =
           $timeAndFilterStore;
         const xTopNData = $xAxisQuery?.data?.data;
@@ -203,7 +202,7 @@ export class ComboChartProvider {
         }
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
-          $runtime.instanceId,
+          instanceId,
           config.metrics_view,
           {
             measures,

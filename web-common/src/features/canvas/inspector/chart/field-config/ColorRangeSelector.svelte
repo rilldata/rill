@@ -20,7 +20,7 @@
   } from "@rilldata/web-common/features/themes/color-config";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { slide } from "svelte/transition";
   import type { ColorScheme } from "vega-typings";
 
@@ -54,7 +54,7 @@
     { label: "Spectral", value: "spectral" },
   ];
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: ({
     canvasEntity: { theme },
   } = getCanvasStore(canvasName, instanceId));

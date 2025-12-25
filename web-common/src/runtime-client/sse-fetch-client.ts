@@ -1,5 +1,4 @@
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import httpClient from "./http-client";
 
 /**
  * Represents a Server-Sent Event message
@@ -156,7 +155,7 @@ export class SSEFetchClient {
       ...customHeaders,
     };
 
-    const jwt = get(runtime).jwt;
+    const jwt = httpClient.getJwt();
     if (jwt) {
       headers["Authorization"] = `Bearer ${jwt.token}`;
     }

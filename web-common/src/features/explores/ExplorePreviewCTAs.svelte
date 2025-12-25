@@ -6,7 +6,7 @@
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { Button } from "../../components/button";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import ChatToggle from "../chat/layouts/sidebar/ChatToggle.svelte";
   import ViewAsButton from "../dashboards/granular-access-policies/ViewAsButton.svelte";
   import {
@@ -20,7 +20,7 @@
 
   export let exploreName: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: exploreQuery = useExplore(instanceId, exploreName);
   $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";

@@ -32,8 +32,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 // We are manually sending in duration, offset and round to grain for previous complete ranges.
 // This is to map back that split
@@ -150,7 +149,7 @@ export async function getExplorePageUrlSearchParams(
   exploreName: string,
   exploreState: Partial<ExploreState>,
 ): Promise<URLSearchParams> {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
   const { explore, metricsView } = await queryClient.fetchQuery({
     queryFn: ({ signal }) =>
       runtimeServiceGetExplore(
@@ -219,7 +218,7 @@ export function maybeGetExplorePageUrlSearchParams(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
 ) {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
   const metricsViewName = exploreSpec.metricsView ?? "";
 
   const metricsViewTimeRangeQueryKey =

@@ -10,16 +10,20 @@
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let formValues: AlertFormValues;
   export let filters: Filters;
   export let timeControls: TimeControls;
+
+  const instanceId = httpClient.getInstanceId();
 
   $: alertPreviewQuery = getAlertPreviewData(
     queryClient,
     formValues,
     filters,
     timeControls,
+    instanceId,
   );
 
   $: isCriteriaEmpty =

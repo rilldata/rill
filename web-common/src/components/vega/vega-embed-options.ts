@@ -1,12 +1,11 @@
 import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
 import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { EmbedOptions } from "svelte-vega";
-import { get } from "svelte/store";
 import { expressionInterpreter } from "vega-interpreter";
 import type { Config } from "vega-lite";
 import type { ExpressionFunction } from "./types";
 import { getRillTheme } from "./vega-config";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 export interface CreateEmbedOptionsParams {
   canvasDashboard: boolean;
@@ -33,7 +32,7 @@ export function createEmbedOptions({
   colorMapping,
   hasComparison,
 }: CreateEmbedOptionsParams): EmbedOptions {
-  const jwt = get(runtime).jwt;
+  const jwt = httpClient.getJwt();
 
   return {
     config: config || getRillTheme(canvasDashboard, themeMode === "dark"),
@@ -55,7 +54,7 @@ export function createEmbedOptions({
     }),
     expressionFunctions,
     loader: {
-      baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,
+      baseURL: `${httpClient.getHost()}/v1/instances/${httpClient.getInstanceId()}/assets/`,
       ...(jwt &&
         jwt.token && {
           http: {

@@ -13,7 +13,7 @@
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { derived } from "svelte/store";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -43,7 +43,7 @@
 
   let active = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: nulls = getNullPercentage(
     instanceId,

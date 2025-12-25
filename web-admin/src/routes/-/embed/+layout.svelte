@@ -21,12 +21,8 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  const {
-    instanceId,
 
-    missingRequireParams,
-    navigationEnabled,
-  } = data;
+  const { instanceId, missingRequireParams, navigationEnabled } = data;
 
   const { dashboardChat } = featureFlags;
 

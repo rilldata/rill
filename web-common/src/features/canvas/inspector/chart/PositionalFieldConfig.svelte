@@ -9,7 +9,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FieldConfig } from "@rilldata/web-common/features/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
   import MarkTypeToggle from "./field-config/MarkTypeToggle.svelte";
 
@@ -21,7 +21,7 @@
 
   export let onChange: (updatedConfig: FieldConfig) => void;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: ({
     canvasEntity: {
       selectedComponent,

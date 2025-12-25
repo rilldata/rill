@@ -8,7 +8,7 @@
   import { EditorView } from "@codemirror/view";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import Editor from "../../editor/Editor.svelte";
   import { getExtensionsForFile } from "../../editor/getExtensionsForFile";
   import { FileArtifact } from "../../entity-management/file-artifact";
@@ -21,7 +21,7 @@
   export let fileArtifact: FileArtifact;
   export let onSave: (content: string) => void = () => {};
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({ remoteContent } = fileArtifact);
 

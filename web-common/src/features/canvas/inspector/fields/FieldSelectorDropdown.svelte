@@ -3,7 +3,7 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
 
@@ -21,7 +21,7 @@
   // Local state for optimistic updates
   let localSelectedItems: string[] = selectedItems;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: fieldData = useMetricFieldData(

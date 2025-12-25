@@ -1,16 +1,17 @@
 <script lang="ts">
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
-
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   export let data;
 
   $: ({
     canvasName,
-    project: { id: projectId },
+    project: {
+      project: { id: projectId },
+    },
   } = data);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 </script>
 
 <CanvasProvider {canvasName} {instanceId} {projectId} showBanner>

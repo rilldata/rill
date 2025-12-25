@@ -1,5 +1,4 @@
 import { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 import {
   ConnectorDriverPropertyType,
   type V1ConnectorDriver,
@@ -7,7 +6,7 @@ import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
 } from "../../runtime-client";
-import { runtime } from "../../runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -127,7 +126,7 @@ export async function updateDotEnvWithSecrets(
   formType: "source" | "connector",
   connectorInstanceName?: string,
 ): Promise<string> {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
 
   // Get the existing .env file
   let blob: string;
@@ -240,7 +239,7 @@ export async function updateRillYAMLWithOlapConnector(
   newConnector: string,
 ): Promise<string> {
   // Get the existing rill.yaml file
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
   const file = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
       path: "rill.yaml",
@@ -277,7 +276,7 @@ export async function createYamlModelFromTable(
   databaseSchema: string,
   table: string,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
 
   // Get driver name for makeSufficientlyQualifiedTableName
   const analyzeConnectorsQueryKey =
@@ -348,7 +347,7 @@ export async function createSqlModelFromTable(
   table: string,
   addDevLimit: boolean = true,
 ): Promise<[string, string]> {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
 
   // Get driver name
   const analyzeConnectorsQueryKey =

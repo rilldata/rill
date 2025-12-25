@@ -3,9 +3,9 @@
   import AlertsTable from "@rilldata/web-admin/features/alerts/listing/AlertsTable.svelte";
   import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
   import ProjectPage from "@rilldata/web-admin/features/projects/ProjectPage.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     params: { organization, project },

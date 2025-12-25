@@ -8,8 +8,7 @@ import {
   runtimeServicePutFile,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
 export async function createResourceFile(
   kind: ResourceKind,
@@ -20,7 +19,7 @@ export async function createResourceFile(
   }
 
   const newPath = getPathForNewResourceFile(kind, baseResource);
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
 
   await runtimeServicePutFile(instanceId, {
     path: newPath,

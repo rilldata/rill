@@ -21,7 +21,7 @@
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
   import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
@@ -69,7 +69,7 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: ({ host, instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({ route } = $page);
 
@@ -77,7 +77,7 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <FileAndResourceWatcher {host} {instanceId}>
+  <FileAndResourceWatcher host={httpClient.getHost()} {instanceId}>
     <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
       {#if data.initialized}
         <BannerCenter />

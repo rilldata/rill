@@ -15,8 +15,7 @@
     type V1Resource,
     createRuntimeServiceGetModelPartitionsInfinite,
   } from "../../../runtime-client";
-
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
   import TriggerPartition from "./TriggerPartition.svelte";
@@ -26,7 +25,7 @@
   export let wherePending: boolean;
 
   $: modelName = resource?.meta?.name?.name as string;
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   // ==========================
   // Infinite Query

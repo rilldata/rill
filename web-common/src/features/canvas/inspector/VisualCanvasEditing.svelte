@@ -5,14 +5,14 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { Inspector } from "@rilldata/web-common/layout/workspace";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { parseDocument } from "yaml";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
   export let canvasName: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     canvasEntity: { selectedComponent, componentsStore },

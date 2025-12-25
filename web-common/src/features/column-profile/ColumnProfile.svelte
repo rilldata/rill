@@ -5,7 +5,7 @@
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
@@ -21,7 +21,7 @@
   let mode = "summaries";
   let container;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   onMount(() => {
     const observer = new ResizeObserver(() => {

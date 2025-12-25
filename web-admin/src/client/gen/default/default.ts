@@ -278,7 +278,7 @@ import type {
   V1UpdateUserPreferencesResponse,
 } from "../index.schemas";
 
-import { httpClient } from "../../http-client";
+import httpClient from "../../http-client";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 

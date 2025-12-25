@@ -7,7 +7,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
@@ -20,7 +20,7 @@
 
   const { generateCanvas } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: dashboardsQuery = useGetExploresForMetricsView(
     instanceId,
     resource?.meta?.name?.name ?? "",

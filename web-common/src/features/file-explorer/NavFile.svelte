@@ -19,7 +19,7 @@
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { Save, Settings } from "lucide-svelte";
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
@@ -64,7 +64,7 @@
     saveState: { saving, error },
   } = fileArtifact);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: resourceKind = ($resourceName?.kind ??
     $inferredResourceKind) as ResourceKind;

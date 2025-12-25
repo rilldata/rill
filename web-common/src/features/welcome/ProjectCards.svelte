@@ -14,7 +14,7 @@
     createRuntimeServiceUnpackEmpty,
     createRuntimeServiceUnpackExample,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
 
@@ -23,7 +23,7 @@
 
   let selectedProjectName: string | null = null;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({ mutateAsync: unpackExample } = $unpackExampleProject);
   $: ({ mutateAsync: unpackEmpty } = $unpackEmptyProject);

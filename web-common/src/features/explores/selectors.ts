@@ -1,4 +1,4 @@
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import {
   type CreateQueryOptions,
   type QueryFunction,
@@ -79,7 +79,8 @@ export function useExploreValidSpec(
 export function getExploreValidSpecQueryOptions(
   exploreNameStore: Readable<string>,
 ) {
-  return derived([runtime, exploreNameStore], ([{ instanceId }, exploreName]) =>
+  const instanceId = httpClient.getInstanceId();
+  return derived([exploreNameStore], ([exploreName]) =>
     getRuntimeServiceGetExploreQueryOptions(
       instanceId,
       {

@@ -10,7 +10,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { generateMetricsFromTable } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
@@ -27,7 +27,7 @@
   export let isModelingSupported: boolean | undefined = false;
   export let isOlapConnector: boolean = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   async function handleCreateModel(
     modelCreationFn: () => Promise<[string, string]>,

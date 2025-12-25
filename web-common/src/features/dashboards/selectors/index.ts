@@ -11,10 +11,10 @@ export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse, HTTPError> {
   return derived(
-    [ctx.runtime, ctx.metricsViewName, ctx.validSpecStore],
-    ([runtime, metricsViewName, validSpec], set) =>
+    [ctx.metricsViewName, ctx.validSpecStore],
+    ([metricsViewName, validSpec], set) =>
       createQueryServiceMetricsViewTimeRange(
-        runtime.instanceId,
+        ctx.instanceId,
         metricsViewName,
         {},
         {

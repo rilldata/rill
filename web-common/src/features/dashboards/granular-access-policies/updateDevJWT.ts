@@ -4,10 +4,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import type { MockUser } from "@rilldata/web-common/features/dashboards/granular-access-policies/useMockUsers";
 import { runtimeServiceIssueDevJWT } from "@rilldata/web-common/runtime-client";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import { invalidateAllMetricsViews } from "@rilldata/web-common/runtime-client/invalidation";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/store";
 
 export async function updateDevJWT(
   queryClient: QueryClient,
@@ -17,10 +16,8 @@ export async function updateDevJWT(
 
   if (mockUser === null) {
     selectedMockUserJWT.set(null);
-    runtime.update((runtimeState) => {
-      runtimeState.jwt = undefined;
-      return runtimeState;
-    });
+
+    await httpClient.updateJWT(undefined, undefined);
   } else {
     try {
       const { name, email, groups, admin, ...customAttributes } = mockUser;
@@ -37,18 +34,11 @@ export async function updateDevJWT(
 
       selectedMockUserJWT.set(jwt);
 
-      runtime.update((runtimeState) => {
-        runtimeState.jwt = {
-          token: jwt,
-          receivedAt: Date.now(),
-          authContext: "mock",
-        };
-        return runtimeState;
-      });
+      await httpClient.updateJWT(jwt, "mock");
     } catch {
       // no-op
     }
   }
 
-  return invalidateAllMetricsViews(queryClient, get(runtime).instanceId);
+  return invalidateAllMetricsViews(queryClient, httpClient.getInstanceId());
 }

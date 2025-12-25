@@ -6,7 +6,7 @@
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { removeCanvasStore } from "./state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let canvasName: string;
   export let fileArtifact: FileArtifact;
@@ -15,7 +15,7 @@
 
   let editor: EditorView;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   /** If the errors change, run the following transaction. */
   $: if (editor) setLineStatuses(lineBasedRuntimeErrors, editor);

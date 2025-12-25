@@ -8,7 +8,7 @@
     V1ReconcileStatus,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
@@ -24,6 +24,8 @@
   let dialogResourceName = "";
   let dialogResourceKind = "";
   let dialogRefreshType: "full" | "incremental" = "full";
+
+  const instanceId = httpClient.getInstanceId();
 
   let openDropdownResourceKey = "";
 
@@ -56,7 +58,7 @@
   const handleRefresh = async () => {
     if (dialogResourceKind === ResourceKind.Model) {
       await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
+        instanceId: instanceId,
         data: {
           models: [
             {
@@ -68,7 +70,7 @@
       });
     } else {
       await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
+        instanceId: instanceId,
         data: {
           resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
         },
@@ -76,10 +78,7 @@
     }
 
     await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
-        undefined,
-      ),
+      queryKey: getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
     });
 
     closeRefreshDialog();

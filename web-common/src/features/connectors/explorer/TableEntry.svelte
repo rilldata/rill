@@ -8,7 +8,7 @@
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import {
     makeFullyQualifiedTableName,
@@ -32,9 +32,9 @@
 
   const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
-  $: ({ instanceId: runtimeInstanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: isModelingSupportedForConnector = useIsModelingSupportedForConnector(
-    runtimeInstanceId,
+    instanceId,
     connector,
   );
   $: isModelingSupported = $isModelingSupportedForConnector.data;

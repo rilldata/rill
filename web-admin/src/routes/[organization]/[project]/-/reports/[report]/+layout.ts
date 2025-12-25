@@ -1,18 +1,21 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper.js";
-import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client/query-options";
+import { getRuntimeServiceGetResourceQueryOptions } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 
 export async function load({ params, parent }) {
-  const { runtime } = await parent();
+  const { project } = await parent();
 
   const reportData = await queryClient
     .fetchQuery(
-      getRuntimeServiceGetResourceQueryOptions(runtime.instanceId, {
-        "name.kind": ResourceKind.Report,
-        "name.name": params.report,
-      }),
+      getRuntimeServiceGetResourceQueryOptions(
+        project?.prodDeployment?.runtimeInstanceId,
+        {
+          "name.kind": ResourceKind.Report,
+          "name.name": params.report,
+        },
+      ),
     )
     .catch((e) => {
       if (!isHTTPError(e)) {

@@ -16,7 +16,6 @@
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { getSort } from "../leaderboard/leaderboard-utils";
@@ -42,6 +41,7 @@
   export let hideStartPivotButton = false;
 
   const {
+    instanceId,
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
       dimensionTable: { virtualizedTableColumns, prepareDimTableRows },
@@ -66,10 +66,8 @@
 
   $: ({ name: dimensionName = "" } = dimension);
 
-  $: ({ instanceId } = $runtime);
-
   $: selectedValues = selectedDimensionValues(
-    $runtime.instanceId,
+    instanceId,
     [metricsViewName],
     $dashboardStore.whereFilter,
     dimensionName,

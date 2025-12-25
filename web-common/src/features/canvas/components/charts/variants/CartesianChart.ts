@@ -197,7 +197,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
+    return this.provider.createChartDataQuery(
+      ctx.canvasEntity.instanceId,
+      timeAndFilterStore,
+    );
   }
 
   static newComponentSpec(

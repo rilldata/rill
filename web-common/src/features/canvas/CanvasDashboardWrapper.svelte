@@ -1,6 +1,6 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
@@ -16,7 +16,7 @@
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     canvasEntity: { theme },

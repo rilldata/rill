@@ -37,7 +37,7 @@
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -94,7 +94,7 @@
     ready: timeControlsReady,
   } = $timeControlsStore);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   let scrubStart;
   let scrubEnd;

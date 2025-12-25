@@ -36,7 +36,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import type { Interval } from "luxon";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
 
@@ -53,7 +53,7 @@
   let filterState: undefined | Awaited<ReturnType<typeof processUrl>> =
     undefined;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 

@@ -9,14 +9,14 @@
     type V1Resource,
     createRuntimeServiceCreateTrigger,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let resource: V1Resource | undefined;
   export let hasUnsavedChanges = false;
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: connectorName = resource?.meta?.name?.name;
   $: isReconciling =
     resource?.meta?.reconcileStatus ===

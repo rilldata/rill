@@ -8,7 +8,7 @@
   import ExploreLink from "@rilldata/web-common/features/explores/explore-link/ExploreLink.svelte";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
@@ -33,13 +33,15 @@
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
 
+  const instanceId = httpClient.getInstanceId();
+
   let chartProvider: ChartProvider;
   $: {
     const chartConfig = CHART_CONFIG[chartType];
     chartProvider = new chartConfig.provider(spec, {});
   }
 
-  $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
+  $: metricsViewSelectors = new MetricsViewSelectors(instanceId);
 
   $: measures = metricsViewSelectors.getMeasuresForMetricView(
     $spec.metrics_view,
@@ -50,7 +52,7 @@
   );
 
   $: chartDataQuery = chartProvider.createChartDataQuery(
-    runtime,
+    instanceId,
     timeAndFilterStore,
   );
 
@@ -70,7 +72,7 @@
   $: chartTitle = chartProvider?.chartTitle?.($chartData.fields) ?? "";
 
   $: exploreAvailability = showExploreLink
-    ? useExploreAvailability($runtime.instanceId, $spec?.metrics_view)
+    ? useExploreAvailability(instanceId, $spec?.metrics_view)
     : readable({
         isAvailable: false,
         exploreName: null,

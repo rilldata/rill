@@ -1,6 +1,5 @@
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import type { MetricsEvent } from "./MetricsTypes";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
 
 const RillIntakeUser = import.meta.env.RILL_UI_PUBLIC_INTAKE_USER;
 const RillIntakePassword = import.meta.env.RILL_UI_PUBLIC_INTAKE_PASSWORD;
@@ -22,7 +21,7 @@ export class RillIntakeClient implements TelemetryClient {
     if (!RillIntakeUser || !RillIntakePassword) return;
 
     try {
-      const resp = await fetch(`${get(runtime).host}/local/track`, {
+      const resp = await fetch(`${httpClient.getHost()}/local/track`, {
         method: "POST",
         body: JSON.stringify(event),
         headers: {

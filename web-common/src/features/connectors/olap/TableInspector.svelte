@@ -9,7 +9,7 @@
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { slide } from "svelte/transition";
 
   export let connector: string;
@@ -21,7 +21,7 @@
   let isReconciling = false;
   let hasUnsavedChanges = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: cardinalityQuery = createQueryServiceTableCardinality(instanceId, table, {
     connector,

@@ -2,6 +2,7 @@
   import { setContext } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -12,6 +13,7 @@
     queryClient,
     metricsViewName,
     exploreName,
+    instanceId: httpClient.getInstanceId(),
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
 

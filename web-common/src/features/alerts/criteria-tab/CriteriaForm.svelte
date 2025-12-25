@@ -11,7 +11,7 @@
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import type { SuperForm } from "sveltekit-superforms/client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let timeControls: TimeControls;
@@ -20,7 +20,7 @@
   $: ({ form, errors, validate } = superFormInstance);
   $: ({ selectedComparisonTimeRange } = timeControls);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: metricsView = useMetricsViewValidSpec(
     instanceId,

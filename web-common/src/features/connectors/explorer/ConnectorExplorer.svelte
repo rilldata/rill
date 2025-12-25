@@ -2,14 +2,14 @@
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import { createRuntimeServiceAnalyzeConnectors } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import ConnectorEntry from "./ConnectorEntry.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {

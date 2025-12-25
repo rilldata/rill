@@ -6,7 +6,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
@@ -21,8 +20,6 @@
     ($themeControl) => $themeControl === "dark",
   );
 
-  $: ({ instanceId } = $runtime);
-
   $: ({
     specStore,
     parent: { name: canvasName, theme },
@@ -32,7 +29,7 @@
 
   $: chartType = $type;
 
-  $: store = getCanvasStore(canvasName, instanceId);
+  $: store = getCanvasStore(canvasName, component.parent.instanceId);
   $: ({
     canvasEntity: {
       metricsView,

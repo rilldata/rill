@@ -6,9 +6,9 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: projectParserQuery = createRuntimeServiceGetResource(
     instanceId,

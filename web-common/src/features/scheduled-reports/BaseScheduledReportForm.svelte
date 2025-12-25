@@ -21,7 +21,7 @@
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let formId: string;
   export let data: Readable<ReportValues>;
@@ -49,7 +49,7 @@
     (o) => o.value === $data["webOpenMode"],
   );
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>

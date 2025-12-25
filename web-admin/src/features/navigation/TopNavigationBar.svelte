@@ -12,7 +12,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
@@ -49,7 +49,7 @@
   const user = createAdminServiceGetCurrentUser();
   const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   // These can be undefined
   $: ({

@@ -124,6 +124,7 @@ export function initStateManagers(metricsViewName?: string) {
     queryClient,
     metricsViewName,
     exploreName,
+    instanceId: "default",
   });
 
   return { stateManagers, queryClient };

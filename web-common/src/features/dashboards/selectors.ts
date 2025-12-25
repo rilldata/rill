@@ -25,7 +25,7 @@ import {
   type V1MetricsViewTimeRangeResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import {
   createQuery,
   type CreateQueryOptions,
@@ -54,22 +54,18 @@ export function useMetricsView(
 }
 
 export function getValidMetricsViewsQueryOptions() {
-  return derived(runtime, ({ instanceId }) => {
-    return getRuntimeServiceListResourcesQueryOptions(
-      instanceId,
-      {
-        kind: ResourceKind.MetricsView,
+  return getRuntimeServiceListResourcesQueryOptions(
+    httpClient.getInstanceId(),
+    {
+      kind: ResourceKind.MetricsView,
+    },
+    {
+      query: {
+        select: (data) =>
+          data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
       },
-      {
-        query: {
-          select: (data) =>
-            data?.resources?.filter(
-              (res) => !!res.metricsView?.state?.validSpec,
-            ),
-        },
-      },
-    );
-  });
+    },
+  );
 }
 
 export function useValidExplores(instanceId: string) {
@@ -77,23 +73,6 @@ export function useValidExplores(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
     data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
-}
-
-export function getValidDashboardsQueryOptions() {
-  return derived(runtime, ({ instanceId }) => {
-    return getRuntimeServiceListResourcesQueryOptions(
-      instanceId,
-      {
-        kind: ResourceKind.Explore,
-      },
-      {
-        query: {
-          select: (data) =>
-            data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
-        },
-      },
-    );
-  });
 }
 
 export function useValidCanvases(instanceId: string) {
@@ -177,25 +156,22 @@ export function getMetricsViewTimeRangeFromExploreQueryOptions(
     queryClient,
   );
 
-  return derived(
-    [runtime, validSpecQuery],
-    ([{ instanceId }, validSpecResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
-      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
-      const metricsViewName = exploreSpec.metricsView ?? "";
+  return derived([validSpecQuery], ([validSpecResp]) => {
+    const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+    const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
+    const metricsViewName = exploreSpec.metricsView ?? "";
 
-      return getQueryServiceMetricsViewTimeRangeQueryOptions(
-        instanceId,
-        metricsViewName,
-        {},
-        {
-          query: {
-            enabled: !!metricsViewSpec.timeDimension,
-          },
+    return getQueryServiceMetricsViewTimeRangeQueryOptions(
+      httpClient.getInstanceId(),
+      metricsViewName,
+      {},
+      {
+        query: {
+          enabled: !!metricsViewSpec.timeDimension,
         },
-      );
-    },
-  );
+      },
+    );
+  });
 }
 
 export function hasValidMetricsViewTimeRange(
@@ -239,24 +215,21 @@ export function getMetricsViewSchemaOptions(
     getExploreValidSpecQueryOptions(exploreNameStore),
   );
 
-  return derived(
-    [runtime, validSpecQuery],
-    ([{ instanceId }, validSpecResp]) => {
-      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
-      const metricsViewName = exploreSpec.metricsView ?? "";
+  return derived([validSpecQuery], ([validSpecResp]) => {
+    const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
+    const metricsViewName = exploreSpec.metricsView ?? "";
 
-      return getQueryServiceMetricsViewSchemaQueryOptions(
-        instanceId,
-        metricsViewName,
-        {},
-        {
-          query: {
-            enabled: Boolean(metricsViewName),
-          },
+    return getQueryServiceMetricsViewSchemaQueryOptions(
+      httpClient.getInstanceId(),
+      metricsViewName,
+      {},
+      {
+        query: {
+          enabled: Boolean(metricsViewName),
         },
-      );
-    },
-  );
+      },
+    );
+  });
 }
 
 export function getFiltersForOtherDimensions(

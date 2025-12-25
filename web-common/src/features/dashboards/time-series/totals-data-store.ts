@@ -21,15 +21,10 @@ export function createTotalsForMeasure(
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-    ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) =>
+    [ctx.metricsViewName, useTimeControlStore(ctx), ctx.dashboardStore],
+    ([metricsViewName, timeControls, dashboard], set) =>
       createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
+        ctx.instanceId,
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
@@ -66,13 +61,8 @@ export function createUnfilteredTotalsForMeasure(
   dimensionName: string,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-    ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) => {
+    [ctx.metricsViewName, useTimeControlStore(ctx), ctx.dashboardStore],
+    ([metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           dashboard.whereFilter,
@@ -87,7 +77,7 @@ export function createUnfilteredTotalsForMeasure(
       );
 
       createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
+        ctx.instanceId,
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),

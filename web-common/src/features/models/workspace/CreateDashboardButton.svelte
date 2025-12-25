@@ -8,7 +8,7 @@
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { Wand } from "lucide-svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -20,7 +20,7 @@
 
   const { ai } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: modelQuery = useModel(instanceId, modelName);
   $: connector = $modelQuery.data?.model?.spec?.outputConnector;

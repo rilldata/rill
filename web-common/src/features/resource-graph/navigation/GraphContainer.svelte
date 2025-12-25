@@ -1,10 +1,10 @@
 <script lang="ts">
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import ResourceGraph from "../embedding/ResourceGraph.svelte";
   export let seeds: string[] | undefined;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
     query: {

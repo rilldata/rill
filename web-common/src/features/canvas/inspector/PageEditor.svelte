@@ -24,7 +24,7 @@
     DEFAULT_TIMEZONES,
   } from "@rilldata/web-common/lib/time/config";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
 
@@ -44,7 +44,7 @@
     canvasEntity: { filtersEnabledStore, _embeddedTheme },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: parsedDocument = getParsedDocument(fileArtifact);
 

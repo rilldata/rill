@@ -20,7 +20,6 @@ import {
   useResourceV2,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, type Readable } from "svelte/store";
 
 export function getProjectPermissions(orgName: string, projName: string) {
@@ -134,18 +133,7 @@ export async function fetchProjectDeploymentDetails(
     queryFn,
   });
 
-  return {
-    projectPermissions: projResp.projectPermissions,
-    project: projResp.project,
-    runtime: <Runtime>{
-      host: projResp.prodDeployment?.runtimeHost,
-      instanceId: projResp.prodDeployment?.runtimeInstanceId,
-      jwt: {
-        token: projResp.jwt,
-        authContext: token ? "magic" : "user",
-      },
-    },
-  };
+  return projResp;
 }
 
 export function useGithubLastSynced(instanceId: string) {

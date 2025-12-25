@@ -6,7 +6,7 @@
     createQueryServiceMetricsViewTimeSeries,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
@@ -24,7 +24,7 @@
     metricsView: { getMeasureForMetricView },
   } = ctx.canvasEntity);
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: ({
     metrics_view: metricsViewName,

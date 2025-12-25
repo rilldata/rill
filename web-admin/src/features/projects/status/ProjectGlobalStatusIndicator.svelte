@@ -5,16 +5,14 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useProjectDeployment } from "./selectors";
-
-  const queryClient = useQueryClient();
 
   export let organization: string;
   export let project: string;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: projectDeployment = useProjectDeployment(organization, project);
   $: ({ data: deployment } = $projectDeployment);
@@ -34,6 +32,7 @@
         },
         refetchOnMount: true,
         refetchOnWindowFocus: true,
+        enabled: !!instanceId,
       },
     },
   );

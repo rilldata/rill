@@ -14,7 +14,7 @@ import {
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import {
   type CreateQueryResult,
   keepPreviousData,
@@ -72,39 +72,37 @@ export function createPivotAggregationRowQuery(
     hasComparison = true;
   }
 
-  return derived(
-    [runtime, ctx.metricsViewName],
-    ([$runtime, metricsViewName], set) =>
-      createQueryServiceMetricsViewAggregation(
-        $runtime.instanceId,
-        metricsViewName,
-        {
-          measures: prepareMeasureForComparison(measures),
-          dimensions,
-          where: sanitiseExpression(whereFilter, undefined),
-          timeRange: {
-            start: timeRange?.start ? timeRange.start : config.time.timeStart,
-            end: timeRange?.end ? timeRange.end : config.time.timeEnd,
-          },
-          comparisonTimeRange:
-            hasComparison && comparisonTime
-              ? {
-                  start: comparisonTime.start,
-                  end: comparisonTime.end,
-                }
-              : undefined,
-          sort,
-          limit,
-          offset,
+  return derived([ctx.metricsViewName], ([metricsViewName], set) =>
+    createQueryServiceMetricsViewAggregation(
+      httpClient.getInstanceId(),
+      metricsViewName,
+      {
+        measures: prepareMeasureForComparison(measures),
+        dimensions,
+        where: sanitiseExpression(whereFilter, undefined),
+        timeRange: {
+          start: timeRange?.start ? timeRange.start : config.time.timeStart,
+          end: timeRange?.end ? timeRange.end : config.time.timeEnd,
         },
-        {
-          query: {
-            enabled: ctx.enabled,
-            placeholderData: keepPreviousData,
-          },
+        comparisonTimeRange:
+          hasComparison && comparisonTime
+            ? {
+                start: comparisonTime.start,
+                end: comparisonTime.end,
+              }
+            : undefined,
+        sort,
+        limit,
+        offset,
+      },
+      {
+        query: {
+          enabled: ctx.enabled,
+          placeholderData: keepPreviousData,
         },
-        ctx.queryClient,
-      ).subscribe(set),
+      },
+      ctx.queryClient,
+    ).subscribe(set),
   );
 }
 

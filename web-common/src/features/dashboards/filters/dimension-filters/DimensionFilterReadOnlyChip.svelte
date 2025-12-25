@@ -6,7 +6,7 @@
     useAllSearchResultsCount,
     useDimensionSearch,
   } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-values";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -19,7 +19,7 @@
   export let timeEnd: string | undefined;
   export let pinned = false;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: effectiveLabel = isInclude ? label : `Exclude ${label}`;
   $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");

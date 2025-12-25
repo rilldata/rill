@@ -18,7 +18,7 @@ import {
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
@@ -122,7 +122,7 @@ export class FileArtifact {
   }
 
   fetchContent = async (invalidate = false) => {
-    const instanceId = get(runtime).instanceId;
+    const instanceId = httpClient.getInstanceId();
     const queryParams = {
       path: this.path,
     };
@@ -225,7 +225,7 @@ export class FileArtifact {
   };
 
   private saveContent = async (blob: string) => {
-    const instanceId = get(runtime).instanceId;
+    const instanceId = httpClient.getInstanceId();
 
     // Optimistically update the query
     queryClient.setQueryData(

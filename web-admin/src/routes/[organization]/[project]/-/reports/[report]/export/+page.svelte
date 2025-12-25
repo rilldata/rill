@@ -5,9 +5,9 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: reportId = $page.params.report;
@@ -30,7 +30,7 @@
     });
   }
 
-  $: if (reportId && $runtime) {
+  $: if (reportId && instanceId) {
     triggerDownload();
   }
 

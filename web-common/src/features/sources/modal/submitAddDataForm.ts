@@ -1,7 +1,6 @@
 import { goto, invalidate } from "$app/navigation";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
-import { get } from "svelte/store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
   BehaviourEventAction,
@@ -16,7 +15,7 @@ import {
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
-import { runtime } from "../../../runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client";
 import {
   compileConnectorYAML,
   updateDotEnvWithSecrets,
@@ -159,7 +158,7 @@ export async function submitAddSourceForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
 ): Promise<void> {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
   await beforeSubmitForm(instanceId, connector);
 
   const newSourceName = formValues.name as string;
@@ -243,7 +242,7 @@ async function saveConnectorAnyway(
   newConnectorName: string,
   instanceId?: string,
 ): Promise<void> {
-  const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
+  const resolvedInstanceId = instanceId ?? httpClient.getInstanceId();
 
   // Create connector file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
@@ -298,7 +297,7 @@ export async function submitAddConnectorForm(
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
 ): Promise<void> {
-  const instanceId = get(runtime).instanceId;
+  const instanceId = httpClient.getInstanceId();
   await beforeSubmitForm(instanceId, connector);
 
   // Create a unique key for this connector submission

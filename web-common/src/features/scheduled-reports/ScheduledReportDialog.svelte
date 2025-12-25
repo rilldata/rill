@@ -52,7 +52,7 @@
     type V1ReportSpec,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
@@ -65,7 +65,7 @@
   const FORM_ID = "scheduled-report-form";
 
   $: ({ organization, project, report: reportName } = $page.params);
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: listProjectMemberUsersQuery = createAdminServiceListProjectMemberUsers(
     organization,

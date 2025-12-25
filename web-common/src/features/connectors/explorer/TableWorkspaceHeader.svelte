@@ -9,7 +9,7 @@
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { ResourceKind } from "../../entity-management/resource-selectors";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -21,7 +21,7 @@
 
   const { ai } = featureFlags;
 
-  $: ({ instanceId } = $runtime);
+  const instanceId = httpClient.getInstanceId();
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     instanceId,
