@@ -29,16 +29,6 @@ export function isEmpty(val: any) {
  * - If input resembles a Zod `_errors` array, returns that.
  * - Otherwise returns undefined.
  */
-export function normalizeErrors(
-  err: any,
-): string | string[] | null | undefined {
-  if (!err) return undefined;
-  if (Array.isArray(err)) return err;
-  if (typeof err === "string") return err;
-  if (err._errors && Array.isArray(err._errors)) return err._errors;
-  return undefined;
-}
-
 /**
  * Converts unknown error inputs into a unified connector error shape.
  * - Prefers native Error.message when present
