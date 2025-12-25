@@ -88,9 +88,10 @@ export function createSchemasafeValidator(
   return {
     ...baseAdapter,
     async validate(data: Record<string, unknown> = {}) {
-      const isValid = validator(data as any);
+      const pruned = pruneEmptyFields(data);
+      const isValid = validator(pruned as any);
       if (isValid) {
-        return { data, success: true };
+        return { data: pruned, success: true };
       }
 
       const issues = (validator.errors ?? []).map((error) =>
@@ -99,6 +100,17 @@ export function createSchemasafeValidator(
       return { success: false, issues };
     },
   };
+}
+
+function pruneEmptyFields(
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(values ?? {})) {
+    if (value === "" || value === null || value === undefined) continue;
+    result[key] = value;
+  }
+  return result;
 }
 
 function filterConditional(
