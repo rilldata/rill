@@ -363,9 +363,10 @@ export class AddDataFormManager {
         if (!result.success) {
           const fieldErrors: Record<string, string[]> = {};
           for (const issue of result.issues ?? []) {
-            const path = issue.path?.[0] || "_errors";
-            if (!fieldErrors[path]) fieldErrors[path] = [];
-            fieldErrors[path].push(issue.message);
+            const key =
+              issue.path?.[0] != null ? String(issue.path[0]) : "_errors";
+            if (!fieldErrors[key]) fieldErrors[key] = [];
+            fieldErrors[key].push(issue.message);
           }
           (this.params.errors as any).set(fieldErrors);
           event.cancel?.();
