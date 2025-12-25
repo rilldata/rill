@@ -6,28 +6,25 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
   it("enforces required fields for access key auth", async () => {
     const schema = getValidationSchemaForConnector("s3", "connector", {
       isMultiStepConnector: true,
-      authMethodGetter: () => "access_keys",
     });
 
-    await expect(
-      schema.validate({}, { abortEarly: false }),
-    ).rejects.toMatchObject({
-      inner: expect.arrayContaining([
-        expect.objectContaining({ path: "aws_access_key_id" }),
-        expect.objectContaining({ path: "aws_secret_access_key" }),
+    const result = await schema.validate({});
+    expect(result.success).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: ["aws_access_key_id"] }),
+        expect.objectContaining({ path: ["aws_secret_access_key"] }),
       ]),
-    });
+    );
   });
 
   it("allows public auth without credentials", async () => {
     const schema = getValidationSchemaForConnector("s3", "connector", {
       isMultiStepConnector: true,
-      authMethodGetter: () => "public",
     });
 
-    await expect(
-      schema.validate({ auth_method: "public" }, { abortEarly: false }),
-    ).resolves.toMatchObject({});
+    const result = await schema.validate({ auth_method: "public" });
+    expect(result.success).toBe(true);
   });
 
   it("requires source fields from JSON schema for multi-step connectors", async () => {
@@ -35,14 +32,14 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
       isMultiStepConnector: true,
     });
 
-    await expect(
-      schema.validate({}, { abortEarly: false }),
-    ).rejects.toMatchObject({
-      inner: expect.arrayContaining([
-        expect.objectContaining({ path: "path" }),
-        expect.objectContaining({ path: "name" }),
+    const result = await schema.validate({});
+    expect(result.success).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: ["path"] }),
+        expect.objectContaining({ path: ["name"] }),
       ]),
-    });
+    );
   });
 
   it("rejects invalid s3 path on source step", async () => {
@@ -50,16 +47,14 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
       isMultiStepConnector: true,
     });
 
-    await expect(
-      schema.validate(
-        { path: "s3:/bucket", name: "valid_name" },
-        { abortEarly: false },
-      ),
-    ).rejects.toMatchObject({
-      inner: expect.arrayContaining([
-        expect.objectContaining({ path: "path" }),
-      ]),
+    const result = await schema.validate({
+      path: "s3:/bucket",
+      name: "valid_name",
     });
+    expect(result.success).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: ["path"] })]),
+    );
   });
 
   it("accepts valid s3 path on source step", async () => {
@@ -67,11 +62,10 @@ describe("getValidationSchemaForConnector (multi-step auth)", () => {
       isMultiStepConnector: true,
     });
 
-    await expect(
-      schema.validate(
-        { path: "s3://bucket/prefix", name: "valid_name" },
-        { abortEarly: false },
-      ),
-    ).resolves.toMatchObject({});
+    const result = await schema.validate({
+      path: "s3://bucket/prefix",
+      name: "valid_name",
+    });
+    expect(result.success).toBe(true);
   });
 });

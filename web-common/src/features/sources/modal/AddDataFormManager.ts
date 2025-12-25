@@ -1,11 +1,6 @@
 import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
-import {
-  yup,
-  type Infer as YupInfer,
-  type InferIn as YupInferIn,
-} from "sveltekit-superforms/adapters";
-import { ValidationError } from "yup";
+import { yup, type Infer as YupInfer, type InferIn as YupInferIn } from "sveltekit-superforms/adapters";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector, dsnSchema } from "./FormValidation";
@@ -139,17 +134,15 @@ export class AddDataFormManager {
     );
 
     // Superforms: params
-    const paramsSchemaDef = getValidationSchemaForConnector(
+    const paramsAdapter = getValidationSchemaForConnector(
       connector.name as string,
       formType,
       {
         isMultiStepConnector: this.isMultiStepConnector,
-        authMethodGetter: this.getSelectedAuthMethod,
       },
     );
-    const paramsAdapter = yup(paramsSchemaDef);
-    type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
-    type ParamsIn = YupInferIn<typeof paramsSchemaDef, "yup">;
+    type ParamsOut = Record<string, unknown>;
+    type ParamsIn = Record<string, unknown>;
     const initialFormValues = getInitialFormValuesFromProperties(
       this.properties,
     );
@@ -357,29 +350,24 @@ export class AddDataFormManager {
       }
 
       if (isMultiStepConnector && stepState.step === "source") {
-        const sourceSchema = getValidationSchemaForConnector(
+        const sourceValidator = getValidationSchemaForConnector(
           connector.name as string,
           "source",
           { isMultiStepConnector: true },
         );
-        try {
-          await sourceSchema.validate(values, { abortEarly: false });
-          // Clear any prior client-side errors
-          (this.params.errors as any).set({});
-        } catch (e) {
-          if (e instanceof ValidationError) {
-            const fieldErrors: Record<string, string[]> = {};
-            for (const issue of e.inner.length ? e.inner : [e]) {
-              const path = issue.path || "_errors";
-              if (!fieldErrors[path]) fieldErrors[path] = [];
-              fieldErrors[path].push(issue.message);
-            }
-            (this.params.errors as any).set(fieldErrors);
-            event.cancel?.();
-            return;
+        const result = await sourceValidator.validate(values);
+        if (!result.success) {
+          const fieldErrors: Record<string, string[]> = {};
+          for (const issue of result.issues ?? []) {
+            const path = issue.path?.[0] || "_errors";
+            if (!fieldErrors[path]) fieldErrors[path] = [];
+            fieldErrors[path].push(issue.message);
           }
-          throw e;
+          (this.params.errors as any).set(fieldErrors);
+          event.cancel?.();
+          return;
         }
+        (this.params.errors as any).set({});
       } else if (!event.form.valid) {
         return;
       }
