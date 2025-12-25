@@ -9,7 +9,7 @@ export async function load({ params, parent }) {
 
   const reportData = await queryClient
     .fetchQuery(
-      getRuntimeServiceGetResourceQueryOptions(runtime.instanceId, {
+      getRuntimeServiceGetResourceQueryOptions(runtime, {
         "name.kind": ResourceKind.Report,
         "name.name": params.report,
       }),

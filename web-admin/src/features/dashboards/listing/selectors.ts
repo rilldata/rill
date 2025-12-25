@@ -42,6 +42,7 @@ export function useDashboards(
       select: (data) => {
         return data.resources.filter((res) => res.canvas || res.explore);
       },
+      enabled: !!instanceId,
       refetchInterval: createSmartRefetchInterval,
     },
   });

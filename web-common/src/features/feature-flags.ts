@@ -2,9 +2,12 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { writable } from "svelte/store";
 import {
   createRuntimeServiceGetInstance,
+  getRuntimeServiceGetInstanceQueryKey,
+  type V1GetInstanceResponse,
   type V1InstanceFeatureFlags,
 } from "../runtime-client";
-import { runtime } from "../runtime-client/runtime-store";
+import { type Runtime, runtime } from "../runtime-client/runtime-store";
+import httpClient from "@rilldata/web-common/runtime-client/http-client.ts";
 
 class FeatureFlag {
   private _internal = false;
@@ -123,3 +126,25 @@ class FeatureFlags {
 }
 
 export const featureFlags = new FeatureFlags();
+
+export async function getFeatureFlags(runtime: Runtime) {
+  const instanceResp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetInstanceQueryKey(
+      runtime.instanceId,
+      undefined,
+    ),
+    queryFn: () =>
+      httpClient<V1GetInstanceResponse>({
+        url: `/v1/instances/${runtime.instanceId}`,
+        method: "GET",
+        baseUrl: runtime.host,
+        headers: runtime.jwt
+          ? {
+              Authorization: `Bearer ${runtime.jwt?.token}`,
+            }
+          : undefined,
+      }),
+  });
+
+  return instanceResp.instance?.featureFlags ?? {};
+}
