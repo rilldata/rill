@@ -1,6 +1,10 @@
 import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
-import { yup, type Infer as YupInfer, type InferIn as YupInferIn } from "sveltekit-superforms/adapters";
+import {
+  yup,
+  type Infer as YupInfer,
+  type InferIn as YupInferIn,
+} from "sveltekit-superforms/adapters";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector, dsnSchema } from "./FormValidation";
