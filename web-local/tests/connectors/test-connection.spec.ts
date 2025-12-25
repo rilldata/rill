@@ -4,6 +4,73 @@ import { test } from "../setup/base";
 test.describe("Test Connection", () => {
   test.use({ project: "Blank" });
 
+  test("Azure connector - auth method specific required fields", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+    await page.locator("#azure").click();
+    await page.waitForSelector('form[id*="azure"]');
+
+    const button = page.getByRole("dialog").getByRole("button", {
+      name: /(Test and Connect|Continue)/,
+    });
+
+    // Select Storage Account Key (default may be different) -> requires account + key.
+    await page.getByRole("radio", { name: "Storage Account Key" }).click();
+    await expect(button).toBeDisabled();
+
+    await page.getByRole("textbox", { name: "Storage account" }).fill("acct");
+    await expect(button).toBeDisabled();
+
+    await page.getByRole("textbox", { name: "Access key" }).fill("key");
+    await expect(button).toBeEnabled();
+
+    // Switch to Public (no required fields) -> button should stay enabled.
+    await page.getByRole("radio", { name: "Public" }).click();
+    await expect(button).toBeEnabled();
+
+    // Switch to Connection String -> requires connection string, so disabled until filled.
+    await page.getByRole("radio", { name: "Connection String" }).click();
+    await expect(button).toBeDisabled();
+    await page
+      .getByRole("textbox", { name: "Connection string" })
+      .fill("DefaultEndpointsProtocol=https;");
+    await expect(button).toBeEnabled();
+  });
+
+  test("S3 connector - auth method specific required fields", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+    await page.locator("#s3").click();
+    await page.waitForSelector('form[id*="s3"]');
+
+    const button = page.getByRole("dialog").getByRole("button", {
+      name: /(Test and Connect|Continue)/,
+    });
+
+    // Default method is Access keys -> requires access key id + secret.
+    await expect(button).toBeDisabled();
+    await page
+      .getByRole("textbox", { name: "Access Key ID" })
+      .fill("AKIA_TEST");
+    await expect(button).toBeDisabled();
+    await page
+      .getByRole("textbox", { name: "Secret Access Key" })
+      .fill("SECRET");
+    await expect(button).toBeEnabled();
+
+    // Switch to Public (no required fields) -> button should stay enabled.
+    await page.getByRole("radio", { name: "Public" }).click();
+    await expect(button).toBeEnabled();
+
+    // Switch back to Access keys -> fields cleared, so disabled until refilled.
+    await page.getByRole("radio", { name: "Access keys" }).click();
+    await expect(button).toBeDisabled();
+  });
+
   test("GCS connector - HMAC", async ({ page }) => {
     // Skip test if environment variables are not set
     if (

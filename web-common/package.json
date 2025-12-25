@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "@bufbuild/protobuf": "^1.0.0",
-    "@dagrejs/dagre": "^1.1.3",
     "@codemirror/autocomplete": "^6.18.1",
     "@codemirror/commands": "^6.7.0",
     "@codemirror/lang-json": "^6.0.1",
@@ -34,6 +33,8 @@
     "@codemirror/view": "^6.34.1",
     "@connectrpc/connect": "^1.4.0",
     "@connectrpc/connect-web": "^1.4.0",
+    "@dagrejs/dagre": "^1.1.3",
+    "@exodus/schemasafe": "^1.3.0",
     "@floating-ui/dom": "^1.7.4",
     "@replit/codemirror-indentation-markers": "^6.5.3",
     "@storybook/addon-actions": "^7.6.17",
@@ -64,6 +65,7 @@
     "@types/dompurify": "^3.0.5",
     "@types/luxon": "^3.4.2",
     "@types/memoizee": "^0.4.11",
+    "@xyflow/svelte": "^0.1.39",
     "autoprefixer": "^10.4.20",
     "bits-ui": "^0.22.0",
     "chroma-js": "^3.1.2",
@@ -114,7 +116,6 @@
     "vega-lite": "^5.23.0",
     "vega-typings": "^1.3.1",
     "vitest": "^3.1.1",
-    "@xyflow/svelte": "^0.1.39",
     "yaml": "^2.4.5",
     "yup": "^1.4.0"
   },
