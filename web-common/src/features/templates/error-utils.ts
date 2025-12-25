@@ -14,4 +14,3 @@ export function normalizeErrors(
   if (err._errors && Array.isArray(err._errors)) return err._errors;
   return undefined;
 }
-

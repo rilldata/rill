@@ -26,4 +26,3 @@ export function getValidationSchemaForConnector(
   const fallbackYupSchema = getYupSchema[name as keyof typeof getYupSchema];
   return yupAdapter(fallbackYupSchema);
 }
-
