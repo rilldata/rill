@@ -5,7 +5,10 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
+import {
+  isResourceReconciling,
+  smartRefetchIntervalFunc,
+} from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 
 export function useDeployingDashboards(
   instanceId: string,
@@ -51,19 +54,20 @@ export function useDeployingDashboards(
           };
         }
 
+        const dashboard = dashboards.find(
+          (res) => res.meta?.name?.name === deployingDashboard,
+        );
+
         // Redirect to home page if no specific dashboard was deployed
-        if (!deployingDashboard) {
+        if (!deployingDashboard || !dashboard?.meta?.name) {
           return {
             redirectPath: `/${orgName}/${projName}`,
             dashboardsErrored: false,
           };
         }
 
-        const dashboard = dashboards.find(
-          (res) => res.meta?.name?.name === deployingDashboard,
-        );
         const resourceRoute =
-          dashboard.meta?.name?.kind === ResourceKind.Explore
+          dashboard.meta.name.kind === ResourceKind.Explore
             ? "explore"
             : "canvas";
         const redirectPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
@@ -72,6 +76,7 @@ export function useDeployingDashboards(
           dashboardsErrored: false,
         };
       },
+      refetchInterval: smartRefetchIntervalFunc,
     },
   });
 }
@@ -106,10 +111,6 @@ function getDashboardsErrored(
 
 function isDashboard(res: V1Resource) {
   return res.canvas || res.explore;
-}
-
-function isValidDashboard(res: V1Resource) {
-  return Boolean(res.canvas?.state?.validSpec || res.explore?.state?.validSpec);
 }
 
 function hasErrored(res: V1Resource) {

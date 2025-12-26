@@ -78,7 +78,12 @@
       const singleProject = $matchingProjects.data!.projects[0];
       // Project already exists. Run a redeploy
       return goto(
-        getUpdateProjectRoute($page, singleProject.orgName, singleProject.name),
+        getUpdateProjectRoute(
+          $page,
+          undefined,
+          singleProject.orgName,
+          singleProject.name,
+        ),
       );
     } else {
       return goto(getSelectProjectRoute());

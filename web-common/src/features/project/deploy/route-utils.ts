@@ -3,7 +3,6 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import {
   DeployingDashboardUrlParam,
   getDeployingDashboard,
-  getDeployingDashboardFromUrl,
 } from "@rilldata/web-common/features/project/deploy/utils.ts";
 import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
 import { createLocalServiceGitStatus } from "@rilldata/web-common/runtime-client/local-service";
@@ -12,6 +11,7 @@ import { derived, readable } from "svelte/store";
 import { getLocalGitRepoStatus } from "../selectors";
 import { page } from "$app/stores";
 import { featureFlags } from "../../feature-flags";
+import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 
 /**
  * Returns a {@link Readable} with a route to deploy.
@@ -43,6 +43,7 @@ export function getCreateProjectRoute(orgName: string, useGit = false) {
 
 export function getUpdateProjectRoute(
   page: Page,
+  currentResource: V1ResourceName | undefined,
   orgName: string,
   projectName: string,
   createManagedRepo = false,
@@ -57,7 +58,15 @@ export function getUpdateProjectRoute(
     deployUrl.searchParams.set("create_managed_repo", "true");
   }
 
-  if (isDashboardVizRoute(page)) {
+  if (
+    currentResource?.kind === ResourceKind.Explore ||
+    currentResource?.kind === ResourceKind.Canvas
+  ) {
+    deployUrl.searchParams.set(
+      DeployingDashboardUrlParam,
+      currentResource.name!,
+    );
+  } else if (isDashboardVizRoute(page)) {
     deployUrl.searchParams.set(DeployingDashboardUrlParam, page.params.name);
   }
 
@@ -82,7 +91,7 @@ export function getSelectOrganizationRoute() {
 
 export function getDeployLandingPage(frontendUrl: string, isInvite: boolean) {
   const url = new URL(frontendUrl);
-  const deployingDashboard = getDeployingDashboardFromUrl();
+  const deployingDashboard = getDeployingDashboard();
   if (deployingDashboard) {
     url.searchParams.set(DeployingDashboardUrlParam, deployingDashboard);
   }

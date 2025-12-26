@@ -16,10 +16,9 @@ export function maybeSetDeployingDashboard(url: URL) {
 }
 
 export function getDeployingDashboard() {
-  return sessionStorage.getItem(deployingDashboardKey);
-}
-
-export function getDeployingDashboardFromUrl() {
   const url = new URL(window.location.href);
-  return url.searchParams.get(DeployingDashboardUrlParam);
+  return (
+    sessionStorage.getItem(deployingDashboardKey) ||
+    url.searchParams.get(DeployingDashboardUrlParam)
+  );
 }
