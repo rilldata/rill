@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     getSelectOrganizationRoute,
@@ -13,6 +14,8 @@
   let selectedProject: Project | undefined = undefined;
 
   $: deployUrl = getUpdateProjectRoute(
+    $page,
+    undefined,
     selectedProject?.orgName ?? "",
     selectedProject?.name ?? "",
   );
