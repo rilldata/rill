@@ -5,7 +5,7 @@ import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import { smartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
+import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 
 export function useReports(instanceId: string, enabled = true) {
   return createRuntimeServiceListResources(
@@ -17,7 +17,7 @@ export function useReports(instanceId: string, enabled = true) {
       query: {
         enabled: enabled && !!instanceId,
         refetchOnMount: true,
-        refetchInterval: smartRefetchInterval,
+        refetchInterval: smartRefetchIntervalFunc,
       },
     },
   );

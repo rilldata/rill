@@ -5,7 +5,10 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store.ts";
+import {
+  isResourceReconciling,
+  smartRefetchIntervalFunc,
+} from "@rilldata/web-admin/lib/refetch-interval-store.ts";
 
 export function useDeployingDashboards(
   instanceId: string,
@@ -72,6 +75,7 @@ export function useDeployingDashboards(
           dashboardsErrored: false,
         };
       },
+      refetchInterval: smartRefetchIntervalFunc,
     },
   });
 }
@@ -106,10 +110,6 @@ function getDashboardsErrored(
 
 function isDashboard(res: V1Resource) {
   return res.canvas || res.explore;
-}
-
-function isValidDashboard(res: V1Resource) {
-  return Boolean(res.canvas?.state?.validSpec || res.explore?.state?.validSpec);
 }
 
 function hasErrored(res: V1Resource) {
