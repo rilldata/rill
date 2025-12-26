@@ -170,9 +170,9 @@ TableCells – the cell contents.
     dispatch("select-item", event.detail);
   }
 
-  async function handleColumnHeaderClick(event) {
+  async function handleColumnHeaderClick(columnName: string) {
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
-    const columnName = event.detail;
+
     dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
@@ -223,7 +223,7 @@ TableCells – the cell contents.
           noPin={true}
           sortByMeasure={$sortByMeasure}
           columns={measureColumns}
-          on:click-column={handleColumnHeaderClick}
+          onClickColumn={handleColumnHeaderClick}
         />
         <!-- dimension value and gutter column -->
         <div class="flex">
