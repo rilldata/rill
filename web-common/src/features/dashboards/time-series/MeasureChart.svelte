@@ -55,7 +55,6 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import ExplainButton from "@rilldata/web-common/features/dashboards/time-series/measure-selection/ExplainButton.svelte";
 
   export let measure: MetricsViewSpecMeasure;
@@ -87,7 +86,8 @@
   export let scrubEnd;
 
   const { validSpecStore, metricsViewName } = getStateManagers();
-  const { dashboardChat } = featureFlags;
+  const measureSelectionEnabledStore = measureSelection.getEnabledStore();
+  $: measureSelectionEnabled = $measureSelectionEnabledStore;
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
@@ -217,7 +217,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    const shouldUpdateSelectedRange = $dashboardChat && !isScrubbing;
+    const shouldUpdateSelectedRange = measureSelectionEnabled && !isScrubbing;
     if (shouldUpdateSelectedRange) {
       measureSelection.setRange(measure.name!, start, end);
     }
@@ -274,13 +274,13 @@
     if (mouseOutsideOfScrubRange) {
       resetScrub();
       measureSelection.clear();
-    } else if (measure.name && $dashboardChat) {
+    } else if (measure.name && measureSelectionEnabled) {
       measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
   }
 
   function maybeSelectMeasureHoverTime() {
-    if (!$dashboardChat) return;
+    if (!measureSelectionEnabled) return;
     const hasValidMeasureSelectionTarget =
       hoveredTime && measure.name && TIME_GRAIN[timeGrain];
     if (!hasValidMeasureSelectionTarget) return;
@@ -431,7 +431,7 @@
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
 
-    {#if $dashboardChat}
+    {#if measureSelectionEnabled}
       <MeasureSelection
         {data}
         measureName={measure.name ?? ""}
@@ -449,7 +449,7 @@
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
   <AnnotationGroupPopover {annotationsStore} />
 
-  {#if $dashboardChat}
+  {#if measureSelectionEnabled}
     <ExplainButton
       measureName={measure.name ?? ""}
       metricsViewName={$metricsViewName}
