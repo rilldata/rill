@@ -2217,6 +2217,11 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RevertToCommitResponse {
+  newCommitSha?: string;
+  message?: string;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -3172,6 +3177,11 @@ export type RuntimeServiceWatchResources200 = {
 
 export type RuntimeServiceGetExploreParams = {
   name?: string;
+};
+
+export type RuntimeServiceRevertToCommitBody = {
+  /** Optional: specific files to revert. If empty, reverts entire commit. */
+  files?: string[];
 };
 
 export type RuntimeServiceCreateTriggerBody = {

@@ -7,6 +7,7 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
+import { type CheckpointBlock } from "./checkpoint/checkpoint-block";
 import { type FileDiffBlock } from "./file-diff/file-diff-block";
 import { createTextBlock, type TextBlock } from "./text/text-block";
 import {
@@ -24,12 +25,14 @@ export type Block =
   | TextBlock
   | ThinkingBlock
   | ChartBlock
+  | CheckpointBlock
   | FileDiffBlock
   | WorkingBlock;
 
 // Re-export individual block types for convenience
 export type {
   ChartBlock,
+  CheckpointBlock,
   FileDiffBlock,
   TextBlock,
   ThinkingBlock,

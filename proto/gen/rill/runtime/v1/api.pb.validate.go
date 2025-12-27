@@ -4381,6 +4381,238 @@ var _ interface {
 	ErrorName() string
 } = RenameFileResponseValidationError{}
 
+// Validate checks the field values on RevertToCommitRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevertToCommitRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevertToCommitRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RevertToCommitRequestMultiError, or nil if none found.
+func (m *RevertToCommitRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevertToCommitRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_RevertToCommitRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := RevertToCommitRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetCommitSha()) < 1 {
+		err := RevertToCommitRequestValidationError{
+			field:  "CommitSha",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RevertToCommitRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevertToCommitRequestMultiError is an error wrapping multiple validation
+// errors returned by RevertToCommitRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RevertToCommitRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevertToCommitRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevertToCommitRequestMultiError) AllErrors() []error { return m }
+
+// RevertToCommitRequestValidationError is the validation error returned by
+// RevertToCommitRequest.Validate if the designated constraints aren't met.
+type RevertToCommitRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevertToCommitRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevertToCommitRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevertToCommitRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevertToCommitRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevertToCommitRequestValidationError) ErrorName() string {
+	return "RevertToCommitRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevertToCommitRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevertToCommitRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevertToCommitRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevertToCommitRequestValidationError{}
+
+var _RevertToCommitRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on RevertToCommitResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevertToCommitResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevertToCommitResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RevertToCommitResponseMultiError, or nil if none found.
+func (m *RevertToCommitResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevertToCommitResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for NewCommitSha
+
+	// no validation rules for Message
+
+	if len(errors) > 0 {
+		return RevertToCommitResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevertToCommitResponseMultiError is an error wrapping multiple validation
+// errors returned by RevertToCommitResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RevertToCommitResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevertToCommitResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevertToCommitResponseMultiError) AllErrors() []error { return m }
+
+// RevertToCommitResponseValidationError is the validation error returned by
+// RevertToCommitResponse.Validate if the designated constraints aren't met.
+type RevertToCommitResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevertToCommitResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevertToCommitResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevertToCommitResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevertToCommitResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevertToCommitResponseValidationError) ErrorName() string {
+	return "RevertToCommitResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevertToCommitResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevertToCommitResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevertToCommitResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevertToCommitResponseValidationError{}
+
 // Validate checks the field values on Example with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

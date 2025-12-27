@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -260,4 +261,91 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
 		return
 	}
+}
+
+// RevertToCommit implements RuntimeService.
+func (s *Server) RevertToCommit(ctx context.Context, req *runtimev1.RevertToCommitRequest) (*runtimev1.RevertToCommitResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.commit_sha", req.CommitSha),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+
+	// Get the repo
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.FailedPrecondition, fmt.Sprintf("failed to access repository: %v", err))
+	}
+	defer release()
+
+	// Get the repo root path
+	repoRoot, err := repo.Root(ctx)
+	if err != nil {
+		return nil, status.Error(codes.FailedPrecondition, fmt.Sprintf("failed to get repository root: %v", err))
+	}
+
+	// Check if there are uncommitted changes
+	statusCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "status", "--porcelain")
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to check git status: %v", err))
+	}
+
+	hasUncommittedChanges := len(strings.TrimSpace(string(statusOutput))) > 0
+
+	// If there are uncommitted changes, commit them first
+	if hasUncommittedChanges {
+		// Stage all changes
+		addCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "add", "-A")
+		if err := addCmd.Run(); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to stage changes before revert: %v", err))
+		}
+
+		// Commit with a message indicating these are pre-revert changes
+		commitCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "commit", "-m", "Auto-commit before revert")
+		if err := commitCmd.Run(); err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to commit changes before revert: %v", err))
+		}
+	}
+
+	// Instead of using git revert (which creates conflicts), restore files to the checkpoint state
+	// This approach: checkout files from the target commit, then commit them as a new "revert" commit
+	
+	// Restore all files to the checkpoint state
+	checkoutCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "checkout", req.CommitSha, "--", ".")
+	output, err := checkoutCmd.CombinedOutput()
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("failed to checkout files from commit: %s", string(output)))
+	}
+
+	// Stage all the restored files
+	addCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "add", "-A")
+	if err := addCmd.Run(); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to stage restored files: %v", err))
+	}
+
+	// Create a commit with the restored state
+	commitMsg := fmt.Sprintf("Reverted to checkpoint %s", req.CommitSha[:7])
+	commitCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "commit", "-m", commitMsg, "--allow-empty")
+	if err := commitCmd.Run(); err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to commit revert: %v", err))
+	}
+
+	// Get the new commit SHA using git directly (repo.CommitHash may be cached)
+	shaCmd := exec.CommandContext(ctx, "git", "-C", repoRoot, "rev-parse", "HEAD")
+	shaOutput, err := shaCmd.Output()
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get new commit hash: %v", err))
+	}
+	newSHA := strings.TrimSpace(string(shaOutput))
+
+	return &runtimev1.RevertToCommitResponse{
+		NewCommitSha: newSHA,
+		Message:      fmt.Sprintf("Reverted commit %s", req.CommitSha[:7]),
+	}, nil
 }

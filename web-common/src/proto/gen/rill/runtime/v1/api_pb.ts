@@ -1821,6 +1821,104 @@ export class RenameFileResponse extends Message$1<RenameFileResponse> {
 }
 
 /**
+ * Request message for RuntimeService.RevertToCommit
+ *
+ * @generated from message rill.runtime.v1.RevertToCommitRequest
+ */
+export class RevertToCommitRequest extends Message$1<RevertToCommitRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string commit_sha = 2;
+   */
+  commitSha = "";
+
+  /**
+   * Optional: specific files to revert. If empty, reverts entire commit.
+   *
+   * @generated from field: repeated string files = 3;
+   */
+  files: string[] = [];
+
+  constructor(data?: PartialMessage<RevertToCommitRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RevertToCommitRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "files", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevertToCommitRequest {
+    return new RevertToCommitRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevertToCommitRequest {
+    return new RevertToCommitRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevertToCommitRequest {
+    return new RevertToCommitRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevertToCommitRequest | PlainMessage<RevertToCommitRequest> | undefined, b: RevertToCommitRequest | PlainMessage<RevertToCommitRequest> | undefined): boolean {
+    return proto3.util.equals(RevertToCommitRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.RevertToCommit
+ *
+ * @generated from message rill.runtime.v1.RevertToCommitResponse
+ */
+export class RevertToCommitResponse extends Message$1<RevertToCommitResponse> {
+  /**
+   * @generated from field: string new_commit_sha = 1;
+   */
+  newCommitSha = "";
+
+  /**
+   * @generated from field: string message = 2;
+   */
+  message = "";
+
+  constructor(data?: PartialMessage<RevertToCommitResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RevertToCommitResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "new_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevertToCommitResponse {
+    return new RevertToCommitResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevertToCommitResponse {
+    return new RevertToCommitResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevertToCommitResponse {
+    return new RevertToCommitResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevertToCommitResponse | PlainMessage<RevertToCommitResponse> | undefined, b: RevertToCommitResponse | PlainMessage<RevertToCommitResponse> | undefined): boolean {
+    return proto3.util.equals(RevertToCommitResponse, a, b);
+  }
+}
+
+/**
  * Example contains metadata about an example project that is available for unpacking.
  *
  * @generated from message rill.runtime.v1.Example

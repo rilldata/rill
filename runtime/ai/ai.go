@@ -62,6 +62,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
+	RegisterTool(r, &Checkpoint{Runtime: rt})
 
 	return r
 }

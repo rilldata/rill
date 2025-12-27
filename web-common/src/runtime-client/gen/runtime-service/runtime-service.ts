@@ -51,6 +51,7 @@ import type {
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceRevertToCommitBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -96,6 +97,7 @@ import type {
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1RenameFileResponse,
+  V1RevertToCommitResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -3851,6 +3853,115 @@ export function createRuntimeServiceGetExplore<
   return query;
 }
 
+/**
+ * @summary RevertToCommit creates a new commit that reverts changes from a specific commit
+ */
+export const runtimeServiceRevertToCommit = (
+  instanceId: string,
+  commitSha: string,
+  runtimeServiceRevertToCommitBody: RuntimeServiceRevertToCommitBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RevertToCommitResponse>({
+    url: `/v1/instances/${instanceId}/revert/${commitSha}`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRevertToCommitBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceRevertToCommitMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRevertToCommit>>,
+    TError,
+    {
+      instanceId: string;
+      commitSha: string;
+      data: RuntimeServiceRevertToCommitBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceRevertToCommit>>,
+  TError,
+  {
+    instanceId: string;
+    commitSha: string;
+    data: RuntimeServiceRevertToCommitBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceRevertToCommit"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRevertToCommit>>,
+    {
+      instanceId: string;
+      commitSha: string;
+      data: RuntimeServiceRevertToCommitBody;
+    }
+  > = (props) => {
+    const { instanceId, commitSha, data } = props ?? {};
+
+    return runtimeServiceRevertToCommit(instanceId, commitSha, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceRevertToCommitMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRevertToCommit>>
+>;
+export type RuntimeServiceRevertToCommitMutationBody =
+  RuntimeServiceRevertToCommitBody;
+export type RuntimeServiceRevertToCommitMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary RevertToCommit creates a new commit that reverts changes from a specific commit
+ */
+export const createRuntimeServiceRevertToCommit = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRevertToCommit>>,
+      TError,
+      {
+        instanceId: string;
+        commitSha: string;
+        data: RuntimeServiceRevertToCommitBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceRevertToCommit>>,
+  TError,
+  {
+    instanceId: string;
+    commitSha: string;
+    data: RuntimeServiceRevertToCommitBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceRevertToCommitMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 Triggers are ephemeral resources that will be cleaned up by the controller.
