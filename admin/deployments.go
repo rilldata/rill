@@ -568,11 +568,25 @@ func (s *Service) TriggerRuntimeReloadForProject(ctx context.Context, proj *data
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.SetLimit(8)
 	for _, d := range ds {
+		isPrimary := proj.PrimaryDeploymentID != nil && *proj.PrimaryDeploymentID == d.ID
+
+		if d.Status != database.DeploymentStatusRunning {
+			if isPrimary {
+				return fmt.Errorf("cannot trigger runtime reload for deployment %q because it is not running", d.ID)
+			}
+			// for non-primary deployments, skip
+			continue
+		}
 		grp.Go(func() error {
 			// Connect to the runtime
 			rt, err := s.OpenRuntimeClient(d)
 			if err != nil {
-				return err
+				if isPrimary {
+					return err
+				}
+				// for non-primary deployments, log and continue
+				s.Logger.Info("failed to trigger runtime reload", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+				return nil
 			}
 			defer rt.Close()
 
@@ -581,7 +595,7 @@ func (s *Service) TriggerRuntimeReloadForProject(ctx context.Context, proj *data
 				InstanceId: d.RuntimeInstanceID,
 			})
 			if err != nil {
-				if proj.PrimaryDeploymentID != nil && *proj.PrimaryDeploymentID == d.ID {
+				if isPrimary {
 					return err
 				}
 				// for non-primary deployments, log and continue
