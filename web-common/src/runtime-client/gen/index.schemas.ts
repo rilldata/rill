@@ -2068,6 +2068,10 @@ export interface V1RefreshTriggerState {
   [key: string]: unknown;
 }
 
+export interface V1ReloadConfigResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: unknown;
 }
@@ -3129,6 +3133,8 @@ export type RuntimeServiceQueryResolverBody = {
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
   limit?: number;
 };
+
+export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };
 
 export type QueryServiceExportReportBody = {
   /** The execution time to evaluate the report relative to.

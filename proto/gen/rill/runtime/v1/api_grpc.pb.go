@@ -27,6 +27,7 @@ const (
 	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
 	RuntimeService_EditInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/EditInstance"
 	RuntimeService_DeleteInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteInstance"
+	RuntimeService_ReloadConfig_FullMethodName            = "/rill.runtime.v1.RuntimeService/ReloadConfig"
 	RuntimeService_ListFiles_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListFiles"
 	RuntimeService_WatchFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchFiles"
 	RuntimeService_GetFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetFile"
@@ -85,6 +86,9 @@ type RuntimeServiceClient interface {
 	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
+	// ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+	// If the instance doesn't have an admin connector, this RPC does nothing.
+	ReloadConfig(ctx context.Context, in *ReloadConfigRequest, opts ...grpc.CallOption) (*ReloadConfigResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
@@ -240,6 +244,16 @@ func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteIns
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteInstanceResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_DeleteInstance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ReloadConfig(ctx context.Context, in *ReloadConfigRequest, opts ...grpc.CallOption) (*ReloadConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReloadConfigResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ReloadConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -635,6 +649,9 @@ type RuntimeServiceServer interface {
 	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
+	// ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+	// If the instance doesn't have an admin connector, this RPC does nothing.
+	ReloadConfig(context.Context, *ReloadConfigRequest) (*ReloadConfigResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
@@ -739,6 +756,9 @@ func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInst
 }
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ReloadConfig(context.Context, *ReloadConfigRequest) (*ReloadConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReloadConfig not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
@@ -1000,6 +1020,24 @@ func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).DeleteInstance(ctx, req.(*DeleteInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ReloadConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReloadConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ReloadConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ReloadConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ReloadConfig(ctx, req.(*ReloadConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1608,6 +1646,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteInstance",
 			Handler:    _RuntimeService_DeleteInstance_Handler,
+		},
+		{
+			MethodName: "ReloadConfig",
+			Handler:    _RuntimeService_ReloadConfig_Handler,
 		},
 		{
 			MethodName: "ListFiles",

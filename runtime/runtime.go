@@ -13,10 +13,12 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -221,6 +223,55 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	inst.ProjectConnectors = projConns
 
 	return r.EditInstance(ctx, inst, false)
+}
+
+func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string, disableRestartCtrl bool) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	admin, release, err := r.Admin(ctx, instanceID)
+	if err != nil {
+		if errors.Is(err, ErrAdminNotConfigured) {
+			return nil
+		}
+		return err
+	}
+	defer release()
+
+	r.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID))
+
+	cfg, err := admin.GetDeploymentConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Clone for editing
+	tmp := *inst
+	inst = &tmp
+
+	// Update variables
+	varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
+	if varsChanged {
+		inst.Variables = cfg.Variables
+	}
+	inst.Annotations = cfg.Annotations
+	inst.FrontendURL = cfg.FrontendURL
+
+	// Force the repo to refresh its handshake.
+	repo, release, err := r.Repo(ctx, inst.ID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	err = repo.Pull(ctx, false, true)
+	if err != nil {
+		r.Logger.Error("ReloadConfig: failed to pull repo", zap.String("instance_id", inst.ID), zap.Error(err), observability.ZapCtx(ctx))
+	}
+	restartCtrl := !disableRestartCtrl && varsChanged
+	return r.EditInstance(ctx, inst, restartCtrl)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

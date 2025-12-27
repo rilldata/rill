@@ -300,7 +300,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment, true)
+	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment)
 	if err != nil {
 		return err
 	}
@@ -432,27 +432,16 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 		return err
 	}
 
-	// Construct the full frontend URL including custom domain (if any) and org/project path
-	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
-
-	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, d.Environment, true)
-	if err != nil {
-		return err
-	}
-
-	// Connect to the runtime, and update the instance's variables/annotations.
-	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
+	// Connect to the runtime and call ReloadConfig.
+	// The runtime will pull the latest variables, annotations, and frontend_url from the admin service,
+	// and will also force a repo pull.
 	rt, err := s.OpenRuntimeClient(d)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
-	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:  d.RuntimeInstanceID,
-		Variables:   vars,
-		Annotations: annotations.ToMap(),
-		FrontendUrl: &frontendURL,
+	_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{
+		InstanceId: d.RuntimeInstanceID,
 	})
 	if err != nil {
 		return err
@@ -567,6 +556,55 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
 	}
+}
+
+func (s *Service) TriggerRuntimeReloadForProject(ctx context.Context, proj *database.Project, environment string) error {
+	projectID := proj.ID
+	ds, err := s.DB.FindDeploymentsForProject(ctx, projectID, environment, "")
+	if err != nil {
+		return err
+	}
+
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.SetLimit(8)
+	for _, d := range ds {
+		isPrimary := proj.PrimaryDeploymentID != nil && *proj.PrimaryDeploymentID == d.ID
+
+		if d.Status != database.DeploymentStatusRunning {
+			if isPrimary {
+				return fmt.Errorf("cannot trigger runtime reload for deployment %q because it is not running", d.ID)
+			}
+			// for non-primary deployments, skip
+			continue
+		}
+		grp.Go(func() error {
+			// Connect to the runtime
+			rt, err := s.OpenRuntimeClient(d)
+			if err != nil {
+				if isPrimary {
+					return err
+				}
+				// for non-primary deployments, log and continue
+				s.Logger.Info("failed to trigger runtime reload", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+				return nil
+			}
+			defer rt.Close()
+
+			// Call ReloadConfig
+			_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{
+				InstanceId: d.RuntimeInstanceID,
+			})
+			if err != nil {
+				if isPrimary {
+					return err
+				}
+				// for non-primary deployments, log and continue
+				s.Logger.Info("failed to trigger runtime reload", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+			return nil
+		})
+	}
+	return grp.Wait()
 }
 
 type DeploymentAnnotations struct {

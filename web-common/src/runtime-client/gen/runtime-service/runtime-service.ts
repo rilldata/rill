@@ -50,6 +50,7 @@ import type {
   RuntimeServiceListResourcesParams,
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
+  RuntimeServiceReloadConfigBody,
   RuntimeServiceRenameFileBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
@@ -95,6 +96,7 @@ import type {
   V1PingResponse,
   V1PutFileResponse,
   V1QueryResolverResponse,
+  V1ReloadConfigResponse,
   V1RenameFileResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
@@ -3416,6 +3418,95 @@ export const createRuntimeServiceQueryResolver = <
 > => {
   const mutationOptions =
     getRuntimeServiceQueryResolverMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+If the instance doesn't have an admin connector, this RPC does nothing.
+ */
+export const runtimeServiceReloadConfig = (
+  instanceId: string,
+  runtimeServiceReloadConfigBody: RuntimeServiceReloadConfigBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ReloadConfigResponse>({
+    url: `/v1/instances/${instanceId}/reload-config`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceReloadConfigBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceReloadConfigMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceReloadConfigBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceReloadConfigBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceReloadConfig"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+    { instanceId: string; data: RuntimeServiceReloadConfigBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceReloadConfig(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceReloadConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceReloadConfig>>
+>;
+export type RuntimeServiceReloadConfigMutationBody =
+  RuntimeServiceReloadConfigBody;
+export type RuntimeServiceReloadConfigMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+If the instance doesn't have an admin connector, this RPC does nothing.
+ */
+export const createRuntimeServiceReloadConfig = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceReloadConfigBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceReloadConfig>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceReloadConfigBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceReloadConfigMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

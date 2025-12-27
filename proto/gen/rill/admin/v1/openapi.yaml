@@ -658,6 +658,22 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1GetDeploymentConfigResponse:
+            properties:
+                annotations:
+                    additionalProperties:
+                        type: string
+                    title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                frontendUrl:
+                    description: Frontend URL for the deployment.
+                    type: string
+                variables:
+                    additionalProperties:
+                        type: string
+                    title: Variables for the deployment (connector credentials, etc.)
+                    type: object
+            type: object
         v1GetDeploymentCredentialsResponse:
             properties:
                 accessToken:
@@ -2272,7 +2288,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.77.8
+    version: v0.78.0
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -2403,6 +2419,31 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
+    /v1/deployments/{deploymentId}/deployment-config:
+        get:
+            operationId: AdminService_GetDeploymentConfig
+            parameters:
+                - in: path
+                  name: deploymentId
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}/provision:
         post:
             operationId: AdminService_Provision

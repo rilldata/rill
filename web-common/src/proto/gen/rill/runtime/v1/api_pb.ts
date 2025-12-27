@@ -1153,6 +1153,78 @@ export class EditInstanceResponse extends Message$1<EditInstanceResponse> {
 }
 
 /**
+ * Request message for RuntimeService.ReloadConfig
+ *
+ * @generated from message rill.runtime.v1.ReloadConfigRequest
+ */
+export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ReloadConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReloadConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReloadConfigRequest | PlainMessage<ReloadConfigRequest> | undefined, b: ReloadConfigRequest | PlainMessage<ReloadConfigRequest> | undefined): boolean {
+    return proto3.util.equals(ReloadConfigRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ReloadConfig
+ *
+ * @generated from message rill.runtime.v1.ReloadConfigResponse
+ */
+export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
+  constructor(data?: PartialMessage<ReloadConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReloadConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReloadConfigResponse | PlainMessage<ReloadConfigResponse> | undefined, b: ReloadConfigResponse | PlainMessage<ReloadConfigResponse> | undefined): boolean {
+    return proto3.util.equals(ReloadConfigResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.ListFiles
  *
  * @generated from message rill.runtime.v1.ListFilesRequest

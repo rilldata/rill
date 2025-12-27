@@ -51,6 +51,7 @@ const (
 	AdminService_TriggerRefreshSources_FullMethodName                  = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                        = "/rill.admin.v1.AdminService/TriggerRedeploy"
 	AdminService_Provision_FullMethodName                              = "/rill.admin.v1.AdminService/Provision"
+	AdminService_GetDeploymentConfig_FullMethodName                    = "/rill.admin.v1.AdminService/GetDeploymentConfig"
 	AdminService_ListRoles_FullMethodName                              = "/rill.admin.v1.AdminService/ListRoles"
 	AdminService_ListOrganizationMemberUsers_FullMethodName            = "/rill.admin.v1.AdminService/ListOrganizationMemberUsers"
 	AdminService_ListOrganizationInvites_FullMethodName                = "/rill.admin.v1.AdminService/ListOrganizationInvites"
@@ -255,6 +256,9 @@ type AdminServiceClient interface {
 	// Provision provisions a new resource for a deployment.
 	// If an existing resource matches the request, it will be returned without provisioning a new resource.
 	Provision(ctx context.Context, in *ProvisionRequest, opts ...grpc.CallOption) (*ProvisionResponse, error)
+	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+	// This is called by the runtime to pull its Variables and Annotations from the admin service.
+	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -835,6 +839,16 @@ func (c *adminServiceClient) Provision(ctx context.Context, in *ProvisionRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ProvisionResponse)
 	err := c.cc.Invoke(ctx, AdminService_Provision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeploymentConfigResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeploymentConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2159,6 +2173,9 @@ type AdminServiceServer interface {
 	// Provision provisions a new resource for a deployment.
 	// If an existing resource matches the request, it will be returned without provisioning a new resource.
 	Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error)
+	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+	// This is called by the runtime to pull its Variables and Annotations from the admin service.
+	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -2520,6 +2537,9 @@ func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *Trigger
 }
 func (UnimplementedAdminServiceServer) Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Provision not implemented")
+}
+func (UnimplementedAdminServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
 }
 func (UnimplementedAdminServiceServer) ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoles not implemented")
@@ -3486,6 +3506,24 @@ func _AdminService_Provision_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).Provision(ctx, req.(*ProvisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeploymentConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5856,6 +5894,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Provision",
 			Handler:    _AdminService_Provision_Handler,
+		},
+		{
+			MethodName: "GetDeploymentConfig",
+			Handler:    _AdminService_GetDeploymentConfig_Handler,
 		},
 		{
 			MethodName: "ListRoles",
