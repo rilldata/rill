@@ -558,6 +558,41 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 	}
 }
 
+func (s *Service) TriggerRuntimeReloadForProject(ctx context.Context, proj *database.Project, environment string) error {
+	projectID := proj.ID
+	ds, err := s.DB.FindDeploymentsForProject(ctx, projectID, environment, "")
+	if err != nil {
+		return err
+	}
+
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.SetLimit(8)
+	for _, d := range ds {
+		grp.Go(func() error {
+			// Connect to the runtime
+			rt, err := s.OpenRuntimeClient(d)
+			if err != nil {
+				return err
+			}
+			defer rt.Close()
+
+			// Call ReloadConfig
+			_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{
+				InstanceId: d.RuntimeInstanceID,
+			})
+			if err != nil {
+				if proj.PrimaryDeploymentID != nil && *proj.PrimaryDeploymentID == d.ID {
+					return err
+				}
+				// for non-primary deployments, log and continue
+				s.Logger.Info("failed to trigger runtime reload", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+			return nil
+		})
+	}
+	return grp.Wait()
+}
+
 type DeploymentAnnotations struct {
 	orgID              string
 	orgName            string

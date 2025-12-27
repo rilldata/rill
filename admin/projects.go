@@ -288,7 +288,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	// Update deployments
 	s.Logger.Info("update project variables: updating deployments", observability.ZapCtx(ctx))
 
-	err = s.UpdateDeploymentsForProject(ctx, project)
+	err = s.TriggerRuntimeReloadForProject(ctx, project, environment)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 		}
 
 		for _, proj := range projs {
-			err := s.UpdateDeploymentsForProject(ctx, proj)
+			err := s.TriggerRuntimeReloadForProject(ctx, proj, "")
 			if err != nil {
 				return err
 			}
