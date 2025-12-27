@@ -1033,7 +1033,10 @@ message GetConversationResponse {
 message ShareConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2 [(validate.rules).string.min_len = 1];
-  string shared_until_message_id = 3; // optional message ID up to which to share otherwise share all current messages, only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared
+  // optional message ID up to which to share otherwise share all current messages
+  // only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+  // It supports a special value of "none" to unshare the conversation.
+  string until_message_id = 3;
 }
 
 // Response message for RuntimeService.ShareConversation

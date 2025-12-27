@@ -11445,7 +11445,7 @@ func (m *ShareConversationRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for SharedUntilMessageId
+	// no validation rules for UntilMessageId
 
 	if len(errors) > 0 {
 		return ShareConversationRequestMultiError(errors)

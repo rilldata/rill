@@ -4758,11 +4758,13 @@ export class ShareConversationRequest extends Message$1<ShareConversationRequest
   conversationId = "";
 
   /**
-   * optional message ID up to which to share otherwise share all current messages, only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared
+   * optional message ID up to which to share otherwise share all current messages
+   * only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.
+   * It supports a special value of "none" to unshare the conversation.
    *
-   * @generated from field: string shared_until_message_id = 3;
+   * @generated from field: string until_message_id = 3;
    */
-  sharedUntilMessageId = "";
+  untilMessageId = "";
 
   constructor(data?: PartialMessage<ShareConversationRequest>) {
     super();
@@ -4774,7 +4776,7 @@ export class ShareConversationRequest extends Message$1<ShareConversationRequest
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "shared_until_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "until_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShareConversationRequest {

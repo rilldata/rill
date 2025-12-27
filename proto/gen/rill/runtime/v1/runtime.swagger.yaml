@@ -608,9 +608,12 @@ paths:
           schema:
             type: object
             properties:
-              sharedUntilMessageId:
+              untilMessageId:
                 type: string
-                title: optional message ID up to which to share otherwise share all current messages, only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared
+                description: |-
+                  optional message ID up to which to share otherwise share all current messages
+                  only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.
+                  It supports a special value of "none" to unshare the conversation.
             title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService

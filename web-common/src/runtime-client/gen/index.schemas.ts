@@ -2618,7 +2618,10 @@ export type RuntimeServiceListConversationsParams = {
 export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
 
 export type RuntimeServiceShareConversationBody = {
-  sharedUntilMessageId?: string;
+  /** optional message ID up to which to share otherwise share all current messages
+only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.
+It supports a special value of "none" to unshare the conversation. */
+  untilMessageId?: string;
 };
 
 export type ConnectorServiceListBucketsParams = {

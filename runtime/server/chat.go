@@ -62,11 +62,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
 
-	var anonUser bool
-	if claims != nil && claims.UserID == "" && !claims.SkipChecks {
-		anonUser = true
-	}
-	if !claims.Can(runtime.UseAI) && !anonUser {
+	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
 
@@ -77,10 +73,6 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	if anonUser && !session.Shareable() {
-		return nil, ErrForbidden
 	}
 
 	messages := session.Messages()
@@ -119,22 +111,35 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 		return nil, ErrForbidden
 	}
 
+	// unshare conversation
+	if req.UntilMessageId == "none" {
+		err = session.UpdateSharedUntilMessageID(ctx, "")
+		if err != nil {
+			return nil, err
+		}
+		err = session.Flush(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &runtimev1.ShareConversationResponse{}, nil
+	}
+
 	// validate that the requested message id exists
-	foundMsg := req.SharedUntilMessageId == ""
+	foundMsg := req.UntilMessageId == ""
 	lastRouterResultMsgID := ""
 	for _, msg := range session.Messages() {
 		// only allow sharing until the last router agent result message
 		if msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult {
 			lastRouterResultMsgID = msg.ID
 		}
-		if msg.ID == req.SharedUntilMessageId {
+		if msg.ID == req.UntilMessageId {
 			// found the message, proceed
 			foundMsg = true
 			break
 		}
 	}
 	if !foundMsg {
-		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.SharedUntilMessageId, req.ConversationId)
+		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
 	}
 	if lastRouterResultMsgID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation %q without any router agent result messages", req.ConversationId)

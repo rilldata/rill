@@ -634,7 +634,7 @@ func (s *BaseSession) Title() string {
 	return s.dto.Title
 }
 
-func (s *BaseSession) Shareable() bool {
+func (s *BaseSession) Shared() bool {
 	return s.dto.SharedUntilMessageID != ""
 }
 
