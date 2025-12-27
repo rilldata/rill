@@ -22,7 +22,7 @@ rill query --sql "SELECT * FROM my-table" --limit 10
 `
 
 func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
-	var sql, connector, resolver, project, path string
+	var sql, connector, resolver, project, path, branch string
 	var properties, args map[string]string
 	var limit int
 	var local bool
@@ -65,7 +65,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Connect to the runtime
-			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, branch, local)
 			if err != nil {
 				return fmt.Errorf("failed to connect to runtime: %w", err)
 			}
@@ -92,6 +92,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	queryCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	queryCmd.Flags().StringVar(&project, "project", "", "Project name")
 	queryCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	queryCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
 	queryCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
 
 	// Query flags

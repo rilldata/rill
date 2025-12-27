@@ -124,7 +124,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		return nil, err
 	}
 
-	depl := proj.ProdDeployment
+	depl := proj.Deployment
 
 	if depl == nil {
 		return &projectStatusTableRow{

@@ -16,9 +16,9 @@ export function useProjectDeployment(orgName: string, projName: string) {
     undefined,
     {
       query: {
-        select: (data: { prodDeployment?: V1Deployment }) => {
-          // There may not be a prodDeployment if the project is hibernating
-          return data?.prodDeployment;
+        select: (data: { deployment?: V1Deployment }) => {
+          // There may not be a deployment if the project is hibernating
+          return data?.deployment;
         },
       },
     },

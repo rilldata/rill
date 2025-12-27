@@ -22,6 +22,7 @@ Manage project deployments
 * [rill project deployments create](create.md)	 - Create a deployment for a specific branch
 * [rill project deployments delete](delete.md)	 - Delete a deployment by branch
 * [rill project deployments list](list.md)	 - List all deployments for a project
+* [rill project deployments show](show.md)	 - Show details of a deployment
 * [rill project deployments start](start.md)	 - Start a deployment by branch
 * [rill project deployments stop](stop.md)	 - Stop a deployment by branch
 

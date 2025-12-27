@@ -1672,6 +1672,13 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
   project = "";
 
   /**
+   * Optional branch to get deployment for. If not set, then project's primary_branch is used.
+   *
+   * @generated from field: string branch = 6;
+   */
+  branch = "";
+
+  /**
    * @generated from field: uint32 access_token_ttl_seconds = 3;
    */
   accessTokenTtlSeconds = 0;
@@ -1696,6 +1703,7 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "issue_superuser_token", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1728,9 +1736,9 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   project?: Project;
 
   /**
-   * @generated from field: rill.admin.v1.Deployment prod_deployment = 2;
+   * @generated from field: rill.admin.v1.Deployment deployment = 2;
    */
-  prodDeployment?: Deployment;
+  deployment?: Deployment;
 
   /**
    * @generated from field: string jwt = 3;
@@ -1751,7 +1759,7 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   static readonly typeName = "rill.admin.v1.GetProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project", kind: "message", T: Project },
-    { no: 2, name: "prod_deployment", kind: "message", T: Deployment },
+    { no: 2, name: "deployment", kind: "message", T: Deployment },
     { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_permissions", kind: "message", T: ProjectPermissions },
   ]);

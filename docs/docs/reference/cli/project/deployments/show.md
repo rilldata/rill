@@ -1,23 +1,18 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project describe
+title: rill project deployments show
 ---
-## rill project describe
+## rill project deployments show
 
-Retrieve detailed state for a resource
-
-### Synopsis
-
-Retrieve detailed state for a specific resource (source, model, dashboard, ...)
+Show details of a deployment
 
 ```
-rill project describe [<project-name>] <type> <name> [flags]
+rill project deployments show [<project>] <branch> [flags]
 ```
 
 ### Flags
 
 ```
-      --branch string    Optional git branch (for non-primary deployment)
       --path string      Project directory (default ".")
       --project string   Project name
 ```
@@ -34,5 +29,5 @@ rill project describe [<project-name>] <type> <name> [flags]
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill project deployments](deployments.md)	 - Manage project deployments
 

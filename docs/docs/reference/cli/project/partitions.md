@@ -15,6 +15,7 @@ rill project partitions [<project>] <model> [flags]
 ```
       --project string      Project Name
       --path string         Project directory (default ".")
+      --branch string       Optional git branch (for non-primary deployment)
       --model string        Model Name
       --pending             Only fetch pending partitions
       --errored             Only fetch errored partitions
