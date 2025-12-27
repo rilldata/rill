@@ -386,7 +386,7 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 
 func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPattern string) ([]*drivers.AISession, error) {
 	query := `
-		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
+		SELECT id, instance_id, owner_id, title, user_agent, shared_until_message_id, forked_from_session_id, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND owner_id = ?
 	`
@@ -409,7 +409,7 @@ func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPat
 	var result []*drivers.AISession
 	for rows.Next() {
 		var s drivers.AISession
-		if err := rows.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.CreatedOn, &s.UpdatedOn); err != nil {
+		if err := rows.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.CreatedOn, &s.UpdatedOn); err != nil {
 			return nil, err
 		}
 		result = append(result, &s)
@@ -422,13 +422,13 @@ func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPat
 
 func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*drivers.AISession, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
+		SELECT id, instance_id, owner_id, title, user_agent, shared_until_message_id, forked_from_session_id, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND id = ?
 	`, c.instanceID, sessionID)
 
 	var s drivers.AISession
-	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.CreatedOn, &s.UpdatedOn); err != nil {
+	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.CreatedOn, &s.UpdatedOn); err != nil {
 		return nil, err
 	}
 	return &s, nil
@@ -436,9 +436,9 @@ func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*dr
 
 func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession) error {
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO ai_sessions (id, instance_id, owner_id, title, user_agent, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, s.ID, s.InstanceID, s.OwnerID, s.Title, s.UserAgent, s.CreatedOn, s.UpdatedOn)
+		INSERT INTO ai_sessions (id, instance_id, owner_id, title, user_agent, forked_from_session_id, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, s.ID, s.InstanceID, s.OwnerID, s.Title, s.UserAgent, s.ForkedFromSessionID, s.CreatedOn, s.UpdatedOn)
 	if err != nil {
 		return err
 	}
@@ -448,9 +448,9 @@ func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession
 func (c *catalogStore) UpdateAISession(ctx context.Context, s *drivers.AISession) error {
 	now := time.Now()
 	_, err := c.db.ExecContext(ctx, `
-		UPDATE ai_sessions SET owner_id = ?, title = ?, user_agent = ?, updated_on = ?
+		UPDATE ai_sessions SET owner_id = ?, title = ?, user_agent = ?, shared_until_message_id = ?, updated_on = ?
 		WHERE id = ?
-	`, s.OwnerID, s.Title, s.UserAgent, now, s.ID)
+	`, s.OwnerID, s.Title, s.UserAgent, s.SharedUntilMessageID, now, s.ID)
 	if err != nil {
 		return err
 	}
