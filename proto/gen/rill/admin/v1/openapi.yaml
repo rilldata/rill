@@ -825,6 +825,9 @@ components:
                     description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
                     format: date-time
                     type: string
+                managedGitRepo:
+                    description: Whether the git repo is managed by Rill.
+                    type: boolean
             type: object
         v1GetReportMetaResponse:
             properties:

@@ -44,12 +44,9 @@ import type {
   RuntimeServiceGetLogsParams,
   RuntimeServiceGetModelPartitionsParams,
   RuntimeServiceGetResourceParams,
-<<<<<<< HEAD
-  RuntimeServiceListConversationsParams,
-=======
   RuntimeServiceGitPullBody,
   RuntimeServiceGitPushBody,
->>>>>>> e267e309d (Add http paths for APIs)
+  RuntimeServiceListConversationsParams,
   RuntimeServiceListFilesParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,

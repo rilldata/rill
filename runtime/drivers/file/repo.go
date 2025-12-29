@@ -436,7 +436,7 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 		Username:          creds.GitUsername,
 		Password:          creds.GitPassword,
 		PasswordExpiresAt: creds.GitPasswordExpiresAt.AsTime(),
-		DefaultBranch:     creds.GitProdBranch,
+		DefaultBranch:     creds.GitPrimaryBranch,
 		Subpath:           creds.GitSubpath,
 		ManagedRepo:       creds.GitManagedRepo,
 	}
