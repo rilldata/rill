@@ -60,6 +60,8 @@ const (
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
+	RuntimeService_ListGitBranches_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListGitBranches"
+	RuntimeService_SwitchBranch_FullMethodName            = "/rill.runtime.v1.RuntimeService/SwitchBranch"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
 	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
@@ -159,6 +161,8 @@ type RuntimeServiceClient interface {
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
+	ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error)
+	SwitchBranch(ctx context.Context, in *SwitchBranchRequest, opts ...grpc.CallOption) (*SwitchBranchResponse, error)
 	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
@@ -624,6 +628,26 @@ func (c *runtimeServiceClient) AnalyzeVariables(ctx context.Context, in *Analyze
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListGitBranches(ctx context.Context, in *ListGitBranchesRequest, opts ...grpc.CallOption) (*ListGitBranchesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGitBranchesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListGitBranches_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) SwitchBranch(ctx context.Context, in *SwitchBranchRequest, opts ...grpc.CallOption) (*SwitchBranchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SwitchBranchResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_SwitchBranch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GitStatusResponse)
@@ -748,6 +772,8 @@ type RuntimeServiceServer interface {
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
+	ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error)
+	SwitchBranch(context.Context, *SwitchBranchRequest) (*SwitchBranchResponse, error)
 	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
@@ -889,6 +915,12 @@ func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJ
 }
 func (UnimplementedRuntimeServiceServer) AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeVariables not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListGitBranches(context.Context, *ListGitBranchesRequest) (*ListGitBranchesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGitBranches not implemented")
+}
+func (UnimplementedRuntimeServiceServer) SwitchBranch(context.Context, *SwitchBranchRequest) (*SwitchBranchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SwitchBranch not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
@@ -1630,6 +1662,42 @@ func _RuntimeService_AnalyzeVariables_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListGitBranches_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGitBranchesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListGitBranches(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListGitBranches_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListGitBranches(ctx, req.(*ListGitBranchesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_SwitchBranch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SwitchBranchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).SwitchBranch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_SwitchBranch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).SwitchBranch(ctx, req.(*SwitchBranchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GitStatusRequest)
 	if err := dec(in); err != nil {
@@ -1838,6 +1906,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AnalyzeVariables",
 			Handler:    _RuntimeService_AnalyzeVariables_Handler,
+		},
+		{
+			MethodName: "ListGitBranches",
+			Handler:    _RuntimeService_ListGitBranches_Handler,
+		},
+		{
+			MethodName: "SwitchBranch",
+			Handler:    _RuntimeService_SwitchBranch_Handler,
 		},
 		{
 			MethodName: "GitStatus",

@@ -1094,6 +1094,12 @@ export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
 }
 
+export interface V1GitBranch {
+  name?: string;
+  isCurrent?: boolean;
+  hasPreviewDeployment?: boolean;
+}
+
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
@@ -1235,6 +1241,10 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  branches?: V1GitBranch[];
 }
 
 export interface V1ListInstancesResponse {
@@ -2344,6 +2354,10 @@ export interface V1Subquery {
   having?: V1Expression;
 }
 
+export interface V1SwitchBranchResponse {
+  [key: string]: unknown;
+}
+
 export interface V1TableCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2746,6 +2760,12 @@ export type RuntimeServiceGenerateResolverBody = {
   table?: string;
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
+};
+
+export type RuntimeServiceSwitchBranchBody = {
+  branchName?: string;
+  createIfNotExists?: boolean;
+  ignoreLocalChanges?: boolean;
 };
 
 export type RuntimeServiceGitPullBody = {

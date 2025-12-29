@@ -290,6 +290,17 @@ service RuntimeService {
 
   // Git APIs
   
+  rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
+  }
+
+  rpc SwitchBranch(SwitchBranchRequest) returns (SwitchBranchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/branches/switch",
+      body: "*"
+    };
+  }
+
   // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
   rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
@@ -1136,6 +1147,29 @@ message AnalyzedVariable {
   // List of resources that appear to use the connector.
   repeated ResourceName used_by = 8;
 }
+
+message ListGitBranchesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message ListGitBranchesResponse {
+  repeated GitBranch branches = 1;
+}
+
+message GitBranch {
+  string name = 1;
+  bool is_current = 2;
+  bool has_preview_deployment = 3;
+}
+
+message SwitchBranchRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string branch_name = 2;
+  bool create_if_not_exists = 3;
+  bool ignore_local_changes = 4;
+}
+
+message SwitchBranchResponse {}
 
 message GitStatusRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];

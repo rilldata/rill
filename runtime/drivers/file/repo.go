@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -422,6 +423,7 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 	if len(orgFiltered) == 0 {
 		return nil, nil
 	}
+	// since we have one repo one project relationship we can take the first project
 	p := orgFiltered[0]
 	creds, err := c.admin.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
 		Org:     p.OrgName,
@@ -440,6 +442,7 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 		Subpath:           creds.GitSubpath,
 		ManagedRepo:       creds.GitManagedRepo,
 	}
+	c.project = p
 	return c.gitConfig, nil
 }
 
@@ -468,4 +471,166 @@ func (c *connection) gitSignature(ctx context.Context, path string) (*object.Sig
 		Email: userResp.User.Email,
 		When:  time.Now(),
 	}, nil
+}
+
+// ListBranches implements drivers.RepoStore.
+func (c *connection) ListBranches(ctx context.Context) ([]drivers.GitBranch, error) {
+	if !c.isGitRepo() {
+		return nil, errors.New("not a git repository")
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, _, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := git.PlainOpen(gitPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch remote branches and preview deployments if authenticated
+	var gitConfig *gitutil.Config
+	previewBranches := make(map[string]bool)
+	if c.driverConfig.AccessToken != "" {
+		gitConfig, err = c.loadGitConfig(ctx)
+		if err == nil && gitConfig != nil {
+			// fetch to get latest remote branches
+			_ = gitutil.GitFetch(ctx, gitPath, gitConfig)
+
+			// fetch preview branches from deployments
+			depls, err := c.admin.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
+				Org:     c.driverConfig.Org,
+				Project: c.project.Name,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, d := range depls.Deployments {
+				if !d.Editable && d.Id != c.project.PrimaryDeploymentId {
+					previewBranches[d.Branch] = true
+				}
+			}
+		}
+	}
+
+	// List all references (local and remote)
+	branchSet := make(map[string]bool)
+	refs, err := repo.References()
+	if err != nil {
+		return nil, err
+	}
+
+	err = refs.ForEach(func(ref *plumbing.Reference) error {
+		refName := ref.Name()
+		// Include local branches (refs/heads/*)
+		if refName.IsBranch() {
+			branchSet[refName.Short()] = true
+		}
+		// Include remote branches (refs/remotes/origin/*)
+		if refName.IsRemote() {
+			// Strip "<remote>/" prefix to get branch name
+			// Skip HEAD reference
+			if branchName, ok := strings.CutPrefix(refName.Short(), gitConfig.RemoteName()+"/"); ok && branchName != "HEAD" {
+				branchSet[branchName] = true
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get current branch
+	head, err := repo.Head()
+	if err != nil {
+		return nil, err
+	}
+	currentBranch := head.Name().Short()
+
+	branches := make([]drivers.GitBranch, 0, len(branchSet))
+	for name := range branchSet {
+		branches = append(branches, drivers.GitBranch{
+			Name:                 name,
+			IsCurrent:            name == currentBranch,
+			HasPreviewDeployment: previewBranches[name],
+		})
+	}
+
+	return branches, nil
+}
+
+// SwitchBranch implements drivers.RepoStore.
+func (c *connection) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
+	if !c.isGitRepo() {
+		return errors.New("not a git repository")
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, _, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		return err
+	}
+
+	repo, err := git.PlainOpen(gitPath)
+	if err != nil {
+		return err
+	}
+
+	// Get the worktree
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Check if branch exists
+	branchRef := plumbing.NewBranchReferenceName(branchName)
+	_, err = repo.Reference(branchRef, true)
+	branchExists := err == nil
+
+	if !branchExists {
+		if !createIfNotExists {
+			return git.ErrBranchNotFound
+		}
+
+		// Create new branch from HEAD
+		head, err := repo.Head()
+		if err != nil {
+			return err
+		}
+
+		// Create the branch reference
+		err = repo.CreateBranch(&config.Branch{
+			Name:   branchName,
+			Remote: "origin",
+			Merge:  plumbing.NewBranchReferenceName(branchName),
+		})
+		if err != nil {
+			return err
+		}
+
+		// Create the reference pointing to HEAD's commit
+		ref := plumbing.NewHashReference(branchRef, head.Hash())
+		err = repo.Storer.SetReference(ref)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Checkout the branch
+	err = w.Checkout(&git.CheckoutOptions{
+		Branch: branchRef,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

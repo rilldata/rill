@@ -423,6 +423,16 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	})
 }
 
+// ListBranches implements drivers.RepoStore.
+func (r *repo) ListBranches(ctx context.Context) ([]drivers.GitBranch, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// SwitchBranch implements drivers.RepoStore.
+func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
+	return drivers.ErrNotImplemented
+}
+
 // Status implements drivers.RepoStore.
 func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if r.git == nil {

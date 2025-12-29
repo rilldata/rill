@@ -53,6 +53,7 @@ import type {
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceSwitchBranchBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -93,6 +94,7 @@ import type {
   V1ListConversationsResponse,
   V1ListExamplesResponse,
   V1ListFilesResponse,
+  V1ListGitBranchesResponse,
   V1ListInstancesResponse,
   V1ListNotifierConnectorsResponse,
   V1ListResourcesResponse,
@@ -101,6 +103,7 @@ import type {
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1RenameFileResponse,
+  V1SwitchBranchResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -2892,6 +2895,179 @@ export const createRuntimeServiceGenerateResolver = <
 > => {
   const mutationOptions =
     getRuntimeServiceGenerateResolverMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+export const runtimeServiceListGitBranches = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListGitBranchesResponse>({
+    url: `/v1/instances/${instanceId}/git/branches`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListGitBranchesQueryKey = (
+  instanceId: string,
+) => {
+  return [`/v1/instances/${instanceId}/git/branches`] as const;
+};
+
+export const getRuntimeServiceListGitBranchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListGitBranchesQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListGitBranches>>
+  > = ({ signal }) => runtimeServiceListGitBranches(instanceId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListGitBranchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListGitBranches>>
+>;
+export type RuntimeServiceListGitBranchesQueryError = ErrorType<RpcStatus>;
+
+export function createRuntimeServiceListGitBranches<
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitBranches>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListGitBranchesQueryOptions(
+    instanceId,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const runtimeServiceSwitchBranch = (
+  instanceId: string,
+  runtimeServiceSwitchBranchBody: RuntimeServiceSwitchBranchBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SwitchBranchResponse>({
+    url: `/v1/instances/${instanceId}/git/branches/switch`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceSwitchBranchBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceSwitchBranchMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceSwitchBranch"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+    { instanceId: string; data: RuntimeServiceSwitchBranchBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceSwitchBranch(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceSwitchBranchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>
+>;
+export type RuntimeServiceSwitchBranchMutationBody =
+  RuntimeServiceSwitchBranchBody;
+export type RuntimeServiceSwitchBranchMutationError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceSwitchBranch = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+  TContext
+> => {
+  const mutationOptions = getRuntimeServiceSwitchBranchMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

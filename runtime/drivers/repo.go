@@ -53,6 +53,10 @@ type RepoStore interface {
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).
 	CommitTimestamp(ctx context.Context) (time.Time, error)
+	// ListBranches returns a list of branch names.
+	ListBranches(ctx context.Context) ([]GitBranch, error)
+	// SwitchBranch switches to the specified branch. If createIfNotExists is true, creates the branch if it doesn't exist.
+	SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error
 }
 
 // FileInfo contains metadata about a file.
@@ -124,6 +128,12 @@ type PullOptions struct {
 	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
 	UserTriggered  bool
 	DiscardChanges bool
+}
+
+type GitBranch struct {
+	Name                 string
+	IsCurrent            bool
+	HasPreviewDeployment bool
 }
 
 // ignoredPaths is a list of paths that are always ignored by the parser.
