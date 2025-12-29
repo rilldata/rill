@@ -12,6 +12,8 @@
     shift,
     inline,
   } from "@floating-ui/dom";
+  import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-svelte";
+  import * as Kbd from "@rilldata/web-common/components/kbd";
 
   export let selectedChatContext: InlineContext | null = null;
   export let searchText: string = "";
@@ -118,12 +120,29 @@
   {:else}
     <div class="contents-empty">No matches found</div>
   {/each}
+  <div class="inline-chat-navigation">
+    <Kbd.Group>
+      <Kbd.Root><ArrowUp size="12px" /></Kbd.Root>
+      <Kbd.Root><ArrowDown size="12px" /></Kbd.Root>
+      <span>Navigate,</span>
+      <Kbd.Root><ArrowLeft size="12px" /></Kbd.Root>
+      <Kbd.Root><ArrowRight size="12px" /></Kbd.Root>
+      <span>Open/Close,</span>
+      <Kbd.Root><span>Enter</span></Kbd.Root>
+      <span>Select</span>
+    </Kbd.Group>
+  </div>
 </div>
 
 <style lang="postcss">
   .inline-chat-context-dropdown {
     @apply flex flex-col absolute top-0 left-0 p-1.5 z-50 w-[400px] max-h-[500px] overflow-auto;
     @apply border rounded-md bg-popover text-popover-foreground shadow-md;
+  }
+
+  .inline-chat-navigation {
+    @apply flex flex-row items-center pt-1.5 px-1.5;
+    @apply text-xs text-popover-foreground/60;
   }
 
   .contents-empty {
