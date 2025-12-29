@@ -33,7 +33,7 @@ import {
   setStep,
   type ConnectorStepState,
 } from "./connectorStepStore";
-import { get, type Writable } from "svelte/store";
+import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
@@ -351,7 +351,6 @@ export class AddDataFormManager {
       paramsErrors,
       dsnErrors,
       paramsForm,
-      dsnForm,
       paramsSubmitting,
       dsnSubmitting,
     } = args;
