@@ -330,7 +330,7 @@ service AdminService {
   // GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
   // This is called by the runtime to pull its Variables and Annotations from the admin service.
   rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (GetDeploymentConfigResponse) {
-    option (google.api.http) = {get: "/v1/deployments/{deployment_id}/deployment-config"};
+    option (google.api.http) = {get: "/v1/deployments/{deployment_id}/config"};
   }
 
   // ListRoles lists all the roles available for orgs and projects.
