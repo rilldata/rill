@@ -43,6 +43,9 @@ export type JSONSchemaCondition = {
 
 export type JSONSchemaConstraint = {
   required?: string[];
+  properties?: Record<string, JSONSchemaField>;
+  // Allow custom keywords or overrides in constraints
+  [key: string]: unknown;
 };
 
 export type JSONSchemaConditional = {
