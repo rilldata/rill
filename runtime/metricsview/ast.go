@@ -296,7 +296,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			return nil, fmt.Errorf("invalid measure %q: %w", qm.Name, err)
 		}
 
-		err = ast.AddMeasureField(ast.Root, m)
+		err = ast.AddMeasureField(ast.Root, m, false)
 		if err != nil {
 			return nil, fmt.Errorf("can't query measure %q: %w", qm.Name, err)
 		}
@@ -318,6 +318,27 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		}
 
 		ast.Root.Where = res
+	}
+
+	// built time spine in the end to ensure no time bins are skipped because of having or measure filters
+	sn, err := ast.buildTimeSpineSelect(ast.GenerateIdentifier(), ast.Query.Spine, ast.Query.TimeRange)
+	if err != nil {
+		return nil, err
+	}
+	if sn != nil {
+		baseNode := ast.Root
+		if ast.Root.JoinComparisonSelect != nil {
+			baseNode = ast.Root.FromSelect
+		}
+		ast.WrapSelect(baseNode, ast.GenerateIdentifier())
+		baseNode.SpineSelect = sn
+
+		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
+		// (since by definition, some dimension values in the spine might not be present in FromSelect).
+		for i, f := range baseNode.DimFields {
+			f.Expr = ast.Dialect.EscapeMember(sn.Alias, f.Name)
+			baseNode.DimFields[i] = f
+		}
 	}
 
 	// Incrementally add each sort criterion.
@@ -439,9 +460,9 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}
 
 		expr := fmt.Sprintf("comparison.%s", a.Dialect.EscapeIdentifier(m.Name))
-		if m.TreatNullsAs != "" {
+		/*if m.TreatNullsAs != "" {
 			expr = fmt.Sprintf("COALESCE(%s, %s)", expr, m.TreatNullsAs)
-		}
+		}*/
 
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
@@ -449,6 +470,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonValue.Measure},
 			DisplayName:        fmt.Sprintf("%s (prev)", m.DisplayName),
+			TreatNullsAs:       m.TreatNullsAs,
 		}, nil
 	}
 
@@ -663,13 +685,14 @@ func (a *AST) WrapSelect(s *SelectNode, innerAlias string) {
 	}
 
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))
-	for _, f := range cpy.MeasureFields {
+	for i, f := range cpy.MeasureFields {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
 			Expr:        a.Dialect.EscapeMember(cpy.Alias, f.Name),
-			TreatNullAs: "",
+			TreatNullAs: f.TreatNullAs,
 		})
+		cpy.MeasureFields[i].TreatNullAs = "" // Clear to avoid double COALESCE when wrapping again
 	}
 
 	s.FromTable = nil
@@ -729,7 +752,7 @@ func (a *AST) AddTimeRange(n *SelectNode, tr *TimeRange) error {
 
 // AddMeasureField adds a measure field to the given SelectNode.
 // Depending on the measure type, it may rewrite the SelectNode to accommodate the measure.
-func (a *AST) AddMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measure) error {
+func (a *AST) AddMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measure, comparison bool) error {
 	// Skip if the measure has already been added.
 	// This can happen if the measure was already added as a referenced measure of a derived measure.
 	if n.HasMeasure(m.Name) {
@@ -753,7 +776,7 @@ func (a *AST) AddMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measur
 		panic("unhandled measure type")
 	}
 
-	if m.TreatNullsAs != "" {
+	if m.TreatNullsAs != "" && !comparison {
 		n.MeasureFields[len(n.MeasureFields)-1].TreatNullAs = m.TreatNullsAs
 	}
 
@@ -925,6 +948,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		Name:        m.Name,
 		DisplayName: m.DisplayName,
 		Expr:        expr,
+		TreatNullAs: m.TreatNullsAs,
 	})
 
 	return nil
@@ -969,14 +993,14 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 		}
 
 		// Add to the base SELECT. addMeasureField skips it if it's already present.
-		err = a.AddMeasureField(n.FromSelect, m)
+		err = a.AddMeasureField(n.FromSelect, m, false)
 		if err != nil {
 			return err
 		}
 
 		// Add to the comparison SELECT if it exists.
 		if n.JoinComparisonSelect != nil {
-			err = a.AddMeasureField(n.JoinComparisonSelect, m)
+			err = a.AddMeasureField(n.JoinComparisonSelect, m, true)
 			if err != nil {
 				return err
 			}
@@ -1043,141 +1067,141 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
-	if a.Query.Spine != nil && !(a.Query.Spine.TimeRange != nil && comparison) { // Skip time range spines in the comparison select
-		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, tr)
-		if err != nil {
-			return nil, err
-		}
+	sn, err := a.buildWhereSpineSelect(a.GenerateIdentifier(), a.Query.Spine, tr)
+	if err != nil {
+		return nil, err
+	}
+	if sn == nil {
+		return n, nil
+	}
 
-		a.WrapSelect(n, a.GenerateIdentifier())
-		n.SpineSelect = sn
+	a.WrapSelect(n, a.GenerateIdentifier())
+	n.SpineSelect = sn
 
-		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
-		// (since by definition, some dimension values in the spine might not be present in FromSelect).
-		for i, f := range n.DimFields {
-			f.Expr = a.Dialect.EscapeMember(sn.Alias, f.Name)
-			n.DimFields[i] = f
-		}
+	// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
+	// (since by definition, some dimension values in the spine might not be present in FromSelect).
+	for i, f := range n.DimFields {
+		f.Expr = a.Dialect.EscapeMember(sn.Alias, f.Name)
+		n.DimFields[i] = f
 	}
 
 	return n, nil
 }
 
-// buildSpineSelect constructs a SELECT node for the given spine of dimension values.
-func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*SelectNode, error) {
-	if spine == nil {
+// buildWhereSpineSelect constructs a SELECT node for the given spine of dimension values.
+func (a *AST) buildWhereSpineSelect(alias string, spine *Spine, tr *TimeRange) (*SelectNode, error) {
+	if spine == nil || spine.Where == nil {
 		return nil, nil
 	}
-
-	if spine.Where != nil {
-		// Using buildWhereForUnderlyingTable to include security filters.
-		// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
-		where, err := a.buildWhereForUnderlyingTable(spine.Where.Expression)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
-		}
-
-		n := &SelectNode{
-			Alias:     alias,
-			DimFields: a.dimFields,
-			FromTable: a.underlyingTable,
-			Unnests:   a.unnests,
-			Group:     true,
-			Where:     where,
-		}
-		err = a.AddTimeRange(n, tr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add time range: %w", err)
-		}
-
-		return n, nil
+	// Using buildWhereForUnderlyingTable to include security filters.
+	// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
+	where, err := a.buildWhereForUnderlyingTable(spine.Where.Expression)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
 	}
 
-	if spine.TimeRange != nil {
-		// if spine generates more than 1000 values then return an error
-		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
-		if bins > 1000 {
-			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
-		}
-
-		timeDim := a.MetricsView.TimeDimension
-		if spine.TimeRange.TimeDimension != "" {
-			timeDim = spine.TimeRange.TimeDimension
-		}
-
-		tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, timeDim)
-		if !ok {
-			return nil, fmt.Errorf("failed to find computed time dimension %q", timeDim)
-		}
-		timeAlias := tf.Name
-
-		var newDims []FieldNode
-		for _, f := range a.dimFields {
-			if f.Name == tf.Name {
-				continue
-			}
-			newDims = append(newDims, f)
-		}
-
-		tz := time.UTC
-		if a.Query.TimeZone != "" {
-			var err error
-			tz, err = time.LoadLocation(a.Query.TimeZone)
-			if err != nil {
-				return nil, fmt.Errorf("invalid time zone %q: %w", a.Query.TimeZone, err)
-			}
-		}
-
-		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate time spine: %w", err)
-		}
-
-		rangeSelect := &SelectNode{
-			Alias: alias,
-			RawSelect: &ExprNode{
-				Expr: sel,
-				Args: args,
-			},
-		}
-
-		// if there is only one dimension in the query, then we can directly join the spine time range with the dimension
-		if len(a.dimFields) == 1 {
-			return rangeSelect, nil
-		}
-
-		// give alias to the outer select as range select will be moved to cross join
-		rangeSelect.Alias = a.GenerateIdentifier()
-
-		dimSelect := &SelectNode{
-			Alias:     alias,
-			DimFields: newDims,
-			Unnests:   a.unnests,
-			FromTable: a.underlyingTable,
-			Where:     a.underlyingWhere,
-			Group:     true,
-		}
-
-		err = a.AddTimeRange(dimSelect, tr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to add time range: %w", err)
-		}
-
-		a.WrapSelect(dimSelect, a.GenerateIdentifier())
-
-		dimSelect.CrossJoinSelects = []*SelectNode{rangeSelect}
-
-		// now add cross join field to the dimension list
-		dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
-			Name:        timeAlias,
-			DisplayName: timeAlias,
-			Expr:        a.Dialect.EscapeMember(rangeSelect.Alias, timeAlias),
-		})
-
-		return dimSelect, nil
+	n := &SelectNode{
+		Alias:     alias,
+		DimFields: a.dimFields,
+		FromTable: a.underlyingTable,
+		Unnests:   a.unnests,
+		Group:     true,
+		Where:     where,
+	}
+	err = a.AddTimeRange(n, tr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add time range: %w", err)
 	}
 
-	return nil, errors.New("unhandled spine type")
+	return n, nil
+}
+
+// buildTimeSpineSelect constructs a SELECT node for the given spine of time values.
+func (a *AST) buildTimeSpineSelect(alias string, spine *Spine, tr *TimeRange) (*SelectNode, error) {
+	if spine == nil || spine.TimeRange == nil {
+		return nil, nil
+	}
+	// if spine generates more than 1000 values then return an error
+	bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
+	if bins > 1000 {
+		return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
+	}
+
+	timeDim := a.MetricsView.TimeDimension
+	if spine.TimeRange.TimeDimension != "" {
+		timeDim = spine.TimeRange.TimeDimension
+	}
+
+	tf, ok := a.findFieldForComputedTimeDimension(a.dimFields, timeDim)
+	if !ok {
+		return nil, fmt.Errorf("failed to find computed time dimension %q", timeDim)
+	}
+	timeAlias := tf.Name
+
+	var newDims []FieldNode
+	for _, f := range a.dimFields {
+		if f.Name == tf.Name {
+			continue
+		}
+		newDims = append(newDims, f)
+	}
+
+	tz := time.UTC
+	if a.Query.TimeZone != "" {
+		var err error
+		tz, err = time.LoadLocation(a.Query.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time zone %q: %w", a.Query.TimeZone, err)
+		}
+	}
+
+	sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate time spine: %w", err)
+	}
+
+	rangeSelect := &SelectNode{
+		Alias: alias,
+		RawSelect: &ExprNode{
+			Expr: sel,
+			Args: args,
+		},
+	}
+
+	// if there is only one dimension in the query, then we can directly join the spine time range with the dimension
+	if len(a.dimFields) == 1 {
+		return rangeSelect, nil
+	}
+
+	// give alias to the outer select as range select will be moved to cross join
+	rangeSelect.Alias = a.GenerateIdentifier()
+
+	dimSelect := &SelectNode{
+		Alias:     alias,
+		DimFields: newDims,
+		Unnests:   a.unnests,
+		FromTable: a.underlyingTable,
+		Where:     a.underlyingWhere,
+		Group:     true,
+	}
+
+	err = a.AddTimeRange(dimSelect, tr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add time range: %w", err)
+	}
+
+	a.WrapSelect(dimSelect, a.GenerateIdentifier())
+
+	dimSelect.CrossJoinSelects = []*SelectNode{rangeSelect}
+
+	// now add cross join field to the dimension list
+	dimSelect.DimFields = append(dimSelect.DimFields, FieldNode{
+		Name:        timeAlias,
+		DisplayName: timeAlias,
+		Expr:        a.Dialect.EscapeMember(rangeSelect.Alias, timeAlias),
+	})
+
+	return dimSelect, nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.

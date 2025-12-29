@@ -344,6 +344,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("Executing SQL:", sql, "with args:", args)
 
 		res, err = e.olap.Query(ctx, &drivers.Statement{
 			Query:            sql,
