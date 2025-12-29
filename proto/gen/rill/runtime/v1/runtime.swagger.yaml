@@ -1128,6 +1128,84 @@ paths:
                 description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/branches:
+    get:
+      operationId: RuntimeService_ListGitBranches
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGitBranchesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/branches/switch:
+    post:
+      operationId: RuntimeService_SwitchBranch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SwitchBranchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branchName:
+                type: string
+              createIfNotExists:
+                type: boolean
+              ignoreLocalChanges:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/commit:
+    post:
+      summary: GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+      operationId: RuntimeService_GitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/pull:
     post:
       summary: |-
@@ -1189,6 +1267,38 @@ paths:
                 type: string
               force:
                 type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/restore/{commitSha}:
+    post:
+      summary: |-
+        RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+        This effectively discards all the changes made after the specified commit.
+      operationId: RuntimeService_RestoreGitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RestoreGitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: commitSha
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.RestoreGitCommit
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/git/status:
@@ -5073,6 +5183,17 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GitBranch:
+    type: object
+    properties:
+      name:
+        type: string
+      isCurrent:
+        type: boolean
+      hasPreviewDeployment:
+        type: boolean
+  v1GitCommitResponse:
+    type: object
   v1GitPullResponse:
     type: object
     properties:
@@ -5290,6 +5411,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1DirEntry'
     title: Response message for RuntimeService.ListFiles
+  v1ListGitBranchesResponse:
+    type: object
+    properties:
+      branches:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GitBranch'
   v1ListInstancesResponse:
     type: object
     properties:
@@ -7027,6 +7156,12 @@ definitions:
         type: string
       name:
         type: string
+  v1RestoreGitCommitResponse:
+    type: object
+    properties:
+      newCommitSha:
+        type: string
+    title: Response message for RuntimeService.RestoreGitCommit
   v1Schedule:
     type: object
     properties:
@@ -7213,6 +7348,8 @@ definitions:
         $ref: '#/definitions/v1Expression'
       having:
         $ref: '#/definitions/v1Expression'
+  v1SwitchBranchResponse:
+    type: object
   v1TableCardinalityRequest:
     type: object
     properties:

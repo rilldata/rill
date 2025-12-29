@@ -423,6 +423,16 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	})
 }
 
+// ListBranches implements drivers.RepoStore.
+func (r *repo) ListBranches(ctx context.Context) ([]drivers.GitBranch, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// SwitchBranch implements drivers.RepoStore.
+func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
+	return drivers.ErrNotImplemented
+}
+
 // Status implements drivers.RepoStore.
 func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if r.git == nil {
@@ -462,6 +472,11 @@ func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	return r.pull(ctx, opts)
 }
 
+// Commit implements drivers.RepoStore.
+func (r *repo) Commit(ctx context.Context, message string) error {
+	return drivers.ErrNotImplemented
+}
+
 // CommitAndPush implements drivers.RepoStore.
 func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// Get a write lock.
@@ -484,6 +499,11 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 	}
 
 	return r.git.commitAndPushToDefaultBranch(ctx, message, force)
+}
+
+// RestoreCommit implements drivers.RepoStore.
+func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+	return "", drivers.ErrNotImplemented
 }
 
 // CommitHash implements drivers.RepoStore.

@@ -47,12 +47,20 @@ type RepoStore interface {
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
 	Pull(ctx context.Context, opts *PullOptions) error
+	// Commit commits local changes to the git repository (equivalent to git commit -am <message>).
+	Commit(ctx context.Context, message string) error
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
+	// RestoreCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+	RestoreCommit(ctx context.Context, commitSHA string) (string, error)
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).
 	CommitTimestamp(ctx context.Context) (time.Time, error)
+	// ListBranches returns a list of branch names.
+	ListBranches(ctx context.Context) ([]GitBranch, error)
+	// SwitchBranch switches to the specified branch. If createIfNotExists is true, creates the branch if it doesn't exist.
+	SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error
 }
 
 // FileInfo contains metadata about a file.
@@ -124,6 +132,12 @@ type PullOptions struct {
 	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
 	UserTriggered  bool
 	DiscardChanges bool
+}
+
+type GitBranch struct {
+	Name                 string
+	IsCurrent            bool
+	HasPreviewDeployment bool
 }
 
 // ignoredPaths is a list of paths that are always ignored by the parser.

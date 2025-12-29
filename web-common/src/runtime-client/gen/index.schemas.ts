@@ -1094,6 +1094,16 @@ export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
 }
 
+export interface V1GitBranch {
+  name?: string;
+  isCurrent?: boolean;
+  hasPreviewDeployment?: boolean;
+}
+
+export interface V1GitCommitResponse {
+  [key: string]: unknown;
+}
+
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
@@ -1235,6 +1245,10 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  branches?: V1GitBranch[];
 }
 
 export interface V1ListInstancesResponse {
@@ -2241,6 +2255,10 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2342,6 +2360,10 @@ export interface V1Subquery {
   measures?: string[];
   where?: V1Expression;
   having?: V1Expression;
+}
+
+export interface V1SwitchBranchResponse {
+  [key: string]: unknown;
 }
 
 export interface V1TableCardinalityRequest {
@@ -2748,6 +2770,16 @@ export type RuntimeServiceGenerateResolverBody = {
   metricsView?: string;
 };
 
+export type RuntimeServiceSwitchBranchBody = {
+  branchName?: string;
+  createIfNotExists?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
 export type RuntimeServiceGitPullBody = {
   discardLocal?: boolean;
 };
@@ -2756,6 +2788,8 @@ export type RuntimeServiceGitPushBody = {
   commitMessage?: string;
   force?: boolean;
 };
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;

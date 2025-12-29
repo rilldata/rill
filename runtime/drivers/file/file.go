@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -153,9 +154,11 @@ type connection struct {
 	driverConfig *configProperties
 	driverName   string
 
-	admin     *client.Client  // admin client for admin service
-	gitConfig *gitutil.Config // git config for repo
-	gitMu     sync.Mutex      // mutex to protect git operations
+	// todo: any changes to project/org/env should invalidate the connection
+	admin     *client.Client   // admin client for admin service
+	gitConfig *gitutil.Config  // git config for repo
+	project   *adminv1.Project // project name for the repo
+	gitMu     sync.Mutex       // mutex to protect git operations
 
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
