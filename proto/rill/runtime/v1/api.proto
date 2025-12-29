@@ -321,6 +321,23 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
   }
 
+  // GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+  rpc GitCommit(GitCommitRequest) returns (GitCommitResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/commit",
+      body: "*"
+    };
+  }
+
+  // RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+  // This effectively discards all the changes made after the specified commit.
+  rpc RestoreGitCommit(RestoreGitCommitRequest) returns (RestoreGitCommitResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/restore/{commit_sha}",
+      body: "*"
+    };
+  }
+
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
   // Force can be set to true to force the pull and overwrite any local changes.
@@ -1244,6 +1261,24 @@ message GitStatusResponse {
   int32 local_commits = 5;
   // remote_commits returns number of remote commits not pulled yet.
   int32 remote_commits = 6;
+}
+
+message GitCommitRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_message = 2;
+}
+
+message GitCommitResponse {}
+
+// Request message for RuntimeService.RestoreGitCommit
+message RestoreGitCommitRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_sha = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.RestoreGitCommit
+message RestoreGitCommitResponse {
+  string new_commit_sha = 1;
 }
 
 message GitPullRequest {

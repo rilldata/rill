@@ -5877,6 +5877,164 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.GitCommitRequest
+ */
+export class GitCommitRequest extends Message$1<GitCommitRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string commit_message = 2;
+   */
+  commitMessage = "";
+
+  constructor(data?: PartialMessage<GitCommitRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitCommitRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "commit_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitCommitRequest {
+    return new GitCommitRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitCommitRequest {
+    return new GitCommitRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitCommitRequest {
+    return new GitCommitRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitCommitRequest | PlainMessage<GitCommitRequest> | undefined, b: GitCommitRequest | PlainMessage<GitCommitRequest> | undefined): boolean {
+    return proto3.util.equals(GitCommitRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitCommitResponse
+ */
+export class GitCommitResponse extends Message$1<GitCommitResponse> {
+  constructor(data?: PartialMessage<GitCommitResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitCommitResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitCommitResponse {
+    return new GitCommitResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitCommitResponse {
+    return new GitCommitResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitCommitResponse {
+    return new GitCommitResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitCommitResponse | PlainMessage<GitCommitResponse> | undefined, b: GitCommitResponse | PlainMessage<GitCommitResponse> | undefined): boolean {
+    return proto3.util.equals(GitCommitResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.RestoreGitCommit
+ *
+ * @generated from message rill.runtime.v1.RestoreGitCommitRequest
+ */
+export class RestoreGitCommitRequest extends Message$1<RestoreGitCommitRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string commit_sha = 2;
+   */
+  commitSha = "";
+
+  constructor(data?: PartialMessage<RestoreGitCommitRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RestoreGitCommitRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RestoreGitCommitRequest {
+    return new RestoreGitCommitRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RestoreGitCommitRequest {
+    return new RestoreGitCommitRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RestoreGitCommitRequest {
+    return new RestoreGitCommitRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RestoreGitCommitRequest | PlainMessage<RestoreGitCommitRequest> | undefined, b: RestoreGitCommitRequest | PlainMessage<RestoreGitCommitRequest> | undefined): boolean {
+    return proto3.util.equals(RestoreGitCommitRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.RestoreGitCommit
+ *
+ * @generated from message rill.runtime.v1.RestoreGitCommitResponse
+ */
+export class RestoreGitCommitResponse extends Message$1<RestoreGitCommitResponse> {
+  /**
+   * @generated from field: string new_commit_sha = 1;
+   */
+  newCommitSha = "";
+
+  constructor(data?: PartialMessage<RestoreGitCommitResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RestoreGitCommitResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "new_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RestoreGitCommitResponse {
+    return new RestoreGitCommitResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RestoreGitCommitResponse {
+    return new RestoreGitCommitResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RestoreGitCommitResponse {
+    return new RestoreGitCommitResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RestoreGitCommitResponse | PlainMessage<RestoreGitCommitResponse> | undefined, b: RestoreGitCommitResponse | PlainMessage<RestoreGitCommitResponse> | undefined): boolean {
+    return proto3.util.equals(RestoreGitCommitResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GitPullRequest
  */
 export class GitPullRequest extends Message$1<GitPullRequest> {

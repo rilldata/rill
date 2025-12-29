@@ -86,6 +86,38 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 	}, nil
 }
 
+// GitCommit implements RuntimeService.
+func (s *Server) GitCommit(ctx context.Context, req *runtimev1.GitCommitRequest) (*runtimev1.GitCommitResponse, error) {
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	err = repo.Commit(ctx, req.CommitMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
+	}
+	return &runtimev1.GitCommitResponse{}, nil
+}
+
+// RestoreGitCommit implements RuntimeService.
+func (s *Server) RestoreGitCommit(ctx context.Context, req *runtimev1.RestoreGitCommitRequest) (*runtimev1.RestoreGitCommitResponse, error) {
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	newCommitSHA, err := repo.RestoreCommit(ctx, req.CommitSha)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to restore commit: %v", err)
+	}
+	return &runtimev1.RestoreGitCommitResponse{
+		NewCommitSha: newCommitSHA,
+	}, nil
+}
+
 // GitPull implements RuntimeService.
 func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*runtimev1.GitPullResponse, error) {
 	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {

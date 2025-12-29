@@ -1237,6 +1237,34 @@ paths:
                 type: boolean
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/commit:
+    post:
+      summary: GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
+      operationId: RuntimeService_GitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/pull:
     post:
       summary: |-
@@ -1298,6 +1326,38 @@ paths:
                 type: string
               force:
                 type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/restore/{commitSha}:
+    post:
+      summary: |-
+        RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+        This effectively discards all the changes made after the specified commit.
+      operationId: RuntimeService_RestoreGitCommit
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RestoreGitCommitResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: commitSha
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.RestoreGitCommit
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/git/status:
@@ -5232,6 +5292,8 @@ definitions:
         type: boolean
       hasPreviewDeployment:
         type: boolean
+  v1GitCommitResponse:
+    type: object
   v1GitPullResponse:
     type: object
     properties:
@@ -7197,6 +7259,12 @@ definitions:
         type: string
       name:
         type: string
+  v1RestoreGitCommitResponse:
+    type: object
+    properties:
+      newCommitSha:
+        type: string
+    title: Response message for RuntimeService.RestoreGitCommit
   v1Schedule:
     type: object
     properties:

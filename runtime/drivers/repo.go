@@ -42,9 +42,13 @@ type RepoStore interface {
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
-	Pull(ctx context.Context, discardChanges, forceHandshake bool) error
+	Pull(ctx context.Context, opts *PullOptions) error
+	// Commit commits local changes to the git repository (equivalent to git commit -am <message>).
+	Commit(ctx context.Context, message string) error
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
+	// RestoreCommit creates a new commit that restores the state of the repo to the specified commit SHA.
+	RestoreCommit(ctx context.Context, commitSHA string) (string, error)
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
 	CommitHash(ctx context.Context) (string, error)
 	// CommitTimestamp returns the update timestamp for the current remote files (does not change on uncommitted local changes).

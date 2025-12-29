@@ -1108,6 +1108,10 @@ export interface V1GitBranch {
   hasPreviewDeployment?: boolean;
 }
 
+export interface V1GitCommitResponse {
+  [key: string]: unknown;
+}
+
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
@@ -2263,6 +2267,10 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2784,6 +2792,10 @@ export type RuntimeServiceSwitchBranchBody = {
   ignoreLocalChanges?: boolean;
 };
 
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
 export type RuntimeServiceGitPullBody = {
   discardLocal?: boolean;
 };
@@ -2792,6 +2804,8 @@ export type RuntimeServiceGitPushBody = {
   commitMessage?: string;
   force?: boolean;
 };
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;

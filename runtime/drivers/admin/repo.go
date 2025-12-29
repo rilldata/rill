@@ -471,6 +471,11 @@ func (r *repo) Pull(ctx context.Context, discardChanges, forceHandshake bool) er
 	return r.pull(ctx, discardChanges, forceHandshake)
 }
 
+// Commit implements drivers.RepoStore.
+func (r *repo) Commit(ctx context.Context, message string) error {
+	return drivers.ErrNotImplemented
+}
+
 // CommitAndPush implements drivers.RepoStore.
 func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// Get a write lock.
@@ -493,6 +498,11 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 	}
 
 	return r.git.commitAndPushToDefaultBranch(ctx, message, force)
+}
+
+// RestoreCommit implements drivers.RepoStore.
+func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+	return "", drivers.ErrNotImplemented
 }
 
 // CommitHash implements drivers.RepoStore.

@@ -14414,6 +14414,453 @@ var _ interface {
 	ErrorName() string
 } = GitStatusResponseValidationError{}
 
+// Validate checks the field values on GitCommitRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitCommitRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitCommitRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitCommitRequestMultiError, or nil if none found.
+func (m *GitCommitRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitCommitRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GitCommitRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GitCommitRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for CommitMessage
+
+	if len(errors) > 0 {
+		return GitCommitRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitCommitRequestMultiError is an error wrapping multiple validation errors
+// returned by GitCommitRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GitCommitRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitCommitRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitCommitRequestMultiError) AllErrors() []error { return m }
+
+// GitCommitRequestValidationError is the validation error returned by
+// GitCommitRequest.Validate if the designated constraints aren't met.
+type GitCommitRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitCommitRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitCommitRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitCommitRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitCommitRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitCommitRequestValidationError) ErrorName() string { return "GitCommitRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitCommitRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitCommitRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitCommitRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitCommitRequestValidationError{}
+
+var _GitCommitRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GitCommitResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitCommitResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitCommitResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitCommitResponseMultiError, or nil if none found.
+func (m *GitCommitResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitCommitResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GitCommitResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitCommitResponseMultiError is an error wrapping multiple validation errors
+// returned by GitCommitResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GitCommitResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitCommitResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitCommitResponseMultiError) AllErrors() []error { return m }
+
+// GitCommitResponseValidationError is the validation error returned by
+// GitCommitResponse.Validate if the designated constraints aren't met.
+type GitCommitResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitCommitResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitCommitResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitCommitResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitCommitResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitCommitResponseValidationError) ErrorName() string {
+	return "GitCommitResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GitCommitResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitCommitResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitCommitResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitCommitResponseValidationError{}
+
+// Validate checks the field values on RestoreGitCommitRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RestoreGitCommitRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RestoreGitCommitRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RestoreGitCommitRequestMultiError, or nil if none found.
+func (m *RestoreGitCommitRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RestoreGitCommitRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_RestoreGitCommitRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := RestoreGitCommitRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetCommitSha()) < 1 {
+		err := RestoreGitCommitRequestValidationError{
+			field:  "CommitSha",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RestoreGitCommitRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RestoreGitCommitRequestMultiError is an error wrapping multiple validation
+// errors returned by RestoreGitCommitRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RestoreGitCommitRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RestoreGitCommitRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RestoreGitCommitRequestMultiError) AllErrors() []error { return m }
+
+// RestoreGitCommitRequestValidationError is the validation error returned by
+// RestoreGitCommitRequest.Validate if the designated constraints aren't met.
+type RestoreGitCommitRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RestoreGitCommitRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RestoreGitCommitRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RestoreGitCommitRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RestoreGitCommitRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RestoreGitCommitRequestValidationError) ErrorName() string {
+	return "RestoreGitCommitRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RestoreGitCommitRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRestoreGitCommitRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RestoreGitCommitRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RestoreGitCommitRequestValidationError{}
+
+var _RestoreGitCommitRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on RestoreGitCommitResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RestoreGitCommitResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RestoreGitCommitResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RestoreGitCommitResponseMultiError, or nil if none found.
+func (m *RestoreGitCommitResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RestoreGitCommitResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for NewCommitSha
+
+	if len(errors) > 0 {
+		return RestoreGitCommitResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RestoreGitCommitResponseMultiError is an error wrapping multiple validation
+// errors returned by RestoreGitCommitResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RestoreGitCommitResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RestoreGitCommitResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RestoreGitCommitResponseMultiError) AllErrors() []error { return m }
+
+// RestoreGitCommitResponseValidationError is the validation error returned by
+// RestoreGitCommitResponse.Validate if the designated constraints aren't met.
+type RestoreGitCommitResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RestoreGitCommitResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RestoreGitCommitResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RestoreGitCommitResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RestoreGitCommitResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RestoreGitCommitResponseValidationError) ErrorName() string {
+	return "RestoreGitCommitResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RestoreGitCommitResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRestoreGitCommitResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RestoreGitCommitResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RestoreGitCommitResponseValidationError{}
+
 // Validate checks the field values on GitPullRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
