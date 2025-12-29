@@ -318,17 +318,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		}
 
 		ast.Root.Where = res
-
-		if ast.Query.Spine != nil && ast.Query.Spine.TimeRange != nil {
-			// time spine needs to be applied before having so that treat_nulls_as works correctly for derived measures
-			// and treat_nulls_as should be applied before Having so that wrong bins are not included in final results
-			// however having also removes null filling bins that does not match criteria, so its depended on time spine
-			// this creates a cyclic dependency between time spine and having, so we re-apply time spine after having to restore removed time bins
-			err = ast.addSpineSelect(ast.Root, ast.Query.TimeRange, false)
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	// Incrementally add each sort criterion.
