@@ -2,10 +2,6 @@
   import { Button } from "@rilldata/web-common/components/button";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-  import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
-  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
@@ -19,11 +15,8 @@
   import { hasOnlyDsn, isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
-    CONNECTOR_TYPE_OPTIONS,
     type ClickHouseConnectorType,
   } from "./constants";
-  import { normalizeErrors } from "../../templates/error-utils";
-
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
@@ -31,11 +24,9 @@
     AddDataFormManager,
     type ClickhouseUiState,
   } from "./AddDataFormManager";
+  import ClickhouseFormRenderer from "./ClickhouseFormRenderer.svelte";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get, type Writable } from "svelte/store";
-  import {
-    ConnectorDriverPropertyType,
-  } from "@rilldata/web-common/runtime-client";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -243,7 +234,9 @@
   }
 
   $: isSubmitting =
-    connector.name === "clickhouse" ? effectiveClickhouseSubmitting : submitting;
+    connector.name === "clickhouse"
+      ? effectiveClickhouseSubmitting
+      : submitting;
 
   // Reset errors when form is modified
   $: (() => {
@@ -375,148 +368,22 @@
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
-        <div class="h-full w-full flex flex-col">
-          <div>
-            <ConnectorTypeSelector
-              bind:value={clickhouseConnectorType}
-              options={CONNECTOR_TYPE_OPTIONS}
-            />
-            {#if clickhouseConnectorType === "rill-managed"}
-              <div class="mt-4">
-                <InformationalField
-                  description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
-                />
-              </div>
-            {/if}
-          </div>
-
-          {#if clickhouseConnectorType === "self-hosted" || clickhouseConnectorType === "clickhouse-cloud"}
-            <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
-              <TabsContent value="parameters">
-                <AddDataFormSection
-                  id={paramsFormId}
-                  enhance={paramsEnhance}
-                  onSubmit={paramsSubmit}
-                >
-                  {#each clickhouseUiState?.filteredProperties ?? [] as property (property.key)}
-                    {@const propertyKey = property.key ?? ""}
-                    {@const isPortField = propertyKey === "port"}
-                    {@const isSSLField = propertyKey === "ssl"}
-
-                    <div class="py-1.5 first:pt-0 last:pb-0">
-                      {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                        <Input
-                          id={propertyKey}
-                          label={property.displayName}
-                          placeholder={property.placeholder}
-                          optional={property.required}
-                          secret={property.secret}
-                          hint={property.hint}
-                          errors={normalizeErrors($paramsErrors[propertyKey])}
-                          bind:value={$paramsFormStore[propertyKey]}
-                          onInput={(_, e) => onStringInputChange(e)}
-                          alwaysShowError
-                          options={clickhouseConnectorType ===
-                            "clickhouse-cloud" && isPortField
-                            ? [
-                                { value: "8443", label: "8443 (HTTPS)" },
-                                {
-                                  value: "9440",
-                                  label: "9440 (Native Secure)",
-                                },
-                              ]
-                            : undefined}
-                        />
-                      {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                        <Checkbox
-                          id={propertyKey}
-                          bind:checked={$paramsFormStore[propertyKey]}
-                          label={property.displayName}
-                          hint={property.hint}
-                          optional={clickhouseConnectorType ===
-                            "clickhouse-cloud" && isSSLField
-                            ? false
-                            : !property.required}
-                          disabled={clickhouseConnectorType ===
-                            "clickhouse-cloud" && isSSLField}
-                        />
-                      {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                        <InformationalField
-                          description={property.description}
-                          hint={property.hint}
-                          href={property.docsUrl}
-                        />
-                      {/if}
-                    </div>
-                  {/each}
-                </AddDataFormSection>
-              </TabsContent>
-              <TabsContent value="dsn">
-                <AddDataFormSection
-                  id={dsnFormId}
-                  enhance={dsnEnhance}
-                  onSubmit={dsnSubmit}
-                >
-                  {#each clickhouseUiState?.dsnProperties ?? [] as property (property.key)}
-                    {@const propertyKey = property.key ?? ""}
-                    <div class="py-1.0 first:pt-0 last:pb-0">
-                      <Input
-                        id={propertyKey}
-                        label={property.displayName}
-                        placeholder={property.placeholder}
-                        secret={property.secret}
-                        hint={property.hint}
-                        errors={normalizeErrors($dsnErrors[propertyKey])}
-                        bind:value={$dsnFormStore[propertyKey]}
-                        alwaysShowError
-                      />
-                    </div>
-                  {/each}
-                </AddDataFormSection>
-              </TabsContent>
-            </Tabs>
-          {:else}
-            <AddDataFormSection
-              id={paramsFormId}
-              enhance={paramsEnhance}
-              onSubmit={paramsSubmit}
-            >
-              {#each clickhouseUiState?.filteredProperties ?? [] as property (property.key)}
-                {@const propertyKey = property.key ?? ""}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                    <Input
-                      id={propertyKey}
-                      label={property.displayName}
-                      placeholder={property.placeholder}
-                      optional={!property.required}
-                      secret={property.secret}
-                      hint={property.hint}
-                      errors={normalizeErrors($paramsErrors[propertyKey])}
-                      bind:value={$paramsFormStore[propertyKey]}
-                      onInput={(_, e) => onStringInputChange(e)}
-                      alwaysShowError
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                    <Checkbox
-                      id={propertyKey}
-                      bind:checked={$paramsFormStore[propertyKey]}
-                      label={property.displayName}
-                      hint={property.hint}
-                      optional={!property.required}
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                    <InformationalField
-                      description={property.description}
-                      hint={property.hint}
-                      href={property.docsUrl}
-                    />
-                  {/if}
-                </div>
-              {/each}
-            </AddDataFormSection>
-          {/if}
-        </div>
+        <ClickhouseFormRenderer
+          bind:connectionTab
+          bind:clickhouseConnectorType
+          {clickhouseUiState}
+          {paramsFormId}
+          {paramsEnhance}
+          {paramsSubmit}
+          {paramsErrors}
+          {paramsFormStore}
+          {dsnFormId}
+          {dsnEnhance}
+          {dsnSubmit}
+          {dsnErrors}
+          {dsnFormStore}
+          {onStringInputChange}
+        />
       {:else if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}
@@ -636,7 +503,7 @@
             : submitting}
           loadingCopy={primaryLoadingCopy}
           form={connector.name === "clickhouse"
-            ? clickhouseUiState?.formId ?? formId
+            ? (clickhouseUiState?.formId ?? formId)
             : formId}
           submitForm
           type="primary"
