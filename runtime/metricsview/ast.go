@@ -304,7 +304,6 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 
 	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise wrap it in a SELECT and add it as a WHERE clause.
 	if ast.Query.Having != nil {
-		spineSelect := ast.Root.SpineSelect
 		// We need to wrap in a new SELECT because a WHERE/HAVING clause cannot apply directly to a field with a window function.
 		// This also enables us to template the field name instead of the field expression into the expression.
 		ast.WrapSelect(ast.Root, ast.GenerateIdentifier())
@@ -320,19 +319,14 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 
 		ast.Root.Where = res
 
-		// time spine needs to be applied before having so that treat_nulls_as works correctly for derived measures
-		// and treat_nulls_as should be applied before Having so that wrong bins are not included in final results
-		// however having also removes null filling bins that does not match criteria, so its depended on time spine
-		// this creates a cyclic dependency between time spine and having, so we re-apply time spine after having to restore removed time bins
-		if spineSelect != nil && ast.Query.Spine.TimeRange != nil {
-			ast.WrapSelect(ast.Root, ast.GenerateIdentifier())
-			ast.Root.SpineSelect = ast.ShallowCopyWithAlias(spineSelect, ast.GenerateIdentifier())
-
-			// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
-			// (since by definition, some dimension values in the spine might not be present in FromSelect).
-			for i, f := range ast.Root.DimFields {
-				f.Expr = ast.Dialect.EscapeMember(ast.Root.SpineSelect.Alias, f.Name)
-				ast.Root.DimFields[i] = f
+		if ast.Query.Spine != nil && ast.Query.Spine.TimeRange != nil {
+			// time spine needs to be applied before having so that treat_nulls_as works correctly for derived measures
+			// and treat_nulls_as should be applied before Having so that wrong bins are not included in final results
+			// however having also removes null filling bins that does not match criteria, so its depended on time spine
+			// this creates a cyclic dependency between time spine and having, so we re-apply time spine after having to restore removed time bins
+			err = ast.addSpineSelect(ast.Root, ast.Query.TimeRange, false)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -1083,27 +1077,35 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		return nil, fmt.Errorf("failed to add time range: %w", err)
 	}
 
+	err = a.addSpineSelect(n, tr, comparison)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
+func (a *AST) addSpineSelect(baseSelect *SelectNode, timeRange *TimeRange, comparison bool) error {
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
 	if a.Query.Spine != nil && !(a.Query.Spine.TimeRange != nil && comparison) { // Skip time range spines in the comparison select
-		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, tr)
+		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, timeRange)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		a.WrapSelect(n, a.GenerateIdentifier())
-		n.SpineSelect = sn
+		a.WrapSelect(baseSelect, a.GenerateIdentifier())
+		baseSelect.SpineSelect = sn
 
 		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
 		// (since by definition, some dimension values in the spine might not be present in FromSelect).
-		for i, f := range n.DimFields {
+		for i, f := range baseSelect.DimFields {
 			f.Expr = a.Dialect.EscapeMember(sn.Alias, f.Name)
-			n.DimFields[i] = f
+			baseSelect.DimFields[i] = f
 		}
 	}
-
-	return n, nil
+	return nil
 }
 
 // buildSpineSelect constructs a SELECT node for the given spine of dimension values.
