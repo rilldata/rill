@@ -304,6 +304,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 
 	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise wrap it in a SELECT and add it as a WHERE clause.
 	if ast.Query.Having != nil {
+		spineSelect := ast.Root.SpineSelect
 		// We need to wrap in a new SELECT because a WHERE/HAVING clause cannot apply directly to a field with a window function.
 		// This also enables us to template the field name instead of the field expression into the expression.
 		ast.WrapSelect(ast.Root, ast.GenerateIdentifier())
@@ -318,6 +319,22 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		}
 
 		ast.Root.Where = res
+
+		// time spine needs to be applied before having so that treat_nulls_as works correctly for derived measures
+		// and treat_nulls_as should be applied before Having so that wrong bins are not included in final results
+		// however having also removes null filling bins that does not match criteria, so its depended on time spine
+		// this creates a cyclic dependency between time spine and having, so we re-apply time spine after having to restore removed time bins
+		if spineSelect != nil && ast.Query.Spine.TimeRange != nil {
+			ast.WrapSelect(ast.Root, ast.GenerateIdentifier())
+			ast.Root.SpineSelect = ast.ShallowCopyWithAlias(spineSelect, ast.GenerateIdentifier())
+
+			// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
+			// (since by definition, some dimension values in the spine might not be present in FromSelect).
+			for i, f := range ast.Root.DimFields {
+				f.Expr = ast.Dialect.EscapeMember(ast.Root.SpineSelect.Alias, f.Name)
+				ast.Root.DimFields[i] = f
+			}
+		}
 	}
 
 	// Incrementally add each sort criterion.
@@ -690,6 +707,32 @@ func (a *AST) WrapSelect(s *SelectNode, innerAlias string) {
 	s.Limit = nil
 	s.Offset = nil
 	s.CrossJoinSelects = nil
+}
+
+func (a *AST) ShallowCopyWithAlias(s *SelectNode, newAlias string) *SelectNode {
+	cpy := &SelectNode{
+		RawSelect:            s.RawSelect,
+		Alias:                newAlias,
+		IsCTE:                s.IsCTE,
+		DimFields:            s.DimFields,
+		MeasureFields:        s.MeasureFields,
+		FromTable:            s.FromTable,
+		FromSelect:           s.FromSelect,
+		SpineSelect:          s.SpineSelect,
+		LeftJoinSelects:      s.LeftJoinSelects,
+		CrossJoinSelects:     s.CrossJoinSelects,
+		JoinComparisonSelect: s.JoinComparisonSelect,
+		JoinComparisonType:   s.JoinComparisonType,
+		Unnests:              s.Unnests,
+		Group:                s.Group,
+		Where:                s.Where,
+		TimeWhere:            s.TimeWhere,
+		Having:               s.Having,
+		OrderBy:              s.OrderBy,
+		Limit:                s.Limit,
+		Offset:               s.Offset,
+	}
+	return cpy
 }
 
 // ConvertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false
