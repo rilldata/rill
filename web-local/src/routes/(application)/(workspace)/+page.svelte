@@ -4,7 +4,9 @@
   import TitleContent from "@rilldata/web-common/features/welcome/TitleContent.svelte";
   import { fly } from "svelte/transition";
   import type { LayoutData } from "../$types";
+  import GeneratingSampleDataMessage from "@rilldata/web-common/features/sample-data/GeneratingSampleDataMessage.svelte";
   import DeveloperChat from "@rilldata/web-common/features/chat/DeveloperChat.svelte";
+  import { generatingSampleData } from "@rilldata/web-common/features/sample-data/generate-sample-data.ts";
 
   export let data: LayoutData;
 </script>
@@ -16,7 +18,11 @@
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
     {#if data.initialized}
-      <OnboardingWorkspace />
+      {#if $generatingSampleData}
+        <GeneratingSampleDataMessage />
+      {:else}
+        <OnboardingWorkspace />
+      {/if}
     {:else}
       <div class="scroll" in:fly={{ duration: 1600, delay: 400, y: 8 }}>
         <div class="wrapper column p-10 2xl:py-16">

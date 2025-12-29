@@ -1,5 +1,3 @@
-import { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
-import { NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/utils.ts";
 import {
   runtimeServiceUnpackEmpty,
   type V1Message,
@@ -10,16 +8,17 @@ import {
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
-import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 
+export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
 export async function generateSampleData(
@@ -53,31 +52,16 @@ export async function generateSampleData(
 
       await projectResetPromise;
       await featureFlags.ready;
-    }
-
-    const developerChatEnabled = get(featureFlags.dashboardChat);
-    if (developerChatEnabled) {
       overlay.set(null);
-      sidebarActions.startChat(agentPrompt);
-      return;
     }
 
-    overlay.set({
-      title: `Hang tight! We're generating the data you requested.`,
-      detail: {
-        component: OptionCancelToAIAction,
-        props: {
-          onCancel: () => {
-            conversation.cancelStream();
-            cancelled = true;
-          },
-        },
-      },
-    });
-    const conversation = new Conversation(instanceId, NEW_CONVERSATION_ID, {
+    generatingSampleData.set(true);
+    const conversationManager = getConversationManager(instanceId, {
+      conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
     });
-    conversation.draftMessage.set(agentPrompt);
+    conversationManager.enterNewConversationMode();
+    const conversation = get(conversationManager.getCurrentConversation());
 
     let created = false;
     let lastReadFile: string | null = null;
@@ -135,16 +119,25 @@ export async function generateSampleData(
         }
       }
     };
+    const handleMessageUnsub = conversation.on("message", handleMessage);
 
-    let cancelled = false;
+    const cancelled = false;
 
     conversation.cancelStream();
 
-    await conversation.sendMessage({}, { onMessage: handleMessage });
+    const developerChatEnabled = get(featureFlags.dashboardChat);
+    if (developerChatEnabled) {
+      sidebarActions.startChat(agentPrompt);
+      await waitUntil(() => get(conversation.isStreaming));
+    } else {
+      conversation.draftMessage.set(agentPrompt);
+      await conversation.sendMessage({});
+    }
 
     await waitUntil(() => !get(conversation.isStreaming));
 
-    overlay.set(null);
+    handleMessageUnsub();
+    generatingSampleData.set(false);
     if (cancelled) return;
     if (!created) {
       if (lastReadFile) {
@@ -158,8 +151,10 @@ export async function generateSampleData(
       }
       return;
     }
-  } catch {
+  } catch (err) {
+    console.error(err);
     overlay.set(null);
+    generatingSampleData.set(false);
     eventBus.emit("notification", {
       message: "Failed to generate sample data. Please try again.",
       type: "error",

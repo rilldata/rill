@@ -24,6 +24,14 @@ import {
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
+import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
+
+type ConversionEvents = {
+  "stream-start": null;
+  message: V1Message;
+  "stream-complete": string;
+  error: string;
+};
 
 /**
  * Individual conversation state management.
@@ -31,7 +39,7 @@ import {
  * Handles streaming message sending, optimistic updates, and conversation-specific queries
  * for a single conversation using the streaming completion endpoint.
  */
-export class Conversation {
+export class Conversation extends EventEmitter<ConversionEvents> {
   // Public reactive state
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
@@ -52,6 +60,8 @@ export class Conversation {
       agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
     },
   ) {
+    super();
+
     if (this.options) {
       this.options.agent ??= ToolName.ANALYST_AGENT;
     }
@@ -114,15 +124,7 @@ export class Conversation {
    * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(
-    context: RuntimeServiceCompleteBody,
-    options?: {
-      onStreamStart?: () => void;
-      onMessage?: (message: V1Message) => void;
-      onStreamComplete?: (conversationId: string) => void;
-      onError?: (error: string) => void;
-    },
-  ): Promise<void> {
+  public async sendMessage(context: RuntimeServiceCompleteBody): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -141,19 +143,15 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      options?.onStreamStart?.();
+      this.emit("stream-start", null);
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(
-        prompt,
-        context,
-        options?.onMessage,
-      );
+      const streamPromise = this.startStreaming(prompt, context);
 
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
-      options?.onStreamComplete?.(this.conversationId);
+      this.emit("stream-complete", this.conversationId);
 
       // Temporary fix to make sure the title of the conversation is updated.
       void invalidateConversationsList(this.instanceId);
@@ -171,7 +169,7 @@ export class Conversation {
         userMessage,
         this.hasReceivedFirstMessage,
       );
-      options?.onError?.(this.formatTransportError(error));
+      this.emit("error", this.formatTransportError(error));
     } finally {
       this.isStreaming.set(false);
     }
@@ -213,7 +211,6 @@ export class Conversation {
   private async startStreaming(
     prompt: string,
     context: RuntimeServiceCompleteBody | undefined,
-    onMessage: ((message: V1Message) => void) | undefined,
   ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
@@ -238,7 +235,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
-          if (response.message) onMessage?.(response.message);
+          if (response.message) this.emit("message", response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");

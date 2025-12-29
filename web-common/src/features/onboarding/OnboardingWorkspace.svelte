@@ -54,7 +54,7 @@
   }
 </script>
 
-<div class="pt-20 px-8 flex flex-col gap-y-6 items-center size-full">
+<div class="flex flex-col pt-20 px-8 gap-y-6 items-center size-full">
   <div class="flex flex-row text-center gap-x-8">
     <div
       class="flex flex-col w-64 p-6 gap-y-4 bg-card border rounded-md shadow-sm"
