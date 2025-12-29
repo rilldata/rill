@@ -27,7 +27,7 @@ rill query [<project>] [flags]
 
 ```
       --args stringToString         Explicit resolver args (only with --resolver) (default [])
-      --branch string               Optional git branch (for non-primary deployment)
+      --branch string               Target deployment by Git branch (default: primary deployment)
       --connector string            Connector to execute against. Defaults to the OLAP connector.
       --limit int                   The maximum number of rows to print (default 100)
       --local                       Target local runtime instead of Rill Cloud

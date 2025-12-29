@@ -62,7 +62,7 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	jwtCmd.Flags().SortFlags = false
 	jwtCmd.Flags().StringVar(&name, "project", "", "Project Name")
-	jwtCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	jwtCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return jwtCmd
 }

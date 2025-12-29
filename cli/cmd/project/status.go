@@ -156,7 +156,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 	statusCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	statusCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
-	statusCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	statusCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return statusCmd
 }

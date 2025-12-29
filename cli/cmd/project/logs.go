@@ -120,7 +120,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 	logsCmd.Flags().SortFlags = false
 	logsCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	logsCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	logsCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	logsCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 	logsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow logs")
 	logsCmd.Flags().IntVarP(&tail, "tail", "t", -1, "Number of lines to show from the end of the logs, use -1 for all logs")
 	logsCmd.Flags().StringVar(&level, "level", "INFO", "Minimum log level to show (DEBUG, INFO, WARN, ERROR, FATAL)")

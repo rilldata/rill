@@ -87,7 +87,7 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	statusCmd.Flags().StringVar(&project, "project", "", "Project name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	statusCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	statusCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return statusCmd
 }

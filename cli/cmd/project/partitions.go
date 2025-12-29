@@ -65,7 +65,7 @@ func PartitionsCmd(ch *cmdutil.Helper) *cobra.Command {
 	partitionsCmd.Flags().SortFlags = false
 	partitionsCmd.Flags().StringVar(&project, "project", "", "Project Name")
 	partitionsCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	partitionsCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	partitionsCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 	partitionsCmd.Flags().StringVar(&model, "model", "", "Model Name")
 	partitionsCmd.Flags().BoolVar(&pending, "pending", false, "Only fetch pending partitions")
 	partitionsCmd.Flags().BoolVar(&errored, "errored", false, "Only fetch errored partitions")

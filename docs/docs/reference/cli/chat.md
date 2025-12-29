@@ -15,7 +15,7 @@ rill chat [<project-name>] [flags]
 ```
       --project string   Project name
       --path string      Project directory (default ".")
-      --branch string    Optional git branch (for non-primary deployment)
+      --branch string    Target deployment by Git branch (default: primary deployment)
       --local            Target locally running Rill
 ```
 

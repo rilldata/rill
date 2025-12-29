@@ -150,7 +150,7 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 	chatCmd.Flags().SortFlags = false
 	chatCmd.Flags().StringVar(&project, "project", "", "Project name")
 	chatCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	chatCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	chatCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 	chatCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 
 	return chatCmd

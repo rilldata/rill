@@ -146,7 +146,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().SortFlags = false
 	refreshCmd.Flags().StringVar(&project, "project", "", "Project name")
 	refreshCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	refreshCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	refreshCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 	refreshCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 	refreshCmd.Flags().BoolVar(&all, "all", false, "Refresh all resources except alerts and reports (default)")
 	refreshCmd.Flags().BoolVar(&full, "full", false, "Fully reload the targeted models (use with --all or --model)")

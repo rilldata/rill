@@ -129,7 +129,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 	tablesCmd.Flags().StringVar(&project, "project", "", "Project name")
 	tablesCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	tablesCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
-	tablesCmd.Flags().StringVar(&branch, "branch", "", "Optional git branch (for non-primary deployment)")
+	tablesCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return tablesCmd
 }
