@@ -27,15 +27,15 @@
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
-
-  import { AddDataFormManager } from "./AddDataFormManager";
+  import {
+    AddDataFormManager,
+    type ClickhouseUiState,
+  } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get, type Writable } from "svelte/store";
   import {
     ConnectorDriverPropertyType,
-    type ConnectorDriverProperty,
   } from "@rilldata/web-common/runtime-client";
-  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -119,157 +119,49 @@
 
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
-  let clickhouseFormId: string = "";
-  let clickhouseSubmitting: boolean;
-  let clickhouseIsSubmitDisabled: boolean;
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
-  let clickhouseParamsForm;
-  let clickhouseDsnForm;
-  let clickhouseProperties: ConnectorDriverProperty[] = [];
-  let clickhouseFilteredProperties: ConnectorDriverProperty[] = [];
-  let clickhouseDsnProperties: ConnectorDriverProperty[] = [];
-  let clickhouseShowSaveAnyway: boolean = false;
-  const clickhouseInitialValues =
-    connector.name === "clickhouse"
-      ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
-      : {};
-  let prevClickhouseConnectorType: ClickHouseConnectorType =
-    clickhouseConnectorType;
+  let clickhouseUiState: ClickhouseUiState | null = null;
+  let clickhouseSaving = false;
+  let effectiveClickhouseSubmitting = false;
   const paramsFormStore = paramsForm as unknown as Writable<
     Record<string, any>
   >;
   const dsnFormStore = dsnForm as unknown as Writable<Record<string, any>>;
 
-  // Keep ClickHouse connector type in sync with form state and apply defaults
+  // ClickHouse-specific derived state handled by the manager
   $: if (connector.name === "clickhouse") {
-    // Always set connector_type on the params form
-    paramsForm.update(
-      ($form: any) => ({
-        ...$form,
-        connector_type: clickhouseConnectorType,
-      }),
-      { taint: false } as any,
-    );
+    clickhouseUiState = formManager.computeClickhouseState({
+      connectorType: clickhouseConnectorType,
+      connectionTab,
+      paramsFormValues: $paramsForm,
+      dsnFormValues: $dsnForm,
+      paramsErrors: $paramsErrors,
+      dsnErrors: $dsnErrors,
+      paramsForm,
+      dsnForm,
+      paramsSubmitting: $paramsSubmitting,
+      dsnSubmitting: $dsnSubmitting,
+    });
 
     if (
-      clickhouseConnectorType === "rill-managed" &&
-      Object.keys($paramsForm).length > 1
+      clickhouseUiState?.enforcedConnectionTab &&
+      clickhouseUiState.enforcedConnectionTab !== connectionTab
     ) {
-      paramsForm.update(
-        () => ({ managed: true, connector_type: "rill-managed" }),
-        { taint: false } as any,
-      );
+      connectionTab = clickhouseUiState.enforcedConnectionTab;
+    }
+
+    if (clickhouseUiState?.shouldClearErrors) {
       clickhouseError = null;
       clickhouseErrorDetails = undefined;
-    } else if (
-      prevClickhouseConnectorType === "rill-managed" &&
-      clickhouseConnectorType === "self-hosted"
-    ) {
-      paramsForm.update(
-        () => ({ ...clickhouseInitialValues, managed: false }),
-        { taint: false } as any,
-      );
-    } else if (
-      prevClickhouseConnectorType !== "clickhouse-cloud" &&
-      clickhouseConnectorType === "clickhouse-cloud"
-    ) {
-      paramsForm.update(
-        () => ({
-          ...clickhouseInitialValues,
-          managed: false,
-          port: "8443",
-          ssl: true,
-        }),
-        { taint: false } as any,
-      );
-    } else if (
-      prevClickhouseConnectorType === "clickhouse-cloud" &&
-      clickhouseConnectorType === "self-hosted"
-    ) {
-      paramsForm.update(
-        () => ({ ...clickhouseInitialValues, managed: false }),
-        { taint: false } as any,
-      );
     }
-    prevClickhouseConnectorType = clickhouseConnectorType;
+  } else {
+    clickhouseUiState = null;
   }
 
-  // Force parameters tab for Rill-managed
-  $: if (
-    connector.name === "clickhouse" &&
-    clickhouseConnectorType === "rill-managed"
-  ) {
-    connectionTab = "parameters";
-  }
-
-  // Use manager forms for ClickHouse
-  $: if (connector.name === "clickhouse") {
-    clickhouseParamsForm = paramsForm;
-    clickhouseDsnForm = dsnForm;
-    clickhouseFormId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
-    clickhouseSubmitting =
-      connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
-  }
-
-  $: if (connector.name === "clickhouse") {
-    clickhouseShowSaveAnyway = showSaveAnyway;
-  }
-
-  // ClickHouse-specific property filtering and disabled state
-  $: clickhouseProperties =
+  $: effectiveClickhouseSubmitting =
     connector.name === "clickhouse"
-      ? clickhouseConnectorType === "rill-managed"
-        ? (connector.sourceProperties ?? [])
-        : (connector.configProperties ?? [])
-      : [];
-
-  $: clickhouseFilteredProperties = clickhouseProperties.filter(
-    (property) =>
-      !property.noPrompt &&
-      property.key !== "managed" &&
-      (connectionTab !== "dsn" ? property.key !== "dsn" : true),
-  );
-
-  $: clickhouseDsnProperties =
-    connector.configProperties?.filter((property) => property.key === "dsn") ??
-    [];
-
-  $: clickhouseIsSubmitDisabled = (() => {
-    if (connector.name !== "clickhouse") return false;
-    if (clickhouseConnectorType === "rill-managed") {
-      for (const property of clickhouseFilteredProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $paramsForm[key];
-          if (isEmpty(value) || ($paramsErrors[key] as any)?.length)
-            return true;
-        }
-      }
-      return false;
-    } else if (connectionTab === "dsn") {
-      for (const property of clickhouseDsnProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $dsnForm[key];
-          if (isEmpty(value) || ($dsnErrors[key] as any)?.length) return true;
-        }
-      }
-      return false;
-    } else {
-      for (const property of clickhouseFilteredProperties) {
-        if (property.required && property.key !== "managed") {
-          const key = String(property.key);
-          const value = $paramsForm[key];
-          if (isEmpty(value) || ($paramsErrors[key] as any)?.length)
-            return true;
-        }
-      }
-      if (clickhouseConnectorType === "clickhouse-cloud") {
-        if (!$paramsForm.ssl) return true;
-      }
-      return false;
-    }
-  })();
+      ? clickhouseSaving || clickhouseUiState?.submitting || false
+      : submitting;
 
   // Hide Save Anyway once we advance to the model step in multi-step flows.
   $: if (isMultiStepConnector && stepState.step === "source") {
@@ -331,7 +223,7 @@
         step: stepState.step,
         submitting,
         clickhouseConnectorType,
-        clickhouseSubmitting,
+        clickhouseSubmitting: effectiveClickhouseSubmitting,
         selectedAuthMethod: activeAuthMethod ?? undefined,
       });
 
@@ -350,7 +242,8 @@
     saveAnyway = false;
   }
 
-  $: isSubmitting = submitting;
+  $: isSubmitting =
+    connector.name === "clickhouse" ? effectiveClickhouseSubmitting : submitting;
 
   // Reset errors when form is modified
   $: (() => {
@@ -385,13 +278,13 @@
     const values =
       connector.name === "clickhouse"
         ? connectionTab === "dsn"
-          ? $clickhouseDsnForm
-          : $clickhouseParamsForm
+          ? $dsnForm
+          : $paramsForm
         : onlyDsn || connectionTab === "dsn"
           ? $dsnForm
           : $paramsForm;
     if (connector.name === "clickhouse") {
-      clickhouseSubmitting = true;
+      clickhouseSaving = true;
     }
     const result = await formManager.saveConnectorAnyway({
       queryClient,
@@ -419,7 +312,7 @@
     }
     saveAnyway = false;
     if (connector.name === "clickhouse") {
-      clickhouseSubmitting = false;
+      clickhouseSaving = false;
     }
   }
 
@@ -434,14 +327,13 @@
     paramsFormValues: $paramsForm,
     dsnFormValues: $dsnForm,
     clickhouseConnectorType,
-    clickhouseParamsValues: $clickhouseParamsForm,
-    clickhouseDsnValues: $clickhouseDsnForm,
+    clickhouseParamsValues: $paramsForm,
+    clickhouseDsnValues: $dsnForm,
   });
   $: isClickhouse = connector.name === "clickhouse";
-  $: shouldShowSaveAnywayButton =
-    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
+  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = isClickhouse
-    ? clickhouseSubmitting && saveAnyway
+    ? effectiveClickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
 
   handleOnUpdate = formManager.makeOnUpdate({
@@ -506,7 +398,7 @@
                   enhance={paramsEnhance}
                   onSubmit={paramsSubmit}
                 >
-                  {#each clickhouseFilteredProperties as property (property.key)}
+                  {#each clickhouseUiState?.filteredProperties ?? [] as property (property.key)}
                     {@const propertyKey = property.key ?? ""}
                     {@const isPortField = propertyKey === "port"}
                     {@const isSSLField = propertyKey === "ssl"}
@@ -565,7 +457,7 @@
                   enhance={dsnEnhance}
                   onSubmit={dsnSubmit}
                 >
-                  {#each clickhouseDsnProperties as property (property.key)}
+                  {#each clickhouseUiState?.dsnProperties ?? [] as property (property.key)}
                     {@const propertyKey = property.key ?? ""}
                     <div class="py-1.0 first:pt-0 last:pb-0">
                       <Input
@@ -589,7 +481,7 @@
               enhance={paramsEnhance}
               onSubmit={paramsSubmit}
             >
-              {#each clickhouseFilteredProperties as property (property.key)}
+              {#each clickhouseUiState?.filteredProperties ?? [] as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
@@ -736,13 +628,16 @@
 
         <Button
           disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+            ? effectiveClickhouseSubmitting ||
+              (clickhouseUiState?.isSubmitDisabled ?? false)
             : submitting || isSubmitDisabled}
           loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting
+            ? effectiveClickhouseSubmitting
             : submitting}
           loadingCopy={primaryLoadingCopy}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          form={connector.name === "clickhouse"
+            ? clickhouseUiState?.formId ?? formId
+            : formId}
           submitForm
           type="primary"
         >
