@@ -703,32 +703,6 @@ func (a *AST) WrapSelect(s *SelectNode, innerAlias string) {
 	s.CrossJoinSelects = nil
 }
 
-func (a *AST) ShallowCopyWithAlias(s *SelectNode, newAlias string) *SelectNode {
-	cpy := &SelectNode{
-		RawSelect:            s.RawSelect,
-		Alias:                newAlias,
-		IsCTE:                s.IsCTE,
-		DimFields:            s.DimFields,
-		MeasureFields:        s.MeasureFields,
-		FromTable:            s.FromTable,
-		FromSelect:           s.FromSelect,
-		SpineSelect:          s.SpineSelect,
-		LeftJoinSelects:      s.LeftJoinSelects,
-		CrossJoinSelects:     s.CrossJoinSelects,
-		JoinComparisonSelect: s.JoinComparisonSelect,
-		JoinComparisonType:   s.JoinComparisonType,
-		Unnests:              s.Unnests,
-		Group:                s.Group,
-		Where:                s.Where,
-		TimeWhere:            s.TimeWhere,
-		Having:               s.Having,
-		OrderBy:              s.OrderBy,
-		Limit:                s.Limit,
-		Offset:               s.Offset,
-	}
-	return cpy
-}
-
 // ConvertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false
 func (a *AST) ConvertToCTE(n *SelectNode) {
 	if n.IsCTE {
