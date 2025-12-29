@@ -1114,6 +1114,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		return nil, nil
 	}
 
+	if spine.Where != nil && spine.TimeRange != nil {
+		return nil, errors.New("spine cannot have both 'where' and 'time_range'")
+	}
+
 	if spine.Where != nil {
 		// Using buildWhereForUnderlyingTable to include security filters.
 		// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
