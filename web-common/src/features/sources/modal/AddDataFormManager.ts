@@ -20,31 +20,50 @@ import { normalizeConnectorError } from "./utils";
 import {
   FORM_HEIGHT_DEFAULT,
   FORM_HEIGHT_TALL,
+  FORM_HEIGHT_MEDIUM,
   MULTI_STEP_CONNECTORS,
+  MEDIUM_FORM_CONNECTORS,
   TALL_FORM_CONNECTORS,
+  OLAP_ENGINES,
 } from "./constants";
 import {
   connectorStepStore,
   setConnectorConfig,
   setStep,
+  type ConnectorStepState,
 } from "./connectorStepStore";
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
-import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
-import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
-import type { ClickHouseConnectorType } from "./constants";
-import { applyClickHouseCloudRequirements } from "./utils";
+import {
+  compileSourceYAML,
+  prepareSourceFormData,
+  prepareConnectorFormData,
+} from "../sourceUtils";
+import {
+  ConnectorDriverPropertyType,
+  type ConnectorDriverProperty,
+} from "@rilldata/web-common/runtime-client";
 import type { ActionResult } from "@sveltejs/kit";
+import { getConnectorSchema } from "./connector-schemas";
+import {
+  findRadioEnumKey,
+  findGroupedEnumKeys,
+  isVisibleForValues,
+} from "../../templates/schema-utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
   form: SuperValidated<Record<string, unknown>, any, Record<string, unknown>>;
 };
 
-// Shape of the step store for multi-step connectors
-type ConnectorStepState = {
-  step: "connector" | "source";
-  connectorConfig: Record<string, unknown> | null;
+const BUTTON_LABELS = {
+  public: { idle: "Continue", submitting: "Continuing..." },
+  connector: { idle: "Test and Connect", submitting: "Testing connection..." },
+  connectorReadOnly: {
+    idle: "Test and Add Connector",
+    submitting: "Testing connection...",
+  },
+  source: { idle: "Import Data", submitting: "Importing data..." },
 };
 
 export class AddDataFormManager {
@@ -69,20 +88,34 @@ export class AddDataFormManager {
     return normalizeConnectorError(this.connector.name ?? "", e);
   }
 
+  private getSelectedAuthMethod?: () => string | undefined;
+
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
     onDsnUpdate: (event: SuperFormUpdateEvent) => void;
+    getSelectedAuthMethod?: () => string | undefined;
   }) {
-    const { connector, formType, onParamsUpdate, onDsnUpdate } = args;
+    const {
+      connector,
+      formType,
+      onParamsUpdate,
+      onDsnUpdate,
+      getSelectedAuthMethod,
+    } = args;
     this.connector = connector;
     this.formType = formType;
+    this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Layout height
-    this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
-      ? FORM_HEIGHT_TALL
-      : FORM_HEIGHT_DEFAULT;
+    if (TALL_FORM_CONNECTORS.has(connector.name ?? "")) {
+      this.formHeight = FORM_HEIGHT_TALL;
+    } else if (MEDIUM_FORM_CONNECTORS.has(connector.name ?? "")) {
+      this.formHeight = FORM_HEIGHT_MEDIUM;
+    } else {
+      this.formHeight = FORM_HEIGHT_DEFAULT;
+    }
 
     // IDs
     this.paramsFormId = `add-data-${connector.name}-form`;
@@ -127,13 +160,34 @@ export class AddDataFormManager {
     // Superforms: params
     const paramsSchemaDef = getValidationSchemaForConnector(
       connector.name as string,
+      formType,
+      {
+        isMultiStepConnector: this.isMultiStepConnector,
+        authMethodGetter: this.getSelectedAuthMethod,
+      },
     );
     const paramsAdapter = yup(paramsSchemaDef);
     type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
     type ParamsIn = YupInferIn<typeof paramsSchemaDef, "yup">;
-    const initialFormValues = getInitialFormValuesFromProperties(
-      this.properties,
-    );
+
+    // For schema-based connectors, use schema defaults instead of backend properties
+    // to avoid pulling defaults from the backend driver
+    const schema = connector.name ? getConnectorSchema(connector.name) : null;
+    let initialFormValues: Record<string, unknown>;
+
+    if (schema?.properties) {
+      // Extract defaults from schema
+      initialFormValues = {};
+      for (const [key, prop] of Object.entries(schema.properties)) {
+        if (prop.default !== undefined) {
+          initialFormValues[key] = prop.default;
+        }
+      }
+    } else {
+      // Fall back to backend properties for non-schema connectors
+      initialFormValues = getInitialFormValuesFromProperties(this.properties);
+    }
+
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
@@ -143,6 +197,7 @@ export class AddDataFormManager {
       validators: paramsAdapter,
       onUpdate: onParamsUpdate,
       resetForm: false,
+      validationMethod: "onsubmit",
     });
 
     // Superforms: dsn
@@ -154,6 +209,7 @@ export class AddDataFormManager {
       validators: dsnAdapter,
       onUpdate: onDsnUpdate,
       resetForm: false,
+      validationMethod: "onsubmit",
     });
   }
 
@@ -169,6 +225,37 @@ export class AddDataFormManager {
     return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
   }
 
+  /**
+   * Determines whether the "Save Anyway" button should be shown for the current submission.
+   */
+  private shouldShowSaveAnywayButton(args: {
+    isConnectorForm: boolean;
+    event?:
+      | {
+          result?: Extract<ActionResult, { type: "success" | "failure" }>;
+        }
+      | undefined;
+    stepState: ConnectorStepState | undefined;
+    selectedAuthMethod?: string;
+  }): boolean {
+    const { isConnectorForm, event, stepState, selectedAuthMethod } = args;
+
+    // Only show for connector forms (not sources)
+    if (!isConnectorForm) return false;
+
+    // Need a submission result to show the button
+    if (!event?.result) return false;
+
+    // Multi-step connectors: don't show on source step (final step)
+    if (stepState?.step === "source") return false;
+
+    // Public auth bypasses connection test, so no "Save Anyway" needed
+    if (stepState?.step === "connector" && selectedAuthMethod === "public")
+      return false;
+
+    return true;
+  }
+
   getActiveFormId(args: {
     connectionTab: "parameters" | "dsn";
     onlyDsn: boolean;
@@ -182,7 +269,12 @@ export class AddDataFormManager {
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig(get(this.params.form) as Record<string, unknown>);
+
+    const formValues = get(this.params.form);
+    const mode = formValues?.mode as string | undefined;
+
+    // Preserve the form values (especially mode) when navigating to source step
+    setConnectorConfig(formValues);
     setStep("source");
   }
 
@@ -199,35 +291,37 @@ export class AddDataFormManager {
     isConnectorForm: boolean;
     step: "connector" | "source" | string;
     submitting: boolean;
-    clickhouseConnectorType?: ClickHouseConnectorType;
-    clickhouseSubmitting?: boolean;
+    selectedAuthMethod?: string;
+    mode?: string;
   }): string {
-    const {
-      isConnectorForm,
-      step,
-      submitting,
-      clickhouseConnectorType,
-      clickhouseSubmitting,
-    } = args;
-    const isClickhouse = this.connector.name === "clickhouse";
-
-    if (isClickhouse) {
-      if (clickhouseConnectorType === "rill-managed") {
-        return clickhouseSubmitting ? "Connecting..." : "Connect";
-      }
-      return clickhouseSubmitting
-        ? "Testing connection..."
-        : "Test and Connect";
-    }
+    const { isConnectorForm, step, submitting, selectedAuthMethod, mode } =
+      args;
 
     if (isConnectorForm) {
       if (this.isMultiStepConnector && step === "connector") {
-        return submitting ? "Testing connection..." : "Test and Connect";
+        if (selectedAuthMethod === "public") {
+          return submitting
+            ? BUTTON_LABELS.public.submitting
+            : BUTTON_LABELS.public.idle;
+        }
+        // For read-only mode, show "Test and Add Connector" instead of "Test and Connect"
+        if (mode === "read") {
+          return submitting
+            ? BUTTON_LABELS.connectorReadOnly.submitting
+            : BUTTON_LABELS.connectorReadOnly.idle;
+        }
+        return submitting
+          ? BUTTON_LABELS.connector.submitting
+          : BUTTON_LABELS.connector.idle;
       }
       if (this.isMultiStepConnector && step === "source") {
-        return submitting ? "Creating model..." : "Test and Add data";
+        return submitting
+          ? BUTTON_LABELS.source.submitting
+          : BUTTON_LABELS.source.idle;
       }
-      return submitting ? "Testing connection..." : "Test and Connect";
+      return submitting
+        ? BUTTON_LABELS.connector.submitting
+        : BUTTON_LABELS.connector.idle;
     }
 
     return "Test and Add data";
@@ -237,6 +331,7 @@ export class AddDataFormManager {
     onClose: () => void;
     queryClient: any;
     getConnectionTab: () => "parameters" | "dsn";
+    getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
     setDsnError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
@@ -245,6 +340,7 @@ export class AddDataFormManager {
       onClose,
       queryClient,
       getConnectionTab,
+      getSelectedAuthMethod,
       setParamsError,
       setDsnError,
       setShowSaveAnyway,
@@ -263,35 +359,97 @@ export class AddDataFormManager {
       >;
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
     }) => {
-      // For non-ClickHouse connectors, expose Save Anyway when a submission starts
+      const values = event.form.data;
+      const schema = getConnectorSchema(this.connector.name ?? "");
+      const authKey = schema ? findRadioEnumKey(schema) : null;
+      const selectedAuthMethod =
+        (authKey && values && values[authKey] != null
+          ? String(values[authKey])
+          : undefined) ||
+        getSelectedAuthMethod?.() ||
+        "";
+      const stepState = get(connectorStepStore) as ConnectorStepState;
+
+      // Fast-path: public auth skips validation/test and goes straight to source step.
       if (
-        isConnectorForm &&
-        connector.name !== "clickhouse" &&
+        isMultiStepConnector &&
+        stepState.step === "connector" &&
+        selectedAuthMethod === "public"
+      ) {
+        setConnectorConfig(values);
+        setStep("source");
+        return;
+      }
+
+      // When in the source step of a multi-step flow, the superform still uses
+      // the connector schema, so it can appear invalid because connector fields
+      // were intentionally skipped. Allow submission in that case and rely on
+      // the UI-level required checks for source fields.
+      if (
+        !event.form.valid &&
+        !(isMultiStepConnector && stepState.step === "source")
+      )
+        return;
+
+      if (
         typeof setShowSaveAnyway === "function" &&
-        event?.result
+        this.shouldShowSaveAnywayButton({
+          isConnectorForm,
+          event,
+          stepState,
+          selectedAuthMethod,
+        })
       ) {
         setShowSaveAnyway(true);
       }
 
-      if (!event.form.valid) return;
-
-      const values = event.form.data;
-
       try {
-        const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
-          await submitAddConnectorForm(queryClient, connector, values, false);
-          setConnectorConfig(values);
+          // For public auth, skip Test & Connect and go straight to the next step.
+          if (selectedAuthMethod === "public") {
+            setConnectorConfig(values);
+            setStep("source");
+            return;
+          }
+          const preparedValues = prepareConnectorFormData(connector, values);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            preparedValues,
+            false,
+          );
+
+          // If mode is "read" (read-only), navigate to explorer step.
+          // For OLAP connectors without a mode field (Pinot, Druid), also go to explorer.
+          // Only advance to source step when mode is "readwrite" or undefined (rill-managed).
+          const mode = values?.mode as string | undefined;
+          const schema = getConnectorSchema(connector.name ?? "");
+          const hasModeField = schema?.properties?.mode !== undefined;
+          const isReadOnlyOlap = !hasModeField && OLAP_ENGINES.includes(connector.name ?? "");
+
+          if (mode === "read" || isReadOnlyOlap) {
+            setConnectorConfig(preparedValues);
+            setStep("explorer");
+            return;
+          }
+
+          setConnectorConfig(preparedValues);
           setStep("source");
           return;
         } else if (this.formType === "source") {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          const preparedValues = prepareConnectorFormData(connector, values);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            preparedValues,
+            false,
+          );
           onClose();
         }
       } catch (e) {
@@ -372,9 +530,6 @@ export class AddDataFormManager {
     isConnectorForm: boolean;
     paramsFormValues: Record<string, unknown>;
     dsnFormValues: Record<string, unknown>;
-    clickhouseConnectorType?: ClickHouseConnectorType;
-    clickhouseParamsValues?: Record<string, unknown>;
-    clickhouseDsnValues?: Record<string, unknown>;
   }): string {
     const connector = this.connector;
     const {
@@ -387,45 +542,90 @@ export class AddDataFormManager {
       isConnectorForm,
       paramsFormValues,
       dsnFormValues,
-      clickhouseConnectorType,
-      clickhouseParamsValues,
-      clickhouseDsnValues,
     } = ctx;
 
+    const connectorPropertiesForPreview =
+      isMultiStepConnector && stepState?.step === "connector"
+        ? (connector.configProperties ?? [])
+        : filteredParamsProperties;
+
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
+      let orderedProperties: ConnectorDriverProperty[] = [];
+
+      // For multi-step connectors with schemas, build properties from schema
+      const schema =
+        isMultiStepConnector &&
+        stepState?.step === "connector" &&
+        connector.name
+          ? getConnectorSchema(connector.name)
+          : null;
+
+      if (schema) {
+        // Build ordered properties from schema fields that are visible and on connector step
+        const schemaProperties: ConnectorDriverProperty[] = [];
+        const properties = schema.properties ?? {};
+
+        // Find all grouped enum keys (radio or tabs with grouped fields) - these are UI control fields we don't want in YAML
+        const groupedEnumKeys = findGroupedEnumKeys(schema);
+        const authMethodKey = findRadioEnumKey(schema);
+
+        // Ensure all grouped enum keys have values for visibility checks (use actual value or fallback to default)
+        let valuesForVisibility = { ...values };
+        for (const enumKey of groupedEnumKeys) {
+          if (!valuesForVisibility[enumKey]) {
+            const enumProp = properties[enumKey];
+            if (enumProp?.default) {
+              valuesForVisibility[enumKey] = enumProp.default;
+            } else if (enumProp?.enum?.length) {
+              valuesForVisibility[enumKey] = enumProp.enum[0];
+            }
+          }
+        }
+
+        for (const [key, prop] of Object.entries(properties)) {
+          // Skip grouped enum keys (auth_method, connection_method, etc.) - they're just UI control fields
+          if (groupedEnumKeys.includes(key)) continue;
+
+          // Only include connector step fields that are currently visible
+          if (
+            prop["x-step"] === "connector" &&
+            isVisibleForValues(schema, key, valuesForVisibility)
+          ) {
+            const value = values[key];
+            const isSecret = prop["x-secret"] || false;
+
+            // Skip if value is undefined/null/empty string
+            if (value === undefined || value === null || value === "") continue;
+
+            // Should we add other properties, like Array for list of strings, Ie path_prefix, etc.
+            schemaProperties.push({
+              key,
+              type:
+                prop.type === "number"
+                  ? ConnectorDriverPropertyType.TYPE_NUMBER
+                  : prop.type === "boolean"
+                    ? ConnectorDriverPropertyType.TYPE_BOOLEAN
+                    : ConnectorDriverPropertyType.TYPE_STRING,
+              secret: isSecret,
+            });
+          }
+        }
+
+        orderedProperties = schemaProperties;
+      } else {
+        // Non-schema connectors use the old DSN/parameters tab system
+        orderedProperties =
+          onlyDsn || connectionTab === "dsn"
+            ? filteredDsnProperties
+            : connectorPropertiesForPreview;
+      }
+
       return compileConnectorYAML(connector, values, {
         fieldFilter: (property) => {
           if (onlyDsn || connectionTab === "dsn") return true;
           return !property.noPrompt;
         },
-        orderedProperties:
-          onlyDsn || connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
-      });
-    };
-
-    const getClickHouseYamlPreview = (
-      values: Record<string, unknown>,
-      chType: ClickHouseConnectorType | undefined,
-    ) => {
-      // Convert to managed boolean and apply CH Cloud requirements for preview
-      const managed = chType === "rill-managed";
-      const previewValues = { ...values, managed } as Record<string, unknown>;
-      const finalValues = applyClickHouseCloudRequirements(
-        connector.name,
-        chType as ClickHouseConnectorType,
-        previewValues,
-      );
-      return compileConnectorYAML(connector, finalValues, {
-        fieldFilter: (property) => {
-          if (onlyDsn || connectionTab === "dsn") return true;
-          return !property.noPrompt;
-        },
-        orderedProperties:
-          connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
+        orderedProperties,
       });
     };
 
@@ -436,9 +636,17 @@ export class AddDataFormManager {
         const connectorPropertyKeys = new Set(
           connector.configProperties?.map((p) => p.key).filter(Boolean) || [],
         );
+
+        // Also filter out grouped enum keys (auth_method, connection_method, mode, etc.)
+        const schema = connector.name
+          ? getConnectorSchema(connector.name)
+          : null;
+        const groupedEnumKeys = schema ? findGroupedEnumKeys(schema) : [];
+
         filteredValues = Object.fromEntries(
           Object.entries(values).filter(
-            ([key]) => !connectorPropertyKeys.has(key),
+            ([key]) =>
+              !connectorPropertyKeys.has(key) && !groupedEnumKeys.includes(key),
           ),
         );
       }
@@ -447,21 +655,18 @@ export class AddDataFormManager {
         connector,
         filteredValues,
       );
+
+      // For multi-step connectors on source step, always show model YAML
+      if (isMultiStepConnector && stepState?.step === "source") {
+        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+      }
+
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
       if (isRewrittenToDuckDb) {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
       }
       return getConnectorYamlPreview(rewrittenFormValues);
     };
-
-    // ClickHouse special-case
-    if (connector.name === "clickhouse") {
-      const values =
-        connectionTab === "dsn"
-          ? clickhouseDsnValues || {}
-          : clickhouseParamsValues || {};
-      return getClickHouseYamlPreview(values, clickhouseConnectorType);
-    }
 
     // Multi-step connectors
     if (isMultiStepConnector) {
@@ -483,20 +688,14 @@ export class AddDataFormManager {
   }
 
   /**
-   * Save connector anyway (non-ClickHouse), returning a result object for the caller to handle.
+   * Save connector anyway, bypassing validation. Returns a result object for the caller to handle.
    */
   async saveConnectorAnyway(args: {
     queryClient: any;
     values: Record<string, unknown>;
-    clickhouseConnectorType?: ClickHouseConnectorType;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values, clickhouseConnectorType } = args;
-    const processedValues = applyClickHouseCloudRequirements(
-      this.connector.name,
-      (clickhouseConnectorType as ClickHouseConnectorType) ||
-        ("self-hosted" as ClickHouseConnectorType),
-      values,
-    );
+    const { queryClient, values } = args;
+    const processedValues = prepareConnectorFormData(this.connector, values);
     try {
       await submitAddConnectorForm(
         queryClient,

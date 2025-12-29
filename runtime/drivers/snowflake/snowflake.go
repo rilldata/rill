@@ -95,6 +95,14 @@ var spec = drivers.Spec{
 			Placeholder: "your_role",
 			Hint:        "The Snowflake role to use (defaults to your default role if not specified)",
 		},
+		{
+			Key:         "privateKey",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Private Key",
+			Description: "RSA private key in PEM format for key pair authentication",
+			Placeholder: "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----",
+			Secret:      true,
+		},
 	},
 	ImplementsWarehouse: true,
 }

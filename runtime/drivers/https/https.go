@@ -21,17 +21,25 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName: "https",
-	Description: "Connect to a remote file.",
+	DisplayName: "HTTPS",
+	Description: "Connect to remote files and REST APIs.",
 	DocsURL:     "https://docs.rilldata.com/build/connect/#adding-a-remote-source",
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:         "headers",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "HTTP Headers (JSON)",
+			Description: `HTTP headers as JSON object. Example: {"Authorization": "Bearer my-token"}`,
+			Placeholder: `{"Authorization": "Bearer my-token"}`,
+		},
+	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "Path",
-			Description: "Path to the remote file.",
-			Placeholder: "https://example.com/file.csv",
+			DisplayName: "URL",
+			Description: "URL to the remote file or API endpoint",
+			Placeholder: "https://api.example.com/data",
 			Required:    true,
 		},
 		{
@@ -102,8 +110,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config: config,
-		logger: logger,
+		config:     config,
+		configProp: cfg,
+		logger:     logger,
 	}
 	return conn, nil
 }
@@ -121,8 +130,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	config map[string]any
-	logger *zap.Logger
+	config     map[string]any
+	configProp *ConfigProperties
+	logger     *zap.Logger
 }
 
 var _ drivers.Handle = &Connection{}
@@ -254,6 +264,12 @@ func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 		return nil, fmt.Errorf("failed to create request for path %s:  %w", path, err)
 	}
 
+	// Apply connector-level headers first (from config)
+	for k, v := range c.configProp.Headers {
+		req.Header.Set(k, v)
+	}
+
+	// Model-specific headers override connector headers
 	for k, v := range modelProp.Headers {
 		req.Header.Set(k, v)
 	}

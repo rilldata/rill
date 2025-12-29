@@ -62,16 +62,18 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     properties = properties.filter(options.fieldFilter);
   }
 
-  // Get the secret property keys
+  // Get the secret property keys from the properties being used (orderedProperties or configProperties)
+  const propertiesForTypeChecking =
+    options?.orderedProperties ?? connector.configProperties ?? [];
   const secretPropertyKeys =
-    connector.configProperties
-      ?.filter((property) => property.secret)
+    propertiesForTypeChecking
+      .filter((property) => property.secret)
       .map((property) => property.key) || [];
 
-  // Get the string property keys
+  // Get the string property keys from the properties being used
   const stringPropertyKeys =
-    connector.configProperties
-      ?.filter(
+    propertiesForTypeChecking
+      .filter(
         (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
       )
       .map((property) => property.key) || [];
@@ -81,6 +83,12 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     .filter((property) => {
       if (!property.key) return false;
       const value = formValues[property.key];
+
+      // Secret fields should be shown with env variable placeholder if they exist in formValues
+      // Don't include secrets that weren't provided (e.g., password when using DSN)
+      const isSecretProperty = secretPropertyKeys.includes(property.key);
+      if (isSecretProperty && value !== undefined) return true;
+
       if (value === undefined) return false;
       // Filter out empty strings for optional fields
       if (typeof value === "string" && value.trim() === "") return false;
@@ -96,7 +104,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     })
     .map((property) => {
       const key = property.key as string;
-      const value = formValues[key] as string;
+      const value = formValues[key];
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
@@ -107,12 +115,14 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
         )} }}"`;
       }
 
+      // At this point, value is guaranteed to be defined due to the filter above
+      const stringValue = value as string;
       const isStringProperty = stringPropertyKeys.includes(key);
       if (isStringProperty) {
-        return `${key}: "${value}"`;
+        return `${key}: "${stringValue}"`;
       }
 
-      return `${key}: ${value}`;
+      return `${key}: ${stringValue}`;
     })
     .join("\n");
 

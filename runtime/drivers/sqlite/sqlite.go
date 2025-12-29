@@ -91,9 +91,9 @@ func (d driver) Spec() drivers.Spec {
 				Key:         "db",
 				Type:        drivers.StringPropertyType,
 				Required:    true,
-				DisplayName: "DB",
-				Description: "Path to SQLite db file",
-				Placeholder: "/path/to/sqlite.db",
+				DisplayName: "Database Path",
+				Description: "Path to SQLite database file",
+				Placeholder: "/path/to/database.db",
 			},
 			{
 				Key:         "table",

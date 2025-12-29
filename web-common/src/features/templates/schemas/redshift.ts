@@ -1,0 +1,97 @@
+import type { MultiStepFormSchema } from "./types";
+
+export const redshiftSchema: MultiStepFormSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    aws_access_key_id: {
+      type: "string",
+      title: "AWS Access Key ID",
+      description: "AWS access key ID for Redshift Data API",
+      "x-placeholder": "Enter AWS access key ID",
+      "x-secret": true,
+      "x-step": "connector",
+    },
+    aws_secret_access_key: {
+      type: "string",
+      title: "AWS Secret Access Key",
+      description: "AWS secret access key for Redshift Data API",
+      "x-placeholder": "Enter AWS secret access key",
+      "x-secret": true,
+      "x-step": "connector",
+    },
+    region: {
+      type: "string",
+      title: "AWS Region",
+      description: "AWS region where the Redshift cluster is located",
+      "x-placeholder": "us-east-1",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    database: {
+      type: "string",
+      title: "Database",
+      description: "Redshift database name",
+      "x-placeholder": "dev",
+      "x-step": "connector",
+    },
+    workgroup: {
+      type: "string",
+      title: "Workgroup",
+      description: "Redshift Serverless workgroup name (for serverless)",
+      "x-placeholder": "default-workgroup",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    cluster_identifier: {
+      type: "string",
+      title: "Cluster Identifier",
+      description:
+        "Redshift provisioned cluster identifier (for provisioned clusters)",
+      "x-placeholder": "my-redshift-cluster",
+      "x-hint":
+        "Provide either workgroup (for serverless) or cluster identifier (for provisioned)",
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    allow_host_access: {
+      type: "boolean",
+      title: "Allow Host Access",
+      description:
+        "Allow the connector to access the host's network (useful for private clusters)",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    log_queries: {
+      type: "boolean",
+      title: "Log Queries",
+      description: "Enable logging of all SQL queries (useful for debugging)",
+      default: false,
+      "x-step": "connector",
+      "x-advanced": true,
+    },
+    sql: {
+      type: "string",
+      title: "SQL Query",
+      description: "SQL query to extract data from Redshift",
+      "x-placeholder": "SELECT * FROM my_table;",
+      "x-step": "source",
+    },
+    name: {
+      type: "string",
+      title: "Model Name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      "x-placeholder": "my_model",
+      "x-step": "source",
+    },
+  },
+  required: [
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    "database",
+    "sql",
+    "name",
+  ],
+};

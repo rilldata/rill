@@ -15,8 +15,8 @@ import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseClo
 export const connectorIconMapping = {
   athena: AthenaIcon,
   bigquery: GoogleBigQueryIcon,
-  clickhouse: ClickHouseIcon,
   clickhousecloud: ClickHouseCloudIcon,
+  clickhouse: ClickHouseIcon,
   motherduck: MotherDuckIcon,
   druid: ApacheDruidIcon,
   duckdb: DuckDbIcon,
