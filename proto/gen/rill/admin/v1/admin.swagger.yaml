@@ -1115,6 +1115,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: branch
+          description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+          in: query
+          required: false
+          type: string
         - name: accessTokenTtlSeconds
           in: query
           required: false
@@ -5186,7 +5191,7 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
-      prodDeployment:
+      deployment:
         $ref: '#/definitions/v1Deployment'
       jwt:
         type: string

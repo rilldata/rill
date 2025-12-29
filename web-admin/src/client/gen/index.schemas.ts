@@ -610,7 +610,7 @@ export interface V1GetProjectMemberUserResponse {
 
 export interface V1GetProjectResponse {
   project?: V1Project;
-  prodDeployment?: V1Deployment;
+  deployment?: V1Deployment;
   jwt?: string;
   projectPermissions?: V1ProjectPermissions;
 }
@@ -1821,6 +1821,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
 };
 
 export type AdminServiceGetProjectParams = {
+  /**
+   * Optional branch to get deployment for. If not set, then project's primary_branch is used.
+   */
+  branch?: string;
   accessTokenTtlSeconds?: number;
   superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;
