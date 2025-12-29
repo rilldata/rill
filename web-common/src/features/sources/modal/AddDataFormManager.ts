@@ -205,9 +205,6 @@ export class AddDataFormManager {
     // Only show for connector forms (not sources)
     if (!isConnectorForm) return false;
 
-    // ClickHouse has its own error handling
-    if (this.connector.name === "clickhouse") return false;
-
     // Need a submission result to show the button
     if (!event?.result) return false;
 

@@ -2,13 +2,16 @@
   import { Button } from "@rilldata/web-common/components/button";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import ConnectorTypeSelector from "@rilldata/web-common/components/forms/ConnectorTypeSelector.svelte";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
   import type { AddDataFormType, ConnectorType } from "./types";
-  import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
@@ -16,8 +19,10 @@
   import { hasOnlyDsn, isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
+    CONNECTOR_TYPE_OPTIONS,
     type ClickHouseConnectorType,
   } from "./constants";
+  import { normalizeErrors } from "../../templates/error-utils";
 
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
@@ -25,7 +30,12 @@
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { get } from "svelte/store";
+  import { get, type Writable } from "svelte/store";
+  import {
+    ConnectorDriverPropertyType,
+    type ConnectorDriverProperty,
+  } from "@rilldata/web-common/runtime-client";
+  import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -115,7 +125,151 @@
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
+  let clickhouseProperties: ConnectorDriverProperty[] = [];
+  let clickhouseFilteredProperties: ConnectorDriverProperty[] = [];
+  let clickhouseDsnProperties: ConnectorDriverProperty[] = [];
   let clickhouseShowSaveAnyway: boolean = false;
+  const clickhouseInitialValues =
+    connector.name === "clickhouse"
+      ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
+      : {};
+  let prevClickhouseConnectorType: ClickHouseConnectorType =
+    clickhouseConnectorType;
+  const paramsFormStore = paramsForm as unknown as Writable<
+    Record<string, any>
+  >;
+  const dsnFormStore = dsnForm as unknown as Writable<Record<string, any>>;
+
+  // Keep ClickHouse connector type in sync with form state and apply defaults
+  $: if (connector.name === "clickhouse") {
+    // Always set connector_type on the params form
+    paramsForm.update(
+      ($form: any) => ({
+        ...$form,
+        connector_type: clickhouseConnectorType,
+      }),
+      { taint: false } as any,
+    );
+
+    if (
+      clickhouseConnectorType === "rill-managed" &&
+      Object.keys($paramsForm).length > 1
+    ) {
+      paramsForm.update(
+        () => ({ managed: true, connector_type: "rill-managed" }),
+        { taint: false } as any,
+      );
+      clickhouseError = null;
+      clickhouseErrorDetails = undefined;
+    } else if (
+      prevClickhouseConnectorType === "rill-managed" &&
+      clickhouseConnectorType === "self-hosted"
+    ) {
+      paramsForm.update(
+        () => ({ ...clickhouseInitialValues, managed: false }),
+        { taint: false } as any,
+      );
+    } else if (
+      prevClickhouseConnectorType !== "clickhouse-cloud" &&
+      clickhouseConnectorType === "clickhouse-cloud"
+    ) {
+      paramsForm.update(
+        () => ({
+          ...clickhouseInitialValues,
+          managed: false,
+          port: "8443",
+          ssl: true,
+        }),
+        { taint: false } as any,
+      );
+    } else if (
+      prevClickhouseConnectorType === "clickhouse-cloud" &&
+      clickhouseConnectorType === "self-hosted"
+    ) {
+      paramsForm.update(
+        () => ({ ...clickhouseInitialValues, managed: false }),
+        { taint: false } as any,
+      );
+    }
+    prevClickhouseConnectorType = clickhouseConnectorType;
+  }
+
+  // Force parameters tab for Rill-managed
+  $: if (
+    connector.name === "clickhouse" &&
+    clickhouseConnectorType === "rill-managed"
+  ) {
+    connectionTab = "parameters";
+  }
+
+  // Use manager forms for ClickHouse
+  $: if (connector.name === "clickhouse") {
+    clickhouseParamsForm = paramsForm;
+    clickhouseDsnForm = dsnForm;
+    clickhouseFormId = connectionTab === "dsn" ? dsnFormId : paramsFormId;
+    clickhouseSubmitting =
+      connectionTab === "dsn" ? $dsnSubmitting : $paramsSubmitting;
+  }
+
+  $: if (connector.name === "clickhouse") {
+    clickhouseShowSaveAnyway = showSaveAnyway;
+  }
+
+  // ClickHouse-specific property filtering and disabled state
+  $: clickhouseProperties =
+    connector.name === "clickhouse"
+      ? clickhouseConnectorType === "rill-managed"
+        ? (connector.sourceProperties ?? [])
+        : (connector.configProperties ?? [])
+      : [];
+
+  $: clickhouseFilteredProperties = clickhouseProperties.filter(
+    (property) =>
+      !property.noPrompt &&
+      property.key !== "managed" &&
+      (connectionTab !== "dsn" ? property.key !== "dsn" : true),
+  );
+
+  $: clickhouseDsnProperties =
+    connector.configProperties?.filter((property) => property.key === "dsn") ??
+    [];
+
+  $: clickhouseIsSubmitDisabled = (() => {
+    if (connector.name !== "clickhouse") return false;
+    if (clickhouseConnectorType === "rill-managed") {
+      for (const property of clickhouseFilteredProperties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || ($paramsErrors[key] as any)?.length)
+            return true;
+        }
+      }
+      return false;
+    } else if (connectionTab === "dsn") {
+      for (const property of clickhouseDsnProperties) {
+        if (property.required) {
+          const key = String(property.key);
+          const value = $dsnForm[key];
+          if (isEmpty(value) || ($dsnErrors[key] as any)?.length) return true;
+        }
+      }
+      return false;
+    } else {
+      for (const property of clickhouseFilteredProperties) {
+        if (property.required && property.key !== "managed") {
+          const key = String(property.key);
+          const value = $paramsForm[key];
+          if (isEmpty(value) || ($paramsErrors[key] as any)?.length)
+            return true;
+        }
+      }
+      if (clickhouseConnectorType === "clickhouse-cloud") {
+        if (!$paramsForm.ssl) return true;
+      }
+      return false;
+    }
+  })();
 
   // Hide Save Anyway once we advance to the model step in multi-step flows.
   $: if (isMultiStepConnector && stepState.step === "source") {
@@ -329,22 +483,148 @@
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
-        <AddClickHouseForm
-          {connector}
-          {onClose}
-          setError={(error, details) => {
-            clickhouseError = error;
-            clickhouseErrorDetails = details;
-          }}
-          bind:formId={clickhouseFormId}
-          bind:isSubmitting={clickhouseSubmitting}
-          bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:connectorType={clickhouseConnectorType}
-          bind:connectionTab
-          bind:paramsForm={clickhouseParamsForm}
-          bind:dsnForm={clickhouseDsnForm}
-          bind:showSaveAnyway={clickhouseShowSaveAnyway}
-        />
+        <div class="h-full w-full flex flex-col">
+          <div>
+            <ConnectorTypeSelector
+              bind:value={clickhouseConnectorType}
+              options={CONNECTOR_TYPE_OPTIONS}
+            />
+            {#if clickhouseConnectorType === "rill-managed"}
+              <div class="mt-4">
+                <InformationalField
+                  description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+                />
+              </div>
+            {/if}
+          </div>
+
+          {#if clickhouseConnectorType === "self-hosted" || clickhouseConnectorType === "clickhouse-cloud"}
+            <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
+              <TabsContent value="parameters">
+                <AddDataFormSection
+                  id={paramsFormId}
+                  enhance={paramsEnhance}
+                  onSubmit={paramsSubmit}
+                >
+                  {#each clickhouseFilteredProperties as property (property.key)}
+                    {@const propertyKey = property.key ?? ""}
+                    {@const isPortField = propertyKey === "port"}
+                    {@const isSSLField = propertyKey === "ssl"}
+
+                    <div class="py-1.5 first:pt-0 last:pb-0">
+                      {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                        <Input
+                          id={propertyKey}
+                          label={property.displayName}
+                          placeholder={property.placeholder}
+                          optional={property.required}
+                          secret={property.secret}
+                          hint={property.hint}
+                          errors={normalizeErrors($paramsErrors[propertyKey])}
+                          bind:value={$paramsFormStore[propertyKey]}
+                          onInput={(_, e) => onStringInputChange(e)}
+                          alwaysShowError
+                          options={clickhouseConnectorType ===
+                            "clickhouse-cloud" && isPortField
+                            ? [
+                                { value: "8443", label: "8443 (HTTPS)" },
+                                {
+                                  value: "9440",
+                                  label: "9440 (Native Secure)",
+                                },
+                              ]
+                            : undefined}
+                        />
+                      {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                        <Checkbox
+                          id={propertyKey}
+                          bind:checked={$paramsFormStore[propertyKey]}
+                          label={property.displayName}
+                          hint={property.hint}
+                          optional={clickhouseConnectorType ===
+                            "clickhouse-cloud" && isSSLField
+                            ? false
+                            : !property.required}
+                          disabled={clickhouseConnectorType ===
+                            "clickhouse-cloud" && isSSLField}
+                        />
+                      {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                        <InformationalField
+                          description={property.description}
+                          hint={property.hint}
+                          href={property.docsUrl}
+                        />
+                      {/if}
+                    </div>
+                  {/each}
+                </AddDataFormSection>
+              </TabsContent>
+              <TabsContent value="dsn">
+                <AddDataFormSection
+                  id={dsnFormId}
+                  enhance={dsnEnhance}
+                  onSubmit={dsnSubmit}
+                >
+                  {#each clickhouseDsnProperties as property (property.key)}
+                    {@const propertyKey = property.key ?? ""}
+                    <div class="py-1.0 first:pt-0 last:pb-0">
+                      <Input
+                        id={propertyKey}
+                        label={property.displayName}
+                        placeholder={property.placeholder}
+                        secret={property.secret}
+                        hint={property.hint}
+                        errors={normalizeErrors($dsnErrors[propertyKey])}
+                        bind:value={$dsnFormStore[propertyKey]}
+                        alwaysShowError
+                      />
+                    </div>
+                  {/each}
+                </AddDataFormSection>
+              </TabsContent>
+            </Tabs>
+          {:else}
+            <AddDataFormSection
+              id={paramsFormId}
+              enhance={paramsEnhance}
+              onSubmit={paramsSubmit}
+            >
+              {#each clickhouseFilteredProperties as property (property.key)}
+                {@const propertyKey = property.key ?? ""}
+                <div class="py-1.5 first:pt-0 last:pb-0">
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      optional={!property.required}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={normalizeErrors($paramsErrors[propertyKey])}
+                      bind:value={$paramsFormStore[propertyKey]}
+                      onInput={(_, e) => onStringInputChange(e)}
+                      alwaysShowError
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                    <Checkbox
+                      id={propertyKey}
+                      bind:checked={$paramsFormStore[propertyKey]}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                    <InformationalField
+                      description={property.description}
+                      hint={property.hint}
+                      href={property.docsUrl}
+                    />
+                  {/if}
+                </div>
+              {/each}
+            </AddDataFormSection>
+          {/if}
+        </div>
       {:else if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}
