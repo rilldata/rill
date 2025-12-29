@@ -101,14 +101,13 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	}
 	onEditBranch := head.Name().Short() == r.editBranch
 
+	// Fetch the remote changes, only default branch and edit branch (if applicable)
 	refSpecs := []config.RefSpec{
 		config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.defaultBranch, r.defaultBranch)),
 	}
 	if onEditBranch {
 		refSpecs = append(refSpecs, config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.editBranch, r.editBranch)))
 	}
-
-	// Fetch the remote changes
 	err = remote.Fetch(&git.FetchOptions{
 		RefSpecs: refSpecs,
 		Force:    true,
@@ -173,7 +172,6 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 
 	// merge default branch into edit branch
 	if force {
-		// Maybe instead of merge with the "theirs" strategy should we just reset to the default branch?
 		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.defaultBranch)
 	} else {
 		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
@@ -224,6 +222,9 @@ func (r *gitRepo) commitToEditBranch(ctx context.Context) error {
 	err = repo.PushContext(ctx, &git.PushOptions{
 		RemoteName: "origin",
 		RemoteURL:  r.remoteURL,
+		RefSpecs: []config.RefSpec{
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.editBranch, r.editBranch)),
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to push changes to remote edit branch: %w", err)
