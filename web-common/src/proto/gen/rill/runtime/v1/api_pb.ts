@@ -856,21 +856,6 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
    */
   connectors: Connector[] = [];
 
-  /**
-   * @generated from field: map<string, string> variables = 7;
-   */
-  variables: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: map<string, string> annotations = 9;
-   */
-  annotations: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: string frontend_url = 18;
-   */
-  frontendUrl = "";
-
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -886,9 +871,6 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 15, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
-    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -1061,21 +1043,6 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
    */
   connectors: Connector[] = [];
 
-  /**
-   * @generated from field: map<string, string> variables = 15;
-   */
-  variables: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: map<string, string> annotations = 10;
-   */
-  annotations: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: optional string frontend_url = 19;
-   */
-  frontendUrl?: string;
-
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1091,9 +1058,6 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
     { no: 16, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
-    { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 19, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {

@@ -77,6 +77,26 @@ paths:
           in: path
           required: true
           type: string
+  /v1/deployments/{deploymentId}/config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/credentials:
     post:
       summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -110,26 +130,6 @@ paths:
                 type: string
               attributes:
                 type: object
-  /v1/deployments/{deploymentId}/deployment-config:
-    get:
-      summary: |-
-        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-        This is called by the runtime to pull its Variables and Annotations from the admin service.
-      operationId: AdminService_GetDeploymentConfig
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetDeploymentConfigResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: deploymentId
-          in: path
-          required: true
-          type: string
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -5080,6 +5080,10 @@ definitions:
       frontendUrl:
         type: string
         description: Frontend URL for the deployment.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Updated on timestamp of the deployment.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:

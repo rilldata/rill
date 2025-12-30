@@ -144,7 +144,10 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	grp.SetLimit(100)
 	var prodErr error
 	for _, d := range ds {
-		d := d
+		// do not trigger reconcile for stopped deployments
+		if d.Status == database.DeploymentStatusDeleting || d.Status == database.DeploymentStatusStopped || d.Status == database.DeploymentStatusStopping {
+			continue
+		}
 		grp.Go(func() error {
 			// If this is the primary prod deployment and the primary branch has changed, update the deployment branch too.
 			branch := d.Branch
@@ -296,15 +299,6 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		},
 	}
 
-	// Construct the full frontend URL including custom domain (if any) and org/project path
-	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
-
-	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment)
-	if err != nil {
-		return err
-	}
-
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
@@ -314,9 +308,6 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      vars,
-		Annotations:    annotations.ToMap(),
-		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
 		return err
@@ -556,55 +547,6 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projProvisioner:    proj.Provisioner,
 		projAnnotations:    proj.Annotations,
 	}
-}
-
-func (s *Service) TriggerRuntimeReloadForProject(ctx context.Context, proj *database.Project, environment string) error {
-	projectID := proj.ID
-	ds, err := s.DB.FindDeploymentsForProject(ctx, projectID, environment, "")
-	if err != nil {
-		return err
-	}
-
-	grp, ctx := errgroup.WithContext(ctx)
-	grp.SetLimit(8)
-	for _, d := range ds {
-		isPrimary := proj.PrimaryDeploymentID != nil && *proj.PrimaryDeploymentID == d.ID
-
-		if d.Status != database.DeploymentStatusRunning {
-			if isPrimary {
-				return fmt.Errorf("cannot trigger runtime reload for deployment %q because it is not running", d.ID)
-			}
-			// for non-primary deployments, skip
-			continue
-		}
-		grp.Go(func() error {
-			// Connect to the runtime
-			rt, err := s.OpenRuntimeClient(d)
-			if err != nil {
-				if isPrimary {
-					return err
-				}
-				// for non-primary deployments, log and continue
-				s.Logger.Info("failed to trigger runtime reload", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
-				return nil
-			}
-			defer rt.Close()
-
-			// Call ReloadConfig
-			_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{
-				InstanceId: d.RuntimeInstanceID,
-			})
-			if err != nil {
-				if isPrimary {
-					return err
-				}
-				// for non-primary deployments, log and continue
-				s.Logger.Info("failed to trigger runtime reload", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
-			}
-			return nil
-		})
-	}
-	return grp.Wait()
 }
 
 type DeploymentAnnotations struct {

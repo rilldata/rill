@@ -534,6 +534,8 @@ export interface V1GetDeploymentConfigResponse {
   annotations?: V1GetDeploymentConfigResponseAnnotations;
   /** Frontend URL for the deployment. */
   frontendUrl?: string;
+  /** Updated on timestamp of the deployment. */
+  updatedOn?: string;
 }
 
 export interface V1GetDeploymentCredentialsResponse {

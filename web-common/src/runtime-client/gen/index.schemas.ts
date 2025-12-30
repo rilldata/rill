@@ -764,10 +764,6 @@ export interface V1CreateDirectoryResponse {
   [key: string]: unknown;
 }
 
-export type V1CreateInstanceRequestVariables = { [key: string]: string };
-
-export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
-
 /**
  * Request message for RuntimeService.CreateInstance.
 See message Instance for field descriptions.
@@ -780,9 +776,6 @@ export interface V1CreateInstanceRequest {
   adminConnector?: string;
   aiConnector?: string;
   connectors?: V1Connector[];
-  variables?: V1CreateInstanceRequestVariables;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  frontendUrl?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -2553,12 +2546,6 @@ export type RuntimeServiceGetInstanceParams = {
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
-export type RuntimeServiceEditInstanceBodyAnnotations = {
-  [key: string]: string;
-};
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -2570,9 +2557,6 @@ export type RuntimeServiceEditInstanceBody = {
   adminConnector?: string;
   aiConnector?: string;
   connectors?: V1Connector[];
-  variables?: RuntimeServiceEditInstanceBodyVariables;
-  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {

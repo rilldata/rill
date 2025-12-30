@@ -1874,12 +1874,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for Variables
-
-	// no validation rules for Annotations
-
-	// no validation rules for FrontendUrl
-
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}
@@ -2377,10 +2371,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for Variables
-
-	// no validation rules for Annotations
-
 	if m.Environment != nil {
 		// no validation rules for Environment
 	}
@@ -2399,10 +2389,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.AiConnector != nil {
 		// no validation rules for AiConnector
-	}
-
-	if m.FrontendUrl != nil {
-		// no validation rules for FrontendUrl
 	}
 
 	if len(errors) > 0 {

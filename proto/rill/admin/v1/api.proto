@@ -1763,6 +1763,8 @@ message GetDeploymentConfigResponse {
   map<string, string> annotations = 2;
   // Frontend URL for the deployment.
   string frontend_url = 3;
+  // Updated on timestamp of the deployment.
+  google.protobuf.Timestamp updated_on = 4;
 }
 
 message ListRolesRequest {}

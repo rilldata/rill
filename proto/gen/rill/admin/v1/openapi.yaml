@@ -668,6 +668,10 @@ components:
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                updatedOn:
+                    description: Updated on timestamp of the deployment.
+                    format: date-time
+                    type: string
                 variables:
                     additionalProperties:
                         type: string
@@ -2379,6 +2383,31 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: DeleteDeployment deletes a deployment.
+    /v1/deployments/{deploymentId}/config:
+        get:
+            operationId: AdminService_GetDeploymentConfig
+            parameters:
+                - in: path
+                  name: deploymentId
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}/credentials:
         post:
             operationId: AdminService_GetDeployment
@@ -2419,31 +2448,6 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
-    /v1/deployments/{deploymentId}/deployment-config:
-        get:
-            operationId: AdminService_GetDeploymentConfig
-            parameters:
-                - in: path
-                  name: deploymentId
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
-                    description: A successful response.
-                default:
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/rpcStatus'
-                    description: An unexpected error response.
-            summary: |-
-                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
-                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}/provision:
         post:
             operationId: AdminService_Provision

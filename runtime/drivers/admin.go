@@ -39,4 +39,5 @@ type DeploymentConfig struct {
 	Variables   map[string]string
 	Annotations map[string]string
 	FrontendURL string
+	UpdatedOn   time.Time
 }

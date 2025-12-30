@@ -831,13 +831,17 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 }
 
 func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploymentConfigRequest) (*adminv1.GetDeploymentConfigResponse, error) {
+	// If the deployment ID is not provided, attempt to infer it from the access token.
 	claims := auth.GetClaims(ctx)
-	// TODO: is it sufficient to check only OwnerTypeDeployment here or other permission checks are needed?
-	if claims.OwnerType() != auth.OwnerTypeDeployment {
-		return nil, status.Error(codes.PermissionDenied, "only deployments can get their config")
+	if req.DeploymentId == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			req.DeploymentId = claims.OwnerID()
+		} else {
+			return nil, status.Error(codes.InvalidArgument, "missing deployment_id")
+		}
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, err
 	}

@@ -4708,6 +4708,13 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
    */
   frontendUrl = "";
 
+  /**
+   * Updated on timestamp of the deployment.
+   *
+   * @generated from field: google.protobuf.Timestamp updated_on = 4;
+   */
+  updatedOn?: Timestamp;
+
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4719,6 +4726,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 1, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {

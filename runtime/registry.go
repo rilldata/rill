@@ -205,11 +205,6 @@ func (r *registryCache) init(ctx context.Context) error {
 	}
 
 	for _, inst := range insts {
-		// refetch the configs from admin
-		err := r.rt.ReloadConfig(ctx, inst.ID, true)
-		if err != nil {
-			r.logger.Error("failed to reload config for instance at startup", zap.Error(err), zap.String("instance_id", inst.ID))
-		}
 		if err := r.add(inst); err != nil {
 			return err
 		}

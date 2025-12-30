@@ -668,6 +668,10 @@ components:
                 frontendUrl:
                     description: Frontend URL for the deployment.
                     type: string
+                updatedOn:
+                    description: Updated on timestamp of the deployment.
+                    format: date-time
+                    type: string
                 variables:
                     additionalProperties:
                         type: string
@@ -2295,8 +2299,8 @@ paths:
     /v1/billing/metrics-project-credentials: {}
     /v1/billing/plans: {}
     /v1/deployments/{deploymentId}: {}
+    /v1/deployments/{deploymentId}/config: {}
     /v1/deployments/{deploymentId}/credentials: {}
-    /v1/deployments/{deploymentId}/deployment-config: {}
     /v1/deployments/{deploymentId}/provision: {}
     /v1/deployments/{deploymentId}/reconcile: {}
     /v1/deployments/{deploymentId}/refresh: {}
