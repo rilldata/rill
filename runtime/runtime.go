@@ -240,7 +240,7 @@ type configReloader struct {
 	// cancel background operations on close
 	cancel context.CancelFunc
 	// singleflight group to deduplicate reloads for same instance
-	group singleflight.Group[string, string]
+	group *singleflight.Group[string, string]
 
 	// to avoid repo handshake refresh on each reload we track last updatedon of each deployment
 	// if the deployment has not changed skip the repo pull
@@ -253,8 +253,10 @@ type configReloader struct {
 func newConfigReloader(rt *Runtime) *configReloader {
 	bgctx, bgcancel := context.WithCancel(context.Background())
 	c := &configReloader{
-		rt:     rt,
-		cancel: bgcancel,
+		rt:        rt,
+		cancel:    bgcancel,
+		group:     &singleflight.Group[string, string]{},
+		updatedOn: make(map[string]time.Time),
 	}
 
 	go c.periodicallyReloadConfigs(bgctx)
@@ -330,6 +332,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 
 func (r *configReloader) periodicallyReloadConfigs(ctx context.Context) {
 	reloadAllInstances := func() {
+		r.rt.Logger.Info("periodicallyReloadConfigs: reloading configs for all instances")
 		instances, err := r.rt.Instances(ctx)
 		if err != nil {
 			r.rt.Logger.Error("periodicallyReloadConfigs: failed to list instances", zap.Error(err))
