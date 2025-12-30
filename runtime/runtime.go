@@ -85,8 +85,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		return nil, err
 	}
 
-	// NewConfigReloader also trigger reload of configs for all instances.
-	rt.configReloader = NewConfigReloader(ctx, rt)
+	rt.configReloader = newConfigReloader(rt)
 
 	return rt, nil
 }
@@ -251,7 +250,7 @@ type configReloader struct {
 	mu        sync.Mutex
 }
 
-func NewConfigReloader(ctx context.Context, rt *Runtime) *configReloader {
+func newConfigReloader(rt *Runtime) *configReloader {
 	bgctx, bgcancel := context.WithCancel(context.Background())
 	c := &configReloader{
 		rt:     rt,
