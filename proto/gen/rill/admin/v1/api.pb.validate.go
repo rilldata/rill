@@ -12038,6 +12038,8 @@ func (m *GetDeploymentConfigResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for UsesArchive
+
 	if len(errors) > 0 {
 		return GetDeploymentConfigResponseMultiError(errors)
 	}

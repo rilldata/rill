@@ -119,5 +119,6 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		Annotations: res.Annotations,
 		FrontendURL: res.FrontendUrl,
 		UpdatedOn:   res.UpdatedOn.AsTime(),
+		UsesArchive: res.UsesArchive,
 	}, nil
 }

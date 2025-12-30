@@ -40,4 +40,5 @@ type DeploymentConfig struct {
 	Annotations map[string]string
 	FrontendURL string
 	UpdatedOn   time.Time
+	UsesArchive bool
 }

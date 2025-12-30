@@ -4715,6 +4715,13 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
    */
   updatedOn?: Timestamp;
 
+  /**
+   * Whether the deployment is git based or archive based.
+   *
+   * @generated from field: bool uses_archive = 5;
+   */
+  usesArchive = false;
+
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4727,6 +4734,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {

@@ -36,6 +36,7 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	Version                      version.Version
+	EnabledConfigReloader        bool
 }
 
 type Runtime struct {
@@ -85,7 +86,9 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		return nil, err
 	}
 
-	rt.configReloader = newConfigReloader(rt)
+	if opts.EnabledConfigReloader {
+		rt.configReloader = newConfigReloader(rt)
+	}
 
 	return rt, nil
 }
@@ -101,7 +104,9 @@ func (r *Runtime) Version() version.Version {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	r.configReloader.close()
+	if r.configReloader != nil {
+		r.configReloader.close()
+	}
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
@@ -295,11 +300,13 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		// Clone for editing
 		tmp := *inst
 		inst = &tmp
+		restartController := false
 
 		// Update variables
 		varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
 		if varsChanged {
 			inst.Variables = cfg.Variables
+			restartController = true
 		}
 		inst.Annotations = cfg.Annotations
 		inst.FrontendURL = cfg.FrontendURL
@@ -324,9 +331,12 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 			r.mu.Lock()
 			r.updatedOn[instanceID] = cfg.UpdatedOn
 			r.mu.Unlock()
+
+			// changes in archive asset IDs are correctly propogated via repo connection reopen only
+			restartController = restartController || cfg.UsesArchive
 		}
 
-		err = r.rt.EditInstance(ctx, inst, varsChanged)
+		err = r.rt.EditInstance(ctx, inst, restartController)
 		if err != nil {
 			return "", err
 		}

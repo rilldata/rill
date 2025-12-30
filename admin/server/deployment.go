@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Deprecated: See details in api.proto.
@@ -871,7 +872,10 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		}
 	}
 
-	resp := &adminv1.GetDeploymentConfigResponse{}
+	resp := &adminv1.GetDeploymentConfigResponse{
+		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
+		UsesArchive: proj.ArchiveAssetID != nil,
+	}
 	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
 	if err != nil {
 		return nil, err

@@ -5084,6 +5084,9 @@ definitions:
         type: string
         format: date-time
         description: Timestamp when the deployment was last updated.
+      usesArchive:
+        type: boolean
+        description: Whether the deployment is git based or archive based.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:

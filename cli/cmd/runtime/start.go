@@ -246,7 +246,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 						Config: metastoreConfig,
 					},
 				},
-				Version: ch.Version,
+				Version:               ch.Version,
+				EnabledConfigReloader: true,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {

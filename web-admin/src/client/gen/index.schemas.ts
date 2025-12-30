@@ -536,6 +536,8 @@ export interface V1GetDeploymentConfigResponse {
   frontendUrl?: string;
   /** Timestamp when the deployment was last updated. */
   updatedOn?: string;
+  /** Whether the deployment is git based or archive based. */
+  usesArchive?: boolean;
 }
 
 export interface V1GetDeploymentCredentialsResponse {

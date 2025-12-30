@@ -672,6 +672,9 @@ components:
                     description: Timestamp when the deployment was last updated.
                     format: date-time
                     type: string
+                usesArchive:
+                    description: Whether the deployment is git based or archive based.
+                    type: boolean
                 variables:
                     additionalProperties:
                         type: string
