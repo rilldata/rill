@@ -4709,7 +4709,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
   frontendUrl = "";
 
   /**
-   * Updated on timestamp of the deployment.
+   * Timestamp when the deployment was last updated.
    *
    * @generated from field: google.protobuf.Timestamp updated_on = 4;
    */

@@ -6017,7 +6017,7 @@ type GetDeploymentConfigResponse struct {
 	Annotations map[string]string `protobuf:"bytes,2,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Frontend URL for the deployment.
 	FrontendUrl string `protobuf:"bytes,3,opt,name=frontend_url,json=frontendUrl,proto3" json:"frontend_url,omitempty"`
-	// Updated on timestamp of the deployment.
+	// Timestamp when the deployment was last updated.
 	UpdatedOn *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_on,json=updatedOn,proto3" json:"updated_on,omitempty"`
 }
 

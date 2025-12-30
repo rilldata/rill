@@ -235,6 +235,12 @@ func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
 	return r.configReloader.reloadConfig(ctx, instanceID)
 }
 
+// configReloader handles reloading instance configurations from admin service
+// periodically reload configs in background
+// config reloads happen in following scenarios:
+// 1. via rt.ReloadConfig whenever admin wants runtime to reload its configs
+// 2. whenever runtime is started to pick up any configs changed while it was down
+// 3. periodically every hour to pick up any changes done outside of runtime. This just adds extra resilience
 type configReloader struct {
 	rt *Runtime
 	// cancel background operations on close
@@ -279,7 +285,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		}
 		defer release()
 
-		r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID))
+		r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 
 		cfg, err := admin.GetDeploymentConfig(ctx)
 		if err != nil {

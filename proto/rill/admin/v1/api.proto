@@ -1763,7 +1763,7 @@ message GetDeploymentConfigResponse {
   map<string, string> annotations = 2;
   // Frontend URL for the deployment.
   string frontend_url = 3;
-  // Updated on timestamp of the deployment.
+  // Timestamp when the deployment was last updated.
   google.protobuf.Timestamp updated_on = 4;
 }
 

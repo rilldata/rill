@@ -669,7 +669,7 @@ components:
                     description: Frontend URL for the deployment.
                     type: string
                 updatedOn:
-                    description: Updated on timestamp of the deployment.
+                    description: Timestamp when the deployment was last updated.
                     format: date-time
                     type: string
                 variables:

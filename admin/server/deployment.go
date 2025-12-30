@@ -856,6 +856,17 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if depl.Environment == "prod" {
+		if !permissions.ReadProdStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
+	} else {
+		if !permissions.ReadDevStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+	}
+
 	resp := &adminv1.GetDeploymentConfigResponse{}
 	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
 	if err != nil {

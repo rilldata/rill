@@ -5083,7 +5083,7 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-        description: Updated on timestamp of the deployment.
+        description: Timestamp when the deployment was last updated.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
