@@ -1399,7 +1399,7 @@ export function createRuntimeServiceGetConversation<
 
 /**
  * @summary ForkConversation creates a new conversation by copying messages from an existing one.
-If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
  */
 export const runtimeServiceForkConversation = (
   instanceId: string,
@@ -1474,7 +1474,7 @@ export type RuntimeServiceForkConversationMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary ForkConversation creates a new conversation by copying messages from an existing one.
-If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
  */
 export const createRuntimeServiceForkConversation = <
   TError = ErrorType<RpcStatus>,

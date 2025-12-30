@@ -150,7 +150,7 @@ type RuntimeServiceClient interface {
 	// ShareConversation enables sharing of the conversation by adding metadata.
 	ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error)
 	// ForkConversation creates a new conversation by copying messages from an existing one.
-	// If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
 	ForkConversation(ctx context.Context, in *ForkConversationRequest, opts ...grpc.CallOption) (*ForkConversationResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
@@ -725,7 +725,7 @@ type RuntimeServiceServer interface {
 	// ShareConversation enables sharing of the conversation by adding metadata.
 	ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error)
 	// ForkConversation creates a new conversation by copying messages from an existing one.
-	// If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
 	ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
