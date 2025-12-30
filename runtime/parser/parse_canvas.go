@@ -84,6 +84,10 @@ func (p *Parser) parseCanvas(node *Node) error {
 	if err != nil {
 		return err
 	}
+	// Fallback to top-level theme from rill.yaml if no local theme or default theme is set
+	if themeName == "" && themeSpec == nil && p.RillYAML != nil && p.RillYAML.Theme != "" {
+		themeName = p.RillYAML.Theme
+	}
 	if themeName != "" && themeSpec == nil {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
