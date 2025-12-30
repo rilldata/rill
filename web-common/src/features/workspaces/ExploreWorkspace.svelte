@@ -133,7 +133,7 @@
       </WorkspaceEditorContainer>
 
       <svelte:fragment slot="inspector">
-        {#if ready && exploreName && metricsViewName}
+        {#if ready}
           <VisualExploreEditing
             {metricsViewName}
             {exploreName}
