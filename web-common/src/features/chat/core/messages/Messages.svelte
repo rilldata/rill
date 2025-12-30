@@ -48,6 +48,7 @@
 
   // Track previous block count to detect new content
   let previousBlockCount = 0;
+  let previousBlockType = "";
 
   // Check if user is near the bottom of a scroll container
   function isNearBottom(element: Element, threshold = 100): boolean {
@@ -64,8 +65,12 @@
   // - Only scroll during streaming if user is near the bottom (respect scroll position)
   afterUpdate(() => {
     const currentBlockCount = blocks.length;
-    const hasNewBlocks = currentBlockCount > previousBlockCount;
+    const currentBlockType = blocks[currentBlockCount - 1]?.type ?? "";
+    const hasNewBlocks =
+      currentBlockCount > previousBlockCount ||
+      currentBlockType !== previousBlockType;
     previousBlockCount = currentBlockCount;
+    previousBlockType = currentBlockType;
 
     if (messagesContainer && layout === "sidebar") {
       if (hasNewBlocks || isNearBottom(messagesContainer)) {
