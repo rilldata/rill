@@ -1063,6 +1063,7 @@ export interface V1GenerateResolverResponse {
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
+  isOwner?: boolean;
 }
 
 export interface V1GetExploreResponse {
@@ -2619,7 +2620,7 @@ export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
 
 export type RuntimeServiceShareConversationBody = {
   /** optional message ID up to which to share otherwise share all current messages
-only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.
+only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
 It supports a special value of "none" to unshare the conversation. */
   untilMessageId?: string;
 };

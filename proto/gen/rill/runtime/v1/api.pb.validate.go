@@ -11321,6 +11321,8 @@ func (m *GetConversationResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for IsOwner
+
 	if len(errors) > 0 {
 		return GetConversationResponseMultiError(errors)
 	}

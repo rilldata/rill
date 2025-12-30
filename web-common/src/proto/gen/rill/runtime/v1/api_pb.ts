@@ -4712,6 +4712,13 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
    */
   messages: Message[] = [];
 
+  /**
+   * would be false for shared conversations accessed by non-owners
+   *
+   * @generated from field: bool is_owner = 3;
+   */
+  isOwner = false;
+
   constructor(data?: PartialMessage<GetConversationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4722,6 +4729,7 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "conversation", kind: "message", T: Conversation },
     { no: 2, name: "messages", kind: "message", T: Message, repeated: true },
+    { no: 3, name: "is_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConversationResponse {
@@ -4759,7 +4767,7 @@ export class ShareConversationRequest extends Message$1<ShareConversationRequest
 
   /**
    * optional message ID up to which to share otherwise share all current messages
-   * only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.
+   * only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
    * It supports a special value of "none" to unshare the conversation.
    *
    * @generated from field: string until_message_id = 3;

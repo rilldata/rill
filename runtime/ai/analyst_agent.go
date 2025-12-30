@@ -242,7 +242,7 @@ Follow these steps in order:
 Important instructions regarding access permissions:
 This conversation has been transferred and the new owner may have different access permissions.
 If you start seeing access errors like "action not allowed"", "resource not found" (for resources earlier available) etc., consider repeating metadata listings and lookups.
-If you run into these issues, explicitly mention to user that this may be due to conversation forking and user may not have access to metrics view that previous user had.
+If you run into such issues, explicitly mention to the user that this may be due to conversation forking and that they may not have access to the data that the previous user had.
 {{ end }}
 
 **Phase 2: analysis (loop)**

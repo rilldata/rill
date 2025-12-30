@@ -612,7 +612,7 @@ paths:
                 type: string
                 description: |-
                   optional message ID up to which to share otherwise share all current messages
-                  only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.
+                  only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
                   It supports a special value of "none" to unshare the conversation.
             title: Request message for RuntimeService.ShareConversation
       tags:
@@ -5013,6 +5013,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Message'
+      isOwner:
+        type: boolean
+        title: would be false for shared conversations accessed by non-owners
     title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object

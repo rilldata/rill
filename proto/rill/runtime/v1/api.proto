@@ -258,7 +258,7 @@ service RuntimeService {
   }
 
   // ForkConversation creates a new conversation by copying messages from an existing one.
-  // If its the owner then all messages will be copied, otherwise only messages up to the shared_until_message_id are copied.
+  // If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
   rpc ForkConversation(ForkConversationRequest) returns (ForkConversationResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
@@ -1027,6 +1027,7 @@ message GetConversationRequest {
 message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
+  bool is_owner = 3; // would be false for shared conversations accessed by non-owners
 }
 
 // Request message for RuntimeService.ShareConversation

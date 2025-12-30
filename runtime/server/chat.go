@@ -88,6 +88,7 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	return &runtimev1.GetConversationResponse{
 		Conversation: sessionToPB(session.CatalogSession(), messagePBs),
 		Messages:     messagePBs,
+		IsOwner:      session.CatalogSession().OwnerID == claims.UserID,
 	}, nil
 }
 
@@ -124,29 +125,22 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 		return &runtimev1.ShareConversationResponse{}, nil
 	}
 
-	// validate that the requested message id exists
-	foundMsg := req.UntilMessageId == ""
-	lastRouterResultMsgID := ""
-	for _, msg := range session.Messages() {
-		// only allow sharing until the last router agent result message
-		if msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult {
-			lastRouterResultMsgID = msg.ID
-		}
-		if msg.ID == req.UntilMessageId {
-			// found the message, proceed
-			foundMsg = true
-			break
-		}
+	var preds []ai.Predicate
+	if req.UntilMessageId == "" {
+		preds = []ai.Predicate{ai.FilterByTool(ai.RouterAgentName), ai.FilterByType(ai.MessageTypeResult)}
+	} else {
+		preds = []ai.Predicate{ai.FilterByID(req.UntilMessageId)}
 	}
-	if !foundMsg {
+	msg, ok := session.LatestMessage(preds...)
+	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
 	}
-	if lastRouterResultMsgID == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation %q without any router agent result messages", req.ConversationId)
+	if req.UntilMessageId != "" && msg.Tool != ai.RouterAgentName && msg.Type != ai.MessageTypeResult {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
 	}
 
 	// now save the session with the shared until message id and flush immediately
-	err = session.UpdateSharedUntilMessageID(ctx, lastRouterResultMsgID)
+	err = session.UpdateSharedUntilMessageID(ctx, msg.ID)
 	if err != nil {
 		return nil, err
 	}
