@@ -111,7 +111,9 @@
     instanceId,
     metricsViewName,
     {
-      measures: filteredMeasures,
+      measures: filteredMeasures.filter(
+        (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
+      ),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
@@ -120,7 +122,6 @@
         undefined,
       ),
       timeRange,
-      comparisonTimeRange,
     },
     {
       query: {
