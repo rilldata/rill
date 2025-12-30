@@ -7,6 +7,8 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import IconButton from "../../components/button/IconButton.svelte";
+  import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
 
   export let type: "button" | "modal" = "button";
   export let initializeProject: boolean = false;
@@ -57,10 +59,18 @@
       <div class="hidden"></div>
     {/if}
   </Dialog.Trigger>
-  <Dialog.Content noClose>
-    <form id={FORM_ID} on:submit|preventDefault={submit} use:enhance>
+  <Dialog.Content>
+    <form
+      id={FORM_ID}
+      on:submit|preventDefault={submit}
+      use:enhance
+      class="relative"
+    >
       <Dialog.Header>
-        <Dialog.Title>Generate sample data</Dialog.Title>
+        <Dialog.Title class="flex flex-row items-center gap-x-1">
+          <SparklesIcon size="16px" />
+          <span>Generate sample data</span>
+        </Dialog.Title>
         <Dialog.Description>
           <div>What is the business context or domain of your data?</div>
         </Dialog.Description>
@@ -69,28 +79,24 @@
         class="prompt-input"
         bind:value={$form.prompt}
         class:empty={$form.prompt.length === 0}
-        placeholder="e.g. Sales transaction of an e-commerce store"
+        placeholder={`E.g. "e-commerce transactions"`}
         on:keydown={handleKeydown}
       />
+      <div class="absolute right-3 bottom-8">
+        <IconButton ariaLabel="Send message" on:click={submit}>
+          <SendIcon size="1.3em" />
+        </IconButton>
+      </div>
       {#if $errors.prompt}
         <div class="error">{$errors.prompt?.[0]}</div>
       {/if}
-
-      <Dialog.Footer>
-        <Button type="secondary" large onClick={() => (open = false)}>
-          Cancel
-        </Button>
-        <Button type="primary" large form={FORM_ID} onClick={submit}>
-          Generate
-        </Button>
-      </Dialog.Footer>
     </form>
   </Dialog.Content>
 </Dialog.Root>
 
 <style lang="postcss">
   .prompt-input {
-    @apply w-full my-4 p-2 min-h-[2.5rem];
+    @apply w-full my-4 p-2 min-h-28;
     @apply border border-gray-300 rounded-[2px];
     @apply text-sm leading-relaxed;
   }

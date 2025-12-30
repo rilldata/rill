@@ -6,7 +6,7 @@ export const EXAMPLES = [
     title: "Cost Monitoring",
     description: "Monitoring cloud infrastructure",
     image: "/img/welcome-bg-cost-monitoring.png",
-    firstFile: "margin_scorecard.yaml",
+    firstFile: "/dashboards/margin_scorecard.yaml",
     connector: "duckdb",
   },
   {
@@ -14,7 +14,7 @@ export const EXAMPLES = [
     title: "OpenRTB Programmatic Ads",
     description: "Real-time Bidding (RTB) advertising",
     image: "/img/welcome-bg-openrtb.png",
-    firstFile: "auction_explore.yaml",
+    firstFile: "/dashboards/auction_explore.yaml",
     connector: "duckdb",
   },
   {
@@ -22,7 +22,7 @@ export const EXAMPLES = [
     title: "Github Analytics",
     description: "A Git project's commit activity",
     image: "/img/welcome-bg-github-analytics.png",
-    firstFile: "clickhouse_commits_explore.yaml",
+    firstFile: "/dashboards/clickhouse_commits_explore.yaml",
     connector: "clickhouse",
   },
 ];

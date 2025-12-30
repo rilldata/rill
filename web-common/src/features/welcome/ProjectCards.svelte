@@ -67,7 +67,7 @@
 </script>
 
 <section class="flex flex-col items-center gap-y-5">
-  <Subheading>Or jump right into a project.</Subheading>
+  <Subheading>Or jump right into an example project.</Subheading>
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     {#each EXAMPLES as example (example.name)}
       {@const icon = ConnectorIconMapping[example.connector]}
@@ -82,16 +82,18 @@
           await unpackProject(example);
         }}
       >
-        <div class="absolute top-[160px]">
-          <div class="flex flex-row items-center gap-x-1">
+        <div class="absolute top-[160px] w-full pl-3">
+          <div class="flex flex-row w-fit items-center gap-x-1">
             {#if icon}
               <svelte:component this={icon} />
             {/if}
-            <span>{label}</span>
+            <span class="italic text-slate-600">{label}</span>
           </div>
         </div>
-        <CardTitle>{example.title}</CardTitle>
-        <CardDescription>{example.description}</CardDescription>
+        <CardTitle className="w-full pl-3">{example.title}</CardTitle>
+        <CardDescription className="w-full text-left pl-3">
+          {example.description}
+        </CardDescription>
       </Card>
     {/each}
 

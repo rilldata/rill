@@ -2,15 +2,15 @@ import { v4 as uuidv4 } from "uuid";
 
 type VoidType = void | Promise<void>;
 type Listener<
-  Events extends Record<string, unknown>,
+  Events extends Record<string, any>,
   E extends keyof Events,
 > = Events[E] extends void ? () => VoidType : (arg: Events[E]) => VoidType;
 type Args<
-  Events extends Record<string, unknown>,
+  Events extends Record<string, any>,
   E extends keyof Events,
 > = Events[E] extends void ? [] : [Events[E]];
 
-export class EventEmitter<Events extends Record<string, unknown>> {
+export class EventEmitter<Events extends Record<string, any>> {
   private readonly listeners = new Map<
     keyof Events,
     Map<string, Listener<Events, keyof Events>>
