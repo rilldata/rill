@@ -251,6 +251,9 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 	)
+	if req.Branch != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.branch", req.Branch))
+	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
@@ -283,20 +286,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
-		return &adminv1.GetProjectResponse{
-			Project:            s.projToDTO(proj, org.Name),
-			ProjectPermissions: permissions,
-		}, nil
-	}
+	var depl *database.Deployment
+	if req.Branch != "" {
+		if !permissions.ReadDev {
+			return &adminv1.GetProjectResponse{
+				Project:            s.projToDTO(proj, org.Name),
+				ProjectPermissions: permissions,
+			}, nil
+		}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, "", req.Branch)
+		if err != nil {
+			return nil, err
+		}
+		if len(depls) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "no deployment found for branch %q", req.Branch)
+		} else if len(depls) > 1 {
+			return nil, status.Errorf(codes.InvalidArgument, "multiple deployments found for branch %q. Recreate deployments to resolve", req.Branch)
+		}
+		depl = depls[0]
 
-	if !permissions.ReadProdStatus {
-		depl.StatusMessage = ""
+		if !permissions.ReadDevStatus {
+			depl.StatusMessage = ""
+		}
+	} else {
+		if proj.PrimaryDeploymentID == nil || !permissions.ReadProd {
+			return &adminv1.GetProjectResponse{
+				Project:            s.projToDTO(proj, org.Name),
+				ProjectPermissions: permissions,
+			}, nil
+		}
+
+		depl, err = s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
+		if err != nil {
+			return nil, err
+		}
+
+		if !permissions.ReadProdStatus {
+			depl.StatusMessage = ""
+		}
 	}
 
 	var attr map[string]any
@@ -406,7 +434,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
-		ProdDeployment:     deploymentToDTO(depl),
+		Deployment:         deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
 	}, nil

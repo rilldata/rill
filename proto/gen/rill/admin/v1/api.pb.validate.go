@@ -1989,6 +1989,8 @@ func (m *ListDeploymentsRequest) validate(all bool) error {
 
 	// no validation rules for Environment
 
+	// no validation rules for Branch
+
 	// no validation rules for UserId
 
 	if len(errors) > 0 {
@@ -4195,6 +4197,8 @@ func (m *GetProjectRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
+	// no validation rules for Branch
+
 	// no validation rules for AccessTokenTtlSeconds
 
 	// no validation rules for SuperuserForceAccess
@@ -4333,11 +4337,11 @@ func (m *GetProjectResponse) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetProdDeployment()).(type) {
+		switch v := interface{}(m.GetDeployment()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetProjectResponseValidationError{
-					field:  "ProdDeployment",
+					field:  "Deployment",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -4345,16 +4349,16 @@ func (m *GetProjectResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetProjectResponseValidationError{
-					field:  "ProdDeployment",
+					field:  "Deployment",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetProdDeployment()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetDeployment()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetProjectResponseValidationError{
-				field:  "ProdDeployment",
+				field:  "Deployment",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
