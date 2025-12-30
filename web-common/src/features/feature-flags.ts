@@ -43,7 +43,7 @@ class FeatureFlags {
   // Right now this is true only in an E2E environment.
   legacyArchiveDeploy = new FeatureFlag(
     "rill",
-    true,
+    !!import.meta.env.VITE_PLAYWRIGHT_TEST,
   );
 
   // These are fallback defaults in case of issues in parsing rill.yaml.

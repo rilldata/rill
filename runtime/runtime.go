@@ -36,7 +36,7 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	Version                      version.Version
-	EnabledConfigReloader        bool
+	EnableConfigReloader         bool
 }
 
 type Runtime struct {
@@ -86,7 +86,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		return nil, err
 	}
 
-	if opts.EnabledConfigReloader {
+	if opts.EnableConfigReloader {
 		rt.configReloader = newConfigReloader(rt)
 	}
 
