@@ -27,6 +27,14 @@
   $: draftMessageStore = currentConversation.draftMessage;
   $: isStreamingStore = currentConversation.isStreaming;
 
+  let streamStartUnsub: (() => void) | undefined = undefined;
+  $: {
+    streamStartUnsub?.();
+    streamStartUnsub = currentConversation.on("stream-start", () => {
+      editor.commands.setContent("");
+    });
+  }
+
   $: value = $draftMessageStore;
   $: disabled = $getConversationQuery?.isLoading || $isStreamingStore;
   $: canSend = !disabled && value.trim();
@@ -40,9 +48,7 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage($additionalContextStore, {
-        onStreamStart: () => editor.commands.setContent(""),
-      });
+      await currentConversation.sendMessage($additionalContextStore);
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
