@@ -58,6 +58,8 @@
     dashboardStore,
   } = StateManagers;
 
+  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
+
   $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
@@ -196,8 +198,6 @@
       }
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
-
-  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
   function getMeasureOrDimensionState(
     node: unknown,

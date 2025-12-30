@@ -123,11 +123,9 @@
               statusCode={404}
             />
           {:else if exploreName && metricsViewName}
-            {#if ready}
-              <DashboardStateManager {exploreName}>
-                <Dashboard {metricsViewName} {exploreName} />
-              </DashboardStateManager>
-            {/if}
+            <DashboardStateManager {exploreName}>
+              <Dashboard {metricsViewName} {exploreName} />
+            </DashboardStateManager>
           {:else}
             <Spinner status={1} size="48px" />
           {/if}
@@ -135,12 +133,12 @@
       </WorkspaceEditorContainer>
 
       <svelte:fragment slot="inspector">
-        {#if ready}
+        {#if ready && exploreName && metricsViewName}
           <VisualExploreEditing
-            autoSave={selectedView === "viz" || $autoSave}
-            exploreResource={exploreResource?.explore}
             {metricsViewName}
             {exploreName}
+            autoSave={selectedView === "viz" || $autoSave}
+            exploreResource={exploreResource?.explore}
             {fileArtifact}
             viewingDashboard={selectedView === "viz"}
             switchView={() => selectedViewStore.set("code")}
