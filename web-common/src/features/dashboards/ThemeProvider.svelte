@@ -9,6 +9,7 @@
   import { Theme } from "../themes/theme";
 
   export let theme: Theme | undefined;
+  export let applyLayout: boolean = true;
 
   let themeBoundary: HTMLElement | null = null;
   let styleEl: HTMLStyleElement | null = null;
@@ -28,10 +29,10 @@
 </script>
 
 <div
-  class="dashboard-theme-boundary flex flex-col overflow-hidden"
+  class="dashboard-theme-boundary"
+  class:w-full={applyLayout && $dynamicHeight}
+  class:size-full={applyLayout && !$dynamicHeight}
   bind:this={themeBoundary}
-  class:w-full={$dynamicHeight}
-  class:size-full={!$dynamicHeight}
 >
   <style bind:this={styleEl}></style>
   <slot />

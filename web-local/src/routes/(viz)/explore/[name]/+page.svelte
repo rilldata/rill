@@ -90,11 +90,13 @@
     body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
   />
 {:else}
-  {#key exploreName}
-    <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardStateManager {exploreName}>
-        <Dashboard {metricsViewName} {exploreName} />
-      </DashboardStateManager>
-    </StateManagersProvider>
-  {/key}
+  <div class="h-full overflow-hidden">
+    {#key exploreName}
+      <StateManagersProvider {metricsViewName} {exploreName}>
+        <DashboardStateManager {exploreName}>
+          <Dashboard {metricsViewName} {exploreName} />
+        </DashboardStateManager>
+      </StateManagersProvider>
+    {/key}
+  </div>
 {/if}

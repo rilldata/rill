@@ -10,10 +10,8 @@
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
-  import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { activeDashboardTheme } from "@rilldata/web-common/features/themes/active-dashboard-theme";
   import {
     createIframeRPCHandler,
     emitNotification,
@@ -129,9 +127,7 @@
       <slot />
     </div>
     {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-      <ThemeProvider theme={$activeDashboardTheme}>
-        <ExploreChat />
-      </ThemeProvider>
+      <ExploreChat />
     {/if}
   </div>
 {/if}
