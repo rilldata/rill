@@ -24,7 +24,16 @@ export async function createResourceAndNavigate(
   baseResource?: V1Resource,
 ) {
   const filePath = await createResourceFile(kind, baseResource);
-  await wrapNavigation(filePath);
+  if (!filePath) return;
+
+  const previousScreenName = getScreenNameFromPage();
+  await goto(`/files${filePath}`);
+  await behaviourEvent?.fireSourceTriggerEvent(
+    BehaviourEventAction.Navigate,
+    BehaviourEventMedium.Button,
+    previousScreenName,
+    MetricsEventSpace.LeftPanel,
+  );
 }
 
 export async function createResourceFile(
@@ -372,16 +381,4 @@ type: report
     default:
       throw new Error(`Unknown resource kind: ${kind}`);
   }
-}
-
-async function wrapNavigation(toPath: string | undefined) {
-  if (!toPath) return;
-  const previousScreenName = getScreenNameFromPage();
-  await goto(`/files${toPath}`);
-  await behaviourEvent?.fireSourceTriggerEvent(
-    BehaviourEventAction.Navigate,
-    BehaviourEventMedium.Button,
-    previousScreenName,
-    MetricsEventSpace.LeftPanel,
-  );
 }

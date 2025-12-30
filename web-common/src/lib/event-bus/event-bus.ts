@@ -10,13 +10,13 @@ export interface Events {
   "clear-all-notifications": void;
   "add-banner": BannerEvent;
   "remove-banner": string;
-  "shift-click": null;
-  "command-click": null;
-  click: null;
-  "shift-command-click": null;
+  "shift-click": void;
+  "command-click": void;
+  click: void;
+  "shift-command-click": void;
   "page-content-resized": PageContentResized;
   "start-chat": string;
-  "rill-yaml-updated": null;
+  "rill-yaml-updated": void;
 }
 
 export const eventBus = new EventEmitter<Events>();

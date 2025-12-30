@@ -2,6 +2,7 @@ import { get, writable } from "svelte/store";
 import { Throttler } from "../lib/throttler";
 import { asyncWait } from "../lib/waitUtils";
 import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
+import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
 
 const BACKOFF_DELAY = 1000; // Base delay in ms
 
@@ -22,26 +23,20 @@ export enum ConnectionStatus {
   CLOSED = "closed",
 }
 
-type EventMap<T> = {
-  message: T;
+type SSEConnectionManagerEvents = {
+  message: SSEMessage;
   reconnect: void;
   error: Error;
   close: void;
   open: void;
 };
 
-type Listeners<T> = Record<keyof EventMap<T>, Callback<T, keyof EventMap<T>>[]>;
-
-type Callback<T, K extends keyof EventMap<T>> = (
-  eventData: EventMap<T>[K],
-) => void | Promise<void>;
-
 // ===== SSE CONNECTION MANAGER =====
 
 /**
  * A wrapper around SSEFetchClient to manage status and reconnections
  */
-export class SSEConnectionManager {
+export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvents> {
   public status = writable<ConnectionStatus>(ConnectionStatus.CLOSED);
 
   public url: string;
@@ -52,13 +47,6 @@ export class SSEConnectionManager {
   };
 
   private client = new SSEFetchClient();
-  private listeners: Listeners<SSEMessage> = {
-    message: [],
-    reconnect: [],
-    error: [],
-    close: [],
-    open: [],
-  };
 
   private autoCloseThrottler: Throttler | undefined;
   private retryAttempts = writable(0);
@@ -66,6 +54,8 @@ export class SSEConnectionManager {
   private connectionCount = 0;
 
   constructor(public params?: Params) {
+    super();
+
     if (params?.autoCloseTimeouts) {
       this.autoCloseThrottler = new Throttler(
         params.autoCloseTimeouts.normal,
@@ -77,13 +67,6 @@ export class SSEConnectionManager {
     this.client.on("message", this.handleMessage);
     this.client.on("close", this.handleCloseEvent);
     this.client.on("open", this.handleSuccessfulConnection);
-  }
-
-  public on<K extends keyof EventMap<SSEMessage>>(
-    event: K,
-    listener: Callback<SSEMessage, K>,
-  ) {
-    this.listeners[event].push(listener);
   }
 
   /**
@@ -172,9 +155,8 @@ export class SSEConnectionManager {
       void this.reconnect();
     }
 
-    this.listeners.error.forEach((listener) =>
-      listener(error instanceof Error ? error : new Error(String(error))),
-    );
+    const errorArg = error instanceof Error ? error : new Error(String(error));
+    this.emit("error", errorArg);
   };
 
   // This can happen in one of three situations:
@@ -191,13 +173,12 @@ export class SSEConnectionManager {
       void this.reconnect();
     } else {
       this.close();
-
-      this.listeners.close.forEach((listener) => listener());
+      this.emit("close");
     }
   };
 
   private handleMessage = (message: SSEMessage) => {
-    this.listeners.message.forEach((listener) => listener(message));
+    this.emit("message", message);
   };
 
   private handleSuccessfulConnection = () => {
@@ -207,7 +188,7 @@ export class SSEConnectionManager {
     this.retryAttempts.set(0);
 
     if (this.connectionCount > 1) {
-      this.listeners.reconnect.forEach((cb) => void cb());
+      this.emit("reconnect");
     }
   };
 
@@ -264,8 +245,6 @@ export class SSEConnectionManager {
     this.pause();
 
     // Clear all event listeners
-    this.listeners.message = [];
-    this.listeners.error = [];
-    this.listeners.close = [];
+    this.clearListeners();
   }
 }

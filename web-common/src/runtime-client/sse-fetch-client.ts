@@ -1,5 +1,6 @@
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
+import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
 
 /**
  * Represents a Server-Sent Event message
@@ -78,6 +79,13 @@ function isValidEvent(event: Partial<SSEMessage>): event is SSEMessage {
   return event.data !== undefined && event.data !== "";
 }
 
+type SSEFetchClientEvents = {
+  message: SSEMessage;
+  error: Error;
+  close: void;
+  open: void;
+};
+
 // ===== SSE FETCH CLIENT =====
 
 /**
@@ -87,49 +95,8 @@ function isValidEvent(event: Partial<SSEMessage>): event is SSEMessage {
  * interpret the semantic meaning of events. Consumers decide how to handle
  * different event types and data formats.
  */
-export class SSEFetchClient {
+export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
   private abortController: AbortController | undefined;
-  private listeners: {
-    message: ((message: SSEMessage) => void)[];
-    error: ((error: Error) => void)[];
-    close: (() => void)[];
-    open: (() => void)[];
-  } = {
-    message: [],
-    error: [],
-    close: [],
-    open: [],
-  };
-
-  /**
-   * Add event listener for SSE events
-   */
-  public on(event: "message", listener: (message: SSEMessage) => void): void;
-  public on(event: "error", listener: (error: Error) => void): void;
-  public on(event: "close", listener: () => void): void;
-  public on(event: "open", listener: () => void): void;
-  public on(event: string, listener: any): void {
-    if (this.listeners[event as keyof typeof this.listeners]) {
-      this.listeners[event as keyof typeof this.listeners].push(listener);
-    }
-  }
-
-  /**
-   * Remove event listener
-   */
-  public off(event: "message", listener: (message: SSEMessage) => void): void;
-  public off(event: "error", listener: (error: Error) => void): void;
-  public off(event: "close", listener: () => void): void;
-  public off(event: "open", listener: () => void): void;
-  public off(event: string, listener: any): void {
-    const eventListeners = this.listeners[event as keyof typeof this.listeners];
-    if (eventListeners) {
-      const index = eventListeners.indexOf(listener);
-      if (index > -1) {
-        eventListeners.splice(index, 1);
-      }
-    }
-  }
 
   /**
    * Start streaming from the given URL
@@ -181,19 +148,19 @@ export class SSEFetchClient {
         throw new Error("No response body");
       }
 
-      this.listeners.open.forEach((listener) => listener());
+      this.emit("open");
 
       // Process the SSE stream
       await this.processSSEStream(response.body);
     } catch (error) {
       if (error.name !== "AbortError") {
-        this.listeners.error.forEach((listener) =>
-          listener(error instanceof Error ? error : new Error(String(error))),
-        );
+        const errorArg =
+          error instanceof Error ? error : new Error(String(error));
+        this.emit("error", errorArg);
       }
     } finally {
       this.stop();
-      this.listeners.close.forEach((listener) => listener());
+      this.emit("close");
     }
   }
 
@@ -215,9 +182,7 @@ export class SSEFetchClient {
     this.stop();
 
     // Clear all event listeners
-    this.listeners.message = [];
-    this.listeners.error = [];
-    this.listeners.close = [];
+    this.clearListeners();
   }
 
   /**
@@ -278,6 +243,6 @@ export class SSEFetchClient {
    * Emit a message to all registered listeners
    */
   private emitMessage(message: SSEMessage): void {
-    this.listeners.message.forEach((listener) => listener(message));
+    this.emit("message", message);
   }
 }
