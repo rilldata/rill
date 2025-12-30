@@ -135,7 +135,7 @@ func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConv
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
 	}
-	if req.UntilMessageId != "" && msg.Tool != ai.RouterAgentName && msg.Type != ai.MessageTypeResult {
+	if req.UntilMessageId != "" && !(msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult) {
 		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
 	}
 
