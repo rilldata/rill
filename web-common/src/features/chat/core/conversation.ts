@@ -189,6 +189,8 @@ export class Conversation extends EventEmitter<ConversionEvents> {
       this.sseClient.cleanup();
       this.sseClient = null;
     }
+
+    this.clearListeners();
   }
 
   // ===== PRIVATE IMPLEMENTATION =====

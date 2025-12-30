@@ -114,6 +114,7 @@
       chatMounted.set(false);
       editor.destroy();
       unsubStartChatEvent();
+      streamStartUnsub?.();
     };
   });
 </script>
