@@ -841,6 +841,10 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		}
 	}
 
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, err
