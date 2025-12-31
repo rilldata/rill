@@ -36,13 +36,6 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
-  bigquery: yup.object().shape({
-    project_id: yup.string(),
-    google_application_credentials: yup
-      .string()
-      .required("Google application credentials is required"),
-  }),
-
   postgres: yup.object().shape({
     dsn: yup.string().optional(),
     host: yup.string().optional(),
