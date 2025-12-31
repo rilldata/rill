@@ -43,7 +43,9 @@ export function generateVLBarChartSpec(
     data,
   );
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  spec.encoding = {
+    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+  };
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
@@ -57,7 +59,6 @@ export function generateVLBarChartSpec(
     xSort: config.x?.sort,
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
-    xBand: config.x?.type === "temporal" ? 0.5 : undefined,
     pivot: createVegaTransformPivotConfig(
       xField,
       yField,

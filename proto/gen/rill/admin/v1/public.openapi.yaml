@@ -766,10 +766,10 @@ components:
             type: object
         v1GetProjectResponse:
             properties:
+                deployment:
+                    $ref: '#/components/schemas/v1Deployment'
                 jwt:
                     type: string
-                prodDeployment:
-                    $ref: '#/components/schemas/v1Deployment'
                 project:
                     $ref: '#/components/schemas/v1Project'
                 projectPermissions:
@@ -2741,6 +2741,11 @@ paths:
                 - in: path
                   name: project
                   required: true
+                  schema:
+                    type: string
+                - description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+                  in: query
+                  name: branch
                   schema:
                     type: string
                 - in: query

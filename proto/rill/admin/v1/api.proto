@@ -1247,6 +1247,7 @@ message ListDeploymentsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3;
+  string branch = 5;
   string user_id = 4;
 }
 
@@ -1346,6 +1347,8 @@ message ListProjectsForFingerprintResponse {
 message GetProjectRequest {
   string org = 1;
   string project = 2;
+  // Optional branch to get deployment for. If not set, then project's primary_branch is used.
+  string branch = 6;
   uint32 access_token_ttl_seconds = 3;
   bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
@@ -1353,7 +1356,7 @@ message GetProjectRequest {
 
 message GetProjectResponse {
   Project project = 1;
-  Deployment prod_deployment = 2;
+  Deployment deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
 }
