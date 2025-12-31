@@ -476,9 +476,9 @@ const metricsViewReducers = {
     });
   },
 
-  setTimeColumn(name: string, column: string) {
+  setTimeDimension(name: string, column: string) {
     updateMetricsExplorerByName(name, (exploreState) => {
-      exploreState.selectedTimeColumn = column;
+      exploreState.selectedTimeDimension = column;
     });
   },
 

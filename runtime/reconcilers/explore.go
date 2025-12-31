@@ -247,18 +247,6 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		p.MeasuresSelector = nil
 	}
 
-	// Filter out all time dimensions from the explore's spec.
-	// TODO: Remove when the UI supports multiple time dimensions.
-	spec.Dimensions = slices.DeleteFunc(spec.Dimensions, func(v string) bool {
-		_, isTime := timeDims[v]
-		return isTime
-	})
-	if spec.DefaultPreset != nil {
-		spec.DefaultPreset.Dimensions = slices.DeleteFunc(spec.DefaultPreset.Dimensions, func(v string) bool {
-			_, isTime := timeDims[v]
-			return isTime
-		})
-	}
 
 	// Done with rewriting
 	return spec, mvr.GetMetricsView().State.DataRefreshedOn, nil

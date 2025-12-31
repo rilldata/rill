@@ -128,7 +128,7 @@ export interface ExploreState {
   /**
    * user selected time column, should default to undefined if no other value is set
    */
-  selectedTimeColumn: string | undefined;
+  selectedTimeDimension: string | undefined;
 
   /**
    * flag to show/hide time comparison based on user preference.

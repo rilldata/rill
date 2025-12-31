@@ -206,8 +206,8 @@ function fromTimeRangesParams(
     partialExploreState.showTimeComparison = false;
   }
 
-  if (preset.timeColumn) {
-    partialExploreState.selectedTimeColumn = preset.timeColumn;
+  if (preset.timeDimension) {
+    partialExploreState.selectedTimeDimension = preset.timeDimension;
   }
 
   return { partialExploreState, errors };

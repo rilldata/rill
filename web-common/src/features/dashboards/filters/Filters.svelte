@@ -40,10 +40,6 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import {
-    createQueryServiceMetricsViewTimeRange,
-    createQueryServiceTableColumns,
-  } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -52,7 +48,6 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
 
   const { rillTime } = featureFlags;
 
@@ -81,7 +76,7 @@
       filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
-      dimensions: { allDimensions },
+      dimensions: { allDimensions, timeDimensions },
       dimensionFilters: {
         dimensionHasFilter,
         getDimensionFilterItems,
@@ -163,7 +158,7 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: ({ whereFilter, selectedTimeColumn } = $dashboardStore);
+  $: ({ whereFilter, selectedTimeDimension } = $dashboardStore);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
@@ -191,36 +186,14 @@
       end: selectedTimeRange.end,
     };
 
-  $: selectedTimeDimension = selectedTimeColumn;
-
-  $: model = metricsViewSpec.model ?? "";
-  $: database = metricsViewSpec.database;
-  $: connector = metricsViewSpec.connector;
-  $: databaseSchema = metricsViewSpec.databaseSchema;
   $: primaryTimeDimension = metricsViewSpec.timeDimension;
 
-  $: columnsQuery = createQueryServiceTableColumns(
-    instanceId,
-    model,
-    {
-      connector,
-      database,
-      databaseSchema,
-    },
-    {
-      query: {
-        enabled: !!model && !!connector,
-      },
-    },
-  );
-
-  $: ({ data: columnsResponse } = $columnsQuery);
-
-  $: columns = columnsResponse?.profileColumns ?? [];
-
-  $: timeColumns = columns
-    .filter(({ type }) => type && TIMESTAMPS.has(type))
-    .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
+    return {
+      value: timeDim.name!,
+      label: timeDim.name!,
+    };
+  });
 
   $: maybeMinDate = allTimeRange?.start
     ? DateTime.fromJSDate(allTimeRange.start)
@@ -244,8 +217,8 @@
     setMeasureFilter(dimension, filter);
   }
 
-  function onTimeColumnSelect(column: string) {
-    metricsExplorerStore.setTimeColumn($exploreName, column);
+  function onTimeDimensionSelect(column: string) {
+    metricsExplorerStore.setTimeDimension($exploreName, column);
   }
 
   function onPan(direction: "left" | "right") {
@@ -439,10 +412,10 @@
           {primaryTimeDimension}
           {selectedTimeDimension}
           {showDefaultItem}
-          {timeColumns}
+          timeDimensions={timeDimensionOptions}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
-          {onTimeColumnSelect}
+          {onTimeDimensionSelect}
           {onSelectRange}
           {onTimeGrainSelect}
           {onSelectTimeZone}

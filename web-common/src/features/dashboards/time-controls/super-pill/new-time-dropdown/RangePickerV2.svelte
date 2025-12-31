@@ -63,10 +63,10 @@
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
-  export let timeColumns: { value: string; label: string }[];
+  export let timeDimensions: { value: string; label: string }[];
   export let primaryTimeDimension: string | undefined;
   export let selectedTimeDimension: string | undefined;
-  export let onTimeColumnSelect: ((column: string) => void) | undefined =
+  export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
     undefined;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
@@ -395,7 +395,7 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-gray-300 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     type="button"
@@ -436,7 +436,7 @@
           </div>
         {/if}
 
-        {#if timeColumns.length && onTimeColumnSelect}
+        {#if timeDimensions.length && onTimeDimensionSelect}
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
 
@@ -453,7 +453,7 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-gray-300 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     class:font-bold={false}
@@ -477,11 +477,11 @@
                 sideOffset={12}
                 class="p-1 z-50"
               >
-                {#each timeColumns as { value, label } (value)}
+                {#each timeDimensions as { value, label } (value)}
                   <button
                     class="item"
                     on:click={() => {
-                      onTimeColumnSelect(value);
+                      onTimeDimensionSelect(value);
                       timeAxisPickerOpen = false;
                     }}
                   >

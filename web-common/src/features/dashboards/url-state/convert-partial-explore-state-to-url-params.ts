@@ -157,10 +157,10 @@ function toTimeRangesUrl(
   const timeRangeParam = toTimeRangeParam(timeControlsState.selectedTimeRange);
   searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
 
-  const timeColumn = partialExploreState.selectedTimeColumn;
+  const timeDimension = partialExploreState.selectedTimeDimension;
 
-  if (timeColumn) {
-    searchParams.set(ExploreStateURLParams.TimeColumn, timeColumn);
+  if (timeDimension) {
+    searchParams.set(ExploreStateURLParams.TimeDimension, timeDimension);
   }
 
   maybeSetParam(searchParams, partialExploreState, "selectedTimezone");
@@ -186,10 +186,10 @@ function toTimeRangesUrl(
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
-  if (partialExploreState.selectedTimeColumn) {
+  if (partialExploreState.selectedTimeDimension) {
     searchParams.set(
-      ExploreStateURLParams.TimeColumn,
-      partialExploreState.selectedTimeColumn,
+      ExploreStateURLParams.TimeDimension,
+      partialExploreState.selectedTimeDimension,
     );
   }
 

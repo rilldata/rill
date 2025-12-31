@@ -393,14 +393,12 @@ export function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has(ExploreStateURLParams.TimeColumn)) {
-    const timeColumn = searchParams.get(
-      ExploreStateURLParams.TimeColumn,
+  if (searchParams.has(ExploreStateURLParams.TimeDimension)) {
+    const timeDimension = searchParams.get(
+      ExploreStateURLParams.TimeDimension,
     ) as string;
 
-    console.log("okay");
-
-    preset.timeColumn = timeColumn;
+    preset.timeDimension = timeDimension;
   }
   return { preset, errors };
 }
