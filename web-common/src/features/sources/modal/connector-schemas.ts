@@ -5,6 +5,7 @@ import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { clickhouseSchema } from "../../templates/schemas/clickhouse";
 import { gcsSchema } from "../../templates/schemas/gcs";
 import { mysqlSchema } from "../../templates/schemas/mysql";
+import { postgresSchema } from "../../templates/schemas/postgres";
 import { s3Schema } from "../../templates/schemas/s3";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
@@ -12,6 +13,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   bigquery: bigquerySchema,
   clickhouse: clickhouseSchema,
   mysql: mysqlSchema,
+  postgres: postgresSchema,
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,

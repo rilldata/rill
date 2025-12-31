@@ -36,16 +36,6 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
-  postgres: yup.object().shape({
-    dsn: yup.string().optional(),
-    host: yup.string().optional(),
-    port: yup.string().optional(),
-    user: yup.string().optional(),
-    password: yup.string().optional(),
-    dbname: yup.string().optional(),
-    sslmode: yup.string().optional(),
-  }),
-
   snowflake: yup.object().shape({
     dsn: yup.string().optional(),
     account: yup.string().required("Account is required"),
