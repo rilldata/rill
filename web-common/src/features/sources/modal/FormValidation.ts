@@ -15,13 +15,10 @@ export function getValidationSchemaForConnector(
     isMultiStepConnector?: boolean;
   },
 ): ValidationAdapter<Record<string, unknown>> {
-  const { isMultiStepConnector } = opts || {};
   const jsonSchema = getConnectorSchema(name);
+  const step = formType === "source" ? "source" : "connector";
 
-  if (isMultiStepConnector && jsonSchema) {
-    const step = formType === "source" ? "source" : "connector";
-    return createSchemasafeValidator(jsonSchema, step);
-  }
+  if (jsonSchema) return createSchemasafeValidator(jsonSchema, step);
 
   const fallbackYupSchema = getYupSchema[name as keyof typeof getYupSchema];
   return yupAdapter(fallbackYupSchema);

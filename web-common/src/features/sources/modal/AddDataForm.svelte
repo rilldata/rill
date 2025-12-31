@@ -13,6 +13,7 @@
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { hasOnlyDsn, isEmpty } from "./utils";
+  import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
@@ -27,6 +28,7 @@
   import ClickhouseFormRenderer from "./ClickhouseFormRenderer.svelte";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get, type Writable } from "svelte/store";
+  import { getConnectorSchema } from "./connector-schemas";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -118,6 +120,9 @@
     Record<string, any>
   >;
   const dsnFormStore = dsnForm as unknown as Writable<Record<string, any>>;
+
+  const connectorSchema = getConnectorSchema(connector.name ?? "");
+  const hasSchema = Boolean(connectorSchema);
 
   // ClickHouse-specific derived state handled by the manager
   $: if (connector.name === "clickhouse") {
@@ -455,6 +460,21 @@
           bind:formId={multiStepFormId}
           bind:shouldShowSkipLink
         />
+      {:else if hasSchema}
+        <AddDataFormSection
+          id={paramsFormId}
+          enhance={paramsEnhance}
+          onSubmit={paramsSubmit}
+        >
+          <JSONSchemaFormRenderer
+            schema={connectorSchema}
+            step={isConnectorForm ? "connector" : "source"}
+            form={paramsForm}
+            errors={$paramsErrors}
+            {onStringInputChange}
+            handleFileUpload={handleFileUpload}
+          />
+        </AddDataFormSection>
       {:else}
         <AddDataFormSection
           id={paramsFormId}
