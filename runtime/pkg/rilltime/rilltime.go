@@ -16,8 +16,7 @@ import (
 var (
 	infPattern             = regexp.MustCompile("^(?i)inf$")
 	iso8601DurationPattern = `(?i)P((\d+[YMWD])+(T(\d+[HMS])+)?|T(\d+[HMS])+)` // Ensures atleast one part is present
-	iso8601DurationRegex   = regexp.MustCompile(iso8601DurationPattern)
-	iso8601PartsRegex      = regexp.MustCompile(`(?i)(\d+)([YMWDHMS])`)
+	iso8601PartsRegex      = regexp.MustCompile(`(?i)(\d+)([YMWDHS])`)
 	isoTimePattern         = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})(\.((?P<milli>\d{3})|(?P<micro>\d{6})|(?P<nano>\d{9})))?Z)?)?)?)?)?`
 	isoTimeRegex           = regexp.MustCompile(isoTimePattern)
 	// nolint:govet // This is suggested usage by the docs.
@@ -285,7 +284,7 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		if err != nil {
 			return nil, err
 		}
-		rt.isNewFormat = true
+		rt.isNewFormat = rt.Interval.LegacyIso == nil
 
 		if rt.Interval != nil {
 			err := rt.Interval.parse()
@@ -598,12 +597,20 @@ func (l *LegacyIsoInterval) expand() (*StartEndInterval, error) {
 		return nil, err
 	}
 
-	start := &PointInTime{Points: []*PointInTimeWithSnap{
-		{Labeled: &LabeledPointInTime{Watermark: true}},
-		isoPointInTime,
-	}}
-	end := &PointInTime{Points: []*PointInTimeWithSnap{
-		{Labeled: &LabeledPointInTime{Watermark: true}}},
+	start := &PointInTime{
+		Points: []*PointInTimeWithSnap{
+			{
+				Labeled: &LabeledPointInTime{Watermark: true},
+			},
+			isoPointInTime,
+		},
+	}
+	end := &PointInTime{
+		Points: []*PointInTimeWithSnap{
+			{
+				Labeled: &LabeledPointInTime{Watermark: true},
+			},
+		},
 	}
 
 	if offsetPoint != nil {
@@ -620,12 +627,23 @@ func (l *LegacyIsoInterval) expand() (*StartEndInterval, error) {
 func (l *LegacyIsoInterval) toPointInTime() (*PointInTimeWithSnap, *PointInTimeWithSnap, error) {
 	matches := iso8601PartsRegex.FindAllStringSubmatchIndex(l.ISO, -1)
 	parts := make([]*GrainDurationPart, len(matches))
+
+	timePartIndex := strings.Index(l.ISO, "T")
+	// Set the index to the end if "T" doesnt exist. This simplifies the check inside the loop.
+	if timePartIndex == -1 {
+		timePartIndex = len(l.ISO)
+	}
+
 	for i, match := range matches {
 		if len(match) != 6 {
 			return nil, nil, fmt.Errorf("invalid ISO duration %q", l.ISO)
 		}
 		numStr := l.ISO[match[2]:match[3]]
 		grain := l.ISO[match[4]:match[5]]
+
+		if match[4] > timePartIndex {
+			grain = strings.ToLower(grain)
+		}
 
 		num, err := strconv.Atoi(numStr)
 		if err != nil {
