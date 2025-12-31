@@ -472,7 +472,7 @@
             form={paramsForm}
             errors={$paramsErrors}
             {onStringInputChange}
-            handleFileUpload={handleFileUpload}
+            {handleFileUpload}
           />
         </AddDataFormSection>
       {:else}
