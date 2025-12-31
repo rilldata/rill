@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/version"
@@ -14,13 +13,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -237,148 +233,10 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 }
 
 func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
-	return r.configReloader.reloadConfig(ctx, instanceID)
-}
-
-// configReloader handles reloading instance configurations from admin service
-// periodically reload configs in background
-// config reloads happen in following scenarios:
-// 1. via rt.ReloadConfig whenever admin wants runtime to reload its configs
-// 2. whenever runtime is started to pick up any configs changed while it was down
-// 3. periodically every hour to pick up any changes done outside of runtime. This just adds extra resilience
-type configReloader struct {
-	rt *Runtime
-	// cancel background operations on close
-	cancel context.CancelFunc
-	// singleflight group to deduplicate reloads for same instance
-	group *singleflight.Group[string, string]
-
-	// to avoid repo handshake refresh on each reload we track last updatedon of each deployment
-	// if the deployment has not changed skip the repo pull
-	//
-	// this can further be optimised to only check for properties that affect repo like url, branch etc but keeping it simple for now
-	updatedOn map[string]time.Time
-	mu        sync.Mutex
-}
-
-func newConfigReloader(rt *Runtime) *configReloader {
-	bgctx, bgcancel := context.WithCancel(context.Background())
-	c := &configReloader{
-		rt:        rt,
-		cancel:    bgcancel,
-		group:     &singleflight.Group[string, string]{},
-		updatedOn: make(map[string]time.Time),
+	if r.configReloader != nil {
+		return r.configReloader.reloadConfig(ctx, instanceID)
 	}
-
-	go c.periodicallyReloadConfigs(bgctx)
-	return c
-}
-
-func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) error {
-	_, err := r.group.Do(ctx, instanceID, func(ctx context.Context) (string, error) {
-		inst, err := r.rt.Instance(ctx, instanceID)
-		if err != nil {
-			return "", err
-		}
-
-		admin, release, err := r.rt.Admin(ctx, instanceID)
-		if err != nil {
-			if errors.Is(err, ErrAdminNotConfigured) {
-				return instanceID, nil
-			}
-			return "", err
-		}
-		defer release()
-
-		r.rt.Logger.Info("Reloading config for instance", zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-
-		cfg, err := admin.GetDeploymentConfig(ctx)
-		if err != nil {
-			return "", err
-		}
-
-		// Clone for editing
-		tmp := *inst
-		inst = &tmp
-		restartController := false
-
-		// Update variables
-		varsChanged := !maps.Equal(inst.Variables, cfg.Variables)
-		if varsChanged {
-			inst.Variables = cfg.Variables
-			restartController = true
-		}
-		inst.Annotations = cfg.Annotations
-		inst.FrontendURL = cfg.FrontendURL
-
-		// Force the repo to refresh its handshake if the deployment has changed
-		r.mu.Lock()
-		updatedOn, ok := r.updatedOn[instanceID]
-		r.mu.Unlock()
-		if !ok || cfg.UpdatedOn.After(updatedOn) {
-			repo, release, err := r.rt.Repo(ctx, inst.ID)
-			if err != nil {
-				return "", err
-			}
-			defer release()
-
-			err = repo.Pull(ctx, false, true)
-			if err != nil {
-				r.rt.Logger.Error("ReloadConfig: failed to pull repo", zap.String("instance_id", inst.ID), zap.Error(err), observability.ZapCtx(ctx))
-			}
-
-			// Update the last updatedOn time
-			r.mu.Lock()
-			r.updatedOn[instanceID] = cfg.UpdatedOn
-			r.mu.Unlock()
-
-			// changes in archive asset IDs are correctly propogated via repo connection reopen only
-			restartController = restartController || cfg.UsesArchive
-		}
-
-		err = r.rt.EditInstance(ctx, inst, restartController)
-		if err != nil {
-			return "", err
-		}
-		return instanceID, nil
-	})
-
-	return err
-}
-
-func (r *configReloader) periodicallyReloadConfigs(ctx context.Context) {
-	reloadAllInstances := func() {
-		r.rt.Logger.Info("periodicallyReloadConfigs: reloading configs for all instances")
-		instances, err := r.rt.Instances(ctx)
-		if err != nil {
-			r.rt.Logger.Error("periodicallyReloadConfigs: failed to list instances", zap.Error(err))
-			return
-		}
-		for _, inst := range instances {
-			err := r.reloadConfig(ctx, inst.ID)
-			if err != nil {
-				r.rt.Logger.Error("periodicallyReloadConfigs: failed to reload config", zap.String("instance_id", inst.ID), zap.Error(err))
-			}
-		}
-	}
-	// first reload immediately
-	reloadAllInstances()
-
-	// then periodically every hour
-	ticker := time.NewTicker(1 * time.Hour)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			reloadAllInstances()
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-func (r *configReloader) close() {
-	r.cancel()
+	return nil
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

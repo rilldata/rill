@@ -106,16 +106,14 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		AdminConnector: req.AdminConnector,
 		AIConnector:    req.AiConnector,
 		Connectors:     req.Connectors,
+		Variables:      req.Variables,
+		Annotations:    req.Annotations,
+		FrontendURL:    req.FrontendUrl,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	err = s.runtime.ReloadConfig(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)

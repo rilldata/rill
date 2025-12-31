@@ -93,15 +93,15 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, branch string) error {
-	// Update the deployment with the new branch (or existing branch) and set desired status to running
+	// Update the deployment with the new branch (or existing branch) and set existing desired status to retrigger reconcile flow
 	var err error
 	if branch != depl.Branch {
 		_, err = s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
-			DesiredStatus: database.DeploymentStatusRunning,
+			DesiredStatus: depl.DesiredStatus,
 			Branch:        branch,
 		})
 	} else {
-		_, err = s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
+		_, err = s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, depl.DesiredStatus)
 	}
 	if err != nil {
 		return err
@@ -144,10 +144,6 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	grp.SetLimit(100)
 	var prodErr error
 	for _, d := range ds {
-		// do not trigger reconcile for stopped deployments
-		if d.Status == database.DeploymentStatusDeleting || d.Status == database.DeploymentStatusStopped || d.Status == database.DeploymentStatusStopping {
-			continue
-		}
 		grp.Go(func() error {
 			// If this is the primary prod deployment and the primary branch has changed, update the deployment branch too.
 			branch := d.Branch
@@ -299,6 +295,15 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		},
 	}
 
+	// Construct the full frontend URL including custom domain (if any) and org/project path
+	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	// Resolve variables based on environment
+	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment)
+	if err != nil {
+		return err
+	}
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
@@ -308,6 +313,9 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
+		Variables:      vars,
+		Annotations:    annotations.ToMap(),
+		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
 		return err

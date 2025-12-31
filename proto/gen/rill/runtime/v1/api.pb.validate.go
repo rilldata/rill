@@ -1874,6 +1874,12 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Variables
+
+	// no validation rules for Annotations
+
+	// no validation rules for FrontendUrl
+
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}

@@ -4549,6 +4549,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Connector'
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      frontendUrl:
+        type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.

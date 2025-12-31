@@ -417,6 +417,9 @@ message CreateInstanceRequest {
   string admin_connector = 15;
   string ai_connector = 17;
   repeated Connector connectors = 10;
+  map<string, string> variables = 7;
+  map<string, string> annotations = 9;
+  string frontend_url = 18;
 }
 
 // Response message for RuntimeService.CreateInstance
