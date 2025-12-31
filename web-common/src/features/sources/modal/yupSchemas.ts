@@ -73,14 +73,6 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
-  athena: yup.object().shape({
-    aws_access_key_id: yup.string().required("AWS access key ID is required"),
-    aws_secret_access_key: yup
-      .string()
-      .required("AWS secret access key is required"),
-    output_location: yup.string().required("S3 URI is required"),
-  }),
-
   redshift: yup.object().shape({
     aws_access_key_id: yup.string().required("AWS access key ID is required"),
     aws_secret_access_key: yup
