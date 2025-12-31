@@ -76,16 +76,6 @@ export const getYupSchema = {
     database: yup.string().required("database name is required"),
   }),
 
-  mysql: yup.object().shape({
-    dsn: yup.string().optional(),
-    user: yup.string().optional(),
-    password: yup.string().optional(),
-    host: yup.string().optional(),
-    port: yup.string().optional(),
-    database: yup.string().optional(),
-    sslmode: yup.string().optional(),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),
