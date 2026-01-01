@@ -84,5 +84,3 @@ export const mysqlSchema: MultiStepFormSchema = {
     },
   ],
 };
-
-

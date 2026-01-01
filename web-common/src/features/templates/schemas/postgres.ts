@@ -9,8 +9,7 @@ export const postgresSchema: MultiStepFormSchema = {
       title: "Postgres connection string",
       description:
         "Full DSN, e.g. postgresql://user:password@host:5432/dbname?sslmode=require",
-      "x-placeholder":
-        "postgresql://postgres:postgres@localhost:5432/postgres",
+      "x-placeholder": "postgresql://postgres:postgres@localhost:5432/postgres",
       "x-secret": true,
       "x-hint":
         "Use a DSN or provide host/user/password/dbname below (but not both).",
@@ -19,8 +18,7 @@ export const postgresSchema: MultiStepFormSchema = {
       type: "string",
       title: "Database URL",
       description: "Alternative DSN field (same as dsn)",
-      "x-placeholder":
-        "postgresql://postgres:postgres@localhost:5432/postgres",
+      "x-placeholder": "postgresql://postgres:postgres@localhost:5432/postgres",
       "x-secret": true,
     },
     host: {
@@ -109,4 +107,3 @@ export const postgresSchema: MultiStepFormSchema = {
     },
   ],
 };
-
