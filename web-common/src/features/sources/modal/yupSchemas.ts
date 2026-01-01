@@ -27,15 +27,6 @@ export const getYupSchema = {
     schema_name: yup.string().required("Schema name is required"),
   }),
 
-  sqlite: yup.object().shape({
-    db: yup.string().required("db is required"),
-    table: yup.string().required("table is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),
