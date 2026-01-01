@@ -5,17 +5,6 @@ import {
 } from "../../entity-management/name-utils";
 
 export const getYupSchema = {
-  https: yup.object().shape({
-    path: yup
-      .string()
-      .matches(/^https?:\/\//, 'Path must start with "http(s)://"')
-      .required("Path is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
-  }),
-
   duckdb: yup.object().shape({
     path: yup.string().required("path is required"),
     attach: yup.string().optional(),
