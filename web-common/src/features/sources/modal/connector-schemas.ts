@@ -8,6 +8,7 @@ import { mysqlSchema } from "../../templates/schemas/mysql";
 import { postgresSchema } from "../../templates/schemas/postgres";
 import { redshiftSchema } from "../../templates/schemas/redshift";
 import { salesforceSchema } from "../../templates/schemas/salesforce";
+import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { s3Schema } from "../../templates/schemas/s3";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
@@ -18,6 +19,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   postgres: postgresSchema,
   redshift: redshiftSchema,
   salesforce: salesforceSchema,
+  snowflake: snowflakeSchema,
   s3: s3Schema,
   gcs: gcsSchema,
   azure: azureSchema,

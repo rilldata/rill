@@ -36,17 +36,6 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
-  snowflake: yup.object().shape({
-    dsn: yup.string().optional(),
-    account: yup.string().required("Account is required"),
-    user: yup.string().required("Username is required"),
-    password: yup.string().required("Password is required"),
-    database: yup.string().optional(),
-    schema: yup.string().optional(),
-    warehouse: yup.string().optional(),
-    role: yup.string().optional(),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),
