@@ -14,6 +14,7 @@ import { localFileSchema } from "../../templates/schemas/local_file";
 import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { httpsSchema } from "../../templates/schemas/https";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
+import { druidSchema } from "../../templates/schemas/druid";
 import { s3Schema } from "../../templates/schemas/s3";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
@@ -28,6 +29,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   sqlite: sqliteSchema,
   motherduck: motherduckSchema,
   duckdb: duckdbSchema,
+  druid: druidSchema,
   local_file: localFileSchema,
   https: httpsSchema,
   s3: s3Schema,
