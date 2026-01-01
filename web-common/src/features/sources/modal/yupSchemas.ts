@@ -56,16 +56,6 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
-  redshift: yup.object().shape({
-    aws_access_key_id: yup.string().required("AWS access key ID is required"),
-    aws_secret_access_key: yup
-      .string()
-      .required("AWS secret access key is required"),
-    workgroup: yup.string().optional(),
-    region: yup.string().optional(), // TODO: add validation
-    database: yup.string().required("database name is required"),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),

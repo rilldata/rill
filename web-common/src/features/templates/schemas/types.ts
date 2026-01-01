@@ -62,6 +62,7 @@ export type JSONSchemaObject = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   allOf?: JSONSchemaConditional[];
+  oneOf?: JSONSchemaConstraint[];
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;
