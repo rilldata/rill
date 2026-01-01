@@ -1,11 +1,6 @@
 import * as yup from "yup";
 
 export const getYupSchema = {
-  duckdb: yup.object().shape({
-    path: yup.string().required("path is required"),
-    attach: yup.string().optional(),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),

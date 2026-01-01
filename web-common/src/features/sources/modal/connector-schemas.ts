@@ -11,6 +11,7 @@ import { salesforceSchema } from "../../templates/schemas/salesforce";
 import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
+import { duckdbSchema } from "../../templates/schemas/duckdb";
 import { httpsSchema } from "../../templates/schemas/https";
 import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { s3Schema } from "../../templates/schemas/s3";
@@ -26,6 +27,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   snowflake: snowflakeSchema,
   sqlite: sqliteSchema,
   motherduck: motherduckSchema,
+  duckdb: duckdbSchema,
   local_file: localFileSchema,
   https: httpsSchema,
   s3: s3Schema,
