@@ -47,15 +47,6 @@ export const getYupSchema = {
     role: yup.string().optional(),
   }),
 
-  salesforce: yup.object().shape({
-    soql: yup.string().required("soql is required"),
-    sobject: yup.string().required("sobject is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),

@@ -16,7 +16,7 @@ export function getValidationSchemaForConnector(
   },
 ): ValidationAdapter<Record<string, unknown>> {
   const jsonSchema = getConnectorSchema(name);
-  const step = formType === "source" ? "source" : "connector";
+    const step = formType === "source" ? "source" : "connector";
 
   if (jsonSchema) return createSchemasafeValidator(jsonSchema, step);
 
