@@ -10,6 +10,7 @@ import { redshiftSchema } from "../../templates/schemas/redshift";
 import { salesforceSchema } from "../../templates/schemas/salesforce";
 import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
+import { localFileSchema } from "../../templates/schemas/local_file";
 import { httpsSchema } from "../../templates/schemas/https";
 import { s3Schema } from "../../templates/schemas/s3";
 
@@ -23,6 +24,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   salesforce: salesforceSchema,
   snowflake: snowflakeSchema,
   sqlite: sqliteSchema,
+  local_file: localFileSchema,
   https: httpsSchema,
   s3: s3Schema,
   gcs: gcsSchema,
