@@ -18,12 +18,23 @@
     | Array<{ value: string; label: string; description?: string }>
     | undefined;
   export let name: string | undefined;
+
+  function normalizeCredentialErrors(
+    err: any,
+  ): string | Record<string | number, string[]> | undefined {
+    const normalized = normalizeErrors(err);
+    if (typeof normalized === "string") return normalized;
+    if (Array.isArray(normalized)) return { 0: normalized };
+    return undefined;
+  }
 </script>
 
 {#if prop["x-display"] === "file" || prop.format === "file"}
   <CredentialsInput
     {id}
+    label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
+    error={normalizeCredentialErrors(errors)}
     {optional}
     bind:value
     uploadFile={handleFileUpload}
