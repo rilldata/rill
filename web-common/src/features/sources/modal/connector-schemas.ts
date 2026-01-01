@@ -12,6 +12,7 @@ import { snowflakeSchema } from "../../templates/schemas/snowflake";
 import { sqliteSchema } from "../../templates/schemas/sqlite";
 import { localFileSchema } from "../../templates/schemas/local_file";
 import { httpsSchema } from "../../templates/schemas/https";
+import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { s3Schema } from "../../templates/schemas/s3";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
@@ -24,6 +25,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   salesforce: salesforceSchema,
   snowflake: snowflakeSchema,
   sqlite: sqliteSchema,
+  motherduck: motherduckSchema,
   local_file: localFileSchema,
   https: httpsSchema,
   s3: s3Schema,

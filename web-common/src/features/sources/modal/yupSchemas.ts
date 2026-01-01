@@ -6,12 +6,6 @@ export const getYupSchema = {
     attach: yup.string().optional(),
   }),
 
-  motherduck: yup.object().shape({
-    token: yup.string().required("Token is required"),
-    path: yup.string().required("Path is required"),
-    schema_name: yup.string().required("Schema name is required"),
-  }),
-
   clickhouse: yup.object().shape({
     dsn: yup.string().optional(),
     managed: yup.boolean(),
