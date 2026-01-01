@@ -1,13 +1,14 @@
 import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
+import * as yupLib from "yup";
 import {
-  yup,
+  yup as yupAdapter,
   type Infer as YupInfer,
   type InferIn as YupInferIn,
 } from "sveltekit-superforms/adapters";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
-import { getValidationSchemaForConnector, dsnSchema } from "./FormValidation";
+import { getValidationSchemaForConnector } from "./FormValidation";
 import {
   getInitialFormValuesFromProperties,
   inferSourceName,
@@ -41,6 +42,10 @@ import type { ClickHouseConnectorType } from "./constants";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
 import { findRadioEnumKey } from "../../templates/schema-utils";
+
+const dsnSchema = yupLib.object({
+  dsn: yupLib.string().required("DSN is required"),
+});
 
 export type ClickhouseUiState = {
   properties: ConnectorDriverProperty[];
@@ -199,7 +204,7 @@ export class AddDataFormManager {
     });
 
     // Superforms: dsn
-    const dsnAdapter = yup(dsnSchema);
+    const dsnAdapter = yupAdapter(dsnSchema);
     type DsnOut = YupInfer<typeof dsnSchema, "yup">;
     type DsnIn = YupInferIn<typeof dsnSchema, "yup">;
     this.dsn = superForm<DsnOut, any, DsnIn>(defaults(dsnAdapter), {
