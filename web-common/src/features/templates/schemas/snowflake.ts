@@ -31,7 +31,8 @@ export const snowflakeSchema: MultiStepFormSchema = {
     password: {
       type: "string",
       title: "Password",
-      description: "Snowflake password (use JWT private key if password auth is disabled)",
+      description:
+        "Snowflake password (use JWT private key if password auth is disabled)",
       "x-placeholder": "your_password",
       "x-secret": true,
     },
@@ -87,4 +88,3 @@ export const snowflakeSchema: MultiStepFormSchema = {
   },
   required: [],
 };
-

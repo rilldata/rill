@@ -182,9 +182,6 @@ export class AddDataFormManager {
     const paramsAdapter = getValidationSchemaForConnector(
       connector.name as string,
       formType,
-      {
-        isMultiStepConnector: this.isMultiStepConnector,
-      },
     );
     type ParamsOut = Record<string, unknown>;
     type ParamsIn = Record<string, unknown>;
@@ -544,7 +541,6 @@ export class AddDataFormManager {
         const sourceValidator = getValidationSchemaForConnector(
           connector.name as string,
           "source",
-          { isMultiStepConnector: true },
         );
         const result = await sourceValidator.validate(values);
         if (!result.success) {

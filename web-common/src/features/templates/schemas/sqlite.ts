@@ -28,4 +28,3 @@ export const sqliteSchema: MultiStepFormSchema = {
   },
   required: ["db", "table", "name"],
 };
-

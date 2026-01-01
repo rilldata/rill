@@ -25,4 +25,3 @@ export const httpsSchema: MultiStepFormSchema = {
   },
   required: ["path", "name"],
 };
-
