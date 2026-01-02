@@ -14,6 +14,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**DuckDB**](#duckdb) - Embedded DuckDB engine (default)
 - [**MotherDuck**](#motherduck) - MotherDuck cloud database
 - [**Pinot**](#pinot) - Apache Pinot
+- [**StarRocks**](#starrocks) - StarRocks analytical database
 
 ### _Data Warehouses_
 - [**Athena**](#athena) - Amazon Athena
@@ -725,6 +726,57 @@ controller_port: 9000 # Port number for the Pinot controller
 ssl: true # Enable SSL connection to Pinot  
 log_queries: true # Log raw SQL queries executed through Pinot  
 max_open_conns: 100 # Maximum number of open connections to the Pinot database
+```
+
+## StarRocks
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `starrocks` _(required)_
+
+### `dsn`
+
+_[string]_ - DSN (Data Source Name) for the StarRocks connection. Follows MySQL protocol format. 
+
+### `host`
+
+_[string]_ - StarRocks FE (Frontend) server hostname 
+
+### `port`
+
+_[integer]_ - MySQL protocol port of StarRocks FE 
+
+### `username`
+
+_[string]_ - Username for authentication 
+
+### `password`
+
+_[string]_ - Password for authentication 
+
+### `catalog`
+
+_[string]_ - StarRocks catalog name (for external catalogs like Iceberg, Hive) 
+
+### `database`
+
+_[string]_ - StarRocks database name 
+
+### `ssl`
+
+_[boolean]_ - Enable SSL/TLS encryption 
+
+```yaml
+# Example: StarRocks connector configuration
+type: connector # Must be `connector` (required)
+driver: starrocks # Must be `starrocks` _(required)_
+host: "starrocks-fe.example.com" # Hostname of the StarRocks FE server  
+port: 9030 # MySQL protocol port of StarRocks FE  
+username: "analyst" # Username for authentication  
+password: "{{ .env.connector.starrocks.password }}" # Password for authentication  
+catalog: "default_catalog" # StarRocks catalog name  
+database: "my_database" # StarRocks database name  
+ssl: false # Enable SSL/TLS encryption
 ```
 
 ## Postgres

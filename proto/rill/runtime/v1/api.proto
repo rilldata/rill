@@ -64,6 +64,15 @@ service RuntimeService {
     };
   }
 
+  // ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+  // If the instance doesn't have an admin connector, this RPC does nothing.
+  rpc ReloadConfig(ReloadConfigRequest) returns (ReloadConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/reload-config",
+      body: "*"
+    };
+  }
+
   // Repos
 
   // ListFiles lists all the files matching a glob in a repo.
@@ -436,15 +445,20 @@ message EditInstanceRequest {
   optional string admin_connector = 16;
   optional string ai_connector = 18;
   repeated Connector connectors = 9;
-  map<string, string> variables = 15;
-  map<string, string> annotations = 10;
-  optional string frontend_url = 19;
 }
 
 // Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
   Instance instance = 1;
 }
+
+// Request message for RuntimeService.ReloadConfig
+message ReloadConfigRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.ReloadConfig
+message ReloadConfigResponse {}
 
 // **********
 // Repos

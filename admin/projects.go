@@ -533,7 +533,7 @@ func (s *Service) TriggerParserAndAwaitResource(ctx context.Context, depl *datab
 
 // ResolveVariables resolves the project's variables for the given environment.
 // It fetches the variable specific to the environment plus the default variables not set exclusively for the environment.
-func (s *Service) ResolveVariables(ctx context.Context, projectID, environment string, forWriting bool) (map[string]string, error) {
+func (s *Service) ResolveVariables(ctx context.Context, projectID, environment string) (map[string]string, error) {
 	vars, err := s.DB.FindProjectVariables(ctx, projectID, &environment)
 	if err != nil {
 		return nil, err
@@ -541,12 +541,6 @@ func (s *Service) ResolveVariables(ctx context.Context, projectID, environment s
 	res := make(map[string]string)
 	for _, v := range vars {
 		res[v.Name] = v.Value
-	}
-	if forWriting && len(res) == 0 {
-		// edge case : no prod variables to set (variable was deleted)
-		// but the runtime does not update variables if the new map is empty
-		// so we need to set a dummy variable to trigger the update
-		res["rill.internal.nonce"] = time.Now().Format(time.RFC3339Nano)
 	}
 	return res, nil
 }

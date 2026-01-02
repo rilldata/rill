@@ -163,13 +163,11 @@
       class="grid-wrapper gap-px overflow-x-auto"
       style:grid-template-columns="repeat(auto-fit, minmax({estimatedTableWidth +
         LEADERBOARD_WRAPPER_PADDING}px, 1fr))"
+      bind:clientWidth={leaderboardWrapperWidth}
     >
       {#each visibleDimensions as dimension (dimension.name)}
         {#if dimension.name}
-          <div
-            class="leaderboard-wrapper"
-            bind:clientWidth={leaderboardWrapperWidth}
-          >
+          <div class="leaderboard-wrapper">
             <Leaderboard
               leaderboardShowContextForAllMeasures
               timeControlsReady

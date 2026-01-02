@@ -17,6 +17,7 @@ rill project describe [<project-name>] <type> <name> [flags]
 ### Flags
 
 ```
+      --branch string    Target deployment by Git branch (default: primary deployment)
       --path string      Project directory (default ".")
       --project string   Project name
 ```

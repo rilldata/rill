@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Deprecated: See details in api.proto.
@@ -103,6 +104,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		attribute.String("args.organization_name", req.Org),
 		attribute.String("args.project_name", req.Project),
 		attribute.String("args.environment", req.Environment),
+		attribute.String("args.branch", req.Branch),
 		attribute.String("args.user_id", req.UserId),
 	)
 
@@ -118,7 +120,7 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, "")
+	depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID, req.Environment, req.Branch)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -827,6 +829,65 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		AccessToken: jwt,
 		TtlSeconds:  uint32(ttlDuration.Seconds()),
 	}, nil
+}
+
+func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploymentConfigRequest) (*adminv1.GetDeploymentConfigResponse, error) {
+	// If the deployment ID is not provided, attempt to infer it from the access token.
+	claims := auth.GetClaims(ctx)
+	if req.DeploymentId == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			req.DeploymentId = claims.OwnerID()
+		} else {
+			return nil, status.Error(codes.InvalidArgument, "missing deployment_id")
+		}
+	}
+
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if depl.Environment == "prod" {
+		if !permissions.ReadProdStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
+	} else {
+		if !permissions.ReadDevStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+	}
+
+	resp := &adminv1.GetDeploymentConfigResponse{
+		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
+		UsesArchive: proj.ArchiveAssetID != nil,
+	}
+	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
+	if err != nil {
+		return nil, err
+	}
+	resp.Variables = vars
+
+	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	resp.Annotations = annotations.ToMap()
+
+	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	return resp, nil
 }
 
 // getResourceRestrictionsForUser returns resource restrictions for a given user and project.
