@@ -142,17 +142,32 @@ const config = {
             activeBaseRegex: "^/user-guide.*", // Keep Docs active for all doc pages
           },
           {
-            type: 'dropdown',
-            label: 'Reference',
-            position: 'left',
+            to: "/reference/project-files",
+            label: "Reference",
+            position: "left",
             className: "navbar-reference-link",
-            items: [
-              { to: '/reference/project-files', label: 'Project Files' },
-              { to: '/reference/cli', label: 'CLI' },
-              { to: '/api/admin/', label: 'REST API' },
-
-            ],
+            activeBasePath: "/reference/project-files",
           },
+          {
+            to: "/api/admin/",
+            label: "API",
+            position: "left",
+            className: "navbar-api-link",
+            activeBasePath: "/api/admin/",
+          },
+
+          // {
+          //   type: 'dropdown',
+          //   label: 'Reference',
+          //   position: 'left',
+          //   className: "navbar-reference-link",
+          //   items: [
+          //     { to: '/reference/project-files', label: 'Project Files' },
+          //     { to: '/reference/cli', label: 'CLI' },
+          //     { to: '/api/admin/', label: 'REST API' },
+
+          //   ],
+          // },
           {
             to: "/contact",
             label: "Contact Us",
