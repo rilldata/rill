@@ -77,6 +77,26 @@ paths:
           in: path
           required: true
           type: string
+  /v1/deployments/{deploymentId}/config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/credentials:
     post:
       summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -5044,6 +5064,29 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1GetDeploymentConfigResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+        title: Variables for the deployment (connector credentials, etc.)
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        title: Annotations for the deployment (org/project metadata, etc.)
+      frontendUrl:
+        type: string
+        description: Frontend URL for the deployment.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the deployment was last updated.
+      usesArchive:
+        type: boolean
+        description: Whether the deployment is git based or archive based.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
