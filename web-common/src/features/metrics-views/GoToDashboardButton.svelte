@@ -42,7 +42,7 @@
             );
         }}
       >
-        Create Canvas dashboard{$ai ? " with AI" : ""}
+        Generate Canvas Dashboard{$ai ? " with AI" : ""}
       </Button>
     {/if}
     <Button
@@ -53,7 +53,7 @@
           await createAndPreviewExplore(queryClient, instanceId, resource);
       }}
     >
-      Create Explore dashboard{$ai ? " with AI" : ""}
+      Generate Explore Dashboard{$ai ? " with AI" : ""}
     </Button>
   </div>
 {:else}
@@ -87,7 +87,7 @@
             }}
           >
             <Add />
-            Create Canvas dashboard{$ai ? " with AI" : ""}
+            Generate Canvas Dashboard{$ai ? " with AI" : ""}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Item
@@ -97,7 +97,7 @@
           }}
         >
           <Add />
-          Create Explore dashboard{$ai ? " with AI" : ""}
+          Generate Explore Dashboard{$ai ? " with AI" : ""}
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>
