@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
@@ -7,6 +8,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import {
     useIsLocalFileConnector,
     useSourceFromYaml,
@@ -22,16 +24,18 @@
   import type { V1Source } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon, GitBranch } from "lucide-svelte";
+  import { GitBranch, WandIcon } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import {
+    useCreateMetricsViewFromTableUIAction,
+    useCreateMetricsViewWithCanvasUIAction,
+  } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
-  import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   export let filePath: string;
 
@@ -41,7 +45,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  const { ai } = featureFlags;
+  const { ai, generateCanvas } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
   let source: V1Source | undefined;
@@ -89,6 +93,16 @@
     databaseSchema,
     tableName,
     true,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+
+  $: createCanvasDashboardFromTable = useCreateMetricsViewWithCanvasUIAction(
+    instanceId,
+    sinkConnector as string,
+    database,
+    databaseSchema,
+    tableName,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -178,7 +192,7 @@
 >
   <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard
+    Generate Explore dashboard
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />
@@ -192,6 +206,29 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
+
+{#if $generateCanvas}
+  <NavigationMenuItem
+    disabled={disableCreateDashboard}
+    on:click={createCanvasDashboardFromTable}
+  >
+    <CanvasIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate Canvas dashboard
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+    <svelte:fragment slot="description">
+      {#if $sourceHasError}
+        Source has errors
+      {:else if !sourceIsIdle}
+        Source is being ingested
+      {/if}
+    </svelte:fragment>
+  </NavigationMenuItem>
+{/if}
 
 <NavigationMenuItem on:click={viewGraph}>
   <GitBranch slot="icon" size="14px" />
