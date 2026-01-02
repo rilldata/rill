@@ -46,7 +46,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckDB" />}
     content="Add extra parameters to Rill's embedded DuckDB or connect your own."
-    link="/build/connectors/olap/duckdb"
+    link="/developer/build/connectors/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
   />
@@ -54,7 +54,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Clickhouse.svg" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
-    link="/build/connectors/olap/clickhouse"
+    link="/developer/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
   />
@@ -62,7 +62,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Motherduck.svg" alt="MotherDuck" />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
-    link="/build/connectors/olap/motherduck"
+    link="/developer/build/connectors/olap/motherduck"
     linkLabel="Learn more"
     referenceLink="motherduck"
   />
@@ -70,7 +70,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Druid.svg" alt="Druid" />}
     content="Real-time analytics database designed for high-performance OLAP queries."
-    link="/build/connectors/olap/druid"
+    link="/developer/build/connectors/olap/druid"
     linkLabel="Learn more"
     referenceLink="druid"
   />
@@ -78,7 +78,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Pinot.svg" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
-    link="/build/connectors/olap/pinot"
+    link="/developer/build/connectors/olap/pinot"
     linkLabel="Learn more"
     referenceLink="pinot"
   />
