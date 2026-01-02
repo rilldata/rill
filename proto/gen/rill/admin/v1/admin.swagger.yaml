@@ -2269,6 +2269,13 @@ paths:
                 description: |-
                   Optional filter to apply as a row filter in queries.
                   This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+              mvFilters:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
+                description: |-
+                  Optional metrics view to filter mapping to apply as row filters in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
               fields:
                 type: array
                 items:
@@ -5607,6 +5614,10 @@ definitions:
         type: string
       filter:
         $ref: '#/definitions/v1Expression'
+      mvFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
       fields:
         type: array
         items:

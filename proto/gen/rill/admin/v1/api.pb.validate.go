@@ -29348,6 +29348,52 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 		}
 	}
 
+	{
+		sorted_keys := make([]string, len(m.GetMvFilters()))
+		i := 0
+		for key := range m.GetMvFilters() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetMvFilters()[key]
+			_ = val
+
+			// no validation rules for MvFilters[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, IssueMagicAuthTokenRequestValidationError{
+							field:  fmt.Sprintf("MvFilters[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, IssueMagicAuthTokenRequestValidationError{
+							field:  fmt.Sprintf("MvFilters[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return IssueMagicAuthTokenRequestValidationError{
+						field:  fmt.Sprintf("MvFilters[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
 	// no validation rules for State
 
 	// no validation rules for DisplayName
@@ -45279,6 +45325,52 @@ func (m *MagicAuthToken) validate(all bool) error {
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
+		}
+	}
+
+	{
+		sorted_keys := make([]string, len(m.GetMvFilters()))
+		i := 0
+		for key := range m.GetMvFilters() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetMvFilters()[key]
+			_ = val
+
+			// no validation rules for MvFilters[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, MagicAuthTokenValidationError{
+							field:  fmt.Sprintf("MvFilters[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, MagicAuthTokenValidationError{
+							field:  fmt.Sprintf("MvFilters[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return MagicAuthTokenValidationError{
+						field:  fmt.Sprintf("MvFilters[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
 		}
 	}
 

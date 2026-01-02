@@ -1,0 +1,1 @@
+ALTER TABLE magic_auth_tokens ADD COLUMN mv_filters JSONB NOT NULL DEFAULT '{}'::JSONB;

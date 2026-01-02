@@ -1176,6 +1176,10 @@ components:
                     $ref: '#/components/schemas/v1Expression'
                 id:
                     type: string
+                mvFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    type: object
                 projectId:
                     type: string
                 resourceName:

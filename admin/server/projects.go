@@ -378,6 +378,27 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			})
 		}
 
+		for mv, filter := range mdl.MVFilters {
+			expr := &runtimev1.Expression{}
+			err := protojson.Unmarshal([]byte(filter), expr)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view %q filter: %s", mv, err.Error())
+			}
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						ConditionResources: []*runtimev1.ResourceName{
+							{
+								Kind: runtime.ResourceKindMetricsView,
+								Name: mv,
+							},
+						},
+						Expression: expr,
+					},
+				},
+			})
+		}
+
 		if len(mdl.Fields) > 0 {
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_FieldAccess{

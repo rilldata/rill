@@ -2408,7 +2408,10 @@ message IssueMagicAuthTokenRequest {
   string resource_name = 9 [deprecated = true];
   // Optional filter to apply as a row filter in queries.
   // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
-  rill.runtime.v1.Expression filter = 5;
+  rill.runtime.v1.Expression filter = 5 [deprecated = true];
+  // Optional metrics view to filter mapping to apply as row filters in queries.
+  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+  map<string, rill.runtime.v1.Expression> mv_filters = 12;
   // Optional list of fields to limit access to. If empty, no field access rule will be added.
   // This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
   repeated string fields = 6;
@@ -3261,7 +3264,8 @@ message MagicAuthToken {
   repeated ResourceName resources = 17;
   string resource_type = 15 [deprecated = true];
   string resource_name = 9 [deprecated = true];
-  rill.runtime.v1.Expression filter = 10;
+  rill.runtime.v1.Expression filter = 10 [deprecated = true];
+  map<string, rill.runtime.v1.Expression> mv_filters = 18;
   repeated string fields = 11;
   string state = 12;
   string display_name = 16;

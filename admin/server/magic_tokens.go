@@ -99,8 +99,12 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.Filter != nil {
-		val, err := protojson.Marshal(req.Filter)
+	if req.Filter != nil && len(req.MvFilters) > 0 { // nolint:staticcheck // for backwards compatibility
+		return nil, status.Error(codes.InvalidArgument, "cannot specify both filter and mv_filters")
+	}
+
+	if req.Filter != nil { // nolint:staticcheck // for backwards compatibility
+		val, err := protojson.Marshal(req.Filter) // nolint:staticcheck // for backwards compatibility
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -110,6 +114,24 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		}
 
 		opts.FilterJSON = string(val)
+	}
+
+	for mv, filter := range req.MvFilters {
+		if opts.MVFilters == nil {
+			opts.MVFilters = make(map[string]string)
+		}
+		val, err := protojson.Marshal(filter)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		if len(val) > magicAuthTokenFilterMaxSize {
+			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
+		}
+
+		filterJSON := string(val)
+
+		opts.MVFilters[mv] = filterJSON
 	}
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
@@ -277,6 +299,16 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		}
 	}
 
+	mvFilters := make(map[string]*runtimev1.Expression)
+	for mv, filterJSON := range tkn.MVFilters {
+		mvFilter := &runtimev1.Expression{}
+		err := protojson.Unmarshal([]byte(filterJSON), mvFilter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal filter for metrics view %s: %w", mv, err)
+		}
+		mvFilters[mv] = mvFilter
+	}
+
 	// backwards compatibility
 	tokenStr := ""
 	url := ""
@@ -314,6 +346,7 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		Attributes:         attrs,
 		Resources:          rs,
 		Filter:             filter,
+		MvFilters:          mvFilters,
 		Fields:             tkn.Fields,
 		State:              tkn.State,
 		DisplayName:        tkn.DisplayName,

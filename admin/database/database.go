@@ -810,21 +810,22 @@ type InsertDeploymentAuthTokenOptions struct {
 // MagicAuthToken is a persistent API token for accessing a specific (filtered) resource in a project.
 type MagicAuthToken struct {
 	ID                    string
-	SecretHash            []byte         `db:"secret_hash"`
-	Secret                []byte         `db:"secret"`
-	SecretEncryptionKeyID string         `db:"secret_encryption_key_id"`
-	ProjectID             string         `db:"project_id"`
-	CreatedOn             time.Time      `db:"created_on"`
-	ExpiresOn             *time.Time     `db:"expires_on"`
-	UsedOn                time.Time      `db:"used_on"`
-	CreatedByUserID       *string        `db:"created_by_user_id"`
-	Attributes            map[string]any `db:"attributes"`
-	FilterJSON            string         `db:"filter_json"`
-	Fields                []string       `db:"fields"`
-	State                 string         `db:"state"`
-	DisplayName           string         `db:"display_name"`
-	Internal              bool           `db:"internal"`
-	Resources             []ResourceName `db:"resources"`
+	SecretHash            []byte            `db:"secret_hash"`
+	Secret                []byte            `db:"secret"`
+	SecretEncryptionKeyID string            `db:"secret_encryption_key_id"`
+	ProjectID             string            `db:"project_id"`
+	CreatedOn             time.Time         `db:"created_on"`
+	ExpiresOn             *time.Time        `db:"expires_on"`
+	UsedOn                time.Time         `db:"used_on"`
+	CreatedByUserID       *string           `db:"created_by_user_id"`
+	Attributes            map[string]any    `db:"attributes"`
+	FilterJSON            string            `db:"filter_json"` // deprecated in favor of MVFilters which has per metrics view filter
+	MVFilters             map[string]string `db:"mv_filters"`
+	Fields                []string          `db:"fields"`
+	State                 string            `db:"state"`
+	DisplayName           string            `db:"display_name"`
+	Internal              bool              `db:"internal"`
+	Resources             []ResourceName    `db:"resources"`
 }
 
 type ResourceName struct {
@@ -849,6 +850,7 @@ type InsertMagicAuthTokenOptions struct {
 	Attributes      map[string]any
 	Resources       []ResourceName
 	FilterJSON      string
+	MVFilters       map[string]string
 	Fields          []string
 	State           string
 	DisplayName     string

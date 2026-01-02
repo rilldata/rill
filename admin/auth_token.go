@@ -181,6 +181,7 @@ type IssueMagicAuthTokenOptions struct {
 	CreatedByUserID *string
 	Attributes      map[string]any
 	FilterJSON      string
+	MVFilters       map[string]string
 	Fields          []string
 	State           string
 	DisplayName     string
@@ -207,6 +208,7 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 		CreatedByUserID: opts.CreatedByUserID,
 		Attributes:      opts.Attributes,
 		FilterJSON:      opts.FilterJSON,
+		MVFilters:       opts.MVFilters,
 		Fields:          opts.Fields,
 		State:           opts.State,
 		DisplayName:     opts.DisplayName,
