@@ -77,6 +77,9 @@ For a detailed comparison, see [Rill Cloud vs Rill Developer](/developer/deploy/
 
 Rill Cloud is organized hierarchically to help you manage access and resources efficiently:
 
+<img src = '/img/explore/dashboard101/rill-cloud-landing-page.png' class='rounded-gif' />
+<br />
+
 ### Organizations
 
 **[Organizations](/user-guide/administration/organization-settings)** are the top-level container for your team. They contain:
