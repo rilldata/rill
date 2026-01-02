@@ -421,6 +421,7 @@ func TestEval_BackwardsCompatibility(t *testing.T) {
 		// `inf` => `earliest to latest+1s`
 		{"inf", "2020-01-01T00:32:36Z", "2025-05-14T06:32:37Z", timeutil.TimeGrainUnspecified, 1, 1},
 		{"P2DT10H", "2025-05-10T21:00:00Z", "2025-05-13T07:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"P1Y2M3W4DT10H15M", "2024-02-17T20:18:00Z", "2025-05-13T06:33:00Z", timeutil.TimeGrainMinute, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)
