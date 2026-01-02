@@ -19,7 +19,7 @@ In this section, we will outline:
 - Setting up your repository (repo) and cloning to your local
 - Pushing changes to Git
 - Deploying Rill to your new org to share dashboards, set up alerts and receive scheduled reports
-- 
+  
 <img src = '/img/deploy/github-101/process.png' class='rounded-gif' />
 <br />
 
