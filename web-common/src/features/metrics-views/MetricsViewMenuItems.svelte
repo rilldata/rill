@@ -9,7 +9,6 @@
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -83,7 +82,26 @@
   {#if referenceModelName}
     <NavigationMenuItem on:click={editModel}>
       <Model slot="icon" />
-      Edit model
+      Edit underlying model
+    </NavigationMenuItem>
+  {/if}
+  <NavigationMenuItem on:click={viewGraph}>
+    <GitBranch slot="icon" size="14px" />
+    View DAG graph
+  </NavigationMenuItem>
+  {#if resource && $generateCanvas}
+    <NavigationMenuItem
+      disabled={!metricsViewName}
+      on:click={handleCreateCanvasDashboard}
+    >
+      <CanvasIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate Canvas Dashboard
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
     </NavigationMenuItem>
   {/if}
   {#if resource}
@@ -93,7 +111,7 @@
     >
       <ExploreIcon slot="icon" />
       <div class="flex gap-x-2 items-center">
-        Generate Explore dashboard
+        Generate Explore Dashboard
         {#if $ai}
           with AI
           <WandIcon class="w-3 h-3" />
@@ -101,25 +119,9 @@
       </div>
     </NavigationMenuItem>
   {/if}
-  {#if resource && $generateCanvas}
-    <NavigationMenuItem
-      disabled={!metricsViewName}
-      on:click={handleCreateCanvasDashboard}
-    >
-      <CanvasIcon slot="icon" />
-      <div class="flex gap-x-2 items-center">
-        Generate Canvas dashboard
-        {#if $ai}
-          with AI
-          <WandIcon class="w-3 h-3" />
-        {/if}
-      </div>
-    </NavigationMenuItem>
-  {/if}
-  <NavigationMenuSeparator />
+{:else}
+  <NavigationMenuItem on:click={viewGraph}>
+    <GitBranch slot="icon" size="14px" />
+    View DAG graph
+  </NavigationMenuItem>
 {/if}
-
-<NavigationMenuItem on:click={viewGraph}>
-  <GitBranch slot="icon" size="14px" />
-  View dependency graph
-</NavigationMenuItem>

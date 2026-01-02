@@ -114,6 +114,11 @@
   );
 </script>
 
+<NavigationMenuItem on:click={viewGraph}>
+  <GitBranch slot="icon" size="14px" />
+  View DAG graph
+</NavigationMenuItem>
+
 <NavigationMenuItem on:click={handleCreateModel}>
   <Model slot="icon" />
   Create new model
@@ -125,33 +130,7 @@
 >
   <MetricsViewIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate metrics
-    {#if $ai}
-      with AI
-      <WandIcon class="w-3 h-3" />
-    {/if}
-  </div>
-  <svelte:fragment slot="description">
-    {#if $modelHasError}
-      Model has errors
-    {:else if !modelIsIdle}
-      Dependencies are being reconciled.
-    {/if}
-  </svelte:fragment>
-</NavigationMenuItem>
-
-<NavigationMenuItem on:click={viewGraph}>
-  <GitBranch slot="icon" size="14px" />
-  View dependency graph
-</NavigationMenuItem>
-
-<NavigationMenuItem
-  disabled={disableCreateDashboard}
-  on:click={createExploreFromTable}
->
-  <ExploreIcon slot="icon" />
-  <div class="flex gap-x-2 items-center">
-    Generate Explore dashboard
+    Generate Metrics View
     {#if $ai}
       with AI
       <WandIcon class="w-3 h-3" />
@@ -173,7 +152,7 @@
   >
     <CanvasIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate Canvas dashboard
+      Generate Canvas Dashboard
       {#if $ai}
         with AI
         <WandIcon class="w-3 h-3" />
@@ -188,3 +167,24 @@
     </svelte:fragment>
   </NavigationMenuItem>
 {/if}
+
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={createExploreFromTable}
+>
+  <ExploreIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate Explore Dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $modelHasError}
+      Model has errors
+    {:else if !modelIsIdle}
+      Dependencies are being reconciled.
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>

@@ -12,6 +12,7 @@
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -153,6 +154,20 @@
         side="right"
         sideOffset={16}
       >
+        {#if $hasUnsavedChanges}
+          <NavigationMenuItem on:click={saveLocalContent}>
+            <Save slot="icon" size="12px" />
+            Save file
+          </NavigationMenuItem>
+        {/if}
+        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
+          <EditIcon slot="icon" />
+          Rename
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
+          <CopyIcon slot="icon" />
+          Duplicate
+        </NavigationMenuItem>
         {#if resourceKind}
           {#if resourceKind === ResourceKind.Source}
             <SourceMenuItems {filePath} />
@@ -166,20 +181,7 @@
             <CanvasMenuItems {filePath} />
           {/if}
         {/if}
-        {#if $hasUnsavedChanges}
-          <NavigationMenuItem on:click={saveLocalContent}>
-            <Save slot="icon" size="12px" />
-            Save file
-          </NavigationMenuItem>
-        {/if}
-        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
-          <EditIcon slot="icon" />
-          Rename...
-        </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
-          <CopyIcon slot="icon" />
-          Duplicate
-        </NavigationMenuItem>
+        <NavigationMenuSeparator />
         <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
           <Cancel slot="icon" />
           Delete
