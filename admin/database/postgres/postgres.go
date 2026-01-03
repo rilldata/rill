@@ -1610,6 +1610,10 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
+	if opts.MVFilters == nil {
+		opts.MVFilters = make(map[string]string)
+	}
+
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, filter_json, mv_filters, fields, state, display_name, internal, resources)
