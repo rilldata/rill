@@ -3448,6 +3448,7 @@ type magicAuthTokenWithUserDTO struct {
 	Attributes pgtype.JSON      `db:"attributes"`
 	Fields     pgtype.TextArray `db:"fields"`
 	Resources  pgtype.JSONB     `db:"resources"`
+	MVFilters  pgtype.JSONB     `db:"mv_filters"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -3460,6 +3461,10 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 		return nil, err
 	}
 	err = dto.Resources.AssignTo(&dto.MagicAuthToken.Resources)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.MVFilters.AssignTo(&dto.MagicAuthToken.MVFilters)
 	if err != nil {
 		return nil, err
 	}
