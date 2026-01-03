@@ -2377,10 +2377,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for Variables
-
-	// no validation rules for Annotations
-
 	if m.Environment != nil {
 		// no validation rules for Environment
 	}
@@ -2399,10 +2395,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.AiConnector != nil {
 		// no validation rules for AiConnector
-	}
-
-	if m.FrontendUrl != nil {
-		// no validation rules for FrontendUrl
 	}
 
 	if len(errors) > 0 {
@@ -2617,6 +2609,223 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EditInstanceResponseValidationError{}
+
+// Validate checks the field values on ReloadConfigRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReloadConfigRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReloadConfigRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReloadConfigRequestMultiError, or nil if none found.
+func (m *ReloadConfigRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReloadConfigRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_ReloadConfigRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ReloadConfigRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ReloadConfigRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReloadConfigRequestMultiError is an error wrapping multiple validation
+// errors returned by ReloadConfigRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ReloadConfigRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReloadConfigRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReloadConfigRequestMultiError) AllErrors() []error { return m }
+
+// ReloadConfigRequestValidationError is the validation error returned by
+// ReloadConfigRequest.Validate if the designated constraints aren't met.
+type ReloadConfigRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReloadConfigRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReloadConfigRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReloadConfigRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReloadConfigRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReloadConfigRequestValidationError) ErrorName() string {
+	return "ReloadConfigRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReloadConfigRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReloadConfigRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReloadConfigRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReloadConfigRequestValidationError{}
+
+var _ReloadConfigRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on ReloadConfigResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReloadConfigResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReloadConfigResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReloadConfigResponseMultiError, or nil if none found.
+func (m *ReloadConfigResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReloadConfigResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ReloadConfigResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReloadConfigResponseMultiError is an error wrapping multiple validation
+// errors returned by ReloadConfigResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ReloadConfigResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReloadConfigResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReloadConfigResponseMultiError) AllErrors() []error { return m }
+
+// ReloadConfigResponseValidationError is the validation error returned by
+// ReloadConfigResponse.Validate if the designated constraints aren't met.
+type ReloadConfigResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReloadConfigResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReloadConfigResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReloadConfigResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReloadConfigResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReloadConfigResponseValidationError) ErrorName() string {
+	return "ReloadConfigResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReloadConfigResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReloadConfigResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReloadConfigResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReloadConfigResponseValidationError{}
 
 // Validate checks the field values on ListFilesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

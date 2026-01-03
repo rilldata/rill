@@ -4647,6 +4647,114 @@ export class ProvisionResponse extends Message<ProvisionResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.GetDeploymentConfigRequest
+ */
+export class GetDeploymentConfigRequest extends Message<GetDeploymentConfigRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<GetDeploymentConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetDeploymentConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigRequest {
+    return new GetDeploymentConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDeploymentConfigRequest {
+    return new GetDeploymentConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDeploymentConfigRequest {
+    return new GetDeploymentConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDeploymentConfigRequest | PlainMessage<GetDeploymentConfigRequest> | undefined, b: GetDeploymentConfigRequest | PlainMessage<GetDeploymentConfigRequest> | undefined): boolean {
+    return proto3.util.equals(GetDeploymentConfigRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetDeploymentConfigResponse
+ */
+export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResponse> {
+  /**
+   * Variables for the deployment (connector credentials, etc.)
+   *
+   * @generated from field: map<string, string> variables = 1;
+   */
+  variables: { [key: string]: string } = {};
+
+  /**
+   * Annotations for the deployment (org/project metadata, etc.)
+   *
+   * @generated from field: map<string, string> annotations = 2;
+   */
+  annotations: { [key: string]: string } = {};
+
+  /**
+   * Frontend URL for the deployment.
+   *
+   * @generated from field: string frontend_url = 3;
+   */
+  frontendUrl = "";
+
+  /**
+   * Timestamp when the deployment was last updated.
+   *
+   * @generated from field: google.protobuf.Timestamp updated_on = 4;
+   */
+  updatedOn?: Timestamp;
+
+  /**
+   * Whether the deployment is git based or archive based.
+   *
+   * @generated from field: bool uses_archive = 5;
+   */
+  usesArchive = false;
+
+  constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetDeploymentConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {
+    return new GetDeploymentConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDeploymentConfigResponse {
+    return new GetDeploymentConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDeploymentConfigResponse {
+    return new GetDeploymentConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDeploymentConfigResponse | PlainMessage<GetDeploymentConfigResponse> | undefined, b: GetDeploymentConfigResponse | PlainMessage<GetDeploymentConfigResponse> | undefined): boolean {
+    return proto3.util.equals(GetDeploymentConfigResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListRolesRequest
  */
 export class ListRolesRequest extends Message<ListRolesRequest> {
