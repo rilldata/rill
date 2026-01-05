@@ -51,6 +51,15 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		return nil, err
 	}
 
+	if args.CurrentFilePath != "" {
+		_, err := s.CallTool(ctx, RoleAssistant, ReadFileName, nil, &ReadFileArgs{
+			Path: args.CurrentFilePath,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Generate the prompts
 	systemPrompt, err := t.systemPrompt(ctx)
 	if err != nil {
