@@ -20,7 +20,8 @@
     {/each}
   </div>
   <div class="title">
-    <SparklesIcon size="14px" />Generating your sample data...
+    <SparklesIcon size="14px" class="text-blue-500" />
+    <span>Generating your sample data...</span>
   </div>
   <div class="description">
     Tips: you can ask AI to create and modify your dashboard
@@ -29,7 +30,7 @@
 
 <style lang="postcss">
   .container {
-    @apply flex flex-col pt-20 px-8 items-center size-full;
+    @apply flex flex-col px-8 m-auto items-center w-fit;
   }
 
   .loading-grid {
@@ -42,7 +43,7 @@
   }
 
   .title {
-    @apply flex flex-row items-center gap-x-1 text-base;
+    @apply flex flex-row items-center mt-4 gap-x-1 text-base font-semibold;
   }
 
   .description {

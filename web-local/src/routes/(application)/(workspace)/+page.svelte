@@ -15,8 +15,8 @@
   <title>Rill Developer</title>
 </svelte:head>
 
-<div class="flex h-full overflow-hidden">
-  <div class="flex-1 overflow-hidden">
+<div class="flex size-full overflow-hidden">
+  <div class="flex size-full overflow-hidden">
     {#if data.initialized}
       {#if $generatingSampleData}
         <GeneratingSampleDataMessage />

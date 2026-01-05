@@ -55,7 +55,7 @@
   }
 </script>
 
-<div class="flex flex-col pt-20 mx-auto px-8 gap-y-6 items-center h-full w-fit">
+<div class="flex flex-col m-auto px-8 gap-y-6 w-fit">
   <div class="flex flex-row text-center gap-x-8">
     <div
       class="flex flex-col w-64 p-6 gap-y-4 bg-card border rounded-md shadow-sm"
@@ -110,7 +110,7 @@
         <DropdownMenu.Content side="right" align="start">
           {#each EXAMPLES as example (example.name)}
             <DropdownMenu.Item on:click={() => unpackProject(example)}>
-              {example.name}
+              {example.title}
             </DropdownMenu.Item>
           {/each}
         </DropdownMenu.Content>

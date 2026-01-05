@@ -67,7 +67,7 @@
       class="relative"
     >
       <Dialog.Header>
-        <Dialog.Title class="flex flex-row items-center gap-x-1">
+        <Dialog.Title class="flex flex-row items-center gap-x-1 text-blue-500">
           <SparklesIcon size="16px" />
           <span>Generate sample data</span>
         </Dialog.Title>

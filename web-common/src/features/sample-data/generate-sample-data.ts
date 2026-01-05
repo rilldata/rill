@@ -17,6 +17,7 @@ import { sourceImportedPath } from "@rilldata/web-common/features/sources/source
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 
 export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
@@ -52,7 +53,6 @@ export async function generateSampleData(
 
       await projectResetPromise;
       await featureFlags.ready;
-      overlay.set(null);
     }
 
     generatingSampleData.set(true);
@@ -62,6 +62,9 @@ export async function generateSampleData(
     });
     conversationManager.enterNewConversationMode();
     const conversation = get(conversationManager.getCurrentConversation());
+
+    const developerChatEnabled = get(featureFlags.dashboardChat);
+    const showImportSourcePopup = !developerChatEnabled;
 
     let created = false;
     let lastReadFile: string | null = null;
@@ -111,7 +114,7 @@ export async function generateSampleData(
           const path = parseFile(callMsg, msg);
           if (!path) break;
 
-          sourceImportedPath.set(path);
+          if (showImportSourcePopup) sourceImportedPath.set(path);
           created = true;
           overlay.set(null);
           void goto(`/files${path}`);
@@ -121,15 +124,27 @@ export async function generateSampleData(
     };
     const handleMessageUnsub = conversation.on("message", handleMessage);
 
-    const cancelled = false;
+    let cancelled = false;
 
     conversation.cancelStream();
 
-    const developerChatEnabled = get(featureFlags.dashboardChat);
     if (developerChatEnabled) {
+      overlay.set(null);
       sidebarActions.startChat(agentPrompt);
       await waitUntil(() => get(conversation.isStreaming));
     } else {
+      overlay.set({
+        title: `Hang tight! We're generating the data you requested.`,
+        detail: {
+          component: OptionCancelToAIAction,
+          props: {
+            onCancel: () => {
+              conversation.cancelStream();
+              cancelled = true;
+            },
+          },
+        },
+      });
       conversation.draftMessage.set(agentPrompt);
       await conversation.sendMessage({});
     }
