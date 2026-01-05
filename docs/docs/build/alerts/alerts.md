@@ -11,10 +11,6 @@ Alerts in Rill allow you to monitor your data and receive notifications when spe
 
 When you create an alert via a YAML file, it appears in the UI marked as `Created through code`.
 
-:::info For additional information
-For the complete specification of all available properties, see the [Alert YAML Reference](/reference/project-files/alerts).
-:::
-
 :::tip Using live connectors?
 
 If you're using [live connectors](/build/connectors/olap) (ClickHouse, Druid, Pinot, StarRocks, etc.), **alerts are your primary tool for data quality monitoring**. Since live connectors don't create local models, [data quality tests](/build/models/data-quality-tests) won't run. Use alerts instead to validate your data on a schedule.
