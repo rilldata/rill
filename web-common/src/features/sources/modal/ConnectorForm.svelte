@@ -3,7 +3,6 @@
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import AddDataFormSection from "./AddDataFormSection.svelte";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import {
@@ -263,17 +262,15 @@
   const handleFileUpload = (file: File) => formManager.handleFileUpload(file);
 </script>
 
-<AddDataFormSection
-  id={paramsFormId}
+<JSONSchemaFormRenderer
+  formId={paramsFormId}
   enhance={paramsEnhance}
   onSubmit={paramsSubmit}
->
-  <JSONSchemaFormRenderer
-    schema={activeSchema}
-    step={stepState.step}
-    form={paramsForm}
-    errors={$paramsErrors}
-    {onStringInputChange}
-    {handleFileUpload}
-  />
-</AddDataFormSection>
+  className="pb-5 flex-grow overflow-y-auto"
+  schema={activeSchema}
+  step={stepState.step}
+  form={paramsForm}
+  errors={$paramsErrors}
+  {onStringInputChange}
+  {handleFileUpload}
+/>
