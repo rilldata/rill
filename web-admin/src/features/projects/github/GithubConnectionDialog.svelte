@@ -102,6 +102,7 @@
       SPA: true,
       validators: schema,
       onUpdate: async ({ form }) => {
+        console.log(form.valid);
         if (!form.valid) return;
         const values = form.data;
 
@@ -121,7 +122,7 @@
             project,
             data: {
               gitRemote: values.repo,
-              prodBranch: values.branch,
+              primaryBranch: values.branch,
               subpath: values.subpath,
             },
           });
@@ -142,12 +143,20 @@
 
     $form.branch = repo.defaultBranch;
   }
+
+  function resetMutations() {
+    $connectProjectToGithub.reset();
+    $updateProject.reset();
+  }
 </script>
 
 <Dialog.Root
   bind:open
   onOpenChange={(o) => {
-    if (!o) reset();
+    if (!o) {
+      resetMutations();
+      reset();
+    }
   }}
 >
   <Dialog.Trigger asChild let:builder>
@@ -167,7 +176,7 @@
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
         <div class="flex flex-col gap-y-1">
-          <Dialog.Title>Connect to github</Dialog.Title>
+          <Dialog.Title>Connect to GitHub</Dialog.Title>
           <Dialog.Description>
             Connect this project to a new repo.
           </Dialog.Description>
@@ -187,6 +196,7 @@
         label="Connection type"
         sameWidth
         options={GithubSelectionTypeOptions}
+        onChange={resetMutations}
       />
 
       {#if isNewRepoType}

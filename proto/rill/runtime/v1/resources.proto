@@ -128,8 +128,12 @@ message ModelSpec {
   // change_mode is the mode of change detection to use for the model.
   ModelChangeMode change_mode = 24;
   repeated ModelTest tests = 25;
+  // trigger indicates a normal refresh (incremental or full depending on the model type).
   bool trigger = 9;
+  // trigger_full indicates a full refresh regardless of the model type.
   bool trigger_full = 22;
+  // trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
+  bool trigger_partitions = 30;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
   bool defined_as_source = 23;
   reserved 2, 3, 6, 7, 8;
@@ -192,8 +196,11 @@ message MetricsViewSpec {
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
+    // The dimension type. Only populated in ValidSpec.
+    DimensionType type = 14;
     string display_name = 3;
     string description = 4;
+    repeated string tags = 16;
     string column = 2;
     string expression = 6;
     bool unnest = 5;
@@ -203,8 +210,15 @@ message MetricsViewSpec {
     string lookup_key_column = 9;
     string lookup_value_column = 10;
     string lookup_default_expression = 11;
+    // The smallest time grain for the dimension. Only populated for time dimensions.
+    TimeGrain smallest_time_grain = 13;
     // The data type of the dimension. Only populated in ValidSpec.
     Type data_type = 12;
+  }
+  enum DimensionType {
+    DIMENSION_TYPE_UNSPECIFIED = 0;
+    DIMENSION_TYPE_CATEGORICAL = 1;
+    DIMENSION_TYPE_TIME = 2;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -233,6 +247,7 @@ message MetricsViewSpec {
     string name = 1;
     string display_name = 3;
     string description = 4;
+    repeated string tags = 16;
     string expression = 2;
     MeasureType type = 8;
     MeasureWindow window = 9;
@@ -317,6 +332,9 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
+  // Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+  // Keys and values are stored as templates and will be resolved at query time.
+  map<string, string> query_attributes = 33;
 }
 
 message SecurityRule {
@@ -507,6 +525,7 @@ message ExplorePreset {
   optional string pivot_sort_by = 26;
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
+  optional int32 pivot_row_limit = 33;
 }
 
 enum ExploreComparisonMode {
@@ -796,6 +815,8 @@ message CanvasSpec {
   repeated CanvasRow rows = 18;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
+  // Array of dimension or measure names
+  repeated string pinned_filters = 16;
 }
 
 message CanvasState {
@@ -836,6 +857,14 @@ message CanvasPreset {
   ExploreComparisonMode comparison_mode = 2;
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   optional string comparison_dimension = 8;
+  // Filter expressions as key-value pairs for the canvas.
+  // Key: Metrics view name
+  // Value: Valid Metrics SQL expression
+  map<string, DefaultMetricsSQLFilter> filter_expr = 19;
+}
+
+message DefaultMetricsSQLFilter {
+  Expression expression = 1;
 }
 
 // API defines a custom operation for querying data stored in Rill.
@@ -898,7 +927,7 @@ message ConnectorV2 {
 
 message ConnectorSpec {
   string driver = 1;
-  map<string, string> properties = 2;
+  google.protobuf.Struct properties = 7;
   repeated string templated_properties = 4;
   bool provision = 5;
   google.protobuf.Struct provision_args = 6;

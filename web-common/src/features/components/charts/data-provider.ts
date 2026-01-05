@@ -1,17 +1,14 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-} from "@rilldata/web-common/features/themes/color-config";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
 import { derived, type Readable } from "svelte/store";
+import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
+import { primary, secondary } from "../../themes/colors";
 import type {
   ChartDataQuery,
   ChartDataResult,
@@ -25,9 +22,13 @@ export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   config: T;
   chartDataQuery: ChartDataQuery;
   metricsView: MetricsViewSelectors;
-  themeStore: Readable<{ primary?: Color; secondary?: Color }>;
+  /** Theme colors (primary/secondary) - updates when theme changes */
+  themeStore: CanvasEntity["theme"];
   timeAndFilterStore: Readable<TimeAndFilterStore>;
-  isDarkMode: boolean;
+  /** Reactive theme mode (light/dark toggle) - used in canvas context */
+  themeModeStore?: Readable<boolean>;
+  /** Static theme mode flag - used in standalone chart context */
+  isThemeModeDark?: boolean;
   getDomainValues: () => ChartDomainValues;
 }
 
@@ -45,7 +46,8 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
     themeStore,
     getDomainValues,
     timeAndFilterStore,
-    isDarkMode,
+    themeModeStore,
+    isThemeModeDark: staticThemeModeDark,
   } = deps;
 
   const { measures, dimensions, timeDimensions } = getFieldsByType(config);
@@ -73,9 +75,19 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
     }
   });
 
+  // Use themeModeStore if provided (canvas context), otherwise create a static store from the flag
+  const modeStore =
+    themeModeStore || derived([], () => staticThemeModeDark ?? false);
+
   return derived(
-    [chartDataQuery, timeAndFilterStore, themeStore, ...fieldReadableMap],
-    ([chartData, $timeAndFilterStore, theme, ...fieldMap]) => {
+    [
+      chartDataQuery,
+      timeAndFilterStore,
+      themeStore,
+      modeStore,
+      ...fieldReadableMap,
+    ],
+    ([chartData, $timeAndFilterStore, theme, isThemeModeDark, ...fieldMap]) => {
       const fieldSpecMap = allFields.reduce(
         (acc, field, index) => {
           acc[field.field] = fieldMap?.[index];
@@ -102,6 +114,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
       }
 
       const domainValues = getDomainValues();
+      const hasComparison = $timeAndFilterStore.showTimeComparison;
 
       return {
         data: data || [],
@@ -109,11 +122,15 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         error: chartData?.error,
         fields: fieldSpecMap,
         domainValues,
-        isDarkMode,
+        isDarkMode: isThemeModeDark,
+        hasComparison,
         theme: {
-          primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
+          primary:
+            theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.primary ||
+            primary["500"],
           secondary:
-            theme.secondary || chroma(`hsl(${defaultSecondaryColors[500]})`),
+            theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.secondary ||
+            secondary["500"],
         },
       };
     },

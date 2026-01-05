@@ -100,6 +100,7 @@ export type ChartDataResult = {
   theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
   isDarkMode: boolean;
+  hasComparison?: boolean;
 };
 
 export interface ChartDomainValues {
@@ -202,7 +203,7 @@ export type ColorMapping = { value: string; color: string }[];
 export type ColorRangeMapping =
   | {
       mode: "scheme";
-      scheme: ColorScheme;
+      scheme: ColorScheme | "sequential" | "diverging";
     }
   | {
       mode: "gradient";

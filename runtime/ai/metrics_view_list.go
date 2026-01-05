@@ -11,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const ListMetricsViewsName = "list_metrics_views"
+
 type ListMetricsViews struct {
 	Runtime *runtime.Runtime
 }
@@ -25,19 +27,19 @@ type ListMetricsViewsResult struct {
 
 func (t *ListMetricsViews) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "list_metrics_views",
+		Name:        ListMetricsViewsName,
 		Title:       "List Metrics Views",
 		Description: "List all metrics views in the current project",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Listing metrics…",
+			"openai/toolInvocation/invoking": "Listing metrics...",
 			"openai/toolInvocation/invoked":  "Listed metrics",
 		},
 	}
 }
 
-func (t *ListMetricsViews) CheckAccess(ctx context.Context) bool {
+func (t *ListMetricsViews) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadObjects)
+	return s.Claims().Can(runtime.ReadObjects), nil
 }
 
 func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsArgs) (*ListMetricsViewsResult, error) {

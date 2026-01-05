@@ -248,7 +248,7 @@ func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, token.Val, pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, roleID, req.IncludeCounts, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -422,6 +422,12 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 		attribute.String("args.usergroup", req.Usergroup),
 		attribute.String("args.role", req.Role),
 	)
+	if req.RestrictResources != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.restrict_resources", req.GetRestrictResources()))
+	}
+	if len(req.Resources) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -446,9 +452,26 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 		return nil, err
 	}
 
-	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
+	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
+	restrictResources := valOrDefault(req.RestrictResources, false) || len(req.Resources) > 0
+	resources := resourceNamesFromProto(req.Resources)
+
+	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, restrictResources, resources)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, err
+		}
+		if keepExistingRestrictions {
+			ug, err := s.admin.DB.FindProjectMemberUsergroup(ctx, usergroup.ID, proj.ID)
+			if err != nil {
+				return nil, err
+			}
+			restrictResources = ug.RestrictResources
+			resources = ug.Resources
+		}
+		if err := s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, restrictResources, resources); err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.AddProjectMemberUsergroupResponse{}, nil
@@ -459,8 +482,16 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		attribute.String("args.org", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.usergroup", req.Usergroup),
-		attribute.String("args.role", req.Role),
 	)
+	if req.Role != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.role", *req.Role))
+	}
+	if req.RestrictResources != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.restrict_resources", *req.RestrictResources))
+	}
+	if len(req.Resources) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.resources", resourcesString(req.Resources)))
+	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
@@ -472,17 +503,40 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project user group role")
 	}
 
-	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
-	if err != nil {
-		return nil, err
-	}
-	if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
-		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
-	}
-
 	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {
 		return nil, err
+	}
+
+	// figure out role to assign
+	var role *database.ProjectRole
+	if req.Role == nil {
+		// keep existing
+		role, err = s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		role, err = s.admin.DB.FindProjectRole(ctx, *req.Role)
+		if err != nil {
+			return nil, err
+		}
+		if role.Admin && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectAdmins {
+			return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
+		}
+	}
+
+	keepExistingRestrictions := req.RestrictResources == nil && len(req.Resources) == 0
+	restrictResources := valOrDefault(req.RestrictResources, false)
+	resources := resourceNamesFromProto(req.Resources)
+
+	if keepExistingRestrictions {
+		ug, err := s.admin.DB.FindProjectMemberUsergroup(ctx, usergroup.ID, proj.ID)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		restrictResources = ug.RestrictResources
+		resources = ug.Resources
 	}
 
 	currentRole, err := s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
@@ -493,7 +547,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
-	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
+	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, restrictResources, resources)
 	if err != nil {
 		return nil, err
 	}
@@ -654,6 +708,40 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 	}, nil
 }
 
+func (s *Server) ListUsergroupsForProjectAndUser(ctx context.Context, req *adminv1.ListUsergroupsForProjectAndUserRequest) (*adminv1.ListUsergroupsForProjectAndUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.email", req.Email),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read project members")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, err
+	}
+
+	usergroups, err := s.admin.DB.FindProjectMemberUsergroupsForUser(ctx, proj.ID, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.ListUsergroupsForProjectAndUserResponse{
+		Usergroups: memberUsergroupsToPB(usergroups),
+	}, nil
+}
+
 func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupMemberUserRequest) (*adminv1.RemoveUsergroupMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
@@ -700,12 +788,22 @@ func usergroupToPB(group *database.Usergroup) *adminv1.Usergroup {
 
 func memberUsergroupToPB(member *database.MemberUsergroup) *adminv1.MemberUsergroup {
 	return &adminv1.MemberUsergroup{
-		GroupId:      member.ID,
-		GroupName:    member.Name,
-		GroupManaged: member.Managed,
-		RoleName:     member.RoleName,
-		UsersCount:   uint32(member.UsersCount),
-		CreatedOn:    timestamppb.New(member.CreatedOn),
-		UpdatedOn:    timestamppb.New(member.UpdatedOn),
+		GroupId:           member.ID,
+		GroupName:         member.Name,
+		GroupManaged:      member.Managed,
+		RoleName:          member.RoleName,
+		UsersCount:        uint32(member.UsersCount),
+		CreatedOn:         timestamppb.New(member.CreatedOn),
+		UpdatedOn:         timestamppb.New(member.UpdatedOn),
+		Resources:         resourceNamesToPB(member.Resources),
+		RestrictResources: member.RestrictResources,
 	}
+}
+
+func memberUsergroupsToPB(groups []*database.MemberUsergroup) []*adminv1.MemberUsergroup {
+	dtos := make([]*adminv1.MemberUsergroup, len(groups))
+	for i, group := range groups {
+		dtos[i] = memberUsergroupToPB(group)
+	}
+	return dtos
 }

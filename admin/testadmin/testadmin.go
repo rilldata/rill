@@ -6,11 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v71/github"
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
@@ -48,6 +53,7 @@ type Fixture struct {
 	Admin      *admin.Service
 	Server     *server.Server
 	ServerOpts *server.Options
+	Audience   *runtimeauth.Audience
 }
 
 // New creates an ephemeral admin service and server for testing.
@@ -120,7 +126,7 @@ func New(t *testing.T) *Fixture {
 		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, &mockGithub{}, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
 	t.Cleanup(func() { adm.Close() })
 
@@ -151,10 +157,16 @@ func New(t *testing.T) *Fixture {
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
+	// Create Audience
+	audienceURL := "http://example.org"
+	aud, err := runtimeauth.OpenAudience(context.Background(), zap.NewNop(), externalURL, audienceURL)
+	require.NoError(t, err)
+
 	return &Fixture{
 		Admin:      adm,
 		Server:     srv,
 		ServerOpts: srvOpts,
+		Audience:   aud,
 	}
 }
 
@@ -186,7 +198,7 @@ func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.Us
 	u, err := f.Admin.CreateOrUpdateUser(ctx, emailAddr, name, "")
 	require.NoError(t, err)
 
-	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
+	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil, false)
 	require.NoError(t, err)
 
 	return u, f.NewClient(t, tkn.Token().String())
@@ -203,6 +215,29 @@ func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
 // ExternalURL returns the localhost URL of the fixture's server.
 func (f *Fixture) ExternalURL() string {
 	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
+}
+
+// newGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
+// Otherwise it creates a real implementation that makes real API calls to Github.
+func newGithub(t *testing.T) admin.Github {
+	if testing.Short() {
+		return &mockGithub{}
+	}
+
+	_, currentFile, _, _ := runtime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err := os.Stat(envPath)
+	if err == nil {
+		err := godotenv.Load(envPath)
+		require.NoError(t, err)
+	}
+
+	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_TEST_GITHUB_APP_ID"), 10, 64)
+	require.NoError(t, err)
+
+	github, err := admin.NewGithub(t.Context(), githubAppID, os.Getenv("RILL_ADMIN_TEST_GITHUB_APP_PRIVATE_KEY"), os.Getenv("RILL_ADMIN_TEST_GITHUB_MANAGED_ACCOUNT"), zap.Must(zap.NewDevelopment()))
+	require.NoError(t, err)
+	return github
 }
 
 // mockGithub provides a mock implementation of admin.Github.

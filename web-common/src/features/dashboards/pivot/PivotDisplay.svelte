@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getPivotExportQuery } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
-  import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
-  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import ExportMenu from "@rilldata/web-common/features/exports/ExportMenu.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { derived } from "svelte/store";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
   import { getPivotConfig } from "./pivot-data-config";
@@ -15,6 +15,8 @@
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
+
+  export let isEmbedded: boolean = false;
 
   const stateManagers = getStateManagers();
   const {
@@ -100,6 +102,8 @@
             rows,
             columns,
           )}
+        setRowLimit={(limit) =>
+          metricsExplorerStore.setPivotRowLimit($exploreName, limit)}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
         {isFetching}
@@ -121,7 +125,12 @@
       {#if $pivotDataStore?.error?.length}
         <PivotError errors={$pivotDataStore.error} />
       {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
+        <PivotEmpty
+          {assembled}
+          {isFetching}
+          {hasColumnAndNoMeasure}
+          {isEmbedded}
+        />
       {:else}
         <PivotTable
           {pivotDataStore}
@@ -141,6 +150,12 @@
               rowId,
               columnId,
             )}
+          setPivotRowLimitForExpanded={(expandIndex, limit) =>
+            metricsExplorerStore.setPivotRowLimitForExpandedRow(
+              $exploreName,
+              expandIndex,
+              limit,
+            )}
         />
       {/if}
     </div>
@@ -149,7 +164,7 @@
 
 <style lang="postcss">
   .layout {
-    @apply flex box-border overflow-hidden;
+    @apply flex box-border overflow-hidden size-full;
   }
 
   .content {

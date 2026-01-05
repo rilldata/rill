@@ -17,6 +17,7 @@
   export let spec: KPISpec;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
+  export let visible: boolean;
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
@@ -75,7 +76,7 @@
     },
     {
       query: {
-        enabled: isValid && !!start && !!end,
+        enabled: isValid && visible && (!hasTimeSeries || (!!start && !!end)),
       },
     },
   );
@@ -92,7 +93,12 @@
     {
       query: {
         enabled:
-          comparisonTimeRange && showComparison && isValid && !!start && !!end,
+          comparisonTimeRange &&
+          showComparison &&
+          isValid &&
+          !!start &&
+          !!end &&
+          visible,
       },
     },
   );
@@ -111,7 +117,7 @@
     },
     {
       query: {
-        enabled: !!start && !!end && isValid && showSparkline,
+        enabled: !!start && !!end && isValid && showSparkline && visible,
       },
     },
   );
@@ -131,7 +137,11 @@
     {
       query: {
         enabled:
-          comparisonTimeRange && isValid && showSparkline && showComparison,
+          comparisonTimeRange &&
+          isValid &&
+          showSparkline &&
+          showComparison &&
+          visible,
       },
     },
   );

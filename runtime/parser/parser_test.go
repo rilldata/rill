@@ -392,11 +392,8 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "postgres"},
 			Paths: []string{"/connectors/postgres.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Driver: "postgres",
-				Properties: map[string]string{
-					"database": "postgres",
-					"schema":   "default",
-				},
+				Driver:     "postgres",
+				Properties: must(structpb.NewStruct(map[string]any{"database": "postgres", "schema": "default"})),
 			},
 		},
 		// s3
@@ -404,10 +401,8 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "s3"},
 			Paths: []string{"/connectors/s3.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Driver: "s3",
-				Properties: map[string]string{
-					"region": "us-east-1",
-				},
+				Driver:     "s3",
+				Properties: must(structpb.NewStruct(map[string]any{"region": "us-east-1"})),
 			},
 		},
 	}
@@ -1360,9 +1355,8 @@ annotations:
 			ReportSpec: &runtimev1.ReportSpec{
 				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					RefUpdate: true,
-					Cron:      "0 * * * *",
-					TimeZone:  "America/Los_Angeles",
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
 				},
 				QueryName:           "MetricsViewToplist",
 				QueryArgsJson:       `{"metrics_view":"mv1"}`,
@@ -1385,9 +1379,8 @@ annotations:
 			ReportSpec: &runtimev1.ReportSpec{
 				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					RefUpdate: true,
-					Cron:      "0 * * * *",
-					TimeZone:  "America/Los_Angeles",
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
 				},
 				QueryName:           "MetricsViewToplist",
 				QueryArgsJson:       `{"metrics_view":"mv1"}`,
@@ -1425,7 +1418,7 @@ refs:
   - model/m1
 
 refresh:
-  ref_update: false
+  ref_update: true
   cron: '0 * * * *'
 
 watermark: inherit
@@ -1474,8 +1467,8 @@ annotations:
 			AlertSpec: &runtimev1.AlertSpec{
 				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
+					RefUpdate: true,
 					Cron:      "0 * * * *",
-					RefUpdate: false,
 				},
 				WatermarkInherit:     true,
 				IntervalsIsoDuration: "PT1H",
@@ -1809,6 +1802,7 @@ rows:
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+					FilterExpr:     map[string]*runtimev1.DefaultMetricsSQLFilter{},
 				},
 				Rows: []*runtimev1.CanvasRow{
 					{
@@ -1964,6 +1958,7 @@ measures:
 				DisplayName:   "D1",
 				TimeDimension: "t",
 				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{Name: "t", DisplayName: ToDisplayName("t"), Column: "t"},
 					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_Measure{
@@ -2080,7 +2075,8 @@ func TestConnector(t *testing.T) {
 		`connectors/clickhouse.yaml`: `
 type: connector
 driver: clickhouse
-`})
+`,
+	})
 	r := &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2097,7 +2093,8 @@ driver: clickhouse
 type: connector
 driver: clickhouse
 managed: true
-`})
+`,
+	})
 	r = &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2117,13 +2114,14 @@ driver: clickhouse
 managed:
   hello: world
 time_zone: America/Los_Angeles
-`})
+`,
+	})
 	r = &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
 		ConnectorSpec: &runtimev1.ConnectorSpec{
 			Driver:        "clickhouse",
-			Properties:    map[string]string{"time_zone": "America/Los_Angeles"},
+			Properties:    must(structpb.NewStruct(map[string]any{"time_zone": "America/Los_Angeles"})),
 			Provision:     true,
 			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
 		},
@@ -2137,7 +2135,8 @@ time_zone: America/Los_Angeles
 type: connector
 driver: clickhouse
 managed: 10
-`})
+`,
+	})
 	p, err = Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{

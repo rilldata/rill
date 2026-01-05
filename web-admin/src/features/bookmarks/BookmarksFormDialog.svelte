@@ -7,7 +7,6 @@
   } from "@rilldata/web-admin/client";
   import {
     type BookmarkEntry,
-    type BookmarkFormValues,
     formatTimeRange,
     getBookmarkData,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
@@ -20,16 +19,27 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
-  import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
-  import { createForm } from "svelte-forms-lib";
-  import * as yup from "yup";
+  import type { Interval } from "luxon";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import CanvasFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/CanvasFilterChipsReadOnly.svelte";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string, boolean } from "yup";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
 
   export let organization: string;
   export let project: string;
@@ -38,33 +48,108 @@
   export let bookmark: BookmarkEntry | null = null;
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
   export let showFiltersOnly: boolean = true;
-  export let dashboardState: {
-    metricsViewNames: string[];
-    filtersState: FiltersState;
-    timeControlState: TimeControlState;
-  };
+  export let metricsViewNames: string[];
   export let onClose = () => {};
 
+  let filterState: undefined | Awaited<ReturnType<typeof processUrl>> =
+    undefined;
+
+  $: ({ instanceId } = $runtime);
+
   $: ({ name: resourceName, kind: resourceKind } = resource);
-  $: ({ metricsViewNames, filtersState, timeControlState } = dashboardState);
 
   $: ({ url } = $page);
   $: curUrlParams = url.searchParams;
 
-  $: start = timeControlState?.selectedTimeRange?.start?.toISOString() ?? "";
-  $: end = timeControlState?.selectedTimeRange?.end?.toISOString() ?? "";
-  $: timeRange = <V1TimeRange>{
-    isoDuration: timeControlState.selectedTimeRange?.name,
-    start,
-    end,
-  };
+  $: bookmarkUrl = bookmark?.url || $page.url.searchParams.toString();
 
-  $: selectedTimeRange = formatTimeRange(
-    start,
-    end,
-    timeControlState.selectedTimeRange?.interval,
-    timeControlState?.selectedTimezone,
-  );
+  $: processUrl(bookmarkUrl)
+    .then((state) => {
+      filterState = state;
+    })
+    .catch(console.error);
+
+  async function processUrl(searchParams: string) {
+    const searchParamsObj = new URLSearchParams(searchParams);
+    const rangeExpression = searchParamsObj.get(
+      ExploreStateURLParams.TimeRange,
+    );
+    const timeRange = <V1TimeRange>{
+      expression: rangeExpression || "",
+    };
+
+    const timeZone =
+      searchParamsObj.get(ExploreStateURLParams.TimeZone) || "UTC";
+
+    try {
+      const promises = metricsViewNames.map((mvName) =>
+        deriveInterval(timeRange.expression || "", mvName, timeZone),
+      );
+
+      const intervals = await Promise.all(promises);
+      let intervalWithLatestEndPoint:
+        | {
+            interval: Interval;
+            grain?: V1TimeGrain | undefined;
+            error?: string;
+          }
+        | undefined;
+      intervals.forEach((response) => {
+        if (
+          !intervalWithLatestEndPoint ||
+          (response.interval.end && intervalWithLatestEndPoint.interval.end
+            ? response.interval.end > intervalWithLatestEndPoint.interval.end
+            : false)
+        ) {
+          intervalWithLatestEndPoint = response;
+        }
+      });
+
+      const start = intervalWithLatestEndPoint.interval.start.toISO();
+      const end = intervalWithLatestEndPoint.interval.end.toISO();
+
+      const grain =
+        (searchParamsObj.get(ExploreStateURLParams.TimeGrain) as V1TimeGrain) ||
+        intervalWithLatestEndPoint.grain ||
+        V1TimeGrain.TIME_GRAIN_MINUTE;
+
+      const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
+
+      if (resource.kind === ResourceKind.Canvas) {
+        const uiFilters = getCanvasStore(
+          resourceName,
+          instanceId,
+        ).canvasEntity.filterManager.getUIFiltersFromString(searchParams);
+
+        return {
+          uiFilters,
+          queryTimeStart: start,
+          queryTimeEnd: end,
+          displayTimeRange: timeRange,
+          selectedTimeRange,
+        };
+      }
+
+      const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
+        searchParamsObj.get(ExploreStateURLParams.Filters) || "",
+      );
+
+      const { dimensionFilters, dimensionThresholdFilters } =
+        splitWhereFilter(expr);
+
+      return {
+        dimensionThresholdFilters,
+        dimensionsWithInlistFilter,
+        filters: dimensionFilters,
+        queryTimeStart: start,
+        queryTimeEnd: end,
+        displayTimeRange: timeRange,
+        selectedTimeRange,
+      };
+    } catch {
+      return undefined;
+    }
+  }
 
   // Adding it here to get a newline in
   const CategoryTooltip = `Your bookmarks can only be viewed by you.
@@ -73,20 +158,35 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
-  const { form, errors, handleSubmit, handleReset } =
-    createForm<BookmarkFormValues>({
-      initialValues: {
-        displayName: bookmark?.resource.displayName || "Default Label",
-        description: bookmark?.resource.description ?? "",
-        shared: bookmark?.resource.shared ? "true" : "false",
-        filtersOnly: bookmark?.filtersOnly ?? false,
-        absoluteTimeRange: bookmark?.absoluteTimeRange ?? false,
-      },
-      validationSchema: yup.object({
-        displayName: yup.string().required("Required"),
-        description: yup.string(),
-      }),
-      onSubmit: async (values) => {
+  const initialValues = {
+    displayName: bookmark?.resource.displayName || "Default Label",
+    description: bookmark?.resource.description ?? "",
+    shared: bookmark?.resource.shared ? "true" : "false",
+    filtersOnly: bookmark?.filtersOnly ?? false,
+    absoluteTimeRange: bookmark?.absoluteTimeRange ?? false,
+  };
+
+  const schema = yup(
+    object({
+      displayName: string().required("Required"),
+      description: string(),
+      shared: string(),
+      filtersOnly: boolean(),
+      absoluteTimeRange: boolean(),
+    }),
+  );
+
+  const formId = "create-bookmark-dialog";
+
+  const { form, errors, submit, reset, enhance } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+
         const bookmarkData = getBookmarkData({
           curUrlParams,
           defaultUrlParams,
@@ -116,7 +216,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               urlSearch: bookmarkData,
             },
           });
-          handleReset();
+          reset();
         }
         onClose();
 
@@ -131,7 +231,12 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           message: bookmark ? "Bookmark updated" : "Bookmark created",
         });
       },
-    });
+    },
+  );
+
+  $: error = getRpcErrorMessage(
+    $bookmarkCreator.error ?? $bookmarkUpdater.error,
+  );
 </script>
 
 <Dialog.Root
@@ -149,10 +254,9 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
 
     <form
       class="flex flex-col gap-4 z-50"
-      id="create-bookmark-dialog"
-      on:submit|preventDefault={() => {
-        /* Switch was triggering this causing clicking on them submitting the form */
-      }}
+      id={formId}
+      use:enhance
+      on:submit|preventDefault={submit}
     >
       <Input
         bind:value={$form["displayName"]}
@@ -174,15 +278,26 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             Inherited from underlying dashboard view.
           </div>
         </Label>
-        <ExploreFilterChipsReadOnly
-          dimensionThresholdFilters={filtersState.dimensionThresholdFilters}
-          dimensionsWithInlistFilter={filtersState.dimensionsWithInlistFilter}
-          filters={filtersState.whereFilter}
-          {metricsViewNames}
-          displayTimeRange={timeRange}
-          queryTimeStart={start}
-          queryTimeEnd={end}
-        />
+        {#if filterState && "uiFilters" in filterState}
+          <CanvasFilterChipsReadOnly
+            col={false}
+            uiFilters={filterState.uiFilters}
+            timeRangeString={filterState.displayTimeRange.expression}
+            comparisonRange={undefined}
+            timeStart={filterState.queryTimeStart}
+            timeEnd={filterState.queryTimeEnd}
+          />
+        {:else if filterState}
+          <ExploreFilterChipsReadOnly
+            filters={filterState.filters}
+            dimensionsWithInlistFilter={filterState.dimensionsWithInlistFilter}
+            dimensionThresholdFilters={filterState.dimensionThresholdFilters}
+            displayTimeRange={filterState.displayTimeRange}
+            queryTimeStart={filterState.queryTimeStart}
+            queryTimeEnd={filterState.queryTimeEnd}
+            {metricsViewNames}
+          />
+        {/if}
       </div>
       <ProjectAccessControls {organization} {project}>
         <Select
@@ -245,15 +360,24 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               </TooltipContent>
             </Tooltip>
           </div>
-          <div class="text-gray-500 text-sm">{selectedTimeRange}</div>
+          {#if filterState}
+            <div class="text-gray-500 text-sm">
+              {filterState.selectedTimeRange}
+            </div>
+          {/if}
         </Label>
       </div>
+      {#if error}
+        <div class="text-red-500 text-sm py-px">
+          {error}
+        </div>
+      {/if}
     </form>
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow" />
       <Button onClick={onClose} type="secondary">Cancel</Button>
-      <Button onClick={handleSubmit} type="primary">Save</Button>
+      <Button onClick={submit} type="primary">Save</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>

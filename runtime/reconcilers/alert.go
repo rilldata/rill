@@ -107,16 +107,25 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// As a special rule, we set a default refresh schedule if:
-	// ref_update=true and one of the refs is streaming (and an explicit schedule wasn't provided).
-	if hasStreamingRef(ctx, r.C, self.Meta.Refs) {
-		if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate {
-			if a.Spec.RefreshSchedule.TickerSeconds == 0 && a.Spec.RefreshSchedule.Cron == "" {
-				cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-				if err != nil {
-					return runtime.ReconcileResult{Err: err}
-				}
+	// - ref_update=true, and
+	// - one of the refs is streaming, and
+	// - an explicit schedule wasn't provided.
+	streaming, maybeScaledToZero, err := checkStreamingRef(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	if streaming {
+		if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate && a.Spec.RefreshSchedule.TickerSeconds == 0 && a.Spec.RefreshSchedule.Cron == "" {
+			cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
 
+			// Use a fast refresh schedule only for streaming sources that can't be scaled to zero.
+			if maybeScaledToZero {
 				a.Spec.RefreshSchedule.Cron = cfg.AlertsDefaultStreamingRefreshCron
+			} else {
+				a.Spec.RefreshSchedule.Cron = cfg.AlertsFastStreamingRefreshCron
 			}
 		}
 	}
@@ -485,7 +494,7 @@ func (r *AlertReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.R
 		curr = a.State.NextRunOn.AsTime()
 	}
 
-	if next == curr {
+	if next.Equal(curr) {
 		return nil
 	}
 

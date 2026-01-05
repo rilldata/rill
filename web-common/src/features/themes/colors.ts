@@ -308,7 +308,7 @@ const stone = {
   950: chroma.oklch(0.147, 0.004, 49.25),
 };
 
-const primary = {
+export const primary = {
   50: chroma.oklch(0.96, 0.0206, 274.04),
   100: chroma.oklch(0.92, 0.0375, 274.1),
   200: chroma.oklch(0.86, 0.0707, 275.12),
@@ -322,7 +322,7 @@ const primary = {
   950: chroma.oklch(0.25, 0.1016, 280.81),
 };
 
-const secondary = {
+export const secondary = {
   50: chroma.oklch(0.98, 0.0134, 226.56),
   100: chroma.oklch(0.95, 0.0275, 232.66),
   200: chroma.oklch(0.91, 0.0603, 226.17),
@@ -335,6 +335,16 @@ const secondary = {
   900: chroma.oklch(0.41, 0.088, 237.95),
   950: chroma.oklch(0.3, 0.0672, 241.09),
 };
+
+/**
+ * Default Rill primary color palette as Color array
+ */
+export const defaultPrimaryPalette = Object.values(primary);
+
+/**
+ * Default Rill secondary color palette as Color array
+ */
+export const defaultSecondaryPalette = Object.values(secondary);
 
 export const allColors = {
   red,

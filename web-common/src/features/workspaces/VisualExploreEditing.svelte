@@ -23,10 +23,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
-  import {
-    metricsExplorerStore,
-    useExploreState,
-  } from "../dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -37,6 +34,8 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -47,6 +46,21 @@
   export let viewingDashboard: boolean;
   export let autoSave: boolean;
   export let switchView: () => void;
+
+  const StateManagers = getStateManagers();
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  const {
+    selectors: {
+      dimensions: { visibleDimensions },
+      measures: { visibleMeasures },
+    },
+    dashboardStore,
+  } = StateManagers;
+
+  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
+
+  $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
@@ -159,16 +173,17 @@
         ? exploreSpec?.embeddedTheme
         : undefined;
 
-  $: exploreStateStore = useExploreState(exploreName);
-
-  $: exploreState = $exploreStateStore;
+  $: visibleDimensionNames = $visibleDimensions
+    .map((d) => d.name)
+    .filter(isString);
+  $: visibleMeasureNames = $visibleMeasures.map((m) => m.name).filter(isString);
 
   $: newDefaults = constructDefaultState(
-    exploreState?.showTimeComparison,
-    exploreState?.selectedComparisonDimension,
-    exploreState?.visibleDimensions,
-    exploreState?.visibleMeasures,
-    exploreState?.selectedTimeRange,
+    showTimeComparison,
+    $dashboardStore?.selectedComparisonDimension,
+    visibleDimensionNames,
+    visibleMeasureNames,
+    selectedTimeRange,
   );
 
   $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
@@ -183,8 +198,6 @@
       }
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
-
-  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
   function getMeasureOrDimensionState(
     node: unknown,
@@ -489,10 +502,13 @@
           updateProperties({ theme: value });
         }
       }}
-      onColorChange={(primary, secondary) => {
+      onColorChange={(primary, secondary, isDarkMode) => {
+        // TODO: Update to support dark mode - currently always sets light mode
+        // Use new theme structure: theme.light or theme.dark
+        const modeKey = isDarkMode ? "dark" : "light";
         updateProperties({
           theme: {
-            colors: {
+            [modeKey]: {
               primary,
               secondary,
             },
@@ -501,62 +517,61 @@
       }}
     />
 
-    <svelte:fragment slot="footer">
-      {#if viewingDashboard}
-        <footer
-          class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
+    <!-- <svelte:fragment slot="footer"> -->
+    {#if viewingDashboard}
+      <footer
+        class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
+      >
+        <p>
+          For more options,
+          <button on:click={switchView} class="text-primary-600 font-medium">
+            edit in YAML
+          </button>
+        </p>
+
+        <Button
+          class="group"
+          type="subtle"
+          gray={viewingDefaults}
+          large
+          onClick={() => {
+            if (viewingDefaults) {
+              updateProperties({}, ["defaults"]);
+            } else {
+              updateProperties({ defaults: newDefaults });
+            }
+          }}
         >
-          <p>
-            For more options,
-            <button on:click={switchView} class="text-primary-600 font-medium">
-              edit in YAML
-            </button>
-          </p>
+          {#if viewingDefaults}
+            <span class="flex gap-x-1">
+              <p class="group-hover:block hidden">Remove</p>
+              <p class="group-hover:hidden">Viewing</p>
+              <p>default state</p>
+            </span>
+          {:else}
+            Save dashboard state as default
+          {/if}
 
-          <Button
-            class="group"
-            type="subtle"
-            gray={viewingDefaults}
-            large
-            onClick={() => {
-              if (viewingDefaults) {
-                updateProperties({}, ["defaults"]);
-              } else {
-                updateProperties({ defaults: newDefaults });
-              }
-            }}
-          >
-            {#if viewingDefaults}
-              <span class="flex gap-x-1">
-                <p class="group-hover:block hidden">Remove</p>
-                <p class="group-hover:hidden">Viewing</p>
-                <p>default state</p>
-              </span>
-            {:else}
-              Save dashboard state as default
-            {/if}
-
-            <Tooltip distance={8} location="top">
-              <InfoIcon
-                size="14px"
-                strokeWidth={2}
-                class={viewingDefaults ? "group-hover:block hidden" : ""}
-              />
-              <TooltipContent slot="tooltip-content">
-                {#if viewingDefaults}
-                  Remove default settings for time range, comparison modes and
-                  displayed measures/dimensions
-                {:else}
-                  Overwrite default settings for time range, comparison modes
-                  and displayed measures/dimensions with the current dashboard
-                  view
-                {/if}
-              </TooltipContent>
-            </Tooltip>
-          </Button>
-        </footer>
-      {/if}
-    </svelte:fragment>
+          <Tooltip distance={8} location="top">
+            <InfoIcon
+              size="14px"
+              strokeWidth={2}
+              class={viewingDefaults ? "group-hover:block hidden" : ""}
+            />
+            <TooltipContent slot="tooltip-content">
+              {#if viewingDefaults}
+                Remove default settings for time range, comparison modes and
+                displayed measures/dimensions
+              {:else}
+                Overwrite default settings for time range, comparison modes and
+                displayed measures/dimensions with the current dashboard view
+              {/if}
+            </TooltipContent>
+          </Tooltip>
+        </Button>
+      </footer>
+    {/if}
+    <!-- </svelte:fragment> -->
   </SidebarWrapper>
 </Inspector>
 

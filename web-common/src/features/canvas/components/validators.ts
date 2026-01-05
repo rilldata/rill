@@ -1,4 +1,4 @@
-import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import { type V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export const isMeasureValid = (
   metricsViewSpec: V1MetricsViewSpec,

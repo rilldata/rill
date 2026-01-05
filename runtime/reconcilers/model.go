@@ -124,10 +124,27 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access instance: %w", err)}
+	}
+
+	cfg, err := inst.Config()
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access instance config: %w", err)}
+	}
+
 	// Fetch contextual config
-	modelEnv, err := r.newModelEnv(ctx)
+	modelEnv, err := r.newModelEnv(ctx, inst, cfg)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
+	}
+
+	// Apply per-model timeout override if configured
+	if cfg.ModelTimeoutOverride > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(cfg.ModelTimeoutOverride)*time.Second)
+		defer cancel()
 	}
 
 	// Handle deletion
@@ -250,14 +267,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Check if and how we should trigger
-	trigger, triggerReset, err := r.shouldTrigger(ctx, self, specHash, refsHash, exists, refreshOn)
+	trigger, err := r.resolveTrigger(ctx, self, specHash, refsHash, exists, prevResult != nil, refreshOn)
 	if err != nil {
 		// This error indicates a manual intervention is required.
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Reschedule if we're not triggering a refresh
-	if !trigger {
+	if !trigger.any() {
 		// Re-run tests if the test config has changed
 		if model.State.TestHash != testHash {
 			testErrs, err := r.runModelTests(ctx, self)
@@ -300,7 +317,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Build the model
-	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
+	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, specHash, refsHash, trigger, prevResult)
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -326,23 +343,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If the build succeeded, update the model's state accordingly
 	if execErr == nil {
-		model.State.ExecutorConnector = executorConnector
-		model.State.SpecHash = specHash
-		model.State.RefsHash = refsHash
-		model.State.TestHash = ""    // Updated below if tests are configured
-		model.State.TestErrors = nil // Updated below if tests are configured
-		model.State.RefreshedOn = timestamppb.Now()
-		model.State.IncrementalState = newIncrementalState
-		model.State.IncrementalStateSchema = newIncrementalStateSchema
-		model.State.PartitionsHaveErrors = partitionsHaveErrors
-		model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
-		if firstRunIncremental {
-			model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
-		} else {
-			model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
-		}
-
-		err = r.updateStateWithResult(ctx, self, execRes)
+		err = r.updateStateAfterExecution(ctx, self, model, executorConnector, specHash, refsHash, newIncrementalState, newIncrementalStateSchema, partitionsHaveErrors, firstRunIncremental, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -368,8 +369,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: errors.Join(ctx.Err(), execErr)}
 	}
 
-	// Reset spec.Trigger and spec.TriggerFull
-	if model.Spec.Trigger || model.Spec.TriggerFull {
+	// Reset spec.Trigger, spec.TriggerFull, and spec.TriggerPartitions
+	if model.Spec.Trigger || model.Spec.TriggerFull || model.Spec.TriggerPartitions {
 		err := r.updateTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
@@ -418,6 +419,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetModel() == nil {
+		return nil, fmt.Errorf("not a model resource")
+	}
 	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
@@ -482,7 +486,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.IncrementalStateResolverProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.IncrementalStateResolverProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -503,7 +507,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.PartitionsResolverProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.PartitionsResolverProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -529,7 +533,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.InputProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.InputProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -550,7 +554,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.OutputProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.OutputProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -635,6 +639,36 @@ func (r *ModelReconciler) testSpecHash(spec *runtimev1.ModelSpec) (string, error
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// updateStateAfterExecution updates the model's state after a successful execution.
+func (r *ModelReconciler) updateStateAfterExecution(
+	ctx context.Context,
+	self *runtimev1.Resource,
+	model *runtimev1.Model,
+	executorConnector, specHash, refsHash string,
+	incrementalState *structpb.Struct,
+	incrementalStateSchema *runtimev1.StructType,
+	partitionsHaveErrors, firstRunIncremental bool,
+	execRes *drivers.ModelResult,
+) error {
+	model.State.ExecutorConnector = executorConnector
+	model.State.SpecHash = specHash
+	model.State.RefsHash = refsHash
+	model.State.TestHash = ""    // Updated later if tests are configured
+	model.State.TestErrors = nil // Updated later if tests are configured
+	model.State.RefreshedOn = timestamppb.Now()
+	model.State.IncrementalState = incrementalState
+	model.State.IncrementalStateSchema = incrementalStateSchema
+	model.State.PartitionsHaveErrors = partitionsHaveErrors
+	model.State.LatestExecutionDurationMs = execRes.ExecDuration.Milliseconds()
+	if firstRunIncremental {
+		model.State.TotalExecutionDurationMs += model.State.LatestExecutionDurationMs
+	} else {
+		model.State.TotalExecutionDurationMs = model.State.LatestExecutionDurationMs
+	}
+
+	return r.updateStateWithResult(ctx, self, execRes)
+}
+
 // updateStateWithResult updates the model resource's state with the result of a model execution.
 // It only updates the result-related fields. If changing other fields, such as RefreshedOn and SpecHash, they must be assigned before calling this function.
 func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
@@ -691,6 +725,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 
 	model.Spec.Trigger = false
 	model.Spec.TriggerFull = false
+	model.Spec.TriggerPartitions = false
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
@@ -930,13 +965,12 @@ func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Mo
 }
 
 // executeAll executes all partitions (if any) of a model with the given execution options.
-// Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
-func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, specHash, refsHash string, trigger *resolvedTrigger, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
 	// Prepare the incremental state to pass to the executor
 	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
 	incrementalState := map[string]any{}
-	if !triggerReset && model.Spec.Incremental && prevResult != nil {
+	if !trigger.reset && model.Spec.Incremental {
 		// This is an incremental run!
 		incrementalRun = true
 		if model.State.IncrementalState != nil {
@@ -995,7 +1029,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
-		res, err := r.executeSingle(ctx, executor, self, model, prevResult, incrementalRun, incrementalState, "", nil)
+		res, err := r.executeSingle(ctx, executor, self, model, incrementalRun, incrementalState, "", nil)
 		if err != nil {
 			return "", nil, false, err
 		}
@@ -1030,9 +1064,20 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
-	if err != nil {
-		return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+	// We don't do this when only trigger.partitions is set, since in that case we only want to run existing partitions marked pending, not sync new partitions.
+	if trigger.reset || trigger.normal {
+		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
+		if err != nil {
+			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+		}
+	}
+
+	// when no prior state is available then mark all but the first partition as executed
+	if prevResult == nil && incrementalRun {
+		err = r.markPartitionsExecutedExceptFirst(ctx, model)
+		if err != nil {
+			return "", nil, false, fmt.Errorf("failed to prepare partitions for force incremental run: %w", err)
+		}
 	}
 
 	// Track execution metadata
@@ -1057,7 +1102,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		partition := partitions[0]
 
 		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
-		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, partition, true)
+		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, incrementalRun, incrementalState, partition, true)
 		if err != nil {
 			return "", nil, false, err
 		}
@@ -1069,6 +1114,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		prevResult = res
 		incrementalRun = true
 		totalExecDuration.Add(int64(res.ExecDuration))
+
+		// also update the model state so that if there are errors in subsequent partitions the model state will reflect that some partitions have succeeded
+		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res)
+		if err != nil {
+			return "", nil, false, err
+		}
 	}
 
 	// Repeatedly load a batch of pending partitions and execute it with a pool of worker goroutines.
@@ -1123,7 +1174,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 					// Execute the partition and capture the result in results[workerID]
 					partition := partitions[idx]
-					res, ok, err := r.executePartition(ctx, catalog, executor, self, model, results[workerID], incrementalRun, incrementalState, partition, false)
+					res, ok, err := r.executePartition(ctx, catalog, executor, self, model, incrementalRun, incrementalState, partition, false)
 					if err != nil {
 						return err
 					}
@@ -1175,7 +1226,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 // executePartition processes a drivers.ModelPartition by calling executeSingle and then updating the partition's state in the catalog.
 // The returned bool will be false if execution failed, but the error was written to the partition in the catalog instead of being returned.
-func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
 	// Get partition data
 	data := map[string]any{}
 	err := json.Unmarshal(partition.DataJSON, &data)
@@ -1194,7 +1245,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	// Execute the partition.
 	start := time.Now()
 	errStr := ""
-	res, err := r.executeSingle(ctx, executor, self, mdl, prevResult, incrementalRun, incrementalState, partition.Key, data)
+	res, err := r.executeSingle(ctx, executor, self, mdl, incrementalRun, incrementalState, partition.Key, data)
 	if err != nil {
 		// Unless cancelled or explicitly told to return the error, we save the error in the partition and continue.
 		if returnErr {
@@ -1222,7 +1273,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 }
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
-func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
 	// Resolve templating in the input and output props
 	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
@@ -1258,7 +1309,6 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 				IncrementalRun:       incrementalRun,
 				PartitionRun:         partitionKey != "",
 				PartitionKey:         partitionKey,
-				PreviousResult:       prevResult,
 				TempDir:              tempDir,
 			})
 			if err != nil {
@@ -1290,7 +1340,6 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			IncrementalRun:       incrementalRun,
 			PartitionRun:         partitionKey != "",
 			PartitionKey:         partitionKey,
-			PreviousResult:       prevResult,
 			TempDir:              tempDir,
 		})
 		if err != nil {
@@ -1384,6 +1433,52 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	}
 
 	return finalResult, lastErr
+}
+
+// markPartitionsExecutedExceptFirst marks all partitions (except the first) as executed.
+// This is used for incremental runs when there's no prior state.
+// We keep the first partition pending to ensure at least one partition runs to generate the result.
+// Note: This can be problematic for incremental partition runs when the mode is `append`,
+// but it's acceptable since we only guarantee at-least-once execution.
+func (r *ModelReconciler) markPartitionsExecutedExceptFirst(ctx context.Context, model *runtimev1.Model) error {
+	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	// Do not mark the first partition as executed to ensure at least one partition runs
+	startIndex := 1
+	afterKey := ""
+	for {
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
+			WherePending: true,
+			Limit:        _modelPendingPartitionsBatchSize,
+			AfterKey:     afterKey,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to find pending partitions: %w", err)
+		}
+		if len(partitions) == 0 {
+			break
+		}
+
+		keys := make([]string, len(partitions))
+		for i := range partitions {
+			keys[i] = partitions[i].Key
+		}
+
+		if len(keys) > startIndex {
+			err = catalog.UpdateModelPartitionsExecuted(ctx, model.State.PartitionsModelId, keys[startIndex:])
+			if err != nil {
+				return fmt.Errorf("failed to mark partitions as executed: %w", err)
+			}
+		}
+		startIndex = 0
+		afterKey = partitions[len(partitions)-1].Key
+	}
+	return nil
 }
 
 // wrappedModelExecutor is a ModelExecutor wraps one or two ModelExecutors. It is used to execute a model with a staging connector.
@@ -1565,12 +1660,7 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 }
 
 // newModelEnv makes a ModelEnv configured using the current instance.
-func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to access instance config: %w", err)
-	}
-
+func (r *ModelReconciler) newModelEnv(ctx context.Context, inst *drivers.Instance, instCfg drivers.InstanceConfig) (*drivers.ModelEnv, error) {
 	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to access repo: %w", err)
@@ -1585,8 +1675,9 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 	return &drivers.ModelEnv{
 		AllowHostAccess:    r.C.Runtime.AllowHostAccess(),
 		RepoRoot:           repoRoot,
-		StageChanges:       cfg.StageChanges,
-		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		StageChanges:       instCfg.StageChanges,
+		DefaultMaterialize: instCfg.ModelDefaultMaterialize,
+		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
 }
@@ -1643,44 +1734,31 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 	return val.(map[string]any), nil
 }
 
-// analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
-// It returns a map of variable names referenced in the props mapped to their current value (if known).
-func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
-	res := make(map[string]string)
-	err := parser.AnalyzeTemplateRecursively(props, res)
-	if err != nil {
-		return nil, err
-	}
-
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-	vars := inst.ResolveVariables(false)
-
-	for k := range res {
-		// Project variables are referenced with .env.name (current) or .vars.name (deprecated).
-		// Other templated variable names are not project variable references.
-		if k2 := strings.TrimPrefix(k, "env."); k != k2 {
-			res[k] = vars[k2]
-		} else if k2 := strings.TrimPrefix(k, "vars."); k != k2 {
-			res[k] = vars[k2]
-		}
-	}
-
-	return res, nil
+// resolvedTrigger represents the resolved trigger state of a model.
+type resolvedTrigger struct {
+	// Full reload.
+	reset bool
+	// Normal/incremental reload. NOTE: may still trigger a reset on first runs or if it's not incremental.
+	normal bool
+	// Manual load of existing partitions that have been marked pending.
+	partitions bool
 }
 
-// shouldTrigger determines if a model should trigger based on its change mode and the current state.
-// If `triggerReset` is returned as true, `trigger` will also be true.
-func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Resource, specHash, refsHash string, exists bool, refreshOn time.Time) (trigger, triggerReset bool, err error) {
+// any returns true if any trigger is set.
+func (rt *resolvedTrigger) any() bool {
+	return rt.reset || rt.normal || rt.partitions
+}
+
+// resolveTrigger determines if and how a model should trigger based on its change mode and the current state.
+// Note this should not be confused for the model's Trigger, TriggerFull, or TriggerPartitions flags, which reflect only manual user-indicated triggers.
+func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Resource, specHash, refsHash string, tableExists, prevResultExists bool, refreshOn time.Time) (*resolvedTrigger, error) {
 	model := self.GetModel()
 
 	// Determine if this is the first run of the model
-	firstRun := model.State.ResultConnector == "" || model.State.RefreshedOn == nil || !exists
+	firstRun := model.State.ResultConnector == "" || model.State.RefreshedOn == nil || !tableExists
 
 	// Determine if the spec changed
-	specChanged := model.State.SpecHash != specHash
+	specChanged := firstRun || model.State.SpecHash != specHash
 
 	// Determine if our refresh clause or DAG refs or a manual action indicate we should trigger
 	scheduledTrigger := model.State.RefsHash != refsHash
@@ -1690,45 +1768,61 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	switch model.Spec.ChangeMode {
 	// Reset mode is the default. It does a full refresh when the model spec changes.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET:
-		full := model.Spec.TriggerFull || firstRun || specChanged
-		trigger := full || scheduledTrigger || model.Spec.Trigger
-		return trigger, full, nil
+		return &resolvedTrigger{
+			reset:      model.Spec.TriggerFull || specChanged,
+			normal:     model.Spec.Trigger || scheduledTrigger,
+			partitions: model.Spec.TriggerPartitions,
+		}, nil
 
 	// Manual mode requires a manual full or incremental trigger to run when the model spec changes.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL:
 		// If it's the first run or the spec changed, we block until we observe a manual trigger.
-		if firstRun || specChanged {
-			if !model.Spec.Trigger && !model.Spec.TriggerFull {
-				return false, false, fmt.Errorf("execution paused because the model definition has changed and 'change_mode' is 'manual': you must manually trigger a refresh")
+		if specChanged || !prevResultExists {
+			if !model.Spec.Trigger && !model.Spec.TriggerFull && !model.Spec.TriggerPartitions {
+				if !prevResultExists {
+					return nil, fmt.Errorf("execution paused because the model has no prior state and the 'change_mode' is 'manual': you must manually trigger either an incremental or full refresh")
+				}
+				return nil, fmt.Errorf("execution paused because the model definition has changed and 'change_mode' is 'manual': you must manually trigger a refresh")
 			}
-			return true, model.Spec.TriggerFull || firstRun, nil
+			return &resolvedTrigger{
+				reset:      model.Spec.TriggerFull,
+				normal:     model.Spec.Trigger,
+				partitions: model.Spec.TriggerPartitions,
+			}, nil
 		}
 
-		full := model.Spec.TriggerFull
-		trigger := full || scheduledTrigger || model.Spec.Trigger
-		return full, trigger, nil
+		return &resolvedTrigger{
+			reset:      model.Spec.TriggerFull,
+			normal:     model.Spec.Trigger || scheduledTrigger,
+			partitions: model.Spec.TriggerPartitions,
+		}, nil
 
 	// Patch mode changes to the new model logic without a full refresh.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH:
 		if !model.Spec.Incremental {
-			return false, false, fmt.Errorf("change_mode=patch can only be used with incremental models")
+			return nil, fmt.Errorf("change_mode=patch can only be used with incremental models")
 		}
 
-		if model.Spec.TriggerFull || firstRun {
-			return true, true, nil
+		// if the catalog has no prior state we take explicit action from user to avoid dropping existing data.
+		if !prevResultExists && !model.Spec.Trigger && !model.Spec.TriggerFull && !model.Spec.TriggerPartitions {
+			return nil, fmt.Errorf("execution paused because the model has no prior state and the 'change_mode' is 'patch': you must manually trigger either an incremental or full refresh")
 		}
 
-		if specChanged {
+		if specChanged && !firstRun && !model.Spec.TriggerFull {
 			model.State.SpecHash = specHash
 			if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
-				return false, false, err
+				return nil, err
 			}
 			r.C.Logger.Info("Updated model definition without a full refresh because change_mode=patch", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
 		}
 
-		return specChanged || scheduledTrigger || model.Spec.Trigger, false, nil
+		return &resolvedTrigger{
+			reset:      model.Spec.TriggerFull,
+			normal:     model.Spec.Trigger || scheduledTrigger || firstRun,
+			partitions: model.Spec.TriggerPartitions,
+		}, nil
 	default:
-		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
+		return nil, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}
 }
 

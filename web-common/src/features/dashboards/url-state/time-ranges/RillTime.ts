@@ -6,10 +6,24 @@ import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {
   getMinGrain,
+  getSmallestGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
   V1TimeGrainToDateTimeUnit,
+  type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
+
+function getLegacyGrain(grain: string, time: boolean) {
+  const isValid = grain in GrainAliasToV1TimeGrain;
+
+  if (!isValid) return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  if (!time || (grain !== "M" && grain !== "m")) {
+    return GrainAliasToV1TimeGrain[grain as TimeGrainAlias];
+  } else {
+    return V1TimeGrain.TIME_GRAIN_MINUTE;
+  }
+}
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
@@ -441,7 +455,16 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return undefined;
+    const timeGrains = [...this.timeGrains].map((g) =>
+      getLegacyGrain(g.grain, true),
+    );
+    const dateGrains = [...this.dateGrains].map((g) =>
+      getLegacyGrain(g.grain, false),
+    );
+
+    const smallestGrain = getSmallestGrain([...timeGrains, ...dateGrains]);
+
+    return smallestGrain;
   }
 
   public toString() {

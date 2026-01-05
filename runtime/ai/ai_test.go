@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/google/uuid"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
@@ -124,21 +123,21 @@ type recordingAIMessage struct {
 var _ drivers.AIService = &recordingAIService{}
 
 // Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error)
-func (r *recordingAIService) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error) {
+func (r *recordingAIService) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	// Create a recorded call
 	call := &recordingAICall{Index: len(r.calls) + 1}
-	for _, m := range msgs {
+	for _, m := range opts.Messages {
 		call.Input = append(call.Input, newRecordingAIMessages(m)...)
 	}
 	r.calls = append(r.calls, call)
 
 	// Forward to the underlying AI service
-	res, err := r.ai.Complete(ctx, msgs, tools, outputSchema)
+	res, err := r.ai.Complete(ctx, opts)
 	if err != nil {
 		call.Error = err.Error()
 		return nil, err
 	}
-	call.Response = newRecordingAIMessages(res)
+	call.Response = newRecordingAIMessages(res.Message)
 	return res, nil
 }
 

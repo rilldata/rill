@@ -232,16 +232,16 @@ managed:
 	r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "managed_duckdb"}]
 	require.NotNil(t, r)
 	require.True(t, r.ConnectorSpec.Provision)
-	require.NotContains(t, r.ConnectorSpec.Properties, "managed")
+	require.Nil(t, r.ConnectorSpec.Properties)
 
 	r = p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "non_managed_duckdb"}]
 	require.NotNil(t, r)
 	require.False(t, r.ConnectorSpec.Provision)
-	require.NotContains(t, r.ConnectorSpec.Properties, "managed")
+	require.Nil(t, r.ConnectorSpec.Properties)
 
 	r = p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "managed_props_duckdb"}]
 	require.NotNil(t, r)
 	require.True(t, r.ConnectorSpec.Provision)
-	require.NotContains(t, r.ConnectorSpec.Properties, "managed")
+	require.Nil(t, r.ConnectorSpec.Properties)
 	require.Equal(t, "world", r.ConnectorSpec.ProvisionArgs.AsMap()["hello"])
 }

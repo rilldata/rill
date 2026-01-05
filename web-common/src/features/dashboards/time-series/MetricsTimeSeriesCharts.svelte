@@ -23,6 +23,7 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
@@ -81,7 +82,6 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
-    dashboardStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -275,9 +275,10 @@
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,
-      selectedTimezone: $dashboardStore.selectedTimezone,
     }),
   );
+
+  let grainDropdownOpen = false;
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
@@ -323,8 +324,15 @@
     );
   }
 
-  let open = false;
+  function maybeClearMeasureSelection() {
+    // Range selection should only clear when scrub range is cleared.
+    if (!measureSelection.isRangeSelection()) {
+      measureSelection.clear();
+    }
+  }
 </script>
+
+<svelte:window on:click={maybeClearMeasureSelection} />
 
 <TimeSeriesChartContainer
   enableFullWidth={showTimeDimensionDetail}
@@ -332,6 +340,7 @@
   start={startValue}
   {workspaceWidth}
   {timeSeriesWidth}
+  bottom={showTimeDimensionDetail ? 25 : 10}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
@@ -353,7 +362,7 @@
       />
 
       {#if $rillTime && activeTimeGrain}
-        <DropdownMenu.Root bind:open>
+        <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild let:builder>
             <button
               {...builder}
@@ -363,7 +372,10 @@
               by <b>
                 {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
               </b>
-              <span class:-rotate-90={open} class="transition-transform">
+              <span
+                class:-rotate-90={grainDropdownOpen}
+                class="transition-transform"
+              >
                 <CaretDownIcon />
               </span>
             </button>

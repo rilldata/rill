@@ -106,20 +106,88 @@ time_zones:
 
 ## Changing Themes & Colors
 
-In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard.
+In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard. All properties in the file are optional—any values you omit will fall back to Rill's standard theme defaults.
 
-First, create the YAML file as below. In this example, the charts and hover in Rill will change to Plum while spinners will change to Violet.
+First, create the YAML file as below. You can define separate color schemes for light and dark modes:
 
 ```yaml
 type: theme
-colors:
-  primary: plum
-  secondary: violet 
+light:
+  primary: "#4F46E5"  # Indigo-600
+  secondary: "#8B5CF6"  # Purple-500
+  variables:
+    # Sequential palette - for ordered data that progresses from low to high
+    color-sequential-1: "hsl(211deg 79% 94%)"
+    color-sequential-2: "hsl(211deg 63% 86%)"
+    color-sequential-3: "hsl(211deg 75% 77%)"
+    color-sequential-4: "hsl(210deg 73% 64%)"
+    color-sequential-5: "hsl(208deg 76% 51%)"
+    color-sequential-6: "hsl(210deg 100% 43%)"
+    color-sequential-7: "hsl(212deg 100% 36%)"
+    color-sequential-8: "hsl(214deg 100% 29%)"
+    color-sequential-9: "hsl(217deg 100% 22%)"
+
+    # Diverging palette - for data that diverges from a critical midpoint
+    color-diverging-1: "hsl(353deg 87% 48%)"
+    color-diverging-2: "hsl(12deg 100% 62%)"
+    color-diverging-3: "hsl(27deg 100% 70%)"
+    color-diverging-4: "hsl(40deg 96% 82%)"
+    color-diverging-5: "hsl(59deg 48% 94%)"
+    color-diverging-6: "hsl(194deg 100% 86%)"
+    color-diverging-7: "hsl(199deg 91% 73%)"
+    color-diverging-8: "hsl(202deg 83% 57%)"
+    color-diverging-9: "hsl(207deg 100% 44%)"
+    color-diverging-10: "hsl(217deg 100% 39%)"
+    color-diverging-11: "hsl(237deg 69% 34%)"
+
+    # Qualitative palette - for categorical data (showing first 12 of 24)
+    color-qualitative-1: "hsl(156deg 56% 52%)"
+    color-qualitative-2: "hsl(27deg 100% 65%)"
+    color-qualitative-3: "hsl(195deg 100% 46%)"
+    color-qualitative-4: "hsl(289deg 61% 76%)"
+    color-qualitative-5: "hsl(109deg 56% 64%)"
+    color-qualitative-6: "hsl(41deg 83% 69%)"
+    color-qualitative-7: "hsl(349deg 76% 71%)"
+    color-qualitative-8: "hsl(217deg 49% 61%)"
+    color-qualitative-9: "hsl(165deg 100% 36%)"
+    color-qualitative-10: "hsl(16deg 95% 70%)"
+    color-qualitative-11: "hsl(236deg 65% 74%)"
+    color-qualitative-12: "hsl(75deg 43% 66%)"
+    # ... up to color-qualitative-24
+
+dark:
+  primary: "#818CF8"  # Indigo-400
+  secondary: "#A78BFA"  # Purple-400
+  variables:
+    # Sequential palette - adjusted for dark backgrounds
+    color-sequential-1: "hsl(210deg 20% 25%)"
+    color-sequential-2: "hsl(210deg 25% 30%)"
+    color-sequential-3: "hsl(210deg 30% 35%)"
+    color-sequential-4: "hsl(210deg 35% 40%)"
+    color-sequential-5: "hsl(210deg 40% 45%)"
+    color-sequential-6: "hsl(210deg 45% 50%)"
+    color-sequential-7: "hsl(210deg 50% 55%)"
+    color-sequential-8: "hsl(210deg 55% 60%)"
+    color-sequential-9: "hsl(210deg 60% 65%)"
+    # ... (diverging and qualitative palettes also available)
 ```
+
+The `light` and `dark` properties allow you to customize:
+- **primary**: Primary color used for charts, buttons, and interactive elements
+- **secondary**: Secondary color (used for loading spinners and accents)
+- **variables**: Custom CSS variables for complete control over color palettes
+  - **Sequential palette** (color-sequential-1 through 9): For ordered data progressions
+  - **Diverging palette** (color-diverging-1 through 11): For data diverging from a midpoint
+  - **Qualitative palette** (color-qualitative-1 through 24): For categorical data
+
+Colors can be specified using:
+- Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
+- Named colors (e.g., `plum`, `violet`)
+- HSL format (e.g., `hsl(180, 100%, 50%)`)
 
 Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
 
-`theme: <name of theme yaml file>` 
+`theme: <name of theme yaml file>`
 
 :::info Theme properties
 
@@ -169,9 +237,16 @@ time_ranges:
   - rill-PQC
   - rill-PYC
 theme:
-  colors:
-    primary: hsl(180, 100%, 50%)
-    secondary: lightgreen
+  light:
+    primary: "#14B8A6"  # Teal-500
+    secondary: "#10B981"  # Emerald-500
+    variables:
+      color-sequential-1: "hsl(180deg 80% 95%)"
+      color-sequential-5: "hsl(180deg 80% 50%)"
+      color-sequential-9: "hsl(180deg 80% 25%)"
+  dark:
+    primary: "#2DD4BF"  # Teal-400
+    secondary: "#34D399"  # Emerald-400
 
 security:
     access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies

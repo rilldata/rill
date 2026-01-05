@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 	"golang.org/x/sync/errgroup"
 )
@@ -56,7 +57,7 @@ func (r *ValidateMetricsViewResult) Error() error {
 
 // ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
 // It also inherits properties from parent metrics view and populates the schema of the metrics view if all dimensions and measures are valid.
-// Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
+// Note: Beware that it modifies the e.metricsView spec in place, e.g. to populate the dimension and measure types.
 func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
 	err := e.resolveParentMetricsView(ctx)
 	if err != nil {
@@ -76,6 +77,19 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		}
 		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
+
+	// Populate empty database/databaseSchema from table metadata for StarRocks only.
+	// StarRocks requires fully qualified table names (catalog.database.table),
+	// even when the metrics view YAML doesn't explicitly specify them (e.g., when using models).
+	if e.olap.Dialect() == drivers.DialectStarRocks {
+		if mv.Database == "" && t.Database != "" {
+			mv.Database = t.Database
+		}
+		if mv.DatabaseSchema == "" && t.DatabaseSchema != "" {
+			mv.DatabaseSchema = t.DatabaseSchema
+		}
+	}
+
 	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
 		cols[strings.ToLower(f.Name)] = f
@@ -139,14 +153,19 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		return res, err
 	}
 
-	// Pinot does have any native support for time shift using time grain specifiers
+	// Pinot does not have any native support for time shift using time grain specifiers
 	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
+	// StarRocks does not support time shift using time grain specifiers
+	if e.olap.Dialect() == drivers.DialectStarRocks && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for StarRocks dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
+	}
+
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		err = e.validateSchema(ctx, res)
+		err = e.validateAndRewriteSchema(ctx, res)
 		if err != nil {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
 		}
@@ -156,6 +175,69 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	_, _, err = e.CacheKey(ctx)
 	if err != nil {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
+	}
+
+	// Validate or infer the smallest time grains for the default time dimension and for any additional time dimensions.
+	// We require the smallest time grain to be at least at second grain.
+	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
+	if e.metricsView.TimeDimension != "" && res.TimeDimensionErr == nil {
+		// Find the smallest possible grain
+		var smallestPossibleGrain runtimev1.TimeGrain
+		var typeCode runtimev1.Type_Code
+		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
+		if ok {
+			typeCode = col.Type.Code
+		} else {
+			// Time dimension not found in the column list, find it in the defined dimension list
+			for _, d := range mv.Dimensions {
+				if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+					if d.DataType == nil {
+						break // data type discovery must have failed
+					}
+					typeCode = d.DataType.Code
+					break
+				}
+			}
+		}
+		if typeCode != runtimev1.Type_CODE_DATE {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
+		} else {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		}
+
+		// Check the grain or apply the smallest possible grain as the default
+		if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			mv.SmallestTimeGrain = smallestPossibleGrain
+		} else if mv.SmallestTimeGrain < smallestPossibleGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(mv.SmallestTimeGrain), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
+	}
+	for _, d := range mv.Dimensions {
+		// Skip if data type discovery failed.
+		if d.DataType == nil {
+			continue
+		}
+
+		// Find the smallest possible grain
+		var smallestPossibleGrain runtimev1.TimeGrain
+		switch d.DataType.Code {
+		case runtimev1.Type_CODE_TIMESTAMP:
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
+		case runtimev1.Type_CODE_DATE:
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		default:
+		}
+		if smallestPossibleGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			// Not a time dimension, skip.
+			continue
+		}
+
+		// Check the grain or apply the smallest possible grain as the default
+		if d.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			d.SmallestTimeGrain = smallestPossibleGrain
+		} else if d.SmallestTimeGrain < smallestPossibleGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q for time dimension %q is smaller than the smallest possible grain %q based on the data type of the time dimension", metricsview.TimeGrainFromProto(d.SmallestTimeGrain), d.Name, metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
 	}
 
 	return res, nil
@@ -196,15 +278,27 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	e.metricsView.CacheEnabled = parent.CacheEnabled
 	e.metricsView.CacheKeySql = parent.CacheKeySql
 	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds
+	// If the metrics view doesn't have a time dimension, use the parent's time dimension
+	if e.metricsView.TimeDimension == "" {
+		e.metricsView.TimeDimension = parent.TimeDimension
+	}
 
 	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
 	names := make([]string, 0, len(parent.Dimensions))
+	timeDim := ""
 	for _, d := range parent.Dimensions {
+		if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+			timeDim = d.Name
+		}
 		names = append(names, d.Name)
 	}
 	names, err = fieldselectorpb.Resolve(e.metricsView.ParentDimensions, names)
 	if err != nil {
 		return fmt.Errorf("failed to resolve parent dimensions selector: %w", err)
+	}
+	// add timeDim to the list of names if it exists and not selected by field selector
+	if timeDim != "" && !slices.Contains(names, timeDim) {
+		names = append(names, timeDim)
 	}
 	filteredDims := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(parent.Dimensions))
 	for _, d := range parent.Dimensions {
@@ -249,10 +343,6 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 		e.metricsView.SecurityRules = append(e.metricsView.SecurityRules, rule)
 	}
 
-	// If the metrics view doesn't have a time dimension, use the parent's time dimension
-	if e.metricsView.TimeDimension == "" {
-		e.metricsView.TimeDimension = parent.TimeDimension
-	}
 	// If the metrics view doesn't have a watermark expression, use the parent's watermark expression
 	if e.metricsView.WatermarkExpression == "" {
 		e.metricsView.WatermarkExpression = parent.WatermarkExpression
@@ -333,8 +423,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 		)
 	}
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:  query,
-		DryRun: true,
+		Query:           query,
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate dims and metrics: %w", err)
@@ -557,8 +648,9 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 
 	// Validate with a query if it's an expression
 	err = e.olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
-		DryRun: true,
+		Query:           fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate expression for dimension %q: %w", d.Name, err)
@@ -569,14 +661,18 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 // validateMeasure validates a metrics view measure.
 func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m *runtimev1.MetricsViewSpec_Measure) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
-		DryRun: true,
+		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
 	})
 	return err
 }
 
-// validateSchema validates that the metrics view's measures are numeric. Also populates the DataType field of each measure and dimension in the metrics view.
-func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
+// validateAndRewriteSchema validates that the metrics view's measures are numeric.
+// Makes two changes to the spec -
+//  1. Populates the DataType field of each measure and dimension in the metrics view.
+//  2. Separates the time dimensions from regular dimensions and populates the TimeDimensions field in the metrics view.
+func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)
 	if err != nil {
@@ -584,12 +680,12 @@ func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewR
 	}
 	types := make(map[string]*runtimev1.Type, len(schema.Fields))
 	for _, f := range schema.Fields {
-		types[f.Name] = f.Type
+		types[strings.ToLower(f.Name)] = f.Type
 	}
 
 	// Check that the measures are not strings
 	for i, m := range e.metricsView.Measures {
-		typ, ok := types[m.Name]
+		typ, ok := types[strings.ToLower(m.Name)]
 		if !ok {
 			// Don't error: schemas are not always reliable
 			continue
@@ -605,10 +701,38 @@ func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewR
 		m.DataType = typ
 	}
 
+	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
-		if typ, ok := types[d.Name]; ok {
+		// Find the dimension's data type, and infer the dimension type
+		var code runtimev1.Type_Code
+		typ, ok := types[strings.ToLower(d.Name)]
+		if ok {
+			code = typ.Code
 			d.DataType = typ
-		} // ignore dimensions that don't have a type in the schema
+		}
+
+		// Don't infer the dimension type if it's already set
+		if d.Type != runtimev1.MetricsViewSpec_DIMENSION_TYPE_UNSPECIFIED {
+			continue
+		}
+
+		// Infer the dimension type
+		switch code {
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME:
+			// TIMESTAMP and TIME types always default to the TIME dimension type
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case runtimev1.Type_CODE_UNSPECIFIED, runtimev1.Type_CODE_DATE:
+			// Unspecified types (e.g. if type detection failed) or DATE types only default to the TIME dimension type if they are the default time dimension.
+			// Otherwise they default to CATEGORICAL.
+			if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+			} else {
+				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+			}
+		default:
+			// All other types default to CATEGORICAL
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+		}
 	}
 
 	return nil

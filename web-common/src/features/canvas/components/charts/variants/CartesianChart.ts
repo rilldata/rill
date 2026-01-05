@@ -11,9 +11,10 @@ import {
 } from "@rilldata/web-common/features/components/charts/types";
 import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type {
-  V1MetricsViewSpec,
-  V1Resource,
+import {
+  MetricsViewSpecDimensionType,
+  type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, type Readable } from "svelte/store";
 import type {
@@ -97,6 +98,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     });
   }
 
+  protected supportsComparison(): boolean {
+    return true;
+  }
+
   getMeasureLabels(): string[] | undefined {
     const config = get(this.specStore);
     const metricsViewName = config.metrics_view;
@@ -148,10 +153,10 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     return inputParams;
   }
 
-  updateProperty(
+  updateProperty = (
     key: keyof CartesianCanvasChartSpec,
     value: CartesianCanvasChartSpec[keyof CartesianCanvasChartSpec],
-  ) {
+  ) => {
     const currentSpec = get(this.specStore);
 
     if (key === "y") {
@@ -186,7 +191,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     }
 
     super.updateProperty(key, value);
-  }
+  };
 
   createChartDataQuery(
     ctx: CanvasStore,
@@ -202,7 +207,9 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const timeDimension = metricsViewSpec?.timeDimension;
-    const dimensions = metricsViewSpec?.dimensions || [];
+    const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
+      (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+    );
 
     const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
       ?.name as string;

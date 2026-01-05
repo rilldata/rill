@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	// Load connectors and reconcilers for runtime
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
@@ -49,6 +50,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/slack"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
@@ -59,6 +61,7 @@ import (
 type Config struct {
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	MetastoreID             string                 `split_words:"true"`
 	RedisURL                string                 `default:"" split_words:"true"`
 	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
@@ -222,6 +225,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			// Init runtime
+			metastoreConfig, err := structpb.NewStruct(map[string]any{
+				"dsn": conf.MetastoreURL,
+				"id":  conf.MetastoreID,
+			})
+			if err != nil {
+				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))
+			}
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
 				MetastoreConnector:           "metastore",
@@ -234,10 +244,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					{
 						Type:   conf.MetastoreDriver,
 						Name:   "metastore",
-						Config: map[string]string{"dsn": conf.MetastoreURL},
+						Config: metastoreConfig,
 					},
 				},
-				Version: ch.Version,
+				Version:              ch.Version,
+				EnableConfigReloader: true,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {

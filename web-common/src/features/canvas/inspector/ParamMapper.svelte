@@ -57,7 +57,10 @@
 <div>
   {#each entries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
-      <div class="component-param">
+      <div
+        class="component-param"
+        class:grouped={config.meta?.layout === "grouped"}
+      >
         <!-- TEXT, NUMBER, RILL_TIME -->
         {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
           <Input
@@ -251,5 +254,9 @@
   .component-param {
     @apply py-3 px-5;
     @apply border-t;
+  }
+  .component-param.grouped {
+    @apply py-0;
+    @apply border-none;
   }
 </style>

@@ -274,7 +274,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 
 	// Build underlying SELECT
 	tbl := ast.Dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
-	where, err := ast.buildUnderlyingWhere()
+	where, err := ast.buildWhereForUnderlyingTable(ast.Query.Where)
 	if err != nil {
 		return nil, err
 	}
@@ -584,7 +584,7 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 
 	// not checking access if its primary time dimension
 	if name == a.MetricsView.TimeDimension {
-		// check if its defined in the dimensions list otherwise return a default dimension spec
+		// check if its defined in the dimensions or time dimension list otherwise return a default dimension spec
 		for _, dim := range a.MetricsView.Dimensions {
 			if dim.Name == name {
 				return dim, nil
@@ -986,11 +986,13 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 	return nil
 }
 
-// buildUnderlyingWhere constructs the base WHERE clause for the query.
-func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
+// buildWhereForUnderlyingTable constructs an expression for a WHERE clause for the underlying table.
+// It combines the provided where expression with any security policy filters.
+// It allows the input `where` to be nil, and returns nil if there are no conditions to apply.
+func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error) {
 	var res *ExprNode
 
-	expr, args, err := a.SQLForExpression(a.Query.Where, nil, false, true)
+	expr, args, err := a.SQLForExpression(where, nil, false, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile 'where': %w", err)
 	}
@@ -1068,7 +1070,9 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.Where != nil {
-		expr, args, err := a.SQLForExpression(spine.Where.Expression, nil, false, true)
+		// Using buildWhereForUnderlyingTable to include security filters.
+		// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
+		where, err := a.buildWhereForUnderlyingTable(spine.Where.Expression)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
 		}
@@ -1076,11 +1080,11 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		n := &SelectNode{
 			Alias:     alias,
 			DimFields: a.dimFields,
+			FromTable: a.underlyingTable,
 			Unnests:   a.unnests,
 			Group:     true,
-			FromTable: a.underlyingTable,
+			Where:     where,
 		}
-		n.Where = n.Where.And(expr, args)
 		err = a.AddTimeRange(n, tr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add time range: %w", err)
@@ -1115,9 +1119,6 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			newDims = append(newDims, f)
 		}
 
-		start := spine.TimeRange.Start
-		end := spine.TimeRange.End
-		grain := spine.TimeRange.Grain
 		tz := time.UTC
 		if a.Query.TimeZone != "" {
 			var err error
@@ -1126,7 +1127,8 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 				return nil, fmt.Errorf("invalid time zone %q: %w", a.Query.TimeZone, err)
 			}
 		}
-		sel, args, err := a.Dialect.SelectTimeRangeBins(start, end, grain.ToProto(), timeAlias, tz)
+
+		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}

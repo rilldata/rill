@@ -90,6 +90,8 @@ type InstanceConfig struct {
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
 	// ModelConcurrentExecutionLimit sets the maximum number of concurrent model executions.
 	ModelConcurrentExecutionLimit uint32 `mapstructure:"rill.models.concurrent_execution_limit"`
+	// ModelTimeoutOverride sets a timeout for model reconciliation in seconds (used in validation mode).
+	ModelTimeoutOverride uint32 `mapstructure:"rill.model.timeout_override"`
 	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
 	// Approximated comparison queries are faster but may not return comparison data points for all values.
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
@@ -104,9 +106,13 @@ type InstanceConfig struct {
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
-	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
+	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
+	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
+	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
+	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
+	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -166,7 +172,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
-		AlertsDefaultStreamingRefreshCron:    "*/10 * * * *", // Every 10 minutes
+		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
+		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 	}
 
 	// Resolve variables
@@ -188,4 +195,55 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	}
 
 	return res, nil
+}
+
+func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
+	var res []*runtimev1.Connector
+	res = append(res, i.Connectors...)
+	res = append(res, i.ProjectConnectors...)
+	// implicit connectors
+	vars := i.ResolveVariables(true)
+
+	existing := make(map[string]bool)
+	for _, c := range res {
+		existing[c.Name] = true
+	}
+
+	for k := range vars {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		if !existing[name] {
+			res = append(res, &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			})
+			existing[name] = true
+		}
+	}
+
+	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
+	// NOTE: only object stores are handled here.
+	if vars["aws_access_key_id"] != "" && !existing["s3"] {
+		res = append(res, &runtimev1.Connector{Type: "s3", Name: "s3"})
+	}
+	if (vars["azure_storage_account"] != "" ||
+		vars["azure_storage_key"] != "" ||
+		vars["azure_storage_sas_token"] != "" ||
+		vars["azure_storage_connection_string"] != "") &&
+		!existing["azure"] {
+		res = append(res, &runtimev1.Connector{Type: "azure", Name: "azure"})
+	}
+	if vars["google_application_credentials"] != "" && !existing["gcs"] {
+		res = append(res, &runtimev1.Connector{Type: "gcs", Name: "gcs"})
+	}
+	return res
 }

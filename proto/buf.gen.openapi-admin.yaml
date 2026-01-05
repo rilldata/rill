@@ -11,5 +11,4 @@ plugins:
       - logtostderr=true
       - output_format=yaml
       - allow_merge=true,merge_file_name=rill/admin/v1/admin
-      - visibility_restriction_selectors=PUBLIC
-      - visibility_restriction_selectors=INTERNAL
+      - disable_service_tags=true

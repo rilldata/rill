@@ -22,6 +22,7 @@ export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 export interface ComponentCommonProperties {
   title?: string;
   description?: string;
+  show_description_as_tooltip?: boolean;
 }
 
 export type VeriticalAlignment = "top" | "middle" | "bottom";

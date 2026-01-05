@@ -72,7 +72,21 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   }
 
   inputParams(): InputParams<KPIGridSpec> {
-    return {
+    const hasTimeSeries = get(this.parent.timeManager.hasTimeSeriesMap).get(
+      this.metricsViewName,
+    );
+
+    const timeSeriesOptions: InputParams<KPIGridSpec>["options"] = {
+      sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
+      hide_time_range: {
+        type: "boolean",
+        optional: true,
+        label: "Time range display",
+        meta: { invertBoolean: true },
+      },
+      comparison: { type: "comparison_options", label: "Comparison values" },
+    };
+    const inputParams: InputParams<KPIGridSpec> = {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         measures: {
@@ -80,18 +94,13 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
           meta: { allowedTypes: ["measure"] },
           label: "Measures",
         },
-        sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
-        hide_time_range: {
-          type: "boolean",
-          optional: true,
-          label: "Time range display",
-          meta: { invertBoolean: true },
-        },
-        comparison: { type: "comparison_options", label: "Comparison values" },
+        ...(hasTimeSeries ? timeSeriesOptions : {}),
         ...commonOptions,
       },
       filter: getFilterOptions(),
     };
+
+    return inputParams;
   }
 
   static newComponentSpec(

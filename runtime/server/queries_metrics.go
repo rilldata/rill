@@ -439,21 +439,38 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		attribute.StringSlice("args.expressions", req.Expressions),
 		attribute.String("args.time_dimension", req.TimeDimension),
 	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
 	if err != nil {
 		return nil, err
 	}
 
+	// to keep results consistent
+	now := time.Now()
+
 	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
 	if err != nil {
 		return nil, err
+	}
+	if req.ExecutionTime != nil {
+		// If override is set, we use it for every ref except `min`
+		ts = metricsview.TimestampsResult{
+			Min:       ts.Min,
+			Max:       req.ExecutionTime.AsTime(),
+			Watermark: req.ExecutionTime.AsTime(),
+		}
+		now = req.ExecutionTime.AsTime()
+	}
+
+	timeDimension := req.TimeDimension
+	if timeDimension == "" && mv.ValidSpec != nil {
+		timeDimension = mv.ValidSpec.TimeDimension
 	}
 
 	var tz *time.Location
@@ -464,12 +481,9 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		}
 	}
 
-	// to keep results consistent
-	now := time.Now()
-
-	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
+	timeRanges := make([]*runtimev1.ResolvedTimeRange, len(req.Expressions))
 	for i, tr := range req.Expressions {
-		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
+		expr, err := rilltime.Parse(tr, rilltime.ParseOptions{
 			TimeZoneOverride: tz,
 			SmallestGrain:    timeutil.TimeGrainFromAPI(mv.ValidSpec.SmallestTimeGrain),
 		})
@@ -477,7 +491,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}
 
-		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
+		start, end, grain := expr.Eval(rilltime.EvalOptions{
 			Now:        now,
 			MinTime:    ts.Min,
 			MaxTime:    ts.Max,
@@ -486,18 +500,37 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
 
-		timeRanges[i] = &runtimev1.TimeRange{
-			Start:        timestamppb.New(start),
-			End:          timestamppb.New(end),
-			RoundToGrain: timeutil.TimeGrainToAPI(grain),
-			// for a reference
+		timeRanges[i] = &runtimev1.ResolvedTimeRange{
+			Start:         timestamppb.New(start),
+			End:           timestamppb.New(end),
+			Grain:         timeutil.TimeGrainToAPI(grain),
+			TimeDimension: timeDimension,
+			TimeZone:      req.TimeZone,
 			Expression:    tr,
-			TimeDimension: req.TimeDimension,
+		}
+	}
+
+	backwardsCompatibleRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
+	for i, r := range timeRanges {
+		backwardsCompatibleRanges[i] = &runtimev1.TimeRange{
+			Start:         r.Start,
+			End:           r.End,
+			TimeDimension: r.TimeDimension,
+			IsoDuration:   "",
+			IsoOffset:     "",
+			Expression:    r.Expression,
+			RoundToGrain:  r.Grain,
 		}
 	}
 
 	return &runtimev1.MetricsViewTimeRangesResponse{
-		TimeRanges: timeRanges,
+		FullTimeRange: &runtimev1.TimeRangeSummary{
+			Min:       valOrNullTime(ts.Min),
+			Max:       valOrNullTime(ts.Max),
+			Watermark: valOrNullTime(ts.Watermark),
+		},
+		ResolvedTimeRanges: timeRanges,
+		TimeRanges:         backwardsCompatibleRanges,
 	}, nil
 }
 
@@ -553,7 +586,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         req.InstanceId,
-		Resolver:           "annotations",
+		Resolver:           "metrics_annotations",
 		ResolverProperties: props,
 		Claims:             claims,
 	})
@@ -614,6 +647,30 @@ type annotation struct {
 	Duration         string         `mapstructure:"duration"`
 	ForMeasures      []string       `mapstructure:"for_measures"`
 	AdditionalFields map[string]any `mapstructure:",remain"`
+}
+
+// ConvertExpressionToMetricsSQL implements QueryService.
+func (s *Server) ConvertExpressionToMetricsSQL(ctx context.Context, req *runtimev1.ConvertExpressionToMetricsSQLRequest) (*runtimev1.ConvertExpressionToMetricsSQLResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	expr := metricsview.NewExpressionFromProto(req.Expression)
+	sql, err := metricsview.ExpressionToSQL(expr)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.ConvertExpressionToMetricsSQLResponse{
+		Sql: sql,
+	}, nil
 }
 
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {

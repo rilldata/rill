@@ -447,7 +447,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 // OpenRuntimeClient opens a client for the production deployment for the given project.
 // If local is true, it connects to the locally running runtime instead of the deployed project's runtime.
 // It returns the runtime client and instance ID for the project.
-func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, local bool) (*runtimeclient.Client, string, error) {
+func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project, branch string, local bool) (*runtimeclient.Client, string, error) {
 	var host, instanceID, jwt string
 	if local {
 		// This is the default port that Rill localhost uses for gRPC.
@@ -463,17 +463,18 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
 			Org:     org,
 			Project: project,
+			Branch:  branch,
 		})
 		if err != nil {
 			return nil, "", err
 		}
 
-		depl := proj.ProdDeployment
+		depl := proj.Deployment
 		if depl == nil {
 			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
 		}
-		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-			return nil, "", fmt.Errorf("deployment status not OK: %s", depl.Status.String())
+		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
+			return nil, "", fmt.Errorf("deployment status not RUNNING: %s", depl.Status.String())
 		}
 
 		host = depl.RuntimeHost
@@ -559,6 +560,74 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	}
 
 	return nil
+}
+
+// CommitAndSafePush commits changes and safely pushes them to the remote repository.
+// It fetches the latest remote changes, checks for conflicts, and handles them based on defaultPushChoice:
+//   - "1": Pull remote changes and merge (fails on conflicts)
+//   - "2": Overwrite remote changes with local changes using merge with favourLocal=true (not supported for monorepos)
+//   - "3": Abort the push operation
+//
+// If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
+func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
+	// 1. Fetch latest from remote
+	err := gitutil.GitFetch(ctx, root, config)
+	if err != nil {
+		return fmt.Errorf("failed to fetch from remote: %w", err)
+	}
+
+	// 2. Check status of the subpath
+	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName())
+	if err != nil {
+		return fmt.Errorf("failed to get git status: %w", err)
+	}
+	if status.Branch != config.DefaultBranch {
+		return fmt.Errorf("current branch %q does not match expected branch %q", status.Branch, config.DefaultBranch)
+	}
+
+	// 3. Warn if there are remote commits
+	choice := defaultPushChoice
+	if status.RemoteCommits != 0 {
+		if h.Interactive {
+			h.PrintfWarn("Warning: There are changes on the remote branch that are not in your local branch.")
+			h.PrintfWarn("It's recommended to pull the latest changes before pushing to avoid overwriting remote changes.\n")
+			h.PrintfWarn("Please choose one of the following options to proceed:\n")
+			h.PrintfWarn("1: Pull remote changes to your local branch and fail on conflicts\n")
+			h.PrintfWarn("2: Overwrite remote changes with your local changes(Not supported for monorepos)\n")
+			h.PrintfWarn("3: Abort deploy and merge manually\n")
+			choice, err = SelectPrompt("Choose how to resolve remote changes", []string{"1", "2", "3"}, "1")
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// 4. Merge + push
+	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
+	switch choice {
+	case "1":
+		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, false)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
+	case "2":
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
+		// This is not euivalent to a force push but is safer for users.
+		if config.Subpath != "" {
+			// force pushing in a monorepo can overwrite other subpaths
+			// we can check for changes in other subpaths but it is tricky and error prone
+			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
+			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
+		}
+		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, true)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
+	default:
+		return fmt.Errorf("aborting deploy")
+	}
 }
 
 func removeRemote(path, remoteName string) error {

@@ -1,4 +1,5 @@
 import {
+  MetricsViewSpecDimensionType,
   MetricsViewSpecMeasureType,
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
@@ -135,9 +136,13 @@ export class MetricsViewSelectors {
       metricsViewResources,
       ($metricsViewResources) => {
         if (!$metricsViewResources) return [];
-        const dimensions = Object.values($metricsViewResources || {}).flatMap(
-          (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
-        );
+        const dimensions = Object.values($metricsViewResources || {})
+          .flatMap(
+            (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
+          )
+          .filter(
+            (d) => d.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+          );
         const uniqueByName = new Map<string, MetricsViewSpecDimension>();
         for (const dimension of dimensions) {
           uniqueByName.set(
@@ -153,7 +158,11 @@ export class MetricsViewSelectors {
       derived(metricsViewResources, ($metricsViewResources) => {
         if (!$metricsViewResources) return [];
         const metricsView = $metricsViewResources[metricViewName];
-        return metricsView?.state?.validSpec?.dimensions ?? [];
+        return (
+          metricsView?.state?.validSpec?.dimensions?.filter(
+            (d) => d.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+          ) ?? []
+        );
       });
 
     this.getMeasureForMetricView = (
@@ -207,9 +216,12 @@ export class MetricsViewSelectors {
           $metricsViewResources || {},
         )) {
           metricsViewDimensionMap[metricViewName] = new Set(
-            metricsView?.state?.validSpec?.dimensions?.map(
-              (d) => (d.name || d.column) as string,
-            ) || [],
+            metricsView?.state?.validSpec?.dimensions
+              ?.filter(
+                (d) =>
+                  d.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+              )
+              ?.map((d) => (d.name || d.column) as string) || [],
           );
         }
         return metricsViewDimensionMap;

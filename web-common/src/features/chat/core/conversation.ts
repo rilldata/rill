@@ -3,6 +3,7 @@ import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   type RpcStatus,
+  type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
@@ -16,7 +17,13 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
+import { transformToBlocks, type Block } from "./messages/block-transform";
+import { MessageContentType, MessageType, ToolName } from "./types";
+import {
+  getOptimisticMessageId,
+  invalidateConversationsList,
+  NEW_CONVERSATION_ID,
+} from "./utils";
 
 /**
  * Individual conversation state management.
@@ -37,11 +44,18 @@ export class Conversation {
   constructor(
     private readonly instanceId: string,
     public conversationId: string,
-    private readonly options?: {
+    private readonly options: {
+      agent?: string;
       onStreamStart?: () => void;
       onConversationCreated?: (conversationId: string) => void;
+    } = {
+      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
     },
-  ) {}
+  ) {
+    if (this.options) {
+      this.options.agent ??= ToolName.ANALYST_AGENT;
+    }
+  }
 
   // ===== PUBLIC API =====
 
@@ -79,16 +93,36 @@ export class Conversation {
   }
 
   /**
+   * Get message blocks for rendering this conversation.
+   * Transforms raw messages into a structured list of blocks (text, thinking blocks, charts).
+   */
+  public getBlocks(): Readable<Block[]> {
+    return derived(
+      [this.getConversationQuery(), this.isStreaming],
+      ([$query, $isStreaming]) => {
+        const messages = $query.data?.messages ?? [];
+        const isLoading = !!$query.isLoading;
+
+        return transformToBlocks(messages, $isStreaming, isLoading);
+      },
+    );
+  }
+
+  /**
    * Send a message and handle streaming response
    *
+   * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(options?: {
-    onStreamStart?: () => void;
-    onMessage?: (message: V1Message) => void;
-    onStreamComplete?: (conversationId: string) => void;
-    onError?: (error: string) => void;
-  }): Promise<void> {
+  public async sendMessage(
+    context: RuntimeServiceCompleteBody,
+    options?: {
+      onStreamStart?: () => void;
+      onMessage?: (message: V1Message) => void;
+      onStreamComplete?: (conversationId: string) => void;
+      onError?: (error: string) => void;
+    },
+  ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -107,14 +141,22 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
+      options?.onStreamStart?.();
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt);
+      const streamPromise = this.startStreaming(
+        prompt,
+        context,
+        options?.onMessage,
+      );
 
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
       options?.onStreamComplete?.(this.conversationId);
+
+      // Temporary fix to make sure the title of the conversation is updated.
+      void invalidateConversationsList(this.instanceId);
     } catch (error) {
       // Transport errors can occur at two different stages:
       // 1. Before streaming starts: message not persisted, needs rollback
@@ -168,7 +210,11 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    * Returns a Promise that resolves when streaming completes
    */
-  private async startStreaming(prompt: string): Promise<void> {
+  private async startStreaming(
+    prompt: string,
+    context: RuntimeServiceCompleteBody | undefined,
+    onMessage: ((message: V1Message) => void) | undefined,
+  ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
       this.sseClient = new SSEFetchClient();
@@ -192,6 +238,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
+          if (response.message) onMessage?.(response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");
@@ -229,6 +276,8 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      agent: this.options?.agent,
+      ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)
@@ -261,20 +310,14 @@ export class Conversation {
 
     if (response.message) {
       // Skip ALL user messages from the stream
-      // Server echoes back the user message (potentially as multiple content blocks)
+      // Server echoes back the user message
       // We've already added it optimistically, so we don't want duplicates
       // Note: Server generates new IDs for streamed messages, can't match by ID
       if (response.message.role === "user") {
         return;
       }
 
-      // Check if this is a tool result message
-      const toolResult = response.message.content?.[0]?.toolResult;
-      if (toolResult?.id) {
-        this.handleToolResult(toolResult);
-      } else {
-        this.addMessageToCache(response.message);
-      }
+      this.addMessageToCache(response.message);
     }
   }
 
@@ -300,12 +343,13 @@ export class Conversation {
       queryClient.getQueryData<V1GetConversationResponse>(oldCacheKey);
 
     if (existingData?.conversation) {
-      // Transfer the conversation data to the real conversation ID cache
+      // Transfer the conversation data and messages to the real conversation ID cache
       queryClient.setQueryData<V1GetConversationResponse>(newCacheKey, {
         conversation: {
           ...existingData.conversation,
           id: realConversationId,
         },
+        messages: existingData.messages || [],
       });
     }
 
@@ -328,7 +372,10 @@ export class Conversation {
     const userMessage: V1Message = {
       id: getOptimisticMessageId(),
       role: "user",
-      content: [{ text: prompt }],
+      type: MessageType.CALL,
+      tool: ToolName.ROUTER_AGENT,
+      contentType: MessageContentType.JSON,
+      contentData: JSON.stringify({ prompt }),
       createdOn: new Date().toISOString(),
       updatedOn: new Date().toISOString(),
     };
@@ -338,7 +385,7 @@ export class Conversation {
   }
 
   /**
-   * Add or merge message to TanStack Query cache
+   * Add message to TanStack Query cache
    */
   private addMessageToCache(message: V1Message): void {
     const cacheKey = getRuntimeServiceGetConversationQueryKey(
@@ -351,57 +398,24 @@ export class Conversation {
         return {
           conversation: {
             id: this.conversationId,
-            messages: [message],
             createdOn: message.createdOn,
             updatedOn: new Date().toISOString(),
           },
+          messages: [message],
         };
       }
 
-      const existingMessages = old.conversation.messages || [];
+      const existingMessages = old.messages || [];
 
-      // Handle messages with same ID (multiple content blocks)
-      const existingIndex = existingMessages.findIndex(
-        (m) => m.id === message.id,
-      );
-
-      if (existingIndex >= 0) {
-        // Merge content blocks for messages with same ID
-        const existing = existingMessages[existingIndex];
-        const mergedContent = [
-          ...(existing.content || []),
-          ...(message.content || []),
-        ];
-
-        const result = {
-          ...old,
-          conversation: {
-            ...old.conversation,
-            messages: [
-              ...existingMessages.slice(0, existingIndex),
-              {
-                ...existing,
-                content: mergedContent,
-                updatedOn: message.updatedOn,
-              },
-              ...existingMessages.slice(existingIndex + 1),
-            ],
-            updatedOn: new Date().toISOString(),
-          },
-        };
-        return result;
-      } else {
-        // Add new message
-        const result = {
-          ...old,
-          conversation: {
-            ...old.conversation,
-            messages: [...existingMessages, message],
-            updatedOn: new Date().toISOString(),
-          },
-        };
-        return result;
-      }
+      // Add new message to the end of the list
+      return {
+        ...old,
+        conversation: {
+          ...old.conversation,
+          updatedOn: new Date().toISOString(),
+        },
+        messages: [...existingMessages, message],
+      };
     });
   }
 
@@ -421,44 +435,9 @@ export class Conversation {
         ...old,
         conversation: {
           ...old.conversation,
-          messages:
-            old.conversation.messages?.filter((m) => m.id !== messageId) || [],
           updatedOn: new Date().toISOString(),
         },
-      };
-    });
-  }
-
-  /**
-   * Handle incoming tool result by merging it with the corresponding tool call
-   */
-  private handleToolResult(toolResult: any): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
-
-    // Find and merge with existing tool call
-    queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
-      if (!old?.conversation?.messages) return old;
-
-      const updatedMessages = old.conversation.messages.map((msg) => ({
-        ...msg,
-        content: msg.content?.map((block) => {
-          if (block.toolCall?.id === toolResult.id) {
-            return { ...block, toolResult };
-          }
-          return block;
-        }),
-      }));
-
-      return {
-        ...old,
-        conversation: {
-          ...old.conversation,
-          messages: updatedMessages,
-          updatedOn: new Date().toISOString(),
-        },
+        messages: old.messages?.filter((m) => m.id !== messageId) || [],
       };
     });
   }
@@ -565,7 +544,7 @@ export class Conversation {
       this.removeMessageFromCache(userMessage.id!);
 
       // Restore draft message so user can easily retry
-      const textContent = userMessage.content?.[0]?.text || "";
+      const textContent = userMessage.contentData || "";
       this.draftMessage.set(textContent);
     }
     // If we were streaming, message is already on server - keep it in UI

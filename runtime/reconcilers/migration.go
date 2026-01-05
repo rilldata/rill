@@ -100,6 +100,9 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 }
 
 func (r *MigrationReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetMigration() == nil {
+		return nil, fmt.Errorf("not a migration resource")
+	}
 	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 

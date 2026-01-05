@@ -21,8 +21,9 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
-  export let theme: "light" | "dark" = "light";
+  export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
+  export let hasComparison: boolean = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let colorMapping: ColorMapping = [];
   export let viewVL: View;
@@ -50,10 +51,17 @@
     height,
     config,
     renderer,
-    theme,
+    themeMode,
     expressionFunctions,
     colorMapping,
+    hasComparison,
   });
+
+  // Create a more efficient key for component remounting
+  $: configKey = config ? Object.keys(config).sort().join(",") : "default";
+  $: colorMappingKey =
+    colorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
+  $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
@@ -76,7 +84,6 @@
 <div
   bind:contentRect
   role="presentation"
-  class:bg-surface={canvasDashboard}
   class:px-2={canvasDashboard}
   class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
   on:mouseleave={handleMouseLeave}
@@ -89,13 +96,15 @@
       {error}
     </div>
   {:else}
-    <VegaLite
-      {data}
-      {spec}
-      {signalListeners}
-      {options}
-      bind:view={viewVL}
-      on:onError={onError}
-    />
+    {#key componentKey}
+      <VegaLite
+        {data}
+        {spec}
+        {signalListeners}
+        {options}
+        bind:view={viewVL}
+        on:onError={onError}
+      />
+    {/key}
   {/if}
 </div>

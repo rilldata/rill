@@ -275,8 +275,11 @@ function filterSubQuery(
   };
 }
 
-export function copyFilterExpression(expr: V1Expression) {
-  return filterExpressions(expr, () => true) ?? createAndExpression([]);
+export function copyFilterExpression(
+  expr: V1Expression,
+  defaultExpr: V1Expression | undefined = createAndExpression([]),
+) {
+  return filterExpressions(expr, () => true) ?? defaultExpr;
 }
 
 export function filterIdentifiers(
@@ -303,7 +306,9 @@ export function getValueIndexInExpression(
 }
 
 export function getValuesInExpression(expr?: V1Expression): any[] {
-  return expr ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []) : [];
+  return expr
+    ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []).flat()
+    : [];
 }
 
 export const matchExpressionByName = (e: V1Expression, name: string) => {
@@ -380,6 +385,12 @@ export function isAndOrExpression(expression: V1Expression | undefined) {
   );
 }
 
+export function isExpressionEmpty(expression: V1Expression | undefined) {
+  if (!expression) return true;
+  if (!isAndOrExpression(expression)) return false;
+  return expression?.cond?.exprs?.length === 0;
+}
+
 export function removeWrapperAndOrExpression(
   expression: V1Expression | undefined,
 ) {
@@ -398,6 +409,7 @@ const SupportedOperations = new Set<V1Operation>([
   V1Operation.OPERATION_LIKE,
   V1Operation.OPERATION_NLIKE,
 ]);
+
 export function isExpressionUnsupported(expression: V1Expression) {
   if (
     !expression.cond ||

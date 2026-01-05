@@ -1,40 +1,52 @@
 <script lang="ts">
-  import { type V1Resource } from "@rilldata/web-common/runtime-client";
-  import { DEFAULT_DASHBOARD_WIDTH } from "./layout-util";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Spinner from "../entity-management/Spinner.svelte";
   import { EntityStatus } from "../entity-management/types";
+  import { derived } from "svelte/store";
+  import {
+    getEmbedThemeStoreInstance,
+    resolveEmbedTheme,
+  } from "../embeds/embed-theme";
 
-  export let resource: V1Resource;
+  export let canvasName: string;
   export let navigationEnabled: boolean = true;
-  export let homeBookmarkUrlSearch: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
 
-  $: meta = resource?.meta;
-  $: canvasName = meta?.name?.name as string;
-
-  $: canvas = resource?.canvas;
-  $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;
-
   $: ({
-    canvasEntity: { components, _rows, firstLoad },
+    canvasEntity: {
+      componentsStore,
+      _rows,
+      firstLoad,
+      _maxWidth,
+      filtersEnabledStore,
+      themeName,
+    },
   } = getCanvasStore(canvasName, instanceId));
 
+  $: components = $componentsStore;
+
+  $: filtersEnabled = $filtersEnabledStore;
+  $: maxWidth = $_maxWidth;
   $: rows = $_rows;
+
+  const embedThemeStore = getEmbedThemeStoreInstance();
+  const embedThemeName = derived([embedThemeStore], () => resolveEmbedTheme());
+
+  // Drive the canvas themeName from the resolved embed theme.
+  $: {
+    const name = $embedThemeName;
+    if (name !== undefined) {
+      themeName.set(name ?? undefined);
+    }
+  }
 </script>
 
 {#if canvasName}
-  <CanvasDashboardWrapper
-    {maxWidth}
-    {canvasName}
-    filtersEnabled={canvas?.spec?.filtersEnabled}
-    embedded
-    {homeBookmarkUrlSearch}
-  >
+  <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow
         {row}

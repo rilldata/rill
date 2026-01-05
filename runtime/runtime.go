@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
@@ -31,6 +32,7 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	Version                      version.Version
+	EnableConfigReloader         bool
 }
 
 type Runtime struct {
@@ -44,6 +46,7 @@ type Runtime struct {
 	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
+	configReloader *configReloader
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
@@ -79,6 +82,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 		return nil, err
 	}
 
+	if opts.EnableConfigReloader {
+		rt.configReloader = newConfigReloader(rt)
+	}
+
 	return rt, nil
 }
 
@@ -93,6 +100,9 @@ func (r *Runtime) Version() version.Version {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	if r.configReloader != nil {
+		r.configReloader.close()
+	}
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
@@ -142,10 +152,14 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	// Dedupe connectors
 	connMap := make(map[string]*runtimev1.Connector)
 	for _, c := range rillYAML.Connectors {
+		config, err := structpb.NewStruct(c.Defaults)
+		if err != nil {
+			return err
+		}
 		connMap[c.Name] = &runtimev1.Connector{
 			Type:   c.Type,
 			Name:   c.Name,
-			Config: c.Defaults,
+			Config: config,
 		}
 	}
 	for _, r := range p.Resources {
@@ -216,6 +230,13 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	inst.ProjectConnectors = projConns
 
 	return r.EditInstance(ctx, inst, false)
+}
+
+func (r *Runtime) ReloadConfig(ctx context.Context, instanceID string) error {
+	if r.configReloader != nil {
+		return r.configReloader.reloadConfig(ctx, instanceID)
+	}
+	return nil
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

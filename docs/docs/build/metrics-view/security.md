@@ -2,7 +2,7 @@
 title: Who Can Access Your Data
 description: Control who can view your metrics and data
 sidebar_label: Data Access Control
-sidebar_position: 20
+sidebar_position: 50
 ---
 
 Rill supports **granular access policies** that let you control:
@@ -58,7 +58,7 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 Metrics views limit data access for all requests, including MCP integrations and custom APIs. When creating a token or copying from the AI tab, the user's attributes (such as email, domain, groups, and custom attributes) are automatically included in the request context. This ensures that the same security policies that apply to dashboard users also apply to programmatic access, maintaining consistent data governance across all access methods.
 
-You can also pass attributes into the `rill service create <token_name> --attributes` as a JSON object to create custom attributes.
+For more details, see [Service Tokens](/manage/service-tokens).
 :::
 Typical use cases include:
 

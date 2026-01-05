@@ -27,6 +27,7 @@
       sortDescFirst: true,
       cell: ({ row }) =>
         flexRender(GroupCompositeCell, {
+          groupName: row.original.groupName,
           name: row.original.groupName?.startsWith("autogroup:")
             ? transformGroupName(row.original.groupName)
             : row.original.groupName,

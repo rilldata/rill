@@ -99,11 +99,11 @@ func validateExplore(ctx context.Context, ch *cmdutil.Helper, project, explore s
 		return err
 	}
 
-	if proj.ProdDeployment == nil {
+	if proj.Deployment == nil {
 		ch.PrintfWarn("Could not validate metrics view: project has no production deployment")
 		return nil
 	}
-	depl := proj.ProdDeployment
+	depl := proj.Deployment
 
 	rt, err := runtimeclient.New(depl.RuntimeHost, proj.Jwt)
 	if err != nil {

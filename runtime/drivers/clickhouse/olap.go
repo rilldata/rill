@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/sqlstring"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -40,21 +42,27 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 }
 
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
-	// Check not nested
-	if connFromContext(ctx) != nil {
-		panic("nested WithConnection")
+	if conn := connFromContext(ctx); conn != nil {
+		// nested calls, ctx is already wrapped with a connection and a session ID
+		sessionID := sessionIDFromContext(ctx)
+		ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn), sessionID)
+		return fn(ctx, ensuredCtx)
 	}
 
-	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	// Acquire a connection from write pool, since this is meant to be used for operations that may write (e.g. creating temp tables).
+	// Beware that this means that if later calls to acquireOLAPConn even with the write flag not set with the same context then they will get the same connection from the write pool.
+	// But I think this is the expected behavior as we want to have a single connection for the whole WithConnection block.
+	conn, release, err := c.acquireOLAPConn(ctx, priority, true)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = release() }()
 
 	// Call fn with connection embedded in context
-	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
-	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
+	// embed session ID in context so that nested calls can fetch session ID
+	sessionID := uuid.New().String()
+	wrappedCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(ctx, sessionID), conn), sessionID)
+	ensuredCtx := c.sessionAwareContext(contextWithConn(contextWithSessionID(context.Background(), sessionID), conn), sessionID)
 	return fn(wrappedCtx, ensuredCtx)
 }
 
@@ -67,15 +75,17 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
 	// Instead, we set the settings in the context.
 	// TODO: Fix query_settings_override not honoured here.
-	settings := map[string]any{
-		"cast_keep_nullable":        1,
-		"insert_distributed_sync":   1,
-		"prefer_global_in_and_join": 1,
-		"session_timezone":          "UTC",
-		"join_use_nulls":            1,
-	}
 	ctx = contextWithQueryID(ctx)
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+	if c.supportSettings {
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"insert_distributed_sync":   1,
+			"prefer_global_in_and_join": 1,
+			"session_timezone":          "UTC",
+			"join_use_nulls":            1,
+		}
+		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+	}
 
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
@@ -90,7 +100,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	}
 
 	// Use write connection for Exec operations
-	conn, release, err := c.acquireWriteConn(ctx)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, true)
 	if err != nil {
 		return err
 	}
@@ -126,12 +136,41 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	if c.config.QuerySettingsOverride != "" {
-		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
-	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
-		if c.config.QuerySettings != "" {
-			stmt.Query += ", " + c.config.QuerySettings
+	if c.supportSettings {
+		// Default settings
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"insert_distributed_sync":   1,
+			"prefer_global_in_and_join": 1,
+			"session_timezone":          "UTC",
+			"join_use_nulls":            1,
+		}
+
+		// Settings string to append to the query
+		var sqlSettings string
+		if c.config.QuerySettingsOverride != "" {
+			sqlSettings = c.config.QuerySettingsOverride
+			settings = map[string]any{} // Clear default settings if override is set
+		} else {
+			sqlSettings = c.config.QuerySettings
+		}
+
+		// Add query attributes as settings
+		for k, v := range stmt.QueryAttributes {
+			// NOTE: Ideally, we could just handle custom attributes with `settings[k] = v`
+			// However, Clickhouse currently doesn't accept custom settings this way, so we fall back to appending to the query.
+			if sqlSettings != "" {
+				sqlSettings += ", "
+			}
+			sqlSettings += fmt.Sprintf("%s = %s", k, sqlstring.ToLiteral(v))
+		}
+
+		// Add settings to query and context (depending on type)
+		if sqlSettings != "" {
+			stmt.Query += "\n SETTINGS " + sqlSettings
+		}
+		if len(settings) > 0 {
+			ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 		}
 	}
 
@@ -169,7 +208,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}()
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, false)
 	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err
@@ -222,7 +261,7 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args))
 	}
 
-	conn, release, err := c.acquireOLAPConn(ctx, 0)
+	conn, release, err := c.acquireOLAPConn(ctx, 0, false)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +313,7 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
-func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *Connection) acquireMetaConn(ctx context.Context) (*SQLConn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -305,8 +344,8 @@ func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 }
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
-// It returns a function that puts the connection back in the pool (if applicable).
-func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+// It returns a function that puts the connection back in the pool (if applicable). write bool indicates if the connection is for an exec query.
+func (c *Connection) acquireOLAPConn(ctx context.Context, priority int, write bool) (*SQLConn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -320,7 +359,12 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	var releaseConn func() error
+	if write {
+		conn, releaseConn, err = c.acquireWriteConn(ctx)
+	} else {
+		conn, releaseConn, err = c.acquireConn(ctx)
+	}
 	if err != nil {
 		c.olapSem.Release()
 		return nil, nil, err
@@ -337,7 +381,7 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 }
 
 // acquireConn returns a ClickHouse connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
-func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *Connection) acquireConn(ctx context.Context) (*SQLConn, func() error, error) {
 	conn, err := c.readDB.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -348,11 +392,11 @@ func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		c.used()
 		return conn.Close()
 	}
-	return conn, release, nil
+	return &SQLConn{Conn: conn, supportSettings: c.supportSettings}, release, nil
 }
 
-// acquireWriteConn returns a ClickHouse write connection for write operations.
-func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+// acquireWriteConn returns a ClickHouse write connection for write operations. It should only be used internally in acquireOLAPConn.
+func (c *Connection) acquireWriteConn(ctx context.Context) (*SQLConn, func() error, error) {
 	conn, err := c.writeDB.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -363,7 +407,7 @@ func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() e
 		c.used()
 		return conn.Close()
 	}
-	return conn, release, nil
+	return &SQLConn{Conn: conn, supportSettings: c.supportSettings}, release, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -397,6 +441,40 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
+}
+
+// When supportSettings is false, the cluster is in readonly mode and does not allow
+// modifying any settings. The clickhouse-go driver automatically sets 'max_execution_time'
+// if a context has a deadline, which would cause errors. To avoid this, we override the
+// connection methods to remove the deadline from the context before executing any query.
+type SQLConn struct {
+	*sqlx.Conn
+	supportSettings bool
+}
+
+func (sc *SQLConn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
+	if sc.supportSettings {
+		return sc.Conn.QueryxContext(ctx, query, args...)
+	}
+	ctx2 := contextWithoutDeadline(ctx)
+	return sc.Conn.QueryxContext(ctx2, query, args...)
+}
+
+func (sc *SQLConn) QueryRowContext(ctx context.Context, query string, args ...any) *sqlx.Row {
+	if sc.supportSettings {
+		return sc.Conn.QueryRowxContext(ctx, query, args...)
+	}
+	ctx2 := contextWithoutDeadline(ctx)
+	return sc.Conn.QueryRowxContext(ctx2, query, args...)
+}
+
+func contextWithoutDeadline(parent context.Context) context.Context {
+	ctx, cancel := context.WithCancel(context.WithoutCancel(parent))
+	go func() {
+		<-parent.Done()
+		cancel()
+	}()
+	return ctx
 }
 
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.

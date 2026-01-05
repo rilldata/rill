@@ -28,7 +28,7 @@ func TestValidateMetricsView(t *testing.T) {
 		},
 	}
 
-	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 
 	res, err := e.ValidateAndNormalizeMetricsView(context.Background())
@@ -161,6 +161,114 @@ timeseries: time
 			}
 		})
 	}
+}
+
+func TestValidateAndNormalizeMetricsViewSmallestTimeGrain(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"model.sql": `
+SELECT '2025-05-01T00:00:00Z'::TIMESTAMP AS t_timestamp, '2025-05-01'::DATE AS t_date
+		`,
+		`ok_none.yaml`: `
+version: 1
+type: metrics_view
+model: model
+measures:
+- expression: count(*)
+`,
+		`ok_timestamp_default.yaml`: `
+version: 1
+type: metrics_view
+model: model
+timeseries: t_timestamp
+measures:
+- expression: count(*)
+`,
+		`ok_date_default.yaml`: `
+version: 1
+type: metrics_view
+model: model
+timeseries: t_date
+measures:
+- expression: count(*)
+`,
+		`ok_timestamp_month.yaml`: `
+version: 1
+type: metrics_view
+model: model
+timeseries: t_timestamp
+smallest_time_grain: month
+measures:
+- expression: count(*)
+`,
+		`ok_date_month.yaml`: `
+version: 1
+type: metrics_view
+model: model
+timeseries: t_date
+smallest_time_grain: month
+measures:
+- expression: count(*)
+`,
+		`ok_dimension_date_default.yaml`: `
+version: 1
+type: metrics_view
+model: model
+dimensions:
+- column: t_date
+measures:
+- expression: count(*)
+`,
+		`ok_dimension_date.yaml`: `
+version: 1
+type: metrics_view
+model: model
+dimensions:
+- column: t_date
+  smallest_time_grain: month
+measures:
+- expression: count(*)
+`,
+		`fail_date_hour.yaml`: `
+version: 1
+type: metrics_view
+model: model
+timeseries: t_date
+smallest_time_grain: hour
+measures:
+- expression: count(*)
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 10, 1, 0)
+
+	mv := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_none")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_timestamp_default")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_SECOND, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_date_default")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_DAY, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_timestamp_month")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_MONTH, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_date_month")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_MONTH, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_dimension_date_default")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_DAY, mv.GetMetricsView().State.ValidSpec.Dimensions[0].SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_dimension_date")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_MONTH, mv.GetMetricsView().State.ValidSpec.Dimensions[0].SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "fail_date_hour")
+	require.NotEmpty(t, mv.Meta.ReconcileError)
+	require.Contains(t, mv.Meta.ReconcileError, "smaller than the smallest possible grain")
 }
 
 func TestValidateAnnotations(t *testing.T) {

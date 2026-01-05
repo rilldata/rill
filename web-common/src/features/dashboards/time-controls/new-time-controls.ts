@@ -4,16 +4,17 @@
 // IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
 // The functions below UTILS are being used
 
+import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
-import {
-  getQueryServiceMetricsViewTimeRangesQueryKey,
-  V1TimeGrain,
+import type {
+  V1ExploreTimeRange,
+  V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -23,7 +24,6 @@ import {
   Interval,
   type WeekdayNumbers,
 } from "luxon";
-import { queryServiceMetricsViewTimeRanges } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
@@ -188,7 +188,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         iso,
-        get(this._maxRange),
+
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -204,7 +204,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         name,
-        get(this._maxRange),
+
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -318,7 +318,6 @@ import {
   GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   RillLegacyDaxInterval,
   RillLegacyIsoInterval,
@@ -331,53 +330,39 @@ import {
 import { getDefaultRangeBuckets } from "@rilldata/web-common/lib/time/defaults";
 
 export async function deriveInterval(
-  name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
-  allTimeRange: Interval,
+  name: RillPeriodToDate | RillPreviousPeriod | ISODurationString | string,
   metricsViewName: string,
   activeTimeZone: string,
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
+  fullTimeRange?: V1TimeRangeSummary;
   error?: string;
 }> {
   if (name === CUSTOM_TIME_RANGE_ALIAS) {
     return {
-      interval: allTimeRange,
+      interval: Interval.invalid("Cannot derive interval for custom range"),
       grain: undefined,
       error: "Cannot derive interval for custom range",
     };
   }
 
-  const parsed = parseRillTime(name);
-
   try {
+    const parsed = parseRillTime(name);
+
     // We have a RillTime string
     const instanceId = get(runtime).instanceId;
     const cacheBust = name.includes("now");
 
-    const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
+    const response = await fetchTimeRanges({
       instanceId,
       metricsViewName,
-      { expressions: [name], timeZone: activeTimeZone, priority: 100 },
-    );
-
-    if (cacheBust) {
-      await queryClient.invalidateQueries({
-        queryKey: queryKey,
-      });
-    }
-
-    const response = await queryClient.fetchQuery({
-      queryKey: queryKey,
-      queryFn: () =>
-        queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
-          expressions: [name],
-          timeZone: activeTimeZone,
-        }),
-      staleTime: Infinity,
+      rillTimes: [name],
+      timeZone: activeTimeZone,
+      cacheBust,
     });
 
-    const timeRange = response.timeRanges?.[0];
+    const timeRange = response.resolvedTimeRanges?.[0];
 
     if (!timeRange?.start || !timeRange?.end) {
       return { interval: Interval.invalid("Invalid time range") };
@@ -388,6 +373,7 @@ export async function deriveInterval(
         DateTime.fromISO(timeRange.start).setZone(activeTimeZone),
         DateTime.fromISO(timeRange.end).setZone(activeTimeZone),
       ),
+      fullTimeRange: response.fullTimeRange,
       grain: parsed.asOfLabel?.snap
         ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
         : parsed.rangeGrain,

@@ -14,6 +14,7 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
+  import { getChroma } from "../../themes/theme-utils";
   import type { ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
 
@@ -21,16 +22,36 @@
   export let chartSpec: CanvasChartSpec;
   export let chartData: Readable<ChartDataResult>;
   export let measures: MetricsViewSpecMeasure[];
-  export let theme: "light" | "dark" = "light";
+  export let themeMode: "light" | "dark" = "light";
+  /**
+   * Full theme object with all CSS variables (primary, secondary, background, etc.)
+   * If provided, chart uses these directly. If not, falls back to defaults.
+   */
+  export let theme: Record<string, string> | undefined = undefined;
   export let isCanvas: boolean;
 
   let viewVL: View;
 
-  $: ({ data, domainValues, isFetching, error } = $chartData);
+  $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
   $: hasNoData = !isFetching && data.length === 0;
 
-  $: spec = generateSpec(chartType, chartSpec, $chartData);
+  // Override chartData theme with mode-aware colors if theme prop is provided
+  $: chartDataWithTheme = theme
+    ? {
+        ...$chartData,
+        theme: {
+          primary: theme.primary
+            ? getChroma(theme.primary)
+            : $chartData.theme.primary,
+          secondary: theme.secondary
+            ? getChroma(theme.secondary)
+            : $chartData.theme.secondary,
+        },
+      }
+    : $chartData;
+
+  $: spec = generateSpec(chartType, chartSpec, chartDataWithTheme);
 
   // TODO: Move this to a central cached store
   $: measureFormatters = measures.reduce(
@@ -39,26 +60,34 @@
       [sanitizeFieldName(measure.name || "measure")]:
         createMeasureValueFormatter<null | undefined>(measure),
     }),
-    {},
+    {} as Record<string, (value: number | null | undefined) => string>,
   );
 
   $: expressionFunctions = {
     humanize: {
-      fn: (val) => humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
+      fn: (val: number) =>
+        humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
     },
-    ...measures.reduce(
-      (acc, measure) => {
-        const fieldName = sanitizeFieldName(measure.name || "measure");
-        return {
-          ...acc,
-          [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
-        };
-      },
-      {} as Record<string, { fn: (val: any) => string }>,
-    ),
+    ...measures.reduce((acc, measure) => {
+      const fieldName = sanitizeFieldName(measure.name || "measure");
+      const formatter = measureFormatters[fieldName];
+      return {
+        ...acc,
+        [fieldName]: {
+          fn: (val: number) => (formatter ? formatter(val) : String(val)),
+        },
+      };
+    }, {}),
   };
 
-  $: colorMapping = getColorMappingForChart(chartSpec, domainValues);
+  // Color mapping needs to be reactive to theme mode changes (light/dark)
+  // because colors are resolved differently for each mode
+  $: isThemeModeDark = themeMode === "dark";
+  $: colorMapping = getColorMappingForChart(
+    chartSpec,
+    domainValues,
+    isThemeModeDark,
+  );
 </script>
 
 {#if isFetching || measures.length === 0}
@@ -78,11 +107,12 @@
     bind:viewVL
     canvasDashboard={isCanvas}
     data={{ "metrics-view": data }}
-    {theme}
+    {themeMode}
     {spec}
     {colorMapping}
     renderer="canvas"
     {expressionFunctions}
-    config={getRillTheme(true, theme === "dark")}
+    {hasComparison}
+    config={getRillTheme(true, isThemeModeDark, theme)}
   />
 {/if}

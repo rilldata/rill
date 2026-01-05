@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -84,7 +85,7 @@ const (
 // If the current org doesn't have a custom domain, the custom domain can be substituted for the canonical domain (without path suffix).
 //
 // There are more details in the type doc for `admin.URLs` and in the individual handler docstrings below.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter, issuer *auth.Issuer) {
 	// checkLimit needs access to limiter
 	checkLimit := func(route string) middleware.CheckFunc {
 		return func(req *http.Request) error {
@@ -111,12 +112,21 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/logout", middleware.Check(checkLimit("/auth/logout"), http.HandlerFunc(a.authLogout)))
 	observability.MuxHandle(inner, "/auth/logout/provider", middleware.Check(checkLimit("/auth/logout/provider"), http.HandlerFunc(a.authLogoutProvider)))
 	observability.MuxHandle(inner, "/auth/logout/callback", middleware.Check(checkLimit("/auth/logout/callback"), http.HandlerFunc(a.authLogoutCallback)))
-	observability.MuxHandle(inner, "/auth/assume-open", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/assume-open"), http.HandlerFunc(a.authAssumeOpen)))) // NOTE: Uses auth middleware
+	observability.MuxHandle(inner, "/auth/assume-open", a.HTTPMiddlewareLenient(middleware.Check(checkLimit("/auth/assume-open"), http.HandlerFunc(a.authAssumeOpen)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/device_authorization", middleware.Check(checkLimit("/auth/oauth/device_authorization"), http.HandlerFunc(a.handleDeviceCodeRequest)))
 	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation))))   // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/authorize", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/authorize"), http.HandlerFunc(a.handleAuthorizeRequest)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
+	observability.MuxHandle(inner, "/auth/oauth/register", middleware.Check(checkLimit("/auth/oauth/register"), http.HandlerFunc(a.handleOAuthRegister)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
+	// Register well known endpoints
+	wellKnownMux := http.NewServeMux()
+	// Serve public JWKS for runtime JWT verification
+	wellKnownMux.Handle("/.well-known/jwks.json", issuer.WellKnownHandler())
+	// OAuth discovery endpoints for MCP support
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-protected-resource", middleware.Check(checkLimit("/.well-known/oauth-protected-resource"), http.HandlerFunc(a.handleOAuthProtectedResourceMetadata)))
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-authorization-server", middleware.Check(checkLimit("/.well-known/oauth-authorization-server"), http.HandlerFunc(a.handleOAuthAuthorizationServerMetadata)))
+	mux.Handle("/.well-known/", observability.Middleware("admin", a.logger, wellKnownMux))
 }
 
 // authSignup redirects the users to the auth provider's signup page.
@@ -321,7 +331,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 		// Issue a short-lived nonce token (2-minute TTL) for browser auth callback
 		ttl := 2 * time.Minute
-		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl)
+		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl, false)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 			return
@@ -332,7 +342,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -395,7 +405,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -431,30 +441,46 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
+// authAssumeOpen allows a superuser to assume the identity of another user for support purposes.
+// It checks if the current user is a superuser, then updates the auth cookie to contain a token that represents the target user.
 func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
-	sess := a.cookies.Get(r, cookieName)
-	authToken, ok := sess.Values[cookieFieldAccessToken].(string)
-	if !ok || authToken == "" {
-		http.Error(w, "not authenticated: please log in first", http.StatusUnauthorized)
-		return
-	}
 	ctx := r.Context()
 	claims := GetClaims(ctx)
-	if claims == nil {
-		internalServerError(w, fmt.Errorf("did not find any claims, %w", errors.New("server error")))
+
+	// If the user is not authenticated, redirect to login.
+	// NOTE: Since we use the HTTPMiddlewareLenient middleware, this also handles users with expired tokens (e.g. if you're assuming different users in a row).
+	if claims.OwnerType() == OwnerTypeAnon {
+		http.Redirect(w, r, a.admin.URLs.AuthLogin(r.URL.String(), false), http.StatusTemporaryRedirect)
 		return
 	}
+
+	// If the caller is not a user, error out.
 	if claims.OwnerType() != OwnerTypeUser {
 		http.Error(w, "not authenticated as a user", http.StatusBadRequest)
 		return
 	}
-	// only superuser can do assume open
+
+	// Grab the DB model for the current token. We need to do some deeper checks.
+	tokenMdl, ok := claims.AuthTokenModel().(*database.UserAuthToken)
+	if !ok {
+		http.Error(w, "invalid user auth token model", http.StatusBadRequest)
+		return
+	}
+
+	// If you switch between assumed users without un-assuming first, this call may be made with a representative token.
+	// Let's handle that gracefully by logging you back in as yourself first.
+	if tokenMdl.RepresentingUserID != nil {
+		http.Redirect(w, r, a.admin.URLs.AuthLogin(r.URL.String(), false), http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Only superuser can do assume open
 	if !claims.Superuser(ctx) {
 		http.Error(w, "not authorized: only superusers can assume another user", http.StatusUnauthorized)
 		return
 	}
 
-	// validating params representEmail
+	// Validate the user to represent
 	representEmail := r.URL.Query().Get("representing_user")
 	if representEmail == "" {
 		http.Error(w, "representing user not provided", http.StatusBadRequest)
@@ -465,17 +491,13 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("user with email %q not found", representEmail), http.StatusBadRequest)
 		return
 	}
-	mdl, ok := claims.AuthTokenModel().(*database.UserAuthToken)
-	if !ok {
-		http.Error(w, "invalid user auth token model", http.StatusBadRequest)
-		return
-	}
-	if u.ID == mdl.UserID {
+	if u.ID == tokenMdl.UserID {
 		http.Error(w, "representing user cannot represent yourself", http.StatusBadRequest)
 		return
 	}
 	representingUserID := &u.ID
 
+	// Parse the TTL for the representative token (if any)
 	ttlMinutesStr := r.URL.Query().Get("ttl_minutes")
 	var ttl *time.Duration
 	if ttlMinutesStr != "" {
@@ -489,8 +511,8 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Issue a new token for the representing user.
-	// We use mdl.UserID here instead of claims.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl)
+	// We use tokenMdl.UserID here instead of claims.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), tokenMdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -498,6 +520,7 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 	newToken := newAuthToken.Token().String()
 
 	// If there's already a token in the cookie, and it's not the same one, revoke it (since we're now setting a new one).
+	sess := a.cookies.Get(r, cookieName)
 	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && oldAuthToken != "" && oldAuthToken != newToken {
 		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
@@ -674,15 +697,15 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grantType := values.Get("grant_type")
-	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType) {
-		http.Error(w, "invalid grant_type", http.StatusBadRequest)
-		return
-	}
-
 	if grantType == deviceCodeGrantType {
 		a.getAccessTokenForDeviceCode(w, r, values)
-	} else {
+	} else if grantType == authorizationCodeGrantType {
 		a.getAccessTokenForAuthorizationCode(w, r, values)
+	} else if grantType == refreshTokenGrantType {
+		a.getAccessTokenForRefreshToken(w, r, values)
+	} else {
+		http.Error(w, fmt.Sprintf("unexpected grant_type: %q", grantType), http.StatusBadRequest)
+		return
 	}
 }
 

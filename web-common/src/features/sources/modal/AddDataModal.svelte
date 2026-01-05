@@ -96,10 +96,6 @@
     }
   }
 
-  function handleSubmittingChange(event: CustomEvent) {
-    isSubmittingForm = event.detail.submitting;
-  }
-
   function resetModal() {
     const state = { step: 0, selectedConnector: null, requestConnector: false };
     window.history.pushState(state, "", "");
@@ -240,7 +236,7 @@
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
-            on:submitting={handleSubmittingChange}
+            bind:isSubmitting={isSubmittingForm}
           />
         {/if}
       {/if}

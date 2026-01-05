@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	goruntime "runtime"
@@ -58,6 +59,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &DevelopModel{Runtime: rt})
 	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
+	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
 
@@ -75,29 +77,11 @@ type SessionOptions struct {
 
 // Session creates or loads an AI session.
 func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Session, resErr error) {
-	// Setup logger
-	logger := r.Runtime.Logger.Named("ai").With(
-		zap.String("instance_id", opts.InstanceID),
-		zap.String("ai_session_id", opts.SessionID),
-		zap.String("user_id", opts.Claims.UserID),
-	)
-
 	// Load instance metadata to get project instructions
 	instance, err := r.Runtime.Instance(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
 	}
-
-	// Setup scoped activity client
-	attrs := []attribute.KeyValue{
-		attribute.String("instance_id", instance.ID),
-		attribute.String("ai_session_id", opts.SessionID),
-		attribute.String(activity.AttrKeyUserID, opts.Claims.UserID),
-	}
-	for k, v := range instance.Annotations {
-		attrs = append(attrs, attribute.String(k, v))
-	}
-	activityClient := r.Activity.With(attrs...)
 
 	// Open catalog
 	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
@@ -150,10 +134,29 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
-	// Check access: for now, only allow users to access their own sessions
-	if opts.Claims.UserID != session.OwnerID {
+	// Check access: for now, only allow users to access their own sessions.
+	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
+	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks {
 		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
+
+	// Setup logger
+	logger := r.Runtime.Logger.Named("ai").With(
+		zap.String("instance_id", opts.InstanceID),
+		zap.String("ai_session_id", session.ID),
+		zap.String("user_id", opts.Claims.UserID),
+	)
+
+	// Setup scoped activity client
+	attrs := []attribute.KeyValue{
+		attribute.String("instance_id", instance.ID),
+		attribute.String("ai_session_id", session.ID),
+		attribute.String(activity.AttrKeyUserID, opts.Claims.UserID),
+	}
+	for k, v := range instance.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+	activityClient := r.Activity.With(attrs...)
 
 	// Create the session
 	base := &BaseSession{
@@ -184,7 +187,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 // Tool is an interface for an AI tool.
 type Tool[In, Out any] interface {
 	Spec() *mcp.Tool
-	CheckAccess(context.Context) bool
+	CheckAccess(context.Context) (bool, error)
 	Handler(ctx context.Context, args In) (Out, error)
 }
 
@@ -192,21 +195,79 @@ type Tool[In, Out any] interface {
 type CompiledTool struct {
 	Name                  string
 	Spec                  *mcp.Tool
-	CheckAccess           func(context.Context) bool
+	CheckAccess           func(context.Context) (bool, error)
 	UnmarshalArgs         func(content string) (any, error)
 	UnmarshalResult       func(content string) (any, error)
 	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
 	RegisterWithMCPServer func(srv *mcp.Server)
 }
 
+// AsProto converts the CompiledTool to a protocol buffer representation.
+func (t *CompiledTool) AsProto() (*aiv1.Tool, error) {
+	var meta *structpb.Struct
+	if t.Spec.Meta != nil {
+		var err error
+		meta, err = structpb.NewStruct(t.Spec.Meta)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert meta for tool %q: %w", t.Name, err)
+		}
+	}
+
+	var inputSchema string
+	if t.Spec.InputSchema != nil {
+		inputSchemaBytes, err := json.Marshal(t.Spec.InputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal input schema for tool %q: %w", t.Name, err)
+		}
+		inputSchema = string(inputSchemaBytes)
+
+		// OpenAI currently does not accept object schemas without explicit properties.
+		// So for now, we skip such schemas.
+		if s, ok := t.Spec.InputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
+			inputSchema = ""
+		}
+	}
+
+	var outputSchema string
+	if t.Spec.OutputSchema != nil {
+		outputSchemaBytes, err := json.Marshal(t.Spec.OutputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal output schema for tool %q: %w", t.Name, err)
+		}
+		outputSchema = string(outputSchemaBytes)
+
+		// For consistency with input schema, skip object schemas without explicit properties.
+		if s, ok := t.Spec.OutputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
+			outputSchema = ""
+		}
+	}
+
+	return &aiv1.Tool{
+		Name:         t.Spec.Name,
+		DisplayName:  t.Spec.Title,
+		Description:  t.Spec.Description,
+		Meta:         meta,
+		InputSchema:  inputSchema,
+		OutputSchema: outputSchema,
+	}, nil
+}
+
 // RegisterTool registers a new tool with the Runner.
 func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 	spec := t.Spec()
 	if spec.InputSchema == nil {
-		spec.InputSchema, _ = schemaFor[In](false)
+		var err error
+		spec.InputSchema, err = schemaFor[In](false)
+		if err != nil {
+			panic(fmt.Sprintf("failed to infer input schema for tool %q: %v", spec.Name, err))
+		}
 	}
 	if spec.OutputSchema == nil {
-		spec.OutputSchema, _ = schemaFor[Out](true)
+		var err error
+		spec.OutputSchema, err = schemaFor[Out](true)
+		if err != nil {
+			panic(fmt.Sprintf("failed to infer output schema for tool %q: %v", spec.Name, err))
+		}
 	}
 
 	s.Tools[spec.Name] = &CompiledTool{
@@ -898,7 +959,11 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 			if !ok {
 				return nil, fmt.Errorf("unknown tool %q", opts.Tool)
 			}
-			if !t.CheckAccess(ctx) {
+			ok, err := t.CheckAccess(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check access for tool %q: %w", opts.Tool, err)
+			}
+			if !ok {
 				return nil, fmt.Errorf("access denied to tool %q", opts.Tool)
 			}
 			return t.JSONHandler(ctx, argsJSON)
@@ -941,6 +1006,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			opts.MaxIterations = 1
 		}
 	}
+	if opts.MaxIterations == 1 && len(opts.Tools) > 0 {
+		return errors.New("max iterations must be greater than 1 when using tools")
+	}
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -949,28 +1017,18 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
-		if !tool.CheckAccess(ctx) {
+		ok, err := tool.CheckAccess(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to check access for tool %q: %w", toolName, err)
+		}
+		if !ok {
 			continue
 		}
-		var inputSchema string
-		if tool.Spec.InputSchema != nil {
-			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)
-			if err != nil {
-				return fmt.Errorf("failed to marshal input schema for tool %q: %w", toolName, err)
-			}
-			inputSchema = string(inputSchemaBytes)
-
-			// OpenAI currently does not accept object schemas without explicit properties.
-			// So for now, we skip such schemas.
-			if s, ok := tool.Spec.InputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
-				inputSchema = ""
-			}
+		toolPB, err := tool.AsProto()
+		if err != nil {
+			return fmt.Errorf("failed to convert tool to proto: %w", err)
 		}
-		tools = append(tools, &aiv1.Tool{
-			Name:        tool.Spec.Name,
-			Description: tool.Spec.Description,
-			InputSchema: inputSchema,
-		})
+		tools = append(tools, toolPB)
 	}
 
 	// Prepare output schema.
@@ -991,7 +1049,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			var err error
 			outputSchema, err = jsonschema.ForType(outType.Elem(), &jsonschema.ForOptions{})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to infer schema for output type: %w", err)
 			}
 		}
 	}
@@ -1013,9 +1071,42 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 		// TODO: For durable execution, add messages from current scope.
 
-		// Log start
-		s.logger.Debug("completion started", zap.Int("messages_count", len(messages)), zap.Int("tools_count", len(tools)), zap.Int("max_iterations", opts.MaxIterations), observability.ZapCtx(ctx))
-		defer s.logger.Debug("completion finished", zap.Int("iterations", opts.MaxIterations), zap.Int("messages_total", len(messages)), zap.Int("messages_added", len(messages)-len(opts.Messages)), zap.Error(outErr), observability.ZapCtx(ctx))
+		// Telemetry
+		var iterations, truncations, inputTokens, outputTokens int
+		s.logger.Debug("completion started",
+			zap.Int("initial_messages", len(messages)),
+			zap.Int("tools_count", len(tools)),
+			zap.Int("max_iterations", opts.MaxIterations),
+			observability.ZapCtx(ctx),
+		)
+		defer func() {
+			s.logger.Debug("completion finished",
+				zap.Int("iterations", iterations),
+				zap.Int("iterations_with_truncation", truncations),
+				zap.Int("added_messages", len(messages)-len(opts.Messages)),
+				zap.Int("total_messages", len(messages)),
+				zap.Error(outErr),
+				observability.ZapCtx(ctx),
+			)
+
+			var outErrStr string
+			if outErr != nil {
+				outErrStr = outErr.Error()
+			}
+			s.activity.Record(ctx, activity.EventTypeLog, "ai_completion",
+				attribute.String("parent_message_id", s.ParentID),
+				attribute.String("parent_tool", name),
+				attribute.String("error", outErrStr),
+				attribute.Int("iterations", iterations),
+				attribute.Int("iterations_with_truncation", truncations),
+				attribute.Int("max_iterations", opts.MaxIterations),
+				attribute.Int("tools_count", len(tools)),
+				attribute.Int("initial_messages", len(opts.Messages)),
+				attribute.Int("added_messages", len(messages)-len(opts.Messages)),
+				attribute.Int("input_tokens", inputTokens),
+				attribute.Int("output_tokens", outputTokens),
+			)
+		}()
 
 		// Complete and execute tool calls in a loop.
 		var result *aiv1.CompletionMessage
@@ -1024,44 +1115,63 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			final := i+1 == opts.MaxIterations
 			if final {
 				tools = nil
-				messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				if i != 0 {
+					messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				}
 			}
 
 			// Truncate messages to fit within LLM context window.
 			truncMessages := maybeTruncateMessages(messages)
+
+			// Telemetry
+			iterations++
+			if len(truncMessages) < len(messages) {
+				truncations++
+			}
 
 			// Log iteration
 			s.logger.Debug("completion iteration started", zap.Int("iteration", i), zap.Bool("iteration_is_final", final), zap.Int("messages_count", len(messages)), zap.Int("truncated_messages_count", len(truncMessages)), observability.ZapCtx(ctx))
 
 			// Call the LLM to complete the messages.
 			llmCtx, llmCancel := context.WithTimeout(ctx, llmRequestTimeout)
-			res, err := llm.Complete(llmCtx, truncMessages, tools, outputSchema)
+			res, err := llm.Complete(llmCtx, &drivers.CompleteOptions{
+				Messages:     truncMessages,
+				Tools:        tools,
+				OutputSchema: outputSchema,
+			})
 			llmCancel()
+
+			// Handle telemetry before checking the error
+			var resMsgsCount int
+			if res != nil {
+				resMsgsCount = len(res.Message.Content)
+				inputTokens += res.InputTokens
+				outputTokens += res.OutputTokens
+			}
+			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_messages_count", resMsgsCount), zap.Error(err), observability.ZapCtx(ctx))
+
+			// Handle LLM completion error
 			if err != nil {
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
 
-			// Telemetry
-			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_blocks_count", len(res.Content)), observability.ZapCtx(ctx))
-			// TODO: Emit `llm_completion` metric messages_count, input_text_length, output_text_length, input_tokens, output_tokens
-
 			// Break the tool call loop if no tool calls were requested.
 			var hasCall bool
-			for _, block := range res.Content {
+			for _, block := range res.Message.Content {
 				if call := block.GetToolCall(); call != nil {
 					hasCall = true
 					break
 				}
 			}
 			if !hasCall {
-				result = res
+				result = res.Message
 				break
 			}
 
 			// Add returned blocks as messages.
 			// Run the requested tool calls.
 			// TODO: How to do durable execution here?
-			for _, block := range res.Content {
+			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
 				case *aiv1.ContentBlock_Text:
 					msg := s.AddMessage(&AddMessageOptions{

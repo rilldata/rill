@@ -11,6 +11,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
@@ -177,14 +178,16 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil, nil)
+	res, err := ai.Complete(ctx, &drivers.CompleteOptions{
+		Messages: msgs,
+	})
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Extract text from content blocks
 	var responseText string
-	for _, block := range res.Content {
+	for _, block := range res.Message.Content {
 		switch blockType := block.GetBlockType().(type) {
 		case *aiv1.ContentBlock_Text:
 			if text := blockType.Text; text != "" {
@@ -260,14 +263,16 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil, nil)
+	res, err := ai.Complete(ctx, &drivers.CompleteOptions{
+		Messages: msgs,
+	})
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Extract text from content blocks
 	var responseText string
-	for _, block := range res.Content {
+	for _, block := range res.Message.Content {
 		switch blockType := block.GetBlockType().(type) {
 		case *aiv1.ContentBlock_Text:
 			if text := blockType.Text; text != "" {

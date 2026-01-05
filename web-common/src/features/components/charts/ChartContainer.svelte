@@ -9,9 +9,12 @@
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { Color } from "chroma-js";
+
+  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import type { Readable } from "svelte/store";
   import { derived, readable } from "svelte/store";
+  import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
   import type { ChartProvider, ChartSpec, ChartType } from "./types";
@@ -19,9 +22,13 @@
   export let chartType: ChartType;
   export let spec: Readable<ChartSpec>;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
-  export let theme: "light" | "dark" = "light";
-  export let themeStore: Readable<{ primary?: Color; secondary?: Color }> =
-    readable({});
+  export let themeMode: "light" | "dark" = "light";
+  /**
+   * Full theme object with all CSS variables for current mode
+   * If not provided, chart will fall back to defaults
+   */
+  export let theme: Record<string, string> | undefined = undefined;
+  export let themeStore: Readable<Theme> = readable(new Theme(undefined));
   export let showExploreLink: boolean = false;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
@@ -38,10 +45,17 @@
     $spec.metrics_view,
   );
 
+  $: dimensions = metricsViewSelectors.getDimensionsForMetricView(
+    $spec.metrics_view,
+  );
+
   $: chartDataQuery = chartProvider.createChartDataQuery(
     runtime,
     timeAndFilterStore,
   );
+
+  $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
+    splitWhereFilter($timeAndFilterStore.where));
 
   $: chartData = getChartData({
     config: $spec,
@@ -50,14 +64,18 @@
     themeStore,
     timeAndFilterStore,
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
-    isDarkMode: theme === "dark",
+    isThemeModeDark: themeMode === "dark",
   });
 
   $: chartTitle = chartProvider?.chartTitle?.($chartData.fields) ?? "";
 
   $: exploreAvailability = showExploreLink
     ? useExploreAvailability($runtime.instanceId, $spec?.metrics_view)
-    : readable({ isAvailable: false, exploreName: null });
+    : readable({
+        isAvailable: false,
+        exploreName: null,
+        displayName: undefined,
+      });
 
   $: exploreName = derived(
     exploreAvailability,
@@ -93,10 +111,31 @@
   <div class="size-full flex flex-col">
     {#if chartTitle}
       <div class="flex items-center justify-between px-4 py-2">
-        <h4 class="text-base font-semibold ui-copy-inactive">{chartTitle}</h4>
+        <div
+          class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
+        >
+          <h4 class="title">{chartTitle}</h4>
+          {#if "metrics_view" in $spec}
+            <Filter size="16px" className="text-gray-400 flex-shrink-0" />
+            <FilterChipsReadOnly
+              metricsViewNames={[$spec.metrics_view]}
+              dimensions={$dimensions}
+              measures={$measures}
+              {dimensionThresholdFilters}
+              dimensionsWithInlistFilter={[]}
+              filters={whereFilter}
+              displayTimeRange={$timeAndFilterStore.timeRange}
+              queryTimeStart={$timeAndFilterStore.timeRange.start}
+              queryTimeEnd={$timeAndFilterStore.timeRange.end}
+              hasBoldTimeRange={false}
+              chipLayout="scroll"
+            />
+          {/if}
+        </div>
         {#if showExploreLink && $exploreAvailability.isAvailable}
           <ExploreLink
             exploreName={$exploreName}
+            displayName={$exploreAvailability.displayName}
             {organization}
             {project}
             exploreState={$exploreState}
@@ -111,9 +150,28 @@
         chartSpec={$spec}
         {chartData}
         measures={$measures}
+        {themeMode}
         {theme}
         isCanvas={true}
       />
     </div>
   </div>
 {/if}
+
+<style lang="postcss">
+  .title {
+    font-size: 15px;
+    line-height: 26px;
+    @apply flex-shrink-0;
+    @apply font-medium text-gray-800 truncate;
+  }
+
+  .chip-scroll-container {
+    mask-image: linear-gradient(to right, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, black 95%, transparent);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+  }
+</style>

@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"encoding/csv"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -67,6 +68,12 @@ func TestHTTPToDuckDBTransfer(t *testing.T) {
 		Env: &drivers.ModelEnv{
 			AllowHostAccess: false,
 			StageChanges:    true,
+			AcquireConnector: func(ctx context.Context, name string) (drivers.Handle, func(), error) {
+				if name == "https" {
+					return inputHandle, func() {}, nil
+				}
+				return nil, nil, fmt.Errorf("unsupported name: %s", name)
+			},
 		},
 		PreliminaryInputProperties: map[string]any{
 			"path":    server.URL + "/data.csv",

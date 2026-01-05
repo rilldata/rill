@@ -1,19 +1,8 @@
 swagger: "2.0"
 info:
-  title: Rill API
-  description: It is used to manage organizations, projects, deployments, users, and roles.
-  version: v1
-  contact:
-    name: Rill Data
-    url: https://rilldata.com
-  license:
-    name: Apache 2.0
-    url: https://github.com/rilldata/rill/blob/main/LICENSE.md
-tags:
-  - name: AdminService
-  - name: AIService
-  - name: TelemetryService
-host: api.rilldata.com
+  title: Rill Admin API
+  description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
+  version: version not set
 consumes:
   - application/json
 produces:
@@ -38,8 +27,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CompleteRequest'
-      tags:
-        - AIService
   /v1/billing/metrics-project-credentials:
     post:
       summary: GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -59,8 +46,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1GetBillingProjectCredentialsRequest'
-      tags:
-        - AdminService
   /v1/billing/plans:
     get:
       summary: ListPublicBillingPlans lists all public billing plans
@@ -74,8 +59,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}:
     delete:
       summary: DeleteDeployment deletes a deployment.
@@ -94,8 +77,26 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
+  /v1/deployments/{deploymentId}/config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/credentials:
     post:
       summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -129,8 +130,6 @@ paths:
                 type: string
               attributes:
                 type: object
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/provision:
     post:
       summary: |-
@@ -171,8 +170,6 @@ paths:
               args:
                 type: object
                 description: Arguments for the provisioner call.
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
       summary: |-
@@ -198,8 +195,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/refresh:
     post:
       summary: |-
@@ -230,8 +225,6 @@ paths:
                 type: array
                 items:
                   type: string
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/start:
     post:
       summary: StartDeployment starts a deployment.
@@ -255,8 +248,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/stop:
     post:
       summary: StopDeployment stops a deployment.
@@ -280,8 +271,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/github/repositories:
     get:
       summary: |-
@@ -302,8 +291,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/github/user:
     get:
       summary: |-
@@ -319,8 +306,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/github/user/repositories:
     get:
       operationId: AdminService_ListGithubUserRepos
@@ -333,8 +318,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/magic-tokens/{tokenId}:
     delete:
       summary: RevokeMagicAuthToken revokes a magic auth token.
@@ -353,8 +336,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/magic-tokens/current:
     get:
       summary: GetCurrentMagicAuthToken returns information about the current magic auth token.
@@ -368,8 +349,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/organization-for-domain/{domain}:
     get:
       summary: |-
@@ -391,8 +370,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/orgs:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -416,8 +393,7 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
     post:
       summary: CreateOrganization creates a new organization
       operationId: AdminService_CreateOrganization
@@ -436,8 +412,7 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateOrganizationRequest'
-      tags:
-        - AdminService
+      x-visibility: public
   /v1/orgs/{org}:
     get:
       summary: GetOrganization returns information about a specific organization
@@ -460,8 +435,7 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
+      x-visibility: public
     delete:
       summary: DeleteOrganization deletes an organization
       operationId: AdminService_DeleteOrganization
@@ -479,8 +453,7 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
     patch:
       summary: UpdateOrganization deletes an organizations
       operationId: AdminService_UpdateOrganization
@@ -512,6 +485,8 @@ paths:
                 type: string
               logoAssetId:
                 type: string
+              logoDarkAssetId:
+                type: string
               faviconAssetId:
                 type: string
               thumbnailAssetId:
@@ -520,8 +495,7 @@ paths:
                 type: string
               billingEmail:
                 type: string
-      tags:
-        - AdminService
+      x-visibility: public
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -544,8 +518,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/billing/payments/portal-url:
     get:
       summary: GetPaymentsPortalURL returns the URL for the billing session to collect payment method
@@ -572,8 +544,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/billing/subscriptions:
     get:
       summary: GetBillingSubscription lists the subscription for the organization
@@ -596,8 +566,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
     delete:
       summary: CancelBillingSubscription cancels the billing subscription for the organization
       operationId: AdminService_CancelBillingSubscription
@@ -619,8 +587,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
     patch:
       summary: UpdateBillingSubscription updates the billing plan for the organization
       operationId: AdminService_UpdateBillingSubscription
@@ -648,8 +614,6 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/billing/subscriptions/renew:
     post:
       summary: RenewBillingSubscription renews the billing plan for the organization once cancelled
@@ -678,8 +642,6 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/create-managed-git-repo:
     put:
       summary: CreateManagedGitRepo creates a new rill managed git repo for the organization.
@@ -707,8 +669,6 @@ paths:
               name:
                 type: string
                 description: "name of the repo to create. \nNote: The final name will be suffixed with a random string to ensure uniqueness."
-      tags:
-        - AdminService
   /v1/orgs/{org}/create_asset:
     post:
       summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
@@ -746,8 +706,6 @@ paths:
               estimatedSizeBytes:
                 type: string
                 format: int64
-      tags:
-        - AdminService
   /v1/orgs/{org}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -775,8 +733,7 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
   /v1/orgs/{org}/members:
     get:
       summary: ListOrganizationMemberUsers lists all the org members
@@ -823,8 +780,7 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
     post:
       summary: AddOrganizationMemberUser adds a user to the organization
       operationId: AdminService_AddOrganizationMemberUser
@@ -854,9 +810,29 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      tags:
-        - AdminService
+      x-visibility: public
   /v1/orgs/{org}/members/{email}:
+    get:
+      summary: GetOrganizationMemberUser gets the member details
+      operationId: AdminService_GetOrganizationMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveOrganizationMemberUser removes member from the organization
       operationId: AdminService_RemoveOrganizationMemberUser
@@ -878,8 +854,7 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
     put:
       summary: SetOrganizationMemberUserRole sets the role for the member
       operationId: AdminService_SetOrganizationMemberUserRole
@@ -911,8 +886,36 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      tags:
-        - AdminService
+  /v1/orgs/{org}/members/{email}/attributes:
+    put:
+      summary: UpdateOrganizationMemberUserAttributes updates the attributes for a member
+      operationId: AdminService_UpdateOrganizationMemberUserAttributes
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateOrganizationMemberUserAttributesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              attributes:
+                type: object
   /v1/orgs/{org}/members/current:
     delete:
       summary: LeaveOrganization removes the current user from the organization
@@ -931,8 +934,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/project/{project}/usergroups:
     get:
       summary: ListProjectMemberUsergroups lists the project's user groups
@@ -960,6 +961,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -969,8 +975,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects:
     get:
       summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
@@ -998,8 +1002,7 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
     post:
       summary: CreateProject creates a new project
       operationId: AdminService_CreateProject
@@ -1041,7 +1044,7 @@ paths:
                 format: int64
               subpath:
                 type: string
-              prodBranch:
+              primaryBranch:
                 type: string
               gitRemote:
                 type: string
@@ -1056,8 +1059,7 @@ paths:
                 type: string
               skipDeploy:
                 type: boolean
-      tags:
-        - AdminService
+      x-visibility: public
   /v1/orgs/{org}/projects-for-user:
     get:
       summary: |-
@@ -1091,8 +1093,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}:
     get:
       summary: GetProject returns information about a specific project
@@ -1115,6 +1115,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: branch
+          description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+          in: query
+          required: false
+          type: string
         - name: accessTokenTtlSeconds
           in: query
           required: false
@@ -1128,8 +1133,7 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
+      x-visibility: public
     delete:
       summary: DeleteProject deletes an project
       operationId: AdminService_DeleteProject
@@ -1151,8 +1155,7 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
+      x-visibility: public
     patch:
       summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
@@ -1186,7 +1189,7 @@ paths:
                 type: boolean
               directoryName:
                 type: string
-              prodBranch:
+              primaryBranch:
                 type: string
               gitRemote:
                 type: string
@@ -1208,8 +1211,7 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
-      tags:
-        - AdminService
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
       summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
@@ -1240,8 +1242,6 @@ paths:
             properties:
               options:
                 $ref: '#/definitions/v1AlertOptions'
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/alerts/-/yaml:
     post:
       summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -1272,8 +1272,6 @@ paths:
             properties:
               options:
                 $ref: '#/definitions/v1AlertOptions'
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/alerts/{name}:
     delete:
       summary: DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
@@ -1300,8 +1298,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     put:
       summary: EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
       operationId: AdminService_EditAlert
@@ -1335,8 +1331,6 @@ paths:
             properties:
               options:
                 $ref: '#/definitions/v1AlertOptions'
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/alerts/{name}/unsubscribe:
     post:
       summary: UnsubscribeAlert removes the calling user from a alert's recipients list
@@ -1373,8 +1367,6 @@ paths:
                 type: string
               slackUser:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/alerts/{name}/yaml:
     get:
       summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -1401,8 +1393,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/clone-credentials:
     get:
       summary: GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
@@ -1429,8 +1419,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/connect-to-github:
     post:
       summary: |-
@@ -1463,8 +1451,6 @@ paths:
             properties:
               remote:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/credentials:
     post:
       summary: |-
@@ -1506,8 +1492,6 @@ paths:
                 type: string
               attributes:
                 type: object
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/deployments:
     get:
       summary: ListDeployments lists deployments for a project.
@@ -1534,12 +1518,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
         - name: userId
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
     post:
       summary: CreateDeployment creates a new deployment for a project.
       operationId: AdminService_CreateDeployment
@@ -1569,8 +1555,14 @@ paths:
             properties:
               environment:
                 type: string
-      tags:
-        - AdminService
+              branch:
+                type: string
+                description: "Branch to deploy from. \nMust not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.\nOptional for `dev` deployments."
+              editable:
+                type: boolean
+                description: |-
+                  Whether the deployment is editable and the edited changes are persisted back to the git repo.
+                  Can't be set for `prod` deployments.
   /v1/orgs/{org}/projects/{project}/hibernate:
     post:
       summary: HibernateProject hibernates a project by tearing down its deployments.
@@ -1597,8 +1589,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/iframe:
     post:
       summary: GetIFrame returns the iframe URL for the given project
@@ -1657,6 +1647,9 @@ paths:
               theme:
                 type: string
                 description: Theme to use for the embedded resource.
+              themeMode:
+                type: string
+                description: 'Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".'
               navigation:
                 type: boolean
                 description: Navigation denotes whether navigation between different resources should be enabled in the embed.
@@ -1669,8 +1662,6 @@ paths:
                   type: string
                 description: 'DEPRECATED: Additional parameters to set outright in the generated URL query.'
             description: GetIFrameRequest is the request payload for AdminService.GetIFrame.
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/invites:
     get:
       summary: ListProjectInvites lists all the project invites
@@ -1702,8 +1693,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/members:
     get:
       summary: ListProjectMemberUsers lists all the project members
@@ -1744,8 +1733,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
     post:
       summary: AddProjectMemberUser adds a member to the project
       operationId: AdminService_AddProjectMemberUser
@@ -1777,9 +1764,39 @@ paths:
                 type: string
               role:
                 type: string
-      tags:
-        - AdminService
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/members/{email}:
+    get:
+      summary: GetProjectMemberUser gets the member details
+      operationId: AdminService_GetProjectMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveProjectMemberUser removes member from the project
       operationId: AdminService_RemoveProjectMemberUser
@@ -1805,8 +1822,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     put:
       summary: SetProjectMemberUserRole sets the role for the member
       operationId: AdminService_SetProjectMemberUserRole
@@ -1840,8 +1855,39 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+  /v1/orgs/{org}/projects/{project}/members/{email}/usergroups:
+    get:
+      summary: ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+      operationId: AdminService_ListUsergroupsForProjectAndUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUsergroupsForProjectAndUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/redeploy:
     post:
       summary: |-
@@ -1871,8 +1917,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/reports:
     post:
       summary: CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
@@ -1903,8 +1947,6 @@ paths:
             properties:
               options:
                 $ref: '#/definitions/v1ReportOptions'
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/reports/-/yaml:
     post:
       summary: GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
@@ -1935,8 +1977,6 @@ paths:
             properties:
               options:
                 $ref: '#/definitions/v1ReportOptions'
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/reports/{name}:
     delete:
       summary: DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
@@ -1963,8 +2003,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     put:
       summary: EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
       operationId: AdminService_EditReport
@@ -1998,8 +2036,6 @@ paths:
             properties:
               options:
                 $ref: '#/definitions/v1ReportOptions'
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/reports/{name}/trigger:
     post:
       summary: TriggerReport triggers an ad-hoc report run
@@ -2031,8 +2067,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/reports/{name}/unsubscribe:
     post:
       summary: UnsubscribeReport removes the calling user from a reports recipients list
@@ -2069,8 +2103,6 @@ paths:
                 type: string
               slackUser:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/request-access:
     post:
       operationId: AdminService_RequestProjectAccess
@@ -2100,8 +2132,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/services:
     get:
       summary: ListProjectMemberServices returns all the services for the project for an organization
@@ -2124,8 +2154,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/services/{name}:
     delete:
       summary: RemoveProjectMemberService removes the service from the project
@@ -2152,8 +2180,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/services/{name}/role:
     put:
       summary: SetProjectMemberServiceRole updates the project role for the service
@@ -2188,8 +2214,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/tokens/magic:
     get:
       summary: ListMagicAuthTokens lists all the magic auth tokens for a specific project.
@@ -2221,8 +2245,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
     post:
       summary: IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
       operationId: AdminService_IssueMagicAuthToken
@@ -2286,8 +2308,6 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles:
     delete:
       summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -2314,8 +2334,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: AddProjectMemberUsergroupRole adds the role for the user group
       operationId: AdminService_AddProjectMemberUsergroup
@@ -2349,8 +2367,13 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -2384,8 +2407,13 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
+              restrictResources:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
   /v1/orgs/{org}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -2421,8 +2449,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/variables:
     get:
       summary: GetProjectVariables returns project variables.
@@ -2461,8 +2487,7 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
+      x-visibility: public
     put:
       summary: UpdateProjectVariables updates variables for a project.
       operationId: AdminService_UpdateProjectVariables
@@ -2509,8 +2534,6 @@ paths:
                 items:
                   type: string
                 description: Variables to delete.
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/whitelisted:
     get:
       summary: ListWhitelistedDomains lists all the whitelisted domains of the project
@@ -2533,8 +2556,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
       operationId: AdminService_CreateProjectWhitelistedDomain
@@ -2566,8 +2587,6 @@ paths:
                 type: string
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/projects/{project}/whitelisted/{domain}:
     delete:
       summary: RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -2594,8 +2613,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/services:
     get:
       summary: ListService returns all the services per organization
@@ -2614,8 +2631,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: CreateService creates a new service per organization
       operationId: AdminService_CreateService
@@ -2652,8 +2667,6 @@ paths:
                 title: Optional project role to assign
               attributes:
                 type: object
-      tags:
-        - AdminService
   /v1/orgs/{org}/services/{name}:
     get:
       summary: GetService returns information about a specific service
@@ -2676,8 +2689,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     delete:
       summary: DeleteService deletes a service per organization
       operationId: AdminService_DeleteService
@@ -2699,8 +2710,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     patch:
       summary: UpdateService updates a service per organization
       operationId: AdminService_UpdateService
@@ -2732,8 +2741,6 @@ paths:
                 type: string
               attributes:
                 type: object
-      tags:
-        - AdminService
   /v1/orgs/{org}/services/{name}/role:
     delete:
       summary: RemoveOrganizationMemberService removes the organization role for the service
@@ -2756,8 +2763,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     put:
       summary: SetOrganizationMemberServiceRole sets or updates the role of the service in the organization
       operationId: AdminService_SetOrganizationMemberServiceRole
@@ -2787,8 +2792,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/services/{serviceName}/tokens:
     get:
       summary: ListServiceAuthTokens lists all the service auth tokens
@@ -2811,8 +2814,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: IssueServiceAuthToken issues an access token for a service
       operationId: AdminService_IssueServiceAuthToken
@@ -2839,8 +2840,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/orgs/{org}/usergroups:
     get:
       summary: ListOrganizationMemberUsergroups lists the org's user groups
@@ -2878,8 +2877,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
     post:
       summary: CreateUsergroup creates a user group in the organization
       operationId: AdminService_CreateUsergroup
@@ -2905,8 +2902,6 @@ paths:
             properties:
               name:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/usergroups-for-user:
     get:
       summary: ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
@@ -2938,8 +2933,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/usergroups/{usergroup}:
     get:
       summary: GetUsergroups returns the user group details
@@ -2971,8 +2964,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
     delete:
       summary: DeleteUsergroup deletes the user group from the organization
       operationId: AdminService_DeleteUsergroup
@@ -2994,8 +2985,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: RenameUsergroup renames the user group
       operationId: AdminService_RenameUsergroup
@@ -3025,8 +3014,6 @@ paths:
             properties:
               name:
                 type: string
-      tags:
-        - AdminService
     put:
       summary: EditUsergroup renames the user group
       operationId: AdminService_EditUsergroup
@@ -3056,8 +3043,6 @@ paths:
             properties:
               description:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/usergroups/{usergroup}/members:
     get:
       summary: ListUsergroupMemberUsers lists all the user group members
@@ -3089,8 +3074,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/usergroups/{usergroup}/members/{email}:
     delete:
       summary: RemoveUsergroupMemberUser removes member from the user group
@@ -3117,8 +3100,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     put:
       summary: AddUsergroupMemberUser adds a member to the user group
       operationId: AdminService_AddUsergroupMemberUser
@@ -3149,8 +3130,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/orgs/{org}/usergroups/{usergroup}/role:
     delete:
       summary: RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
@@ -3173,8 +3152,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: AddOrganizationMemberUsergroupRole adds the role for the user group
       operationId: AdminService_AddOrganizationMemberUsergroup
@@ -3204,8 +3181,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
     put:
       summary: SetOrganizationMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetOrganizationMemberUsergroupRole
@@ -3235,8 +3210,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/whitelisted:
     get:
       summary: ListWhitelistedDomains lists all the whitelisted domains for the organization
@@ -3255,8 +3228,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     post:
       summary: CreateWhitelistedDomain adds a domain to the whitelist
       operationId: AdminService_CreateWhitelistedDomain
@@ -3284,8 +3255,6 @@ paths:
                 type: string
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/orgs/{org}/whitelisted/{domain}:
     delete:
       summary: RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -3308,8 +3277,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -3323,8 +3290,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/project-access-request/{id}:
     get:
       operationId: AdminService_GetProjectAccessRequest
@@ -3342,8 +3307,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/project-access-request/{id}/approve:
     post:
       operationId: AdminService_ApproveProjectAccess
@@ -3369,8 +3332,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
   /v1/project-access-request/{id}/deny:
     post:
       operationId: AdminService_DenyProjectAccess
@@ -3393,8 +3354,6 @@ paths:
           required: true
           schema:
             type: object
-      tags:
-        - AdminService
   /v1/projects:
     get:
       summary: ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -3413,8 +3372,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/projects-for-fingerprint:
     get:
       summary: |-
@@ -3447,8 +3404,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/projects/-/redeploy:
     post:
       summary: |-
@@ -3470,8 +3425,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1TriggerRedeployRequest'
-      tags:
-        - AdminService
   /v1/projects/{id}:
     get:
       summary: GetProject returns information about a specific project
@@ -3490,8 +3443,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/projects/{projectId}/alerts/meta:
     post:
       summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -3534,8 +3485,6 @@ paths:
                   type: string
               anonRecipients:
                 type: boolean
-      tags:
-        - AdminService
   /v1/projects/{projectId}/repo/meta:
     get:
       summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -3555,8 +3504,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/projects/{projectId}/repo/virtual:
     get:
       summary: PullVirtualRepo fetches files from a project's virtual repo
@@ -3594,8 +3541,82 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
+        - name: superuserForceAccess
+          description: If set and the caller is a superuser, force access regardless of project permissions.
+          in: query
+          required: false
+          type: boolean
+  /v1/projects/{projectId}/repo/virtual/file:
+    get:
+      summary: GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+      operationId: AdminService_GetVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to get the virtual file for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            The environment to get the virtual file for.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: The path of the virtual file to get.
+          in: query
+          required: false
+          type: string
+        - name: superuserForceAccess
+          description: If set and the caller is a superuser, force access regardless of project permissions.
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: DeleteVirtualFile deletes a virtual file from a project's virtual repo
+      operationId: AdminService_DeleteVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to delete the virtual file from.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            The environment to delete the virtual file from.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: The path of the virtual file to delete.
+          in: query
+          required: false
+          type: string
+        - name: superuserForceAccess
+          description: If set and the caller is a superuser, force access regardless of project permissions.
+          in: query
+          required: false
+          type: boolean
   /v1/projects/{projectId}/reports/meta:
     post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -3646,8 +3667,6 @@ paths:
                 type: array
                 items:
                   type: string
-      tags:
-        - AdminService
   /v1/roles:
     get:
       summary: ListRoles lists all the roles available for orgs and projects.
@@ -3661,8 +3680,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/services/tokens/{tokenId}:
     delete:
       summary: RevokeServiceAuthToken revoke a service's access token
@@ -3681,8 +3698,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/superuser/billing/repair:
     post:
       summary: SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
@@ -3702,8 +3717,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoTriggerBillingRepairRequest'
-      tags:
-        - AdminService
   /v1/superuser/deployments/manager-token:
     post:
       summary: SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
@@ -3723,8 +3736,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoIssueRuntimeManagerTokenRequest'
-      tags:
-        - AdminService
   /v1/superuser/members:
     get:
       summary: ListSuperusers lists all the superusers
@@ -3738,8 +3749,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
     post:
       summary: SetSuperuser adds/remove a superuser
       operationId: AdminService_SetSuperuser
@@ -3758,8 +3767,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SetSuperuserRequest'
-      tags:
-        - AdminService
   /v1/superuser/organization/billing/customer_id:
     patch:
       summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
@@ -3779,8 +3786,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
-      tags:
-        - AdminService
   /v1/superuser/organization/custom-domain:
     patch:
       summary: |-
@@ -3803,8 +3808,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
-      tags:
-        - AdminService
   /v1/superuser/organization/trial/extend:
     post:
       summary: SudoExtendTrial extends the trial period for an organization
@@ -3824,8 +3827,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoExtendTrialRequest'
-      tags:
-        - AdminService
   /v1/superuser/organizations/{org}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -3857,8 +3858,6 @@ paths:
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
             - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
-      tags:
-        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -3878,8 +3877,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateAnnotationsRequest'
-      tags:
-        - AdminService
   /v1/superuser/projects/search:
     get:
       summary: SearchProjectNames returns project names matching the pattern
@@ -3912,8 +3909,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/superuser/quotas/organization:
     patch:
       summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
@@ -3933,8 +3928,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationQuotasRequest'
-      tags:
-        - AdminService
   /v1/superuser/quotas/user:
     patch:
       summary: SudoUpdateUserQuotas update the quotas for users
@@ -3954,8 +3947,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateUserQuotasRequest'
-      tags:
-        - AdminService
   /v1/superuser/resource:
     get:
       summary: SudoGetResource returns details about a resource by ID lookup
@@ -3990,8 +3981,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/telemetry/events:
     post:
       summary: |-
@@ -4013,8 +4002,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1RecordEventsRequest'
-      tags:
-        - TelemetryService
   /v1/tokens/current:
     delete:
       summary: |-
@@ -4030,8 +4017,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/tokens/represent:
     post:
       summary: |-
@@ -4053,8 +4038,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
-      tags:
-        - AdminService
   /v1/users:
     get:
       summary: GetUser returns user by email
@@ -4073,8 +4056,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
   /v1/users/-/tokens/{tokenId}:
     delete:
       summary: |-
@@ -4103,11 +4084,11 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/users/-/tokens/representing/{email}:
     delete:
-      summary: "RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. \nThis is primarily used for \"unassume\" flows."
+      summary: |-
+        RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
+        This is primarily used for "unassume" flows.
       operationId: AdminService_RevokeRepresentativeAuthTokens
       responses:
         "200":
@@ -4124,8 +4105,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/users/{email}:
     delete:
       summary: DeleteUser deletes the user from the organization by email
@@ -4148,8 +4127,6 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
   /v1/users/{userId}/tokens:
     get:
       summary: |-
@@ -4187,8 +4164,38 @@ paths:
           in: query
           required: false
           type: boolean
-      tags:
-        - AdminService
+        - name: refresh
+          description: Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: |-
+        RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+        You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+      operationId: AdminService_RevokeAllUserAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeAllUserAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          description: |-
+            User ID to revoke all tokens for.
+            Set to "current" to revoke all tokens for the current user.
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          description: Flag for superusers to override normal access checks.
+          in: query
+          required: false
+          type: boolean
     post:
       summary: |-
         IssueUserAuthToken issues an access token for the current user.
@@ -4235,8 +4242,6 @@ paths:
               superuserForceAccess:
                 type: boolean
                 description: Flag for superusers to override normal access checks.
-      tags:
-        - AdminService
   /v1/users/bookmarks:
     get:
       summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -4263,8 +4268,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
     post:
       summary: CreateBookmark creates a bookmark for the given user or for all users for the dashboard
       operationId: AdminService_CreateBookmark
@@ -4283,8 +4286,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateBookmarkRequest'
-      tags:
-        - AdminService
     put:
       summary: UpdateBookmark updates a bookmark for the given user for the given project
       operationId: AdminService_UpdateBookmark
@@ -4303,8 +4304,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1UpdateBookmarkRequest'
-      tags:
-        - AdminService
   /v1/users/bookmarks/{bookmarkId}:
     get:
       summary: GetBookmark returns the bookmark for the given user for the given project
@@ -4323,8 +4322,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
     delete:
       summary: RemoveBookmark removes the bookmark for the given user or all users
       operationId: AdminService_RemoveBookmark
@@ -4342,8 +4339,6 @@ paths:
           in: path
           required: true
           type: string
-      tags:
-        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -4357,8 +4352,6 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/users/preferences:
     put:
       summary: UpdateUserPreferences updates the preferences for the user
@@ -4378,8 +4371,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1UpdateUserPreferencesRequest'
-      tags:
-        - AdminService
   /v1/users/search:
     get:
       summary: GetUsersByEmail returns users by email
@@ -4407,8 +4398,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
 definitions:
   ListGithubUserReposResponseRepo:
     type: object
@@ -4726,6 +4715,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+        description: Input message(s) for the AI to complete.
       tools:
         type: array
         items:
@@ -4740,6 +4730,15 @@ definitions:
     properties:
       message:
         $ref: '#/definitions/v1CompletionMessage'
+        description: The AI-generated output message.
+      inputTokens:
+        type: integer
+        format: int64
+        description: Number of tokens in the input.
+      outputTokens:
+        type: integer
+        format: int64
+        description: Number of tokens in the output.
   v1CompletionMessage:
     type: object
     properties:
@@ -4898,6 +4897,8 @@ definitions:
     type: object
   v1DeleteUsergroupResponse:
     type: object
+  v1DeleteVirtualFileResponse:
+    type: object
   v1DenyProjectAccessResponse:
     type: object
   v1Deployment:
@@ -4913,6 +4914,8 @@ definitions:
         type: string
       branch:
         type: string
+      editable:
+        type: boolean
       runtimeHost:
         type: string
       runtimeInstanceId:
@@ -4932,9 +4935,13 @@ definitions:
     enum:
       - DEPLOYMENT_STATUS_UNSPECIFIED
       - DEPLOYMENT_STATUS_PENDING
-      - DEPLOYMENT_STATUS_OK
-      - DEPLOYMENT_STATUS_ERROR
+      - DEPLOYMENT_STATUS_RUNNING
+      - DEPLOYMENT_STATUS_ERRORED
       - DEPLOYMENT_STATUS_STOPPED
+      - DEPLOYMENT_STATUS_UPDATING
+      - DEPLOYMENT_STATUS_STOPPING
+      - DEPLOYMENT_STATUS_DELETING
+      - DEPLOYMENT_STATUS_DELETED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1EditAlertResponse:
     type: object
@@ -5038,7 +5045,7 @@ definitions:
         format: date-time
       gitSubpath:
         type: string
-      gitProdBranch:
+      gitPrimaryBranch:
         type: string
       gitManagedRepo:
         type: boolean
@@ -5057,6 +5064,29 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1GetDeploymentConfigResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+        title: Variables for the deployment (connector credentials, etc.)
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        title: Annotations for the deployment (org/project metadata, etc.)
+      frontendUrl:
+        type: string
+        description: Frontend URL for the deployment.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the deployment was last updated.
+      usesArchive:
+        type: boolean
+        description: Whether the deployment is git based or archive based.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5126,6 +5156,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationMemberUserResponse:
+    type: object
+    properties:
+      member:
+        $ref: '#/definitions/v1OrganizationMemberUser'
   v1GetOrganizationNameForDomainResponse:
     type: object
     properties:
@@ -5153,12 +5188,17 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectMemberUserResponse:
+    type: object
+    properties:
+      member:
+        $ref: '#/definitions/v1ProjectMemberUser'
   v1GetProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-      prodDeployment:
+      deployment:
         $ref: '#/definitions/v1Deployment'
       jwt:
         type: string
@@ -5257,6 +5297,12 @@ definitions:
         $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1GetVirtualFileResponse:
+    type: object
+    properties:
+      file:
+        $ref: '#/definitions/v1VirtualFile'
+        description: The virtual file.
   v1GithubPermission:
     type: string
     enum:
@@ -5551,6 +5597,14 @@ definitions:
           $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1ListUsergroupsForProjectAndUserResponse:
+    type: object
+    properties:
+      usergroups:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -5624,6 +5678,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1Organization:
     type: object
     properties:
@@ -5637,6 +5698,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      logoDarkUrl:
         type: string
       faviconUrl:
         type: string
@@ -5716,6 +5779,8 @@ definitions:
       usergroupsCount:
         type: integer
         format: int64
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time
@@ -5812,14 +5877,14 @@ definitions:
         description: managed_git_id is set if the project is connected to a rill-managed git repo.
       subpath:
         type: string
-      prodBranch:
+      primaryBranch:
         type: string
       archiveAssetId:
         type: string
       prodSlots:
         type: string
         format: int64
-      prodDeploymentId:
+      primaryDeploymentId:
         type: string
       devSlots:
         type: string
@@ -5853,6 +5918,13 @@ definitions:
         type: string
       invitedBy:
         type: string
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectMemberService:
     type: object
     properties:
@@ -5901,6 +5973,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      restrictResources:
+        type: boolean
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1ProjectPermissions:
     type: object
     properties:
@@ -6141,6 +6220,13 @@ definitions:
         type: string
       name:
         type: string
+  v1RevokeAllUserAuthTokensResponse:
+    type: object
+    properties:
+      tokensRevoked:
+        type: integer
+        format: int32
+        description: Number of tokens revoked.
   v1RevokeCurrentAuthTokenResponse:
     type: object
   v1RevokeMagicAuthTokenResponse:
@@ -6415,12 +6501,21 @@ definitions:
       name:
         type: string
         title: The name of the tool
+      displayName:
+        type: string
+        title: The display name of the tool
       description:
         type: string
         title: A human-readable description of the tool
+      meta:
+        type: object
+        title: Metadata about the tool
       inputSchema:
         type: string
         title: JSON Schema defining the expected parameters for the tool (as JSON string)
+      outputSchema:
+        type: string
+        title: JSON Schema defining the expected output of the tool (as JSON string)
     title: Tool represents a tool definition for AI usage
   v1ToolCall:
     type: object
@@ -6490,6 +6585,8 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateOrganizationMemberUserAttributesResponse:
+    type: object
   v1UpdateOrganizationResponse:
     type: object
     properties:
@@ -6558,6 +6655,10 @@ definitions:
         type: string
       prefix:
         type: string
+      attributes:
+        type: object
+      refresh:
+        type: boolean
       createdOn:
         type: string
         format: date-time
@@ -6636,5 +6737,5 @@ definitions:
       role:
         type: string
 externalDocs:
-  description: Rill API Reference
-  url: https://docs.rilldata.com/api/admin
+  description: Rill API Documentation
+  url: https://docs.rilldata.com

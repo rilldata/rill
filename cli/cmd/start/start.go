@@ -1,19 +1,16 @@
 package start
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/envdetect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +22,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var debug bool
 	var readonly bool
 	var reset bool
+	var pullEnv bool
 	var noUI bool
 	var noOpen bool
 	var logFormat string
@@ -41,14 +39,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var projectPath string
 			if len(args) > 0 {
-				projectPath = args[0]
-				if strings.HasSuffix(projectPath, ".git") {
-					repoName, err := gitutil.CloneRepo(projectPath)
-					if err != nil {
-						return fmt.Errorf("clone repo error: %w", err)
-					}
-
-					projectPath = repoName
+				var err error
+				projectPath, err = ResolveProjectPath(args[0])
+				if err != nil {
+					return err
 				}
 			} else if !cmdutil.HasRillProject(".") {
 				if !ch.Interactive {
@@ -120,42 +114,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Always attempt to pull env for any valid Rill project (after projectPath is set)
-			if ch.IsAuthenticated() {
-				if local.IsProjectInit(projectPath) {
-					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
-					if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
-						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
-					}
-				}
-			}
-
-			// Check that projectPath doesn't have an excessive number of files.
-			// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
-			if _, err := os.Stat(projectPath); err == nil {
-				repo, _, err := cmdutil.RepoForProjectPath(projectPath)
-				if err != nil {
-					return err
-				}
-				_, err = repo.ListGlob(cmd.Context(), "**", false)
-				if err != nil {
-					if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
-						ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
-						return nil
-					}
-					return fmt.Errorf("failed to list project files: %w", err)
-				}
-			}
-
-			// Parse log format
-			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
-			if !ok {
-				return fmt.Errorf("invalid log format %q", logFormat)
-			}
-
 			// Parser variables from "a=b" format to map
 			envVars = append(envVars, envVarsOld...)
-			envVarsMap, err := parseVariables(envVars)
+			envVarsMap, err := ParseVariables(envVars)
 			if err != nil {
 				return err
 			}
@@ -182,14 +143,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			allowedOrigins = append(allowedOrigins, localURL)
 
+			ch.Interactive = false // Disable interactive mode for the app server
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Ch:             ch,
 				Verbose:        verbose,
 				Debug:          debug,
 				Reset:          reset,
+				PullEnv:        pullEnv,
 				Environment:    environment,
 				ProjectPath:    projectPath,
-				LogFormat:      parsedLogFormat,
+				LogFormat:      logFormat,
 				Variables:      envVarsMap,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
@@ -215,6 +178,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
 	startCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
+	startCmd.Flags().BoolVar(&pullEnv, "pull-env", true, "Pull environment variables from Rill Cloud before starting the project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
@@ -241,7 +205,19 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	return startCmd
 }
 
-func parseVariables(vals []string) (map[string]string, error) {
+func ResolveProjectPath(path string) (string, error) {
+	if strings.HasSuffix(path, ".git") {
+		repoName, err := gitutil.CloneRepo(path)
+		if err != nil {
+			return "", fmt.Errorf("clone repo error: %w", err)
+		}
+		path = repoName
+	}
+
+	return path, nil
+}
+
+func ParseVariables(vals []string) (map[string]string, error) {
 	res := make(map[string]string)
 	for _, v := range vals {
 		v, err := godotenv.Unmarshal(v)

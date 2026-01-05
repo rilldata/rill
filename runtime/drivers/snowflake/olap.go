@@ -43,7 +43,15 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if c.configProperties.LogQueries {
-		c.logger.Info("Snowflake query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("Snowflake query", fields...)
 	}
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -187,7 +195,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_UUID
 	case "VARIANT", "OBJECT", "ARRAY", "STRUCT":
 		t.Code = runtimev1.Type_CODE_JSON
-	case "GEOMETRY":
+	case "GEOMETRY", "GEOGRAPHY":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "NULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED

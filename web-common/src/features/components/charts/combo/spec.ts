@@ -3,6 +3,7 @@ import type {
   ChartDataResult,
   ColorMapping,
 } from "@rilldata/web-common/features/components/charts/types";
+import { resolveCSSVariable } from "@rilldata/web-common/features/components/charts/util";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import type { VisualizationSpec } from "svelte-vega";
 import type { ColorDef, Field } from "vega-lite/build/src/channeldef";
@@ -31,10 +32,12 @@ function getColorForField(
     }
   }
 
+  // Use qualitative palette colors for the two measures
   if (encoding === "y1") return COMPARIONS_COLORS[0];
   if (encoding === "y2") return COMPARIONS_COLORS[1];
 
-  return "#3524C7";
+  // Fallback to qualitative palette color 3
+  return COMPARIONS_COLORS[2];
 }
 
 export function generateVLComboChartSpec(
@@ -128,7 +131,8 @@ export function generateVLComboChartSpec(
     ...(config.color?.legendOrientation !== "none" && { legend }),
     scale: {
       domain: colorMapping.map((m) => m.value),
-      range: colorMapping.map((m) => m.color),
+      // Resolve CSS variables for canvas rendering
+      range: colorMapping.map((m) => resolveCSSVariable(m.color)),
       type: "ordinal",
     },
   };

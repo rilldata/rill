@@ -16,6 +16,7 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
+  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -66,6 +67,11 @@
     $validSpecStore.data?.explore,
   );
 
+  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+  $: hasDimensionThresholdFilter =
+    hasDashboardDimensionThresholdFilter($dashboardStore);
+  $: hasSomeFilter = hasWhereFilter || hasDimensionThresholdFilter;
+
   let url: string | null = null;
   let setExpiration = false;
   let apiError: string;
@@ -95,13 +101,20 @@
         const values = form.data;
 
         try {
+          const filter = hasSomeFilter
+            ? mergeDimensionAndMeasureFilters(
+                $dashboardStore.whereFilter,
+                $dashboardStore.dimensionThresholdFilters,
+              )
+            : undefined;
+
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
             project,
             data: {
               resourceType: ResourceKind.Explore as string,
               resourceName: dashboard,
-              filter: hasWhereFilter ? $dashboardStore.whereFilter : undefined,
+              filter,
               fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
@@ -137,10 +150,6 @@
     }, 2_000);
   }
 
-  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
-  $: hasDimensionThresholdFilter =
-    hasDashboardDimensionThresholdFilter($dashboardStore);
-
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
     $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
@@ -170,10 +179,7 @@
         />
       </div>
 
-      <div
-        class="mt-4"
-        class:mb-4={!hasWhereFilter && !hasDimensionThresholdFilter}
-      >
+      <div class="mt-4" class:mb-4={!hasSomeFilter}>
         <div class="flex items-center gap-x-2">
           <Switch small id="has-expiration" bind:checked={setExpiration} />
           <Label class="text-xs" for="has-expiration">Set expiration</Label>
@@ -237,7 +243,7 @@
       {/if}
     </div> -->
 
-      {#if hasWhereFilter || hasDimensionThresholdFilter}
+      {#if hasSomeFilter}
         <hr class="mt-4 mb-4" />
 
         <div class="flex flex-col gap-y-1">

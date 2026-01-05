@@ -18,12 +18,18 @@ import {
   isFieldConfig,
   mergedVlConfig,
   resolveColor,
+  resolveCSSVariable,
   sanitizeSortFieldForVega,
 } from "@rilldata/web-common/features/components/charts/util";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   BarHighlightColorDark,
   BarHighlightColorLight,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  getDivergingColorsAsHex,
+  getSequentialColorsAsHex,
+} from "@rilldata/web-common/features/themes/palette-store";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
@@ -44,6 +50,7 @@ export function createMultiLayerBaseSpec() {
     width: "container",
     data: { name: "metrics-view" },
     autosize: { type: "fit" },
+    background: "transparent",
     layer: [],
   };
   return baseSpec;
@@ -73,12 +80,11 @@ export function createPositionEncoding(
     title: metaData?.displayName || field.field,
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(field.sort &&
-      field.type !== "temporal" && {
-        sort:
-          data.domainValues?.[field.field] ??
-          sanitizeSortFieldForVega(field.sort),
-      }),
+    ...(field.type !== "temporal" && {
+      sort:
+        data.domainValues?.[field.field] ??
+        sanitizeSortFieldForVega(field.sort),
+    }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
@@ -127,7 +133,10 @@ export function createColorEncoding(
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
-      const range = colorMapping.map((mapping) => mapping.color);
+      // Resolve CSS variables for canvas rendering
+      const range = colorMapping.map((mapping) =>
+        resolveCSSVariable(mapping.color),
+      );
 
       baseEncoding.scale = {
         domain,
@@ -140,9 +149,23 @@ export function createColorEncoding(
       const colorRange = colorField.colorRange;
 
       if (colorRange.mode === "scheme") {
-        baseEncoding.scale = {
-          scheme: colorRange.scheme,
-        };
+        // Support palette scheme names
+        if (colorRange.scheme === "sequential") {
+          // Use our sequential palette (9 colors) as hex for Vega compatibility
+          baseEncoding.scale = {
+            range: getSequentialColorsAsHex(),
+          };
+        } else if (colorRange.scheme === "diverging") {
+          // Use our diverging palette (11 colors) as hex for Vega compatibility
+          baseEncoding.scale = {
+            range: getDivergingColorsAsHex(),
+          };
+        } else {
+          // Use Vega's built-in color schemes
+          baseEncoding.scale = {
+            scheme: colorRange.scheme,
+          };
+        }
       } else if (colorRange.mode === "gradient") {
         baseEncoding.scale = {
           range: [
@@ -312,27 +335,77 @@ export function buildHoverPointOverlay(): UnitSpec<Field> {
 /**
  * Creates a multiValueTooltipChannel for cartesian charts (area, line, bar, stacked-bar)
  * Maps data values based on colorField and includes x-field information
+ * In comparison mode, includes both current and previous period values
  */
 export function createCartesianMultiValueTooltipChannel(
-  config: { x?: FieldConfig; colorField?: string; yField?: string },
+  config: { x?: FieldConfig; colorField?: string | undefined; yField?: string },
   data: ChartDataResult,
 ): TooltipValue[] | undefined {
   const { x: xConfig, colorField, yField } = config;
 
-  if (!colorField || !xConfig || !yField) {
+  if (!xConfig || !yField) {
     return undefined;
   }
 
   const xField = sanitizeValueForVega(xConfig.field);
   const sanitizedYField = sanitizeValueForVega(yField);
+  const yFormatType = sanitizeFieldName(yField);
 
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
-    field: sanitizeValueForVega(value as string),
-    type: "quantitative" as const,
-    formatType: sanitizeFieldName(sanitizedYField),
-  }));
+  // In comparison mode, we need to include both current and previous values
+  // The pivot will create fields like "CategoryA", "CategoryA_prev", "CategoryB", "CategoryB_prev"
+  if (data.hasComparison && colorField) {
+    const tooltipFields: TooltipValue[] = [];
+    const domainValues = data.domainValues?.[colorField] as
+      | string[]
+      | undefined;
+
+    if (domainValues) {
+      for (const value of domainValues) {
+        // Add current period value
+        tooltipFields.push({
+          field: sanitizeValueForVega(value),
+          type: "quantitative" as const,
+          formatType: yFormatType,
+        });
+
+        // Add previous period value
+        tooltipFields.push({
+          field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
+          type: "quantitative" as const,
+          formatType: yFormatType,
+        });
+      }
+    }
+
+    multiValueTooltipChannel = tooltipFields;
+  } else if (data.hasComparison) {
+    const yTitle = data.fields[yField]?.displayName || yField;
+    multiValueTooltipChannel = [
+      {
+        field: sanitizedYField,
+        title: yTitle,
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      },
+      {
+        field: sanitizedYField + ComparisonDeltaPreviousSuffix,
+        title: yTitle + ComparisonDeltaPreviousSuffix,
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      },
+    ];
+  } else if (colorField) {
+    // Normal mode without comparison
+    multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
+      (value) => ({
+        field: sanitizeValueForVega(value as string),
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      }),
+    );
+  }
 
   if (multiValueTooltipChannel) {
     multiValueTooltipChannel.unshift({

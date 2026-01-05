@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/google/jsonschema-go/jsonschema"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (h *Handle) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error) {
+func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	var outputJSONSchema string
-	if outputSchema != nil {
-		schemaBytes, err := json.Marshal(outputSchema)
+	if opts.OutputSchema != nil {
+		schemaBytes, err := json.Marshal(opts.OutputSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -20,13 +19,17 @@ func (h *Handle) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 	}
 
 	res, err := h.admin.Complete(ctx, &adminv1.CompleteRequest{
-		Messages:         msgs,
-		Tools:            tools,
+		Messages:         opts.Messages,
+		Tools:            opts.Tools,
 		OutputJsonSchema: outputJSONSchema,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return res.Message, nil
+	return &drivers.CompleteResult{
+		Message:      res.Message,
+		InputTokens:  int(res.InputTokens),
+		OutputTokens: int(res.OutputTokens),
+	}, nil
 }

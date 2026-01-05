@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -74,10 +75,17 @@ func CloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printf("Cloned project %q to %q\n", name, path)
+			var subpath string
+			if res.Project.Subpath != "" {
+				subpath = filepath.Join(path, res.Project.Subpath)
+			} else {
+				subpath = path
+			}
+
+			ch.Printf("Cloned project %q to %q\n", name, subpath)
 
 			// download variables
-			err = env.PullVars(cmd.Context(), ch, path, name, "prod", false)
+			err = env.PullVars(cmd.Context(), ch, subpath, name, "prod", false)
 			if err != nil {
 				return fmt.Errorf("failed to download variables: %w", err)
 			}

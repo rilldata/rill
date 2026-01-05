@@ -9,9 +9,9 @@ import type {
   FilterInputParam,
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
   V1MetricsViewSpec,
+  V1ResolveCanvasResponseResolvedComponents,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
@@ -44,6 +44,15 @@ export const commonOptions: Record<
     label: "Description",
     meta: {
       placeholder: "Add additional context for this component",
+    },
+  },
+  show_description_as_tooltip: {
+    type: "boolean",
+    optional: true,
+    showInUI: true,
+    label: "Show description as tooltip",
+    meta: {
+      layout: "grouped",
     },
   },
 };
@@ -186,10 +195,10 @@ export function getHeaderForComponent(
 
 export function getComponentMetricsViewFromSpec(
   componentName: string | undefined,
-  spec: CanvasResponse | undefined,
+  components: V1ResolveCanvasResponseResolvedComponents | undefined,
 ): string | undefined {
   if (!componentName) return undefined;
-  const resource = spec?.components?.[componentName]?.component;
+  const resource = components?.[componentName]?.component;
 
   if (resource) {
     return resource?.state?.validSpec?.rendererProperties?.metrics_view as

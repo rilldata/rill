@@ -106,6 +106,9 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 }
 
 func (r *ComponentReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetComponent() == nil {
+		return nil, fmt.Errorf("not a component resource")
+	}
 	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 

@@ -7,12 +7,14 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
   import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import { PinIcon } from "lucide-svelte";
 
   export let removable = false;
   export let active = false;
   export let readOnly = false;
   export let type: "measure" | "dimension" | "time" | "special" | "amber" =
     "dimension";
+  export let gray = false;
   export let exclude = false;
   export let grab = false;
   export let compact = false;
@@ -25,6 +27,7 @@
   export let removeTooltipText: string | undefined = undefined;
   export let allowPointerEvents = false;
   export let theme = false;
+  export let showPinnedIcon = false;
   export let onRemove: () => void = () => {};
 
   const tooltipSuppression = getContext<Writable<boolean>>(
@@ -45,6 +48,7 @@
     class:theme
     class:active
     class:grab
+    class:gray
     class:exclude
     class:compact
     class:fullWidth
@@ -76,6 +80,10 @@
           {removeTooltipText}
         </TooltipContent>
       </Tooltip>
+    {:else if showPinnedIcon}
+      <div class="flex-none">
+        <PinIcon size="16px" />
+      </div>
     {/if}
 
     {#if $$slots.body}
@@ -83,7 +91,7 @@
         on:click
         on:mousedown
         aria-label={`Open ${label}`}
-        class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
+        class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
         type="button"
       >
         <slot name="body" />
@@ -104,9 +112,9 @@
   }
 
   .chip {
-    @apply flex flex-none gap-x-1;
+    @apply flex gap-x-1;
     @apply items-center justify-center;
-    @apply px-2 py-[3px] border w-fit;
+    @apply px-2 py-[3px] border w-full max-w-fit truncate;
   }
 
   .dimension {
@@ -123,7 +131,7 @@
   .dimension:hover,
   .dimension:active,
   .dimension.active {
-    @apply bg-primary-100;
+    @apply bg-primary-200;
   }
 
   .dimension.theme {
@@ -215,11 +223,25 @@
     @apply bg-amber-100;
   }
 
+  .gray,
+  .gray.theme {
+    @apply bg-gray-100 border-gray-300 text-gray-600;
+  }
+
+  .gray:hover,
+  .gray:active,
+  .gray.active,
+  .gray.theme:hover,
+  .gray.theme:active,
+  .gray.theme.active {
+    @apply bg-gray-200 border-gray-400;
+  }
+
   .compact {
     @apply py-0;
   }
 
   .fullWidth {
-    @apply w-full;
+    @apply w-full max-w-full;
   }
 </style>
