@@ -20,7 +20,7 @@
   export let onResize: (size: number) => void = () => {};
 
   let isResizing = false;
-  let resizeSuppressTimeout;
+  let resizeSuppressTimeout: ReturnType<typeof setTimeout>;
 
   function suppressClickAfterResize() {
     isResizing = true;
@@ -55,14 +55,14 @@
 <button
   on:mouseover={onFocus}
   on:mouseleave={onBlur}
-  on:focus={focus}
-  on:blur={blur}
-  on:click={(e) => {
+  on:focus={onFocus}
+  on:blur={onBlur}
+  on:click={async (e) => {
     if (isResizing) {
       e.stopPropagation();
       return;
     }
-    modified({ shift: onShiftClick, click: onClick })(e);
+    await modified({ shift: onShiftClick, click: onClick })(e);
   }}
   style:transform="translate{position === 'left' ? 'Y' : 'X'}({header.start}px)"
   style:padding-right={position === "left" ? "0px" : "10px"}
