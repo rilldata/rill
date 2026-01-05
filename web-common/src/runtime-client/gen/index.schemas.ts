@@ -2073,6 +2073,10 @@ export interface V1RefreshTriggerState {
   [key: string]: unknown;
 }
 
+export interface V1ReloadConfigResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: unknown;
 }
@@ -2558,12 +2562,6 @@ export type RuntimeServiceGetInstanceParams = {
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
-export type RuntimeServiceEditInstanceBodyAnnotations = {
-  [key: string]: string;
-};
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -2575,9 +2573,6 @@ export type RuntimeServiceEditInstanceBody = {
   adminConnector?: string;
   aiConnector?: string;
   connectors?: V1Connector[];
-  variables?: RuntimeServiceEditInstanceBodyVariables;
-  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
@@ -3147,6 +3142,8 @@ export type RuntimeServiceQueryResolverBody = {
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
   limit?: number;
 };
+
+export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };
 
 export type QueryServiceExportReportBody = {
   /** The execution time to evaluate the report relative to.
