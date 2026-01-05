@@ -8,5 +8,5 @@ export function getRpcErrorMessage(
   error: RpcStatus | undefined,
 ): string | undefined {
   const mappedError = error as unknown as AxiosError<RpcStatus> | undefined;
-  return mappedError?.response?.data?.message;
+  return mappedError?.response?.data?.message ?? mappedError?.message;
 }
