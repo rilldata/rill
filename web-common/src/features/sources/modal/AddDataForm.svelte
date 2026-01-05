@@ -9,7 +9,7 @@
 
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
-  import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
+  import ConnectorForm from "./ConnectorForm.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
@@ -383,7 +383,6 @@
           </TabsContent>
         </Tabs>
       {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
-        <!-- Connector with only DSN - show DSN form directly -->
         <AddDataFormSection
           id={dsnFormId}
           enhance={dsnEnhance}
@@ -398,7 +397,7 @@
           />
         </AddDataFormSection>
       {:else if isMultiStepConnector}
-        <MultiStepConnectorFlow
+        <ConnectorForm
           {connector}
           {formManager}
           {paramsForm}
