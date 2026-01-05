@@ -16,7 +16,6 @@
   import { getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
-  import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -32,8 +31,8 @@
   export let enableSorting = true;
   export let isSelected = false;
   export let sorted: SortDirection | undefined = undefined;
-  export let onResizeColumn: (size: number, name: string) => void;
-  export let onResetColumnWidth: (name: string) => void;
+  export let onResizeColumn: (size: number, name: string) => void = () => {};
+  export let onResetColumnWidth: (name: string) => void = () => {};
   export let onClickColumn: (name: string) => void;
   export let onPin: () => void;
 
@@ -49,8 +48,8 @@
 
   $: columnFontWeight = isSelected ? "" : config.columnHeaderFontWeightClass;
 
-  const handleResize = (event: ResizeEvent) => {
-    onResizeColumn(event.detail.size, name);
+  const handleResize = (size: number) => {
+    onResizeColumn(size, name);
   };
 </script>
 
@@ -60,7 +59,7 @@
   onResetColumnWidth={() => {
     onResetColumnWidth(name);
   }}
-  on:resize={handleResize}
+  onResize={handleResize}
   {position}
   {header}
   onFocus={() => {

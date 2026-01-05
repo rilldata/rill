@@ -19,6 +19,10 @@
   export let isBeingCompared = false;
   export let dimensionName: string;
   export let toggleComparisonDimension: (dimensionName: string) => void;
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
 
   function getColor(i: number) {
     const posInSelection = selectedIndex.indexOf(i);

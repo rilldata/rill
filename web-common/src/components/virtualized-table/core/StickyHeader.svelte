@@ -11,12 +11,13 @@
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let borderRight = false;
+  export let bgClass = "";
   export let onClick: undefined | (() => void) = undefined;
   export let onShiftClick: undefined | (() => void) = undefined;
   export let onResetColumnWidth: () => void = () => {};
   export let onBlur: () => void = () => {};
   export let onFocus: () => void = () => {};
-  export let bgClass = "";
+  export let onResize: (size: number) => void = () => {};
 
   let isResizing = false;
   let resizeSuppressTimeout;
@@ -90,7 +91,9 @@
         role="columnheader"
         tabindex="0"
         use:dragTableCell
-        on:resize
+        on:resize={(e) => {
+          onResize(e.detail);
+        }}
         on:resizeend={suppressClickAfterResize}
         on:dblclick={onResetColumnWidth}
         on:click|stopPropagation
