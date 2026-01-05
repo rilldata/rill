@@ -1040,35 +1040,27 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		return nil, fmt.Errorf("failed to add time range: %w", err)
 	}
 
-	err = a.addSpineSelect(n, tr, comparison)
-	if err != nil {
-		return nil, err
-	}
-
-	return n, nil
-}
-
-func (a *AST) addSpineSelect(baseSelect *SelectNode, timeRange *TimeRange, comparison bool) error {
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
 	if a.Query.Spine != nil && !(a.Query.Spine.TimeRange != nil && comparison) { // Skip time range spines in the comparison select
-		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, timeRange)
+		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, tr)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		a.WrapSelect(baseSelect, a.GenerateIdentifier())
-		baseSelect.SpineSelect = sn
+		a.WrapSelect(n, a.GenerateIdentifier())
+		n.SpineSelect = sn
 
 		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
 		// (since by definition, some dimension values in the spine might not be present in FromSelect).
-		for i, f := range baseSelect.DimFields {
+		for i, f := range n.DimFields {
 			f.Expr = a.Dialect.EscapeMember(sn.Alias, f.Name)
-			baseSelect.DimFields[i] = f
+			n.DimFields[i] = f
 		}
 	}
-	return nil
+
+	return n, nil
 }
 
 // buildSpineSelect constructs a SELECT node for the given spine of dimension values.
