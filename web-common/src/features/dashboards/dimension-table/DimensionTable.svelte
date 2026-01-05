@@ -237,7 +237,6 @@ TableCells – the cell contents.
             {excludeMode}
             {dimensionName}
             {toggleComparisonDimension}
-            onSelectItem={onSelectItemHandler}
           />
           {#if dimensionColumn}
             <DimensionValueHeader
