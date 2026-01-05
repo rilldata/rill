@@ -23,10 +23,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
   import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
-  import {
-    metricsExplorerStore,
-    useExploreState,
-  } from "../dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -37,6 +34,8 @@
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "../dashboards/time-controls/time-control-store";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -47,6 +46,21 @@
   export let viewingDashboard: boolean;
   export let autoSave: boolean;
   export let switchView: () => void;
+
+  const StateManagers = getStateManagers();
+  const timeControlsStore = useTimeControlStore(StateManagers);
+
+  const {
+    selectors: {
+      dimensions: { visibleDimensions },
+      measures: { visibleMeasures },
+    },
+    dashboardStore,
+  } = StateManagers;
+
+  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
+
+  $: ({ selectedTimeRange, showTimeComparison } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
   $: ({ editorContent, path, updateEditorContent } = fileArtifact);
@@ -159,16 +173,17 @@
         ? exploreSpec?.embeddedTheme
         : undefined;
 
-  $: exploreStateStore = useExploreState(exploreName);
-
-  $: exploreState = $exploreStateStore;
+  $: visibleDimensionNames = $visibleDimensions
+    .map((d) => d.name)
+    .filter(isString);
+  $: visibleMeasureNames = $visibleMeasures.map((m) => m.name).filter(isString);
 
   $: newDefaults = constructDefaultState(
-    exploreState?.showTimeComparison,
-    exploreState?.selectedComparisonDimension,
-    exploreState?.visibleDimensions,
-    exploreState?.visibleMeasures,
-    exploreState?.selectedTimeRange,
+    showTimeComparison,
+    $dashboardStore?.selectedComparisonDimension,
+    visibleDimensionNames,
+    visibleMeasureNames,
+    selectedTimeRange,
   );
 
   $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
@@ -183,8 +198,6 @@
       }
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
-
-  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
 
   function getMeasureOrDimensionState(
     node: unknown,
