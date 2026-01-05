@@ -61,13 +61,13 @@ measures:
 	require.NoError(t, err)
 
 	// Create test context with claims (to test conversation listings, which filter by user ID)
-	ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+	fooCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
 		UserID:      "foo",
 		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}, // Sufficient for analyst_agent, excludes developer agents
 	})
 
 	// Ask a question
-	res1, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
+	res1, err := srv.Complete(fooCtx, &runtimev1.CompleteRequest{
 		InstanceId: instanceID,
 		Prompt:     "What are the names of the available metrics views?",
 	})
@@ -77,7 +77,7 @@ measures:
 	require.Len(t, res1.Messages, 6)
 
 	// Ask another question in the same conversation
-	res2, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
+	res2, err := srv.Complete(fooCtx, &runtimev1.CompleteRequest{
 		InstanceId:     instanceID,
 		ConversationId: res1.ConversationId,
 		Prompt:         "Can you simply repeat your previous answer? Don't make any tool calls.",
@@ -88,7 +88,7 @@ measures:
 	require.Len(t, res2.Messages, 4)
 
 	// Ask a question in a new conversation
-	res3, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
+	res3, err := srv.Complete(fooCtx, &runtimev1.CompleteRequest{
 		InstanceId: instanceID,
 		Prompt:     "What are the names of the available metrics views?",
 	})
@@ -98,7 +98,7 @@ measures:
 	require.NotEmpty(t, res3.Messages)
 
 	// Check it persisted the messages in the first conversation
-	get1, err := srv.GetConversation(ctx, &runtimev1.GetConversationRequest{
+	get1, err := srv.GetConversation(fooCtx, &runtimev1.GetConversationRequest{
 		InstanceId:     instanceID,
 		ConversationId: res1.ConversationId,
 	})
@@ -106,7 +106,7 @@ measures:
 	require.Len(t, get1.Messages, len(res1.Messages)+len(res2.Messages))
 
 	// Check it persisted the messages in the second conversation
-	get2, err := srv.GetConversation(ctx, &runtimev1.GetConversationRequest{
+	get2, err := srv.GetConversation(fooCtx, &runtimev1.GetConversationRequest{
 		InstanceId:     instanceID,
 		ConversationId: res3.ConversationId,
 	})
@@ -114,7 +114,7 @@ measures:
 	require.Len(t, get2.Messages, len(res3.Messages))
 
 	// Check it lists the conversations
-	list1, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+	list1, err := srv.ListConversations(fooCtx, &runtimev1.ListConversationsRequest{
 		InstanceId: instanceID,
 	})
 	require.NoError(t, err)
@@ -122,7 +122,7 @@ measures:
 
 	// Check user agent pattern filtering works correctly.
 	// Filter for "rill" conversations only (prefix match).
-	list4, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+	list4, err := srv.ListConversations(fooCtx, &runtimev1.ListConversationsRequest{
 		InstanceId:       instanceID,
 		UserAgentPattern: "rill/%",
 	})
@@ -130,7 +130,7 @@ measures:
 	require.Len(t, list4.Conversations, 2)
 
 	// Filter for "mcp" conversations (should be none since all conversations are rill).
-	list5, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+	list5, err := srv.ListConversations(fooCtx, &runtimev1.ListConversationsRequest{
 		InstanceId:       instanceID,
 		UserAgentPattern: "mcp%",
 	})
@@ -138,26 +138,124 @@ measures:
 	require.Len(t, list5.Conversations, 0)
 
 	// Check it errors if completing a conversation that doesn't exist
-	_, err = srv.Complete(ctx, &runtimev1.CompleteRequest{
+	_, err = srv.Complete(fooCtx, &runtimev1.CompleteRequest{
 		InstanceId:     instanceID,
 		ConversationId: "doesntexist",
 		Prompt:         "What is 2 + 2?",
 	})
 	require.ErrorContains(t, err, "failed to find")
 
-	// Check that another user cannot list the conversations
-	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+	// Share the first conversation and then continue it.
+	_, err = srv.ShareConversation(fooCtx, &runtimev1.ShareConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+	})
+	require.NoError(t, err)
+	sharedLen := len(res1.Messages) + len(res2.Messages)
+	res5, err := srv.Complete(fooCtx, &runtimev1.CompleteRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+		Prompt:         "Summarize the answer in one short sentence.",
+	})
+	require.NoError(t, err)
+	get4, err := srv.GetConversation(fooCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+	})
+	require.NoError(t, err)
+	require.Len(t, get4.Messages, sharedLen+len(res5.Messages))
+
+	// Check that another user can read a shared conversation until the shared message id but can't list it.
+	barCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
 		UserID:      "bar",
 		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}, // Sufficient for analyst_agent, excludes developer agents
 	})
-	list2, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+	get5, err := srv.GetConversation(barCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+	})
+	require.NoError(t, err)
+	require.False(t, get5.IsOwner)
+	require.Len(t, get5.Messages, sharedLen) // Only the shared messages are visible res5.Messages are not visible
+	list2, err := srv.ListConversations(barCtx, &runtimev1.ListConversationsRequest{
 		InstanceId: instanceID,
 	})
 	require.NoError(t, err)
 	require.Len(t, list2.Conversations, 0)
 
+	// Check that a user can fork a shared conversation and see it in their list.
+	fork, err := srv.ForkConversation(barCtx, &runtimev1.ForkConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: res1.ConversationId,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, fork.ConversationId)
+	require.NotEqual(t, fork.ConversationId, res1.ConversationId)
+	get6, err := srv.GetConversation(barCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+	})
+	require.NoError(t, err)
+	require.True(t, get6.IsOwner)
+	require.Len(t, get6.Messages, sharedLen)
+	list7, err := srv.ListConversations(barCtx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+	})
+	require.NoError(t, err)
+	require.Len(t, list7.Conversations, 1)
+	// The forked conversation can be continued by the new user.
+	res6, err := srv.Complete(barCtx, &runtimev1.CompleteRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+		Prompt:         "Now, summarize the answer in one short sentence.",
+	})
+	require.NoError(t, err)
+	get7, err := srv.GetConversation(barCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+	})
+	require.NoError(t, err)
+	require.Len(t, get7.Messages, sharedLen+len(res6.Messages))
+
+	// check that the original owner still cannot see the forked conversation
+	list8, err := srv.ListConversations(fooCtx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+	})
+	require.NoError(t, err)
+	require.Len(t, list8.Conversations, 2) // still only the two original conversations
+
+	// fork conversation can be shared by the new user
+	_, err = srv.ShareConversation(barCtx, &runtimev1.ShareConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+	})
+	require.NoError(t, err)
+
+	// original owner can now see the shared forked conversation
+	get8, err := srv.GetConversation(fooCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+	})
+	require.NoError(t, err)
+	require.Len(t, get8.Messages, sharedLen+len(res6.Messages)) // all messages are visible now
+
+	// conversation can be unshared using ShareConversation API with "none" as until_message_id
+	_, err = srv.ShareConversation(barCtx, &runtimev1.ShareConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+		UntilMessageId: "none",
+	})
+	require.NoError(t, err)
+
+	// original owner can no longer see the unshared forked conversation
+	_, err = srv.GetConversation(fooCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: fork.ConversationId,
+	})
+	require.Error(t, err)
+
 	// Check that an anonymous user can create a conversation
-	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+	ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{
 		UserID:      "",
 		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}, // Sufficient for analyst_agent, excludes developer agents
 	})
