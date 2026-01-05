@@ -1,42 +1,74 @@
 <script lang="ts">
+  import type { ActionResult } from "@sveltejs/kit";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
-  import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
+  import {
+    connectorStepStore,
+    setAuthMethod,
+    type ConnectorStepState,
+  } from "./connectorStepStore";
   import {
     findRadioEnumKey,
     getRadioEnumOptions,
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
-  import type { AddDataFormManager } from "./AddDataFormManager";
+  import { AddDataFormManager } from "./AddDataFormManager";
   import type { MultiStepFormSchema } from "../../templates/schemas/types";
-  import type { ConnectorStepState } from "./connectorStepStore";
 
   export let connector: V1ConnectorDriver;
-  export let formManager: AddDataFormManager;
-  export let paramsForm: any;
-  export let paramsErrors: any;
-  export let paramsEnhance: any;
-  export let paramsSubmit: (
-    event: Event & {
-      currentTarget: EventTarget & HTMLFormElement;
-    },
-  ) => unknown;
-  export let paramsFormId: string;
-  export let onStringInputChange: (e: Event) => void;
-  export let handleFileUpload: (file: File) => Promise<string>;
-  export let submitting: boolean;
+  export let onClose: () => void;
+  export let onBack: () => void;
 
   // Outputs bound by parent
-  export let activeAuthMethod: string | null = null;
+  export let isSubmitDisabled = true;
   export let primaryButtonLabel = "";
   export let primaryLoadingCopy = "";
-  export let isSubmitDisabled = true;
-  export let formId = paramsFormId;
+  export let formId = "";
   export let shouldShowSkipLink = false;
+  export let yamlPreview = "";
+  export let yamlPreviewTitle = "Connector preview";
+  export let isSubmitting = false;
+  export let showSaveAnyway = false;
+  export let saveAnywayLoading = false;
+  export let saveAnywayHandler: () => Promise<void> = async () => {};
+  export let handleBack: () => void = () => onBack();
+  export let handleSkip: () => void = () => {};
+  export let paramsError: string | null = null;
+  export let paramsErrorDetails: string | undefined = undefined;
+
+  let handleOnUpdate: <
+    T extends Record<string, unknown>,
+    M = any,
+    In extends Record<string, unknown> = T,
+  >(event: {
+    form: import("sveltekit-superforms").SuperValidated<T, M, In>;
+    formEl: HTMLFormElement;
+    cancel: () => void;
+    result: Extract<ActionResult, { type: "success" | "failure" }>;
+  }) => Promise<void> = async (_event) => {};
+
+  const formManager = new AddDataFormManager({
+    connector,
+    formType: "connector",
+    onParamsUpdate: (e: any) => handleOnUpdate(e),
+    onDsnUpdate: (_e: any) => {},
+    getSelectedAuthMethod: () => activeAuthMethod ?? undefined,
+  });
+
+  const paramsFormId = formManager.paramsFormId;
+  const {
+    form: paramsForm,
+    errors: paramsErrors,
+    enhance: paramsEnhance,
+    tainted: paramsTainted,
+    submit: paramsSubmit,
+    submitting: paramsSubmitting,
+  } = formManager.params;
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
@@ -50,6 +82,8 @@
   let activeSchema: MultiStepFormSchema | null = null;
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
   let selectedAuthMethod = "";
+  let activeAuthMethod: string | null = null;
+  let prevAuthMethod: string | null = null;
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
 
@@ -135,6 +169,12 @@
     return selectedAuthMethod;
   })();
 
+  // Reset Save Anyway when auth changes.
+  $: if (activeAuthMethod !== prevAuthMethod) {
+    prevAuthMethod = activeAuthMethod;
+    showSaveAnyway = false;
+  }
+
   // CTA and disable state for multi-step connectors.
   $: isSubmitDisabled = isMultiStepConnectorDisabled(
     activeSchema,
@@ -145,7 +185,7 @@
   $: primaryButtonLabel = formManager.getPrimaryButtonLabel({
     isConnectorForm: formManager.isConnectorForm,
     step: stepState.step,
-    submitting,
+    submitting: isSubmitting,
     selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
   });
   $: primaryLoadingCopy =
@@ -156,6 +196,71 @@
         : "Testing connection...";
   $: formId = paramsFormId;
   $: shouldShowSkipLink = stepState.step === "connector";
+
+  // YAML preview lives here for multi-step connectors.
+  $: yamlPreview = formManager.computeYamlPreview({
+    connectionTab: "parameters",
+    onlyDsn: formManager.hasOnlyDsn,
+    filteredParamsProperties: formManager.filteredParamsProperties,
+    filteredDsnProperties: formManager.filteredDsnProperties,
+    stepState,
+    isMultiStepConnector: true,
+    isConnectorForm: true,
+    paramsFormValues: $paramsForm,
+    dsnFormValues: {},
+  });
+  $: yamlPreviewTitle =
+    stepState.step === "connector" ? "Connector preview" : "Model preview";
+
+  // Submission wiring
+  $: isSubmitting = $paramsSubmitting;
+  $: handleOnUpdate = formManager.makeOnUpdate({
+    onClose,
+    queryClient,
+    getConnectionTab: () => "parameters",
+    getSelectedAuthMethod: () => activeAuthMethod || undefined,
+    setParamsError: (message: string | null, details?: string) => {
+      paramsError = message;
+      paramsErrorDetails = details;
+    },
+    setDsnError: (_message: string | null, _details?: string) => {},
+    setShowSaveAnyway: (value: boolean) => {
+      showSaveAnyway = value;
+    },
+  });
+
+  $: handleBack = () => formManager.handleBack(onBack);
+  $: handleSkip = () => formManager.handleSkip();
+
+  // Reset errors when form is modified
+  $: if ($paramsTainted) {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+  }
+
+  // Save Anyway handler (parent renders button, uses this handler)
+  async function handleSaveAnyway() {
+    saveAnywayLoading = true;
+    const result = await formManager.saveConnectorAnyway({
+      queryClient,
+      values: $paramsForm,
+    });
+    if (result.ok) {
+      onClose();
+    } else {
+      paramsError = result.message;
+      paramsErrorDetails = result.details;
+    }
+    saveAnywayLoading = false;
+  }
+
+  $: saveAnywayHandler = handleSaveAnyway;
+  const onStringInputChange = (event: Event) =>
+    formManager.onStringInputChange(
+      event,
+      $paramsTainted as Record<string, boolean> | null | undefined,
+    );
+  const handleFileUpload = (file: File) => formManager.handleFileUpload(file);
 </script>
 
 <AddDataFormSection
