@@ -28,17 +28,16 @@
   export let primaryButtonLabel = "";
   export let primaryLoadingCopy = "";
   export let formId = "";
-  export let shouldShowSkipLink = false;
   export let yamlPreview = "";
-  export let yamlPreviewTitle = "Connector preview";
-  export let isSubmitting = false;
   export let showSaveAnyway = false;
   export let saveAnywayLoading = false;
   export let saveAnywayHandler: () => Promise<void> = async () => {};
-  export let handleBack: () => void = () => onBack();
-  export let handleSkip: () => void = () => {};
   export let paramsError: string | null = null;
   export let paramsErrorDetails: string | undefined = undefined;
+  export let isSubmitting = false;
+  export let shouldShowSkipLink = false;
+  export let handleBack: () => void = () => onBack();
+  export let handleSkip: () => void = () => {};
 
   let handleOnUpdate: <
     T extends Record<string, unknown>,
@@ -168,12 +167,6 @@
     return selectedAuthMethod;
   })();
 
-  // Reset Save Anyway when auth changes.
-  $: if (activeAuthMethod !== prevAuthMethod) {
-    prevAuthMethod = activeAuthMethod;
-    showSaveAnyway = false;
-  }
-
   // CTA and disable state for multi-step connectors.
   $: isSubmitDisabled = isMultiStepConnectorDisabled(
     activeSchema,
@@ -195,6 +188,8 @@
         : "Testing connection...";
   $: formId = paramsFormId;
   $: shouldShowSkipLink = stepState.step === "connector";
+  $: handleBack = () => formManager.handleBack(onBack);
+  $: handleSkip = () => formManager.handleSkip();
 
   // YAML preview lives here for multi-step connectors.
   $: yamlPreview = formManager.computeYamlPreview({
@@ -208,9 +203,6 @@
     paramsFormValues: $paramsForm,
     dsnFormValues: {},
   });
-  $: yamlPreviewTitle =
-    stepState.step === "connector" ? "Connector preview" : "Model preview";
-
   // Submission wiring
   $: isSubmitting = $paramsSubmitting;
   $: handleOnUpdate = formManager.makeOnUpdate({
@@ -227,9 +219,6 @@
       showSaveAnyway = value;
     },
   });
-
-  $: handleBack = () => formManager.handleBack(onBack);
-  $: handleSkip = () => formManager.handleSkip();
 
   // Reset errors when form is modified
   $: if ($paramsTainted) {
