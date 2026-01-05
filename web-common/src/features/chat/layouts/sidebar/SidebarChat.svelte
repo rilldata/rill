@@ -38,13 +38,19 @@
     chatInputComponent?.focusInput();
   }
 
-  // Clean up conversation manager resources when switching projects
+  // Clean up conversation manager resources when switching projects or dashboards
   beforeNavigate(({ from, to }) => {
     const currentProject = from?.params?.project;
     const targetProject = to?.params?.project;
+    const currentDashboard = from?.params?.dashboard ?? from?.params?.name;
+    const targetDashboard = to?.params?.dashboard ?? to?.params?.name;
 
-    if (currentProject !== targetProject) {
-      cleanupConversationManager(instanceId);
+    // Clear conversation when switching projects OR when switching dashboards within the same project
+    if (
+      currentProject !== targetProject ||
+      (currentProject === targetProject && currentDashboard !== targetDashboard)
+    ) {
+      conversationManager.enterNewConversationMode();
     }
   });
 
