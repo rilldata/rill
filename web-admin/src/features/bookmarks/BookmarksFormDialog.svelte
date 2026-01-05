@@ -39,6 +39,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, boolean } from "yup";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils.ts";
 
   export let organization: string;
   export let project: string;
@@ -232,6 +233,10 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       },
     },
   );
+
+  $: error = getRpcErrorMessage(
+    $bookmarkCreator.error ?? $bookmarkUpdater.error,
+  );
 </script>
 
 <Dialog.Root
@@ -362,14 +367,17 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           {/if}
         </Label>
       </div>
+      {#if error}
+        <div class="text-red-500 text-sm py-px">
+          {error}
+        </div>
+      {/if}
     </form>
 
     <div class="flex flex-row mt-4 gap-2">
       <div class="grow" />
       <Button onClick={onClose} type="secondary">Cancel</Button>
-      <Button onClick={submit} type="primary" form={formId} submitForm>
-        Save
-      </Button>
+      <Button onClick={submit} type="primary">Save</Button>
     </div>
   </Dialog.Content>
 </Dialog.Root>
