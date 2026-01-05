@@ -161,16 +161,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		connectors = oldInst.Connectors
 	}
 
-	variables := req.Variables
-	if len(variables) == 0 { // variables not changed
-		variables = oldInst.Variables
-	}
-
-	annotations := req.Annotations
-	if len(annotations) == 0 { // annotations not changed
-		annotations = oldInst.Annotations
-	}
-
 	inst := &drivers.Instance{
 		ID:                   req.InstanceId,
 		Environment:          valOrDefault(req.Environment, oldInst.Environment),
@@ -181,12 +171,9 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		AIConnector:          valOrDefault(req.AiConnector, oldInst.AIConnector),
 		Connectors:           connectors,
 		ProjectConnectors:    oldInst.ProjectConnectors,
-		Variables:            variables,
 		ProjectVariables:     oldInst.ProjectVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
-		Annotations:          annotations,
 		AIInstructions:       oldInst.AIInstructions,
-		FrontendURL:          valOrDefault(req.FrontendUrl, oldInst.FrontendURL),
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -194,17 +181,9 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Force the repo to refresh its handshake.
-	// NOTE: When we move from push-based config to pull-based config, this should ideally be done only when repo-related properties change.
-	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
-	if err == nil {
-		defer release()
-		err = repo.Pull(ctx, &drivers.PullOptions{ForceHandshake: true})
-		if err != nil {
-			s.logger.Error("failed to pull repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
-		}
-	} else {
-		s.logger.Error("failed to acquire repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
+	err = s.runtime.ReloadConfig(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
 	}
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
@@ -301,6 +280,24 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 			s.logger.Info("failed to send log event", zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}, lvl)
+}
+
+func (s *Server) ReloadConfig(ctx context.Context, req *runtimev1.ReloadConfigRequest) (*runtimev1.ReloadConfigResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	err := s.runtime.ReloadConfig(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.ReloadConfigResponse{}, nil
 }
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {

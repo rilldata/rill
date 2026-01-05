@@ -658,6 +658,29 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1GetDeploymentConfigResponse:
+            properties:
+                annotations:
+                    additionalProperties:
+                        type: string
+                    title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                frontendUrl:
+                    description: Frontend URL for the deployment.
+                    type: string
+                updatedOn:
+                    description: Timestamp when the deployment was last updated.
+                    format: date-time
+                    type: string
+                usesArchive:
+                    description: Whether the deployment is git based or archive based.
+                    type: boolean
+                variables:
+                    additionalProperties:
+                        type: string
+                    title: Variables for the deployment (connector credentials, etc.)
+                    type: object
+            type: object
         v1GetDeploymentCredentialsResponse:
             properties:
                 accessToken:
@@ -766,10 +789,10 @@ components:
             type: object
         v1GetProjectResponse:
             properties:
+                deployment:
+                    $ref: '#/components/schemas/v1Deployment'
                 jwt:
                     type: string
-                prodDeployment:
-                    $ref: '#/components/schemas/v1Deployment'
                 project:
                     $ref: '#/components/schemas/v1Project'
                 projectPermissions:
@@ -2282,6 +2305,7 @@ paths:
     /v1/billing/metrics-project-credentials: {}
     /v1/billing/plans: {}
     /v1/deployments/{deploymentId}: {}
+    /v1/deployments/{deploymentId}/config: {}
     /v1/deployments/{deploymentId}/credentials: {}
     /v1/deployments/{deploymentId}/provision: {}
     /v1/deployments/{deploymentId}/reconcile: {}
@@ -2744,6 +2768,11 @@ paths:
                 - in: path
                   name: project
                   required: true
+                  schema:
+                    type: string
+                - description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+                  in: query
+                  name: branch
                   schema:
                     type: string
                 - in: query

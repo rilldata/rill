@@ -1,22 +1,20 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project status
+title: rill project deployments show
 ---
-## rill project status
+## rill project deployments show
 
-Project deployment status
+Show details of a deployment
 
 ```
-rill project status [<project-name>] [flags]
+rill project deployments show [<project>] <branch> [flags]
 ```
 
 ### Flags
 
 ```
-      --branch string    Target deployment by Git branch (default: primary deployment)
-      --local            Target locally running Rill
       --path string      Project directory (default ".")
-      --project string   Project Name
+      --project string   Project name
 ```
 
 ### Global flags
@@ -31,5 +29,5 @@ rill project status [<project-name>] [flags]
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill project deployments](deployments.md)	 - Manage project deployments
 

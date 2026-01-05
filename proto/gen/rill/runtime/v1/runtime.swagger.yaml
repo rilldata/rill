@@ -380,16 +380,6 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1Connector'
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
-              frontendUrl:
-                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -2992,6 +2982,34 @@ paths:
               limit:
                 type: integer
                 format: int32
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/reload-config:
+    post:
+      summary: |-
+        ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+        If the instance doesn't have an admin connector, this RPC does nothing.
+      operationId: RuntimeService_ReloadConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReloadConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ReloadConfig
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/reports/{report}/export:
@@ -6794,6 +6812,9 @@ definitions:
         description: Models to refresh. These are specified separately to enable more fine-grained configuration.
   v1RefreshTriggerState:
     type: object
+  v1ReloadConfigResponse:
+    type: object
+    title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile

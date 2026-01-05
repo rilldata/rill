@@ -8,7 +8,7 @@
   > = {
     gcTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
     refetchInterval: (query) => {
-      switch (query.state.data?.prodDeployment?.status) {
+      switch (query.state.data?.deployment?.status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
         case V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING:
           return PollTimeWhenProjectDeploymentPending;
@@ -123,9 +123,9 @@
   $: ({ data: projectData, error: projectError } = $projectQuery);
   // A re-deploy triggers `DEPLOYMENT_STATUS_UPDATING` status. But we can still show the project UI.
   $: isProjectAvailable =
-    projectData?.prodDeployment?.status ===
+    projectData?.deployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING ||
-    projectData?.prodDeployment?.status ===
+    projectData?.deployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING;
 
   $: error = projectError as HTTPError;
@@ -150,7 +150,7 @@
   }
 </script>
 
-{#if onProjectPage && projectData?.prodDeployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
+{#if onProjectPage && projectData?.deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
     projectPermissions={projectData.projectPermissions}
     {organization}
@@ -166,27 +166,27 @@
     body={error.response.data?.message}
   />
 {:else if projectData}
-  {#if !projectData.prodDeployment}
+  {#if !projectData.deployment}
     <!-- No deployment = the project is "hibernating" -->
     <RedeployProjectCta {organization} {project} />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+  {:else if projectData.deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
     <ProjectBuilding />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
+  {:else if projectData.deployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
     <ErrorPage
       statusCode={500}
       header="Deployment Error"
-      body={projectData.prodDeployment.statusMessage !== ""
-        ? projectData.prodDeployment.statusMessage
+      body={projectData.deployment.statusMessage !== ""
+        ? projectData.deployment.statusMessage
         : "There was an error deploying your project. Please contact support."}
     />
   {:else if isProjectAvailable}
     <RuntimeProvider
       instanceId={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.instanceId
-        : projectData.prodDeployment.runtimeInstanceId}
+        : projectData.deployment.runtimeInstanceId}
       host={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.runtimeHost
-        : projectData.prodDeployment.runtimeHost}
+        : projectData.deployment.runtimeHost}
       jwt={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.accessToken
         : projectData.jwt}

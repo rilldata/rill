@@ -523,6 +523,23 @@ export interface V1GetCurrentUserResponse {
   preferences?: V1UserPreferences;
 }
 
+export type V1GetDeploymentConfigResponseVariables = { [key: string]: string };
+
+export type V1GetDeploymentConfigResponseAnnotations = {
+  [key: string]: string;
+};
+
+export interface V1GetDeploymentConfigResponse {
+  variables?: V1GetDeploymentConfigResponseVariables;
+  annotations?: V1GetDeploymentConfigResponseAnnotations;
+  /** Frontend URL for the deployment. */
+  frontendUrl?: string;
+  /** Timestamp when the deployment was last updated. */
+  updatedOn?: string;
+  /** Whether the deployment is git based or archive based. */
+  usesArchive?: boolean;
+}
+
 export interface V1GetDeploymentCredentialsResponse {
   runtimeHost?: string;
   instanceId?: string;
@@ -597,7 +614,7 @@ export interface V1GetProjectMemberUserResponse {
 
 export interface V1GetProjectResponse {
   project?: V1Project;
-  prodDeployment?: V1Deployment;
+  deployment?: V1Deployment;
   jwt?: string;
   projectPermissions?: V1ProjectPermissions;
 }
@@ -1810,6 +1827,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
 };
 
 export type AdminServiceGetProjectParams = {
+  /**
+   * Optional branch to get deployment for. If not set, then project's primary_branch is used.
+   */
+  branch?: string;
   accessTokenTtlSeconds?: number;
   superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;

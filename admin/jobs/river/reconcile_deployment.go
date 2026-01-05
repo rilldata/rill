@@ -74,6 +74,10 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		newStatus = database.DeploymentStatusRunning
 
 	case database.DeploymentStatusStopped:
+		if depl.Status == database.DeploymentStatusStopped {
+			// No action needed, already stopped
+			return nil
+		}
 		// Update the deployment status to stopping
 		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
 		if err != nil {
@@ -89,6 +93,10 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		newStatus = database.DeploymentStatusStopped
 
 	case database.DeploymentStatusDeleted:
+		if depl.Status == database.DeploymentStatusDeleted {
+			// No action needed, already deleted
+			return nil
+		}
 		// Update the deployment status to deleting
 		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
 		if err != nil {

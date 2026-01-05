@@ -1061,21 +1061,6 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
    */
   connectors: Connector[] = [];
 
-  /**
-   * @generated from field: map<string, string> variables = 15;
-   */
-  variables: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: map<string, string> annotations = 10;
-   */
-  annotations: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: optional string frontend_url = 19;
-   */
-  frontendUrl?: string;
-
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1091,9 +1076,6 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
     { no: 16, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
-    { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 19, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -1149,6 +1131,78 @@ export class EditInstanceResponse extends Message$1<EditInstanceResponse> {
 
   static equals(a: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined, b: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined): boolean {
     return proto3.util.equals(EditInstanceResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ReloadConfig
+ *
+ * @generated from message rill.runtime.v1.ReloadConfigRequest
+ */
+export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ReloadConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReloadConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReloadConfigRequest | PlainMessage<ReloadConfigRequest> | undefined, b: ReloadConfigRequest | PlainMessage<ReloadConfigRequest> | undefined): boolean {
+    return proto3.util.equals(ReloadConfigRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ReloadConfig
+ *
+ * @generated from message rill.runtime.v1.ReloadConfigResponse
+ */
+export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
+  constructor(data?: PartialMessage<ReloadConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReloadConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReloadConfigResponse | PlainMessage<ReloadConfigResponse> | undefined, b: ReloadConfigResponse | PlainMessage<ReloadConfigResponse> | undefined): boolean {
+    return proto3.util.equals(ReloadConfigResponse, a, b);
   }
 }
 
