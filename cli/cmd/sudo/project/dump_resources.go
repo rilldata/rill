@@ -126,7 +126,7 @@ func resourcesForProject(ctx context.Context, c *client.Client, org, project, fi
 		return nil, err
 	}
 
-	depl := proj.ProdDeployment
+	depl := proj.Deployment
 	if depl == nil {
 		return nil, nil
 	}

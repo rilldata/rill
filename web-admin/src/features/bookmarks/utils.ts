@@ -29,14 +29,6 @@ export type Bookmarks = {
   shared: BookmarkEntry[];
 };
 
-export type BookmarkFormValues = {
-  displayName: string;
-  description: string;
-  shared: "false" | "true";
-  filtersOnly: boolean;
-  absoluteTimeRange: boolean;
-};
-
 // These are the only parameters that are stored in a filter-only bookmark
 const FILTER_ONLY_PARAMS = new Set([
   ExploreStateURLParams.Filters,

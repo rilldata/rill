@@ -447,7 +447,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 // OpenRuntimeClient opens a client for the production deployment for the given project.
 // If local is true, it connects to the locally running runtime instead of the deployed project's runtime.
 // It returns the runtime client and instance ID for the project.
-func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, local bool) (*runtimeclient.Client, string, error) {
+func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project, branch string, local bool) (*runtimeclient.Client, string, error) {
 	var host, instanceID, jwt string
 	if local {
 		// This is the default port that Rill localhost uses for gRPC.
@@ -463,12 +463,13 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
 			Org:     org,
 			Project: project,
+			Branch:  branch,
 		})
 		if err != nil {
 			return nil, "", err
 		}
 
-		depl := proj.ProdDeployment
+		depl := proj.Deployment
 		if depl == nil {
 			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
 		}
