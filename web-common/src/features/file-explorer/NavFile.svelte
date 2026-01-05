@@ -3,10 +3,10 @@
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
@@ -183,7 +183,7 @@
         {/if}
         <NavigationMenuSeparator />
         <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
-          <Cancel slot="icon" />
+          <Trash slot="icon" />
           Delete
         </NavigationMenuItem>
       </DropdownMenu.Content>
