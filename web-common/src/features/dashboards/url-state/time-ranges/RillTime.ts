@@ -1,7 +1,4 @@
-import {
-  DEFAULT_TIME_RANGES,
-  type TimeRangeMeta,
-} from "@rilldata/web-common/lib/time/config.ts";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -16,6 +13,7 @@ import {
   V1TimeGrainToDateTimeUnit,
   type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
+import type { TimeRangeMeta } from "@rilldata/web-common/lib/time/types";
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
