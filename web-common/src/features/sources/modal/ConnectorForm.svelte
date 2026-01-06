@@ -226,6 +226,8 @@
   $: if ($paramsTainted) {
     paramsError = null;
     paramsErrorDetails = undefined;
+    // Clear field-level errors so a corrected input can resubmit.
+    (paramsErrors as any)?.set?.({});
   }
 
   // Save Anyway handler (parent renders button, uses this handler)
