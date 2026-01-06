@@ -1,6 +1,6 @@
 import {
   DEFAULT_TIME_RANGES,
-  PERIOD_TO_DATE_RANGES,
+  type TimeRangeMeta,
 } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
@@ -521,9 +521,11 @@ export class RillLegacyDaxInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    const entry = PERIOD_TO_DATE_RANGES[this.name];
+    const timeRangeMeta = DEFAULT_TIME_RANGES[this.name] as
+      | TimeRangeMeta
+      | undefined;
 
-    return entry?.defaultGrain;
+    return timeRangeMeta?.defaultGrain || V1TimeGrain.TIME_GRAIN_DAY;
   }
 
   public toString() {
