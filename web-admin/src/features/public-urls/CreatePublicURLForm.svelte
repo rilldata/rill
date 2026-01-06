@@ -107,7 +107,7 @@
                 $dashboardStore.dimensionThresholdFilters,
               )
             : undefined;
-
+          // TODO : add a check upstream to make sure if filter exists, metricsViewName is defined
           const metricsViewFilters = filter
             ? { [$metricsViewName]: filter }
             : undefined;
