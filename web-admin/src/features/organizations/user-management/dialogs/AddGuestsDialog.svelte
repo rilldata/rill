@@ -38,18 +38,20 @@
   const queryClient = useQueryClient();
   const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
 
-  let failedInvites: string[] = [];
-  let selectedProjects: string[] = [];
-  let projectDropdownOpen = false;
-  let selectedRole: "admin" | "editor" | "viewer" = "viewer";
-  let roleDropdownOpen = false;
-  let hasAutoSelectedProject = false;
+let failedInvites: string[] = [];
+let selectedProjects: string[] = [];
+let projectDropdownOpen = false;
+let selectedRole: "admin" | "editor" | "viewer" = "viewer";
+let roleDropdownOpen = false;
+let hasAutoSelectedProject = false;
 
   function resetDialogState() {
     failedInvites = [];
     selectedProjects = [];
     selectedRole = "viewer";
     hasAutoSelectedProject = false;
+  projectDropdownOpen = false;
+  roleDropdownOpen = false;
   }
 
   // Projects list
@@ -94,6 +96,7 @@
     } else {
       selectedProjects = [...selectedProjects, projectName];
     }
+  projectDropdownOpen = true;
   }
 
   async function handleCreate(email: string) {
