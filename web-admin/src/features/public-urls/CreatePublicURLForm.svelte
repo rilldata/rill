@@ -107,6 +107,14 @@
                 $dashboardStore.dimensionThresholdFilters,
               )
             : undefined;
+          if (filter && !$metricsViewName) {
+            apiError = "Missing metrics view name for filter.";
+            return;
+          }
+
+          const metricsViewFilters = filter
+            ? { [$metricsViewName]: filter }
+            : undefined;
 
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
@@ -114,7 +122,7 @@
             data: {
               resourceType: ResourceKind.Explore as string,
               resourceName: dashboard,
-              filter,
+              metricsViewFilters,
               fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
