@@ -54,6 +54,7 @@
   const database = ""; // models use the default database
   const databaseSchema = ""; // models use the default databaseSchema
   $: tableName = (model as V1Model)?.state?.resultTable as string;
+  $: hasResultTable = !!tableName;
 
   $: refreshedOn = model?.state?.refreshedOn;
   $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
@@ -118,7 +119,7 @@
           {resource}
           {connector}
           {collapse}
-          modelHasError={$hasErrors}
+          {hasResultTable}
           modelName={assetName}
           hasUnsavedChanges={$hasUnsavedChanges}
         />
