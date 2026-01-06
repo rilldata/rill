@@ -36,7 +36,7 @@ type SSEConnectionManagerEvents = {
 /**
  * A wrapper around SSEFetchClient to manage status and reconnections
  */
-export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvents> {
+export class SSEConnectionManager {
   public status = writable<ConnectionStatus>(ConnectionStatus.CLOSED);
 
   public url: string;
@@ -46,6 +46,14 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     headers?: Record<string, string>;
   };
 
+  private readonly events = new EventEmitter<SSEConnectionManagerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
+
   private client = new SSEFetchClient();
 
   private autoCloseThrottler: Throttler | undefined;
@@ -54,8 +62,6 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
   private connectionCount = 0;
 
   constructor(public params?: Params) {
-    super();
-
     if (params?.autoCloseTimeouts) {
       this.autoCloseThrottler = new Throttler(
         params.autoCloseTimeouts.normal,
@@ -156,7 +162,7 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     }
 
     const errorArg = error instanceof Error ? error : new Error(String(error));
-    this.emit("error", errorArg);
+    this.events.emit("error", errorArg);
   };
 
   // This can happen in one of three situations:
@@ -174,12 +180,12 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     } else {
       this.close();
 
-      this.emit("close");
+      this.events.emit("close");
     }
   };
 
   private handleMessage = (message: SSEMessage) => {
-    this.emit("message", message);
+    this.events.emit("message", message);
   };
 
   private handleSuccessfulConnection = () => {
@@ -189,7 +195,7 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     this.retryAttempts.set(0);
 
     if (this.connectionCount > 1) {
-      this.emit("reconnect");
+      this.events.emit("reconnect");
     }
   };
 
@@ -246,6 +252,6 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     this.pause();
 
     // Clear all event listeners
-    this.clearListeners();
+    this.events.clearListeners();
   }
 }

@@ -1,11 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 
-type VoidType = void | Promise<void>;
 type Listener<
   Events extends Record<string, any>,
   E extends keyof Events,
-> = Events[E] extends void ? () => VoidType : (arg: Events[E]) => VoidType;
-type Args<
+> = Events[E] extends void ? () => void : (arg: Events[E]) => void;
+type EventPayload<
   Events extends Record<string, any>,
   E extends keyof Events,
 > = Events[E] extends void ? [] : [Events[E]];
@@ -31,8 +30,8 @@ export class EventEmitter<Events extends Record<string, any>> {
     return unsubscribe;
   }
 
-  once<E extends keyof Events>(event: E, listener: Listener<Events, E>) {
-    const unsubscribe = this.on(event, ((...args: Args<Events, E>) => {
+  public once<E extends keyof Events>(event: E, listener: Listener<Events, E>) {
+    const unsubscribe = this.on(event, ((...args: EventPayload<Events, E>) => {
       (listener as any)(...args);
       unsubscribe();
     }) as Listener<Events, E>);
@@ -40,7 +39,10 @@ export class EventEmitter<Events extends Record<string, any>> {
     return unsubscribe;
   }
 
-  public emit<E extends keyof Events>(event: E, ...args: Args<Events, E>) {
+  public emit<E extends keyof Events>(
+    event: E,
+    ...args: EventPayload<Events, E>
+  ) {
     const listeners = this.listeners.get(event);
 
     listeners?.forEach((listener) => {
