@@ -1,14 +1,13 @@
 <script lang="ts">
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { Editor } from "@tiptap/core";
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
-  import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let conversationManager: ConversationManager;
@@ -71,6 +70,12 @@
     editor.commands.startMention();
   }
 
+  function startChat(prompt: string) {
+    editor.commands.setContent(prompt);
+    // Wait for `value` and `canSend` to update before sending the message.`
+    tick().then(sendMessage).catch(console.error);
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
@@ -80,6 +85,12 @@
         onSubmit: () => void sendMessage(),
       }),
       content: "",
+      editorProps: {
+        attributes: {
+          class: config.minChatHeight,
+          style: height ? `height: ${height};` : "",
+        },
+      },
       onTransaction: () => {
         // force re-render so `editor.isActive` works as expected
         editor = editor;
@@ -89,10 +100,7 @@
       },
     });
 
-    const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
-      editor.commands.setContent(prompt);
-      editor.commands.focus();
-    });
+    const unsubStartChatEvent = eventBus.on("start-chat", startChat);
 
     chatMounted.set(true);
 
@@ -109,12 +117,7 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div
-    class="chat-input-container"
-    bind:this={element}
-    class:fixed-height={!!height}
-    style:height
-  />
+  <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
     {#if enableMention}
       <button class="text-base ml-1" type="button" on:click={startMention}>
@@ -144,7 +147,7 @@
 
 <style lang="postcss">
   .chat-input-form {
-    @apply flex flex-col gap-1 p-1 m-4;
+    @apply flex flex-col gap-1 py-1 mx-4 mb-4;
     @apply bg-background border rounded-md;
     transition: border-color 0.2s;
   }
@@ -157,18 +160,13 @@
     margin: 0;
   }
 
-  :global(.chat-input-container .tiptap) {
-    @apply p-2 min-h-16 outline-none;
+  :global(.tiptap) {
+    @apply px-2 py-2 outline-none;
     @apply text-sm leading-relaxed;
   }
 
   .chat-input-container {
     @apply w-full max-h-32 overflow-auto;
-  }
-
-  .chat-input-container.fixed-height {
-    min-height: unset;
-    max-height: unset;
   }
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
@@ -197,6 +195,6 @@
   }
 
   .chat-input-footer {
-    @apply flex flex-row;
+    @apply flex flex-row px-1;
   }
 </style>

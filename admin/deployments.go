@@ -93,15 +93,15 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, branch string) error {
-	// Update the deployment with the new branch (or existing branch) and set desired status to running
+	// Update the deployment with the new branch (or existing branch) and set existing desired status to retrigger reconcile flow
 	var err error
 	if branch != depl.Branch {
 		_, err = s.DB.UpdateDeploymentSafe(ctx, depl.ID, &database.UpdateDeploymentSafeOptions{
-			DesiredStatus: database.DeploymentStatusRunning,
+			DesiredStatus: depl.DesiredStatus,
 			Branch:        branch,
 		})
 	} else {
-		_, err = s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
+		_, err = s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, depl.DesiredStatus)
 	}
 	if err != nil {
 		return err
@@ -144,20 +144,18 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	grp.SetLimit(100)
 	var prodErr error
 	for _, d := range ds {
-		d := d
 		grp.Go(func() error {
-			// If this is the default prod deployment and the prod branch has changed, update the deployment branch too.
+			// If this is the primary prod deployment and the primary branch has changed, update the deployment branch too.
 			branch := d.Branch
-			if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID && p.ProdBranch != d.Branch {
-				branch = p.ProdBranch
+			if p.PrimaryDeploymentID != nil && *p.PrimaryDeploymentID == d.ID && p.PrimaryBranch != d.Branch {
+				branch = p.PrimaryBranch
 			}
-
 			err := s.UpdateDeployment(ctx, d, branch)
 			if err != nil {
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				if p.ProdDeploymentID != nil && *p.ProdDeploymentID == d.ID {
+				if p.PrimaryDeploymentID != nil && *p.PrimaryDeploymentID == d.ID {
 					prodErr = err
 				}
 				s.Logger.Warn("failed to update deployment", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
@@ -301,7 +299,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
 
 	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment, true)
+	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment)
 	if err != nil {
 		return err
 	}
@@ -433,27 +431,16 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 		return err
 	}
 
-	// Construct the full frontend URL including custom domain (if any) and org/project path
-	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
-
-	// Resolve variables based on environment
-	vars, err := s.ResolveVariables(ctx, proj.ID, d.Environment, true)
-	if err != nil {
-		return err
-	}
-
-	// Connect to the runtime, and update the instance's variables/annotations.
-	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
+	// Connect to the runtime and call ReloadConfig.
+	// The runtime will pull the latest variables, annotations, and frontend_url from the admin service,
+	// and will also force a repo pull.
 	rt, err := s.OpenRuntimeClient(d)
 	if err != nil {
 		return err
 	}
 	defer rt.Close()
-	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:  d.RuntimeInstanceID,
-		Variables:   vars,
-		Annotations: annotations.ToMap(),
-		FrontendUrl: &frontendURL,
+	_, err = rt.ReloadConfig(ctx, &runtimev1.ReloadConfigRequest{
+		InstanceId: d.RuntimeInstanceID,
 	})
 	if err != nil {
 		return err

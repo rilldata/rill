@@ -9,6 +9,9 @@ import type {
   GraphicScale,
   SimpleDataGraphicConfiguration,
 } from "@rilldata/web-common/components/data-graphic/state/types";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+import { derived } from "svelte/store";
 
 export class MeasureSelection {
   public readonly measure = writable<string | null>(null);
@@ -70,6 +73,10 @@ export class MeasureSelection {
     return Boolean(get(this.measure));
   }
 
+  public isRangeSelection() {
+    return Boolean(get(this.end));
+  }
+
   public startAnomalyExplanationChat(metricsView: string) {
     if (!this.hasSelection()) return;
     const measure = get(this.measure)!;
@@ -99,6 +106,15 @@ export class MeasureSelection {
       `What dimensions have noticeably changed, as compared to other time windows?`;
 
     sidebarActions.startChat(prompt);
+  }
+
+  public getEnabledStore() {
+    return derived(
+      [featureFlags.dashboardChat, getExploreNameStore()],
+      ([dashboardChat, exploreName]) => {
+        return Boolean(dashboardChat && exploreName);
+      },
+    );
   }
 }
 
