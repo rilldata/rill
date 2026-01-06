@@ -25,7 +25,7 @@ test.describe("File Explorer", () => {
       // Rename the file
       await page.getByRole("listitem", { name: "/untitled_file" }).hover();
       await page.getByLabel("/untitled_file actions menu").click();
-      await page.getByRole("menuitem", { name: "Rename..." }).click();
+      await page.getByRole("menuitem", { name: "Rename" }).click();
       await page.getByLabel("File name").click();
       await page.getByLabel("File name").press("Meta+a");
       await page.getByLabel("File name").fill("README.md");
@@ -84,7 +84,7 @@ test.describe("File Explorer", () => {
       // Rename the folder
       await page.getByRole("directory", { name: "untitled_folder" }).hover();
       await page.getByLabel("untitled_folder actions menu").click();
-      await page.getByRole("menuitem", { name: "Rename..." }).click();
+      await page.getByRole("menuitem", { name: "Rename" }).click();
       await page.getByLabel("Folder name").click();
       await page.getByLabel("Folder name").press("Meta+a");
       await page.getByLabel("Folder name").fill("my-directory");

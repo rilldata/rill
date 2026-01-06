@@ -2,14 +2,17 @@
   import { page } from "$app/stores";
   import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
+  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -24,6 +27,7 @@
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import File from "../../components/icons/File.svelte";
+  import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import {
@@ -31,14 +35,11 @@
     resourceIconMapping,
   } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
+  import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
-  import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
-  import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
-  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -153,6 +154,20 @@
         side="right"
         sideOffset={16}
       >
+        {#if $hasUnsavedChanges}
+          <NavigationMenuItem on:click={saveLocalContent}>
+            <Save slot="icon" size="12px" />
+            Save file
+          </NavigationMenuItem>
+        {/if}
+        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
+          <EditIcon slot="icon" />
+          Rename
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
+          <CopyIcon slot="icon" />
+          Duplicate
+        </NavigationMenuItem>
         {#if resourceKind}
           {#if resourceKind === ResourceKind.Source}
             <SourceMenuItems {filePath} />
@@ -166,22 +181,9 @@
             <CanvasMenuItems {filePath} />
           {/if}
         {/if}
-        {#if $hasUnsavedChanges}
-          <NavigationMenuItem on:click={saveLocalContent}>
-            <Save slot="icon" size="12px" />
-            Save file
-          </NavigationMenuItem>
-        {/if}
-        <NavigationMenuItem on:click={() => onRename(filePath, false)}>
-          <EditIcon slot="icon" />
-          Rename...
-        </NavigationMenuItem>
-        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
-          <CopyIcon slot="icon" />
-          Duplicate
-        </NavigationMenuItem>
+        <NavigationMenuSeparator />
         <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
-          <Cancel slot="icon" />
+          <Trash slot="icon" />
           Delete
         </NavigationMenuItem>
       </DropdownMenu.Content>
