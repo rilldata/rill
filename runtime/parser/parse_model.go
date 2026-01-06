@@ -116,6 +116,9 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		inputProps = map[string]any{}
 	}
 
+	// kind is unspecified because all connectors are not explicit and may not exist as resource, will be resolved later
+	node.Refs = append(node.Refs, ResourceName{Name: inputConnector, Kind: ResourceKindUnspecified})
+
 	// Special handling for adding SQL to the input properties
 	if sql := strings.TrimSpace(node.SQL); sql != "" {
 		refs, err := p.inferSQLRefs(node)
@@ -154,6 +157,9 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if outputConnector == "" {
 		outputConnector = p.defaultOLAPConnector()
 	}
+
+	// kind is unspecified because all connectors are not explicit and may not exist as resource, will be resolved later
+	node.Refs = append(node.Refs, ResourceName{Name: outputConnector, Kind: ResourceKindUnspecified})
 	outputProps := tmp.Output.Properties
 
 	// Backwards compatibility: materialize can be specified outside of the output properties

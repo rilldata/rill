@@ -787,7 +787,14 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			}
 		}
 
-		// Rule 4: Skip it
+		// Rule 4: For any resource if there is a connector with that name, use it
+		n := ResourceName{Kind: ResourceKindConnector, Name: ref.Name}
+		if _, ok := p.Resources[n.Normalized()]; ok {
+			refs = append(refs, n)
+			continue
+		}
+
+		// Rule 5: Skip it
 	}
 
 	slices.SortFunc(refs, func(a, b ResourceName) int {

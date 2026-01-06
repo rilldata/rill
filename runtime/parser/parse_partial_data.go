@@ -34,11 +34,15 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 		count++
 		resolver = "sql"
 		resolverProps["sql"] = raw.SQL
+		var connector string
 		if raw.Connector != "" {
-			resolverProps["connector"] = raw.Connector
+			connector = raw.Connector
 		} else if contextualConnector != "" {
-			resolverProps["connector"] = contextualConnector
+			connector = contextualConnector
 		}
+		resolverProps["connector"] = connector
+		// kind is unspecified because all connectors are not explicit and may not exist as resource, will be resolved later
+		refs = append(refs, ResourceName{Kind: ResourceKindUnspecified, Name: connector})
 	}
 
 	// Handle metrics SQL resolver

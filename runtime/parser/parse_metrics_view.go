@@ -715,7 +715,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 	node.Refs = append(node.Refs, securityRefs...)
-
+	// kind is unspecified because all connectors are not explicit and may not exist as resource, will be resolved later
+	node.Refs = append(node.Refs, ResourceName{Name: node.Connector, Kind: ResourceKindUnspecified})
 	var cacheTTLDuration time.Duration
 	if tmp.Cache.KeyTTL != "" {
 		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)

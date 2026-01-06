@@ -255,6 +255,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s1"},
 			Paths: []string{"/sources/s1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "s3"}},
 			ModelSpec: &runtimev1.ModelSpec{
 				InputConnector:   "s3",
 				OutputConnector:  "duckdb",
@@ -269,6 +270,7 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "s2"},
 			Paths: []string{"/sources/s2.sql"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "postgres"}},
 			ModelSpec: &runtimev1.ModelSpec{
 				InputConnector:   "postgres",
 				OutputConnector:  "duckdb",
