@@ -38,20 +38,20 @@
   const queryClient = useQueryClient();
   const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
 
-let failedInvites: string[] = [];
-let selectedProjects: string[] = [];
-let projectDropdownOpen = false;
-let selectedRole: "admin" | "editor" | "viewer" = "viewer";
-let roleDropdownOpen = false;
-let hasAutoSelectedProject = false;
+  let failedInvites: string[] = [];
+  let selectedProjects: string[] = [];
+  let projectDropdownOpen = false;
+  let selectedRole: "admin" | "editor" | "viewer" = "viewer";
+  let roleDropdownOpen = false;
+  let hasAutoSelectedProject = false;
 
   function resetDialogState() {
     failedInvites = [];
     selectedProjects = [];
     selectedRole = "viewer";
     hasAutoSelectedProject = false;
-  projectDropdownOpen = false;
-  roleDropdownOpen = false;
+    projectDropdownOpen = false;
+    roleDropdownOpen = false;
   }
 
   // Projects list
@@ -96,7 +96,7 @@ let hasAutoSelectedProject = false;
     } else {
       selectedProjects = [...selectedProjects, projectName];
     }
-  projectDropdownOpen = true;
+    projectDropdownOpen = true;
   }
 
   async function handleCreate(email: string) {
@@ -256,7 +256,7 @@ let hasAutoSelectedProject = false;
             closeOnItemClick={false}
           >
             <Dropdown.Trigger
-              class="min-w-[260px] h-10 flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {projectDropdownOpen
+              class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {projectDropdownOpen
                 ? 'bg-slate-200'
                 : 'hover:bg-slate-100'}"
             >
@@ -289,7 +289,7 @@ let hasAutoSelectedProject = false;
         <div class="text-xs font-medium mb-1">Access level</div>
         <Dropdown.Root bind:open={roleDropdownOpen}>
           <Dropdown.Trigger
-            class="min-w-[180px] h-10 flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {roleDropdownOpen
+            class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {roleDropdownOpen
               ? 'bg-slate-200'
               : 'hover:bg-slate-100'}"
           >
