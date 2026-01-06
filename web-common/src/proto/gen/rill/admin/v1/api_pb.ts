@@ -10483,15 +10483,6 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   resourceName = "";
 
   /**
-   * Optional filter to apply as a row filter in queries.
-   * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
-   *
-   * @generated from field: rill.runtime.v1.Expression filter = 5 [deprecated = true];
-   * @deprecated
-   */
-  filter?: Expression;
-
-  /**
    * Optional metrics view to filter mapping to apply as row filters in queries.
    * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
    *
@@ -10541,7 +10532,6 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 3, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 8, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "filter", kind: "message", T: Expression },
     { no: 12, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },

@@ -5064,8 +5064,6 @@ paths:
                                     items:
                                         type: string
                                     type: array
-                                filter:
-                                    $ref: '#/components/schemas/v1Expression'
                                 metricsViewFilters:
                                     additionalProperties:
                                         $ref: '#/components/schemas/v1Expression'

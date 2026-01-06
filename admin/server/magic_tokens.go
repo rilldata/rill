@@ -99,24 +99,6 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.Filter != nil && len(req.MetricsViewFilters) > 0 { // nolint:staticcheck // for backwards compatibility
-		return nil, status.Error(codes.InvalidArgument, "cannot specify both filter and mv_filters")
-	}
-
-	if req.Filter != nil { // nolint:staticcheck // for backwards compatibility should be removed in the next version
-		val, err := protojson.Marshal(req.Filter) // nolint:staticcheck // for backwards compatibility
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		if len(val) > magicAuthTokenFilterMaxSize {
-			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
-		}
-
-		opts.MetricsViewFilterJSONs = make(map[string]string)
-		opts.MetricsViewFilterJSONs["*"] = string(val)
-	}
-
 	filterSize := 0
 	for mv, filter := range req.MetricsViewFilters {
 		if opts.MetricsViewFilterJSONs == nil {

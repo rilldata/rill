@@ -190,7 +190,7 @@ type IssueMagicAuthTokenOptions struct {
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
 func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthTokenOptions) (AuthToken, error) {
-	for mv, _ := range opts.MetricsViewFilterJSONs {
+	for mv := range opts.MetricsViewFilterJSONs {
 		if mv == "" {
 			return nil, fmt.Errorf("metrics view name cannot be empty in MetricsViewFilterJSONs")
 		}

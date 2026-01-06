@@ -2284,11 +2284,6 @@ paths:
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
-                description: |-
-                  Optional filter to apply as a row filter in queries.
-                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
               metricsViewFilters:
                 type: object
                 additionalProperties:

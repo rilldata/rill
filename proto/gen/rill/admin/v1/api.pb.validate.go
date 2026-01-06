@@ -29563,35 +29563,6 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for ResourceName
 
-	if all {
-		switch v := interface{}(m.GetFilter()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "Filter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "Filter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return IssueMagicAuthTokenRequestValidationError{
-				field:  "Filter",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	{
 		sorted_keys := make([]string, len(m.GetMetricsViewFilters()))
 		i := 0

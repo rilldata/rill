@@ -2429,9 +2429,6 @@ message IssueMagicAuthTokenRequest {
   string resource_type = 8 [deprecated = true];
   // Name of the resource to grant access to.
   string resource_name = 9 [deprecated = true];
-  // Optional filter to apply as a row filter in queries.
-  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
-  rill.runtime.v1.Expression filter = 5 [deprecated = true];
   // Optional metrics view to filter mapping to apply as row filters in queries.
   // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
   map<string, rill.runtime.v1.Expression> metrics_view_filters = 12;
@@ -2444,6 +2441,7 @@ message IssueMagicAuthTokenRequest {
   string display_name = 10;
   // list of resources to grant access to.
   repeated ResourceName resources = 11;
+  reserved 5;
 }
 
 message ResourceName {

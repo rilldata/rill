@@ -1983,7 +1983,6 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   resourceType?: string;
   /** Name of the resource to grant access to. */
   resourceName?: string;
-  filter?: V1Expression;
   /** Optional metrics view to filter mapping to apply as row filters in queries.
 This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries. */
   metricsViewFilters?: AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters;
