@@ -447,6 +447,7 @@
             bind:primaryLoadingCopy={multiStepLoadingCopy}
             bind:formId={multiStepFormId}
             bind:yamlPreview={multiStepYamlPreview}
+            bind:yamlPreviewTitle={multiStepYamlPreviewTitle}
             bind:isSubmitting={multiStepSubmitting}
             bind:showSaveAnyway={multiStepShowSaveAnyway}
             bind:saveAnywayLoading={multiStepSaveAnywayLoading}

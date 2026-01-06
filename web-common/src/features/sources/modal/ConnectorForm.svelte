@@ -29,6 +29,7 @@
   export let primaryLoadingCopy = "";
   export let formId = "";
   export let yamlPreview = "";
+  export let yamlPreviewTitle = "Connector preview";
   export let showSaveAnyway = false;
   export let saveAnywayLoading = false;
   export let saveAnywayHandler: () => Promise<void> = async () => {};
@@ -202,6 +203,8 @@
     paramsFormValues: $paramsForm,
     dsnFormValues: {},
   });
+  $: yamlPreviewTitle =
+    stepState.step === "connector" ? "Connector preview" : "Model preview";
   // Submission wiring
   $: isSubmitting = $paramsSubmitting;
   $: handleOnUpdate = formManager.makeOnUpdate({
