@@ -623,10 +623,14 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: createdByUserID,
-		FilterJSON:      whereFilterJSON,
 		Fields:          accessibleFields,
 		Internal:        true,
 		TTL:             &ttl,
+	}
+	if whereFilterJSON != "" {
+		mgcOpts.MetricsViewFilterJSONs = map[string]string{
+			"": whereFilterJSON,
+		}
 	}
 
 	var res []database.ResourceName

@@ -2289,7 +2289,7 @@ paths:
                 description: |-
                   Optional filter to apply as a row filter in queries.
                   This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
-              mvFilters:
+              metricsViewFilters:
                 type: object
                 additionalProperties:
                   $ref: '#/definitions/v1Expression'
@@ -5655,9 +5655,7 @@ definitions:
         type: string
       resourceName:
         type: string
-      filter:
-        $ref: '#/definitions/v1Expression'
-      mvFilters:
+      metricsViewFilters:
         type: object
         additionalProperties:
           $ref: '#/definitions/v1Expression'

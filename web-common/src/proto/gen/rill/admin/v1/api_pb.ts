@@ -10495,9 +10495,9 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    * Optional metrics view to filter mapping to apply as row filters in queries.
    * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
    *
-   * @generated from field: map<string, rill.runtime.v1.Expression> mv_filters = 12;
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 12;
    */
-  mvFilters: { [key: string]: Expression } = {};
+  metricsViewFilters: { [key: string]: Expression } = {};
 
   /**
    * Optional list of fields to limit access to. If empty, no field access rule will be added.
@@ -10542,7 +10542,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 8, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "filter", kind: "message", T: Expression },
-    { no: 12, name: "mv_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
+    { no: 12, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -16999,15 +16999,9 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   resourceName = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression filter = 10 [deprecated = true];
-   * @deprecated
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 18;
    */
-  filter?: Expression;
-
-  /**
-   * @generated from field: map<string, rill.runtime.v1.Expression> mv_filters = 18;
-   */
-  mvFilters: { [key: string]: Expression } = {};
+  metricsViewFilters: { [key: string]: Expression } = {};
 
   /**
    * @generated from field: repeated string fields = 11;
@@ -17045,8 +17039,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 17, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 15, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "filter", kind: "message", T: Expression },
-    { no: 18, name: "mv_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
+    { no: 18, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },

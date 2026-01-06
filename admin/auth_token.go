@@ -176,17 +176,16 @@ func (t *magicAuthToken) OwnerID() string {
 
 // IssueMagicAuthTokenOptions provides options for IssueMagicAuthToken.
 type IssueMagicAuthTokenOptions struct {
-	ProjectID       string
-	TTL             *time.Duration
-	CreatedByUserID *string
-	Attributes      map[string]any
-	FilterJSON      string
-	MVFilters       map[string]string
-	Fields          []string
-	State           string
-	DisplayName     string
-	Internal        bool
-	Resources       []database.ResourceName
+	ProjectID              string
+	TTL                    *time.Duration
+	CreatedByUserID        *string
+	Attributes             map[string]any
+	MetricsViewFilterJSONs map[string]string
+	Fields                 []string
+	State                  string
+	DisplayName            string
+	Internal               bool
+	Resources              []database.ResourceName
 }
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
@@ -200,20 +199,19 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	}
 
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
-		ID:              tkn.ID.String(),
-		SecretHash:      tkn.SecretHash(),
-		Secret:          tkn.Secret[:],
-		ProjectID:       opts.ProjectID,
-		ExpiresOn:       expiresOn,
-		CreatedByUserID: opts.CreatedByUserID,
-		Attributes:      opts.Attributes,
-		FilterJSON:      opts.FilterJSON,
-		MVFilters:       opts.MVFilters,
-		Fields:          opts.Fields,
-		State:           opts.State,
-		DisplayName:     opts.DisplayName,
-		Internal:        opts.Internal,
-		Resources:       opts.Resources,
+		ID:                     tkn.ID.String(),
+		SecretHash:             tkn.SecretHash(),
+		Secret:                 tkn.Secret[:],
+		ProjectID:              opts.ProjectID,
+		ExpiresOn:              expiresOn,
+		CreatedByUserID:        opts.CreatedByUserID,
+		Attributes:             opts.Attributes,
+		MetricsViewFilterJSONs: opts.MetricsViewFilterJSONs,
+		Fields:                 opts.Fields,
+		State:                  opts.State,
+		DisplayName:            opts.DisplayName,
+		Internal:               opts.Internal,
+		Resources:              opts.Resources,
 	})
 	if err != nil {
 		return nil, err

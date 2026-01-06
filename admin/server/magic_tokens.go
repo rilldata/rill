@@ -99,11 +99,11 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.Filter != nil && len(req.MvFilters) > 0 { // nolint:staticcheck // for backwards compatibility
+	if req.Filter != nil && len(req.MetricsViewFilters) > 0 { // nolint:staticcheck // for backwards compatibility
 		return nil, status.Error(codes.InvalidArgument, "cannot specify both filter and mv_filters")
 	}
 
-	if req.Filter != nil { // nolint:staticcheck // for backwards compatibility
+	if req.Filter != nil { // nolint:staticcheck // for backwards compatibility should be removed in the next version
 		val, err := protojson.Marshal(req.Filter) // nolint:staticcheck // for backwards compatibility
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -113,25 +113,28 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
 		}
 
-		opts.FilterJSON = string(val)
+		opts.MetricsViewFilterJSONs = make(map[string]string)
+		opts.MetricsViewFilterJSONs[""] = string(val)
 	}
 
-	for mv, filter := range req.MvFilters {
-		if opts.MVFilters == nil {
-			opts.MVFilters = make(map[string]string)
+	filterSize := 0
+	for mv, filter := range req.MetricsViewFilters {
+		if opts.MetricsViewFilterJSONs == nil {
+			opts.MetricsViewFilterJSONs = make(map[string]string)
 		}
 		val, err := protojson.Marshal(filter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if len(val) > magicAuthTokenFilterMaxSize {
+		filterSize += len(val)
+		if filterSize > magicAuthTokenFilterMaxSize {
 			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
 		}
 
 		filterJSON := string(val)
 
-		opts.MVFilters[mv] = filterJSON
+		opts.MetricsViewFilterJSONs[mv] = filterJSON
 	}
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
@@ -290,17 +293,8 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
 	}
 
-	var filter *runtimev1.Expression
-	if tkn.FilterJSON != "" {
-		filter = &runtimev1.Expression{}
-		err := protojson.Unmarshal([]byte(tkn.FilterJSON), filter)
-		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal filter: %w", err)
-		}
-	}
-
 	mvFilters := make(map[string]*runtimev1.Expression)
-	for mv, filterJSON := range tkn.MVFilters {
+	for mv, filterJSON := range tkn.MetricsViewFilterJSONs {
 		mvFilter := &runtimev1.Expression{}
 		err := protojson.Unmarshal([]byte(filterJSON), mvFilter)
 		if err != nil {
@@ -345,8 +339,7 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
 		Attributes:         attrs,
 		Resources:          rs,
-		Filter:             filter,
-		MvFilters:          mvFilters,
+		MetricsViewFilters: mvFilters,
 		Fields:             tkn.Fields,
 		State:              tkn.State,
 		DisplayName:        tkn.DisplayName,

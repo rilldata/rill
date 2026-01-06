@@ -865,7 +865,9 @@ export interface V1ListWhitelistedDomainsResponse {
 
 export type V1MagicAuthTokenAttributes = { [key: string]: unknown };
 
-export type V1MagicAuthTokenMvFilters = { [key: string]: V1Expression };
+export type V1MagicAuthTokenMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
 
 export interface V1MagicAuthToken {
   id?: string;
@@ -881,8 +883,7 @@ export interface V1MagicAuthToken {
   resources?: V1ResourceName[];
   resourceType?: string;
   resourceName?: string;
-  filter?: V1Expression;
-  mvFilters?: V1MagicAuthTokenMvFilters;
+  metricsViewFilters?: V1MagicAuthTokenMetricsViewFilters;
   fields?: string[];
   state?: string;
   displayName?: string;
@@ -1971,7 +1972,7 @@ export type AdminServiceListMagicAuthTokensParams = {
  * Optional metrics view to filter mapping to apply as row filters in queries.
 This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
  */
-export type AdminServiceIssueMagicAuthTokenBodyMvFilters = {
+export type AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters = {
   [key: string]: V1Expression;
 };
 
@@ -1985,7 +1986,7 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   filter?: V1Expression;
   /** Optional metrics view to filter mapping to apply as row filters in queries.
 This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries. */
-  mvFilters?: AdminServiceIssueMagicAuthTokenBodyMvFilters;
+  metricsViewFilters?: AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters;
   /** Optional list of fields to limit access to. If empty, no field access rule will be added.
 This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
   fields?: string[];
