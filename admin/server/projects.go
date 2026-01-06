@@ -390,7 +390,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 						},
 					},
 				})
-				break
+				continue
 			}
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_RowFilter{
