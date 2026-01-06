@@ -81,7 +81,6 @@
   let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
   let selectedAuthMethod = "";
   let activeAuthMethod: string | null = null;
-  let prevAuthMethod: string | null = null;
 
   $: selectedAuthMethod = $selectedAuthMethodStore;
 

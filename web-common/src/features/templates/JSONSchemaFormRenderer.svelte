@@ -216,7 +216,12 @@
   }
 </script>
 
-<form id={formId} class={className} use:enhance on:submit|preventDefault={onSubmit}>
+<form
+  id={formId}
+  class={className}
+  use:enhance
+  on:submit|preventDefault={onSubmit}
+>
   {#if schema}
     {#each renderOrder as [key, prop]}
       {#if isRadioEnum(prop)}
