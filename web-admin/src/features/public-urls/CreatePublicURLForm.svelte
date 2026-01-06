@@ -107,10 +107,6 @@
                 $dashboardStore.dimensionThresholdFilters,
               )
             : undefined;
-          if (filter && !$metricsViewName) {
-            apiError = "Missing metrics view name for filter.";
-            return;
-          }
 
           const metricsViewFilters = filter
             ? { [$metricsViewName]: filter }

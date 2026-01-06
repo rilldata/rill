@@ -456,7 +456,10 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 		if err != nil {
 			panic(err)
 		}
-		filters += fmt.Sprintf("Metrics View: %s Filter: %s\n", mv, sqlFilter)
+		if filters != "" {
+			filters += ", "
+		}
+		filters += fmt.Sprintf("%s(%s)", mv, sqlFilter)
 	}
 
 	row := &magicAuthToken{
