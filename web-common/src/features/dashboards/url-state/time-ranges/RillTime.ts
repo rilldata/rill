@@ -12,6 +12,7 @@ import {
   V1TimeGrainToDateTimeUnit,
   type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
+import type { TimeRangeMeta } from "@rilldata/web-common/lib/time/types";
 
 function getLegacyGrain(grain: string, time: boolean) {
   const isValid = grain in GrainAliasToV1TimeGrain;
@@ -494,7 +495,10 @@ export class RillLegacyDaxInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return undefined;
+    const timeRangeMeta = DEFAULT_TIME_RANGES[this.name] as
+      | TimeRangeMeta
+      | undefined;
+    return timeRangeMeta?.defaultGrain || V1TimeGrain.TIME_GRAIN_DAY;
   }
 
   public toString() {

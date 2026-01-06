@@ -54,11 +54,11 @@ var (
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
-		"TD":  "ref/D to ref as of watermark",
-		"WTD": "ref/W to ref as of watermark",
-		"MTD": "ref/M to ref as of watermark",
-		"QTD": "ref/Q to ref as of watermark",
-		"YTD": "ref/Y to ref as of watermark",
+		"TD":  "ref/D to ref/D+1D as of watermark",
+		"WTD": "ref/W to ref/D+1D as of watermark",
+		"MTD": "ref/M to ref/D+1D as of watermark",
+		"QTD": "ref/Q to ref/D+1D as of watermark",
+		"YTD": "ref/Y to ref/D+1D as of watermark",
 		"PDC": "-1D/D to ref/D as of watermark",
 		"PWC": "-1W/W to ref/W as of watermark",
 		"PMC": "-1M/M to ref/M as of watermark",
@@ -804,6 +804,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	if strings.HasPrefix(from, "rill-") {
 		// We are using "rill-" as a prefix to DAX notation so that it doesn't interfere with ISO8601 standard.
 		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
+		// rill- prefixed strings use `latest/D+1D` (end of latest complete day) as anchor.
 		rillDur := strings.Replace(from, "rill-", "", 1)
 		if t, ok := daxNotations[rillDur]; ok {
 			return Parse(t, parseOpts)
