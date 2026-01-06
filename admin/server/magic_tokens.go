@@ -114,7 +114,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		}
 
 		opts.MetricsViewFilterJSONs = make(map[string]string)
-		opts.MetricsViewFilterJSONs[""] = string(val)
+		opts.MetricsViewFilterJSONs["*"] = string(val)
 	}
 
 	filterSize := 0
