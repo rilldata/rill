@@ -361,6 +361,17 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			})
 		}
 
+		if len(mdl.Resources) == 0 {
+			// If no resources are specified, deny all access.
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Allow: false,
+					},
+				},
+			})
+		}
+
 		attr = mdl.Attributes
 		for mv, filter := range mdl.MetricsViewFilterJSONs {
 			expr := &runtimev1.Expression{}
