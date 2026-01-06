@@ -805,7 +805,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	if strings.HasPrefix(from, "rill-") {
 		// We are using "rill-" as a prefix to DAX notation so that it doesn't interfere with ISO8601 standard.
 		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
-	
+
 		rillDur := strings.Replace(from, "rill-", "", 1)
 		if t, ok := daxNotations[rillDur]; ok {
 			return Parse(t, parseOpts)
