@@ -739,6 +739,10 @@ export type ComponentPath = [
   CanvasComponentType,
 ];
 
+// Constants for ComponentPath array indices
+export const COMPONENT_PATH_ROW_INDEX = 1;
+export const COMPONENT_PATH_COLUMN_INDEX = 3;
+
 function constructPath(
   row: number,
   column: number,

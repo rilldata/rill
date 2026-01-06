@@ -402,6 +402,10 @@ export interface V1CanvasItem {
   width?: number;
   /** Unit of the width. Current possible values: empty string. */
   widthUnit?: string;
+  /** Background color for light mode. Overrides theme's card color when set. */
+  backgroundColorLight?: string;
+  /** Background color for dark mode. Overrides theme's card color when set. */
+  backgroundColorDark?: string;
 }
 
 export type V1CanvasPresetFilterExpr = {

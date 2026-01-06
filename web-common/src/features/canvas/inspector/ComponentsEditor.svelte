@@ -5,15 +5,18 @@
   } from "@rilldata/web-common/features/canvas/components/util";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import VegaConfigInput from "./chart/VegaConfigInput.svelte";
   import ComponentTabs from "./ComponentTabs.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
+  import BackgroundColorEditor from "./BackgroundColorEditor.svelte";
   import { hasComponentFilters } from "./util";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
   export let component: BaseCanvasComponent;
+  export let fileArtifact: FileArtifact;
 
   let currentTab: string;
 
@@ -44,6 +47,7 @@
   {#if componentType && component && rendererProperties}
     {#if currentTab === "options"}
       <ParamMapper {component} />
+      <BackgroundColorEditor {component} {fileArtifact} />
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />
     {:else if currentTab === "config"}

@@ -64,7 +64,7 @@
 
 <Inspector minWidth={320} filePath={path}>
   {#if component}
-    <ComponentsEditor {component} />
+    <ComponentsEditor {component} {fileArtifact} />
   {:else}
     <PageEditor {canvasName} {fileArtifact} {updateProperties} />
   {/if}

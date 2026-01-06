@@ -51,6 +51,8 @@ export const mousePosition = (() => {
 
 type YAMLItem = Record<string, unknown> & {
   width?: number;
+  background_color_light?: string;
+  background_color_dark?: string;
 };
 
 export type YAMLRow = {

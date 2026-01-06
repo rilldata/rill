@@ -845,6 +845,10 @@ message CanvasItem {
   optional uint32 width = 9;
   // Unit of the width. Current possible values: empty string.
   string width_unit = 10;
+  // Background color for light mode. Overrides theme's card color when set.
+  optional string background_color_light = 11;
+  // Background color for dark mode. Overrides theme's card color when set.
+  optional string background_color_dark = 12;
 }
 
 message CanvasPreset {

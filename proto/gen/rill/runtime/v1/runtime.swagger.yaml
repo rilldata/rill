@@ -3866,6 +3866,12 @@ definitions:
       widthUnit:
         type: string
         description: 'Unit of the width. Current possible values: empty string.'
+      backgroundColorLight:
+        type: string
+        description: Background color for light mode. Overrides theme's card color when set.
+      backgroundColorDark:
+        type: string
+        description: Background color for dark mode. Overrides theme's card color when set.
   v1CanvasPreset:
     type: object
     properties:

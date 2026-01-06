@@ -4988,6 +4988,20 @@ export class CanvasItem extends Message<CanvasItem> {
    */
   widthUnit = "";
 
+  /**
+   * Background color for light mode. Overrides theme's card color when set.
+   *
+   * @generated from field: optional string background_color_light = 11;
+   */
+  backgroundColorLight?: string;
+
+  /**
+   * Background color for dark mode. Overrides theme's card color when set.
+   *
+   * @generated from field: optional string background_color_dark = 12;
+   */
+  backgroundColorDark?: string;
+
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5000,6 +5014,8 @@ export class CanvasItem extends Message<CanvasItem> {
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "background_color_light", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "background_color_dark", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {

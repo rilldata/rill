@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
@@ -43,9 +44,11 @@ type CanvasYAML struct {
 	Rows      []*struct {
 		Height *string `yaml:"height"`
 		Items  []*struct {
-			Width           *string              `yaml:"width"`
-			Component       string               `yaml:"component"` // Name of an externally defined component
-			InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
+			Width                *string              `yaml:"width"`
+			Component            string               `yaml:"component"` // Name of an externally defined component
+			BackgroundColorLight *string              `yaml:"background_color_light"`
+			BackgroundColorDark  *string              `yaml:"background_color_dark"`
+			InlineComponent      map[string]yaml.Node `yaml:",inline"` // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
 	Security *SecurityPolicyYAML `yaml:"security"`
@@ -192,12 +195,36 @@ func (p *Parser) parseCanvas(node *Node) error {
 				definedInCanvs = true
 			}
 
-			items = append(items, &runtimev1.CanvasItem{
+			canvasItem := &runtimev1.CanvasItem{
 				Component:       item.Component,
 				DefinedInCanvas: definedInCanvs,
 				Width:           width,
 				WidthUnit:       widthUnit,
-			})
+			}
+
+			// Extract and validate background colors if present
+			if item.BackgroundColorLight != nil {
+				trimmed := strings.TrimSpace(*item.BackgroundColorLight)
+				if trimmed != "" {
+					// Validate color format
+					if _, err := csscolorparser.Parse(trimmed); err != nil {
+						return fmt.Errorf("invalid background_color_light for item %d in row %d: %w", j, i, err)
+					}
+					canvasItem.BackgroundColorLight = &trimmed
+				}
+			}
+			if item.BackgroundColorDark != nil {
+				trimmed := strings.TrimSpace(*item.BackgroundColorDark)
+				if trimmed != "" {
+					// Validate color format
+					if _, err := csscolorparser.Parse(trimmed); err != nil {
+						return fmt.Errorf("invalid background_color_dark for item %d in row %d: %w", j, i, err)
+					}
+					canvasItem.BackgroundColorDark = &trimmed
+				}
+			}
+
+			items = append(items, canvasItem)
 
 			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: item.Component})
 		}

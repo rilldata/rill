@@ -10736,6 +10736,14 @@ func (m *CanvasItem) validate(all bool) error {
 		// no validation rules for Width
 	}
 
+	if m.BackgroundColorLight != nil {
+		// no validation rules for BackgroundColorLight
+	}
+
+	if m.BackgroundColorDark != nil {
+		// no validation rules for BackgroundColorDark
+	}
+
 	if len(errors) > 0 {
 		return CanvasItemMultiError(errors)
 	}
