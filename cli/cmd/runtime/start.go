@@ -50,6 +50,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/slack"
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
@@ -246,7 +247,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 						Config: metastoreConfig,
 					},
 				},
-				Version: ch.Version,
+				Version:              ch.Version,
+				EnableConfigReloader: true,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {

@@ -294,6 +294,11 @@ function fromExploreUrlParams(
       preset.exploreLeaderboardMeasures;
   }
 
+  if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
+    partialExploreState.leaderboardShowContextForAllMeasures =
+      preset.exploreLeaderboardShowContextForAllMeasures;
+  }
+
   if (preset.exploreExpandedDimension !== undefined) {
     if (preset.exploreExpandedDimension === "") {
       partialExploreState.selectedDimensionName = "";
@@ -482,6 +487,11 @@ function fromPivotUrlParams(
     }
   }
 
+  let rowLimit: number | undefined = undefined;
+  if (preset.pivotRowLimit !== undefined) {
+    rowLimit = preset.pivotRowLimit;
+  }
+
   return {
     partialExploreState: {
       pivot: {
@@ -495,6 +505,7 @@ function fromPivotUrlParams(
         enableComparison: true,
         activeCell: null,
         tableMode,
+        rowLimit,
       },
     },
     errors,

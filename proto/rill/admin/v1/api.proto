@@ -327,6 +327,12 @@ service AdminService {
     };
   }
 
+  // GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+  // This is called by the runtime to pull its Variables and Annotations from the admin service.
+  rpc GetDeploymentConfig(GetDeploymentConfigRequest) returns (GetDeploymentConfigResponse) {
+    option (google.api.http) = {get: "/v1/deployments/{deployment_id}/config"};
+  }
+
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
@@ -1247,6 +1253,7 @@ message ListDeploymentsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string environment = 3;
+  string branch = 5;
   string user_id = 4;
 }
 
@@ -1346,6 +1353,8 @@ message ListProjectsForFingerprintResponse {
 message GetProjectRequest {
   string org = 1;
   string project = 2;
+  // Optional branch to get deployment for. If not set, then project's primary_branch is used.
+  string branch = 6;
   uint32 access_token_ttl_seconds = 3;
   bool superuser_force_access = 5;
   bool issue_superuser_token = 4;
@@ -1353,7 +1362,7 @@ message GetProjectRequest {
 
 message GetProjectResponse {
   Project project = 1;
-  Deployment prod_deployment = 2;
+  Deployment deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
 }
@@ -1741,6 +1750,23 @@ message ProvisionRequest {
 
 message ProvisionResponse {
   ProvisionerResource resource = 1;
+}
+
+message GetDeploymentConfigRequest {
+  string deployment_id = 1; 
+}
+
+message GetDeploymentConfigResponse {
+  // Variables for the deployment (connector credentials, etc.)
+  map<string, string> variables = 1;
+  // Annotations for the deployment (org/project metadata, etc.)
+  map<string, string> annotations = 2;
+  // Frontend URL for the deployment.
+  string frontend_url = 3;
+  // Timestamp when the deployment was last updated.
+  google.protobuf.Timestamp updated_on = 4;
+  // Whether the deployment is git based or archive based.
+  bool uses_archive = 5;
 }
 
 message ListRolesRequest {}
@@ -2403,9 +2429,9 @@ message IssueMagicAuthTokenRequest {
   string resource_type = 8 [deprecated = true];
   // Name of the resource to grant access to.
   string resource_name = 9 [deprecated = true];
-  // Optional filter to apply as a row filter in queries.
-  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
-  rill.runtime.v1.Expression filter = 5;
+  // Optional metrics view to filter mapping to apply as row filters in queries.
+  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+  map<string, rill.runtime.v1.Expression> metrics_view_filters = 12;
   // Optional list of fields to limit access to. If empty, no field access rule will be added.
   // This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
   repeated string fields = 6;
@@ -2415,6 +2441,7 @@ message IssueMagicAuthTokenRequest {
   string display_name = 10;
   // list of resources to grant access to.
   repeated ResourceName resources = 11;
+  reserved 5;
 }
 
 message ResourceName {
@@ -3258,10 +3285,11 @@ message MagicAuthToken {
   repeated ResourceName resources = 17;
   string resource_type = 15 [deprecated = true];
   string resource_name = 9 [deprecated = true];
-  rill.runtime.v1.Expression filter = 10;
+  map<string, rill.runtime.v1.Expression> metrics_view_filters = 18;
   repeated string fields = 11;
   string state = 12;
   string display_name = 16;
+  reserved 10;
 }
 
 message VirtualFile {

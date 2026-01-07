@@ -434,6 +434,7 @@ function fromPivotProto(
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
+    rowLimit: dashboard.pivotRowLimit,
   };
 }
 
