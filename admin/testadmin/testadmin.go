@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
+	goruntime "runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,11 +26,14 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/version"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	runtimeserver "github.com/rilldata/rill/runtime/server"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -37,14 +41,17 @@ import (
 	// Register database driver and supported provisioners
 	_ "github.com/rilldata/rill/admin/database/postgres"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
-// Fixture is a test fixture for an admin service and server.
+// Fixture is a test fixture for an admin service and server with an embedded runtime server.
 // It wraps an admin service with a server running on a random port backed by a testcontainer Postgres database.
-// The service, server and other resources will be cleaned up when the test that created the Fixture stops.
+// It also includes a fully functional runtime server for integration testing.
+// The service, servers and other resources will be cleaned up when the test that created the Fixture stops.
 //
 // The service has several limitations compared to a production server:
-// - Cannot provision runtimes
 // - Github operation are no-ops
 // - Billing operations are no-ops
 // - No configured metrics project
@@ -54,11 +61,19 @@ type Fixture struct {
 	Server     *server.Server
 	ServerOpts *server.Options
 	Audience   *runtimeauth.Audience
+
+	Runtime           *runtime.Runtime
+	RuntimeServer     *runtimeserver.Server
+	RuntimeServerOpts *runtimeserver.Options
 }
 
 // New creates an ephemeral admin service and server for testing.
 // See the docstring for the returned Fixture for details.
 func New(t *testing.T) *Fixture {
+	return NewWithOptionalRuntime(t, false)
+}
+
+func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	ctx := t.Context()
 
 	// Postgres
@@ -81,20 +96,18 @@ func New(t *testing.T) *Fixture {
 	keyringJSON, err := json.Marshal(keyring)
 	require.NoError(t, err)
 
-	// Ports and external URLs
-	port := findPort(t)
+	// Ports and external URLs - find both ports (guaranteed to be different)
+	port, runtimePort := findTwoPorts(t)
 	externalURL := fmt.Sprintf("http://localhost:%d", port)
+	runtimeExternalURL := fmt.Sprintf("http://localhost:%d", runtimePort)
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
 	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
-	// Runtime provisioner.
-	// NOTE: Only gives the appearance of a static runtime, but does not actually start one.
-	// TODO: Support actually starting a runtime.
-	runtimeExternalURL := "http://localhost:8081"
-	runtimeAudienceURL := "http://localhost:8081"
+	// Runtime provisioner - if startRt is false, we set up a provisioner that points to a non-existent runtime server.
+	runtimeAudienceURL := runtimeExternalURL
 	defaultProvisioner := "static"
 	provisionerSetJSON := must(json.Marshal(map[string]any{
 		"static": map[string]any{
@@ -158,15 +171,56 @@ func New(t *testing.T) *Fixture {
 	require.NoError(t, srv.AwaitServing(ctx))
 
 	// Create Audience
-	audienceURL := "http://example.org"
-	aud, err := runtimeauth.OpenAudience(context.Background(), zap.NewNop(), externalURL, audienceURL)
+	aud, err := runtimeauth.OpenAudience(context.Background(), zap.NewNop(), externalURL, runtimeExternalURL)
 	require.NoError(t, err)
 
+	if !startRt {
+		return &Fixture{
+			Admin:      adm,
+			Server:     srv,
+			ServerOpts: srvOpts,
+			Audience:   aud,
+		}
+	}
+
+	// Create runtime server
+	runtimeServerOpts := &runtimeserver.Options{
+		HTTPPort:        runtimePort,
+		GRPCPort:        runtimePort,
+		AllowedOrigins:  []string{"*"},
+		SessionKeyPairs: [][]byte{randomBytes(16), randomBytes(16)},
+		AuthEnable:      true,
+		AuthIssuerURL:   externalURL,        // Admin server as issuer
+		AuthAudienceURL: runtimeExternalURL, // Runtime's own URL
+	}
+
+	rt := testruntime.New(t, false)
+	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	t.Cleanup(func() { rtSrv.Close() })
+
+	group.Go(func() error {
+		return rtSrv.ServeHTTP(ctx, nil, false)
+	})
+
+	// Wait for runtime server to be ready
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(fmt.Sprintf("%s/v1/ping", runtimeExternalURL))
+		if err == nil && resp.StatusCode == 200 {
+			resp.Body.Close()
+			return true
+		}
+		return false
+	}, 15*time.Second, 100*time.Millisecond, "runtime server failed to start")
+
 	return &Fixture{
-		Admin:      adm,
-		Server:     srv,
-		ServerOpts: srvOpts,
-		Audience:   aud,
+		Admin:             adm,
+		Server:            srv,
+		ServerOpts:        srvOpts,
+		Audience:          aud,
+		Runtime:           rt,
+		RuntimeServer:     rtSrv,
+		RuntimeServerOpts: runtimeServerOpts,
 	}
 }
 
@@ -217,6 +271,11 @@ func (f *Fixture) ExternalURL() string {
 	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
 }
 
+// RuntimeURL returns the URL where the embedded runtime is accessible.
+func (f *Fixture) RuntimeURL() string {
+	return fmt.Sprintf("http://localhost:%d", f.RuntimeServerOpts.GRPCPort)
+}
+
 // newGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
 // Otherwise it creates a real implementation that makes real API calls to Github.
 func newGithub(t *testing.T) admin.Github {
@@ -224,7 +283,7 @@ func newGithub(t *testing.T) admin.Github {
 		return &mockGithub{}
 	}
 
-	_, currentFile, _, _ := runtime.Caller(0)
+	_, currentFile, _, _ := goruntime.Caller(0)
 	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
 	_, err := os.Stat(envPath)
 	if err == nil {
@@ -267,11 +326,23 @@ func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 
-func findPort(t *testing.T) int {
-	lis, err := net.Listen("tcp", "localhost:0")
+// findTwoPorts finds two different available ports.
+func findTwoPorts(t *testing.T) (int, int) {
+	lis1, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
-	defer lis.Close()
-	return lis.Addr().(*net.TCPAddr).Port
+	defer lis1.Close()
+
+	lis2, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer lis2.Close()
+
+	port1 := lis1.Addr().(*net.TCPAddr).Port
+	port2 := lis2.Addr().(*net.TCPAddr).Port
+
+	// Since both listeners are open simultaneously, the OS guarantees different ports
+	require.NotEqual(t, port1, port2, "ports should be different")
+
+	return port1, port2
 }
 
 func randomBytes(n int) []byte {

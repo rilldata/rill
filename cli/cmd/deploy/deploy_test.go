@@ -36,7 +36,7 @@ func TestManagedDeploy(t *testing.T) {
 	// deploy the project
 	tempDir := initRillProject(t)
 
-	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=github-test", "--project=rill-mgd-deploy", "--skip-deploy=true", "--path="+tempDir)
+	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=github-test", "--project=rill-mgd-deploy", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify the project is correctly created
