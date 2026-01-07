@@ -19,6 +19,8 @@
     deltaColumn,
     MEASURES_PADDING,
   } from "./leaderboard-widths";
+  import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
+  import { builderActions, getAttrs } from "bits-ui";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -211,59 +213,63 @@
       selectionIndex={itemData?.selectedIndex}
     />
   </td>
-  <td
-    role="button"
-    tabindex="0"
-    data-dimension-cell
-    class:ui-copy={!atLeastOneActive}
-    class:ui-copy-disabled={excluded}
-    class:ui-copy-strong={!excluded && selected}
-    on:click={modified({
-      shift: () => shiftClickHandler(dimensionValue),
-    })}
-    on:pointerover={() => {
-      if (dimensionValue) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString());
-      }
-    }}
-    on:focus={() => {
-      if (dimensionValue) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString());
-      }
-    }}
-    class="relative size-full flex flex-none justify-between items-center leaderboard-label"
-    style:background={dimensionGradients}
-  >
-    <span class="truncate select-text">
-      <FormattedDataType value={dimensionValue} truncate />
-    </span>
-
-    {#if previousValueString && hovered}
-      <span
-        class="opacity-50 whitespace-nowrap font-normal"
-        transition:slide={{ axis: "x", duration: 200 }}
-      >
-        {previousValueString} →
+  <LeaderboardCell copyLabel={dimensionValue} let:builder>
+    <td
+      role="button"
+      tabindex="0"
+      data-dimension-cell
+      class:ui-copy={!atLeastOneActive}
+      class:ui-copy-disabled={excluded}
+      class:ui-copy-strong={!excluded && selected}
+      on:click={modified({
+        shift: () => shiftClickHandler(dimensionValue),
+      })}
+      on:pointerover={() => {
+        if (dimensionValue) {
+          // Always update the value in the store, but don't change visibility
+          cellInspectorStore.updateValue(dimensionValue.toString());
+        }
+      }}
+      on:focus={() => {
+        if (dimensionValue) {
+          // Always update the value in the store, but don't change visibility
+          cellInspectorStore.updateValue(dimensionValue.toString());
+        }
+      }}
+      class="relative size-full flex flex-none justify-between items-center leaderboard-label"
+      style:background={dimensionGradients}
+      {...getAttrs([builder])}
+      use:builderActions={{ builders: [builder] }}
+    >
+      <span class="truncate select-text">
+        <FormattedDataType value={dimensionValue} truncate />
       </span>
-    {/if}
 
-    {#if href}
-      <span class="external-link-wrapper">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          {href}
-          title={href}
-          on:click|stopPropagation
-          class:hovered
+      {#if previousValueString && hovered}
+        <span
+          class="opacity-50 whitespace-nowrap font-normal"
+          transition:slide={{ axis: "x", duration: 200 }}
         >
-          <ExternalLink className="fill-primary-600" />
-        </a>
-      </span>
-    {/if}
-  </td>
+          {previousValueString} →
+        </span>
+      {/if}
+
+      {#if href}
+        <span class="external-link-wrapper">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            {href}
+            title={href}
+            on:click|stopPropagation
+            class:hovered
+          >
+            <ExternalLink className="fill-primary-600" />
+          </a>
+        </span>
+      {/if}
+    </td>
+  </LeaderboardCell>
 
   {#each Object.keys(values) as measureName}
     <td
