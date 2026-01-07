@@ -2,63 +2,7 @@ import { useColorMode } from '@docusaurus/theme-common';
 import Navbar from '@theme-original/Navbar';
 import { useEffect, useLayoutEffect } from 'react';
 
-const MOBILE_ICON_LINKS = [
-  {
-    href: 'https://github.com/rilldata/rill',
-    label: 'GitHub',
-    src: '/icons/Github.svg',
-  },
-  {
-    href: '/notes',
-    label: 'Release Notes',
-    src: '/icons/ReleaseNotes.svg',
-  },
-  {
-    href: 'https://www.rilldata.com/blog',
-    label: 'Blog',
-    src: '/icons/MessageSquareQuote.svg',
-  },
-];
-
-function createIconLink({ href, label, src }) {
-  const anchor = document.createElement('a');
-  anchor.href = href;
-  anchor.target = '_blank';
-  anchor.rel = 'noopener noreferrer';
-  anchor.className = 'mobile-nav-icon-link';
-  anchor.setAttribute('aria-label', label);
-
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = label;
-  img.width = 24;
-  img.height = 24;
-
-  anchor.appendChild(img);
-  return anchor;
-}
-
-function ensureSidebarIcons() {
-  const brand = document.querySelector('.navbar-sidebar__brand');
-  // Check if icons already exist
-  if (!brand || brand.querySelector('.mobile-nav-icon-links')) {
-    return;
-  }
-
-  const container = document.createElement('div');
-  container.className = 'mobile-nav-icon-links';
-
-  MOBILE_ICON_LINKS.forEach((link) => {
-    container.appendChild(createIconLink(link));
-  });
-
-  const closeButton = brand.querySelector('.navbar-sidebar__close');
-  if (closeButton) {
-    brand.insertBefore(container, closeButton);
-  } else {
-    brand.appendChild(container);
-  }
-}
+// Mobile icon functionality removed
 
 export default function NavbarWrapper(props) {
   // We only need colorMode to determine which icon to show.
@@ -80,9 +24,9 @@ export default function NavbarWrapper(props) {
       if (!iconContainer) {
         iconContainer = document.createElement('span');
         iconContainer.className = 'icon-container';
-        
+
         // Clear existing Docusaurus toggle content (text/emojis)
-        btn.innerHTML = ''; 
+        btn.innerHTML = '';
         btn.appendChild(iconContainer);
       }
 
@@ -90,7 +34,7 @@ export default function NavbarWrapper(props) {
       // If Dark Mode -> Show Sun (to switch to Light)
       // If Light Mode -> Show Moon (to switch to Dark)
       const isDark = colorMode === 'dark';
-      
+
       iconContainer.innerHTML = `
         <img 
           src="/icons/${isDark ? 'Sun' : 'Moon'}.svg" 
@@ -99,27 +43,60 @@ export default function NavbarWrapper(props) {
           height="24" 
         />
       `;
-      
+
       btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     });
   }, [colorMode]);
 
-  // Handle Mobile Sidebar Icons
-  useEffect(() => {
-    // Observer to inject icons when the mobile menu opens/renders
-    const observer = new MutationObserver(() => {
-      ensureSidebarIcons();
-    });
+  // Mobile sidebar icons removed - no longer needed
 
+  // Mark dropdown as active when any dropdown menu item is active
+  useEffect(() => {
+    const markActiveDropdowns = () => {
+      // Target elements with both navbar__item and dropdown classes
+      const dropdownItems = document.querySelectorAll('.navbar__item.dropdown');
+      dropdownItems.forEach((dropdownItem) => {
+        const activeDropdownLink = dropdownItem.querySelector('.dropdown__link--active');
+        if (activeDropdownLink) {
+          dropdownItem.classList.add('navbar__dropdown--has-active');
+        } else {
+          dropdownItem.classList.remove('navbar__dropdown--has-active');
+        }
+      });
+    };
+
+    // Check on mount and when DOM changes
+    markActiveDropdowns();
+    const observer = new MutationObserver(markActiveDropdowns);
     observer.observe(document.body, { childList: true, subtree: true });
-    ensureSidebarIcons(); // Initial check
 
     return () => {
       observer.disconnect();
-      const existing = document.querySelector('.mobile-nav-icon-links');
-      if (existing) {
-        existing.remove();
-      }
+    };
+  }, []);
+
+  // Mark non-dropdown navbar items as active when they contain an active link
+  useEffect(() => {
+    const markActiveNavItems = () => {
+      // Target non-dropdown navbar items
+      const navItems = document.querySelectorAll('.navbar__item:not(.dropdown)');
+      navItems.forEach((navItem) => {
+        const activeLink = navItem.querySelector('.navbar__link--active');
+        if (activeLink) {
+          navItem.classList.add('navbar__item--has-active-link');
+        } else {
+          navItem.classList.remove('navbar__item--has-active-link');
+        }
+      });
+    };
+
+    // Check on mount and when DOM changes
+    markActiveNavItems();
+    const observer = new MutationObserver(markActiveNavItems);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
     };
   }, []);
 
