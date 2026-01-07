@@ -412,8 +412,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			// Leave unspecified as default
 		case "geo":
 			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_GEOSPATIAL
+		case "time":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case "categorical":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 		default:
-			return fmt.Errorf(`invalid dimension type %q (allowed values: geo)`, dim.Type)
+			return fmt.Errorf(`invalid dimension type %q (allowed values: geo, time, categorical)`, dim.Type)
 		}
 
 		// Dimension is valid, add to the list

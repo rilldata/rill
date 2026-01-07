@@ -84,7 +84,7 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`tags`** - _[array of string]_ - optional list of tags for categorizing the dimension (defaults to empty) 
 
-  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions. Default is undefined and the type will be inferred instead 
+  - **`type`** - _[string]_ - Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead 
 
   - **`column`** - _[string]_ - a categorical column 
 

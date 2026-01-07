@@ -1852,7 +1852,7 @@ definitions:
                     type: string
                 type:
                     type: string
-                    description: 'Dimension type: "geo" for geospatial dimensions. Default is undefined and the type will be inferred instead'
+                    description: 'Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead'
                 column:
                   type: string
                   description: a categorical column
