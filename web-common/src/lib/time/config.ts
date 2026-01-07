@@ -320,7 +320,7 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.QUARTER_TO_DATE]: {
     label: "Quarter to Date",
 
-    defaultGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,

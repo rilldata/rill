@@ -210,7 +210,7 @@ describe("rill time", () => {
         `2025-02-20T01:23:45Z,2025-07-15T02:34:50Z`,
         `Custom`,
         false,
-        undefined,
+        V1TimeGrain.TIME_GRAIN_SECOND,
         undefined,
       ],
 
