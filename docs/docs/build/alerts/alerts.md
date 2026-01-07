@@ -90,7 +90,7 @@ The alert triggers when the query returns **any rows**.
 
 ### Metrics SQL
 
-Use `metrics_sql` when you want to query a [metrics view](/build/metrics-view) using its defined dimensions and measures, rather than writing raw SQL against the underlying model. This approach leverages the metrics view's security policies and allows you to reference measures and dimensions by name. For details on the `metrics_sql` syntax, see [Custom APIs](/build/custom-apis/custom-apis#metrics-sql-api).
+Use `metrics_sql` when you want to query a [metrics view](/build/metrics-view) using its defined dimensions and measures, rather than writing raw SQL against the underlying model. This approach leverages the metrics view's security policies and allows you to reference measures and dimensions by name. For details on the `metrics_sql` syntax, see [Custom APIs](/build/custom-apis/metrics-sql-api).
 
 ```yaml
 data:
@@ -102,7 +102,7 @@ data:
 
 ### Custom API
 
-Use a custom API when you want to reuse complex query logic that's already defined as a [Custom API](/build/custom-apis/custom-apis) in your project. This approach is useful for sharing validation logic between alerts and other integrations, or when you need to pass dynamic arguments to your alert queries.
+Use a custom API when you want to reuse complex query logic that's already defined as a [Custom API](/build/custom-apis) in your project. This approach is useful for sharing validation logic between alerts and other integrations, or when you need to pass dynamic arguments to your alert queries.
 
 ```yaml
 data:
