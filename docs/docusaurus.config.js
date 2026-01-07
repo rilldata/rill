@@ -137,6 +137,7 @@ const config = {
             label: "Reference",
             position: "left",
             to: "/reference/project-files",
+            className: 'my-custom-dropdown',
             activeBaseRegex: "^(/reference|/api/admin)",
             items: [
               {

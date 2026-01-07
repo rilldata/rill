@@ -2,6 +2,21 @@
    Navbar Styles
    ========================= */
 
+/* Hide caret for custom dropdown links - global rule */
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) .menu__caret,
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button.menu__caret,
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) .clean-btn.menu__caret,
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) .menu__caret svg,
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button[class*="caret"],
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button[aria-label*="dropdown"],
+.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button[aria-label*="Collapse"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Base navbar link styles - all text black, no decorations */
 .navbar .navbar__link {
   color: var(--ifm-color-black);
@@ -54,18 +69,50 @@
     color: var(--ifm-color-black);
     text-decoration: none;
     position: relative;
-    
+    padding-right: 2rem;
     &:hover {
       color: var(--ifm-color-primary);
       text-decoration: none;
     }
     
   }
+  /* Hide the default chevron icon for custom dropdown links */
+  &:has(.navbar__link.my-custom-dropdown) {
+    .menu__caret,
+    button.menu__caret,
+    .clean-btn.menu__caret,
+    button[class*="caret"],
+    button[aria-label*="dropdown"],
+    button[aria-label*="Collapse"],
+    .navbar__link.my-custom-dropdown ~ .menu__caret,
+    .navbar__link.my-custom-dropdown + .menu__caret,
+    .navbar__link.my-custom-dropdown .menu__caret,
+    .navbar__link.my-custom-dropdown::after {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      width: 0 !important;
+      height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  }
   
+  /* Rotate custom chevron on hover and when dropdown is open */
+  &:has(.navbar__link.my-custom-dropdown) {
+    .navbar__link.my-custom-dropdown .custom-chevron {
+      transition: transform 0.2s ease;
+    }
+    
+    &:hover .navbar__link.my-custom-dropdown .custom-chevron,
+    &.dropdown--show .navbar__link.my-custom-dropdown .custom-chevron,
+    .navbar__link.my-custom-dropdown[aria-expanded="true"] .custom-chevron {
+      transform: translateY(0%) rotate(180deg);
+    }
+  }
   /* Active dropdown - theme color when any sub-page is active */
   /* JavaScript adds 'navbar__dropdown--has-active' class when dropdown menu has active item */
   &.navbar__dropdown--has-active > .navbar__link {
-    color: var(--ifm-color-primary);
     color: var(--ifm-color-primary);
     text-decoration: underline;
     text-decoration-thickness: 1px;
@@ -75,6 +122,7 @@
     text-decoration-skip-ink: none;
     text-decoration-skip: none;
     text-decoration-skip-ink: none;
+
   }
   
   /* Hover effect for dropdown */

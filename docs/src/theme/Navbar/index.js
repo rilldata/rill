@@ -91,15 +91,75 @@ export default function NavbarWrapper(props) {
       });
     };
 
+    const replaceCustomDropdownCarets = () => {
+      // Add custom SVG chevron for custom dropdown links
+      // CSS already hides the default caret, so we just need to add our custom one
+      const customDropdownLinks = document.querySelectorAll('.navbar__link.my-custom-dropdown');
+      customDropdownLinks.forEach((link) => {
+        const dropdownItem = link.closest('.navbar__item.dropdown');
+        if (dropdownItem && !link.hasAttribute('data-custom-chevron-added')) {
+          // Mark as processed
+          link.setAttribute('data-custom-chevron-added', 'true');
+
+          // Create a container for the custom chevron
+          let chevronContainer = link.querySelector('.custom-chevron');
+          if (!chevronContainer) {
+            chevronContainer = document.createElement('span');
+            chevronContainer.className = 'custom-chevron';
+            chevronContainer.style.position = 'absolute';
+            chevronContainer.style.right = '0.5rem';
+            chevronContainer.style.top = '30%';
+            chevronContainer.style.transform = 'translateY(0%)';
+            chevronContainer.style.transition = 'transform 0.2s ease';
+            chevronContainer.style.opacity = '0.7';
+            chevronContainer.style.width = '14px';
+            chevronContainer.style.height = '14px';
+            chevronContainer.style.display = 'block';
+            chevronContainer.style.pointerEvents = 'none';
+            link.style.position = 'relative';
+            link.appendChild(chevronContainer);
+          }
+
+          // Clear and add custom SVG chevron
+          chevronContainer.innerHTML = '';
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('height', '14px');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'currentColor');
+          svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          svg.style.width = '14px';
+          svg.style.height = '14px';
+          svg.style.display = 'block';
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('fill-rule', 'evenodd');
+          path.setAttribute('clip-rule', 'evenodd');
+          path.setAttribute('d', 'M19.189 9.43683C19.3842 9.63209 19.3842 9.94867 19.189 10.1439L11.9999 17.333L4.81075 10.1439C4.61549 9.94867 4.61549 9.63209 4.81075 9.43683L5.98898 8.2586C6.18424 8.06334 6.50082 8.06334 6.69609 8.2586L11.9999 13.5624L17.3036 8.2586C17.4989 8.06334 17.8155 8.06334 18.0108 8.2586L19.189 9.43683Z');
+
+          svg.appendChild(path);
+          chevronContainer.appendChild(svg);
+
+          // CSS will handle the rotation on hover/open
+        }
+      });
+    };
+
     // Combined update function
     const updateNavbar = () => {
       markActiveDropdowns();
       markActiveNavItems();
       addDataTextAttributes();
+      replaceCustomDropdownCarets();
     };
 
     // Run on mount and when DOM changes
     updateNavbar();
+
+    // Also run after a short delay to catch dynamically added elements
+    setTimeout(updateNavbar, 100);
+    setTimeout(updateNavbar, 500);
+    setTimeout(updateNavbar, 1000);
+
     const observer = new MutationObserver(updateNavbar);
     observer.observe(document.body, { childList: true, subtree: true });
 
