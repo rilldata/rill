@@ -8,45 +8,45 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
-const ResourceStatusName = "resource_status"
+const ProjectStatusName = "project_status"
 
-type ResourceStatus struct {
+type ProjectStatus struct {
 	Runtime *runtime.Runtime
 }
 
-var _ Tool[*ResourceStatusArgs, *ResourceStatusResult] = (*ResourceStatus)(nil)
+var _ Tool[*ProjectStatusArgs, *ProjectStatusResult] = (*ProjectStatus)(nil)
 
-type ResourceStatusArgs struct {
+type ProjectStatusArgs struct {
 	WhereError bool   `json:"where_error,omitempty" jsonschema:"Optional flag to only return resources that have reconcile errors."`
 	Kind       string `json:"kind,omitempty" jsonschema:"Optional filter to only return resources of the specified kind."`
 	Name       string `json:"name,omitempty" jsonschema:"Optional filter to only return the resource with the specified name."`
 	Path       string `json:"path,omitempty" jsonschema:"Optional filter to only return resources declared in the specified file path."`
 }
 
-type ResourceStatusResult struct {
+type ProjectStatusResult struct {
 	DefaultOLAPConnector string           `json:"default_olap_connector,omitempty" jsonschema:"The default OLAP connector configured in rill.yaml. May or may not exist as an explicit connector resource."`
 	VariablesNames       []string         `json:"variable_names,omitempty" jsonschema:"List of environment variable names present in the project. The values omitted for security."`
 	Resources            []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
 	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
 }
 
-func (t *ResourceStatus) Spec() *mcp.Tool {
+func (t *ProjectStatus) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        ResourceStatusName,
-		Title:       "Get resource status",
+		Name:        ProjectStatusName,
+		Title:       "Get project status",
 		Description: "Returns the reconcile status of resources in the Rill project, including any parse errors.",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Getting resource status...",
-			"openai/toolInvocation/invoked":  "Got resource status",
+			"openai/toolInvocation/invoking": "Getting project status...",
+			"openai/toolInvocation/invoked":  "Got project status",
 		},
 	}
 }
 
-func (t *ResourceStatus) CheckAccess(ctx context.Context) (bool, error) {
+func (t *ProjectStatus) CheckAccess(ctx context.Context) (bool, error) {
 	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
-func (t *ResourceStatus) Handler(ctx context.Context, args *ResourceStatusArgs) (*ResourceStatusResult, error) {
+func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*ProjectStatusResult, error) {
 	s := GetSession(ctx)
 
 	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
@@ -129,7 +129,7 @@ func (t *ResourceStatus) Handler(ctx context.Context, args *ResourceStatusArgs) 
 		varNames = append(varNames, k)
 	}
 
-	return &ResourceStatusResult{
+	return &ProjectStatusResult{
 		DefaultOLAPConnector: instance.ResolveOLAPConnector(),
 		VariablesNames:       varNames,
 		Resources:            resources,

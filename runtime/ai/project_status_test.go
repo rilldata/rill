@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResourceStatus(t *testing.T) {
+func TestProjectStatus(t *testing.T) {
 	// Setup a basic project with various files
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Variables: map[string]string{
@@ -54,8 +54,8 @@ measures:
 	s := newSession(t, rt, instanceID)
 
 	t.Run("list all resources", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{})
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{})
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, "duckdb", res.DefaultOLAPConnector)
@@ -73,8 +73,8 @@ measures:
 	})
 
 	t.Run("filter by kind", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
 			Kind: "rill.runtime.v1.Model",
 		})
 		require.NoError(t, err)
@@ -87,8 +87,8 @@ measures:
 	})
 
 	t.Run("filter by name", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
 			Name: "orders",
 		})
 		require.NoError(t, err)
@@ -98,8 +98,8 @@ measures:
 	})
 
 	t.Run("filter by path", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
 			Path: "/models/orders.yaml",
 		})
 		require.NoError(t, err)
@@ -110,8 +110,8 @@ measures:
 	})
 
 	t.Run("filter where_error with no errors", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
 			WhereError: true,
 		})
 		require.NoError(t, err)
@@ -120,8 +120,8 @@ measures:
 	})
 
 	t.Run("resources have refs", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
 			Kind: "rill.runtime.v1.MetricsView",
 		})
 		require.NoError(t, err)
@@ -137,7 +137,7 @@ measures:
 	})
 }
 
-func TestResourceStatusWithParseErrors(t *testing.T) {
+func TestProjectStatusWithParseErrors(t *testing.T) {
 	// Setup a project with a parse error
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
@@ -156,8 +156,8 @@ sql: SELECT 1 AS id
 	s := newSession(t, rt, instanceID)
 
 	t.Run("returns parse errors", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{})
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{})
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.NotEmpty(t, res.ParseErrors)
@@ -169,8 +169,8 @@ sql: SELECT 1 AS id
 	})
 
 	t.Run("filter parse errors by path", func(t *testing.T) {
-		var res *ai.ResourceStatusResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{
+		var res *ai.ProjectStatusResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ProjectStatusName, &res, &ai.ProjectStatusArgs{
 			Path: "/models/valid.yaml",
 		})
 		require.NoError(t, err)
