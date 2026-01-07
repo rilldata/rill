@@ -100,6 +100,17 @@
   }
 }
 
+/* DocSearch button - smaller text */
+.navbar .DocSearch-Button {
+  font-size: 0.875rem; /* 14px */
+  min-width: 16rem; /* Increased width */
+  border: .5px solid #e5e7eb;
+  
+  .DocSearch-Button-Placeholder {
+    font-size: 0.875rem;
+  }
+}
+
 /* Right-hand navbar items - only for smaller widths */
 @media (max-width: 996px) {
   .navbar .navbar-icon-link {
@@ -186,6 +197,11 @@
     }
   }
   
+  /* DocSearch button in dark mode */
+  .DocSearch-Button {
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+  }
+  
   /* Right-hand navbar items in dark mode - only for smaller widths */
   @media (max-width: 996px) {
     .navbar-icon-link {
@@ -242,6 +258,11 @@
       border-radius: 0.375rem;
       width: 100%;
       justify-content: flex-start;
+      font-size: 0.875rem; /* 14px */
+      
+      .DocSearch-Button-Placeholder {
+        font-size: 0.875rem;
+      }
     }
   }
   
