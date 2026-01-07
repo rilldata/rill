@@ -3260,7 +3260,7 @@ definitions:
             minItems: 1
           channels:
             type: array
-            description: An array of Slack channel IDs to notify.
+            description: An array of Slack channel names to notify.
             items:
               type: string
             minItems: 1
