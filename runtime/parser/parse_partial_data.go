@@ -40,7 +40,6 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 			connector = contextualConnector
 		}
 		resolverProps["connector"] = connector
-
 	}
 
 	// Handle metrics SQL resolver
