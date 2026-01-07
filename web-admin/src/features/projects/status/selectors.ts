@@ -7,11 +7,10 @@ import {
   createConnectorServiceOLAPListTables,
   type V1ListResourcesResponse,
   type V1Resource,
-  type V1OLAPListTablesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { derived, readable } from "svelte/store";
+import { readable } from "svelte/store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -52,53 +51,22 @@ export function useResources(instanceId: string) {
   );
 }
 
-// Cache for connector queries to avoid recreating them
-const connectorQueryCache = new Map<
+// Cache for model table size stores to avoid recreating them
+const modelSizesStoreCache = new Map<
   string,
-  ReturnType<typeof createConnectorServiceOLAPListTables>
+  ReturnType<typeof createModelTableSizesStore>
 >();
 
-function getConnectorQuery(instanceId: string, connector: string) {
-  const cacheKey = `${instanceId}:${connector}`;
-  if (!connectorQueryCache.has(cacheKey)) {
-    const query = createConnectorServiceOLAPListTables(
-      {
-        instanceId,
-        connector,
-      },
-      {
-        query: {
-          enabled: !!instanceId && !!connector,
-        },
-      },
-    );
-    connectorQueryCache.set(cacheKey, query);
-  }
-  return connectorQueryCache.get(cacheKey)!;
-}
+// Keep track of which stores are actively subscribed to ensure queries stay alive
+const activeStoreSubscriptions = new WeakMap<
+  any,
+  () => void
+>();
 
-export function useModelTableSizes(
+function createModelTableSizesStore(
   instanceId: string,
-  resources: V1Resource[] | undefined,
+  connectorArray: string[],
 ) {
-  // Extract unique connectors from model resources
-  const uniqueConnectors = new Set<string>();
-
-  if (resources) {
-    for (const resource of resources) {
-      if (resource?.meta?.name?.kind === ResourceKind.Model) {
-        const connector = resource.model?.state?.resultConnector;
-        const table = resource.model?.state?.resultTable;
-
-        if (connector && table) {
-          uniqueConnectors.add(connector);
-        }
-      }
-    }
-  }
-
-  const connectorArray = Array.from(uniqueConnectors).sort();
-
   // If no connectors, return an empty readable store
   if (connectorArray.length === 0) {
     return readable(
@@ -112,7 +80,7 @@ export function useModelTableSizes(
   }
 
   // Use a readable store with custom subscription logic to handle pagination
-  return readable(
+  const store = readable(
     {
       data: new Map<string, string | number>(),
       isLoading: true,
@@ -199,4 +167,40 @@ export function useModelTableSizes(
       };
     },
   );
+
+  // Eagerly subscribe to keep queries alive across component re-renders
+  const unsubscribe = store.subscribe(() => {});
+  activeStoreSubscriptions.set(store, unsubscribe);
+
+  return store;
+}
+
+export function useModelTableSizes(
+  instanceId: string,
+  resources: V1Resource[] | undefined,
+) {
+  // Extract unique connectors to create a stable cache key
+  const uniqueConnectors = new Set<string>();
+
+  if (resources) {
+    for (const resource of resources) {
+      if (resource?.meta?.name?.kind === ResourceKind.Model) {
+        const connector = resource.model?.state?.resultConnector;
+        const table = resource.model?.state?.resultTable;
+
+        if (connector && table) {
+          uniqueConnectors.add(connector);
+        }
+      }
+    }
+  }
+
+  const connectorArray = Array.from(uniqueConnectors).sort();
+  const cacheKey = `${instanceId}:${connectorArray.join(",")}`;
+
+  if (!modelSizesStoreCache.has(cacheKey)) {
+    modelSizesStoreCache.set(cacheKey, createModelTableSizesStore(instanceId, connectorArray));
+  }
+
+  return modelSizesStoreCache.get(cacheKey)!;
 }
