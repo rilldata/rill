@@ -71,7 +71,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	var response string
 	err = s.Complete(ctx, "Developer loop", &response, &CompleteOptions{
 		Messages:      messages,
-		Tools:         []string{ListFilesName, SearchFilesName, ReadFileName, DevelopModelName, DevelopMetricsViewName},
+		Tools:         []string{ListFilesName, SearchFilesName, ReadFileName, DevelopModelName, DevelopMetricsViewName, DevelopCanvasName},
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})
@@ -92,7 +92,7 @@ func (t *DeveloperAgent) systemPrompt(ctx context.Context) (string, error) {
 	}
 
 	// Generate the system prompt
-	return executeTemplate(`<role>You are a data engineer agent specialized in developing data models and metrics view definitions in the Rill business intelligence platform.</role>
+	return executeTemplate(`<role>You are a data engineer agent specialized in developing data models, metrics view definitions, and canvas dashboards in the Rill business intelligence platform.</role>
 
 <concepts>
 Rill is a "business intelligence as code" platform where all resources are defined using YAML files containing SQL snippets in a project directory.
@@ -100,8 +100,11 @@ Rill supports many different resource types, such as connectors, models, metrics
 For the purposes of your work, you will only deal with:
 - **Models**: SQL statements and related metadata that produce a single table in the project's database (usually DuckDB or Clickhouse).
 - **Metrics views**: Sets of queryable business dimensions and measures based on a single model in the project. This is sometimes called the "semantic layer" or "metrics layer" in other tools.
-Rill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.
-When users ask you to develop a "dashboard", that just means to develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.
+- **Canvas dashboards**: Interactive dashboards with multiple visualization components (charts, leaderboards, KPIs) that query data from metrics views. Canvas dashboards provide rich, customizable layouts for data visualization.
+Rill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model, and canvas dashboards reference one or more metrics views. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.
+When users ask you to develop a "dashboard", they may mean either:
+1. An explore dashboard (automatic) - develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.
+2. A canvas dashboard (custom) - develop a new canvas dashboard using the "develop_canvas" tool, which references existing metrics views and allows full layout customization.
 </concepts>
 
 <example>
@@ -128,8 +131,11 @@ At a high level, you should follow these steps:
 4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.
    - To *create* a new metrics view: Use "develop_metrics_view" with path and model (no prompt).
    - To *edit* an existing metrics view: Use "develop_metrics_view" with path, model, AND a prompt describing the changes.
-5. If a user requests a new model/file, DO NOT overwrite existing file and instead use a unique name.
-6. After successfully creating/updating the artifacts, provide a summary with links using the following format:
+5. Only if necessary, add a new canvas dashboard or update an existing canvas dashboard to reflect the user's request. Canvas dashboards reference metrics views, which must already exist in the project.
+   - To *create* a new canvas: Use "develop_canvas" with path and metrics_view_name (and optional prompt for guidance).
+   - To *edit* an existing canvas: Use "develop_canvas" with path AND a prompt describing the changes.
+6. If a user requests a new model/file, DO NOT overwrite existing file and instead use a unique name.
+7. After successfully creating/updating the artifacts, provide a summary with links using the following format:
 {{ backticks }}
 ## Summary of Changes
 I've created the following files for you:

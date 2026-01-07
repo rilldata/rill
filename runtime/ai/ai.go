@@ -58,6 +58,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 
 	RegisterTool(r, &DevelopModel{Runtime: rt})
 	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
+	RegisterTool(r, &DevelopCanvas{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
 	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
