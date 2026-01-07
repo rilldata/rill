@@ -100,5 +100,30 @@ export default function NavbarWrapper(props) {
     };
   }, []);
 
+  // Add data-text attributes to navbar links for layout shift prevention
+  useEffect(() => {
+    const addDataTextAttributes = () => {
+      const navLinks = document.querySelectorAll('.navbar__link');
+      navLinks.forEach((link) => {
+        // Only add if not already present
+        if (!link.hasAttribute('data-text')) {
+          const text = link.textContent?.trim() || '';
+          if (text) {
+            link.setAttribute('data-text', text);
+          }
+        }
+      });
+    };
+
+    // Run on mount and when DOM changes
+    addDataTextAttributes();
+    const observer = new MutationObserver(addDataTextAttributes);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return <Navbar {...props} />;
 }

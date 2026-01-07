@@ -14,14 +14,14 @@
   }
 }
 
-/* Active navbar item - theme color */
+.navbar__item {
+  padding: 0.75rem 0.5rem;
+}
 
 /* Active navbar link - theme color */
 .navbar .navbar__link--active,
 .navbar__item .navbar__link--active {
   color: var(--ifm-color-primary);
-  font-weight: 600;
-  text-decoration: none;
 }
 
 /* Hover effects with rounded corners for navbar items */
@@ -32,9 +32,11 @@
     background-color: rgba(0, 0, 0, 0.05);
   }
   
+  /* Standardized padding for consistent widths */
   .navbar__link {
     padding: 0.5rem 0.75rem;
     border-radius: 0.375rem;
+
   }
 }
 
@@ -44,19 +46,51 @@
   /* Base styles for dropdown link */
   > .navbar__link {
     color: var(--ifm-color-black);
-    text-decoration: none;  
+    text-decoration: none;
+    padding-right: 1.5rem; /* Extra space for chevron */
+    position: relative;
     
     &:hover {
       color: var(--ifm-color-primary);
       text-decoration: none;
     }
+    
+    /* Hide any default Docusaurus icons/elements */
+    > svg,
+    > .navbar__link-icon,
+    > i {
+      display: none;
+    }
+    
+    /* Replace default Docusaurus caret with Rill-style chevron */
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid currentColor;
+      transition: transform 0.2s ease;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+  }
+  
+  /* Rotate chevron when dropdown is open or hovered */
+  &--show > .navbar__link::after,
+  &:hover > .navbar__link::after,
+  > .navbar__link[aria-expanded="true"]::after {
+    transform: translateY(-50%) rotate(180deg);
   }
   
   /* Active dropdown - theme color when any sub-page is active */
   /* JavaScript adds 'navbar__dropdown--has-active' class when dropdown menu has active item */
   &.navbar__dropdown--has-active > .navbar__link {
     color: var(--ifm-color-primary);
-    font-weight: 600;
   }
   
   /* Hover effect for dropdown */
@@ -65,12 +99,17 @@
   }
 }
 
+/* Dropdown menu - add breathing room between trigger and popover */
+.navbar .dropdown__menu {
+  margin-top: 2px;
+}
+
 /* Dropdown menu items - black text with hover effects */
 .navbar .dropdown__link {
   color: var(--ifm-color-black);
   text-decoration: none;
   border-radius: 0.375rem;
-  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  padding: 0.375rem 0.75rem 0.375rem 1rem;
   display: block;
   
   &:hover,
@@ -84,10 +123,9 @@
   &.dropdown__link--active {
     color: var(--ifm-color-primary);
     text-decoration: none;
-    font-weight: 600;
+
   }
 }
-
 /* Custom HTML links (GitHub, Blog) */
 .navbar .navbar-icon-link {
   color: var(--ifm-color-black);
@@ -161,6 +199,18 @@
       &:focus {
         color: var(--ifm-color-white);
       }
+      
+      /* Rill-style chevron in dark mode */
+      &::after {
+        border-top-color: currentColor;
+      }
+    }
+    
+    /* Rotate chevron when dropdown is open in dark mode */
+    &--show > .navbar__link::after,
+    &:hover > .navbar__link::after,
+    > .navbar__link[aria-expanded="true"]::after {
+      transform: translateY(-50%) rotate(180deg);
     }
     
     /* Active dropdown in dark mode - theme color */
@@ -171,6 +221,11 @@
     &:hover {
       background-color: rgba(255, 255, 255, 0.1);
     }
+  }
+  
+  /* Dropdown menu in dark mode - maintain breathing room */
+  .dropdown__menu {
+    margin-top: 4px;
   }
   
   .dropdown__link {
