@@ -39,18 +39,6 @@ sql: |
 		require.EqualValues(t, 100, res.Data[0]["value"])
 	})
 
-	t.Run("with limit", func(t *testing.T) {
-		var res *ai.QuerySQLResult
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QuerySQLName, &res, &ai.QuerySQLArgs{
-			SQL:   "SELECT * FROM test_data ORDER BY id",
-			Limit: 1,
-		})
-		require.NoError(t, err)
-		require.NotNil(t, res)
-		require.Len(t, res.Data, 1)
-		require.EqualValues(t, 1, res.Data[0]["id"])
-	})
-
 	t.Run("explicit connector", func(t *testing.T) {
 		var res *ai.QuerySQLResult
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QuerySQLName, &res, &ai.QuerySQLArgs{

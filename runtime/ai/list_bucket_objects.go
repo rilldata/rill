@@ -21,11 +21,13 @@ type ListBucketObjectsArgs struct {
 	Connector string `json:"connector" jsonschema:"The name of an object store connector (e.g., s3, gcs, azure)."`
 	Bucket    string `json:"bucket" jsonschema:"The bucket name to list objects from."`
 	Path      string `json:"path,omitempty" jsonschema:"Optional path prefix to list objects under. Defaults to root."`
-	Delimiter string `json:"delimiter,omitempty" jsonschema:"Optional delimiter for directory-style listing. Defaults to '/' for non-recursive listing. Use empty string for recursive listing."`
+	PageSize  int    `json:"page_size,omitempty" jsonschema:"Maximum number of objects to return. Defaults to 10."`
+	PageToken string `json:"page_token,omitempty" jsonschema:"Token for pagination. Use next_page_token from previous response to get next page."`
 }
 
 type ListBucketObjectsResult struct {
-	Objects []ObjectInfo `json:"objects"`
+	Objects       []ObjectInfo `json:"objects"`
+	NextPageToken string       `json:"next_page_token,omitempty"`
 }
 
 type ObjectInfo struct {
@@ -74,39 +76,34 @@ func (t *ListBucketObjects) Handler(ctx context.Context, args *ListBucketObjects
 		return nil, fmt.Errorf("connector %q does not implement object store", args.Connector)
 	}
 
-	// Default delimiter to "/" for non-recursive listing
-	delimiter := args.Delimiter
-	if delimiter == "" && args.Path == "" {
-		delimiter = "/"
-	} else if delimiter == "" {
-		delimiter = "/"
+	// Apply defaults
+	pageSize := args.PageSize
+	if pageSize <= 0 {
+		pageSize = 10
 	}
 
-	// List objects (collect all pages up to reasonable limit)
-	var allObjects []ObjectInfo
-	pageToken := ""
-	maxObjects := 1000 // Limit total objects to prevent excessive results
-	for len(allObjects) < maxObjects {
-		objects, nextToken, err := os.ListObjects(ctx, args.Bucket, args.Path, delimiter, 100, pageToken)
-		if err != nil {
-			return nil, err
-		}
-		for _, obj := range objects {
-			info := ObjectInfo{
-				Path:  obj.Path,
-				IsDir: obj.IsDir,
-				Size:  obj.Size,
-			}
-			if !obj.UpdatedOn.IsZero() {
-				info.ModifiedOn = &obj.UpdatedOn
-			}
-			allObjects = append(allObjects, info)
-		}
-		if nextToken == "" {
-			break
-		}
-		pageToken = nextToken
+	// List objects
+	objects, nextToken, err := os.ListObjects(ctx, args.Bucket, args.Path, "/", uint32(pageSize), args.PageToken)
+	if err != nil {
+		return nil, err
 	}
 
-	return &ListBucketObjectsResult{Objects: allObjects}, nil
+	// Convert to result format
+	result := &ListBucketObjectsResult{
+		Objects:       make([]ObjectInfo, 0, len(objects)),
+		NextPageToken: nextToken,
+	}
+	for _, obj := range objects {
+		info := ObjectInfo{
+			Path:  obj.Path,
+			IsDir: obj.IsDir,
+			Size:  obj.Size,
+		}
+		if !obj.UpdatedOn.IsZero() {
+			info.ModifiedOn = &obj.UpdatedOn
+		}
+		result.Objects = append(result.Objects, info)
+	}
+
+	return result, nil
 }

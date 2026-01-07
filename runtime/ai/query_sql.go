@@ -24,7 +24,6 @@ var _ Tool[*QuerySQLArgs, *QuerySQLResult] = (*QuerySQL)(nil)
 type QuerySQLArgs struct {
 	Connector      string `json:"connector,omitempty" jsonschema:"Optional OLAP connector name. Defaults to the instance's default OLAP connector."`
 	SQL            string `json:"sql" jsonschema:"The SQL query to execute."`
-	Limit          int    `json:"limit,omitempty" jsonschema:"Maximum number of rows to return. Defaults to 100."`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty" jsonschema:"Query timeout in seconds. Defaults to 30."`
 }
 
@@ -55,12 +54,7 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 
 	s := GetSession(ctx)
 
-	// Apply defaults
-	limit := args.Limit
-	if limit <= 0 {
-		limit = 100
-	}
-
+	// Apply timeout default
 	timeoutSeconds := args.TimeoutSeconds
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = 30
@@ -70,13 +64,10 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Build SQL with limit applied directly (to ensure cache key uniqueness based on limit)
-	// We add +1 to detect if more rows exist than requested
-	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", args.SQL, limit+1)
-
-	// Build resolver properties
+	// Build resolver properties with hard-coded limit
 	props := map[string]any{
-		"sql": sql,
+		"sql":   args.SQL,
+		"limit": int64(1000),
 	}
 	if args.Connector != "" {
 		props["connector"] = args.Connector
@@ -94,10 +85,10 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 	defer res.Close()
 
-	// Collect results (cap at limit)
+	// Collect results
 	var data []map[string]any
 	schema := &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: res.Schema()}
-	for len(data) < limit {
+	for {
 		row, err := res.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {

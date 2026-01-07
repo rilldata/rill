@@ -28,7 +28,7 @@ type ShowTableResult struct {
 	Name              string       `json:"name"`
 	IsView            bool         `json:"is_view"`
 	Columns           []ColumnInfo `json:"columns"`
-	PhysicalSizeBytes int64        `json:"physical_size_bytes,omitempty"`
+	PhysicalSizeBytes int64        `json:"physical_size_bytes,omitempty" jsonschema:"The physical size of the table in bytes. If 0 or omitted, size information is not available."`
 }
 
 type ColumnInfo struct {
