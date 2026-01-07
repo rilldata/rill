@@ -483,6 +483,8 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
+	// TODO: This should merge to the current branch
+	// A separate merge RPC should merge to primary branch
 	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
 }
 
