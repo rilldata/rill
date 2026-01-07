@@ -11,6 +11,10 @@ import (
 func TestResourceStatus(t *testing.T) {
 	// Setup a basic project with various files
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Variables: map[string]string{
+			"empty_var":     "",
+			"non_empty_var": "hello_world",
+		},
 		Files: map[string]string{
 			// Create some models with SQL content (self-contained, no external tables)
 			"models/orders.yaml": `
@@ -54,6 +58,9 @@ measures:
 		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ResourceStatusName, &res, &ai.ResourceStatusArgs{})
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.Equal(t, "duckdb", res.DefaultOLAPConnector)
+		require.Len(t, res.VariablesNames, 1)
+		require.Contains(t, res.VariablesNames, "non_empty_var")
 		require.GreaterOrEqual(t, len(res.Resources), 3) // At least orders, customers, orders_metrics
 		require.Empty(t, res.ParseErrors)
 

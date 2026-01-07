@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -23,8 +24,10 @@ type ResourceStatusArgs struct {
 }
 
 type ResourceStatusResult struct {
-	Resources   []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
-	ParseErrors []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
+	DefaultOLAPConnector string           `json:"default_olap_connector,omitempty" jsonschema:"The default OLAP connector configured in rill.yaml. May or may not exist as an explicit connector resource."`
+	VariablesNames       []string         `json:"variable_names,omitempty" jsonschema:"List of environment variable names present in the project. The values omitted for security."`
+	Resources            []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
+	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
 }
 
 func (t *ResourceStatus) Spec() *mcp.Tool {
@@ -112,8 +115,24 @@ func (t *ResourceStatus) Handler(ctx context.Context, args *ResourceStatusArgs) 
 		})
 	}
 
+	// Get instance info
+	instance, err := t.Runtime.Instance(ctx, s.InstanceID())
+	if err != nil {
+		return nil, err
+	}
+	var varNames []string
+	for k, v := range instance.ResolveVariables(false) {
+		// Skip empty variables and internal ones
+		if v == "" || strings.HasPrefix(k, "rill.") {
+			continue
+		}
+		varNames = append(varNames, k)
+	}
+
 	return &ResourceStatusResult{
-		Resources:   resources,
-		ParseErrors: parseErrors,
+		DefaultOLAPConnector: instance.ResolveOLAPConnector(),
+		VariablesNames:       varNames,
+		Resources:            resources,
+		ParseErrors:          parseErrors,
 	}, nil
 }
