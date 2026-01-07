@@ -522,6 +522,7 @@ export class RillLegacyDaxInterval implements RillTimeInterval {
     const timeRangeMeta = DEFAULT_TIME_RANGES[this.name] as
       | TimeRangeMeta
       | undefined;
+
     return timeRangeMeta?.defaultGrain || V1TimeGrain.TIME_GRAIN_DAY;
   }
 
