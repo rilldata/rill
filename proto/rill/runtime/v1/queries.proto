@@ -170,6 +170,14 @@ service QueryService {
     };
   }
 
+  // ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
+  rpc ConvertExpressionToMetricsSQL(ConvertExpressionToMetricsSQLRequest) returns (ConvertExpressionToMetricsSQLResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/filter-expression/resolve",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -185,6 +193,14 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/components/{component}/resolve",
       body: "*",
+    };
+  }
+
+  // ResolveTemplatedString resolves a templated strings.
+  rpc ResolveTemplatedString(ResolveTemplatedStringRequest) returns (ResolveTemplatedStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
+      body: "*"
     };
   }
 
@@ -908,6 +924,16 @@ message MetricsViewAnnotationsResponse {
   repeated Annotation rows = 1;
 }
 
+message ConvertExpressionToMetricsSQLRequest {
+  string instance_id = 1;
+  Expression expression = 2;
+}
+
+message ConvertExpressionToMetricsSQLResponse {
+  // The SQL filter string representation of the expression.
+  string sql = 1;
+}
+
 // **********
 // Canvas APIs
 // **********
@@ -944,6 +970,22 @@ message ResolveComponentRequest {
 message ResolveComponentResponse {
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
+}
+
+message ResolveTemplatedStringRequest {
+  string instance_id = 1;
+  // Any string with Go templating
+  string body = 2;
+  // If true, output format tokens instead of raw values.
+  bool use_format_tokens = 3;
+  // Additional filters to inject into metrics SQL queries by metrics view name
+  map<string, Expression> additional_where_by_metrics_view = 4;
+  // Additional time range to add to metrics SQL queries
+  TimeRange additional_time_range = 5;
+}
+
+message ResolveTemplatedStringResponse {
+  string body = 1;
 }
 
 // **********

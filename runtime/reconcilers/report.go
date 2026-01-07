@@ -288,7 +288,7 @@ func (r *ReportReconciler) updateNextRunOn(ctx context.Context, self *runtimev1.
 		curr = rep.State.NextRunOn.AsTime()
 	}
 
-	if next == curr {
+	if next.Equal(curr) {
 		return nil
 	}
 
@@ -515,9 +515,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
-		if webOpenMode == "" { // backwards compatibility
-			webOpenMode = "creator"
-		}
+	}
+	if webOpenMode == "" { // backwards compatibility
+		webOpenMode = "creator"
 	}
 
 	anonRecipients := false

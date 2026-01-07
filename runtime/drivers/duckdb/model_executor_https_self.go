@@ -3,11 +3,11 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/https"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 type httpsToSelfExecutor struct {
@@ -26,7 +26,7 @@ func (e *httpsToSelfExecutor) Concurrency(desired int) (int, bool) {
 func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
+	newInputProps, err := e.modelInputProperties(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -38,48 +38,38 @@ func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelEx
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProperties map[string]any) (map[string]any, error) {
-	connectorProps := &https.ConfigProperties{}
-	if err := mapstructure.WeakDecode(inputHandle.Config(), connectorProps); err != nil {
+func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *drivers.ModelExecuteOptions) (map[string]any, error) {
+	parsed := &https.ModelInputProperties{}
+	if err := parsed.Decode(opts.InputProperties); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 
-	srcProp := &https.SourceProperties{}
-	if err := mapstructure.WeakDecode(inputProperties, srcProp); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	// Merge headers
-	headers := make(map[string]string)
-	for k, v := range connectorProps.Headers {
-		headers[k] = v
-	}
-	for k, v := range srcProp.Headers {
-		headers[k] = v // srcProp overrides connectorProps
-	}
-
-	path := srcProp.ResolvePath()
-	if path == "" {
-		return nil, fmt.Errorf("missing required property: `path`")
+	var format string
+	if parsed.Format != "" {
+		format = fmt.Sprintf(".%s", parsed.Format)
+	} else {
+		format = fileutil.FullExt(parsed.Path)
 	}
 
 	m := &ModelInputProperties{}
-	safeSecret := safeSQLName(fmt.Sprintf("%s__%s__secret__", modelName, inputConnector))
-	if len(headers) != 0 {
-		m.PreExec = createSecretSQL(safeSecret, headers)
+	// Generate secret SQL to access the to access http url using duckdb
+	var err error
+	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
+	if err != nil {
+		return nil, err
 	}
-	m.SQL = "SELECT * FROM " + safeSQLString(path)
+
+	// Set SQL to read from the external source
+	from, err := sourceReader([]string{parsed.Path}, format, map[string]any{})
+	if err != nil {
+		return nil, err
+	}
+
+	m.SQL = "SELECT * FROM " + from
+
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err
 	}
 	return propsMap, nil
-}
-
-func createSecretSQL(safeName string, headers map[string]string) string {
-	var headerStrings []string
-	for key, value := range headers {
-		headerStrings = append(headerStrings, fmt.Sprintf("%s: %s", safeSQLString(key), safeSQLString(value)))
-	}
-	headersSQL := strings.Join(headerStrings, ", ")
-	return fmt.Sprintf(`CREATE OR REPLACE TEMPORARY SECRET %s (TYPE HTTP, EXTRA_HTTP_HEADERS MAP { %s })`, safeName, headersSQL)
 }

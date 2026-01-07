@@ -41,7 +41,7 @@ func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userI
 // InsertProjectMemberUser inserts a user as a member of a project.
 // If the user is not already a member of the project's organization, it transactionally adds them as a guest of the org as well.
 // It may be called with or without holding an existing transaction.
-func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID, userID, roleID string, attributes map[string]interface{}) error {
+func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID, userID, roleID string, attributes map[string]interface{}, restrictResources bool, resources []database.ResourceName) error {
 	guestRole, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID,
 	defer func() { _ = tx.Rollback() }()
 
 	// Insert the user as a member of the project.
-	err = s.DB.InsertProjectMemberUser(ctx, projectID, userID, roleID)
+	err = s.DB.InsertProjectMemberUser(ctx, projectID, userID, roleID, restrictResources, resources)
 	if err != nil {
 		return err
 	}
@@ -264,7 +264,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, invite.ProjectID, user.ID, invite.ProjectRoleID, nil)
+		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, invite.ProjectID, user.ID, invite.ProjectRoleID, nil, invite.RestrictResources, invite.Resources)
 		if err != nil {
 			return nil, err
 		}
@@ -292,7 +292,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID, nil)
+		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID, nil, false, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -335,6 +335,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		DisplayName:                         displayName,
 		Description:                         description,
 		LogoAssetID:                         nil,
+		LogoDarkAssetID:                     nil,
 		FaviconAssetID:                      nil,
 		ThumbnailAssetID:                    nil,
 		CustomDomain:                        "",

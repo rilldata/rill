@@ -68,8 +68,8 @@ const config = {
         config: path.join(__dirname, 'redocly.yaml'),
         specs: [
           {
-            id: 'public',
-            spec: 'api/openapi.yaml',
+            id: 'admin',
+            spec: '../proto/gen/rill/admin/v1/public.openapi.yaml',
             route: '/api/admin/',
           },
         ],
@@ -127,42 +127,46 @@ const config = {
         },
         items: [
           {
-            type: "doc",
-            docId: "get-started/get-started",
-            position: "left",
+            to: "/",
             label: "Docs",
-          },
-
-          {
-            type: "docSidebar",
-            sidebarId: "refSidebar",
             position: "left",
-            label: "Reference",
+            className: "navbar-docs-link",
+            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
           },
-
+          {
+            to: "/reference/project-files",
+            label: "Reference",
+            position: "left",
+            className: "navbar-reference-link",
+            activeBasePath: "/reference",
+          },
           {
             to: "/api/admin/",
-            position: "left",
             label: "API",
+            position: "left",
+            className: "navbar-api-link",
+            activeBasePath: "/api/admin",
+          },
+          {
+            to: "/contact",
+            label: "Contact Us",
+            position: "left",
+            className: "navbar-contact-link",
+            activeBasePath: "/contact",
           },
 
-          {
-            type: "docSidebar",
-            sidebarId: "contactSidebar",
-            position: "left",
-            label: "Contact Us",
-          },
+
 
           // Right side items
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
 
           {
@@ -425,11 +429,15 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/home/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/deploy/cloud-vs-developer'
+          },
+          {
+            from: '/get-started/concepts/cloud-vs-developer',
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
@@ -441,19 +449,27 @@ const config = {
           },
           {
             from: '/concepts/architecture',
-            to: '/get-started/concepts/architecture'
+            to: '/get-started/why-rill#architecture'
           },
           {
             from: '/home/concepts/architecture',
-            to: '/get-started/concepts/architecture'
+            to: '/get-started/why-rill#architecture'
+          },
+          {
+            from: '/get-started/concepts/architecture',
+            to: '/get-started/why-rill#architecture'
           },
           {
             from: '/concepts/operational',
-            to: '/get-started/concepts/operational'
+            to: '/get-started/why-rill#operational-vs-traditional-bi'
           },
           {
             from: '/home/concepts/operational',
-            to: '/get-started/concepts/operational'
+            to: '/get-started/why-rill#operational-vs-traditional-bi'
+          },
+          {
+            from: '/get-started/concepts/operational',
+            to: '/get-started/why-rill#operational-vs-traditional-bi'
           },
           {
             from: '/concepts/metrics-layer',
@@ -461,11 +477,15 @@ const config = {
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/get-started/concepts/bi-as-code'
+            to: '/get-started/why-rill#bi-as-code'
           },
           {
             from: '/home/concepts/bi-as-code',
-            to: '/get-started/concepts/bi-as-code'
+            to: '/get-started/why-rill#bi-as-code'
+          },
+          {
+            from: '/get-started/concepts/bi-as-code',
+            to: '/get-started/why-rill#bi-as-code'
           },
           {
             from: '/build/advanced-models/',

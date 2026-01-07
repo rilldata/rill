@@ -116,7 +116,7 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		if authorizationHeader == "" {
 			return withClaimsProvider(ctx, wrappedClaims{
 				claims: &runtime.SecurityClaims{
-					UserAttributes: map[string]any{"admin": true},
+					UserAttributes: map[string]any{"admin": true, "email": "", "name": ""},
 					Permissions:    runtime.AllPermissions,
 					SkipChecks:     true,
 				},

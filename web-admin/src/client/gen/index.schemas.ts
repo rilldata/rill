@@ -382,6 +382,10 @@ export interface V1DeleteUsergroupResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteVirtualFileResponse {
+  [key: string]: unknown;
+}
+
 export interface V1DenyProjectAccessResponse {
   [key: string]: unknown;
 }
@@ -392,6 +396,7 @@ export interface V1Deployment {
   ownerUserId?: string;
   environment?: string;
   branch?: string;
+  editable?: boolean;
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
@@ -407,9 +412,13 @@ export type V1DeploymentStatus =
 export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
-  DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
-  DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+  DEPLOYMENT_STATUS_RUNNING: "DEPLOYMENT_STATUS_RUNNING",
+  DEPLOYMENT_STATUS_ERRORED: "DEPLOYMENT_STATUS_ERRORED",
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
+  DEPLOYMENT_STATUS_UPDATING: "DEPLOYMENT_STATUS_UPDATING",
+  DEPLOYMENT_STATUS_STOPPING: "DEPLOYMENT_STATUS_STOPPING",
+  DEPLOYMENT_STATUS_DELETING: "DEPLOYMENT_STATUS_DELETING",
+  DEPLOYMENT_STATUS_DELETED: "DEPLOYMENT_STATUS_DELETED",
 } as const;
 
 export interface V1EditAlertResponse {
@@ -500,7 +509,7 @@ export interface V1GetCloneCredentialsResponse {
   gitPassword?: string;
   gitPasswordExpiresAt?: string;
   gitSubpath?: string;
-  gitProdBranch?: string;
+  gitPrimaryBranch?: string;
   gitManagedRepo?: boolean;
   archiveDownloadUrl?: string;
 }
@@ -512,6 +521,23 @@ export interface V1GetCurrentMagicAuthTokenResponse {
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
+}
+
+export type V1GetDeploymentConfigResponseVariables = { [key: string]: string };
+
+export type V1GetDeploymentConfigResponseAnnotations = {
+  [key: string]: string;
+};
+
+export interface V1GetDeploymentConfigResponse {
+  variables?: V1GetDeploymentConfigResponseVariables;
+  annotations?: V1GetDeploymentConfigResponseAnnotations;
+  /** Frontend URL for the deployment. */
+  frontendUrl?: string;
+  /** Timestamp when the deployment was last updated. */
+  updatedOn?: string;
+  /** Whether the deployment is git based or archive based. */
+  usesArchive?: boolean;
 }
 
 export interface V1GetDeploymentCredentialsResponse {
@@ -582,9 +608,13 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectMemberUserResponse {
+  member?: V1ProjectMemberUser;
+}
+
 export interface V1GetProjectResponse {
   project?: V1Project;
-  prodDeployment?: V1Deployment;
+  deployment?: V1Deployment;
   jwt?: string;
   projectPermissions?: V1ProjectPermissions;
 }
@@ -654,6 +684,10 @@ export interface V1GetUserResponse {
 export interface V1GetUsergroupResponse {
   usergroup?: V1Usergroup;
   nextPageToken?: string;
+}
+
+export interface V1GetVirtualFileResponse {
+  file?: V1VirtualFile;
 }
 
 export type V1GithubPermission =
@@ -821,11 +855,19 @@ export interface V1ListUsergroupsForOrganizationAndUserResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListUsergroupsForProjectAndUserResponse {
+  usergroups?: V1MemberUsergroup[];
+}
+
 export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
 export type V1MagicAuthTokenAttributes = { [key: string]: unknown };
+
+export type V1MagicAuthTokenMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
 
 export interface V1MagicAuthToken {
   id?: string;
@@ -841,7 +883,7 @@ export interface V1MagicAuthToken {
   resources?: V1ResourceName[];
   resourceType?: string;
   resourceName?: string;
-  filter?: V1Expression;
+  metricsViewFilters?: V1MagicAuthTokenMetricsViewFilters;
   fields?: string[];
   state?: string;
   displayName?: string;
@@ -855,6 +897,8 @@ export interface V1MemberUsergroup {
   usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1Organization {
@@ -863,6 +907,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  logoDarkUrl?: string;
   faviconUrl?: string;
   thumbnailUrl?: string;
   customDomain?: string;
@@ -962,10 +1007,10 @@ export interface V1Project {
   /** managed_git_id is set if the project is connected to a rill-managed git repo. */
   managedGitId?: string;
   subpath?: string;
-  prodBranch?: string;
+  primaryBranch?: string;
   archiveAssetId?: string;
   prodSlots?: string;
-  prodDeploymentId?: string;
+  primaryDeploymentId?: string;
   devSlots?: string;
   /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
@@ -981,6 +1026,8 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
@@ -1008,6 +1055,8 @@ export interface V1ProjectMemberUser {
   orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectPermissions {
@@ -1186,6 +1235,11 @@ export interface V1RequestProjectAccessResponse {
 export interface V1ResourceName {
   type?: string;
   name?: string;
+}
+
+export interface V1RevokeAllUserAuthTokensResponse {
+  /** Number of tokens revoked. */
+  tokensRevoked?: number;
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {
@@ -1395,10 +1449,15 @@ export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
 
+export type V1ToolMeta = { [key: string]: unknown };
+
 export interface V1Tool {
   name?: string;
+  displayName?: string;
   description?: string;
+  meta?: V1ToolMeta;
   inputSchema?: string;
+  outputSchema?: string;
 }
 
 export type V1ToolCallInput = { [key: string]: unknown };
@@ -1512,6 +1571,7 @@ export interface V1UserAuthToken {
   representingUserId?: string;
   prefix?: string;
   attributes?: V1UserAuthTokenAttributes;
+  refresh?: boolean;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -1563,7 +1623,7 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
-export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
 
@@ -1579,6 +1639,12 @@ export type AdminServiceCreateAlertBodyBody = {
 export type AdminServiceUnsubscribeAlertBodyBody = {
   email?: string;
   slackUser?: string;
+};
+
+export type AdminServiceSetProjectMemberUserRoleBodyBody = {
+  role?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceCreateReportBodyBody = {
@@ -1637,6 +1703,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  logoDarkAssetId?: string;
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
@@ -1744,7 +1811,7 @@ See ListProjectsForFingerprint for more context. */
   provisioner?: string;
   prodSlots?: string;
   subpath?: string;
-  prodBranch?: string;
+  primaryBranch?: string;
   /** git_remote is set for projects whose project files are stored in Git.
 It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
 Either git_remote or archive_asset_id should be set. */
@@ -1762,6 +1829,10 @@ export type AdminServiceListProjectsForOrganizationAndUserParams = {
 };
 
 export type AdminServiceGetProjectParams = {
+  /**
+   * Optional branch to get deployment for. If not set, then project's primary_branch is used.
+   */
+  branch?: string;
   accessTokenTtlSeconds?: number;
   superuserForceAccess?: boolean;
   issueSuperuserToken?: boolean;
@@ -1771,7 +1842,7 @@ export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
   directoryName?: string;
-  prodBranch?: string;
+  primaryBranch?: string;
   gitRemote?: string;
   subpath?: string;
   archiveAssetId?: string;
@@ -1805,11 +1876,19 @@ export type AdminServiceGetDeploymentCredentialsBody = {
 
 export type AdminServiceListDeploymentsParams = {
   environment?: string;
+  branch?: string;
   userId?: string;
 };
 
 export type AdminServiceCreateDeploymentBody = {
   environment?: string;
+  /** Branch to deploy from. 
+Must not be set for `prod` deployments, uses project's default branch. This limitation can be lifted in the future if needed.
+Optional for `dev` deployments. */
+  branch?: string;
+  /** Whether the deployment is editable and the edited changes are persisted back to the git repo.
+Can't be set for `prod` deployments. */
+  editable?: boolean;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -1848,6 +1927,8 @@ export type AdminServiceGetIFrameBody = {
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
+  /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
+  themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
@@ -1874,6 +1955,8 @@ export type AdminServiceListProjectMemberUsersParams = {
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceRedeployProjectParams = {
@@ -1885,6 +1968,14 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
+/**
+ * Optional metrics view to filter mapping to apply as row filters in queries.
+This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+ */
+export type AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
+
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
@@ -1892,7 +1983,9 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   resourceType?: string;
   /** Name of the resource to grant access to. */
   resourceName?: string;
-  filter?: V1Expression;
+  /** Optional metrics view to filter mapping to apply as row filters in queries.
+This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries. */
+  metricsViewFilters?: AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters;
   /** Optional list of fields to limit access to. If empty, no field access rule will be added.
 This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
   fields?: string[];
@@ -2033,6 +2126,42 @@ It is optional. If the call is made with a deployment access token, it defaults 
    * Page token for pagination.
    */
   pageToken?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceGetVirtualFileParams = {
+  /**
+ * The environment to get the virtual file for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to get.
+   */
+  path?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
+};
+
+export type AdminServiceDeleteVirtualFileParams = {
+  /**
+ * The environment to delete the virtual file from.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to delete.
+   */
+  path?: string;
+  /**
+   * If set and the caller is a superuser, force access regardless of project permissions.
+   */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetReportMetaBody = {
@@ -2089,6 +2218,17 @@ export type AdminServiceListUserAuthTokensParams = {
    * Page token for pagination. If set, the first page of results will be returned.
    */
   pageToken?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+  /**
+   * Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+   */
+  refresh?: boolean;
+};
+
+export type AdminServiceRevokeAllUserAuthTokensParams = {
   /**
    * Flag for superusers to override normal access checks.
    */

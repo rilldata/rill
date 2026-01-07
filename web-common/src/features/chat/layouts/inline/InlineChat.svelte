@@ -6,6 +6,7 @@
     getConversationManager,
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
+  import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
   export let noMargin = false;
   export let height: string | undefined = undefined;
@@ -27,4 +28,4 @@
   });
 </script>
 
-<ChatInput {conversationManager} {noMargin} {height} />
+<ChatInput {conversationManager} {noMargin} {height} config={projectChat} />

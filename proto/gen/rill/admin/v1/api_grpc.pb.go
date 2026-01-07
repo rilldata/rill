@@ -51,6 +51,7 @@ const (
 	AdminService_TriggerRefreshSources_FullMethodName                  = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                        = "/rill.admin.v1.AdminService/TriggerRedeploy"
 	AdminService_Provision_FullMethodName                              = "/rill.admin.v1.AdminService/Provision"
+	AdminService_GetDeploymentConfig_FullMethodName                    = "/rill.admin.v1.AdminService/GetDeploymentConfig"
 	AdminService_ListRoles_FullMethodName                              = "/rill.admin.v1.AdminService/ListRoles"
 	AdminService_ListOrganizationMemberUsers_FullMethodName            = "/rill.admin.v1.AdminService/ListOrganizationMemberUsers"
 	AdminService_ListOrganizationInvites_FullMethodName                = "/rill.admin.v1.AdminService/ListOrganizationInvites"
@@ -59,12 +60,14 @@ const (
 	AdminService_LeaveOrganization_FullMethodName                      = "/rill.admin.v1.AdminService/LeaveOrganization"
 	AdminService_SetOrganizationMemberUserRole_FullMethodName          = "/rill.admin.v1.AdminService/SetOrganizationMemberUserRole"
 	AdminService_GetOrganizationMemberUser_FullMethodName              = "/rill.admin.v1.AdminService/GetOrganizationMemberUser"
+	AdminService_ListUsergroupsForProjectAndUser_FullMethodName        = "/rill.admin.v1.AdminService/ListUsergroupsForProjectAndUser"
 	AdminService_UpdateOrganizationMemberUserAttributes_FullMethodName = "/rill.admin.v1.AdminService/UpdateOrganizationMemberUserAttributes"
 	AdminService_ListProjectMemberUsers_FullMethodName                 = "/rill.admin.v1.AdminService/ListProjectMemberUsers"
 	AdminService_ListProjectInvites_FullMethodName                     = "/rill.admin.v1.AdminService/ListProjectInvites"
 	AdminService_AddProjectMemberUser_FullMethodName                   = "/rill.admin.v1.AdminService/AddProjectMemberUser"
 	AdminService_RemoveProjectMemberUser_FullMethodName                = "/rill.admin.v1.AdminService/RemoveProjectMemberUser"
 	AdminService_SetProjectMemberUserRole_FullMethodName               = "/rill.admin.v1.AdminService/SetProjectMemberUserRole"
+	AdminService_GetProjectMemberUser_FullMethodName                   = "/rill.admin.v1.AdminService/GetProjectMemberUser"
 	AdminService_ListUsergroupsForOrganizationAndUser_FullMethodName   = "/rill.admin.v1.AdminService/ListUsergroupsForOrganizationAndUser"
 	AdminService_CreateUsergroup_FullMethodName                        = "/rill.admin.v1.AdminService/CreateUsergroup"
 	AdminService_GetUsergroup_FullMethodName                           = "/rill.admin.v1.AdminService/GetUsergroup"
@@ -88,6 +91,7 @@ const (
 	AdminService_ListUserAuthTokens_FullMethodName                     = "/rill.admin.v1.AdminService/ListUserAuthTokens"
 	AdminService_IssueUserAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/IssueUserAuthToken"
 	AdminService_RevokeUserAuthToken_FullMethodName                    = "/rill.admin.v1.AdminService/RevokeUserAuthToken"
+	AdminService_RevokeAllUserAuthTokens_FullMethodName                = "/rill.admin.v1.AdminService/RevokeAllUserAuthTokens"
 	AdminService_RevokeRepresentativeAuthTokens_FullMethodName         = "/rill.admin.v1.AdminService/RevokeRepresentativeAuthTokens"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName           = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                 = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
@@ -144,6 +148,8 @@ const (
 	AdminService_RemoveBookmark_FullMethodName                         = "/rill.admin.v1.AdminService/RemoveBookmark"
 	AdminService_GetRepoMeta_FullMethodName                            = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName                        = "/rill.admin.v1.AdminService/PullVirtualRepo"
+	AdminService_GetVirtualFile_FullMethodName                         = "/rill.admin.v1.AdminService/GetVirtualFile"
+	AdminService_DeleteVirtualFile_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteVirtualFile"
 	AdminService_GetReportMeta_FullMethodName                          = "/rill.admin.v1.AdminService/GetReportMeta"
 	AdminService_GetAlertMeta_FullMethodName                           = "/rill.admin.v1.AdminService/GetAlertMeta"
 	AdminService_CreateReport_FullMethodName                           = "/rill.admin.v1.AdminService/CreateReport"
@@ -250,6 +256,9 @@ type AdminServiceClient interface {
 	// Provision provisions a new resource for a deployment.
 	// If an existing resource matches the request, it will be returned without provisioning a new resource.
 	Provision(ctx context.Context, in *ProvisionRequest, opts ...grpc.CallOption) (*ProvisionResponse, error)
+	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+	// This is called by the runtime to pull its Variables and Annotations from the admin service.
+	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -266,6 +275,8 @@ type AdminServiceClient interface {
 	SetOrganizationMemberUserRole(ctx context.Context, in *SetOrganizationMemberUserRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUserRoleResponse, error)
 	// GetOrganizationMemberUser gets the member details
 	GetOrganizationMemberUser(ctx context.Context, in *GetOrganizationMemberUserRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserResponse, error)
+	// ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+	ListUsergroupsForProjectAndUser(ctx context.Context, in *ListUsergroupsForProjectAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForProjectAndUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(ctx context.Context, in *UpdateOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*UpdateOrganizationMemberUserAttributesResponse, error)
 	// ListProjectMemberUsers lists all the project members
@@ -278,6 +289,8 @@ type AdminServiceClient interface {
 	RemoveProjectMemberUser(ctx context.Context, in *RemoveProjectMemberUserRequest, opts ...grpc.CallOption) (*RemoveProjectMemberUserResponse, error)
 	// SetProjectMemberUserRole sets the role for the member
 	SetProjectMemberUserRole(ctx context.Context, in *SetProjectMemberUserRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberUserRoleResponse, error)
+	// GetProjectMemberUser gets the member details
+	GetProjectMemberUser(ctx context.Context, in *GetProjectMemberUserRequest, opts ...grpc.CallOption) (*GetProjectMemberUserResponse, error)
 	// ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
 	ListUsergroupsForOrganizationAndUser(ctx context.Context, in *ListUsergroupsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForOrganizationAndUserResponse, error)
 	// CreateUsergroup creates a user group in the organization
@@ -327,6 +340,9 @@ type AdminServiceClient interface {
 	// RevokeUserAuthToken revokes a user access token.
 	// You can optionally pass "current" instead of the token ID to revoke the current token.
 	RevokeUserAuthToken(ctx context.Context, in *RevokeUserAuthTokenRequest, opts ...grpc.CallOption) (*RevokeUserAuthTokenResponse, error)
+	// RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+	// You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+	RevokeAllUserAuthTokens(ctx context.Context, in *RevokeAllUserAuthTokensRequest, opts ...grpc.CallOption) (*RevokeAllUserAuthTokensResponse, error)
 	// RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
 	// This is primarily used for "unassume" flows.
 	RevokeRepresentativeAuthTokens(ctx context.Context, in *RevokeRepresentativeAuthTokensRequest, opts ...grpc.CallOption) (*RevokeRepresentativeAuthTokensResponse, error)
@@ -447,6 +463,10 @@ type AdminServiceClient interface {
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
+	// GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+	GetVirtualFile(ctx context.Context, in *GetVirtualFileRequest, opts ...grpc.CallOption) (*GetVirtualFileResponse, error)
+	// DeleteVirtualFile deletes a virtual file from a project's virtual repo
+	DeleteVirtualFile(ctx context.Context, in *DeleteVirtualFileRequest, opts ...grpc.CallOption) (*DeleteVirtualFileResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
 	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -825,6 +845,16 @@ func (c *adminServiceClient) Provision(ctx context.Context, in *ProvisionRequest
 	return out, nil
 }
 
+func (c *adminServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDeploymentConfigResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeploymentConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListRolesResponse)
@@ -905,6 +935,16 @@ func (c *adminServiceClient) GetOrganizationMemberUser(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *adminServiceClient) ListUsergroupsForProjectAndUser(ctx context.Context, in *ListUsergroupsForProjectAndUserRequest, opts ...grpc.CallOption) (*ListUsergroupsForProjectAndUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUsergroupsForProjectAndUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListUsergroupsForProjectAndUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateOrganizationMemberUserAttributes(ctx context.Context, in *UpdateOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*UpdateOrganizationMemberUserAttributesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateOrganizationMemberUserAttributesResponse)
@@ -959,6 +999,16 @@ func (c *adminServiceClient) SetProjectMemberUserRole(ctx context.Context, in *S
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetProjectMemberUserRoleResponse)
 	err := c.cc.Invoke(ctx, AdminService_SetProjectMemberUserRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectMemberUser(ctx context.Context, in *GetProjectMemberUserRequest, opts ...grpc.CallOption) (*GetProjectMemberUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectMemberUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetProjectMemberUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1189,6 +1239,16 @@ func (c *adminServiceClient) RevokeUserAuthToken(ctx context.Context, in *Revoke
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RevokeUserAuthTokenResponse)
 	err := c.cc.Invoke(ctx, AdminService_RevokeUserAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeAllUserAuthTokens(ctx context.Context, in *RevokeAllUserAuthTokensRequest, opts ...grpc.CallOption) (*RevokeAllUserAuthTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeAllUserAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeAllUserAuthTokens_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1755,6 +1815,26 @@ func (c *adminServiceClient) PullVirtualRepo(ctx context.Context, in *PullVirtua
 	return out, nil
 }
 
+func (c *adminServiceClient) GetVirtualFile(ctx context.Context, in *GetVirtualFileRequest, opts ...grpc.CallOption) (*GetVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteVirtualFile(ctx context.Context, in *DeleteVirtualFileRequest, opts ...grpc.CallOption) (*DeleteVirtualFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteVirtualFileResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteVirtualFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetReportMetaResponse)
@@ -2093,6 +2173,9 @@ type AdminServiceServer interface {
 	// Provision provisions a new resource for a deployment.
 	// If an existing resource matches the request, it will be returned without provisioning a new resource.
 	Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error)
+	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+	// This is called by the runtime to pull its Variables and Annotations from the admin service.
+	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -2109,6 +2192,8 @@ type AdminServiceServer interface {
 	SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error)
 	// GetOrganizationMemberUser gets the member details
 	GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error)
+	// ListUsergroupsForProjectAndUser returns the user groups for a user within a project
+	ListUsergroupsForProjectAndUser(context.Context, *ListUsergroupsForProjectAndUserRequest) (*ListUsergroupsForProjectAndUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error)
 	// ListProjectMemberUsers lists all the project members
@@ -2121,6 +2206,8 @@ type AdminServiceServer interface {
 	RemoveProjectMemberUser(context.Context, *RemoveProjectMemberUserRequest) (*RemoveProjectMemberUserResponse, error)
 	// SetProjectMemberUserRole sets the role for the member
 	SetProjectMemberUserRole(context.Context, *SetProjectMemberUserRoleRequest) (*SetProjectMemberUserRoleResponse, error)
+	// GetProjectMemberUser gets the member details
+	GetProjectMemberUser(context.Context, *GetProjectMemberUserRequest) (*GetProjectMemberUserResponse, error)
 	// ListUsergroupsForOrganizationAndUser lists the user groups that an organization member user has access to.
 	ListUsergroupsForOrganizationAndUser(context.Context, *ListUsergroupsForOrganizationAndUserRequest) (*ListUsergroupsForOrganizationAndUserResponse, error)
 	// CreateUsergroup creates a user group in the organization
@@ -2170,6 +2257,9 @@ type AdminServiceServer interface {
 	// RevokeUserAuthToken revokes a user access token.
 	// You can optionally pass "current" instead of the token ID to revoke the current token.
 	RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error)
+	// RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+	// You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+	RevokeAllUserAuthTokens(context.Context, *RevokeAllUserAuthTokensRequest) (*RevokeAllUserAuthTokensResponse, error)
 	// RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
 	// This is primarily used for "unassume" flows.
 	RevokeRepresentativeAuthTokens(context.Context, *RevokeRepresentativeAuthTokensRequest) (*RevokeRepresentativeAuthTokensResponse, error)
@@ -2290,6 +2380,10 @@ type AdminServiceServer interface {
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
+	// GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+	GetVirtualFile(context.Context, *GetVirtualFileRequest) (*GetVirtualFileResponse, error)
+	// DeleteVirtualFile deletes a virtual file from a project's virtual repo
+	DeleteVirtualFile(context.Context, *DeleteVirtualFileRequest) (*DeleteVirtualFileResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
 	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -2444,6 +2538,9 @@ func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *Trigger
 func (UnimplementedAdminServiceServer) Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Provision not implemented")
 }
+func (UnimplementedAdminServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
+}
 func (UnimplementedAdminServiceServer) ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoles not implemented")
 }
@@ -2468,6 +2565,9 @@ func (UnimplementedAdminServiceServer) SetOrganizationMemberUserRole(context.Con
 func (UnimplementedAdminServiceServer) GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationMemberUser not implemented")
 }
+func (UnimplementedAdminServiceServer) ListUsergroupsForProjectAndUser(context.Context, *ListUsergroupsForProjectAndUserRequest) (*ListUsergroupsForProjectAndUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListUsergroupsForProjectAndUser not implemented")
+}
 func (UnimplementedAdminServiceServer) UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganizationMemberUserAttributes not implemented")
 }
@@ -2485,6 +2585,9 @@ func (UnimplementedAdminServiceServer) RemoveProjectMemberUser(context.Context, 
 }
 func (UnimplementedAdminServiceServer) SetProjectMemberUserRole(context.Context, *SetProjectMemberUserRoleRequest) (*SetProjectMemberUserRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberUserRole not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectMemberUser(context.Context, *GetProjectMemberUserRequest) (*GetProjectMemberUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectMemberUser not implemented")
 }
 func (UnimplementedAdminServiceServer) ListUsergroupsForOrganizationAndUser(context.Context, *ListUsergroupsForOrganizationAndUserRequest) (*ListUsergroupsForOrganizationAndUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsergroupsForOrganizationAndUser not implemented")
@@ -2554,6 +2657,9 @@ func (UnimplementedAdminServiceServer) IssueUserAuthToken(context.Context, *Issu
 }
 func (UnimplementedAdminServiceServer) RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeUserAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeAllUserAuthTokens(context.Context, *RevokeAllUserAuthTokensRequest) (*RevokeAllUserAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeAllUserAuthTokens not implemented")
 }
 func (UnimplementedAdminServiceServer) RevokeRepresentativeAuthTokens(context.Context, *RevokeRepresentativeAuthTokensRequest) (*RevokeRepresentativeAuthTokensResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeRepresentativeAuthTokens not implemented")
@@ -2722,6 +2828,12 @@ func (UnimplementedAdminServiceServer) GetRepoMeta(context.Context, *GetRepoMeta
 }
 func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PullVirtualRepo not implemented")
+}
+func (UnimplementedAdminServiceServer) GetVirtualFile(context.Context, *GetVirtualFileRequest) (*GetVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVirtualFile not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteVirtualFile(context.Context, *DeleteVirtualFileRequest) (*DeleteVirtualFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteVirtualFile not implemented")
 }
 func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
@@ -3398,6 +3510,24 @@ func _AdminService_Provision_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeploymentConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRolesRequest)
 	if err := dec(in); err != nil {
@@ -3542,6 +3672,24 @@ func _AdminService_GetOrganizationMemberUser_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListUsergroupsForProjectAndUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUsergroupsForProjectAndUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListUsergroupsForProjectAndUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListUsergroupsForProjectAndUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListUsergroupsForProjectAndUser(ctx, req.(*ListUsergroupsForProjectAndUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateOrganizationMemberUserAttributes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateOrganizationMemberUserAttributesRequest)
 	if err := dec(in); err != nil {
@@ -3646,6 +3794,24 @@ func _AdminService_SetProjectMemberUserRole_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SetProjectMemberUserRole(ctx, req.(*SetProjectMemberUserRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectMemberUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectMemberUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectMemberUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetProjectMemberUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectMemberUser(ctx, req.(*GetProjectMemberUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4060,6 +4226,24 @@ func _AdminService_RevokeUserAuthToken_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).RevokeUserAuthToken(ctx, req.(*RevokeUserAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeAllUserAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAllUserAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeAllUserAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeAllUserAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeAllUserAuthTokens(ctx, req.(*RevokeAllUserAuthTokensRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5072,6 +5256,42 @@ func _AdminService_PullVirtualRepo_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetVirtualFile(ctx, req.(*GetVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteVirtualFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteVirtualFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteVirtualFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteVirtualFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteVirtualFile(ctx, req.(*DeleteVirtualFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetReportMetaRequest)
 	if err := dec(in); err != nil {
@@ -5676,6 +5896,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_Provision_Handler,
 		},
 		{
+			MethodName: "GetDeploymentConfig",
+			Handler:    _AdminService_GetDeploymentConfig_Handler,
+		},
+		{
 			MethodName: "ListRoles",
 			Handler:    _AdminService_ListRoles_Handler,
 		},
@@ -5708,6 +5932,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetOrganizationMemberUser_Handler,
 		},
 		{
+			MethodName: "ListUsergroupsForProjectAndUser",
+			Handler:    _AdminService_ListUsergroupsForProjectAndUser_Handler,
+		},
+		{
 			MethodName: "UpdateOrganizationMemberUserAttributes",
 			Handler:    _AdminService_UpdateOrganizationMemberUserAttributes_Handler,
 		},
@@ -5730,6 +5958,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetProjectMemberUserRole",
 			Handler:    _AdminService_SetProjectMemberUserRole_Handler,
+		},
+		{
+			MethodName: "GetProjectMemberUser",
+			Handler:    _AdminService_GetProjectMemberUser_Handler,
 		},
 		{
 			MethodName: "ListUsergroupsForOrganizationAndUser",
@@ -5822,6 +6054,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeUserAuthToken",
 			Handler:    _AdminService_RevokeUserAuthToken_Handler,
+		},
+		{
+			MethodName: "RevokeAllUserAuthTokens",
+			Handler:    _AdminService_RevokeAllUserAuthTokens_Handler,
 		},
 		{
 			MethodName: "RevokeRepresentativeAuthTokens",
@@ -6046,6 +6282,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PullVirtualRepo",
 			Handler:    _AdminService_PullVirtualRepo_Handler,
+		},
+		{
+			MethodName: "GetVirtualFile",
+			Handler:    _AdminService_GetVirtualFile_Handler,
+		},
+		{
+			MethodName: "DeleteVirtualFile",
+			Handler:    _AdminService_DeleteVirtualFile_Handler,
 		},
 		{
 			MethodName: "GetReportMeta",

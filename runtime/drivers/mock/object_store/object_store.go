@@ -3,13 +3,11 @@ package mock
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	rillblob "github.com/rilldata/rill/runtime/pkg/blob"
-	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
@@ -170,20 +168,28 @@ func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 	return nil, drivers.ErrNotNotifier
 }
 
-// ListObjects implements drivers.ObjectStore.
-func (h *handle) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
-	url, err := globutil.ParseBucketURL(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", path, err)
-	}
+func (h *handle) ListBuckets(ctx context.Context, pageSize uint32, pageToken string) ([]string, string, error) {
+	return nil, "", errors.New("not implemented")
+}
 
-	bucket, err := rillblob.NewBucket(h.bucket, h.logger)
+// ListObjects implements drivers.ObjectStore.
+func (h *handle) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	blobBucket, err := rillblob.NewBucket(h.bucket, h.logger)
+	if err != nil {
+		return nil, "", err
+	}
+	defer blobBucket.Close()
+	return blobBucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
+}
+
+// ListObjectsForGlob implements drivers.ObjectStore.
+func (h *handle) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+	blobBucket, err := rillblob.NewBucket(h.bucket, h.logger)
 	if err != nil {
 		return nil, err
 	}
-	defer bucket.Close()
-
-	return bucket.ListObjects(ctx, url.Path)
+	defer blobBucket.Close()
+	return blobBucket.ListObjectsForGlob(ctx, glob)
 }
 
 // DownloadFiles implements drivers.ObjectStore.

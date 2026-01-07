@@ -30,6 +30,7 @@ func Expensive(t TestingT) {
 	// Fail if running an expensive test without the env var set.
 	if Mode(t) != "expensive" {
 		t.Errorf("expensive tests are disabled; set %s=expensive to enable", modeEnvironmentVariable)
+		t.FailNow()
 	}
 }
 
@@ -43,6 +44,7 @@ func Mode(t TestingT) string {
 	// Validate value
 	if !validModes[val] {
 		t.Errorf("invalid value for environment variable %s: %s", modeEnvironmentVariable, val)
+		t.FailNow()
 	}
 
 	return val
@@ -51,6 +53,7 @@ func Mode(t TestingT) string {
 // TestingT is an interface that matches *testing.T and *testing.B.
 type TestingT interface {
 	SkipNow()
+	FailNow()
 	Errorf(format string, args ...any)
 }
 
@@ -63,6 +66,7 @@ func loadDotEnv(t TestingT) {
 		err = godotenv.Load(envPath)
 		if err != nil {
 			t.Errorf("error loading .env file: %w", err)
+			t.FailNow()
 		}
 	}
 }

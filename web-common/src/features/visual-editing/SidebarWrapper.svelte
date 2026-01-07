@@ -13,15 +13,13 @@
   </div>
 
   <div
-    class="flex flex-col w-full h-full overflow-y-auto overflow-x-visible pb-8"
+    class="flex flex-col w-full h-full overflow-y-auto overflow-x-visible"
     class:px-5={!disableHorizontalPadding}
     class:gap-y-1={type === "secondary"}
     class:gap-y-3={type === "primary"}
   >
     <slot />
   </div>
-
-  <slot name="footer" />
 </div>
 
 <style lang="postcss">

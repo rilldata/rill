@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
-import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 
 /**
@@ -1061,21 +1061,6 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
    */
   connectors: Connector[] = [];
 
-  /**
-   * @generated from field: map<string, string> variables = 15;
-   */
-  variables: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: map<string, string> annotations = 10;
-   */
-  annotations: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: optional string frontend_url = 19;
-   */
-  frontendUrl?: string;
-
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1091,9 +1076,6 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
     { no: 16, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "ai_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
-    { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 19, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -1149,6 +1131,78 @@ export class EditInstanceResponse extends Message$1<EditInstanceResponse> {
 
   static equals(a: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined, b: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined): boolean {
     return proto3.util.equals(EditInstanceResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ReloadConfig
+ *
+ * @generated from message rill.runtime.v1.ReloadConfigRequest
+ */
+export class ReloadConfigRequest extends Message$1<ReloadConfigRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ReloadConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReloadConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReloadConfigRequest {
+    return new ReloadConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReloadConfigRequest | PlainMessage<ReloadConfigRequest> | undefined, b: ReloadConfigRequest | PlainMessage<ReloadConfigRequest> | undefined): boolean {
+    return proto3.util.equals(ReloadConfigRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ReloadConfig
+ *
+ * @generated from message rill.runtime.v1.ReloadConfigResponse
+ */
+export class ReloadConfigResponse extends Message$1<ReloadConfigResponse> {
+  constructor(data?: PartialMessage<ReloadConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReloadConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReloadConfigResponse {
+    return new ReloadConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReloadConfigResponse | PlainMessage<ReloadConfigResponse> | undefined, b: ReloadConfigResponse | PlainMessage<ReloadConfigResponse> | undefined): boolean {
+    return proto3.util.equals(ReloadConfigResponse, a, b);
   }
 }
 
@@ -2183,6 +2237,13 @@ export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsVie
    */
   useAi = false;
 
+  /**
+   * Optional prompt to guide AI generation.
+   *
+   * @generated from field: string prompt = 9;
+   */
+  prompt = "";
+
   constructor(data?: PartialMessage<GenerateMetricsViewFileRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2199,6 +2260,7 @@ export class GenerateMetricsViewFileRequest extends Message$1<GenerateMetricsVie
     { no: 3, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateMetricsViewFileRequest {
@@ -2256,6 +2318,111 @@ export class GenerateMetricsViewFileResponse extends Message$1<GenerateMetricsVi
 
   static equals(a: GenerateMetricsViewFileResponse | PlainMessage<GenerateMetricsViewFileResponse> | undefined, b: GenerateMetricsViewFileResponse | PlainMessage<GenerateMetricsViewFileResponse> | undefined): boolean {
     return proto3.util.equals(GenerateMetricsViewFileResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GenerateCanvasFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasFileRequest
+ */
+export class GenerateCanvasFileRequest extends Message$1<GenerateCanvasFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Metrics view name to base the canvas on.
+   *
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * Path to save the canvas file to.
+   *
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  /**
+   * If true, the AI will be used to generate the canvas file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
+   * @generated from field: bool use_ai = 4;
+   */
+  useAi = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasFileRequest {
+    return new GenerateCanvasFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasFileRequest | PlainMessage<GenerateCanvasFileRequest> | undefined, b: GenerateCanvasFileRequest | PlainMessage<GenerateCanvasFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasFileRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateCanvasFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasFileResponse
+ */
+export class GenerateCanvasFileResponse extends Message$1<GenerateCanvasFileResponse> {
+  /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasFileResponse {
+    return new GenerateCanvasFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasFileResponse | PlainMessage<GenerateCanvasFileResponse> | undefined, b: GenerateCanvasFileResponse | PlainMessage<GenerateCanvasFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasFileResponse, a, b);
   }
 }
 
@@ -3000,11 +3167,6 @@ export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
    */
   replay = false;
 
-  /**
-   * @generated from field: string level = 4;
-   */
-  level = "";
-
   constructor(data?: PartialMessage<WatchResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3016,7 +3178,6 @@ export class WatchResourcesRequest extends Message$1<WatchResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "level", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchResourcesRequest {
@@ -4327,6 +4488,138 @@ export class Message extends Message$1<Message> {
 }
 
 /**
+ * Context for prompts handled by the analyst_agent.
+ *
+ * @generated from message rill.runtime.v1.AnalystAgentContext
+ */
+export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
+  /**
+   * Optional explore dashboard.
+   *
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * Optional dimensions.
+   *
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * Optional measures.
+   *
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * Optional filters.
+   *
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * Optional start of a time range.
+   *
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * Optional end of a time range.
+   *
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
+
+  constructor(data?: PartialMessage<AnalystAgentContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalystAgentContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalystAgentContext {
+    return new AnalystAgentContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalystAgentContext {
+    return new AnalystAgentContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalystAgentContext {
+    return new AnalystAgentContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalystAgentContext | PlainMessage<AnalystAgentContext> | undefined, b: AnalystAgentContext | PlainMessage<AnalystAgentContext> | undefined): boolean {
+    return proto3.util.equals(AnalystAgentContext, a, b);
+  }
+}
+
+/**
+ * Context for prompts handled by the developer_agent.
+ *
+ * @generated from message rill.runtime.v1.DeveloperAgentContext
+ */
+export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
+  /**
+   * Set to true if the prompt is provided as part of project initialization.
+   * This should only be used when the project directory contains an empty project (except for the boilerplate generated by UnpackEmpty).
+   *
+   * @generated from field: bool init_project = 1;
+   */
+  initProject = false;
+
+  /**
+   * Optional path to the file that the user is currently viewing/editing.
+   * This helps the agent understand which file the user is referring to in their request.
+   *
+   * @generated from field: string current_file_path = 2;
+   */
+  currentFilePath = "";
+
+  constructor(data?: PartialMessage<DeveloperAgentContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeveloperAgentContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "init_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "current_file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeveloperAgentContext {
+    return new DeveloperAgentContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeveloperAgentContext {
+    return new DeveloperAgentContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeveloperAgentContext {
+    return new DeveloperAgentContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeveloperAgentContext | PlainMessage<DeveloperAgentContext> | undefined, b: DeveloperAgentContext | PlainMessage<DeveloperAgentContext> | undefined): boolean {
+    return proto3.util.equals(DeveloperAgentContext, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.ListConversations
  *
  * @generated from message rill.runtime.v1.ListConversationsRequest
@@ -4337,6 +4630,13 @@ export class ListConversationsRequest extends Message$1<ListConversationsRequest
    */
   instanceId = "";
 
+  /**
+   * Optional search pattern for filtering by user agent.
+   *
+   * @generated from field: string user_agent_pattern = 2;
+   */
+  userAgentPattern = "";
+
   constructor(data?: PartialMessage<ListConversationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4346,6 +4646,7 @@ export class ListConversationsRequest extends Message$1<ListConversationsRequest
   static readonly typeName = "rill.runtime.v1.ListConversationsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_agent_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConversationsRequest {
@@ -4465,6 +4766,13 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
    */
   messages: Message[] = [];
 
+  /**
+   * would be false for shared conversations accessed by non-owners
+   *
+   * @generated from field: bool is_owner = 3;
+   */
+  isOwner = false;
+
   constructor(data?: PartialMessage<GetConversationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4475,6 +4783,7 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "conversation", kind: "message", T: Conversation },
     { no: 2, name: "messages", kind: "message", T: Message, repeated: true },
+    { no: 3, name: "is_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConversationResponse {
@@ -4495,57 +4804,307 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 }
 
 /**
- * Request message for RuntimeService.Complete
+ * Request message for RuntimeService.ShareConversation
  *
- * @generated from message rill.runtime.v1.CompleteRequest
+ * @generated from message rill.runtime.v1.ShareConversationRequest
  */
-export class CompleteRequest extends Message$1<CompleteRequest> {
+export class ShareConversationRequest extends Message$1<ShareConversationRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * If not provided, creates a new conversation
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * optional message ID up to which to share otherwise share all current messages
+   * only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+   * It supports a special value of "none" to unshare the conversation.
+   *
+   * @generated from field: string until_message_id = 3;
+   */
+  untilMessageId = "";
+
+  constructor(data?: PartialMessage<ShareConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ShareConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "until_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShareConversationRequest {
+    return new ShareConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ShareConversationRequest {
+    return new ShareConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ShareConversationRequest {
+    return new ShareConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ShareConversationRequest | PlainMessage<ShareConversationRequest> | undefined, b: ShareConversationRequest | PlainMessage<ShareConversationRequest> | undefined): boolean {
+    return proto3.util.equals(ShareConversationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ShareConversation
+ *
+ * @generated from message rill.runtime.v1.ShareConversationResponse
+ */
+export class ShareConversationResponse extends Message$1<ShareConversationResponse> {
+  constructor(data?: PartialMessage<ShareConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ShareConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ShareConversationResponse {
+    return new ShareConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ShareConversationResponse {
+    return new ShareConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ShareConversationResponse {
+    return new ShareConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ShareConversationResponse | PlainMessage<ShareConversationResponse> | undefined, b: ShareConversationResponse | PlainMessage<ShareConversationResponse> | undefined): boolean {
+    return proto3.util.equals(ShareConversationResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ForkConversation
+ *
+ * @generated from message rill.runtime.v1.ForkConversationRequest
+ */
+export class ForkConversationRequest extends Message$1<ForkConversationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  constructor(data?: PartialMessage<ForkConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ForkConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ForkConversationRequest {
+    return new ForkConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ForkConversationRequest {
+    return new ForkConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ForkConversationRequest {
+    return new ForkConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ForkConversationRequest | PlainMessage<ForkConversationRequest> | undefined, b: ForkConversationRequest | PlainMessage<ForkConversationRequest> | undefined): boolean {
+    return proto3.util.equals(ForkConversationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ForkConversation
+ *
+ * @generated from message rill.runtime.v1.ForkConversationResponse
+ */
+export class ForkConversationResponse extends Message$1<ForkConversationResponse> {
+  /**
+   * new conversation ID
+   *
+   * @generated from field: string conversation_id = 1;
+   */
+  conversationId = "";
+
+  constructor(data?: PartialMessage<ForkConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ForkConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ForkConversationResponse {
+    return new ForkConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ForkConversationResponse {
+    return new ForkConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ForkConversationResponse {
+    return new ForkConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ForkConversationResponse | PlainMessage<ForkConversationResponse> | undefined, b: ForkConversationResponse | PlainMessage<ForkConversationResponse> | undefined): boolean {
+    return proto3.util.equals(ForkConversationResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListTools
+ *
+ * @generated from message rill.runtime.v1.ListToolsRequest
+ */
+export class ListToolsRequest extends Message$1<ListToolsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<ListToolsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListToolsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListToolsRequest {
+    return new ListToolsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListToolsRequest | PlainMessage<ListToolsRequest> | undefined, b: ListToolsRequest | PlainMessage<ListToolsRequest> | undefined): boolean {
+    return proto3.util.equals(ListToolsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListTools
+ *
+ * @generated from message rill.runtime.v1.ListToolsResponse
+ */
+export class ListToolsResponse extends Message$1<ListToolsResponse> {
+  /**
+   * @generated from field: repeated rill.ai.v1.Tool tools = 1;
+   */
+  tools: Tool[] = [];
+
+  constructor(data?: PartialMessage<ListToolsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListToolsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tools", kind: "message", T: Tool, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListToolsResponse {
+    return new ListToolsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListToolsResponse | PlainMessage<ListToolsResponse> | undefined, b: ListToolsResponse | PlainMessage<ListToolsResponse> | undefined): boolean {
+    return proto3.util.equals(ListToolsResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.Complete
+ *
+ * @generated from message rill.runtime.v1.CompleteRequest
+ */
+export class CompleteRequest extends Message$1<CompleteRequest> {
+  /**
+   * Instance to run the completion against.
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Conversation ID to continue. If empty, a new conversation is created.
    *
    * @generated from field: string conversation_id = 2;
    */
   conversationId = "";
 
   /**
+   * The prompt to complete.
+   *
    * @generated from field: string prompt = 3;
    */
   prompt = "";
 
   /**
-   * @generated from field: string explore = 4;
+   * Optional agent to use for the completion.
+   * If not set, it will infer an agent based on the prompt and conversation history.
+   *
+   * @generated from field: string agent = 10;
    */
-  explore = "";
+  agent = "";
 
   /**
-   * @generated from field: repeated string dimensions = 5;
+   * Optional context for prompts handled by the analyst_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.AnalystAgentContext analyst_agent_context = 11;
    */
-  dimensions: string[] = [];
+  analystAgentContext?: AnalystAgentContext;
 
   /**
-   * @generated from field: repeated string measures = 6;
+   * Optional context for prompts handled by the developer_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.DeveloperAgentContext developer_agent_context = 12;
    */
-  measures: string[] = [];
-
-  /**
-   * @generated from field: rill.runtime.v1.Expression where = 7;
-   */
-  where?: Expression;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_start = 8;
-   */
-  timeStart?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_end = 9;
-   */
-  timeEnd?: Timestamp;
+  developerAgentContext?: DeveloperAgentContext;
 
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
@@ -4558,12 +5117,9 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "time_start", kind: "message", T: Timestamp },
-    { no: 9, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
+    { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4635,51 +5191,49 @@ export class CompleteResponse extends Message$1<CompleteResponse> {
  */
 export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest> {
   /**
+   * Instance to run the completion against.
+   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * If not provided, creates a new conversation
+   * Conversation ID to continue. If empty, a new conversation is created.
    *
    * @generated from field: string conversation_id = 2;
    */
   conversationId = "";
 
   /**
+   * The prompt to complete.
+   *
    * @generated from field: string prompt = 3;
    */
   prompt = "";
 
   /**
-   * @generated from field: string explore = 4;
+   * Optional agent to use for the completion.
+   * If not set, it will infer an agent based on the prompt and conversation history.
+   *
+   * @generated from field: string agent = 10;
    */
-  explore = "";
+  agent = "";
 
   /**
-   * @generated from field: repeated string dimensions = 5;
+   * Optional context for prompts handled by the analyst_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.AnalystAgentContext analyst_agent_context = 11;
    */
-  dimensions: string[] = [];
+  analystAgentContext?: AnalystAgentContext;
 
   /**
-   * @generated from field: repeated string measures = 6;
+   * Optional context for prompts handled by the developer_agent.
+   * The field is ignored if another agent is selected.
+   *
+   * @generated from field: rill.runtime.v1.DeveloperAgentContext developer_agent_context = 12;
    */
-  measures: string[] = [];
-
-  /**
-   * @generated from field: rill.runtime.v1.Expression where = 7;
-   */
-  where?: Expression;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_start = 8;
-   */
-  timeStart?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp time_end = 9;
-   */
-  timeEnd?: Timestamp;
+  developerAgentContext?: DeveloperAgentContext;
 
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
@@ -4692,12 +5246,9 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "time_start", kind: "message", T: Timestamp },
-    { no: 9, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
+    { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

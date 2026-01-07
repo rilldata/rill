@@ -55,7 +55,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	}
 	defer release()
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := olap.Dialect().EscapeIdentifier(q.ColumnName)
 	var descriptiveStatisticsSQL string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
@@ -71,15 +71,28 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
-		descriptiveStatisticsSQL = fmt.Sprintf(`SELECT 
-			min(%[1]s)::DOUBLE as min, 
-			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25, 
-			quantileTDigest(0.5)(%[1]s)::DOUBLE as q50, 
-			quantileTDigest(0.75)(%[1]s)::DOUBLE as q75, 
-			max(%[1]s)::DOUBLE as max, 
-			avg(%[1]s)::DOUBLE as mean, 
-			stddevSamp(%[1]s)::DOUBLE as sd 
+		descriptiveStatisticsSQL = fmt.Sprintf(`SELECT
+			min(%[1]s)::DOUBLE as min,
+			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25,
+			quantileTDigest(0.5)(%[1]s)::DOUBLE as q50,
+			quantileTDigest(0.75)(%[1]s)::DOUBLE as q75,
+			max(%[1]s)::DOUBLE as max,
+			avg(%[1]s)::DOUBLE as mean,
+			stddevSamp(%[1]s)::DOUBLE as sd
 			FROM %[2]s WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+``,
+			sanitizedColumnName,
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
+	case drivers.DialectStarRocks:
+		sanitizedColumnName = olap.Dialect().EscapeIdentifier(q.ColumnName)
+		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
+			"CAST(min(%[1]s) AS DOUBLE) as min, "+
+			"CAST(percentile_approx(%[1]s, 0.25) AS DOUBLE) as q25, "+
+			"CAST(percentile_approx(%[1]s, 0.5) AS DOUBLE) as q50, "+
+			"CAST(percentile_approx(%[1]s, 0.75) AS DOUBLE) as q75, "+
+			"CAST(max(%[1]s) AS DOUBLE) as max, "+
+			"CAST(avg(%[1]s) AS DOUBLE) as mean, "+
+			"CAST(stddev_samp(%[1]s) AS DOUBLE) as sd "+
+			"FROM %[2]s WHERE %[1]s IS NOT NULL",
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	default:

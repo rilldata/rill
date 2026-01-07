@@ -16,6 +16,7 @@ rill start [<path>] [flags]
   -e, --env strings               Set environment variables
       --environment string        Environment name (default "dev")
       --reset                     Clear and re-ingest source data
+      --pull-env                  Pull environment variables from Rill Cloud before starting the project (default true)
       --no-open                   Do not open browser
       --verbose                   Sets the log level to debug
       --port int                  Port for HTTP (default 9009)

@@ -208,8 +208,8 @@ describe("Report rows and columns", () => {
     ];
 
     testCases.forEach((testCase) => {
-      it(testCase.title, () => {
-        runTest(testCase, (exploreState, timeControlState) =>
+      it(testCase.title, async () => {
+        await runTest(testCase, (exploreState, timeControlState) =>
           getDimensionTableAggregationRequestForTime({
             metricsViewName: AD_BIDS_METRICS_NAME,
             exploreState,
@@ -364,8 +364,8 @@ describe("Report rows and columns", () => {
     ];
 
     testCases.forEach((testCase) => {
-      it(testCase.title, () => {
-        runTest(
+      it(testCase.title, async () => {
+        await runTest(
           testCase,
           (exploreState, timeControlState) =>
             getTDDAggregationRequest({
@@ -499,8 +499,8 @@ describe("Report rows and columns", () => {
     ];
 
     testCases.forEach((testCase) => {
-      it(testCase.title, () => {
-        runTest(
+      it(testCase.title, async () => {
+        await runTest(
           testCase,
           (exploreState, timeControlState) =>
             getPivotAggregationRequest({
@@ -543,7 +543,7 @@ type TestCase = {
   expectedRequest: V1MetricsViewAggregationRequest;
 };
 
-function runTest(
+async function runTest(
   {
     mutations,
 
@@ -568,10 +568,10 @@ function runTest(
     ),
   );
 
-  applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+  await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
     leaderboardContextCorrection,
   ]);
-  applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+  await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
   const exploreState = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
   const timeControlState = getTimeControlState(

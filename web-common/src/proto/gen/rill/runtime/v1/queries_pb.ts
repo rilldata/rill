@@ -3949,6 +3949,88 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
 }
 
 /**
+ * @generated from message rill.runtime.v1.ConvertExpressionToMetricsSQLRequest
+ */
+export class ConvertExpressionToMetricsSQLRequest extends Message<ConvertExpressionToMetricsSQLRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression expression = 2;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<ConvertExpressionToMetricsSQLRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConvertExpressionToMetricsSQLRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConvertExpressionToMetricsSQLRequest {
+    return new ConvertExpressionToMetricsSQLRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLRequest {
+    return new ConvertExpressionToMetricsSQLRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLRequest {
+    return new ConvertExpressionToMetricsSQLRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConvertExpressionToMetricsSQLRequest | PlainMessage<ConvertExpressionToMetricsSQLRequest> | undefined, b: ConvertExpressionToMetricsSQLRequest | PlainMessage<ConvertExpressionToMetricsSQLRequest> | undefined): boolean {
+    return proto3.util.equals(ConvertExpressionToMetricsSQLRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ConvertExpressionToMetricsSQLResponse
+ */
+export class ConvertExpressionToMetricsSQLResponse extends Message<ConvertExpressionToMetricsSQLResponse> {
+  /**
+   * The SQL filter string representation of the expression.
+   *
+   * @generated from field: string sql = 1;
+   */
+  sql = "";
+
+  constructor(data?: PartialMessage<ConvertExpressionToMetricsSQLResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConvertExpressionToMetricsSQLResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConvertExpressionToMetricsSQLResponse {
+    return new ConvertExpressionToMetricsSQLResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLResponse {
+    return new ConvertExpressionToMetricsSQLResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConvertExpressionToMetricsSQLResponse {
+    return new ConvertExpressionToMetricsSQLResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConvertExpressionToMetricsSQLResponse | PlainMessage<ConvertExpressionToMetricsSQLResponse> | undefined, b: ConvertExpressionToMetricsSQLResponse | PlainMessage<ConvertExpressionToMetricsSQLResponse> | undefined): boolean {
+    return proto3.util.equals(ConvertExpressionToMetricsSQLResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ResolveCanvasRequest
  */
 export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
@@ -4151,6 +4233,112 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
 
   static equals(a: ResolveComponentResponse | PlainMessage<ResolveComponentResponse> | undefined, b: ResolveComponentResponse | PlainMessage<ResolveComponentResponse> | undefined): boolean {
     return proto3.util.equals(ResolveComponentResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveTemplatedStringRequest
+ */
+export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStringRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Any string with Go templating
+   *
+   * @generated from field: string body = 2;
+   */
+  body = "";
+
+  /**
+   * If true, output format tokens instead of raw values.
+   *
+   * @generated from field: bool use_format_tokens = 3;
+   */
+  useFormatTokens = false;
+
+  /**
+   * Additional filters to inject into metrics SQL queries by metrics view name
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> additional_where_by_metrics_view = 4;
+   */
+  additionalWhereByMetricsView: { [key: string]: Expression } = {};
+
+  /**
+   * Additional time range to add to metrics SQL queries
+   *
+   * @generated from field: rill.runtime.v1.TimeRange additional_time_range = 5;
+   */
+  additionalTimeRange?: TimeRange;
+
+  constructor(data?: PartialMessage<ResolveTemplatedStringRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveTemplatedStringRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "use_format_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "additional_where_by_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
+    { no: 5, name: "additional_time_range", kind: "message", T: TimeRange },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveTemplatedStringRequest {
+    return new ResolveTemplatedStringRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveTemplatedStringRequest {
+    return new ResolveTemplatedStringRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveTemplatedStringRequest {
+    return new ResolveTemplatedStringRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveTemplatedStringRequest | PlainMessage<ResolveTemplatedStringRequest> | undefined, b: ResolveTemplatedStringRequest | PlainMessage<ResolveTemplatedStringRequest> | undefined): boolean {
+    return proto3.util.equals(ResolveTemplatedStringRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveTemplatedStringResponse
+ */
+export class ResolveTemplatedStringResponse extends Message<ResolveTemplatedStringResponse> {
+  /**
+   * @generated from field: string body = 1;
+   */
+  body = "";
+
+  constructor(data?: PartialMessage<ResolveTemplatedStringResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveTemplatedStringResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveTemplatedStringResponse {
+    return new ResolveTemplatedStringResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveTemplatedStringResponse {
+    return new ResolveTemplatedStringResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveTemplatedStringResponse {
+    return new ResolveTemplatedStringResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveTemplatedStringResponse | PlainMessage<ResolveTemplatedStringResponse> | undefined, b: ResolveTemplatedStringResponse | PlainMessage<ResolveTemplatedStringResponse> | undefined): boolean {
+    return proto3.util.equals(ResolveTemplatedStringResponse, a, b);
   }
 }
 

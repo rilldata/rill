@@ -9,16 +9,17 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
+  import { WandIcon, GitBranch } from "lucide-svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
-  import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
+  import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -31,13 +32,23 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = ($modelQuery.data as V1Resource | undefined)?.model?.spec
-    ?.outputConnector;
+  $: modelResource = $modelQuery.data;
+  $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
+    modelResource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-  $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
+  $: tableName = modelResource?.model?.state?.resultTable ?? "";
+
+  function viewGraph() {
+    if (!modelResource) {
+      console.warn(
+        "[ModelMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(modelResource);
+  }
 
   async function handleCreateModel() {
     try {
@@ -113,6 +124,11 @@
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>
+</NavigationMenuItem>
+
+<NavigationMenuItem on:click={viewGraph}>
+  <GitBranch slot="icon" size="14px" />
+  View dependency graph
 </NavigationMenuItem>
 
 <NavigationMenuItem

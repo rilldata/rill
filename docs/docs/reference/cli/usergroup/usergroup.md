@@ -25,6 +25,7 @@ Manage user groups
 * [rill usergroup list](list.md)	 - List groups
 * [rill usergroup remove](remove.md)	 - Remove a group's role on a project or organization
 * [rill usergroup rename](rename.md)	 - Rename a group
+* [rill usergroup set-resources](set-resources.md)	 - Set a user group's project resources and restriction flag (overwrites existing list)
 * [rill usergroup set-role](set-role.md)	 - Change a group's role on a project or organization
 * [rill usergroup show](show.md)	 - Show group
 
