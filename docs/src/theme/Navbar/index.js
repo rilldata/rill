@@ -50,7 +50,7 @@ export default function NavbarWrapper(props) {
 
   // Mobile sidebar icons removed - no longer needed
 
-  // Mark dropdown as active when any dropdown menu item is active
+  // Consolidated MutationObserver for navbar updates
   useEffect(() => {
     const markActiveDropdowns = () => {
       // Target elements with both navbar__item and dropdown classes
@@ -65,18 +65,6 @@ export default function NavbarWrapper(props) {
       });
     };
 
-    // Check on mount and when DOM changes
-    markActiveDropdowns();
-    const observer = new MutationObserver(markActiveDropdowns);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  // Mark non-dropdown navbar items as active when they contain an active link
-  useEffect(() => {
     const markActiveNavItems = () => {
       // Target non-dropdown navbar items
       const navItems = document.querySelectorAll('.navbar__item:not(.dropdown)');
@@ -90,18 +78,6 @@ export default function NavbarWrapper(props) {
       });
     };
 
-    // Check on mount and when DOM changes
-    markActiveNavItems();
-    const observer = new MutationObserver(markActiveNavItems);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  // Add data-text attributes to navbar links for layout shift prevention
-  useEffect(() => {
     const addDataTextAttributes = () => {
       const navLinks = document.querySelectorAll('.navbar__link');
       navLinks.forEach((link) => {
@@ -115,9 +91,16 @@ export default function NavbarWrapper(props) {
       });
     };
 
+    // Combined update function
+    const updateNavbar = () => {
+      markActiveDropdowns();
+      markActiveNavItems();
+      addDataTextAttributes();
+    };
+
     // Run on mount and when DOM changes
-    addDataTextAttributes();
-    const observer = new MutationObserver(addDataTextAttributes);
+    updateNavbar();
+    const observer = new MutationObserver(updateNavbar);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {

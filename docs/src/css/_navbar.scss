@@ -6,7 +6,7 @@
 .navbar .navbar__link {
   color: var(--ifm-color-black);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   
   &:hover {
     color: var(--ifm-color-primary);
@@ -22,6 +22,14 @@
 .navbar .navbar__link--active,
 .navbar__item .navbar__link--active {
   color: var(--ifm-color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 14px;
+  text-decoration-color: var(--ifm-color-primary);
+  text-decoration-style: solid;
+  text-decoration-skip-ink: none;
+  text-decoration-skip: none;
+  text-decoration-skip-ink: none;
 }
 
 /* Hover effects with rounded corners for navbar items */
@@ -91,6 +99,15 @@
   /* JavaScript adds 'navbar__dropdown--has-active' class when dropdown menu has active item */
   &.navbar__dropdown--has-active > .navbar__link {
     color: var(--ifm-color-primary);
+    color: var(--ifm-color-primary);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 14px;
+    text-decoration-color: var(--ifm-color-primary);
+    text-decoration-style: solid;
+    text-decoration-skip-ink: none;
+    text-decoration-skip: none;
+    text-decoration-skip-ink: none;
   }
   
   /* Hover effect for dropdown */
@@ -142,7 +159,7 @@
 .navbar .DocSearch-Button {
   font-size: 0.875rem; /* 14px */
   min-width: 16rem; /* Increased width */
-  border: .5px solid #e5e7eb;
+  border: 0.5px solid var(--ifm-color-gray-300, #e5e7eb);
   
   .DocSearch-Button-Placeholder {
     font-size: 0.875rem;
@@ -172,14 +189,10 @@
     }
   }
   
-  /* Active navbar item - theme color in dark mode */
+  /* Active navbar link - theme color in dark mode */
   .navbar__item--has-active-link .navbar__link,
-  .navbar__item .navbar__link--active {
-    color: var(--ifm-color-primary);
-  }
-  
-  .navbar__link--active,
-  .navbar__item .navbar__link--active {
+  .navbar__item .navbar__link--active,
+  .navbar__link--active {
     color: var(--ifm-color-primary);
   }
   
@@ -279,11 +292,6 @@
    Mobile Sidebar Panel Styles
    ========================= */
 .navbar-sidebar {
-  /* Remove mobile icon links */
-  .mobile-nav-icon-links {
-    display: none;
-  }
-  
   /* Fix spacing for navbar items in mobile sidebar */
   .navbar-sidebar__item {
     margin: 0;
