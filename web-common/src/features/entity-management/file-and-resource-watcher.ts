@@ -177,7 +177,7 @@ export class FileAndResourceWatcher {
 
             await invalidate("init");
 
-            eventBus.emit("rill-yaml-updated", null);
+            eventBus.emit("rill-yaml-updated");
           }
           this.seenFiles.add(res.path);
           break;

@@ -39,6 +39,7 @@ type MetricsViewYAML struct {
 		DisplayName             string `yaml:"display_name"`
 		Label                   string // Deprecated: use display_name
 		Description             string
+		Type                    string
 		Column                  string
 		Expression              string
 		Property                string // For backwards compatibility
@@ -405,6 +406,20 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: must be at least "second"`, dim.Name)
 		}
 
+		var typ runtimev1.MetricsViewSpec_DimensionType
+		switch strings.ToLower(dim.Type) {
+		case "":
+			// Leave unspecified as default
+		case "geo":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_GEOSPATIAL
+		case "time":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		case "categorical":
+			typ = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+		default:
+			return fmt.Errorf(`invalid dimension type %q (allowed values: geo, time, categorical)`, dim.Type)
+		}
+
 		// Dimension is valid, add to the list
 		dimensions = append(dimensions, &runtimev1.MetricsViewSpec_Dimension{
 			Name:                    dim.Name,
@@ -412,6 +427,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Description:             dim.Description,
 			Column:                  dim.Column,
 			Expression:              dim.Expression,
+			Type:                    typ,
 			Unnest:                  dim.Unnest,
 			Uri:                     dim.URI,
 			LookupTable:             dim.LookupTable,
