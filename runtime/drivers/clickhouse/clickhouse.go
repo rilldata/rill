@@ -156,6 +156,9 @@ type configProperties struct {
 	// WriteDSN is the connection string for write operations. When set, the normal connection config (DSN or host, etc.) is used for reads and this for writes.
 	WriteDSN string `mapstructure:"write_dsn"`
 	// Host configuration. Should not be set if DSN is set.
+	// CreateNamedCollectionsFromConnectors is list of connector names to create Named Collections for before executing models.
+	CreateNamedCollectionsFromConnectors []string `mapstructure:"create_named_collections_from_connectors"`
+	// Host configuration. Should not be set if DSN is set.
 	Host string `mapstructure:"host"`
 	// Port configuration. Should not be set if DSN is set.
 	Port int `mapstructure:"port"`
@@ -216,6 +219,10 @@ func (c *configProperties) validate() error {
 	}
 
 	return nil
+}
+
+func (c configProperties) isClickhouseCloud() bool {
+	return strings.Contains(c.DSN, "clickhouse.cloud") || strings.Contains(c.Host, "clickhouse.cloud")
 }
 
 // Open connects to Clickhouse using std API.
