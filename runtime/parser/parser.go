@@ -191,6 +191,7 @@ type Parser struct {
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
+	postParseHooks             map[ResourceName][]postParseHook
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -332,6 +333,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
+	p.postParseHooks = make(map[ResourceName][]postParseHook)
 	p.insertedResources = nil
 	p.updatedResources = nil
 	p.deletedResources = nil
@@ -357,6 +359,16 @@ func (p *Parser) reload(ctx context.Context) error {
 	// Infer unspecified refs for all inserted resources
 	for _, r := range p.insertedResources {
 		p.inferUnspecifiedRefs(r)
+	}
+
+	// run all post-parse hooks
+	for rn, hooks := range p.postParseHooks {
+		for _, hook := range hooks {
+			r := p.Resources[rn]
+			if r != nil {
+				hook(r)
+			}
+		}
 	}
 
 	return nil
@@ -529,6 +541,16 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 				inferRefsSeen[n] = true
 				p.inferUnspecifiedRefs(r2)
 				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+			}
+		}
+	}
+
+	// run all post-parse hooks
+	for rn, hooks := range p.postParseHooks {
+		for _, hook := range hooks {
+			r := p.Resources[rn]
+			if r != nil {
+				hook(r)
 			}
 		}
 	}
@@ -787,14 +809,7 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			}
 		}
 
-		// Rule 4: For any resource if there is a connector with that name, use it
-		n := ResourceName{Kind: ResourceKindConnector, Name: ref.Name}
-		if _, ok := p.Resources[n.Normalized()]; ok {
-			refs = append(refs, n)
-			continue
-		}
-
-		// Rule 5: Skip it
+		// Rule 4: Skip it
 	}
 
 	slices.SortFunc(refs, func(a, b ResourceName) int {
@@ -822,7 +837,7 @@ func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
 
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
-func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
+func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs []ResourceName, postParseHooks []postParseHook) (*Resource, error) {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
@@ -897,6 +912,11 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		}
 	}
 
+	// Track post-parse hooks
+	if len(postParseHooks) > 0 {
+		p.postParseHooks[r.Name.Normalized()] = postParseHooks
+	}
+
 	return r, nil
 }
 
@@ -965,6 +985,9 @@ func (p *Parser) deleteResource(r *Resource) {
 			p.resourceNamesForDataPaths[path] = slices.Delete(resources, idx, idx+1)
 		}
 	}
+
+	// Remove from postParseHooks
+	delete(p.postParseHooks, r.Name.Normalized())
 
 	// Track in deleted resources (unless it was in insertedResources, in which case it's not a real deletion)
 	if !foundInInserted {
@@ -1052,6 +1075,24 @@ func (p *Parser) defaultOLAPConnector() string {
 // Usually this means it's running on localhost with "rill start".
 func (p *Parser) isDev() bool {
 	return strings.EqualFold(p.Environment, "dev")
+}
+
+// addConnectorRef adds a post-parse hook to conditionally add a ref to the connector.
+// The hook runs after all resources are parsed and only adds a reference if the connector exists,
+// since connectors may not be explicitly defined as resources.
+func (p *Parser) addConnectorRef(node *Node, connectorName string) {
+	node.postParseHooks = append(node.postParseHooks, func(r *Resource) {
+		n := ResourceName{ResourceKindConnector, connectorName}.Normalized()
+		if _, ok := p.Resources[n]; !ok {
+			return
+		}
+		for _, ref := range r.Refs {
+			if ref.Normalized() == n {
+				return
+			}
+		}
+		r.Refs = append(r.Refs, n)
+	})
 }
 
 // pathIsSQL returns true if the path is a SQL file
@@ -1190,3 +1231,5 @@ func newDuckDBError(err error) error {
 		},
 	}
 }
+
+type postParseHook func(r *Resource)

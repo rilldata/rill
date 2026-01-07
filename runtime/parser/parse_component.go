@@ -72,7 +72,7 @@ func (p *Parser) parseComponent(node *Node) error {
 	node.Refs = append(node.Refs, refs...)
 
 	// Track component
-	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Refs, node.postParseHooks)
 	if err != nil {
 		return err
 	}

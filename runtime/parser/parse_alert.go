@@ -138,11 +138,13 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	if !isLegacyQuery {
 		var refs []ResourceName
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
+		var connector string
+		resolver, resolverProps, connector, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
+		p.addConnectorRef(node, connector)
 
 		// Query for: validate only one of user_id, user_email, or attributes is set
 		n := 0
@@ -270,7 +272,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Track alert
-	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs, node.postParseHooks)
 	if err != nil {
 		return err
 	}

@@ -92,11 +92,12 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Parse the resolver and its properties from the DataYAML
-	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
+	resolver, resolverProps, connector, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
 	if err != nil {
 		return err
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
+	p.addConnectorRef(node, connector)
 
 	securityRules, err := tmp.Security.Proto()
 	if err != nil {
@@ -108,7 +109,7 @@ func (p *Parser) parseAPI(node *Node) error {
 		}
 	}
 
-	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs, node.postParseHooks)
 	if err != nil {
 		return err
 	}

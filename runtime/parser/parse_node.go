@@ -29,6 +29,8 @@ type Node struct {
 	SQLPath           string
 	SQLAnnotations    map[string]any
 	SQLUsesTemplating bool
+
+	postParseHooks []postParseHook
 }
 
 // parseNode multiplexes to the appropriate parse function based on the node kind.

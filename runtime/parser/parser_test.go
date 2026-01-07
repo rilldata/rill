@@ -850,6 +850,49 @@ func TestRefInferrence(t *testing.T) {
 	}, diff)
 }
 
+func TestConnectorRef(t *testing.T) {
+	ctx := context.Background()
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// connector duckdb
+		`connectors/duckdb.yaml`: `
+driver: duckdb
+`,
+		// model m1
+		`models/m1.sql`: `
+SELECT 1
+`,
+	}
+	resources := []*Resource{
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			Refs:  []ResourceName{{Kind: ResourceKindConnector, Name: "duckdb"}},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["models/m1.sql"])})),
+				OutputConnector: "duckdb",
+				ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
+			},
+		},
+		// duckdb connector
+		{
+			Name:  ResourceName{Kind: ResourceKindConnector, Name: "duckdb"},
+			Paths: []string{"/connectors/duckdb.yaml"},
+			ConnectorSpec: &runtimev1.ConnectorSpec{
+				Driver: "duckdb",
+			},
+		},
+	}
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	files := map[string]string{

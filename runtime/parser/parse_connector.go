@@ -65,7 +65,7 @@ func (p *Parser) parseConnector(node *Node) error {
 	}
 
 	// Insert the connector
-	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs, node.postParseHooks)
 	if err != nil {
 		return err
 	}

@@ -179,7 +179,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 
 	// Track report
-	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs, node.postParseHooks)
 	if err != nil {
 		return err
 	}
