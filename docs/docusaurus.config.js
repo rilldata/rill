@@ -145,12 +145,17 @@ const config = {
               },
               {
                 to: "/reference/cli",
-                label: "CLI Reference",
+                label: "CLI",
+              },
+              {
+                to: "/reference/rill-iso-extensions",
+                label: "Rill ISO 8601",
               },
               {
                 to: "/api/admin/",
-                label: "API",
-              }
+                label: "REST API",
+              },
+
             ],
           },
           {
