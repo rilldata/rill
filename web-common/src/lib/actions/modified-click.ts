@@ -28,7 +28,7 @@ export function modified(params: Params) {
     }
 
     const event = (modifier ? `${modifier}-click` : "click") as keyof Events;
-    eventBus.emit(event, null);
+    eventBus.emit(event);
 
     if (handler) {
       await handler(e);
