@@ -868,6 +868,10 @@ export interface V1ListWhitelistedDomainsResponse {
 
 export type V1MagicAuthTokenAttributes = { [key: string]: unknown };
 
+export type V1MagicAuthTokenMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
+
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
@@ -882,7 +886,7 @@ export interface V1MagicAuthToken {
   resources?: V1ResourceName[];
   resourceType?: string;
   resourceName?: string;
-  filter?: V1Expression;
+  metricsViewFilters?: V1MagicAuthTokenMetricsViewFilters;
   fields?: string[];
   state?: string;
   displayName?: string;
@@ -1967,6 +1971,14 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
+/**
+ * Optional metrics view to filter mapping to apply as row filters in queries.
+This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+ */
+export type AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
+
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
@@ -1974,7 +1986,9 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   resourceType?: string;
   /** Name of the resource to grant access to. */
   resourceName?: string;
-  filter?: V1Expression;
+  /** Optional metrics view to filter mapping to apply as row filters in queries.
+This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries. */
+  metricsViewFilters?: AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters;
   /** Optional list of fields to limit access to. If empty, no field access rule will be added.
 This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
   fields?: string[];

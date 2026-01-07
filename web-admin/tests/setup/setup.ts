@@ -261,4 +261,68 @@ setup.describe("global setup", () => {
       }),
     ).toContainText("Last refreshed", { timeout: 15_000 });
   });
+
+  setup("should deploy the AdBids project", async ({ adminPage }) => {
+    // increase project quota for the organization
+    const { stdout: quotaUpdateStdout } = await execAsync(
+      `rill sudo quota set --org ${RILL_ORG_NAME} --projects 10`,
+    );
+    expect(quotaUpdateStdout).toContain(`Projects: 10`);
+
+    // Deploy the AdBids project
+    const { match } = await spawnAndMatch(
+      "rill",
+      [
+        "deploy",
+        "--path",
+        "../web-common/tests/projects/AdBids",
+        "--project",
+        "AdBids",
+        "--archive",
+        "--interactive=false",
+      ],
+      /https?:\/\/[^\s]+/,
+    );
+
+    // Navigate to the project URL and expect to see the successful deployment
+    const url = match[0];
+    await adminPage.goto(url);
+    await expect(
+      adminPage.getByRole("link", { name: RILL_ORG_NAME }),
+    ).toBeVisible(); // Organization breadcrumb
+    await expect(
+      adminPage.getByRole("link", { name: "AdBids", exact: true }),
+    ).toBeVisible(); // Project breadcrumb
+
+    // Expect to land on the project home page
+    await adminPage.waitForURL(`/${RILL_ORG_NAME}/AdBids`);
+    // Temporary fix to wait for the project to be ready.
+    // TODO: add a refetch to the project API
+    await expect
+      .poll(
+        async () => {
+          await adminPage.reload();
+          return adminPage.getByLabel("Project title").textContent();
+        },
+        { intervals: Array(4).fill(30_000), timeout: 120_000 },
+      )
+      .toContain(`Welcome to Untitled Rill Project`);
+
+    // Navigate to the dashboards page to validate the deployment
+    await adminPage.getByRole("link", { name: "Dashboards" }).click();
+    await adminPage.waitForURL("**/-/dashboards");
+
+    // Wait for the project to be ready
+    await expect(adminPage.getByLabel("Container title")).toHaveText(
+      "Project dashboards",
+    );
+
+    // Check that the dashboards are listed
+    await expect(
+      adminPage.getByRole("link", { name: "Adbids Canvas Dashboard" }).first(),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByRole("link", { name: "Adbids dashboard" }),
+    ).toBeVisible();
+  });
 });

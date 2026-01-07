@@ -258,6 +258,23 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // ShareConversation enables sharing of the conversation by adding metadata.
+  rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
+      body: "*"
+    };
+  }
+
+  // ForkConversation creates a new conversation by copying messages from an existing one.
+  // If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+  rpc ForkConversation(ForkConversationRequest) returns (ForkConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
+      body: "*"
+    };
+  }
+
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
@@ -1050,6 +1067,31 @@ message GetConversationRequest {
 message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
+  bool is_owner = 3; // would be false for shared conversations accessed by non-owners
+}
+
+// Request message for RuntimeService.ShareConversation
+message ShareConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // optional message ID up to which to share otherwise share all current messages
+  // only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+  // It supports a special value of "none" to unshare the conversation.
+  string until_message_id = 3;
+}
+
+// Response message for RuntimeService.ShareConversation
+message ShareConversationResponse {}
+
+// Request message for RuntimeService.ForkConversation
+message ForkConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.ForkConversation
+message ForkConversationResponse {
+  string conversation_id = 1; // new conversation ID
 }
 
 // Request message for RuntimeService.ListTools

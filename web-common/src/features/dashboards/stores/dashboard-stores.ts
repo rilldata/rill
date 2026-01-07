@@ -114,6 +114,7 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
+
   exploreState.whereFilter =
     filterExpressions(exploreState.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;

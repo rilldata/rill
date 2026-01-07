@@ -1199,10 +1199,12 @@ components:
                     items:
                         type: string
                     type: array
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 id:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    type: object
                 projectId:
                     type: string
                 resourceName:
@@ -5066,8 +5068,13 @@ paths:
                                     items:
                                         type: string
                                     type: array
-                                filter:
-                                    $ref: '#/components/schemas/v1Expression'
+                                metricsViewFilters:
+                                    additionalProperties:
+                                        $ref: '#/components/schemas/v1Expression'
+                                    description: |-
+                                        Optional metrics view to filter mapping to apply as row filters in queries.
+                                        This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+                                    type: object
                                 resourceName:
                                     description: Name of the resource to grant access to.
                                     type: string
