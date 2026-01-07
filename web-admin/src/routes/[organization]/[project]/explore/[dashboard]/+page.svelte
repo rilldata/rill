@@ -143,7 +143,12 @@
     <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricsViewName}
     {#key exploreName}
-      <StateManagersProvider {metricsViewName} {exploreName}>
+      <StateManagersProvider
+        {metricsViewName}
+        {exploreName}
+        organization={orgName}
+        project={projectName}
+      >
         <DashboardStateManager
           {exploreName}
           storageNamespacePrefix={`${orgName}__${projectName}__`}

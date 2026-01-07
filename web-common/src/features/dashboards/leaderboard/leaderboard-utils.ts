@@ -11,6 +11,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import type { JsonValue } from "@bufbuild/protobuf";
 
 export type LeaderboardItemData = {
   /**
@@ -158,7 +159,7 @@ export function getSort(
 }
 
 export function prepareLeaderboardItemData(
-  values: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  values: JsonValue[] | undefined,
   dimensionName: string,
   measureNames: string[],
   numberAboveTheFold: number,
@@ -180,7 +181,7 @@ export function prepareLeaderboardItemData(
   const belowTheFoldValues = new Set(selectedValues);
 
   for (const value of values) {
-    if (aboveTheFold.length === numberAboveTheFold) break;
+    if (aboveTheFold.length === numberAboveTheFold || !value) break;
 
     const dimensionValue = value[dimensionName] as string;
 

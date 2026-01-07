@@ -148,6 +148,47 @@ export async function fetchProjectDeploymentDetails(
   };
 }
 
+export async function fetchProject(
+  orgName: string,
+  projectName: string,
+  token: string | undefined,
+) {
+  let queryKey: QueryKey;
+  let queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProject>>
+  >;
+
+  if (token) {
+    queryKey = getAdminServiceGetProjectWithBearerTokenQueryKey(
+      orgName,
+      projectName,
+      token,
+      {},
+    );
+
+    queryFn = ({ signal }) =>
+      adminServiceGetProjectWithBearerToken(
+        orgName,
+        projectName,
+        token,
+        {},
+        signal,
+      );
+  } else {
+    queryKey = getAdminServiceGetProjectQueryKey(orgName, projectName);
+
+    queryFn = ({ signal }) =>
+      adminServiceGetProject(orgName, projectName, {}, signal);
+  }
+
+  const projResp = await queryClient.fetchQuery({
+    queryKey,
+    queryFn,
+  });
+
+  return projResp;
+}
+
 export function useGithubLastSynced(instanceId: string) {
   return useResourceV2(
     instanceId,

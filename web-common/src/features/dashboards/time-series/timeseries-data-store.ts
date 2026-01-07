@@ -14,6 +14,8 @@ import {
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewTimeSeriesResponse,
+  type V1TimeSeriesValue,
+  type V1TimeSeriesValueRecords,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
@@ -28,6 +30,17 @@ import {
   type DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
+import {
+  toConnectRPCTimeGrain,
+  toTimestamp,
+  useQueryServiceClient,
+} from "@rilldata/web-common/runtime-client/connectrpc";
+import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
+import type {
+  MetricsViewTimeSeriesResponse,
+  TimeSeriesValue,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 
 export interface TimeSeriesDatum {
   ts?: Date;
@@ -56,7 +69,7 @@ export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
-): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
+): CreateQueryResult<MetricsViewTimeSeriesResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
@@ -65,43 +78,52 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      return createQueryServiceMetricsViewTimeSeries(
-        runtime.instanceId,
-        metricsViewName,
-        {
-          measureNames: measures,
-          where: sanitiseExpression(
-            mergeDimensionAndMeasureFilters(
-              dashboardStore.whereFilter,
-              dashboardStore.dimensionThresholdFilters,
+      return useQueryServiceClient({
+        organization: ctx.organization,
+        project: ctx.project,
+      })
+        .queryServiceClient.metricsViewTimeSeries(
+          {
+            metricsViewName: metricsViewName,
+            measureNames: measures,
+            where: sanitiseExpression(
+              mergeDimensionAndMeasureFilters(
+                dashboardStore.whereFilter,
+                dashboardStore.dimensionThresholdFilters,
+              ),
+              undefined,
+            ) as Expression,
+            timeStart: toTimestamp(
+              isComparison
+                ? timeControls.comparisonAdjustedStart
+                : timeControls.adjustedStart,
             ),
-            undefined,
-          ),
-          timeStart: isComparison
-            ? timeControls.comparisonAdjustedStart
-            : timeControls.adjustedStart,
-          timeEnd: isComparison
-            ? timeControls.comparisonAdjustedEnd
-            : timeControls.adjustedEnd,
-          timeGranularity:
-            timeControls.selectedTimeRange?.interval ??
-            timeControls.minTimeGrain,
-          timeZone: dashboardStore.selectedTimezone,
-        },
-        {
-          query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              // in case of comparison, we need to wait for the comparison start time to be available
-              (!isComparison || !!timeControls.comparisonAdjustedStart),
-
-            placeholderData: keepPreviousData,
-            refetchOnMount: false,
+            timeEnd: toTimestamp(
+              isComparison
+                ? timeControls.comparisonAdjustedEnd
+                : timeControls.adjustedEnd,
+            ),
+            timeGranularity: toConnectRPCTimeGrain(
+              timeControls.selectedTimeRange?.interval ??
+                timeControls.minTimeGrain,
+            ),
+            timeZone: dashboardStore.selectedTimezone,
           },
-        },
-        ctx.queryClient,
-      ).subscribe(set);
+          {
+            query: {
+              enabled:
+                !!timeControls.ready &&
+                !!ctx.dashboardStore &&
+                // in case of comparison, we need to wait for the comparison start time to be available
+                (!isComparison || !!timeControls.comparisonAdjustedStart),
+
+              placeholderData: keepPreviousData,
+              refetchOnMount: false,
+            },
+          },
+        )
+        .create()
+        .subscribe(set);
     },
   );
 }
@@ -189,7 +211,7 @@ export function createTimeSeriesDataStore(
         );
       }
       let comparisonTimeSeries:
-        | CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError>
+        | CreateQueryResult<MetricsViewTimeSeriesResponse, HTTPError>
         | Writable<null> = writable(null);
       let comparisonTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
@@ -236,8 +258,8 @@ export function createTimeSeriesDataStore(
           if (!primary.isFetching && interval) {
             const intervalDuration = TIME_GRAIN[interval]?.duration as Period;
             preparedTimeSeriesData = prepareTimeSeries(
-              primary?.data?.data || [],
-              comparison?.data?.data || [],
+              toV1TimeSeriesValue(primary?.data?.data),
+              toV1TimeSeriesValue(comparison?.data?.data),
               intervalDuration,
               dashboardStore.selectedTimezone,
             );
@@ -281,3 +303,17 @@ export function createTimeSeriesDataStore(
 export const useTimeSeriesDataStore = memoizeMetricsStore<TimeSeriesDataStore>(
   (ctx: StateManagers) => createTimeSeriesDataStore(ctx),
 );
+
+export function toV1TimeSeriesValue(
+  records: TimeSeriesValue[] | undefined,
+): V1TimeSeriesValue[] {
+  if (!records) return [];
+
+  return records.map((d) => {
+    return <V1TimeSeriesValue>{
+      bin: d.bin,
+      records: d.records?.toJson() as V1TimeSeriesValueRecords | undefined,
+      ts: d.ts?.toJson()?.toString(),
+    };
+  });
+}

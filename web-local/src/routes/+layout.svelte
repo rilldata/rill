@@ -28,6 +28,7 @@
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
   import "@rilldata/web-common/app.css";
+  import ProjectProvider from "@rilldata/web-common/features/project/ProjectProvider.svelte";
 
   export let data: LayoutData;
 
@@ -77,20 +78,24 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <FileAndResourceWatcher {host} {instanceId}>
-    <div class="body h-screen w-screen overflow-hidden absolute flex flex-col">
-      {#if data.initialized}
-        <BannerCenter />
-        <RepresentingUserBanner />
-        <ApplicationHeader {mode} />
-        {#if $deploy}
-          <RemoteProjectManager />
+  <ProjectProvider organization="default" project="default">
+    <FileAndResourceWatcher {host} {instanceId}>
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
+        {#if data.initialized}
+          <BannerCenter />
+          <RepresentingUserBanner />
+          <ApplicationHeader {mode} />
+          {#if $deploy}
+            <RemoteProjectManager />
+          {/if}
         {/if}
-      {/if}
 
-      <slot />
-    </div>
-  </FileAndResourceWatcher>
+        <slot />
+      </div>
+    </FileAndResourceWatcher>
+  </ProjectProvider>
 </QueryClientProvider>
 
 {#if $overlay !== null}

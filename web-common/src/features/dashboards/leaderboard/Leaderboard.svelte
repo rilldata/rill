@@ -41,6 +41,10 @@
   import { valueColumn, COMPARISON_COLUMN_WIDTH } from "./leaderboard-widths";
   import type { selectedDimensionValues } from "../state-managers/selectors/dimension-filters";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
+  import { useQueryServiceClient } from "@rilldata/web-common/runtime-client/connectrpc";
+  import { toTimestamp } from "@rilldata/web-common/runtime-client/connectrpc";
+  import { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+  import type { MetricsViewAggregationMeasure } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 
   const gutterWidth = 24;
 
@@ -164,25 +168,71 @@
     !!comparisonTimeRange,
   );
 
-  $: sortedQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
+  const {
+    queryServiceClient: { metricsViewAggregation },
+  } = useQueryServiceClient();
+
+  $: connectRpcMeasures = measures.map((measure) => {
+    const computeCase = measure.name?.endsWith("_prev")
+      ? "comparisonValue"
+      : measure.name?.endsWith("_delta")
+        ? "comparisonDelta"
+        : measure.name?.endsWith("_delta_perc")
+          ? "comparisonRatio"
+          : undefined;
+
+    return {
+      name: measure.name,
+      compute: computeCase
+        ? { case: computeCase, value: { measure: measures[0].name } }
+        : undefined,
+    };
+  }) as MetricsViewAggregationMeasure[];
+
+  $: sortedQuery = metricsViewAggregation(
     {
+      metricsView: metricsViewName,
       dimensions: [{ name: dimensionName }],
-      measures,
-      timeRange,
-      comparisonTimeRange,
+      measures: connectRpcMeasures,
+      timeRange: {
+        start: toTimestamp(timeRange.start),
+        end: toTimestamp(timeRange.end),
+      },
+      comparisonTimeRange: {
+        start: toTimestamp(comparisonTimeRange?.start),
+        end: toTimestamp(comparisonTimeRange?.end),
+      },
       sort,
-      where,
-      limit: queryLimit.toString(),
-      offset: "0",
+      where: where as Expression,
+      offset: 0n,
+      limit: BigInt(queryLimit),
     },
     {
       query: {
         enabled: visible && timeControlsReady,
       },
     },
-  );
+  ).create();
+
+  // $: sortedQuery = createQueryServiceMetricsViewAggregation(
+  //   instanceId,
+  //   metricsViewName,
+  //   {
+  //     dimensions: [{ name: dimensionName }],
+  //     measures,
+  //     timeRange,
+  //     comparisonTimeRange,
+  //     sort,
+  //     where,
+  //     limit: queryLimit.toString(),
+  //     offset: "0",
+  //   },
+  //   {
+  //     query: {
+  //       enabled: visible && timeControlsReady,
+  //     },
+  //   },
+  // );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -214,7 +264,7 @@
 
   $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
     prepareLeaderboardItemData(
-      sortedData?.data,
+      sortedData?.data?.map((struct) => struct.toJson()) ?? [],
       dimensionName,
       leaderboardMeasureNames,
       slice,

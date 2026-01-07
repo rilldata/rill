@@ -41,6 +41,7 @@ import {
   prepareTimeSeries,
   transformAggregateDimensionData,
 } from "./utils";
+import { toV1TimeSeriesValue } from "./timeseries-data-store";
 
 const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
@@ -357,7 +358,7 @@ export function getDimensionValueTimeSeries(
               dimensionName,
               measures,
               batchedTopList[i],
-              timeSeriesData?.data?.data || [],
+              toV1TimeSeriesValue(timeSeriesData?.data?.data),
               batchedAggTimeSeriesData[i]?.data?.data || [],
             ),
           );
@@ -373,7 +374,7 @@ export function getDimensionValueTimeSeries(
               measures,
               // For chart surface, we only have 1 batch
               batchedTopList[0],
-              comparisonTimeSeriesData?.data?.data || [],
+              toV1TimeSeriesValue(comparisonTimeSeriesData?.data?.data),
               batchedAggTimeSeriesData[1]?.data?.data || [],
             );
           }

@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { setContext } from "svelte";
+  import { getContext, setContext } from "svelte";
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
   import { useExploreState } from "../stores/dashboard-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let metricsViewName: string | undefined;
   export let exploreName: string;
+  export let organization: string = getContext("organization");
+  export let project: string = getContext("project");
   export let visualEditing = false;
 
   const stateManagers = metricsViewName
@@ -13,6 +15,8 @@
         queryClient,
         metricsViewName,
         exploreName,
+        organization,
+        project,
       })
     : undefined;
 

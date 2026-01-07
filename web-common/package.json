@@ -18,7 +18,9 @@
     "build-rill-time-grammar": "nearleyc src/features/dashboards/url-state/time-ranges/rill-time.ne -o src/features/dashboards/url-state/time-ranges/rill-time.cjs"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.63.0",
     "@bufbuild/protobuf": "^1.0.0",
+    "@bufbuild/protoc-gen-es": "^1.10.0",
     "@codemirror/autocomplete": "^6.18.1",
     "@codemirror/commands": "^6.7.0",
     "@codemirror/lang-json": "^6.0.1",

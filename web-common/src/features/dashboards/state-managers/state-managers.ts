@@ -40,6 +40,8 @@ import {
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
+  organization: string;
+  project: string;
   metricsViewName: Writable<string>;
   exploreName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
@@ -80,10 +82,14 @@ export function createStateManagers({
   queryClient,
   metricsViewName,
   exploreName,
+  organization,
+  project,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
   exploreName: string;
+  organization: string;
+  project: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const exploreNameStore = writable(exploreName);
@@ -161,6 +167,8 @@ export function createStateManagers({
     validSpecStore,
     queryClient,
     dashboardStore,
+    organization,
+    project,
 
     updateDashboard,
     /**

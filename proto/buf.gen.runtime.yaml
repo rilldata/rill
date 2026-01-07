@@ -1,0 +1,20 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/rilldata/rill/proto/gen
+  disable:
+    - module: buf.build/googleapis/googleapis
+      file_option: go_package_prefix
+    - module: buf.build/envoyproxy/protoc-gen-validate
+      file_option: go_package_prefix
+plugins:
+  - remote: buf.build/connectrpc/go:v1.16.2
+    out: gen
+    opt:
+      - paths=source_relative
+  - remote: buf.build/connectrpc/es:v1.4.0
+    out: ../web-common/src/proto/gen
+    opt:
+      - target=ts
