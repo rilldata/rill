@@ -121,7 +121,10 @@ export class Conversation {
    * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(context: RuntimeServiceCompleteBody): Promise<void> {
+  public async sendMessage(
+    context: RuntimeServiceCompleteBody,
+    options?: { onStreamStart?: () => void },
+  ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -140,7 +143,8 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      this.events.emit("stream-start");
+      options?.onStreamStart?.(); // Callback for direct callers
+      this.events.emit("stream-start"); // Event for external listeners
       // Start streaming - this establishes the connection
       const streamPromise = this.startStreaming(prompt, context);
 
