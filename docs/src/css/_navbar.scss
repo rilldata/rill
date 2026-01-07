@@ -361,6 +361,41 @@
         font-size: 0.875rem;
       }
     }
+    
+    /* Apply same styling to HTML links (GitHub, Blog) to match left-side items */
+    .navbar-icon-link {
+      display: block;
+      padding: 0.2rem 0rem;
+      margin: 0.25rem 0;
+      border-radius: 0.375rem;
+      color: var(--ifm-color-black);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: background-color 0.2s ease;
+      
+      &:hover,
+      &:focus {
+        color: var(--ifm-color-primary);
+        background-color: rgba(0, 0, 0, 0.05);
+        font-weight: 600;
+      }
+    }
+  }
+  
+  /* Dark mode for mobile sidebar HTML links */
+  [data-theme='dark'] & {
+    .navbar-sidebar__item {
+      .navbar-icon-link {
+        color: var(--ifm-color-white);
+        
+        &:hover,
+        &:focus {
+          color: var(--ifm-color-primary);
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
   }
   
   /* Ensure consistent spacing between all items */
