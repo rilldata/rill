@@ -33718,7 +33718,9 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	// no validation rules for GitBranch
 
-	// no validation rules for GitEditBranch
+	// no validation rules for Editable
+
+	// no validation rules for PrimaryBranch
 
 	// no validation rules for ManagedGitRepo
 

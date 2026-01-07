@@ -483,7 +483,7 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 		return fmt.Errorf("commits are not supported for this repo type")
 	}
 
-	return r.git.commitAndPushToDefaultBranch(ctx, message, force)
+	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -538,7 +538,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		err := r.git.commitToEditBranch(ctx)
+		err := r.git.commitToDefaultBranch(ctx)
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}
@@ -728,7 +728,8 @@ func (r *repo) checkHandshake(ctx context.Context, force bool) error {
 
 		r.git.remoteURL = meta.GitUrl
 		r.git.defaultBranch = meta.GitBranch
-		r.git.editBranch = meta.GitEditBranch
+		r.git.editableDepl = meta.Editable
+		r.git.primaryBranch = meta.PrimaryBranch
 		r.git.subpath = meta.GitSubpath
 		r.git.managedRepo = meta.ManagedGitRepo
 	} else {

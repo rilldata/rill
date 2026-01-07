@@ -2626,9 +2626,10 @@ message GetRepoMetaResponse {
   string git_subpath = 3;
   // The branch to use for the deployment.
   string git_branch = 7;
-  // A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-  // This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
-  string git_edit_branch = 8;
+  // Whether editing is allowed. Set to true for dev deployments.
+  bool editable = 11;
+  // Primary branch of the project.
+  string primary_branch = 12;
   // Whether the git repo is managed by Rill.
   bool managed_git_repo = 10; 
   // Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).

@@ -12069,12 +12069,18 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitBranch = "";
 
   /**
-   * A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-   * This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+   * Whether editing is allowed. Set to true for dev deployments.
    *
-   * @generated from field: string git_edit_branch = 8;
+   * @generated from field: bool editable = 11;
    */
-  gitEditBranch = "";
+  editable = false;
+
+  /**
+   * Primary branch of the project.
+   *
+   * @generated from field: string primary_branch = 12;
+   */
+  primaryBranch = "";
 
   /**
    * Whether the git repo is managed by Rill.
@@ -12117,7 +12123,8 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "git_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "git_edit_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "managed_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

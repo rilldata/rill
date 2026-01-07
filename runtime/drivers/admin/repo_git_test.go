@@ -34,7 +34,6 @@ func TestGitRepo_pullInner(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
-					editBranch:    "", // Non-editable
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -70,7 +69,6 @@ func TestGitRepo_pullInner(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
-					editBranch:    "", // Non-editable
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -99,22 +97,15 @@ func TestGitRepo_pullInner(t *testing.T) {
 		{
 			name: "create and switch to edit branch in editable mode",
 			setupRepo: func(t *testing.T, localDir, remoteURL string) *gitRepo {
-				// Clone the repository first
-				_, err := git.PlainClone(localDir, false, &git.CloneOptions{
-					URL:           remoteURL,
-					RemoteName:    "origin",
-					ReferenceName: plumbing.ReferenceName("refs/heads/main"),
-					SingleBranch:  false, // Allow multiple branches for editable mode
-				})
-				require.NoError(t, err)
-
-				setupGitConfig(t, localDir) // Ensure git config is set up
+				// Remove the local directory to simulate no existing repo
+				require.NoError(t, os.RemoveAll(localDir))
 				return &gitRepo{
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
-					defaultBranch: "main",
-					editBranch:    "edit-branch", // Editable
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -173,8 +164,9 @@ func TestGitRepo_pullInner(t *testing.T) {
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
-					defaultBranch: "main",
-					editBranch:    "edit-branch",
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -218,7 +210,6 @@ func TestGitRepo_pullInner(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
-					editBranch:    "", // Non-editable, so force should always be true
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -313,8 +304,9 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
-					defaultBranch: "main",
-					editBranch:    "edit-branch",
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -376,8 +368,9 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
-					defaultBranch: "main",
-					editBranch:    "edit-branch",
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -442,8 +435,9 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
-					defaultBranch: "main",
-					editBranch:    "edit-branch",
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -508,8 +502,9 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					h:             &Handle{logger: zap.NewNop()},
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
-					defaultBranch: "main",
-					editBranch:    "edit-branch",
+					defaultBranch: "edit-branch",
+					editableDepl:  true,
+					primaryBranch: "main",
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -562,7 +557,6 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 					repoDir:       localDir,
 					remoteURL:     remoteURL,
 					defaultBranch: "main",
-					editBranch:    "", // Non-editable
 					subpath:       "",
 					managedRepo:   true,
 				}
@@ -606,7 +600,7 @@ func TestGitRepo_commitAndPushToDefaultBranch(t *testing.T) {
 
 			// Execute commitAndPushToDefaultBranch
 			ctx := context.Background()
-			err := repo.commitAndPushToDefaultBranch(ctx, tt.message, tt.force)
+			err := repo.commitAndPushToPrimaryBranch(ctx, tt.message, tt.force)
 
 			// Verify error expectation
 			if tt.expectError {

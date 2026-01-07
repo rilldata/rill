@@ -30,7 +30,8 @@ type gitRepo struct {
 
 	remoteURL     string // Note that repo.checkSyncHandshake may update it at any time
 	defaultBranch string // Note that repo.checkSyncHandshake may update it at any time
-	editBranch    string // Does not change. Only set for dev deployments.
+	primaryBranch string // Primary branch of the project.
+	editableDepl  bool   // Whether this is a dev deployment where editing is allowed
 	subpath       string // Note that repo.checkSyncHandshake may update it at any time
 	managedRepo   bool   // Whether the repo is managed by Rill
 }
@@ -72,112 +73,98 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 		}
 
 		cloneOptions := &git.CloneOptions{
-			URL:           r.remoteURL,
-			RemoteName:    "origin",
-			ReferenceName: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-			SingleBranch:  !r.editable(),
+			URL:          r.remoteURL,
+			SingleBranch: r.primaryBranch == r.defaultBranch,
+			NoCheckout:   true,
 		}
 
-		_, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
-		return err
-	}
-
-	// Repository exists, pull latest changes
-
-	// Ensure the remote URL is correct
-	_ = repo.DeleteRemote("origin")
-	remote, err := repo.CreateRemote(&config.RemoteConfig{
-		Name: "origin",
-		URLs: []string{r.remoteURL},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to set remote URL: %w", err)
-	}
-
-	// check what is the current branch
-	head, err := repo.Head()
-	if err != nil {
-		return fmt.Errorf("failed to get current branch: %w", err)
-	}
-	onEditBranch := head.Name().Short() == r.editBranch
-
-	// Fetch the remote changes, only default branch and edit branch (if applicable)
-	refSpecs := []config.RefSpec{
-		config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.defaultBranch, r.defaultBranch)),
-	}
-	if onEditBranch {
-		refSpecs = append(refSpecs, config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.editBranch, r.editBranch)))
-	}
-	err = remote.Fetch(&git.FetchOptions{
-		RefSpecs: refSpecs,
-		Force:    true,
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return fmt.Errorf("failed to fetch from remote: %w", err)
-	}
-
-	// If we are not on the edit branch, we checkout the default branch.
-	if !onEditBranch {
-		// Checkout the default branch
-		worktree, err := repo.Worktree()
+		repo, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
 		if err != nil {
-			return fmt.Errorf("failed to get worktree: %w", err)
+			return nil
 		}
-		err = worktree.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
-			Force:  true,
+	} else {
+		// Repository exists, pull latest changes
+
+		// Ensure the remote URL is correct
+		_ = repo.DeleteRemote("origin")
+		remote, err := repo.CreateRemote(&config.RemoteConfig{
+			Name: "origin",
+			URLs: []string{r.remoteURL},
 		})
 		if err != nil {
-			return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
+			return fmt.Errorf("failed to set remote URL: %w", err)
 		}
 
-		// Hard reset to remote branch
-		err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
-		if err != nil {
-			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
+		// Fetch the remote changes
+		refSpecs := []config.RefSpec{
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.defaultBranch, r.defaultBranch)),
+		}
+		err = remote.Fetch(&git.FetchOptions{
+			RefSpecs: refSpecs,
+			Force:    true,
+		})
+		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return fmt.Errorf("failed to fetch from remote: %w", err)
 		}
 	}
 
-	// If not editable, we stay on the default branch.
-	if !r.editable() {
-		return nil
-	}
-
-	// We're in editable mode, so r.editBranch is set. We want to pull/create it and switch to it.
-	// The edit branch enables us to commit progress when closing (e.g. due to hibernation) without affecting the default branch.
-	// When pulling the editBranch, we should force pull if there are conflicts even if `force` is false (to bring us in sync with changes made in a split-brain scenario).
-	// To reduce the chance of conflicts, we should also try to merge the default branch into the edit branch (but only force merge if `force` is true).
-
+	// Checkout the default branch
 	worktree, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
-	if !onEditBranch {
-		// Create the edit branch if it doesn't exist
-		err = worktree.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", r.editBranch)),
-			Create: true,
-			Force:  true,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create edit branch %q: %w", r.editBranch, err)
+	err = worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
+		Force:  true,
+	})
+	if err != nil {
+		if errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable() {
+			// // In editable mode, the default branch may not exist yet on remote.
+			// the branch does not exist yet, checkout primary branch and create the default branch from there
+			err = worktree.Checkout(&git.CheckoutOptions{
+				Branch: plumbing.ReferenceName("refs/heads/" + r.primaryBranch),
+				Force:  true,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to checkout primary branch %q: %w", r.primaryBranch, err)
+			}
+			// create the default branch
+			err = worktree.Checkout(&git.CheckoutOptions{
+				Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
+				Create: true,
+				Force:  true,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create and checkout default branch %q: %w", r.defaultBranch, err)
+			}
+			return nil
 		}
-	} else {
-		// Hard reset to remote branch (this discards all local changes)
-		err = resetToRemoteTrackingBranch(repo, worktree, r.editBranch)
-		if err != nil {
-			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.editBranch, err)
+		return fmt.Errorf("failed to checkout branch %q: %w", r.defaultBranch, err)
+	}
+
+	// Hard reset to remote branch
+	err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
+	if err != nil {
+		if !(errors.Is(err, plumbing.ErrReferenceNotFound) && r.editable()) { // In editable mode, the default branch may not exist yet on remote.
+			return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
 		}
 	}
 
-	// merge default branch into edit branch
+	if !r.editable() {
+		return nil
+	}
+
+	// We're in editable mode.
+	// To reduce the chance of conflicts, we should also try to merge the primary branch into the default branch (but only force merge if `force` is true).
+
+	// merge primary branch into edit branch
 	if force {
-		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.defaultBranch)
+		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.primaryBranch)
 	} else {
-		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
+		_, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.primaryBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge default branch %q into edit branch %q: %w", r.defaultBranch, r.editBranch, err)
+		return fmt.Errorf("failed to merge primary branch %q into default branch %q: %w", r.primaryBranch, r.defaultBranch, err)
 	}
 	return nil
 }
@@ -185,7 +172,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 // editable returns true if its allowed to edit files in the repository.
 // Will be true for dev deployments with an edit branch, and false for prod deployments that serve files on the default branch.
 func (r *gitRepo) editable() bool {
-	return r.editBranch != ""
+	return r.editableDepl
 }
 
 // root returns the absolute path to the root of the Rill project.
@@ -196,15 +183,15 @@ func (r *gitRepo) root() string {
 	return r.repoDir
 }
 
-// commitToEditBranch auto-commits any current changes to the edit branch of the repository.
+// commitToDefaultBranch auto-commits any current changes to the default branch of the repository. This is only allowed if editable is true.
 // This is done to checkpoint progress when the handle is closed.
 // If there are conflicts, it should drop any local changes.
-func (r *gitRepo) commitToEditBranch(ctx context.Context) error {
+func (r *gitRepo) commitToDefaultBranch(ctx context.Context) error {
 	if !r.editable() {
-		return fmt.Errorf("cannot commit to the edit branch because it is not configured")
+		return fmt.Errorf("cannot commit to the default branch because it is not configured")
 	}
 
-	r.h.logger.Info("commitToEditBranch", observability.ZapCtx(ctx))
+	r.h.logger.Info("commitToDefaultBranch", observability.ZapCtx(ctx))
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
 		return err
@@ -223,22 +210,22 @@ func (r *gitRepo) commitToEditBranch(ctx context.Context) error {
 		RemoteName: "origin",
 		RemoteURL:  r.remoteURL,
 		RefSpecs: []config.RefSpec{
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.editBranch, r.editBranch)),
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to push changes to remote edit branch: %w", err)
+		return fmt.Errorf("failed to push changes to remote default branch: %w", err)
 	}
 	return nil
 }
 
 // commitAndPush commits changes to the repository and pushes them to the remote.
-func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message string, force bool) error {
+func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message string, force bool) (resErr error) {
 	if !r.editable() {
 		return fmt.Errorf("cannot commit to this repository because it is not marked editable")
 	}
 
-	r.h.logger.Info("commitAndPushToDefaultBranch", zap.String("message", message), zap.Bool("force", force), observability.ZapCtx(ctx))
+	r.h.logger.Info("commitAndPushToPrimaryBranch", zap.String("message", message), zap.Bool("force", force), observability.ZapCtx(ctx))
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
 		return fmt.Errorf("failed to open repository: %w", err)
@@ -251,57 +238,58 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
-	// Fetch the default branch to ensure we are up-to-date
+	// Fetch the primary branch to ensure we are up-to-date
 	err = repo.FetchContext(ctx, &git.FetchOptions{
 		RemoteURL: r.remoteURL,
-		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.defaultBranch, r.defaultBranch))},
+		RefSpecs:  []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", r.primaryBranch, r.primaryBranch))},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return fmt.Errorf("failed to fetch default branch %q: %w", r.defaultBranch, err)
+		return fmt.Errorf("failed to fetch primary branch %q: %w", r.primaryBranch, err)
 	}
 
-	// Switch to the default branch
+	// Switch to the primary branch
 	worktree, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 	defer func() {
-		// switch back to the edit branch
+		// switch back to the default branch
 		err := worktree.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName("refs/heads/" + r.editBranch),
+			Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
 			Force:  true,
 		})
 		if err != nil {
-			r.h.logger.Error("failed to switch back to edit branch after commit", zap.String("editBranch", r.editBranch), zap.Error(err))
+			resErr = errors.Join(err, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
+			return
 		}
 	}()
 
 	err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + r.defaultBranch),
+		Branch: plumbing.ReferenceName("refs/heads/" + r.primaryBranch),
 		Force:  true,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err)
+		return fmt.Errorf("failed to checkout primary branch %q: %w", r.primaryBranch, err)
 	}
-	err = resetToRemoteTrackingBranch(repo, worktree, r.defaultBranch)
+	err = resetToRemoteTrackingBranch(repo, worktree, r.primaryBranch)
 	if err != nil {
-		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.defaultBranch, err)
+		return fmt.Errorf("failed to reset to remote tracking branch %q: %w", r.primaryBranch, err)
 	}
 
-	// Merge the edit branch into the default branch
+	// Merge the default branch into the primary branch
 	merged := true
 	if force {
-		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.editBranch)
+		err = gitutil.MergeWithTheirsStrategy(r.repoDir, r.defaultBranch)
 	} else {
-		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.editBranch)
+		merged, err = gitutil.MergeWithBailOnConflict(r.repoDir, r.defaultBranch)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to merge edit branch %q into default branch %q: %w", r.editBranch, r.defaultBranch, err)
+		return fmt.Errorf("failed to merge default branch %q into primary branch %q: %w", r.defaultBranch, r.primaryBranch, err)
 	}
 
 	if !merged {
 		// If the merge was aborted no need to push the changes
-		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("editBranch", r.editBranch), zap.String("defaultBranch", r.defaultBranch))
+		r.h.logger.Warn("Merge aborted due to conflicts, not pushing changes", zap.String("primaryBranch", r.primaryBranch), zap.String("defaultBranch", r.defaultBranch))
 		return nil
 	}
 
@@ -311,7 +299,7 @@ func (r *gitRepo) commitAndPushToDefaultBranch(ctx context.Context, message stri
 		RemoteURL:  r.remoteURL,
 		RefSpecs: []config.RefSpec{
 			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.defaultBranch, r.defaultBranch)),
-			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.editBranch, r.editBranch)),
+			config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", r.primaryBranch, r.primaryBranch)),
 		},
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {

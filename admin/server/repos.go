@@ -81,18 +81,14 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 	ep.Password = token
 	gitURL := ep.String()
 
-	var editBranch string
-	if depl != nil {
-		editBranch = depl.Branch
-	}
-
 	return &adminv1.GetRepoMetaResponse{
 		ExpiresOn:      timestamppb.New(expiresAt),
 		LastUpdatedOn:  timestamppb.New(proj.UpdatedOn),
 		GitUrl:         gitURL,
 		GitSubpath:     proj.Subpath,
 		GitBranch:      depl.Branch,
-		GitEditBranch:  editBranch,
+		Editable:       depl.Editable,
+		PrimaryBranch:  proj.PrimaryBranch,
 		ManagedGitRepo: proj.ManagedGitRepoID != nil,
 	}, nil
 }
