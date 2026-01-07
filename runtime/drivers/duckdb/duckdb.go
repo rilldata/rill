@@ -510,11 +510,13 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"INSTALL 'icu'",
 		"INSTALL 'parquet'",
 		"INSTALL 'httpfs'",
+		"INSTALL 'spatial'",
 		"LOAD 'json'",
 		"LOAD 'sqlite'",
 		"LOAD 'icu'",
 		"LOAD 'parquet'",
 		"LOAD 'httpfs'",
+		"LOAD 'spatial'",
 		"SET GLOBAL timezone='UTC'",
 		"SET GLOBAL old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)
