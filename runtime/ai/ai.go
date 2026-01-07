@@ -104,6 +104,11 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
 		}
+		retrieveUntilMessageID := session.SharedUntilMessageID
+		if session.OwnerID == opts.Claims.UserID || opts.Claims.SkipChecks {
+			// If the user owns the session or skipCheck enabled, they can see all messages.
+			retrieveUntilMessageID = ""
+		}
 
 		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
 		if err != nil {
@@ -122,6 +127,10 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 				ContentType: MessageContentType(m.ContentType),
 				Content:     m.Content,
 			})
+			// only load messages up to and including that retrieveUntilMessageID; messages are ordered by "Index" ascending.
+			if m.ID == retrieveUntilMessageID {
+				break
+			}
 		}
 	}
 	if opts.SessionID == "" {
@@ -140,9 +149,9 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
-	// Check access: for now, only allow users to access their own sessions.
+	// Check access: for now, only allow users to access their own sessions or shared sessions with trimmed messages.
 	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
-	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks {
+	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks && session.SharedUntilMessageID == "" {
 		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 
@@ -188,6 +197,71 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	return &Session{
 		BaseSession: base,
 	}, nil
+}
+
+// ForkSession creates a new session cloned from an existing session.
+func (r *Runner) ForkSession(ctx context.Context, opts *SessionOptions) (string, error) {
+	if opts.SessionID == "" {
+		return "", errors.New("cannot fork session: SessionID is empty")
+	}
+
+	session, err := r.Session(ctx, opts)
+	if err != nil {
+		return "", fmt.Errorf("failed to load session to fork: %w", err)
+	}
+
+	forked := &drivers.AISession{
+		ID:                  uuid.NewString(),
+		InstanceID:          opts.InstanceID,
+		OwnerID:             opts.Claims.UserID,
+		Title:               session.CatalogSession().Title + " (forked)",
+		UserAgent:           opts.UserAgent,
+		ForkedFromSessionID: session.ID(),
+		CreatedOn:           time.Now(),
+		UpdatedOn:           time.Now(),
+	}
+
+	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to open catalog: %w", err)
+	}
+	defer release()
+
+	err = catalog.InsertAISession(ctx, forked)
+	if err != nil {
+		return "", fmt.Errorf("failed to fork session: %w", err)
+	}
+	// Map of old message IDs to new message IDs
+	oldToNewMessageID := make(map[string]string)
+	oldToNewMessageID[""] = ""
+	// Clone messages
+	for _, m := range session.Messages() {
+		id := uuid.NewString()
+		oldToNewMessageID[m.ID] = id
+		pid, ok := oldToNewMessageID[m.ParentID]
+		if !ok {
+			return "", fmt.Errorf("failed to clone message %q: parent message %q not found", m.ID, m.ParentID)
+		}
+		newMsg := &drivers.AIMessage{
+			ID:          id,
+			ParentID:    pid,
+			SessionID:   forked.ID,
+			CreatedOn:   time.Now(),
+			UpdatedOn:   time.Now(),
+			Index:       m.Index,
+			Role:        string(m.Role),
+			Type:        string(m.Type),
+			Tool:        m.Tool,
+			ContentType: string(m.ContentType),
+			Content:     m.Content,
+		}
+		err = catalog.InsertAIMessage(ctx, newMsg)
+		if err != nil {
+			return "", fmt.Errorf("failed to clone message %q: %w", m.ID, err)
+		}
+	}
+
+	return forked.ID, nil
 }
 
 // Tool is an interface for an AI tool.
@@ -528,6 +602,14 @@ func (s *BaseSession) Title() string {
 	return s.dto.Title
 }
 
+func (s *BaseSession) Shared() bool {
+	return s.dto.SharedUntilMessageID != ""
+}
+
+func (s *BaseSession) Forked() bool {
+	return s.dto.ForkedFromSessionID != ""
+}
+
 func (s *BaseSession) UpdateTitle(ctx context.Context, title string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -540,6 +622,14 @@ func (s *BaseSession) UpdateUserAgent(ctx context.Context, userAgent string) err
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.dto.UserAgent = userAgent
+	s.dtoDirty = true
+	return nil
+}
+
+func (s *BaseSession) UpdateSharedUntilMessageID(ctx context.Context, messageID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dto.SharedUntilMessageID = messageID
 	s.dtoDirty = true
 	return nil
 }

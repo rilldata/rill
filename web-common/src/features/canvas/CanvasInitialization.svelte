@@ -85,6 +85,7 @@
     fetchedCanvas,
     isReconciling,
     existingStore,
+    instanceId,
   );
 
   $: ready = !!resolvedStore;
@@ -146,6 +147,7 @@
     fetchedCanvas: V1ResolveCanvasResponse | undefined,
     isReconciling: boolean,
     existingStore: CanvasStore | undefined,
+    instanceId: string,
   ) {
     if (fetchedCanvas && !isReconciling) {
       const metricsViews: Record<string, V1MetricsView | undefined> = {};
