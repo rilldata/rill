@@ -1,7 +1,7 @@
 ---
 title: "Managing Organizations in Rill Cloud"
 description: Basic managment from projects 
-sidebar_label: "Organizations Settings"
+sidebar_label: "Organization Settings"
 sidebar_position: 00
 ---
 
