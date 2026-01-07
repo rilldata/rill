@@ -148,7 +148,7 @@ test.describe("Embeds", () => {
         expect(
           logMessages.some((msg) =>
             msg.includes(
-              "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+              "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+('Instacart')",
             ),
           ),
         ).toBeTruthy();
