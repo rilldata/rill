@@ -299,7 +299,7 @@ service RuntimeService {
 
   // Git APIs
   
-  // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
   rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
   }

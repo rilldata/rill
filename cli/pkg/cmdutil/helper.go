@@ -612,7 +612,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 		}
 		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
-		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
 		// This is not euivalent to a force push but is safer for users.
 		if config.Subpath != "" {
 			// force pushing in a monorepo can overwrite other subpaths

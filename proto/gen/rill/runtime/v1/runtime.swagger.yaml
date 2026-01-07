@@ -1183,7 +1183,7 @@ paths:
         - RuntimeService
   /v1/instances/{instanceId}/git/status:
     get:
-      summary: GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+      summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
       operationId: RuntimeService_GitStatus
       responses:
         "200":

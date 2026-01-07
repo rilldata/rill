@@ -333,12 +333,12 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		return err
 	}
 	if gs.RemoteCommits > 0 && !force {
-		return errors.New("cannot push with remote commits present, please pull first")
+		return drivers.ErrRemoteAhead
 	}
 
 	if force {
-		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
-		// This is not euivalent to a force push but is safer for users.
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
+		// This is not equivalent to a force push but is safer for users.
 		if gitConfig.Subpath != "" {
 			// force pushing in a monorepo can overwrite other subpaths
 			// we can check for changes in other subpaths but it is tricky and error prone

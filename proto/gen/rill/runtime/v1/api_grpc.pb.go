@@ -163,7 +163,7 @@ type RuntimeServiceClient interface {
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
-	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.
@@ -765,7 +765,7 @@ type RuntimeServiceServer interface {
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
-	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
 	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 	// If there are any merge conflicts the pull is aborted.

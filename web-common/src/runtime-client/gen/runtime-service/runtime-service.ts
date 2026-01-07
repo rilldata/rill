@@ -3076,7 +3076,7 @@ export const createRuntimeServiceGitPush = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+ * @summary GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
  */
 export const runtimeServiceGitStatus = (
   instanceId: string,
@@ -3135,7 +3135,7 @@ export type RuntimeServiceGitStatusQueryResult = NonNullable<
 export type RuntimeServiceGitStatusQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+ * @summary GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
  */
 
 export function createRuntimeServiceGitStatus<
