@@ -729,6 +729,8 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 			} else {
 				d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 			}
+		case runtimev1.Type_CODE_POINT, runtimev1.Type_CODE_POLYGON:
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_GEOSPATIAL
 		default:
 			// All other types default to CATEGORICAL
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL

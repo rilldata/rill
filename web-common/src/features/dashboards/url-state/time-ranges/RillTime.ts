@@ -5,6 +5,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {
+  getLowerOrderGrain,
   getMinGrain,
   getSmallestGrain,
   grainAliasToDateTimeUnit,
@@ -13,18 +14,6 @@ import {
   type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
 import type { TimeRangeMeta } from "@rilldata/web-common/lib/time/types";
-
-function getLegacyGrain(grain: string, time: boolean) {
-  const isValid = grain in GrainAliasToV1TimeGrain;
-
-  if (!isValid) return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-
-  if (!time || (grain !== "M" && grain !== "m")) {
-    return GrainAliasToV1TimeGrain[grain as TimeGrainAlias];
-  } else {
-    return V1TimeGrain.TIME_GRAIN_MINUTE;
-  }
-}
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
@@ -38,7 +27,7 @@ export enum RillTimeLabel {
 }
 
 export type RillTimeAsOfLabel = {
-  label: RillTimeLabel;
+  label: RillTimeLabel | string;
   snap: string | undefined;
   offset: number;
 };
@@ -408,8 +397,33 @@ export class RillIsoInterval implements RillTimeInterval {
     return ["Custom", true];
   }
 
+  // Checks for non-zero time components to determine smallest grain
+  // Starts with year as this function is not complete and may
+  // run into weekNumber, ordinal and other properties not currently being checked for
   public getGrain() {
-    return undefined;
+    let smallestGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_YEAR;
+
+    if (this.start.dateObject.month || this.end?.dateObject.month) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_MONTH;
+    }
+    if (this.start.dateObject.day || this.end?.dateObject.day) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_DAY;
+    }
+    if (this.start.dateObject.hour || this.end?.dateObject.hour) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_HOUR;
+    }
+    if (this.start.dateObject.minute || this.end?.dateObject.minute) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_MINUTE;
+    }
+    if (
+      this.start.dateObject.second ||
+      this.end?.dateObject.second ||
+      this.start.dateObject.millisecond ||
+      this.end?.dateObject.millisecond
+    ) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_SECOND;
+    }
+    return smallestGrain;
   }
 
   public toString() {
@@ -463,6 +477,16 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
       getLegacyGrain(g.grain, false),
     );
 
+    const allGrains = [...timeGrains, ...dateGrains];
+    const isSinglePeriod =
+      allGrains.length === 1 &&
+      (this.timeGrains[0]?.num === 1 || this.dateGrains[0]?.num === 1);
+
+    if (isSinglePeriod) {
+      const grain = allGrains[0];
+      return getLowerOrderGrain(grain);
+    }
+
     const smallestGrain = getSmallestGrain([...timeGrains, ...dateGrains]);
 
     return smallestGrain;
@@ -482,7 +506,7 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
 }
 
 export class RillLegacyDaxInterval implements RillTimeInterval {
-  public constructor(private readonly name: string) {}
+  public constructor(public readonly name: string) {}
 
   public isComplete() {
     return false;
@@ -649,7 +673,7 @@ export class RillLabelledPointInTime implements RillPointInTimeVariant {
 }
 
 export class RillAbsoluteTime implements RillPointInTimeVariant {
-  private readonly dateObject: DateObjectUnits = {};
+  readonly dateObject: DateObjectUnits = {};
 
   public constructor(private readonly timeStr: string) {
     const absTimeMatch = absTimeRegex.exec(timeStr);
@@ -713,4 +737,16 @@ type RillGrain = {
 
 export function capitalizeFirstChar(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function getLegacyGrain(grain: string, time: boolean) {
+  const isValid = grain in GrainAliasToV1TimeGrain;
+
+  if (!isValid) return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  if (!time || (grain !== "M" && grain !== "m")) {
+    return GrainAliasToV1TimeGrain[grain as TimeGrainAlias];
+  } else {
+    return V1TimeGrain.TIME_GRAIN_MINUTE;
+  }
 }

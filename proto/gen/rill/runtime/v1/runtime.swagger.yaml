@@ -3438,6 +3438,7 @@ definitions:
       - DIMENSION_TYPE_UNSPECIFIED
       - DIMENSION_TYPE_CATEGORICAL
       - DIMENSION_TYPE_TIME
+      - DIMENSION_TYPE_GEOSPATIAL
     default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
@@ -3593,6 +3594,8 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
+      - CODE_POINT
+      - CODE_POLYGON
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   protobufAny:

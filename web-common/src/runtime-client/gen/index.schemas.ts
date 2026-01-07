@@ -80,6 +80,7 @@ export const MetricsViewSpecDimensionType = {
   DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
   DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
   DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+  DIMENSION_TYPE_GEOSPATIAL: "DIMENSION_TYPE_GEOSPATIAL",
 } as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
@@ -179,6 +180,8 @@ export const TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
+  CODE_POINT: "CODE_POINT",
+  CODE_POLYGON: "CODE_POLYGON",
 } as const;
 
 export interface ProtobufAny {
