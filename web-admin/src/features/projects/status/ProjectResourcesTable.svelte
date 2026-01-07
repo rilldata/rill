@@ -13,12 +13,14 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import ActionsCell from "./ActionsCell.svelte";
+  import ModelSizeCell from "./ModelSizeCell.svelte";
   import NameCell from "./NameCell.svelte";
   import RefreshCell from "./RefreshCell.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
 
   export let data: V1Resource[];
+  export let tableSizes: Map<string, string | number> = new Map();
 
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
@@ -103,6 +105,45 @@
         flexRender(NameCell, {
           name: getValue() as string,
         }),
+    },
+    {
+      id: "size",
+      accessorFn: (row) => {
+        // Only for models
+        if (row.meta.name.kind !== ResourceKind.Model) return undefined;
+
+        const connector = row.model?.state?.resultConnector;
+        const tableName = row.model?.state?.resultTable;
+        if (!connector || !tableName) return undefined;
+
+        const key = `${connector}:${tableName}`;
+        return tableSizes.get(key);
+      },
+      header: "Size",
+      sortingFn: (rowA, rowB) => {
+        const sizeA = rowA.getValue("size") as string | number | undefined;
+        const sizeB = rowB.getValue("size") as string | number | undefined;
+
+        let numA = -1;
+        if (sizeA && sizeA !== "-1") {
+          numA = typeof sizeA === "number" ? sizeA : parseInt(sizeA, 10);
+        }
+
+        let numB = -1;
+        if (sizeB && sizeB !== "-1") {
+          numB = typeof sizeB === "number" ? sizeB : parseInt(sizeB, 10);
+        }
+
+        return numB - numA; // Descending
+      },
+      sortDescFirst: true,
+      cell: ({ getValue }) =>
+        flexRender(ModelSizeCell, {
+          sizeBytes: getValue() as string | number | undefined,
+        }),
+      meta: {
+        widthPercent: 0,
+      },
     },
     {
       accessorFn: (row) => row.meta.reconcileStatus,
@@ -193,7 +234,7 @@
 <VirtualizedTable
   data={tableData}
   {columns}
-  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
+  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 100px 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
 />
 
 <RefreshResourceConfirmDialog
