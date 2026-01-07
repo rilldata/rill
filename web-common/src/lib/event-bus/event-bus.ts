@@ -3,7 +3,7 @@ import type {
   PageContentResized,
   NotificationMessage,
 } from "./events";
-import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 export interface Events {
   notification: NotificationMessage;

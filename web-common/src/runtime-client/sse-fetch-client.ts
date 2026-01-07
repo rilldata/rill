@@ -1,6 +1,6 @@
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
-import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 /**
  * Represents a Server-Sent Event message
@@ -95,8 +95,16 @@ type SSEFetchClientEvents = {
  * interpret the semantic meaning of events. Consumers decide how to handle
  * different event types and data formats.
  */
-export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
+export class SSEFetchClient {
   private abortController: AbortController | undefined;
+
+  private readonly events = new EventEmitter<SSEFetchClientEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
 
   /**
    * Start streaming from the given URL
@@ -148,7 +156,7 @@ export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
         throw new Error("No response body");
       }
 
-      this.emit("open");
+      this.events.emit("open");
 
       // Process the SSE stream
       await this.processSSEStream(response.body);
@@ -156,11 +164,11 @@ export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
       if (error.name !== "AbortError") {
         const errorArg =
           error instanceof Error ? error : new Error(String(error));
-        this.emit("error", errorArg);
+        this.events.emit("error", errorArg);
       }
     } finally {
       this.stop();
-      this.emit("close");
+      this.events.emit("close");
     }
   }
 
@@ -182,7 +190,7 @@ export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
     this.stop();
 
     // Clear all event listeners
-    this.clearListeners();
+    this.events.clearListeners();
   }
 
   /**
@@ -220,7 +228,7 @@ export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
           if (isEventComplete(line)) {
             // Empty line signals end of event - emit if valid
             if (isValidEvent(currentEvent)) {
-              this.emitMessage(currentEvent);
+              this.events.emit("message", currentEvent);
             }
             currentEvent = {};
           } else {
@@ -232,17 +240,10 @@ export class SSEFetchClient extends EventEmitter<SSEFetchClientEvents> {
 
       // Emit any remaining event in the buffer
       if (isValidEvent(currentEvent)) {
-        this.emitMessage(currentEvent);
+        this.events.emit("message", currentEvent);
       }
     } finally {
       reader.releaseLock();
     }
-  }
-
-  /**
-   * Emit a message to all registered listeners
-   */
-  private emitMessage(message: SSEMessage): void {
-    this.emit("message", message);
   }
 }

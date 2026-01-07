@@ -23,7 +23,6 @@ import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/proj
 import { getOrgWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-org-with-bearer-token";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 import { isAxiosError } from "axios";
 import { Settings } from "luxon";
@@ -135,14 +134,6 @@ export const load = async ({ params, url, route, depends }) => {
       project: proj,
       runtime: runtimeData,
     } = await fetchProjectDeploymentDetails(organization, project, token);
-
-    await runtime.setRuntime(
-      queryClient,
-      runtimeData.host ?? "",
-      runtimeData.instanceId,
-      runtimeData.jwt?.token,
-      runtimeData.jwt?.authContext,
-    );
 
     return {
       user,

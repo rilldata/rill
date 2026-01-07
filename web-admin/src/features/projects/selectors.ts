@@ -138,8 +138,8 @@ export async function fetchProjectDeploymentDetails(
     projectPermissions: projResp.projectPermissions,
     project: projResp.project,
     runtime: <Runtime>{
-      host: projResp.prodDeployment?.runtimeHost,
-      instanceId: projResp.prodDeployment?.runtimeInstanceId,
+      host: projResp.deployment?.runtimeHost,
+      instanceId: projResp.deployment?.runtimeInstanceId,
       jwt: {
         token: projResp.jwt,
         authContext: token ? "magic" : "user",

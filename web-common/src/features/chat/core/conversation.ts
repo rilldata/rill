@@ -24,10 +24,11 @@ import {
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
-import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
-type ConversionEvents = {
-  "stream-start": null;
+type ConversationEvents = {
+  "conversation-created": string;
+  "stream-start": void;
   message: V1Message;
   "stream-complete": string;
   error: string;
@@ -39,11 +40,19 @@ type ConversionEvents = {
  * Handles streaming message sending, optimistic updates, and conversation-specific queries
  * for a single conversation using the streaming completion endpoint.
  */
-export class Conversation extends EventEmitter<ConversionEvents> {
+export class Conversation extends EventEmitter<ConversationEvents> {
   // Public reactive state
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
+
+  private readonly events = new EventEmitter<ConversationEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
 
   // Private state
   private sseClient: SSEFetchClient | null = null;
@@ -52,20 +61,8 @@ export class Conversation extends EventEmitter<ConversionEvents> {
   constructor(
     private readonly instanceId: string,
     public conversationId: string,
-    private readonly options: {
-      agent?: string;
-      onStreamStart?: () => void;
-      onConversationCreated?: (conversationId: string) => void;
-    } = {
-      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
-    },
-  ) {
-    super();
-
-    if (this.options) {
-      this.options.agent ??= ToolName.ANALYST_AGENT;
-    }
-  }
+    private readonly agent: string = ToolName.ANALYST_AGENT, // Hardcoded default for now
+  ) {}
 
   // ===== PUBLIC API =====
 
@@ -124,7 +121,10 @@ export class Conversation extends EventEmitter<ConversionEvents> {
    * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(context: RuntimeServiceCompleteBody): Promise<void> {
+  public async sendMessage(
+    context: RuntimeServiceCompleteBody,
+    options?: { onStreamStart?: () => void },
+  ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -143,7 +143,8 @@ export class Conversation extends EventEmitter<ConversionEvents> {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      this.emit("stream-start", null);
+      options?.onStreamStart?.(); // Callback for direct callers
+      this.events.emit("stream-start"); // Event for external listeners
       // Start streaming - this establishes the connection
       const streamPromise = this.startStreaming(prompt, context);
 
@@ -151,7 +152,7 @@ export class Conversation extends EventEmitter<ConversionEvents> {
       await streamPromise;
 
       // Stream has completed successfully
-      this.emit("stream-complete", this.conversationId);
+      this.events.emit("stream-complete", this.conversationId);
 
       // Temporary fix to make sure the title of the conversation is updated.
       void invalidateConversationsList(this.instanceId);
@@ -169,7 +170,7 @@ export class Conversation extends EventEmitter<ConversionEvents> {
         userMessage,
         this.hasReceivedFirstMessage,
       );
-      this.emit("error", this.formatTransportError(error));
+      this.events.emit("error", this.formatTransportError(error));
     } finally {
       this.isStreaming.set(false);
     }
@@ -198,6 +199,8 @@ export class Conversation extends EventEmitter<ConversionEvents> {
       this.sseClient.cleanup();
       this.sseClient = null;
     }
+
+    this.events.clearListeners();
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
@@ -235,7 +238,7 @@ export class Conversation extends EventEmitter<ConversionEvents> {
             message.data,
           );
           this.processStreamingResponse(response);
-          if (response.message) this.emit("message", response.message);
+          if (response.message) this.events.emit("message", response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");
@@ -273,12 +276,12 @@ export class Conversation extends EventEmitter<ConversionEvents> {
           ? undefined
           : this.conversationId,
       prompt,
-      agent: this.options?.agent,
+      agent: this.agent,
       ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)
-    this.options?.onStreamStart?.();
+    this.events.emit("stream-start");
 
     // Start streaming - this will establish the connection and then stream until completion
     await this.sseClient.start(baseUrl, {
@@ -357,7 +360,7 @@ export class Conversation extends EventEmitter<ConversionEvents> {
     this.conversationId = realConversationId;
 
     // Notify that conversation was created
-    this.options?.onConversationCreated?.(realConversationId);
+    this.events.emit("conversation-created", realConversationId);
   }
 
   // ----- Cache Management -----

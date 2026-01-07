@@ -2,7 +2,7 @@ import { get, writable } from "svelte/store";
 import { Throttler } from "../lib/throttler";
 import { asyncWait } from "../lib/waitUtils";
 import { SSEFetchClient, type SSEMessage } from "./sse-fetch-client";
-import { EventEmitter } from "@rilldata/web-common/lib/event-bus/event-emitter.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 const BACKOFF_DELAY = 1000; // Base delay in ms
 
@@ -45,6 +45,14 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     body?: Record<string, unknown>;
     headers?: Record<string, string>;
   };
+
+  private readonly events = new EventEmitter<SSEConnectionManagerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
 
   private client = new SSEFetchClient();
 
@@ -156,7 +164,7 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     }
 
     const errorArg = error instanceof Error ? error : new Error(String(error));
-    this.emit("error", errorArg);
+    this.events.emit("error", errorArg);
   };
 
   // This can happen in one of three situations:
@@ -173,12 +181,12 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
       void this.reconnect();
     } else {
       this.close();
-      this.emit("close");
+      this.events.emit("close");
     }
   };
 
   private handleMessage = (message: SSEMessage) => {
-    this.emit("message", message);
+    this.events.emit("message", message);
   };
 
   private handleSuccessfulConnection = () => {
@@ -188,7 +196,7 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     this.retryAttempts.set(0);
 
     if (this.connectionCount > 1) {
-      this.emit("reconnect");
+      this.events.emit("reconnect");
     }
   };
 
@@ -245,6 +253,6 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
     this.pause();
 
     // Clear all event listeners
-    this.clearListeners();
+    this.events.clearListeners();
   }
 }
