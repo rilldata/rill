@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -65,7 +66,7 @@ func (p *Parser) parseConnector(node *Node) error {
 	}
 
 	// Insert the connector
-	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

@@ -727,7 +727,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 	node.Refs = append(node.Refs, securityRefs...)
-	node.postParseHooks = append(node.postParseHooks, func(r *Resource) {
+	node.addPostParseHook(node.Connector, func(r *Resource) bool {
 		// check if the model is actually a resource in which case no need to add a ref to the connector
 		// model's connector can be different and a ref to model will ensure correct DAG link
 		if tmp.Model != "" {
@@ -736,23 +736,16 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				// clear older refs to connector, if any
 				for i, ref := range r.Refs {
 					if ref.Kind == ResourceKindConnector && ref.Name == node.Connector {
+						// okay to modify r.Refs here as we return immediately after
 						r.Refs = append(r.Refs[:i], r.Refs[i+1:]...)
-						break
+						return true
 					}
 				}
-				return
+				return false
 			}
 		}
-		n := ResourceName{ResourceKindConnector, node.Connector}.Normalized()
-		if _, ok := p.Resources[n]; !ok {
-			return
-		}
-		for _, ref := range r.Refs {
-			if ref.Normalized() == n {
-				return
-			}
-		}
-		r.Refs = append(r.Refs, n)
+		f := p.addConnectorRef(node.Connector)
+		return f(r)
 	})
 
 	var cacheTTLDuration time.Duration
@@ -770,7 +763,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// insert metrics view resource immediately after parsing the inline explore as it inserts the explore resource so we should not return an error now
-	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		// If we fail to insert the metrics view, we must delete the inline explore if it was created.
 		if exploreRes != nil {
@@ -856,7 +849,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
-	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs, node.postParseHooks)
+	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		// We mustn't error because we have already emitted one resource.
 		// Since this probably means an explore has been defined separately, we can just ignore this error.

@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -179,7 +180,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 
 	// Track report
-	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindReport, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

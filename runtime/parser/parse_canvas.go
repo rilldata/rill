@@ -256,7 +256,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 
 	// Track canvas
-	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "embed"
@@ -72,7 +73,7 @@ func (p *Parser) parseComponent(node *Node) error {
 	node.Refs = append(node.Refs, refs...)
 
 	// Track component
-	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindComponent, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

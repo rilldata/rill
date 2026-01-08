@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -116,8 +117,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		inputProps = map[string]any{}
 	}
 
-	// all connectors are not explicit and may not exist as resource
-	p.addConnectorRef(node, inputConnector)
+	node.addPostParseHook(inputConnector, p.addConnectorRef(inputConnector))
 
 	// Special handling for adding SQL to the input properties
 	if sql := strings.TrimSpace(node.SQL); sql != "" {
@@ -157,8 +157,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if outputConnector == "" {
 		outputConnector = p.defaultOLAPConnector()
 	}
-
-	p.addConnectorRef(node, outputConnector)
+	node.addPostParseHook(outputConnector, p.addConnectorRef(outputConnector))
 	outputProps := tmp.Output.Properties
 
 	// Backwards compatibility: materialize can be specified outside of the output properties
@@ -189,7 +188,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			return fmt.Errorf(`failed to parse "state": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-		p.addConnectorRef(node, connector)
+		node.addPostParseHook(connector, p.addConnectorRef(connector))
 	}
 
 	// Parse partitions resolver
@@ -209,7 +208,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			return fmt.Errorf(`failed to parse "partitions": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-		p.addConnectorRef(node, connector)
+		node.addPostParseHook(connector, p.addConnectorRef(connector))
 
 		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
 		if tmp.PartitionsWatermark == "" {
@@ -229,7 +228,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 		modelTests = append(modelTests, modelTest)
 		node.Refs = append(node.Refs, refs...)
-		p.addConnectorRef(node, connector)
+		node.addPostParseHook(connector, p.addConnectorRef(connector))
 	}
 
 	var retryDelay *uint32
@@ -243,7 +242,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	}
 
 	// Insert the model
-	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"golang.org/x/exp/maps"
 )
 
 // ThemeYAML is the raw structure of a Theme for the UI in YAML (does not include common fields)
@@ -116,7 +117,7 @@ func (p *Parser) parseTheme(node *Node) error {
 		return err
 	}
 
-	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

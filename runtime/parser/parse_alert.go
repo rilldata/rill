@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -144,7 +145,7 @@ func (p *Parser) parseAlert(node *Node) error {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
-		p.addConnectorRef(node, connector)
+		node.addPostParseHook(connector, p.addConnectorRef(connector))
 
 		// Query for: validate only one of user_id, user_email, or attributes is set
 		n := 0
@@ -272,7 +273,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Track alert
-	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}

@@ -265,7 +265,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Refs, node.postParseHooks)
+	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}
