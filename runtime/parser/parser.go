@@ -361,16 +361,7 @@ func (p *Parser) reload(ctx context.Context) error {
 		p.inferUnspecifiedRefs(r)
 	}
 
-	// run all post-parse hooks
-	for rn, hooks := range p.postParseHooks {
-		for _, hook := range hooks {
-			r := p.Resources[rn]
-			if r != nil {
-				hook(r)
-			}
-		}
-	}
-
+	p.runPostParseHooks()
 	return nil
 }
 
@@ -545,15 +536,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 	}
 
-	// run all post-parse hooks
-	for rn, hooks := range p.postParseHooks {
-		for _, hook := range hooks {
-			r := p.Resources[rn]
-			if r != nil {
-				hook(r)
-			}
-		}
-	}
+	// Run post-parse hooks
+	p.runPostParseHooks()
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
@@ -1093,6 +1077,17 @@ func (p *Parser) addConnectorRef(node *Node, connectorName string) {
 		}
 		r.Refs = append(r.Refs, n)
 	})
+}
+
+func (p *Parser) runPostParseHooks() {
+	for rn, hooks := range p.postParseHooks {
+		for _, hook := range hooks {
+			r := p.Resources[rn]
+			if r != nil {
+				hook(r)
+			}
+		}
+	}
 }
 
 // pathIsSQL returns true if the path is a SQL file

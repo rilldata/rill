@@ -733,6 +733,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if tmp.Model != "" {
 			_, ok := p.Resources[ResourceName{Kind: ResourceKindModel, Name: tmp.Model}.Normalized()]
 			if ok {
+				r.Refs = nil
 				return
 			}
 		}
