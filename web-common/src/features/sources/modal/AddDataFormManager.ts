@@ -26,6 +26,7 @@ import {
 import {
   connectorStepStore,
   setConnectorConfig,
+  setAuthMethod,
   setStep,
   type ConnectorStepState,
 } from "./connectorStepStore";
@@ -234,7 +235,8 @@ export class AddDataFormManager {
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig({});
+    setConnectorConfig(null);
+    setAuthMethod(null);
     setStep("source");
   }
 
@@ -348,7 +350,8 @@ export class AddDataFormManager {
         stepState.step === "connector" &&
         selectedAuthMethod === "public"
       ) {
-        setConnectorConfig(values);
+        setConnectorConfig(null);
+        setAuthMethod(null);
         setStep("source");
         return;
       }
@@ -396,12 +399,14 @@ export class AddDataFormManager {
         } else if (isMultiStepConnector && stepState.step === "connector") {
           // For public auth, skip Test & Connect and go straight to the next step.
           if (selectedAuthMethod === "public") {
-            setConnectorConfig(values);
+            setConnectorConfig(null);
+            setAuthMethod(null);
             setStep("source");
             return;
           }
           await submitAddConnectorForm(queryClient, connector, values, false);
-          setConnectorConfig(values);
+          setConnectorConfig(null);
+          setAuthMethod(null);
           setStep("source");
           return;
         } else if (this.formType === "source") {
