@@ -165,6 +165,10 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "https":
     case "azure":
+      // Ensure DuckDB creates a temporary secret for the original connector
+      if (!formValues.create_secrets_from_connectors) {
+        formValues.create_secrets_from_connectors = connector.name;
+      }
     case "local_file":
       connectorCopy.name = "duckdb";
 
