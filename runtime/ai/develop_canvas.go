@@ -3,6 +3,7 @@ package ai
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,6 +17,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed data/component-template-v1.json
+var componentSchemaJSON string
 
 const DevelopCanvasName = "develop_canvas"
 
@@ -206,7 +210,8 @@ func (t *DevelopCanvas) systemPrompt(ctx context.Context) (string, error) {
 	// Prepare template data
 	session := GetSession(ctx)
 	data := map[string]any{
-		"ai_instructions": session.ProjectInstructions(),
+		"ai_instructions":  session.ProjectInstructions(),
+		"component_schema": componentSchemaJSON,
 	}
 
 	// Generate the system prompt
@@ -233,22 +238,35 @@ A canvas dashboard consists of:
 Available component types:
 - **markdown**: Rich text content for documentation
 - **kpi_grid**: Grid of key performance indicators
-- **leaderboard**: Ranked table of dimension values
+- **leaderboard**: Ranked table of dimension values (NOT a chart component)
 - **bar_chart**: Bar chart for categorical comparisons
 - **line_chart**: Line chart for time series trends
 - **area_chart**: Area chart for cumulative trends
 - **stacked_bar**: Stacked bar chart for multi-measure comparisons
 - **stacked_bar_normalized**: Normalized stacked bar for proportions
 - **donut_chart**: Donut chart for part-to-whole relationships
+- **funnel_chart**: Funnel chart for conversion analysis
 - **heatmap**: Heatmap for two-dimensional patterns
 - **combo_chart**: Combined chart with multiple mark types
+- **pivot**: Pivot table for multi-dimensional analysis
+- **table**: Table for displaying raw data
+- **image**: Image component for displaying images
 </canvas_structure>
+
+<critical_component_schema>
+**CRITICAL: The following JSON Schema is the AUTHORITATIVE source of truth for all component field names and structures. You MUST strictly follow this schema when generating YAML.**
+
+{{ .component_schema }}
+
+**NEVER invent or guess field names** - only use fields defined in the schema above
+</critical_component_schema>
 
 <process>
 At a high level, you should follow these steps:
 1. Leverage the "read_file" tool to understand the file's current contents, if any (it may return a file not found error).
 2. Generate a new or updated canvas dashboard definition based on the user's prompt and save it to the requested path using the "write_file" tool.
-3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
+3. Before writing, validate that ALL field names match the JSON Schema above exactly.
+4. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
 
 Additional instructions:
 - Canvas dashboards use a 12-unit grid system for layout. Components can have widths from 3 to 12 units.
@@ -309,6 +327,37 @@ rows:
             type: "quantitative"
             zeroBasedOrigin: true
           color: "primary"
+
+  - height: "400px"
+    items:
+      - width: 6
+        donut_chart:
+          metrics_view: "sales_metrics"
+          title: "Revenue Distribution by Category"
+          color:
+            field: "product_category"
+            type: "nominal"
+            limit: 10
+          measure:
+            field: "total_revenue"
+            type: "quantitative"
+            showTotal: true
+          innerRadius: 50
+
+      - width: 6
+        bar_chart:
+          metrics_view: "sales_metrics"
+          title: "Top Products by Revenue"
+          color: "secondary"
+          x:
+            field: "product_name"
+            type: "nominal"
+            limit: 15
+            sort: "-y"
+          y:
+            field: "total_revenue"
+            type: "quantitative"
+            zeroBasedOrigin: true
 {{ backticks }}
 </example>
 

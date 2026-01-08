@@ -1,6 +1,11 @@
 import type { CartesianCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import type { CircularCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/CircularChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
+import type {
+  ComboChartSpec,
+  FunnelChartSpec,
+  HeatmapChartSpec,
+} from "@rilldata/web-common/features/components/charts";
 import type { ChartType } from "../../components/charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
@@ -56,40 +61,18 @@ export type CanvasComponentType =
   | "table"
   | "leaderboard";
 
-interface LineChart {
-  line_chart: CartesianCanvasChartSpec;
-}
-
-interface AreaChart {
-  area_chart: CartesianCanvasChartSpec;
-}
-
-interface BarChart {
-  bar_chart: CartesianCanvasChartSpec;
-}
-
-export type ChartTemplates = LineChart | BarChart | AreaChart;
-export interface KPITemplateT {
-  kpi: KPISpec;
-}
-export interface MarkdownTemplateT {
-  markdown: MarkdownSpec;
-}
-export interface ImageTemplateT {
-  image: ImageSpec;
-}
-
-export interface PivotTemplateT {
-  pivot: PivotSpec;
-}
-export interface TableTemplateT {
-  table: TableSpec;
-}
-
-export type TemplateSpec =
-  | ChartTemplates
-  | KPITemplateT
-  | PivotTemplateT
-  | MarkdownTemplateT
-  | ImageTemplateT
-  | TableTemplateT;
+export type ComponentWithTypeSpec =
+  | { line_chart: CartesianCanvasChartSpec }
+  | { bar_chart: CartesianCanvasChartSpec }
+  | { area_chart: CartesianCanvasChartSpec }
+  | { stacked_bar: CartesianCanvasChartSpec }
+  | { stacked_bar_normalized: CartesianCanvasChartSpec }
+  | { donut_chart: CircularCanvasChartSpec }
+  | { funnel_chart: FunnelChartSpec }
+  | { heatmap: HeatmapChartSpec }
+  | { combo_chart: ComboChartSpec }
+  | { pivot: PivotSpec }
+  | { table: TableSpec }
+  | { kpi_grid: KPIGridSpec }
+  | { markdown: MarkdownSpec }
+  | { image: ImageSpec };

@@ -7,7 +7,7 @@
     "format": "prettier --write .",
     "generate:runtime-client": "svelte-kit sync && orval --config ./orval.config.ts",
     "generate:sveltekit": "svelte-kit sync",
-    "generate:template-schema": "ts-json-schema-generator --path 'src/features/canvas/components/types.ts' --type TemplateSpec -o ../runtime/parser/data/component-template-v1.json",
+    "generate:template-schema": "ts-json-schema-generator --path 'src/features/canvas/components/types.ts' --type ComponentWithTypeSpec --no-type-check -o ../runtime/ai/data/component-template-v1.json --no-top-ref",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:watch": "vitest",
