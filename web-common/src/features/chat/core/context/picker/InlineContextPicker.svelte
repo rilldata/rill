@@ -1,8 +1,9 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-  import PickerGroup from "@rilldata/web-common/features/chat/core/context/picker/PickerGroup.svelte";
-  import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
+  import {
+    getIdForContext,
+    type InlineContext,
+  } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import {
     autoUpdate,
     computePosition,
@@ -14,7 +15,11 @@
   import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-svelte";
   import * as Kbd from "@rilldata/web-common/components/kbd";
   import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
-  import { getFilteredPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/filters.ts";
+  import { getFilteredPickerItems } from "@rilldata/web-common/features/chat/core/context/picker/filters.ts";
+  import { buildPickerTree } from "@rilldata/web-common/features/chat/core/context/picker/tree/build-picker-tree.ts";
+  import { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
+  import NonLeafOption from "@rilldata/web-common/features/chat/core/context/picker/tree/NonLeafOption.svelte";
+  import LeafOption from "@rilldata/web-common/features/chat/core/context/picker/tree/LeafOption.svelte";
 
   export let selectedChatContext: InlineContext | null = null;
   export let searchText: string = "";
@@ -22,41 +27,27 @@
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
+  $: selectedItemId = selectedChatContext
+    ? getIdForContext(selectedChatContext)
+    : null;
+
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
   const uiState = new ContextPickerUIState();
-  const filteredOptions = getFilteredPickerOptions(uiState, searchTextStore);
+  const expandedParentsStore = uiState.expandedParentsStore;
+  const filteredOptions = getFilteredPickerItems(uiState, searchTextStore);
+  $: pickerTree = buildPickerTree($filteredOptions);
 
-  const highlightManager = new PickerOptionsHighlightManager(uiState);
-  const highlightedContext = highlightManager.highlightedContext;
-  $: highlightManager.filterOptionsUpdated(
-    $filteredOptions,
-    selectedChatContext,
+  const keyboardNavigationManager = new KeyboardNavigationManager(
+    uiState,
+    onSelect,
   );
-
-  function handleKeyDown(event: KeyboardEvent) {
-    switch (event.key) {
-      case "ArrowUp":
-        highlightManager.highlightPreviousContext();
-        break;
-      case "ArrowDown":
-        highlightManager.highlightNextContext();
-        break;
-      case "ArrowLeft":
-        highlightManager.collapseToClosestParent();
-        break;
-      case "ArrowRight":
-        highlightManager.openCurrentParentOption();
-        break;
-      case "Enter":
-        if ($highlightedContext) onSelect($highlightedContext);
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        break;
-    }
-  }
+  $: keyboardNavigationManager.setPickerItems(
+    $filteredOptions,
+    $expandedParentsStore,
+    selectedItemId,
+  );
 
   function positionHandler(node: Node, ref: HTMLElement) {
     if (!(node instanceof HTMLElement)) return;
@@ -100,22 +91,31 @@
   }
 </script>
 
-<svelte:window on:keydown={handleKeyDown} />
+<svelte:window on:keydown={(e) => keyboardNavigationManager.handleKeyDown(e)} />
 
 <!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
 <div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
-  {#each $filteredOptions as parentOption (parentOption.context.key)}
-    <PickerGroup
-      {parentOption}
-      {selectedChatContext}
-      {uiState}
-      {highlightManager}
-      {searchTextStore}
-      {onSelect}
-      {focusEditor}
-    />
+  {#each pickerTree.rootNodes as rootNode (rootNode.item.id)}
+    {#if rootNode.item.hasChildren}
+      <NonLeafOption
+        node={rootNode}
+        {selectedChatContext}
+        {keyboardNavigationManager}
+        {uiState}
+        {searchTextStore}
+        {onSelect}
+        {focusEditor}
+      />
+    {:else}
+      <LeafOption
+        item={rootNode.item}
+        {selectedChatContext}
+        {keyboardNavigationManager}
+        {onSelect}
+      />
+    {/if}
   {:else}
     <div class="contents-empty">No matches found</div>
   {/each}

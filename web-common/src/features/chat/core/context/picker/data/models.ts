@@ -3,10 +3,11 @@ import {
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
+  getIdForContext,
   type InlineContext,
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import { getActiveFileArtifactStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 import {
   getClientFilteredResourcesQueryOptions,
@@ -26,7 +27,7 @@ import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/co
  */
 export function getModelsPickerOptions(
   uiState: ContextPickerUIState,
-): Readable<InlineContextPickerParentOption[]> {
+): Readable<PickerItem[]> {
   const modelResourcesQuery = createQuery(
     getClientFilteredResourcesQueryOptions(ResourceKind.Model),
     queryClient,
@@ -35,32 +36,57 @@ export function getModelsPickerOptions(
 
   return derived(
     [runtime, modelResourcesQuery, activeFileArtifactStore],
-    ([{ instanceId }, modelResourcesResp, activeFileArtifact]) => {
+    ([{ instanceId }, modelResourcesResp, activeFileArtifact], set) => {
       const models = modelResourcesResp.data ?? [];
-      return models.map((res) => {
+      const modelPickerItems: PickerItem[] = [];
+      const modelQueryOptions: ReturnType<
+        typeof getModelColumnsQueryOptions
+      >[] = [];
+
+      models.forEach((res) => {
         const modelName = res.meta?.name?.name ?? "";
 
-        const key = `${InlineContextType.Model}_${modelName}`;
         const currentlyActive =
           activeFileArtifact.resource?.kind === ResourceKind.Model &&
           activeFileArtifact.resource?.name === modelName;
-
-        return {
-          context: {
-            type: InlineContextType.Model,
-            model: modelName,
-            key,
-            label: modelName,
-          },
-          childrenQueryOptions: getModelColumnsQueryOptions(
-            instanceId,
-            res,
-            modelName,
-            uiState.getExpandedStore(key),
-          ),
+        const modelContext = {
+          type: InlineContextType.Model,
+          model: modelName,
+          value: modelName,
+          label: modelName,
+        } satisfies InlineContext;
+        const modelPickerItem = {
+          id: getIdForContext(modelContext),
+          context: modelContext,
           currentlyActive,
-        } satisfies InlineContextPickerParentOption;
+          hasChildren: true,
+        } satisfies PickerItem;
+
+        const childrenQueryOptions = getModelColumnsQueryOptions(
+          instanceId,
+          res,
+          modelPickerItem,
+          uiState.getExpandedStore(modelPickerItem.id),
+        );
+
+        modelPickerItems.push(modelPickerItem);
+        modelQueryOptions.push(childrenQueryOptions);
       });
+
+      const allPickerOptionsStore = derived(
+        modelQueryOptions.map((o) => createQuery(o, queryClient)),
+        (modelQueryResults) => {
+          return modelQueryResults.flatMap((res, index) => [
+            {
+              ...modelPickerItems[index],
+              childrenLoading: res.isLoading,
+            },
+            ...(res.data ?? []),
+          ]);
+        },
+      );
+
+      return allPickerOptionsStore.subscribe(set);
     },
   );
 }
@@ -68,7 +94,7 @@ export function getModelsPickerOptions(
 function getModelColumnsQueryOptions(
   instanceId: string,
   modelRes: V1Resource | undefined,
-  modelName: string,
+  modelPickerItem: PickerItem,
   enabledStore: Readable<boolean>,
 ) {
   const connector = modelRes?.model?.spec?.outputConnector ?? "";
@@ -83,18 +109,26 @@ function getModelColumnsQueryOptions(
       {
         query: {
           enabled: enabled && Boolean(table),
-          select: (data) =>
-            data.profileColumns?.map(
-              (col) =>
-                ({
+          select: (data): PickerItem[] => {
+            return (
+              data.profileColumns?.map((col) => {
+                const context = {
                   type: InlineContextType.Column,
                   label: col.name,
-                  key: `${InlineContextType.Column}_${col.name!}`,
+                  value: col.name!,
                   column: col.name,
                   columnType: col.type,
-                  model: modelName,
-                }) satisfies InlineContext,
-            ) ?? [],
+                  model: modelPickerItem.context.model,
+                } satisfies InlineContext;
+
+                return {
+                  id: getIdForContext(context),
+                  context,
+                  parentId: modelPickerItem.id,
+                } satisfies PickerItem;
+              }) ?? []
+            );
+          },
         },
       },
     ),

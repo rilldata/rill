@@ -14,3 +14,13 @@ export type InlineContextPickerParentOption = {
   >;
   childrenLoading?: boolean;
 };
+
+export type PickerItem = {
+  id: string;
+  context: InlineContext;
+  parentId?: string; // undefined for top-level items
+  recentlyUsed?: boolean;
+  currentlyActive?: boolean;
+  childrenLoading?: boolean;
+  hasChildren?: boolean;
+};

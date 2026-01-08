@@ -1,35 +1,35 @@
 import { writable, derived, get } from "svelte/store";
 
 export class ContextPickerUIState {
-  private expandedParentsStore = writable({} as Record<string, boolean>);
+  public expandedParentsStore = writable({} as Record<string, boolean>);
 
-  public getExpandedStore(parentKey: string) {
+  public getExpandedStore(id: string) {
     return derived(this.expandedParentsStore, (expandedParents) =>
-      Boolean(expandedParents[parentKey]),
+      Boolean(expandedParents[id]),
     );
   }
 
-  public isExpanded(parentKey: string) {
-    return get(this.expandedParentsStore)[parentKey] ?? false;
+  public isExpanded(id: string) {
+    return get(this.expandedParentsStore)[id] ?? false;
   }
 
-  public expand(parentKey: string) {
+  public expand(id: string) {
     this.expandedParentsStore.update((expandedParents) => {
-      expandedParents[parentKey] = true;
+      expandedParents[id] = true;
       return expandedParents;
     });
   }
 
-  public collapse(parentKey: string) {
+  public collapse(id: string) {
     this.expandedParentsStore.update((expandedParents) => {
-      expandedParents[parentKey] = false;
+      expandedParents[id] = false;
       return expandedParents;
     });
   }
 
-  public toggle(parentKey: string) {
+  public toggle(id: string) {
     this.expandedParentsStore.update((expandedParents) => {
-      expandedParents[parentKey] = !expandedParents[parentKey];
+      expandedParents[id] = !expandedParents[id];
       return expandedParents;
     });
   }

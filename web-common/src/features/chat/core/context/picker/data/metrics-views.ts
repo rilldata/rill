@@ -2,9 +2,10 @@ import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/das
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { derived, type Readable } from "svelte/store";
-import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import {
+  getIdForContext,
   type InlineContext,
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -25,9 +26,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
  * 1st level: metrics view context options
  * 2nd level: measures and dimensions options for each metrics view
  */
-export function getMetricsViewPickerOptions(): Readable<
-  InlineContextPickerParentOption[]
-> {
+export function getMetricsViewPickerOptions(): Readable<PickerItem[]> {
   const metricsViewsQuery = createQuery(
     getValidMetricsViewsQueryOptions(),
     queryClient,
@@ -40,40 +39,57 @@ export function getMetricsViewPickerOptions(): Readable<
     [metricsViewsQuery, lastUsedMetricsViewStore, activeMetricsViewStore],
     ([metricsViewsResp, lastUsedMetricsView, activeMetricsView]) => {
       const metricsViews = metricsViewsResp.data ?? [];
-      return metricsViews.map((mv) => {
+      return metricsViews.flatMap((mv) => {
         const mvName = mv.meta?.name?.name ?? "";
         const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
         const mvDisplayName = metricsViewSpec?.displayName || mvName;
-
-        const measures: InlineContext[] =
-          metricsViewSpec?.measures?.map((m) => ({
-            type: InlineContextType.Measure,
-            label: getMeasureDisplayName(m),
-            key: `${InlineContextType.Measure}_${m.name!}`,
-            metricsView: mvName,
-            measure: m.name!,
-          })) ?? [];
-
-        const dimensions: InlineContext[] =
-          metricsViewSpec?.dimensions?.map((d) => ({
-            type: InlineContextType.Dimension,
-            label: getDimensionDisplayName(d),
-            key: `${InlineContextType.Dimension}_${d.name!}`,
-            metricsView: mvName,
-            dimension: d.name!,
-          })) ?? [];
-
-        return {
-          context: {
-            type: InlineContextType.MetricsView,
-            metricsView: mvName,
-            label: mvDisplayName,
-            key: `${InlineContextType.MetricsView}_${mvName}`,
-          },
-          children: measures.concat(dimensions),
+        const mvContext = {
+          type: InlineContextType.MetricsView,
+          value: mvName,
+          label: mvDisplayName,
+          metricsView: mvName,
+        } satisfies InlineContext;
+        const mvPickerItem = {
+          id: getIdForContext(mvContext),
+          context: mvContext,
           currentlyActive: activeMetricsView === mvName,
           recentlyUsed: lastUsedMetricsView === mvName,
-        } satisfies InlineContextPickerParentOption;
+          hasChildren: true,
+        } satisfies PickerItem;
+
+        const measures = metricsViewSpec?.measures ?? [];
+        const measurePickerItems = measures.map((m) => {
+          const measureContext = {
+            type: InlineContextType.Measure,
+            label: getMeasureDisplayName(m),
+            value: m.name!,
+            metricsView: mvName,
+            measure: m.name!,
+          } satisfies InlineContext;
+          return {
+            id: getIdForContext(measureContext),
+            context: measureContext,
+            parentId: mvPickerItem.id,
+          } satisfies PickerItem;
+        });
+
+        const dimensions = metricsViewSpec?.dimensions ?? [];
+        const dimensionPickerItems = dimensions.map((d) => {
+          const dimensionContext = {
+            type: InlineContextType.Dimension,
+            label: getDimensionDisplayName(d),
+            value: d.name!,
+            metricsView: mvName,
+            dimension: d.name!,
+          } satisfies InlineContext;
+          return {
+            id: getIdForContext(dimensionContext),
+            context: dimensionContext,
+            parentId: mvPickerItem.id,
+          } satisfies PickerItem;
+        });
+
+        return [mvPickerItem, ...measurePickerItems, ...dimensionPickerItems];
       });
     },
   );

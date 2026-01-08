@@ -83,6 +83,7 @@ export class MeasureSelection {
 
     const measureMention = convertContextToInlinePrompt({
       type: InlineContextType.Measure,
+      value: measure,
       metricsView,
       measure,
     });

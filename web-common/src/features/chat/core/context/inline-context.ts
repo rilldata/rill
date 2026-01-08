@@ -13,8 +13,7 @@ export enum InlineContextType {
 export type InlineContext = {
   type: InlineContextType;
   label?: string;
-  // Unique ID that is a combination of type and value of this context
-  key: string;
+  // Main value for this context, used to run search and forms a unique identifier with type
   value: string;
   metricsView?: string;
   measure?: string;
@@ -26,11 +25,18 @@ export type InlineContext = {
   columnType?: string; // TODO: is this needed here?
 };
 
+export function getIdForContext(ctx: InlineContext) {
+  return `${ctx.type}__${ctx.value}`;
+}
+
 export function inlineContextsAreEqual(
   ctx1: InlineContext,
   ctx2: InlineContext,
 ) {
-  return ctx1.key === ctx2.key;
+  if (ctx1.type !== ctx2.type || ctx1.value !== ctx2.value) return false;
+  const parentValuesAreEqual =
+    ctx1.metricsView === ctx2.metricsView && ctx1.model === ctx2.model;
+  return parentValuesAreEqual;
 }
 
 export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
@@ -80,8 +86,6 @@ export function normalizeInlineContext(ctx: InlineContext) {
       break;
   }
 
-  normalisedContext.key = `${normalisedContext.type}-${normalisedContext.value}`;
-
   return normalisedContext;
 }
 
@@ -93,7 +97,7 @@ export function convertContextToInlinePrompt(ctx: InlineContext) {
   const parts: string[] = [];
 
   for (const key in ctx) {
-    const isComputedKey = key === "key" || key === "label";
+    const isComputedKey = key === "value" || key === "label";
     const isNonStringKey = key === "values";
     if (isComputedKey || isNonStringKey) continue;
     if (ctx[key] !== undefined) parts.push(`${key}="${ctx[key]}"`);
