@@ -173,6 +173,7 @@ export function mapQueryToDashboard(
       const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
         validSpecResp.data.explore,
         timeRangeSummary.data?.timeRangeSummary,
+        metricsView.smallestTimeGrain,
       );
       const defaultExploreState = {
         ...rillDefaultExploreState,

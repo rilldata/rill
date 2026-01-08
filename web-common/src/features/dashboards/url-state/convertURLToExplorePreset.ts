@@ -21,14 +21,19 @@ import {
   FromURLParamTimeDimensionMap,
   FromURLParamTimeGrainMap,
   FromURLParamViewMap,
+  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import {
+  parseRillTime,
+  validateRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -121,6 +126,7 @@ export function convertURLToExplorePreset(
     searchParams,
     dimensions,
   );
+
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
@@ -349,10 +355,24 @@ export function fromTimeRangesParams(
 
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
+
     if (tg in FromURLParamTimeGrainMap) {
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
+    }
+  } else {
+    try {
+      const parsed = parseRillTime(preset.timeRange ?? "");
+      const grain = getAggregationGrain(parsed);
+
+      if (grain && grain in ToURLParamTimeGrainMapMap) {
+        preset.timeGrain = ToURLParamTimeGrainMapMap[grain];
+      } else {
+        errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
+      }
+    } catch {
+      // ignore
     }
   }
 
