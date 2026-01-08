@@ -60,22 +60,6 @@ type MeasureCompute struct {
 	ComparisonTime  *MeasureComputeComparisonTime  `json:"comparison_time" mapstructure:"comparison_time"`
 }
 
-func (q *Query) AsMap() (map[string]any, error) {
-	// We do a JSON roundtrip to convert to a map[string]any.
-	// We don't use mapstructure here because it doesn't correctly handle time.Time roundtrips to a map[string]any, even with decoder hooks.
-	// And anyway, since JSON is the usual entrypoint for TimeRange maps, this is more representative of real usage.
-	data, err := json.Marshal(q)
-	if err != nil {
-		return nil, err
-	}
-	var res map[string]any
-	err = json.Unmarshal(data, &res)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 func (q *Query) Validate() error {
 	if q.Rows {
 		if len(q.Dimensions) > 0 {
