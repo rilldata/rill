@@ -242,28 +242,36 @@ Before proceeding, verify what the project supports:
 Follow these steps when building or extending a project:
 
 1. **Survey existing resources**: Check what resources already exist in the project. You may be able to reuse or extend existing models, metrics views, or dashboards rather than creating new ones.
-
 2. **Explore available data**: Use connector tools to discover what tables or files are available. For SQL databases, query the information schema. For object stores, list buckets and files.
-
 3. **Handle missing data**: If the project lacks access to the data you need, ask the user whether to generate mock data or help them configure a connector to their data source.
+4. **Create or update models** (managed or readwrite OLAP only): Build models that ingest and transform data into denormalized tables suitable for dashboard queries. Materialize models that involve expensive joins or aggregations. Use dev partitions to limit data during development.
+5. **Profile the data**: Before creating a metrics view, look at the schema of the underlying table to understand its shape. This informs which columns become dimensions and measures. Consider doing a few, well-chosen queries to the table to get row counts, cardinality of important columns, date ranges, and data quality. Be very careful not to run too many queries or very expensive queries. 
+6. **Create or update the metrics view**: Define dimensions, measures, and any security policies on the profiled table. Start with the most important metrics and iterate.
+7. **Ensure there are dashboards**: Create an explore dashboard for drill-down analysis of the metrics view if one doesn't already exist. If the user wants an overview or report-style view, also create a canvas dashboard with components from one or more metrics views.
 
-4. **Create models** (readwrite OLAP only): Build models that ingest and transform data into denormalized tables suitable for dashboard queries. Materialize models that involve expensive joins or aggregations. Use dev partitions to limit data during development.
-
-5. **Profile the data**: Before creating a metrics view, query the underlying table to understand its shape: row counts, cardinality of key columns, date ranges, and data quality. This informs which columns become dimensions and measures.
-
-6. **Create the metrics view**: Define dimensions, measures, and any security policies on the profiled table. Start with the most important metrics and iterate.
-
-7. **Create dashboards**: Add an explore dashboard for drill-down analysis. If the user wants an overview or report-style view, also create a canvas dashboard with components from one or more metrics views.
+When you're extending an existing project, try to consider if you can make surgical updates to existing resources and avoid going through the full workflow of exploring and profiling available data.
 
 ### Available tools
 
 The following tools are typically available for project development:
-- File operations for listing, reading, and writing project files
+- `file_list`, `file_search` and `file_read` for accessing existing files in the project
+- `file_write` for creating, updating or deleting a file in the project; this also waits for the file to be parsed/reconciled, returning any relevant resource status as part of the result
 - `project_status` for checking resource names and their current status (idle, running, error)
-- `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and be mindful of performance
+- `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
 - `list_tables` and `get_table` for accessing the information schema of a database connector
-- `list_buckets` and `list_files` for exploring object stores; load files into models using SQL before querying them
+- `list_buckets` and `list_bucket_files` for exploring object stores; load files into models using SQL before querying them
+
+{% if .external %}
+
+### What to do when tools are not available
+
+You may be running in an external editor that does not have Rill's MCP server connected. In this case, you will need to approach your work differently because you can't run tool calls like `list_tables` or `project_status`. Instead:
+1. Use the `rill validate` CLI command to validate the project and get the status of different resources.
+2. Before editing a resource, load the specific instruction file for its resource type (if available).
+3. Be more bold in making changes, and rely on `rill validate` or user feedback to inform you of issues.
+
+{% end %}
 
 ### Common pitfalls
 

@@ -50,12 +50,12 @@ func TestLoadAll(t *testing.T) {
 
 func TestParseFrontMatter(t *testing.T) {
 	tests := []struct {
-		name        string
-		content     string
-		wantName    string
-		wantDesc    string
-		wantBody    string
-		wantErr     bool
+		name     string
+		content  string
+		wantName string
+		wantDesc string
+		wantBody string
+		wantErr  bool
 	}{
 		{
 			name: "valid front matter",
@@ -108,7 +108,7 @@ name: Template Test
 description: Testing templates
 ---
 
-{%if .External%}External mode{%else%}Internal mode{%end%}`
+{%if .external %}External mode{% else %}Internal mode{% end %}`
 
 	// Test with External = false
 	inst, err := parseInstruction([]byte(content), Options{External: false})

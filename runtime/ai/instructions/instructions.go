@@ -155,7 +155,7 @@ func executeTemplate(body string, opts Options) (string, error) {
 	}
 
 	data := map[string]any{
-		"External": opts.External,
+		"external": opts.External,
 	}
 
 	var buf bytes.Buffer
