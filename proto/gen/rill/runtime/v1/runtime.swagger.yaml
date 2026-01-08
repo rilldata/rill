@@ -496,6 +496,11 @@ paths:
                 description: |-
                   Optional context for prompts handled by the developer_agent.
                   The field is ignored if another agent is selected.
+              userFeedbackContext:
+                $ref: '#/definitions/v1UserFeedbackContext'
+                description: |-
+                  Optional feedback context. If provided, the router_agent calls the user_feedback tool,
+                  which records feedback and, for negative feedback, attributes the cause.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -7384,6 +7389,26 @@ definitions:
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
+  v1UserFeedbackContext:
+    type: object
+    properties:
+      targetMessageId:
+        type: string
+        description: The ID of the message being rated.
+      sentiment:
+        type: string
+        description: 'Sentiment: "positive" or "negative".'
+      categories:
+        type: array
+        items:
+          type: string
+        description: 'Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".'
+      comment:
+        type: string
+        description: Optional free-text comment.
+    description: |-
+      Context for submitting user feedback on an AI message.
+      When provided, the request records feedback and, for negative sentiment, runs attribution.
   v1WatchFilesResponse:
     type: object
     properties:

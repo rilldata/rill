@@ -212,9 +212,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return ErrForbidden
 	}
 
-	// Add basic validation - fail fast for invalid requests
-	if req.Prompt == "" {
-		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
+	// Validate request - either prompt or feedback context must be provided
+	if req.Prompt == "" && req.UserFeedbackContext == nil {
+		return status.Error(codes.InvalidArgument, "prompt or user_feedback_context must be provided")
 	}
 
 	// Setup user agent
@@ -273,7 +273,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
-	// Prepare agent args if provided
+	// Prepare optional context args
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
@@ -292,6 +292,15 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 			CurrentFilePath: req.DeveloperAgentContext.CurrentFilePath,
 		}
 	}
+	var userFeedbackArgs *ai.UserFeedbackArgs
+	if req.UserFeedbackContext != nil {
+		userFeedbackArgs = &ai.UserFeedbackArgs{
+			TargetMessageID: req.UserFeedbackContext.TargetMessageId,
+			Sentiment:       req.UserFeedbackContext.Sentiment,
+			Categories:      req.UserFeedbackContext.Categories,
+			Comment:         req.UserFeedbackContext.Comment,
+		}
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
@@ -300,6 +309,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		Agent:              req.Agent,
 		AnalystAgentArgs:   analystAgentArgs,
 		DeveloperAgentArgs: developerAgentArgs,
+		UserFeedbackArgs:   userFeedbackArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.

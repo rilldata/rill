@@ -988,6 +988,19 @@ message DeveloperAgentContext {
   string current_file_path = 2;
 }
 
+// Context for submitting user feedback on an AI message.
+// When provided, the request records feedback and, for negative sentiment, runs attribution.
+message UserFeedbackContext {
+  // The ID of the message being rated.
+  string target_message_id = 1;
+  // Sentiment: "positive" or "negative".
+  string sentiment = 2;
+  // Categories (only for negative sentiment): e.g. "instruction_ignored", "no_citation_links", "being_lazy", "incorrect_information", "other".
+  repeated string categories = 3;
+  // Optional free-text comment.
+  string comment = 4;
+}
+
 // Request message for RuntimeService.ListConversations
 message ListConversationsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
@@ -1064,6 +1077,9 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the developer_agent.
   // The field is ignored if another agent is selected.
   DeveloperAgentContext developer_agent_context = 12;
+  // Optional feedback context. If provided, the router_agent calls the user_feedback tool,
+  // which records feedback and, for negative feedback, attributes the cause.
+  UserFeedbackContext user_feedback_context = 13;
 }
 
 // Response message for RuntimeService.CompleteStreaming

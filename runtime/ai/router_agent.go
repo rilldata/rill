@@ -29,6 +29,7 @@ type RouterAgentArgs struct {
 	Agent              string              `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
 	AnalystAgentArgs   *AnalystAgentArgs   `json:"analyst_agent_args,omitempty" jsonschema:"Optional arguments to pass to the analyst agent if the selected agent is analyst_agent."`
 	DeveloperAgentArgs *DeveloperAgentArgs `json:"developer_agent_args,omitempty" jsonschema:"Optional arguments to pass to the developer agent if the selected agent is developer_agent."`
+	UserFeedbackArgs   *UserFeedbackArgs   `json:"user_feedback_args,omitempty" jsonschema:"Optional user feedback to record. If provided, skips routing and calls user_feedback tool directly."`
 	SkipHandoff        bool                `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
@@ -73,9 +74,10 @@ func (t *RouterAgent) CheckAccess(ctx context.Context) (bool, error) {
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
-	// Handle title
 	s := GetSession(ctx)
-	if s.Title() == "" {
+
+	// Handle title
+	if s.Title() == "" && args.Prompt != "" {
 		err := s.UpdateTitle(ctx, promptToTitle(args.Prompt))
 		if err != nil {
 			return nil, err
@@ -95,7 +97,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		return nil, ctx.Err()
 	}
 
-	// Find agent to invoke
+	// Find agent/tool to invoke
 	switch {
 	// Specific agent requested
 	case args.Agent != "":
@@ -106,6 +108,9 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		if !found {
 			return nil, fmt.Errorf("agent %q not found", args.Agent)
 		}
+	// User feedback
+	case args.UserFeedbackArgs != nil:
+		args.Agent = UserFeedbackToolName
 	// No candidates available
 	case len(candidates) == 0:
 		return nil, fmt.Errorf("no agents available")
@@ -184,6 +189,19 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			return nil, err
 		}
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
+
+	case UserFeedbackToolName:
+		var res *UserFeedbackResult
+		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+			Role: RoleUser,
+			Tool: UserFeedbackToolName,
+			Out:  &res,
+			Args: args.UserFeedbackArgs,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &RouterAgentResult{Response: res.Response, Agent: UserFeedbackToolName}, nil
 	}
 
 	return nil, fmt.Errorf("agent %q not implemented", args.Agent)
