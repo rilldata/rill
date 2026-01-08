@@ -555,7 +555,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "NOTHING":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "POINT":
-		return databaseTypeToPB("Array(Float64)", nullable)
+		t.Code = runtimev1.Type_CODE_POINT
 	case "RING":
 		return databaseTypeToPB("Array(Point)", nullable)
 	case "LINESTRING":
@@ -563,7 +563,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "MULTILINESTRING":
 		return databaseTypeToPB("Array(LineString)", nullable)
 	case "POLYGON":
-		return databaseTypeToPB("Array(Ring)", nullable)
+		t.Code = runtimev1.Type_CODE_POLYGON
 	case "MULTIPOLYGON":
 		return databaseTypeToPB("Array(Polygon)", nullable)
 	default:

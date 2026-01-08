@@ -1195,10 +1195,12 @@ components:
                     items:
                         type: string
                     type: array
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 id:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    type: object
                 projectId:
                     type: string
                 resourceName:
