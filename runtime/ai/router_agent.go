@@ -176,14 +176,18 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 
 	case DeveloperAgentName:
+		developerAgentArgs := args.DeveloperAgentArgs
+		if developerAgentArgs == nil {
+			developerAgentArgs = &DeveloperAgentArgs{}
+		}
+		developerAgentArgs.Prompt = args.Prompt
+
 		var res *DeveloperAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
 			Tool: args.Agent,
 			Out:  &res,
-			Args: &DeveloperAgentArgs{
-				Prompt: args.Prompt,
-			},
+			Args: developerAgentArgs,
 		})
 		if err != nil {
 			return nil, err

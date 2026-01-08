@@ -380,16 +380,6 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1Connector'
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
-              frontendUrl:
-                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -551,6 +541,75 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
+    post:
+      summary: |-
+        ForkConversation creates a new conversation by copying messages from an existing one.
+        If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+      operationId: RuntimeService_ForkConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ForkConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ForkConversation
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
+    post:
+      summary: ShareConversation enables sharing of the conversation by adding metadata.
+      operationId: RuntimeService_ShareConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ShareConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              untilMessageId:
+                type: string
+                description: |-
+                  optional message ID up to which to share otherwise share all current messages
+                  only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+                  It supports a special value of "none" to unshare the conversation.
+            title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
@@ -2916,6 +2975,34 @@ paths:
                 format: int32
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/reload-config:
+    post:
+      summary: |-
+        ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+        If the instance doesn't have an admin connector, this RPC does nothing.
+      operationId: RuntimeService_ReloadConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReloadConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ReloadConfig
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/reports/{report}/export:
     post:
       summary: ExportReport builds a URL to download the results of a query as a file.
@@ -3356,6 +3443,7 @@ definitions:
       - DIMENSION_TYPE_UNSPECIFIED
       - DIMENSION_TYPE_CATEGORICAL
       - DIMENSION_TYPE_TIME
+      - DIMENSION_TYPE_GEOSPATIAL
     default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
@@ -3511,6 +3599,8 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
+      - CODE_POINT
+      - CODE_POLYGON
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   protobufAny:
@@ -4904,6 +4994,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1ForkConversationResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+        title: new conversation ID
+    title: Response message for RuntimeService.ForkConversation
   v1GenerateCanvasFileResponse:
     type: object
     properties:
@@ -4942,6 +5039,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Message'
+      isOwner:
+        type: boolean
+        title: would be false for shared conversations accessed by non-owners
     title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object
@@ -6685,6 +6785,9 @@ definitions:
         description: Models to refresh. These are specified separately to enable more fine-grained configuration.
   v1RefreshTriggerState:
     type: object
+  v1ReloadConfigResponse:
+    type: object
+    title: Response message for RuntimeService.ReloadConfig
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
@@ -7035,6 +7138,9 @@ definitions:
       resource:
         $ref: '#/definitions/v1ResourceName'
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
+  v1ShareConversationResponse:
+    type: object
+    title: Response message for RuntimeService.ShareConversation
   v1Source:
     type: object
     properties:

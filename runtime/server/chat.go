@@ -61,6 +61,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
+
 	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
@@ -87,6 +88,96 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	return &runtimev1.GetConversationResponse{
 		Conversation: sessionToPB(session.CatalogSession(), messagePBs),
 		Messages:     messagePBs,
+		IsOwner:      session.CatalogSession().OwnerID == claims.UserID,
+	}, nil
+}
+
+func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConversationRequest) (*runtimev1.ShareConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// This check prevents changing sharing boundaries on already shared conversations by non-owners.
+	if session.CatalogSession().OwnerID != claims.UserID && !claims.SkipChecks {
+		return nil, ErrForbidden
+	}
+
+	// unshare conversation
+	if req.UntilMessageId == "none" {
+		err = session.UpdateSharedUntilMessageID(ctx, "")
+		if err != nil {
+			return nil, err
+		}
+		err = session.Flush(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &runtimev1.ShareConversationResponse{}, nil
+	}
+
+	var preds []ai.Predicate
+	if req.UntilMessageId == "" {
+		preds = []ai.Predicate{ai.FilterByTool(ai.RouterAgentName), ai.FilterByType(ai.MessageTypeResult)}
+	} else {
+		preds = []ai.Predicate{ai.FilterByID(req.UntilMessageId)}
+	}
+	msg, ok := session.LatestMessage(preds...)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "message with id %q not found in conversation %q", req.UntilMessageId, req.ConversationId)
+	}
+	if req.UntilMessageId != "" && !(msg.Tool == ai.RouterAgentName && msg.Type == ai.MessageTypeResult) {
+		return nil, status.Errorf(codes.InvalidArgument, "cannot share incomplete conversation as message with id %q is not a router agent result message", req.UntilMessageId)
+	}
+
+	// now save the session with the shared until message id and flush immediately
+	err = session.UpdateSharedUntilMessageID(ctx, msg.ID)
+	if err != nil {
+		return nil, err
+	}
+	err = session.Flush(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ShareConversationResponse{}, nil
+}
+
+func (s *Server) ForkConversation(ctx context.Context, req *runtimev1.ForkConversationRequest) (*runtimev1.ForkConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	// Setup user agent
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "unknown"
+	}
+	userAgent := fmt.Sprintf("rill/%s", version)
+
+	// Open the existing AI session, this will only contain messages the user has access to
+	id, err := s.ai.ForkSession(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+		UserAgent:  userAgent,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ForkConversationResponse{
+		ConversationId: id,
 	}, nil
 }
 

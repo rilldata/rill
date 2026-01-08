@@ -26,6 +26,15 @@ import {
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+
+type ConversationEvents = {
+  "conversation-created": string;
+  "stream-start": void;
+  message: V1Message;
+  "stream-complete": string;
+  error: string;
+};
 
 /**
  * Individual conversation state management.
@@ -42,10 +51,18 @@ export class Conversation {
   // Feedback state (submission handled by submitFeedback method below)
   public readonly feedback = new FeedbackState();
 
+  // Events
+  private readonly events = new EventEmitter<ConversationEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
+
   // Private state
   private sseClient: SSEFetchClient | null = null;
   private hasReceivedFirstMessage = false;
-  private onMessageCallback: ((message: V1Message) => void) | undefined;
   private readonly conversationQuery: CreateQueryResult<
     V1GetConversationResponse,
     RpcStatus
@@ -54,18 +71,8 @@ export class Conversation {
   constructor(
     private readonly instanceId: string,
     public conversationId: string,
-    private readonly options: {
-      agent?: string;
-      onStreamStart?: () => void;
-      onConversationCreated?: (conversationId: string) => void;
-    } = {
-      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
-    },
+    private readonly agent: string = ToolName.ANALYST_AGENT,
   ) {
-    if (this.options) {
-      this.options.agent ??= ToolName.ANALYST_AGENT;
-    }
-
     // Create and store the conversation query
     this.conversationQuery = createQuery(
       getRuntimeServiceGetConversationQueryOptions(
@@ -136,12 +143,7 @@ export class Conversation {
    */
   public async sendMessage(
     context: RuntimeServiceCompleteBody,
-    options?: {
-      onStreamStart?: () => void;
-      onMessage?: (message: V1Message) => void;
-      onStreamComplete?: (conversationId: string) => void;
-      onError?: (error: string) => void;
-    },
+    options?: { onStreamStart?: () => void },
   ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
@@ -161,19 +163,14 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      options?.onStreamStart?.();
-      // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming({
-        prompt,
-        context,
-        onMessage: options?.onMessage,
-      });
+      options?.onStreamStart?.(); // Callback for direct callers
+      this.events.emit("stream-start"); // Event for external listeners
 
-      // Wait for streaming to complete
-      await streamPromise;
+      // Start streaming - this establishes the connection
+      await this.startStreaming({ prompt, context });
 
       // Stream has completed successfully
-      options?.onStreamComplete?.(this.conversationId);
+      this.events.emit("stream-complete", this.conversationId);
 
       // Temporary fix to make sure the title of the conversation is updated.
       void invalidateConversationsList(this.instanceId);
@@ -191,7 +188,7 @@ export class Conversation {
         userMessage,
         this.hasReceivedFirstMessage,
       );
-      options?.onError?.(this.formatTransportError(error));
+      this.events.emit("error", this.formatTransportError(error as Error));
     } finally {
       this.isStreaming.set(false);
     }
@@ -267,6 +264,8 @@ export class Conversation {
       this.sseClient.cleanup();
       this.sseClient = null;
     }
+
+    this.events.clearListeners();
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
@@ -286,9 +285,8 @@ export class Conversation {
       categories: FeedbackCategory[];
       comment?: string;
     };
-    onMessage?: (message: V1Message) => void;
   }): Promise<void> {
-    this.ensureSSEClient(request.onMessage);
+    this.ensureSSEClient();
     this.sseClient!.stop();
 
     const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
@@ -300,12 +298,10 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt: request.prompt,
-      agent: this.options?.agent,
+      agent: this.agent,
       userFeedbackContext: request.userFeedbackContext,
       ...request.context,
     };
-
-    this.options?.onStreamStart?.();
 
     await this.sseClient!.start(baseUrl, {
       method: "POST",
@@ -315,13 +311,8 @@ export class Conversation {
 
   /**
    * Ensure SSE client is initialized with event handlers.
-   * The onMessage callback is stored as an instance property so it can be
-   * updated on subsequent calls (e.g., feedback streaming doesn't need the callback).
    */
-  private ensureSSEClient(onMessage?: (message: V1Message) => void): void {
-    // Always update the callback - allows different callers to set different callbacks
-    this.onMessageCallback = onMessage;
-
+  private ensureSSEClient(): void {
     if (this.sseClient) return;
 
     this.sseClient = new SSEFetchClient();
@@ -343,7 +334,7 @@ export class Conversation {
       try {
         const response: V1CompleteStreamingResponse = JSON.parse(message.data);
         this.processStreamingResponse(response);
-        if (response.message) this.onMessageCallback?.(response.message);
+        if (response.message) this.events.emit("message", response.message);
       } catch (error) {
         console.error("Failed to parse streaming response:", error);
         this.streamError.set("Failed to process server response");
@@ -437,7 +428,7 @@ export class Conversation {
     this.conversationId = realConversationId;
 
     // Notify that conversation was created
-    this.options?.onConversationCreated?.(realConversationId);
+    this.events.emit("conversation-created", realConversationId);
   }
 
   // ----- Cache Management -----
@@ -608,12 +599,12 @@ export class Conversation {
    *    → No rollback (message already persisted on server)
    */
   private handleTransportError(
-    error: any,
+    error: unknown,
     userMessage: V1Message,
     wasStreaming: boolean,
   ): void {
     // Set error message
-    this.streamError.set(this.formatTransportError(error));
+    this.streamError.set(this.formatTransportError(error as Error));
 
     // Only rollback if we hadn't started streaming yet
     if (!wasStreaming) {

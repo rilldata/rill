@@ -80,6 +80,7 @@ export const MetricsViewSpecDimensionType = {
   DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
   DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
   DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+  DIMENSION_TYPE_GEOSPATIAL: "DIMENSION_TYPE_GEOSPATIAL",
 } as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
@@ -179,6 +180,8 @@ export const TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
+  CODE_POINT: "CODE_POINT",
+  CODE_POLYGON: "CODE_POLYGON",
 } as const;
 
 export interface ProtobufAny {
@@ -1028,6 +1031,10 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1ForkConversationResponse {
+  conversationId?: string;
+}
+
 export interface V1GenerateCanvasFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -1059,6 +1066,7 @@ export interface V1GenerateResolverResponse {
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
+  isOwner?: boolean;
 }
 
 export interface V1GetExploreResponse {
@@ -2068,6 +2076,10 @@ export interface V1RefreshTriggerState {
   [key: string]: unknown;
 }
 
+export interface V1ReloadConfigResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: unknown;
 }
@@ -2278,6 +2290,10 @@ It is ORed together with the condition_kinds. */
 
 export interface V1SecurityRuleTransitiveAccess {
   resource?: V1ResourceName;
+}
+
+export interface V1ShareConversationResponse {
+  [key: string]: unknown;
 }
 
 export interface V1Source {
@@ -2564,12 +2580,6 @@ export type RuntimeServiceGetInstanceParams = {
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
-export type RuntimeServiceEditInstanceBodyAnnotations = {
-  [key: string]: string;
-};
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -2581,9 +2591,6 @@ export type RuntimeServiceEditInstanceBody = {
   adminConnector?: string;
   aiConnector?: string;
   connectors?: V1Connector[];
-  variables?: RuntimeServiceEditInstanceBodyVariables;
-  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
-  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
@@ -2621,6 +2628,15 @@ export type RuntimeServiceListConversationsParams = {
    * Optional search pattern for filtering by user agent.
    */
   userAgentPattern?: string;
+};
+
+export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
+
+export type RuntimeServiceShareConversationBody = {
+  /** optional message ID up to which to share otherwise share all current messages
+only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+It supports a special value of "none" to unshare the conversation. */
+  untilMessageId?: string;
 };
 
 export type ConnectorServiceListBucketsParams = {
@@ -3145,6 +3161,8 @@ export type RuntimeServiceQueryResolverBody = {
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
   limit?: number;
 };
+
+export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };
 
 export type QueryServiceExportReportBody = {
   /** The execution time to evaluate the report relative to.

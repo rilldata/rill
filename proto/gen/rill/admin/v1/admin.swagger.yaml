@@ -77,6 +77,26 @@ paths:
           in: path
           required: true
           type: string
+  /v1/deployments/{deploymentId}/config:
+    get:
+      summary: |-
+        GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+        This is called by the runtime to pull its Variables and Annotations from the admin service.
+      operationId: AdminService_GetDeploymentConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
   /v1/deployments/{deploymentId}/credentials:
     post:
       summary: GetDeployment returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -1094,6 +1114,11 @@ paths:
         - name: project
           in: path
           required: true
+          type: string
+        - name: branch
+          description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+          in: query
+          required: false
           type: string
         - name: accessTokenTtlSeconds
           in: query
@@ -2259,11 +2284,13 @@ paths:
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
+              metricsViewFilters:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
                 description: |-
-                  Optional filter to apply as a row filter in queries.
-                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+                  Optional metrics view to filter mapping to apply as row filters in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
               fields:
                 type: array
                 items:
@@ -5039,6 +5066,29 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1GetDeploymentConfigResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+        title: Variables for the deployment (connector credentials, etc.)
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+        title: Annotations for the deployment (org/project metadata, etc.)
+      frontendUrl:
+        type: string
+        description: Frontend URL for the deployment.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the deployment was last updated.
+      usesArchive:
+        type: boolean
+        description: Whether the deployment is git based or archive based.
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5150,7 +5200,7 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
-      prodDeployment:
+      deployment:
         $ref: '#/definitions/v1Deployment'
       jwt:
         type: string
@@ -5600,8 +5650,10 @@ definitions:
         type: string
       resourceName:
         type: string
-      filter:
-        $ref: '#/definitions/v1Expression'
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
       fields:
         type: array
         items:
