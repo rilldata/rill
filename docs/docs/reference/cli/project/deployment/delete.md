@@ -1,21 +1,20 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project deployments list
+title: rill project deployment delete
 ---
-## rill project deployments list
+## rill project deployment delete
 
-List all deployments for a project
+Delete a deployment by branch
 
 ```
-rill project deployments list [<project>] [flags]
+rill project deployment delete [<project>] <branch> [flags]
 ```
 
 ### Flags
 
 ```
-      --environment string   Filter deployments by environment (prod/dev)
-      --path string          Project directory (default ".")
-      --project string       Project name
+      --path string      Project directory (default ".")
+      --project string   Project name
 ```
 
 ### Global flags
@@ -30,5 +29,5 @@ rill project deployments list [<project>] [flags]
 
 ### SEE ALSO
 
-* [rill project deployments](deployments.md)	 - Manage project deployments
+* [rill project deployment](deployment.md)	 - Manage project deployments
 

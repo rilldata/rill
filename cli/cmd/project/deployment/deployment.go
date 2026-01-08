@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DeploymentsCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeploymentCmd(ch *cmdutil.Helper) *cobra.Command {
 	deploymentCmd := &cobra.Command{
 		Use:   "deployment",
 		Short: "Manage project deployments",

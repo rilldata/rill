@@ -59,7 +59,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintDeployments(resp.Deployments, projResp.Project.PrimaryDeploymentId)
+			for _, d := range resp.Deployments {
+				if d.Id == projResp.Project.PrimaryDeploymentId {
+					d.Branch += " (primary)"
+				}
+			}
+			ch.PrintDeployments(resp.Deployments)
 			return nil
 		},
 	}

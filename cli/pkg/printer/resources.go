@@ -715,13 +715,13 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
-func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment, primaryDeploymentID string) {
+func (p *Printer) PrintDeployments(deployments []*adminv1.Deployment) {
 	if len(deployments) == 0 {
 		p.PrintfWarn("No deployments found\n")
 		return
 	}
 
-	p.PrintData(toDeploymentsTable(deployments, primaryDeploymentID))
+	p.PrintData(toDeploymentsTable(deployments))
 }
 
 func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
@@ -744,13 +744,10 @@ func (p *Printer) PrintDeployment(d *adminv1.Deployment) {
 	p.Printf("Updated: %s\n", d.UpdatedOn.AsTime().Local().Format(time.RFC1123))
 }
 
-func toDeploymentsTable(deployments []*adminv1.Deployment, primaryDeploymentID string) []*deployment {
+func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
 	res := make([]*deployment, 0, len(deployments))
 	for _, d := range deployments {
 		res = append(res, toDeploymentRow(d))
-		if d.Id == primaryDeploymentID {
-			res[len(res)-1].Branch += " (primary)"
-		}
 	}
 	slices.SortFunc(res, func(a, b *deployment) int {
 		if a.Environment < b.Environment {

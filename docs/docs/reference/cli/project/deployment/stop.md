@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project deployments delete
+title: rill project deployment stop
 ---
-## rill project deployments delete
+## rill project deployment stop
 
-Delete a deployment by branch
+Stop a deployment by branch
 
 ```
-rill project deployments delete [<project>] <branch> [flags]
+rill project deployment stop [<project>] <branch> [flags]
 ```
 
 ### Flags
@@ -29,5 +29,5 @@ rill project deployments delete [<project>] <branch> [flags]
 
 ### SEE ALSO
 
-* [rill project deployments](deployments.md)	 - Manage project deployments
+* [rill project deployment](deployment.md)	 - Manage project deployments
 
