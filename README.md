@@ -25,6 +25,10 @@
 - **AI-ready** — Built-in chat + MCP server for Claude, ChatGPT, and custom agents
 - **Git-native** — Version control your dashboards, CI/CD your analytics
 
+<p align="center">
+  <img src="/docs/static/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
+</p>
+
 ## Community
 
 Have questions, need support, or just want to talk about Rill?
@@ -41,10 +45,6 @@ Have questions, need support, or just want to talk about Rill?
 curl https://rill.sh | sh
 rill start my-rill-project
 ```
-
-<p align="center">
-  <img src="/docs/static/img/explore/dashboard101/multi-measure-select.png" alt="Rill dashboard" width="80%">
-</p>
 
 ## Capabilities
 
