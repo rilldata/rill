@@ -139,11 +139,12 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	if c.supportSettings {
 		// Default settings
 		settings := map[string]any{
-			"cast_keep_nullable":        1,
-			"insert_distributed_sync":   1,
-			"prefer_global_in_and_join": 1,
-			"session_timezone":          "UTC",
-			"join_use_nulls":            1,
+			"cast_keep_nullable":            1,
+			"insert_distributed_sync":       1,
+			"prefer_global_in_and_join":     1,
+			"session_timezone":              "UTC",
+			"join_use_nulls":                1,
+			"cast_string_to_date_time_mode": "best_effort",
 		}
 
 		// Settings string to append to the query

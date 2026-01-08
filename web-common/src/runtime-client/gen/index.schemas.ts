@@ -1929,6 +1929,7 @@ export const V1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1ParseError {

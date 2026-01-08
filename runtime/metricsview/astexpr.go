@@ -131,12 +131,26 @@ func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
+	case OperatorCast:
+		return b.writeCast(cond)
 	default:
 		if !cond.Operator.Valid() {
 			return fmt.Errorf("invalid expression operator %q", cond.Operator)
 		}
 		return b.writeBinaryCondition(cond.Expressions, cond.Operator)
 	}
+}
+
+func (b *sqlExprBuilder) writeCast(cond *Condition) error {
+	b.writeString("CAST(")
+	err := b.writeExpression(cond.Expressions[0])
+	if err != nil {
+		return err
+	}
+	b.writeString(" AS ")
+	b.writeString(cond.Expressions[1].Value.(string))
+	b.writeByte(')')
+	return nil
 }
 
 func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {

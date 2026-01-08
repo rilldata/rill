@@ -67,6 +67,8 @@ func parseFilter(ctx context.Context, node, context ast.ExprNode, q *query) (*me
 		return parseBetween(ctx, node, q)
 	case *ast.FuncCallExpr:
 		return parseFuncCallInFilter(ctx, node, context, q)
+	case *ast.FuncCastExpr:
+		return parseFuncCastCallInFilter(ctx, node, context, q)
 	default:
 		return nil, fmt.Errorf("metrics sql: unsupported type %T, expression %q", node, restore(node))
 	}
@@ -498,5 +500,59 @@ func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, context 
 		}, nil
 	default:
 		return nil, fmt.Errorf("metrics sql: function `%s` not supported in where clause", node.FnName.L)
+	}
+}
+
+func parseFuncCastCallInFilter(ctx context.Context, node *ast.FuncCastExpr, context ast.ExprNode, q *query) (*metricsview.Expression, error) {
+	// only support casting to DateTime or Timestamp for now
+	switch node.Tp.GetType() {
+	case mysql.TypeDatetime, mysql.TypeTimestamp:
+		ex, err := parseCastExpr(ctx, node.Expr, context, q)
+		if err != nil {
+			return nil, err
+		}
+		var castType string
+		if node.Tp.GetType() == mysql.TypeDatetime {
+			castType = "DateTime"
+		} else {
+			castType = "Timestamp"
+		}
+		return &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator:    metricsview.OperatorCast,
+				Expressions: []*metricsview.Expression{ex, {Value: castType}},
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("metrics sql: casting to type `%s` is not supported in where clause", node.Tp.String())
+	}
+}
+
+func parseCastExpr(ctx context.Context, node, context ast.ExprNode, q *query) (*metricsview.Expression, error) {
+	switch node := node.(type) {
+	case *ast.ColumnNameExpr:
+		col, err := parseColumnNameExpr(node)
+		if err != nil {
+			return nil, err
+		}
+		return &metricsview.Expression{
+			Name: col,
+		}, nil
+	case ast.ValueExpr:
+		val, err := parseValueExpr(node)
+		if err != nil {
+			return nil, err
+		}
+		return &metricsview.Expression{
+			Value: val,
+		}, nil
+	case *ast.ParenthesesExpr:
+		return parseParentheses(ctx, node, q)
+	case *ast.FuncCallExpr:
+		return parseFuncCallInFilter(ctx, node, context, q)
+	case *ast.FuncCastExpr:
+		return parseFuncCastCallInFilter(ctx, node, context, q)
+	default:
+		return nil, fmt.Errorf("metrics sql: unsupported type %T, expression %q", node, restore(node))
 	}
 }
