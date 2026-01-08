@@ -51,31 +51,83 @@ export function useResources(instanceId: string) {
   );
 }
 
-export function useModelTableSizes(
+// Cache stores by instanceId and connector array to prevent recreating them
+const modelSizesStoreCache = new Map<
+  string,
+  { store: any; unsubscribe: () => void }
+>();
+
+// Keep preloaded query subscriptions alive so they don't get cancelled
+const preloadedQuerySubscriptions = new Map<string, Set<() => void>>();
+
+// Preload queries to ensure they start immediately and keep them alive
+function preloadConnectorQueries(
   instanceId: string,
-  resources: V1Resource[] | undefined,
+  connectorArray: string[],
 ) {
-  // Extract unique connectors from model resources
-  const uniqueConnectors = new Set<string>();
+  const preloadKey = `${instanceId}:${connectorArray.join(",")}`;
 
-  if (resources) {
-    for (const resource of resources) {
-      if (resource?.meta?.name?.kind === ResourceKind.Model) {
-        const connector = resource.model?.state?.resultConnector;
-        const table = resource.model?.state?.resultTable;
-
-        if (connector && table) {
-          uniqueConnectors.add(connector);
-        }
-      }
-    }
+  // Only preload once per connector set
+  if (preloadedQuerySubscriptions.has(preloadKey)) {
+    console.log("[ModelSize] Preload already exists for", preloadKey);
+    return;
   }
 
-  const connectorArray = Array.from(uniqueConnectors).sort();
+  console.log("[ModelSize] Preloading queries for", connectorArray, "on", new Date().toISOString());
+
+  const subscriptions = new Set<() => void>();
+
+  for (const connector of connectorArray) {
+    console.log("[ModelSize] Creating preload query for connector:", connector);
+    const query = createConnectorServiceOLAPListTables(
+      {
+        instanceId,
+        connector,
+      },
+      {
+        query: {
+          enabled: true,
+        },
+      },
+    );
+
+    // Eagerly subscribe to keep the query alive
+    const unsubscribe = query.subscribe((result: any) => {
+      console.log(
+        `[ModelSize] Preloaded query for ${connector} updated:`,
+        "isLoading=",
+        result.isLoading,
+        "tableCount=",
+        result.data?.tables?.length || 0,
+      );
+    });
+    subscriptions.add(unsubscribe);
+  }
+
+  preloadedQuerySubscriptions.set(preloadKey, subscriptions);
+}
+
+function createCachedStore(
+  cacheKey: string,
+  instanceId: string,
+  connectorArray: string[],
+) {
+  console.log("[ModelSize] createCachedStore called with cacheKey:", cacheKey);
+
+  // Check if we already have a cached store
+  if (modelSizesStoreCache.has(cacheKey)) {
+    console.log("[ModelSize] Found cached store for", cacheKey);
+    return modelSizesStoreCache.get(cacheKey)!.store;
+  }
+
+  console.log("[ModelSize] Creating new store for", cacheKey);
+
+  // Preload queries immediately so they start running before store subscribers attach
+  preloadConnectorQueries(instanceId, connectorArray);
 
   // If no connectors, return an empty readable store
   if (connectorArray.length === 0) {
-    return readable(
+    const emptyStore = readable(
       {
         data: new Map<string, string | number>(),
         isLoading: false,
@@ -83,11 +135,15 @@ export function useModelTableSizes(
       },
       () => {},
     );
+    modelSizesStoreCache.set(cacheKey, {
+      store: emptyStore,
+      unsubscribe: () => {},
+    });
+    return emptyStore;
   }
 
-  // Use a readable store with custom subscription logic to handle pagination
-  // Create fresh stores each time to ensure proper query lifecycle
-  return readable(
+  // Create a new store with pagination support
+  const store = readable(
     {
       data: new Map<string, string | number>(),
       isLoading: true,
@@ -120,6 +176,9 @@ export function useModelTableSizes(
           }
         }
 
+        console.log(
+          `[ModelSize] Store updating for ${cacheKey}: tableCount=${sizeMap.size}, isLoading=${isLoading}`,
+        );
         set({ data: sizeMap, isLoading, isError });
       };
 
@@ -177,4 +236,36 @@ export function useModelTableSizes(
       };
     },
   );
+
+  // Eagerly subscribe to keep queries alive across component re-renders
+  const unsubscribe = store.subscribe(() => {});
+  modelSizesStoreCache.set(cacheKey, { store, unsubscribe });
+
+  return store;
+}
+
+export function useModelTableSizes(
+  instanceId: string,
+  resources: V1Resource[] | undefined,
+) {
+  // Extract unique connectors from model resources
+  const uniqueConnectors = new Set<string>();
+
+  if (resources) {
+    for (const resource of resources) {
+      if (resource?.meta?.name?.kind === ResourceKind.Model) {
+        const connector = resource.model?.state?.resultConnector;
+        const table = resource.model?.state?.resultTable;
+
+        if (connector && table) {
+          uniqueConnectors.add(connector);
+        }
+      }
+    }
+  }
+
+  const connectorArray = Array.from(uniqueConnectors).sort();
+  const cacheKey = `${instanceId}:${connectorArray.join(",")}`;
+
+  return createCachedStore(cacheKey, instanceId, connectorArray);
 }

@@ -28,6 +28,7 @@
   let dialogRefreshType: "full" | "incremental" = "full";
 
   let openDropdownResourceKey = "";
+  let columns: ColumnDef<V1Resource, any>[];
 
   const createTrigger = createRuntimeServiceCreateTrigger();
   const queryClient = useQueryClient();
@@ -87,8 +88,10 @@
     closeRefreshDialog();
   };
 
-  // Create columns definition as a constant to prevent unnecessary re-creation
-  const columns: ColumnDef<V1Resource, any>[] = [
+  // Columns must be reactive to update when tableSizes changes
+  $: {
+    console.log("[ProjectResourcesTable] Updating columns, tableSizesMapSize=", tableSizes.size);
+    columns = [
     {
       accessorKey: "title",
       header: "Type",
@@ -224,7 +227,8 @@
         widthPercent: 0,
       },
     },
-  ];
+    ];
+  }
 
   $: tableData = data.filter(
     (resource) => resource.meta.name.kind !== ResourceKind.Component,

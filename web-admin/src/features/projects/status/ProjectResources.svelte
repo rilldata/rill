@@ -16,11 +16,20 @@
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
+  let tableSizes: any;
 
   $: ({ instanceId } = $runtime);
 
   $: resources = useResources(instanceId);
-  $: tableSizes = useModelTableSizes(instanceId, $resources.data?.resources);
+  $: {
+    tableSizes = useModelTableSizes(instanceId, $resources.data?.resources);
+    console.log(
+      "[ProjectResources] Updated tableSizes, resourceCount=",
+      $resources.data?.resources?.length,
+      "sizeMapSize=",
+      $tableSizes?.data?.size,
+    );
+  }
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
