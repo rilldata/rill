@@ -92,10 +92,11 @@ rill start my-rill-project
 A complete Rill project in four files:
 
 **`connectors/s3.yaml`** — connect to data
+
 ```yaml
 # Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
+
 type: connector
 
 driver: gcs
@@ -103,6 +104,7 @@ google_application_credentials: "{{ .env.connector.gcs_1.google_application_cred
 ```
 
 **`models/auction_data.yaml`** — import and transform with SQL
+
 ```yaml
 type: model
 materialize: true
@@ -112,15 +114,16 @@ connector: duckdb
 sql: |
   select * from read_parquet('gs://rilldata-public/auction_data.parquet') 
     where pub_name like '%TV%'
-  ```
+```
 
 **`metrics/auction_data_metrics.yaml`** — define metrics
+
 ```yaml
 # Metrics view YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
 version: 1
-type: metrics_view 
+type: metrics_view
 
 display_name: Auction Data Metrics
 model: auction_data
@@ -145,10 +148,10 @@ measures:
     expression: SUM(has_bid_floor_cnt)
     description: Total count of entries where a bid floor was present.
     format_preset: humanize
-
 ```
 
 **`dashboards/auction_data_explore.yaml`** — define visualization
+
 ```yaml
 # Explore YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
@@ -158,9 +161,8 @@ type: explore
 display_name: "Auction Data Metrics dashboard"
 metrics_view: auction_data_metrics
 
-dimensions: '*'
-measures: '*'
-
+dimensions: "*"
+measures: "*"
 ```
 
 → [More examples](https://github.com/rilldata/rill-examples) | [Live demos](https://ui.rilldata.com/demo)
