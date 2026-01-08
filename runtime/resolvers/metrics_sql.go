@@ -133,8 +133,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Build the options for the metrics resolver
-	metricProps, err := query.AsMap()
-	if err != nil {
+	metricProps := map[string]any{}
+	if err := mapstructure.WeakDecode(query, &metricProps); err != nil {
 		return nil, err
 	}
 	resolverOpts := &runtime.ResolverOptions{
