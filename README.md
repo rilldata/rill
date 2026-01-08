@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/rilldata/rill/releases"><img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="License"></a>
-  <a href="https://discord.gg/2ubRfjC7Rh"><img src="https://img.shields.io/discord/1082772946957127710?label=discord" alt="Discord"></a>
+
 </p>
 
 <p align="center">
@@ -24,6 +24,16 @@
 - **Metrics layer** — Single source of truth for dimensions, measures, and time grains
 - **AI-ready** — Built-in chat + MCP server for Claude, ChatGPT, and custom agents
 - **Git-native** — Version control your dashboards, CI/CD your analytics
+
+## Community
+
+Have questions, need support, or just want to talk about Rill?
+
+<p align="center">
+  <a href="https://discord.gg/2ubRfjC7Rh"><img src="https://img.shields.io/badge/Discord-Join%20Chat-7289da?logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://twitter.com/medriscoll"><img src="https://img.shields.io/badge/Twitter-Follow-1da1f2?logo=twitter&logoColor=white" alt="Twitter"></a>
+  <a href="https://github.com/rilldata/rill/discussions"><img src="https://img.shields.io/badge/GitHub-Discussions-181717?logo=github&logoColor=white" alt="GitHub Discussions"></a>
+</p>
 
 ## Quickstart
 
@@ -158,11 +168,31 @@ measures: '*'
 
 → [More examples](https://github.com/rilldata/rill-examples) | [Live demos](https://ui.rilldata.com/demo)
 
+## Production Examples
+
+| Example              | Description                                                                 | Links                                                                                                                                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Programmatic Ads** | Bidstream data for optimizing pricing strategies and campaign performance   | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) · [Walkthrough](https://docs.rilldata.com/guides/openrtb-analytics) · [Demo](https://ui.rilldata.com/demo/rill-openrtb-prog-ads)       |
+| **Cost Monitoring**  | Cloud infrastructure data merged with customer data for efficiency analysis | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-cost-monitoring) · [Walkthrough](https://docs.rilldata.com/guides/cost-monitoring-analytics) · [Demo](https://ui.rilldata.com/demo/rill-cost-monitoring) |
+| **GitHub Analytics** | Analyze codebase activity, contributor productivity, and commit patterns    | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-github-analytics) · [Walkthrough](https://docs.rilldata.com/guides/github-analytics) · [Demo](https://ui.rilldata.com/demo/rill-github-analytics)        |
+| **App Engagement**   | Conversion dataset for analyzing funnel steps                               | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement) · [Demo](https://ui.rilldata.com/demo/rill-app-engagement)                                                                               |
+| **Kitchen Sink**     | Deep dive into Rill features using ClickHouse GitHub data                   | [GitHub](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial) · [Walkthrough](https://docs.rilldata.com/guides/rill-basics/launch) · [Demo](https://ui.rilldata.com/demo/my-rill-tutorial)                |
+
 ## Learn
 
-- 📖 [Documentation](https://docs.rilldata.com/)
-- 🎬 [Getting Started Video](https://www.youtube.com/watch?v=oQSok8Dy-D0)
-- 💬 [Discord Community](https://discord.gg/2ubRfjC7Rh)
+<div align="center">
+
+[Documentation](https://docs.rilldata.com) · [Discord Community](https://discord.gg/2ubRfjC7Rh) · [Data Talks on the Rocks](https://datatalks.rilldata.com/)
+
+</div>
+
+For visual learners, check out our playlists:
+
+<div align="center">
+
+[Getting Started with Rill](https://www.youtube.com/watch?v=oQSok8Dy-D0) · [Exploring Data](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) 
+
+</div>
 
 ## Contributing
 
