@@ -118,7 +118,7 @@ export function createStateManagers({
         runtime.instanceId,
         mvName,
         {
-          timeDimension: $dashboardStore.selectedTimeDimension,
+          timeDimension: $dashboardStore?.selectedTimeDimension,
         },
         {
           query: {
