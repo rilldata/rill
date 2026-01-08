@@ -16,23 +16,21 @@
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import type { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 
   export let parentOption: InlineContextPickerParentOption;
   export let selectedChatContext: InlineContext | null = null;
+  export let uiState: ContextPickerUIState;
   export let highlightManager: PickerOptionsHighlightManager;
   export let searchTextStore: Readable<string>;
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
 
-  $: ({
-    context,
-    openStore,
-    recentlyUsed,
-    currentlyActive,
-    children,
-    childrenLoading,
-  } = parentOption);
-  $: typeConfig = InlineContextConfig[context.type];
+  const { context } = parentOption;
+  const typeConfig = InlineContextConfig[context.type];
+
+  $: ({ recentlyUsed, currentlyActive, children, childrenLoading } =
+    parentOption);
   $: resolvedChildren = children ?? [];
 
   const highlightedContextStore = highlightManager.highlightedContext;
@@ -55,6 +53,7 @@
   $: parentIcon = typeConfig.getIcon?.(context);
 
   const ensureIsHighlightedHandler = ensureIsHighlighted(highlightManager);
+  const openStore = uiState.getExpandedStore(context.key);
 
   $: shouldForceOpen =
     withinParentOptionSelected ||
@@ -62,12 +61,12 @@
     currentlyActive ||
     $searchTextStore.length > 0;
   function forceOpen() {
-    openStore.set(true);
+    uiState.expand(context.key);
   }
   $: if (shouldForceOpen) forceOpen();
 </script>
 
-<Collapsible.Root bind:open={$openStore}>
+<Collapsible.Root open={$openStore}>
   <Collapsible.Trigger asChild let:builder>
     <button
       class="context-item parent-context-item"
@@ -89,7 +88,6 @@
         {#if $openStore && resolvedChildren.length}
           <ChevronDownIcon size="12px" strokeWidth={4} />
         {:else if parentIcon}
-          <!-- On hover show chevron right icon -->
           <svelte:component this={parentIcon} size="12px" />
         {:else}
           <ChevronRightIcon size="12px" strokeWidth={4} />
@@ -115,40 +113,38 @@
     {#if childrenLoading}
       <DelayedSpinner isLoading={childrenLoading} />
     {:else}
-      {#each resolvedChildren as childCategory (childCategory.type)}
-        {#each childCategory.options as child (child.value)}
-          {@const selected =
-            selectedChatContext !== null &&
-            inlineContextsAreEqual(child, selectedChatContext)}
-          {@const highlighted =
-            highlightedContext !== null &&
-            inlineContextsAreEqual(child, highlightedContext)}
-          {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
+      {#each resolvedChildren as child (child.key)}
+        {@const selected =
+          selectedChatContext !== null &&
+          inlineContextsAreEqual(child, selectedChatContext)}
+        {@const highlighted =
+          highlightedContext !== null &&
+          inlineContextsAreEqual(child, highlightedContext)}
+        {@const icon = InlineContextConfig[child.type]?.getIcon?.(child)}
 
-          <button
-            class="context-item"
-            class:highlight={highlighted}
-            type="button"
-            on:click={() => onSelect(child)}
-            use:ensureInView={highlighted}
-            use:ensureIsHighlightedHandler={child}
-          >
-            <div class="context-item-checkbox">
-              {#if selected}
-                <CheckIcon size="12px" />
-              {/if}
-            </div>
-            {#if icon}
-              <div class="text-gray-500">
-                <svelte:component this={icon} size="16px" />
-              </div>
-            {:else}
-              <div class="context-item-icon"></div>
+        <button
+          class="context-item"
+          class:highlight={highlighted}
+          type="button"
+          on:click={() => onSelect(child)}
+          use:ensureInView={highlighted}
+          use:ensureIsHighlightedHandler={child}
+        >
+          <div class="context-item-checkbox">
+            {#if selected}
+              <CheckIcon size="12px" />
             {/if}
+          </div>
+          {#if icon}
+            <div class="text-gray-500">
+              <svelte:component this={icon} size="16px" />
+            </div>
+          {:else}
+            <div class="context-item-icon"></div>
+          {/if}
 
-            <span class="context-item-label">{child.label}</span>
-          </button>
-        {/each}
+          <span class="context-item-label">{child.label}</span>
+        </button>
       {/each}
     {/if}
   </Collapsible.Content>

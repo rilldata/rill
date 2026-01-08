@@ -1,23 +1,28 @@
 import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { inlineContextsAreEqual } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { get, writable } from "svelte/store";
-import type {
-  InlineContextPickerParentOption,
-  InlineContextPickerSection,
-} from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
-import { ParentPickerTypes } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
+import type { InlineContextPickerParentOption } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
+import { ParentPickerTypes } from "@rilldata/web-common/features/chat/core/context/picker/data";
+import type { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 
 export class PickerOptionsHighlightManager {
   public highlightedContext = writable<InlineContext | null>(null);
 
   private highlightedIndex = -1;
-  private metadata: HighlightManagerMetadata = new HighlightManagerMetadata([]);
+  private metadata: HighlightManagerMetadata;
+
+  public constructor(private readonly uiState: ContextPickerUIState) {
+    this.metadata = new HighlightManagerMetadata(this.uiState, []);
+  }
 
   public filterOptionsUpdated(
-    filteredOptions: InlineContextPickerSection[],
+    filteredOptions: InlineContextPickerParentOption[],
     selectedChatContext: InlineContext | null,
   ) {
-    const newMetadata = new HighlightManagerMetadata(filteredOptions);
+    const newMetadata = new HighlightManagerMetadata(
+      this.uiState,
+      filteredOptions,
+    );
 
     const currentHighlightedContext = get(this.highlightedContext);
     this.highlightedIndex = newMetadata.getUpdatedIndex(
@@ -52,8 +57,8 @@ export class PickerOptionsHighlightManager {
     );
     if (parentIndex === -1) return;
     const parentOption = this.metadata.parentOptionMap.get(parentIndex);
-    if (parentOption && get(parentOption.openStore)) {
-      parentOption.openStore.set(false);
+    if (parentOption && this.uiState.isExpanded(parentOption.context.key)) {
+      this.uiState.collapse(parentOption.context.key);
     }
     this.highlightedIndex = parentIndex;
     this.updateHighlightedContext();
@@ -63,7 +68,7 @@ export class PickerOptionsHighlightManager {
     const parentOption = this.metadata.parentOptionMap.get(
       this.highlightedIndex,
     );
-    if (parentOption) parentOption.openStore.set(true);
+    if (parentOption) this.uiState.expand(parentOption.context.key);
   }
 
   public highlightContext(context: InlineContext | null) {
@@ -98,18 +103,19 @@ class HighlightManagerMetadata {
   >();
   private readonly closestParentIndices: number[];
 
-  public constructor(filteredOptions: InlineContextPickerSection[]) {
+  public constructor(
+    private readonly uiState: ContextPickerUIState,
+    filteredOptions: InlineContextPickerParentOption[],
+  ) {
     // Convert the filtered options to a flat list for ease of navigation using arrow keys.
     let cursor = 0;
-    this.highlightableContexts = filteredOptions
-      .flatMap((section) => section.options)
-      .flatMap((parent) => {
-        this.parentOptionMap.set(cursor, parent);
-        const children = parent.children?.flatMap((c) => c.options) ?? [];
-        const optionsForParent = [parent.context, ...children];
-        cursor += optionsForParent.length;
-        return optionsForParent;
-      });
+    this.highlightableContexts = filteredOptions.flatMap((parent) => {
+      this.parentOptionMap.set(cursor, parent);
+      const children = parent.children ?? [];
+      const optionsForParent = [parent.context, ...children];
+      cursor += optionsForParent.length;
+      return optionsForParent;
+    });
 
     this.closestParentIndices = new Array<number>(
       this.highlightableContexts.length,
@@ -186,7 +192,7 @@ class HighlightManagerMetadata {
     const currentParentIsClosed =
       ParentPickerTypes.has(currentContext.type) &&
       currentParentOption &&
-      !get(currentParentOption.openStore);
+      !this.uiState.isExpanded(currentParentOption.context.key);
 
     if (currentParentIsClosed) {
       let validContext = this.highlightableContexts[nextIndex];
@@ -210,7 +216,8 @@ class HighlightManagerMetadata {
     const prevParentIndex = this.closestParentIndex(prevContext, prevIndex);
     const prevParentOption = this.parentOptionMap.get(prevParentIndex);
     const prevParentIsClosed =
-      prevParentOption && !get(prevParentOption.openStore);
+      prevParentOption &&
+      !this.uiState.isExpanded(prevParentOption.context.key);
     if (prevParentIsClosed) {
       return prevParentIndex;
     }

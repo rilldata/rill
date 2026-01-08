@@ -3,7 +3,6 @@
   import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import PickerGroup from "@rilldata/web-common/features/chat/core/context/picker/PickerGroup.svelte";
   import { PickerOptionsHighlightManager } from "@rilldata/web-common/features/chat/core/context/picker/highlight-manager.ts";
-  import { getFilteredPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data.ts";
   import {
     autoUpdate,
     computePosition,
@@ -14,6 +13,8 @@
   } from "@floating-ui/dom";
   import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-svelte";
   import * as Kbd from "@rilldata/web-common/components/kbd";
+  import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
+  import { getFilteredPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/filters.ts";
 
   export let selectedChatContext: InlineContext | null = null;
   export let searchText: string = "";
@@ -24,9 +25,10 @@
   const searchTextStore = writable("");
   $: searchTextStore.set(searchText.replace(/^@/, ""));
 
-  const filteredOptions = getFilteredPickerOptions(searchTextStore);
+  const uiState = new ContextPickerUIState();
+  const filteredOptions = getFilteredPickerOptions(uiState, searchTextStore);
 
-  const highlightManager = new PickerOptionsHighlightManager();
+  const highlightManager = new PickerOptionsHighlightManager(uiState);
   const highlightedContext = highlightManager.highlightedContext;
   $: highlightManager.filterOptionsUpdated(
     $filteredOptions,
@@ -104,19 +106,16 @@
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
 <div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
-  {#each $filteredOptions as section (section.type)}
-    <div class="border-b last:border-b-0">
-      {#each section.options as parentOption (parentOption.context.value)}
-        <PickerGroup
-          {parentOption}
-          {selectedChatContext}
-          {highlightManager}
-          {searchTextStore}
-          {onSelect}
-          {focusEditor}
-        />
-      {/each}
-    </div>
+  {#each $filteredOptions as parentOption (parentOption.context.key)}
+    <PickerGroup
+      {parentOption}
+      {selectedChatContext}
+      {uiState}
+      {highlightManager}
+      {searchTextStore}
+      {onSelect}
+      {focusEditor}
+    />
   {:else}
     <div class="contents-empty">No matches found</div>
   {/each}

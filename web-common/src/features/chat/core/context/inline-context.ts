@@ -13,7 +13,8 @@ export enum InlineContextType {
 export type InlineContext = {
   type: InlineContextType;
   label?: string;
-  // Main value for this context, used as a key in svelte loop and to easily filter on value
+  // Unique ID that is a combination of type and value of this context
+  key: string;
   value: string;
   metricsView?: string;
   measure?: string;
@@ -29,10 +30,7 @@ export function inlineContextsAreEqual(
   ctx1: InlineContext,
   ctx2: InlineContext,
 ) {
-  if (ctx1.type !== ctx2.type || ctx1.value !== ctx2.value) return false;
-  const parentValuesAreEqual =
-    ctx1.metricsView === ctx2.metricsView && ctx1.model === ctx2.model;
-  return parentValuesAreEqual;
+  return ctx1.key === ctx2.key;
 }
 
 export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {
@@ -82,6 +80,8 @@ export function normalizeInlineContext(ctx: InlineContext) {
       break;
   }
 
+  normalisedContext.key = `${normalisedContext.type}-${normalisedContext.value}`;
+
   return normalisedContext;
 }
 
@@ -93,7 +93,7 @@ export function convertContextToInlinePrompt(ctx: InlineContext) {
   const parts: string[] = [];
 
   for (const key in ctx) {
-    const isComputedKey = key === "value" || key === "label";
+    const isComputedKey = key === "key" || key === "label";
     const isNonStringKey = key === "values";
     if (isComputedKey || isNonStringKey) continue;
     if (ctx[key] !== undefined) parts.push(`${key}="${ctx[key]}"`);
