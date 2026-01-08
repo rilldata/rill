@@ -5,13 +5,18 @@ import (
 	"errors"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // GitStatus implements RuntimeService.
 func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest) (*runtimev1.GitStatusResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -37,6 +42,9 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 
 // GitPull implements RuntimeService.
 func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*runtimev1.GitPullResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -55,6 +63,9 @@ func (s *Server) GitPull(ctx context.Context, req *runtimev1.GitPullRequest) (*r
 
 // GitPush implements RuntimeService.
 func (s *Server) GitPush(ctx context.Context, req *runtimev1.GitPushRequest) (*runtimev1.GitPushResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
