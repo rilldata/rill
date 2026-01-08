@@ -67,12 +67,10 @@ The available templates are:
 			// 	if !cmdutil.HasRillProject(targetPath) {
 			// 		return fmt.Errorf("no Rill project found at %q; run `rill init` first to create an empty project.", targetPath)
 			// 	}
-
 			// 	repo, _, err := cmdutil.RepoForProjectPath(targetPath)
 			// 	if err != nil {
 			// 		return fmt.Errorf("failed to initialize repo: %w", err)
 			// 	}
-
 			// 	err = parser.InitCursorRules(ctx, repo, force)
 			// 	if err != nil {
 			// 		return fmt.Errorf("failed to add Cursor rules: %w", err)
