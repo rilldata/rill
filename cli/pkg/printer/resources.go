@@ -750,6 +750,7 @@ func toDeploymentsTable(deployments []*adminv1.Deployment) []*deployment {
 		res = append(res, toDeploymentRow(d))
 	}
 	slices.SortFunc(res, func(a, b *deployment) int {
+		// group by environment
 		if a.Environment < b.Environment {
 			return -1
 		} else if a.Environment > b.Environment {

@@ -62,6 +62,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			for _, d := range resp.Deployments {
 				if d.Id == projResp.Project.PrimaryDeploymentId {
 					d.Branch += " (primary)"
+					break
 				}
 			}
 			ch.PrintDeployments(resp.Deployments)
