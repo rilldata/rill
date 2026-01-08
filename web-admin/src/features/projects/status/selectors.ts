@@ -61,10 +61,7 @@ const modelSizesStoreCache = new Map<
 const preloadedQuerySubscriptions = new Map<string, Set<() => void>>();
 
 // Preload queries to ensure they start immediately and keep them alive
-function preloadConnectorQueries(
-  instanceId: string,
-  connectorArray: string[],
-) {
+function preloadConnectorQueries(instanceId: string, connectorArray: string[]) {
   const preloadKey = `${instanceId}:${connectorArray.join(",")}`;
 
   // Only preload once per connector set
