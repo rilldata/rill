@@ -240,6 +240,7 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
 export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.TODAY]: {
     label: "Today",
+
     defaultGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
