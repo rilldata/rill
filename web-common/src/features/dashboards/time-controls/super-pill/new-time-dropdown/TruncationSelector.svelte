@@ -25,7 +25,7 @@
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
   export let zone: string;
-  export let ref: RillTimeLabel | undefined;
+  export let ref: RillTimeLabel | string | undefined;
   export let onSelectAsOfOption: (ref: RillTimeLabel) => void;
   export let onToggleAlignment: (forward: boolean) => void;
   export let onSelectEnding: (
@@ -98,7 +98,7 @@
   }
 
   function humanizeRef(
-    ref: RillTimeLabel | undefined,
+    ref: RillTimeLabel | string | undefined,
     grain: V1TimeGrain | undefined,
   ): string {
     switch (ref) {
@@ -111,7 +111,12 @@
         if (grain) return "current";
         return "now";
       default:
-        return "now";
+        try {
+          const dt = DateTime.fromISO(ref as string).setZone(zone);
+          return dt.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+        } catch {
+          return ref as string;
+        }
     }
   }
 

@@ -658,6 +658,29 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1GetDeploymentConfigResponse:
+            properties:
+                annotations:
+                    additionalProperties:
+                        type: string
+                    title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                frontendUrl:
+                    description: Frontend URL for the deployment.
+                    type: string
+                updatedOn:
+                    description: Timestamp when the deployment was last updated.
+                    format: date-time
+                    type: string
+                usesArchive:
+                    description: Whether the deployment is git based or archive based.
+                    type: boolean
+                variables:
+                    additionalProperties:
+                        type: string
+                    title: Variables for the deployment (connector credentials, etc.)
+                    type: object
+            type: object
         v1GetDeploymentCredentialsResponse:
             properties:
                 accessToken:
@@ -1172,10 +1195,12 @@ components:
                     items:
                         type: string
                     type: array
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 id:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    type: object
                 projectId:
                     type: string
                 resourceName:
@@ -2279,6 +2304,7 @@ paths:
     /v1/billing/metrics-project-credentials: {}
     /v1/billing/plans: {}
     /v1/deployments/{deploymentId}: {}
+    /v1/deployments/{deploymentId}/config: {}
     /v1/deployments/{deploymentId}/credentials: {}
     /v1/deployments/{deploymentId}/provision: {}
     /v1/deployments/{deploymentId}/reconcile: {}

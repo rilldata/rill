@@ -9,7 +9,6 @@
 
   /**
    * Input that allows to enter multiple items but appears within a single input box.
-   * This is a more advanced version of InputArray.svelte
    */
 
   export let id: string;

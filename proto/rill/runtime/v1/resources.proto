@@ -219,6 +219,7 @@ message MetricsViewSpec {
     DIMENSION_TYPE_UNSPECIFIED = 0;
     DIMENSION_TYPE_CATEGORICAL = 1;
     DIMENSION_TYPE_TIME = 2;
+    DIMENSION_TYPE_GEOSPATIAL = 3;
   }
   // Selector for a dimension
   message DimensionSelector {
