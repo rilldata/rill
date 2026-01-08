@@ -71,6 +71,20 @@ _[string]_ - Refers to a SQL query that is run after the main query, available f
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors. 
+
+```yaml
+create_secrets_from_connectors: my_s3_connector
+```
+
+```yaml
+create_secrets_from_connectors:
+    - my_s3_connector
+    - my_other_s3_connector
+```
+
 ### `retry`
 
 _[object]_ - Refers to the retry configuration for the model. (optional) 
@@ -487,6 +501,10 @@ _[string]_ - Path to the data source.
 ### `format`
 
 _[string]_ - Format of the data source (e.g., csv, json, parquet). 
+
+### `invalidate_on_change`
+
+_[boolean]_ - When true, the model will be invalidated and re-processed if the source file changes. 
 
 ## Additional properties when `connector` is `redshift` or [named connector](./connectors#redshift) of redshift
 
