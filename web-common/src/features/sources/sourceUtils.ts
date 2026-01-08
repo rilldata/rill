@@ -212,6 +212,9 @@ export function prepareSourceFormData(
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
 
+  // Never carry connector auth selection into the source/model layer.
+  delete processedValues.auth_method;
+
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
   if (connector.configProperties) {
