@@ -31,7 +31,7 @@ func timeRangeDecodeHook(from, to reflect.Type, data any) (any, error) {
 
 		// first decode to map normally, this will not handle time fields correctly
 		trMap := map[string]any{}
-		err := mapstructure.Decode(tr, &trMap)
+		err := mapstructure.WeakDecode(tr, &trMap)
 		if err != nil {
 			return nil, err
 		}
