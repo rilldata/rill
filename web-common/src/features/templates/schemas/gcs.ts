@@ -68,7 +68,7 @@ export const gcsSchema: MultiStepFormSchema = {
       type: "string",
       title: "Model name",
       description: "Name for the source model",
-      pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+      pattern: "^[a-zA-Z0-9_]+$",
       "x-placeholder": "my_model",
       "x-step": "source",
     },
