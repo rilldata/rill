@@ -94,8 +94,10 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           on:click={async () => {
+            if (!hasResultTable) return;
             await createMetricsViewFromTable();
           }}
+          disabled={!hasResultTable}
         >
           <Add />
           Create metrics view
