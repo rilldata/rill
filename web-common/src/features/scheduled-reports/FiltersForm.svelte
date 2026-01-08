@@ -203,7 +203,6 @@
 
     const { interval, grain } = await deriveInterval(
       name,
-
       metricsViewName,
       $selectedTimezone,
     );

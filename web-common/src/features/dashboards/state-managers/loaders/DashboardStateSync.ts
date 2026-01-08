@@ -149,6 +149,8 @@ export class DashboardStateSync {
           // initExploreState.selectedComparisonTimeRange,
         ],
         initExploreState.selectedTimezone,
+        undefined,
+        initExploreState.selectedTimeDimension,
       );
     }
 
@@ -237,6 +239,8 @@ export class DashboardStateSync {
           // partialExplore.selectedComparisonTimeRange,
         ],
         partialExplore.selectedTimezone,
+        undefined,
+        partialExplore.selectedTimeDimension,
       );
     }
 
