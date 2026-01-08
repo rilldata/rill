@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://docs.rilldata.com/">Docs</a> · <a href="#quickstart">Quickstart</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="#capabilities">Capabilities</a> · <a href="https://docs.rilldata.com/home/contribute">Contributing</a>
+  <a href="https://docs.rilldata.com/">Docs</a> · <a href="#quickstart">Quickstart</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="#capabilities">Capabilities</a> · <a href="https://docs.rilldata.com/home/contribute">Contributing</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>
 </p>
 
 ---
@@ -148,7 +148,7 @@ measures:
 
 ```
 
-**`dashboards/auction_data_explore.yaml`** — define metrics
+**`dashboards/auction_data_explore.yaml`** — define visualization
 ```yaml
 # Explore YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
@@ -175,19 +175,11 @@ measures: '*'
 | **App Engagement**   | Conversion dataset for analyzing funnel steps                               | [GitHub](https://github.com/rilldata/rill-examples/tree/main/rill-app-engagement) · [Demo](https://ui.rilldata.com/demo/rill-app-engagement)                                                                               |
 | **Kitchen Sink**     | Deep dive into Rill features using ClickHouse GitHub data                   | [GitHub](https://github.com/rilldata/rill-examples/tree/main/my-rill-tutorial) · [Walkthrough](https://docs.rilldata.com/guides/rill-basics/launch) · [Demo](https://ui.rilldata.com/demo/my-rill-tutorial)                |
 
-## Learn
+## Playlists
 
 <div align="center">
 
-[Documentation](https://docs.rilldata.com) · [Discord Community](https://discord.gg/2ubRfjC7Rh) · [Data Talks on the Rocks](https://datatalks.rilldata.com/)
-
-</div>
-
-For visual learners, check out our playlists:
-
-<div align="center">
-
-[Getting Started with Rill](https://www.youtube.com/watch?v=oQSok8Dy-D0) · [Exploring Data](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) 
+[Getting Started with Rill](https://www.youtube.com/watch?v=oQSok8Dy-D0) · [Exploring Data](https://www.youtube.com/watch?v=wTP46eOzoCk&list=PL_ZoDsg2yFKgi7ud_fOOD33AH8ONWQS7I&index=1) · [Data Talks](https://www.youtube.com/playlist?list=PL_ZoDsg2yFKgr_YEc4XOY0wlRLqzyR07q)
 
 </div>
 
