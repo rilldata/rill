@@ -247,7 +247,6 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		p.MeasuresSelector = nil
 	}
 
-
 	// Done with rewriting
 	return spec, mvr.GetMetricsView().State.DataRefreshedOn, nil
 }
