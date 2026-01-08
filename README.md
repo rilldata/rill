@@ -48,47 +48,44 @@ rill start my-rill-project
 
 ## Capabilities
 
-### Platform (BI-as-code)
+### Rill Developer (local, open-source)
 
-| Feature                                                                            | Description                                        |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------- |
-| [SQL Models](https://docs.rilldata.com/build/models/)                              | Transform raw data with SQL, chain models together |
-| [Incremental Ingestion](https://docs.rilldata.com/build/models/incremental-models) | Partitioned, incremental data loading              |
-| [Modeling Tests](https://docs.rilldata.com/build/models/data-quality-tests)        | Validate your data transformations                 |
-| [Metrics Views](https://docs.rilldata.com/build/metrics-view/)                     | Define dimensions & measures in YAML               |
-| [Custom APIs](https://docs.rilldata.com/build/custom-apis/)                        | Expose metrics via REST endpoints                  |
-| [Alerts](https://docs.rilldata.com/build/alerts)                                   | Code-defined alerting on metric thresholds         |
-| [Cloud Deploy](https://docs.rilldata.com/deploy/deploy-dashboard/)                 | `rill deploy` to push dashboards to Rill Cloud     |
+| Feature                                                                            | Description                                       |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **Process Data**                                                                   |                                                   |
+| [Connectors](https://docs.rilldata.com/build/connectors/)                          | Connect to S3, GCS, databases, and 20+ sources    |
+| [SQL Models](https://docs.rilldata.com/build/models/)                              | Transform raw data with SQL, join models together |
+| [Data Profiling](https://docs.rilldata.com/build/models)                           | Instant column stats and distributions            |
+| [Incremental Ingestion](https://docs.rilldata.com/build/models/incremental-models) | Partitioned, incremental data loading             |
+| [Modeling Tests](https://docs.rilldata.com/build/models/data-quality-tests)        | Validate your data transformations                |
+| **Define and Visualize Metrics**                                                   |                                                   |
+| [Metrics Views](https://docs.rilldata.com/build/metrics-view/)                     | Define dimensions & measures in YAML              |
+| [Local Dashboards](https://docs.rilldata.com/build/dashboards)                     | Preview and explore dashboards locally            |
 
-### Visualization & Exploration
+### Rill Cloud
 
-| Feature                                                                | Description                              |
-| ---------------------------------------------------------------------- | ---------------------------------------- |
-| [Data Profiling](https://docs.rilldata.com/build/models)               | Instant column stats and distributions   |
-| [Data Explorer](https://docs.rilldata.com/build/dashboards/explore)    | Slice, dice, and drill into your data    |
-| [Canvas Dashboards](https://docs.rilldata.com/build/dashboards/canvas) | Drag-and-drop canvas for bespoke layouts |
-| [Pivot Tables](https://docs.rilldata.com/explore/dashboard-101/pivot)  | Multi-dimensional analysis               |
-| [Time Comparisons](https://docs.rilldata.com/explore/time-series)      | Period-over-period analysis built-in     |
-| [Bookmarks](https://docs.rilldata.com/explore/bookmarks)               | Save and share exploration states        |
-| [Public URLs](https://docs.rilldata.com/explore/public-url)            | Share dashboards without authentication  |
+| Feature                                                                      | Description                                              |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **Deploy & Manage**                                                          |                                                          |
+| [Cloud Deploy](https://docs.rilldata.com/deploy/deploy-dashboard/)           | `rill deploy` to push dashboards to Rill Cloud           |
+| [Row Access Policies](https://docs.rilldata.com/build/metrics-view/security) | Control data access per user, group, or attribute        |
+| [Alerts](https://docs.rilldata.com/build/alerts)                             | Code-defined or UI-defined alerting on metric thresholds |
+| **Visualize**                                                                |                                                          |
+| [Explore Dashboards](https://docs.rilldata.com/build/dashboards/explore)     | Preview and explore dashboards locally                   |
+| [Canvas Dashboards](https://docs.rilldata.com/build/dashboards/canvas)       | Drag-and-drop canvas for bespoke layouts                 |
+| [Pivot Tables](https://docs.rilldata.com/explore/dashboard-101/pivot)        | Multi-dimensional analysis                               |
+| [Time Comparisons](https://docs.rilldata.com/explore/time-series)            | Period-over-period analysis built-in                     |
+| [Bookmarks](https://docs.rilldata.com/explore/bookmarks)                     | Save and share exploration states                        |
+| **AI**                                                                       |                                                          |
+| [AI Chat](https://docs.rilldata.com/explore/ai-chat)                         | Ask questions in natural language, get insights          |
+| [MCP Server](https://docs.rilldata.com/explore/mcp)                          | Connect Claude, ChatGPT, or any AI agent                 |
+| **Integrate**                                                                |                                                          |
+| [Custom APIs](https://docs.rilldata.com/build/custom-apis/)                  | Expose metrics via REST endpoints                        |
+| [Public URLs](https://docs.rilldata.com/explore/public-url)                  | Share dashboards without authentication                  |
+| [Embedding](https://docs.rilldata.com/integrate/embedding)                   | Embed dashboards in your product                         |
+| [Themes](https://docs.rilldata.com/build/dashboards/customization)           | Customize colors and branding                            |
 
-### AI
-
-| Feature                                              | Description                                     |
-| ---------------------------------------------------- | ----------------------------------------------- |
-| [AI Chat](https://docs.rilldata.com/explore/ai-chat) | Ask questions in natural language, get insights |
-| [MCP Server](https://docs.rilldata.com/explore/mcp)  | Connect Claude, ChatGPT, or any AI agent        |
-
-→ [Try AI Chat live](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai)
-
-### Integration
-
-| Feature                                                            | Description                      |
-| ------------------------------------------------------------------ | -------------------------------- |
-| [Embedding](https://docs.rilldata.com/integrate/embedding)         | Embed dashboards in your product |
-| [Themes](https://docs.rilldata.com/build/dashboards/customization) | Customize colors and branding    |
-
-→ [Embedding and Themes demo](https://rill-embedding-example.netlify.app/)
+→ [Try AI Chat live](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/-/ai) · [Embedding demo](https://rill-embedding-example.netlify.app/)
 
 ## Example
 
