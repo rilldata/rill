@@ -17,6 +17,8 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import { FeedbackState } from "./feedback/feedback-state";
+import type { FeedbackCategory, FeedbackSentiment } from "./feedback/types";
 import { transformToBlocks, type Block } from "./messages/block-transform";
 import { MessageContentType, MessageType, ToolName } from "./types";
 import {
@@ -37,9 +39,17 @@ export class Conversation {
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
 
+  // Feedback state (submission handled by submitFeedback method below)
+  public readonly feedback = new FeedbackState();
+
   // Private state
   private sseClient: SSEFetchClient | null = null;
   private hasReceivedFirstMessage = false;
+  private onMessageCallback: ((message: V1Message) => void) | undefined;
+  private readonly conversationQuery: CreateQueryResult<
+    V1GetConversationResponse,
+    RpcStatus
+  >;
 
   constructor(
     private readonly instanceId: string,
@@ -55,18 +65,9 @@ export class Conversation {
     if (this.options) {
       this.options.agent ??= ToolName.ANALYST_AGENT;
     }
-  }
 
-  // ===== PUBLIC API =====
-
-  /**
-   * Get a reactive query for this conversation's data
-   */
-  public getConversationQuery(): CreateQueryResult<
-    V1GetConversationResponse,
-    RpcStatus
-  > {
-    return createQuery(
+    // Create and store the conversation query
+    this.conversationQuery = createQuery(
       getRuntimeServiceGetConversationQueryOptions(
         this.instanceId,
         this.conversationId,
@@ -78,6 +79,25 @@ export class Conversation {
       ),
       queryClient,
     );
+
+    // Auto-hydrate feedback state when conversation data loads
+    this.conversationQuery.subscribe((query) => {
+      if (query.data?.messages) {
+        this.feedback.hydrateFromMessages(query.data.messages);
+      }
+    });
+  }
+
+  // ===== PUBLIC API =====
+
+  /**
+   * Get a reactive query for this conversation's data
+   */
+  public getConversationQuery(): CreateQueryResult<
+    V1GetConversationResponse,
+    RpcStatus
+  > {
+    return this.conversationQuery;
   }
 
   /**
@@ -143,11 +163,11 @@ export class Conversation {
     try {
       options?.onStreamStart?.();
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(
+      const streamPromise = this.startStreaming({
         prompt,
         context,
-        options?.onMessage,
-      );
+        onMessage: options?.onMessage,
+      });
 
       // Wait for streaming to complete
       await streamPromise;
@@ -173,6 +193,53 @@ export class Conversation {
       );
       options?.onError?.(this.formatTransportError(error));
     } finally {
+      this.isStreaming.set(false);
+    }
+  }
+
+  /**
+   * Submit user feedback for a message.
+   *
+   * Updates feedback state optimistically, then streams the submission to the server.
+   * The feedback is stored as messages in the conversation (visible to LLM in future turns).
+   */
+  public async submitFeedback(
+    targetMessageId: string,
+    sentiment: FeedbackSentiment,
+    categories?: FeedbackCategory[],
+    comment?: string,
+  ): Promise<void> {
+    // Prevent concurrent operations
+    if (get(this.isStreaming)) {
+      this.streamError.set("Please wait for the current operation to complete");
+      return;
+    }
+
+    // Optimistic state updates
+    this.feedback.setSentiment(targetMessageId, sentiment);
+    this.feedback.setPending(targetMessageId);
+
+    this.streamError.set(null);
+    this.isStreaming.set(true);
+    this.hasReceivedFirstMessage = false;
+
+    try {
+      await this.startStreaming({
+        userFeedbackContext: {
+          targetMessageId,
+          sentiment,
+          categories: categories ?? [],
+          comment,
+        },
+      });
+    } catch (error) {
+      console.error("[Conversation] Feedback submission error:", {
+        error,
+        conversationId: this.conversationId,
+      });
+      this.streamError.set(this.formatTransportError(error as Error));
+    } finally {
+      this.feedback.setPending(null);
       this.isStreaming.set(false);
     }
   }
@@ -207,86 +274,96 @@ export class Conversation {
   // ----- Transport Layer: SSE Connection Management -----
 
   /**
-   * Start streaming completion responses for a given prompt
-   * Returns a Promise that resolves when streaming completes
+   * Start streaming completion responses.
+   * Used for both regular messages (with prompt) and feedback submission (with userFeedbackContext).
    */
-  private async startStreaming(
-    prompt: string,
-    context: RuntimeServiceCompleteBody | undefined,
-    onMessage: ((message: V1Message) => void) | undefined,
-  ): Promise<void> {
-    // Initialize SSE client if not already done
-    if (!this.sseClient) {
-      this.sseClient = new SSEFetchClient();
+  private async startStreaming(request: {
+    prompt?: string;
+    context?: RuntimeServiceCompleteBody;
+    userFeedbackContext?: {
+      targetMessageId: string;
+      sentiment: FeedbackSentiment;
+      categories: FeedbackCategory[];
+      comment?: string;
+    };
+    onMessage?: (message: V1Message) => void;
+  }): Promise<void> {
+    this.ensureSSEClient(request.onMessage);
+    this.sseClient!.stop();
 
-      // Set up SSE event handlers
-      this.sseClient.on("message", (message: SSEMessage) => {
-        // Mark that we've received data
-        // Since server always emits user message first (after persisting),
-        // receiving any message means the server has persisted our message
-        this.hasReceivedFirstMessage = true;
-
-        // Handle application-level errors sent via SSE
-        if (message.type === "error") {
-          this.handleServerError(message.data);
-          return;
-        }
-
-        // Handle normal streaming data
-        try {
-          const response: V1CompleteStreamingResponse = JSON.parse(
-            message.data,
-          );
-          this.processStreamingResponse(response);
-          if (response.message) onMessage?.(response.message);
-        } catch (error) {
-          console.error("Failed to parse streaming response:", error);
-          this.streamError.set("Failed to process server response");
-        }
-      });
-
-      this.sseClient.on("error", (error) => {
-        // Transport errors only: connection, network, HTTP failures
-        console.error("[SSE] Transport error:", {
-          message: error.message,
-          status: error instanceof SSEHttpError ? error.status : undefined,
-          statusText:
-            error instanceof SSEHttpError ? error.statusText : undefined,
-          name: error.name,
-        });
-        this.streamError.set(this.formatTransportError(error));
-      });
-
-      this.sseClient.on("close", () => {
-        // Stream closed - completion handled in sendMessage
-      });
-    }
-
-    // Clean up any existing connection
-    this.sseClient.stop();
-
-    // Build URL with stream parameter (like other streaming endpoints)
     const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
 
-    // Prepare request body for POST request
     const requestBody = {
       instanceId: this.instanceId,
       conversationId:
         this.conversationId === NEW_CONVERSATION_ID
           ? undefined
           : this.conversationId,
-      prompt,
+      prompt: request.prompt,
       agent: this.options?.agent,
-      ...context,
+      userFeedbackContext: request.userFeedbackContext,
+      ...request.context,
     };
 
-    // Notify that streaming is about to start (for concurrent stream management)
     this.options?.onStreamStart?.();
 
-    // Start streaming - this will establish the connection and then stream until completion
-    await this.sseClient.start(baseUrl, {
+    await this.sseClient!.start(baseUrl, {
       method: "POST",
       body: requestBody,
+    });
+  }
+
+  /**
+   * Ensure SSE client is initialized with event handlers.
+   * The onMessage callback is stored as an instance property so it can be
+   * updated on subsequent calls (e.g., feedback streaming doesn't need the callback).
+   */
+  private ensureSSEClient(onMessage?: (message: V1Message) => void): void {
+    // Always update the callback - allows different callers to set different callbacks
+    this.onMessageCallback = onMessage;
+
+    if (this.sseClient) return;
+
+    this.sseClient = new SSEFetchClient();
+
+    // Set up SSE event handlers
+    this.sseClient.on("message", (message: SSEMessage) => {
+      // Mark that we've received data
+      // Since server always emits user message first (after persisting),
+      // receiving any message means the server has persisted our message
+      this.hasReceivedFirstMessage = true;
+
+      // Handle application-level errors sent via SSE
+      if (message.type === "error") {
+        this.handleServerError(message.data);
+        return;
+      }
+
+      // Handle normal streaming data
+      try {
+        const response: V1CompleteStreamingResponse = JSON.parse(message.data);
+        this.processStreamingResponse(response);
+        if (response.message) this.onMessageCallback?.(response.message);
+      } catch (error) {
+        console.error("Failed to parse streaming response:", error);
+        this.streamError.set("Failed to process server response");
+      }
+    });
+
+    this.sseClient.on("error", (error) => {
+      // Transport errors only: connection, network, HTTP failures
+      console.error("[SSE] Transport error:", {
+        message: error.message,
+        status: error instanceof SSEHttpError ? error.status : undefined,
+        statusText:
+          error instanceof SSEHttpError ? error.statusText : undefined,
+        name: error.name,
+      });
+      this.streamError.set(this.formatTransportError(error));
+    });
+
+    this.sseClient.on("close", () => {
+      // Stream closed - completion handled in caller
     });
   }
 

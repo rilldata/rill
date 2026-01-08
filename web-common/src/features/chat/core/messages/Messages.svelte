@@ -6,6 +6,7 @@
   import { runtime } from "../../../../runtime-client/runtime-store";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
+  import FeedbackModal from "../feedback/FeedbackModal.svelte";
   import { type ChatConfig } from "../types";
   import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
@@ -18,6 +19,10 @@
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
   export let config: ChatConfig;
+
+  // Feedback modal state (UI concern - stays here)
+  let feedbackModalOpen = false;
+  let pendingFeedbackMessageId: string | null = null;
 
   // Prefetch tools metadata for tool call display names
   const listToolsQueryOptionsStore = derived(runtime, ($runtime) =>
@@ -49,16 +54,6 @@
   // Track previous block count to detect new content
   let previousBlockCount = 0;
 
-  // Check if user is near the bottom of a scroll container
-  function isNearBottom(element: Element, threshold = 100): boolean {
-    const { scrollTop, scrollHeight, clientHeight } = element;
-    return scrollHeight - scrollTop - clientHeight <= threshold;
-  }
-
-  function scrollToBottom(element: Element) {
-    element.scrollTop = element.scrollHeight;
-  }
-
   // Auto-scroll behavior:
   // - Always scroll when new blocks are added (new message sent or response started)
   // - Only scroll during streaming if user is near the bottom (respect scroll position)
@@ -78,6 +73,26 @@
       }
     }
   });
+
+  // Feedback modal handlers
+  function handleDownvote(messageId: string) {
+    pendingFeedbackMessageId = messageId;
+    feedbackModalOpen = true;
+  }
+
+  function handleFeedbackModalClose() {
+    feedbackModalOpen = false;
+    pendingFeedbackMessageId = null;
+  }
+
+  function isNearBottom(element: Element, threshold = 100): boolean {
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    return scrollHeight - scrollTop - clientHeight <= threshold;
+  }
+
+  function scrollToBottom(element: Element) {
+    element.scrollTop = element.scrollHeight;
+  }
 </script>
 
 <div
@@ -108,7 +123,11 @@
       {#if block.type === "text" && block.message.role === "user"}
         <UserMessage message={block.message} />
       {:else if block.type === "text" && block.message.role === "assistant"}
-        <AssistantMessage message={block.message} />
+        <AssistantMessage
+          message={block.message}
+          conversation={currentConversation}
+          onDownvote={handleDownvote}
+        />
       {:else if block.type === "thinking"}
         <ThinkingBlock {block} {tools} />
       {:else if block.type === "working"}
@@ -124,6 +143,13 @@
     <Error headline="Failed to generate response" error={$streamErrorStore} />
   {/if}
 </div>
+
+<FeedbackModal
+  open={feedbackModalOpen}
+  messageId={pendingFeedbackMessageId}
+  conversation={currentConversation}
+  onClose={handleFeedbackModalClose}
+/>
 
 <style lang="postcss">
   .chat-messages {

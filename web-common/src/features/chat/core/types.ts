@@ -52,6 +52,9 @@ export const ToolName = {
   SEARCH_FILES: "search_files",
   READ_FILE: "read_file",
   WRITE_FILE: "write_file",
+
+  // Feedback tools
+  USER_FEEDBACK: "user_feedback",
 } as const;
 
 // =============================================================================
