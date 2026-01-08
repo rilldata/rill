@@ -14,7 +14,7 @@ const TestCases: {
     search:
       "view=tdd&tr=P7D&tz=UTC&compare_tr=&grain=hour&compare_dim=&f=&measure=impressions&chart_type=line",
     expectedCleanedSearch:
-      "view=tdd&tr=P7D&measure=impressions&chart_type=line",
+      "view=tdd&tr=P7D&grain=hour&measure=impressions&chart_type=line",
   },
   {
     title: "should remove default params for explore and pivot",
