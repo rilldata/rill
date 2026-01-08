@@ -51,22 +51,28 @@ export function useResources(instanceId: string) {
   );
 }
 
-// Cache for model table size stores to avoid recreating them
-const modelSizesStoreCache = new Map<
-  string,
-  ReturnType<typeof createModelTableSizesStore>
->();
-
-// Keep track of which stores are actively subscribed to ensure queries stay alive
-const activeStoreSubscriptions = new WeakMap<
-  any,
-  () => void
->();
-
-function createModelTableSizesStore(
+export function useModelTableSizes(
   instanceId: string,
-  connectorArray: string[],
+  resources: V1Resource[] | undefined,
 ) {
+  // Extract unique connectors from model resources
+  const uniqueConnectors = new Set<string>();
+
+  if (resources) {
+    for (const resource of resources) {
+      if (resource?.meta?.name?.kind === ResourceKind.Model) {
+        const connector = resource.model?.state?.resultConnector;
+        const table = resource.model?.state?.resultTable;
+
+        if (connector && table) {
+          uniqueConnectors.add(connector);
+        }
+      }
+    }
+  }
+
+  const connectorArray = Array.from(uniqueConnectors).sort();
+
   // If no connectors, return an empty readable store
   if (connectorArray.length === 0) {
     return readable(
@@ -80,7 +86,8 @@ function createModelTableSizesStore(
   }
 
   // Use a readable store with custom subscription logic to handle pagination
-  const store = readable(
+  // Create fresh stores each time to ensure proper query lifecycle
+  return readable(
     {
       data: new Map<string, string | number>(),
       isLoading: true,
@@ -136,7 +143,10 @@ function createModelTableSizesStore(
 
           if (result.data?.tables) {
             const existing = connectorTables.get(connector) || [];
-            connectorTables.set(connector, [...existing, ...result.data.tables]);
+            connectorTables.set(connector, [
+              ...existing,
+              ...result.data.tables,
+            ]);
           }
 
           // If query completed and has more pages, fetch the next page
@@ -167,40 +177,4 @@ function createModelTableSizesStore(
       };
     },
   );
-
-  // Eagerly subscribe to keep queries alive across component re-renders
-  const unsubscribe = store.subscribe(() => {});
-  activeStoreSubscriptions.set(store, unsubscribe);
-
-  return store;
-}
-
-export function useModelTableSizes(
-  instanceId: string,
-  resources: V1Resource[] | undefined,
-) {
-  // Extract unique connectors to create a stable cache key
-  const uniqueConnectors = new Set<string>();
-
-  if (resources) {
-    for (const resource of resources) {
-      if (resource?.meta?.name?.kind === ResourceKind.Model) {
-        const connector = resource.model?.state?.resultConnector;
-        const table = resource.model?.state?.resultTable;
-
-        if (connector && table) {
-          uniqueConnectors.add(connector);
-        }
-      }
-    }
-  }
-
-  const connectorArray = Array.from(uniqueConnectors).sort();
-  const cacheKey = `${instanceId}:${connectorArray.join(",")}`;
-
-  if (!modelSizesStoreCache.has(cacheKey)) {
-    modelSizesStoreCache.set(cacheKey, createModelTableSizesStore(instanceId, connectorArray));
-  }
-
-  return modelSizesStoreCache.get(cacheKey)!;
 }
