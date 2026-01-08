@@ -89,142 +89,142 @@
 
   // Create columns definition as a constant - key block handles re-renders
   const columns: ColumnDef<V1Resource, any>[] = [
-      {
-        accessorKey: "title",
-        header: "Type",
-        accessorFn: (row) => row.meta.name.kind,
-        cell: ({ row }) =>
-          flexRender(ResourceTypeBadge, {
-            kind: row.original.meta.name.kind as ResourceKind,
-          }),
+    {
+      accessorKey: "title",
+      header: "Type",
+      accessorFn: (row) => row.meta.name.kind,
+      cell: ({ row }) =>
+        flexRender(ResourceTypeBadge, {
+          kind: row.original.meta.name.kind as ResourceKind,
+        }),
+    },
+    {
+      accessorFn: (row) => row.meta.name.name,
+      header: "Name",
+      cell: ({ getValue }) =>
+        flexRender(NameCell, {
+          name: getValue() as string,
+        }),
+    },
+    {
+      id: "size",
+      accessorFn: (row) => {
+        // Only for models
+        if (row.meta.name.kind !== ResourceKind.Model) return undefined;
+
+        const connector = row.model?.state?.resultConnector;
+        const tableName = row.model?.state?.resultTable;
+        if (!connector || !tableName) return undefined;
+
+        const key = `${connector}:${tableName}`;
+        return tableSizes.get(key);
       },
-      {
-        accessorFn: (row) => row.meta.name.name,
-        header: "Name",
-        cell: ({ getValue }) =>
-          flexRender(NameCell, {
-            name: getValue() as string,
-          }),
+      header: "Size",
+      sortingFn: (rowA, rowB) => {
+        const sizeA = rowA.getValue("size") as string | number | undefined;
+        const sizeB = rowB.getValue("size") as string | number | undefined;
+
+        let numA = -1;
+        if (sizeA && sizeA !== "-1") {
+          numA = typeof sizeA === "number" ? sizeA : parseInt(sizeA, 10);
+        }
+
+        let numB = -1;
+        if (sizeB && sizeB !== "-1") {
+          numB = typeof sizeB === "number" ? sizeB : parseInt(sizeB, 10);
+        }
+
+        return numB - numA; // Descending
       },
-      {
-        id: "size",
-        accessorFn: (row) => {
-          // Only for models
-          if (row.meta.name.kind !== ResourceKind.Model) return undefined;
-
-          const connector = row.model?.state?.resultConnector;
-          const tableName = row.model?.state?.resultTable;
-          if (!connector || !tableName) return undefined;
-
-          const key = `${connector}:${tableName}`;
-          return tableSizes.get(key);
-        },
-        header: "Size",
-        sortingFn: (rowA, rowB) => {
-          const sizeA = rowA.getValue("size") as string | number | undefined;
-          const sizeB = rowB.getValue("size") as string | number | undefined;
-
-          let numA = -1;
-          if (sizeA && sizeA !== "-1") {
-            numA = typeof sizeA === "number" ? sizeA : parseInt(sizeA, 10);
+      sortDescFirst: true,
+      cell: ({ getValue }) =>
+        flexRender(ModelSizeCell, {
+          sizeBytes: getValue() as string | number | undefined,
+        }),
+      meta: {
+        widthPercent: 0,
+      },
+    },
+    {
+      accessorFn: (row) => row.meta.reconcileStatus,
+      header: "Status",
+      sortingFn: (rowA, rowB) => {
+        // Priority order: Running (highest) -> Pending -> Idle -> Unknown (lowest)
+        const getStatusPriority = (status: V1ReconcileStatus) => {
+          switch (status) {
+            case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
+              return 4;
+            case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
+              return 3;
+            case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
+              return 2;
+            case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
+            default:
+              return 1;
           }
+        };
 
-          let numB = -1;
-          if (sizeB && sizeB !== "-1") {
-            numB = typeof sizeB === "number" ? sizeB : parseInt(sizeB, 10);
-          }
-
-          return numB - numA; // Descending
-        },
-        sortDescFirst: true,
-        cell: ({ getValue }) =>
-          flexRender(ModelSizeCell, {
-            sizeBytes: getValue() as string | number | undefined,
-          }),
-        meta: {
-          widthPercent: 0,
-        },
+        return (
+          getStatusPriority(rowB.original.meta.reconcileStatus) -
+          getStatusPriority(rowA.original.meta.reconcileStatus)
+        );
       },
-      {
-        accessorFn: (row) => row.meta.reconcileStatus,
-        header: "Status",
-        sortingFn: (rowA, rowB) => {
-          // Priority order: Running (highest) -> Pending -> Idle -> Unknown (lowest)
-          const getStatusPriority = (status: V1ReconcileStatus) => {
-            switch (status) {
-              case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-                return 4;
-              case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-                return 3;
-              case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
-                return 2;
-              case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
-              default:
-                return 1;
-            }
-          };
-
-          return (
-            getStatusPriority(rowB.original.meta.reconcileStatus) -
-            getStatusPriority(rowA.original.meta.reconcileStatus)
-          );
-        },
-        cell: ({ row }) =>
-          flexRender(ResourceErrorMessage, {
-            message: row.original.meta.reconcileError,
-            status: row.original.meta.reconcileStatus,
-          }),
-        meta: {
-          marginLeft: "1",
-        },
+      cell: ({ row }) =>
+        flexRender(ResourceErrorMessage, {
+          message: row.original.meta.reconcileError,
+          status: row.original.meta.reconcileStatus,
+        }),
+      meta: {
+        marginLeft: "1",
       },
-      {
-        accessorFn: (row) => row.meta.stateUpdatedOn,
-        header: "Last refresh",
-        sortDescFirst: true,
-        cell: (info) =>
-          flexRender(RefreshCell, {
-            date: info.getValue() as string,
-          }),
+    },
+    {
+      accessorFn: (row) => row.meta.stateUpdatedOn,
+      header: "Last refresh",
+      sortDescFirst: true,
+      cell: (info) =>
+        flexRender(RefreshCell, {
+          date: info.getValue() as string,
+        }),
+    },
+    {
+      accessorFn: (row) => row.meta.reconcileOn,
+      header: "Next refresh",
+      cell: (info) =>
+        flexRender(RefreshCell, {
+          date: info.getValue() as string,
+        }),
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      cell: ({ row }) => {
+        // Only hide actions for reconciling rows
+        const status = row.original.meta?.reconcileStatus;
+        const isRowReconciling =
+          status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+          status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
+        if (!isRowReconciling) {
+          const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
+          return flexRender(ActionsCell, {
+            resourceKind: row.original.meta.name.kind,
+            resourceName: row.original.meta.name.name,
+            canRefresh:
+              row.original.meta.name.kind === ResourceKind.Model ||
+              row.original.meta.name.kind === ResourceKind.Source,
+            onClickRefreshDialog: openRefreshDialog,
+            isDropdownOpen: isDropdownOpen(resourceKey),
+            onDropdownOpenChange: (isOpen: boolean) =>
+              setDropdownOpen(resourceKey, isOpen),
+          });
+        }
       },
-      {
-        accessorFn: (row) => row.meta.reconcileOn,
-        header: "Next refresh",
-        cell: (info) =>
-          flexRender(RefreshCell, {
-            date: info.getValue() as string,
-          }),
+      enableSorting: false,
+      meta: {
+        widthPercent: 0,
       },
-      {
-        accessorKey: "actions",
-        header: "",
-        cell: ({ row }) => {
-          // Only hide actions for reconciling rows
-          const status = row.original.meta?.reconcileStatus;
-          const isRowReconciling =
-            status === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-            status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
-          if (!isRowReconciling) {
-            const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
-            return flexRender(ActionsCell, {
-              resourceKind: row.original.meta.name.kind,
-              resourceName: row.original.meta.name.name,
-              canRefresh:
-                row.original.meta.name.kind === ResourceKind.Model ||
-                row.original.meta.name.kind === ResourceKind.Source,
-              onClickRefreshDialog: openRefreshDialog,
-              isDropdownOpen: isDropdownOpen(resourceKey),
-              onDropdownOpenChange: (isOpen: boolean) =>
-                setDropdownOpen(resourceKey, isOpen),
-            });
-          }
-        },
-        enableSorting: false,
-        meta: {
-          widthPercent: 0,
-        },
-      },
-    ];
+    },
+  ];
 
   $: tableData = data.filter(
     (resource) => resource.meta.name.kind !== ResourceKind.Component,
