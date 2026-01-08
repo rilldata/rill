@@ -243,7 +243,8 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
+    @apply absolute border-[12.5px] pointer-events-none size-full;
+    border-color: var(--card);
     z-index: 20;
   }
 

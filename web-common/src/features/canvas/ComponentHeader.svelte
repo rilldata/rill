@@ -107,16 +107,18 @@
     font-size: 15px;
     line-height: 26px;
     @apply flex-shrink-0;
-    @apply font-medium text-gray-800 truncate;
+    @apply font-medium truncate;
+    color: var(--foreground);
   }
 
   .title.faint {
-    @apply text-gray-500;
+    color: var(--muted-foreground);
   }
 
   .description {
     font-size: 13px;
     @apply flex-shrink-0;
-    @apply text-gray-500 font-normal leading-none;
+    @apply font-normal leading-none;
+    color: var(--muted-foreground);
   }
 </style>

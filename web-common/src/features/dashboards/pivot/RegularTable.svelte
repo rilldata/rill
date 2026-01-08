@@ -343,7 +343,7 @@
     padding-right: 0px;
   }
   :global(regular-table table) {
-    color: var(--color-gray-700);
+    color: var(--foreground, var(--color-gray-700));
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;

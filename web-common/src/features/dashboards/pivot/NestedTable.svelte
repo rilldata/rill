@@ -394,13 +394,15 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply table-fixed;
+    background-color: var(--card);
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30;
+    background-color: var(--card);
   }
 
   .with-row-dimension thead tr th:first-of-type .header-cell {
@@ -442,12 +444,15 @@
   .header-cell {
     @apply px-2 size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply font-medium;
+    background-color: var(--card);
     height: var(--header-height);
+    color: var(--foreground);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2;
+    color: var(--foreground);
   }
 
   /* The leftmost header cells have no bottom border unless they're the last row */
@@ -457,12 +462,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-surface;
+    background-color: var(--card);
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-surface;
+    background-color: var(--card);
   }
 
   .with-row-dimension tr:hover > td:first-of-type {
@@ -475,7 +480,8 @@
 
   /* The totals row */
   .with-totals-row tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+    @apply sticky z-20;
+    background-color: var(--card);
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }

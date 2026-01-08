@@ -81,7 +81,8 @@
   }
 
   .kpi-wrapper {
-    @apply relative p-4 grid outline outline-1 outline-gray-200;
+    @apply relative p-4 grid outline outline-1;
+    outline-color: var(--border);
   }
 
   .border-overlay {

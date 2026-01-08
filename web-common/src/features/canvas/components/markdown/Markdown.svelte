@@ -91,7 +91,7 @@
   })();
 </script>
 
-<div class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface">
+<div class="size-full px-2 overflow-y-auto select-text cursor-text" style="background-color: var(--card);">
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#if needsTemplating && $resolveQuery?.isError}
       <div class="markdown-error">
@@ -107,7 +107,7 @@
 
 <style lang="postcss">
   :global(.canvas-markdown) {
-    @apply text-gray-900;
+    color: var(--foreground);
   }
   :global(.canvas-markdown h1) {
     font-size: 24px;

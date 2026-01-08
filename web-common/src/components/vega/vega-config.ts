@@ -30,9 +30,12 @@ export const getRillTheme: (
   theme?: Record<string, string>,
 ) => Config = (isCanvasDashboard, isDarkMode = false, theme) => {
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
-  const axisLabelColor = isDarkMode
-    ? colors.dark.axisLabel
-    : colors.light.axisLabel;
+  // Use theme foreground color if available, otherwise use default axis label colors
+  const axisLabelColor = theme?.foreground
+    ? theme.foreground
+    : isDarkMode
+      ? colors.dark.axisLabel
+      : colors.light.axisLabel;
 
   // Use provided theme if available, otherwise resolve from CSS variables
   let lineColor: string,

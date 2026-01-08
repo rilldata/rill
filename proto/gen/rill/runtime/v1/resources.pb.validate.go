@@ -10736,12 +10736,70 @@ func (m *CanvasItem) validate(all bool) error {
 		// no validation rules for Width
 	}
 
-	if m.BackgroundColorLight != nil {
-		// no validation rules for BackgroundColorLight
+	if m.LightThemeOverride != nil {
+
+		if all {
+			switch v := interface{}(m.GetLightThemeOverride()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasItemValidationError{
+						field:  "LightThemeOverride",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasItemValidationError{
+						field:  "LightThemeOverride",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetLightThemeOverride()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasItemValidationError{
+					field:  "LightThemeOverride",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
-	if m.BackgroundColorDark != nil {
-		// no validation rules for BackgroundColorDark
+	if m.DarkThemeOverride != nil {
+
+		if all {
+			switch v := interface{}(m.GetDarkThemeOverride()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasItemValidationError{
+						field:  "DarkThemeOverride",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasItemValidationError{
+						field:  "DarkThemeOverride",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDarkThemeOverride()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasItemValidationError{
+					field:  "DarkThemeOverride",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
@@ -44,11 +43,13 @@ type CanvasYAML struct {
 	Rows      []*struct {
 		Height *string `yaml:"height"`
 		Items  []*struct {
-			Width                *string              `yaml:"width"`
-			Component            string               `yaml:"component"` // Name of an externally defined component
-			BackgroundColorLight *string              `yaml:"background_color_light"`
-			BackgroundColorDark  *string              `yaml:"background_color_dark"`
-			InlineComponent      map[string]yaml.Node `yaml:",inline"` // Any other properties are considered an inline component definition
+			Width         *string `yaml:"width"`
+			Component     string  `yaml:"component"` // Name of an externally defined component
+			ThemeOverride *struct {
+				Light *ThemeColors `yaml:"light"`
+				Dark  *ThemeColors `yaml:"dark"`
+			} `yaml:"theme_override"`
+			InlineComponent map[string]yaml.Node `yaml:",inline"` // Any other properties are considered an inline component definition
 		} `yaml:"items"`
 	}
 	Security *SecurityPolicyYAML `yaml:"security"`
@@ -202,25 +203,21 @@ func (p *Parser) parseCanvas(node *Node) error {
 				WidthUnit:       widthUnit,
 			}
 
-			// Extract and validate background colors if present
-			if item.BackgroundColorLight != nil {
-				trimmed := strings.TrimSpace(*item.BackgroundColorLight)
-				if trimmed != "" {
-					// Validate color format
-					if _, err := csscolorparser.Parse(trimmed); err != nil {
-						return fmt.Errorf("invalid background_color_light for item %d in row %d: %w", j, i, err)
+			// Extract and validate theme overrides if present
+			if item.ThemeOverride != nil {
+				if item.ThemeOverride.Light != nil {
+					lightTheme, err := item.ThemeOverride.Light.validate()
+					if err != nil {
+						return fmt.Errorf("invalid light theme override for item %d in row %d: %w", j, i, err)
 					}
-					canvasItem.BackgroundColorLight = &trimmed
+					canvasItem.LightThemeOverride = lightTheme
 				}
-			}
-			if item.BackgroundColorDark != nil {
-				trimmed := strings.TrimSpace(*item.BackgroundColorDark)
-				if trimmed != "" {
-					// Validate color format
-					if _, err := csscolorparser.Parse(trimmed); err != nil {
-						return fmt.Errorf("invalid background_color_dark for item %d in row %d: %w", j, i, err)
+				if item.ThemeOverride.Dark != nil {
+					darkTheme, err := item.ThemeOverride.Dark.validate()
+					if err != nil {
+						return fmt.Errorf("invalid dark theme override for item %d in row %d: %w", j, i, err)
 					}
-					canvasItem.BackgroundColorDark = &trimmed
+					canvasItem.DarkThemeOverride = darkTheme
 				}
 			}
 

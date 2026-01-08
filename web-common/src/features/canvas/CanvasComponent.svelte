@@ -3,35 +3,56 @@
   import Toolbar from "./Toolbar.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
   import {
     COMPONENT_PATH_ROW_INDEX,
     COMPONENT_PATH_COLUMN_INDEX,
   } from "./stores/canvas-entity";
+  import {
+    getComponentThemeOverrides,
+    generateComponentThemeCSS,
+  } from "./utils/component-colors";
 </script>
 
 <script lang="ts">
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        component.visible.set(true);
-        observer.unobserve(container);
-      }
-    },
-    {
-      root: document.querySelector(".dashboard-theme-boundary"),
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
+  export let component: BaseCanvasComponent;
+
+  let observer: IntersectionObserver | null = null;
 
   onMount(() => {
-    observer.observe(container);
+    if (!component) return;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && component) {
+          component.visible.set(true);
+          if (observer) {
+            observer.unobserve(container);
+          }
+        }
+      },
+      {
+        root: document.querySelector(".dashboard-theme-boundary"),
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
+    if (container) {
+      observer.observe(container);
+    }
   });
 
-  export let component: BaseCanvasComponent;
+  onDestroy(() => {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+    if (styleElement) {
+      styleElement.remove();
+      styleElement = null;
+    }
+  });
   export let selected = false;
   export let ghost = false;
   export let allowPointerEvents = true;
@@ -43,25 +64,37 @@
 
   let open = false;
   let container: HTMLElement;
+  let styleElement: HTMLStyleElement | null = null;
 
-  $: ({ id: componentName, type: renderer } = component);
+  // Extract component name safely
+  let componentName = "";
+  let renderer = "";
+
+  $: {
+    if (component) {
+      componentName = component.id || "";
+      renderer = component.type || "";
+    }
+  }
 
   $: allowBorder = !hideBorder.has(renderer);
 
   // Get component position from pathInYAML with bounds checking
   $: rowIndex = (() => {
+    if (!component) return -1;
     const idx = component.pathInYAML?.[COMPONENT_PATH_ROW_INDEX];
     return typeof idx === "number" && idx >= 0 ? idx : -1;
   })();
 
   $: columnIndex = (() => {
+    if (!component) return -1;
     const idx = component.pathInYAML?.[COMPONENT_PATH_COLUMN_INDEX];
     return typeof idx === "number" && idx >= 0 ? idx : -1;
   })();
 
   // Get canvas spec to access item properties with null checks
   // Extract store reference first, then subscribe to it
-  $: specStore = component.parent?.specStore;
+  $: specStore = component?.parent?.specStore;
   $: canvasData = specStore ? $specStore?.data : undefined;
   $: canvasRows = canvasData?.canvas?.rows ?? [];
 
@@ -82,39 +115,41 @@
     return row.items[columnIndex];
   })();
 
-  // Get background colors from item spec (camelCase from generated types)
-  $: backgroundColorLight = item?.backgroundColorLight?.trim() || undefined;
-  $: backgroundColorDark = item?.backgroundColorDark?.trim() || undefined;
-
   // Detect dark mode (SSR-safe)
   $: isDarkMode =
     typeof window !== "undefined" ? $themeControl === "dark" : false;
 
-  // Resolve background color: use override if set, otherwise use theme's card color
-  $: backgroundColor = (() => {
-    // Use override if available for current mode
-    if (isDarkMode && backgroundColorDark) {
-      return backgroundColorDark;
-    }
-    if (!isDarkMode && backgroundColorLight) {
-      return backgroundColorLight;
+  // Get component theme overrides
+  $: themeOverrides = getComponentThemeOverrides(item);
+
+  // Generate scoped CSS for component theme overrides
+  $: themeCSS = componentName
+    ? generateComponentThemeCSS(componentName, themeOverrides)
+    : "";
+
+  // Function to update style element
+  function updateStyleElement() {
+    if (typeof window === "undefined" || !componentName) {
+      return;
     }
 
-    // Fallback to theme's card color with proper fallback
-    if (typeof window !== "undefined") {
-      const cardColor = themeManager.resolveCSSVariable(
-        "var(--card)",
-        isDarkMode,
-      );
-      // If resolved color is still a CSS variable, use a safe default
-      if (cardColor && !cardColor.startsWith("var(")) {
-        return cardColor;
+    if (themeCSS) {
+      if (!styleElement) {
+        styleElement = document.createElement("style");
+        styleElement.setAttribute("data-component-theme", componentName);
+        document.head.appendChild(styleElement);
       }
+      styleElement.textContent = themeCSS;
+    } else if (styleElement) {
+      styleElement.remove();
+      styleElement = null;
     }
+  }
 
-    // Ultimate fallback (should rarely be needed)
-    return undefined;
-  })();
+  // Update style element when themeCSS or componentName changes
+  $: if (componentName) {
+    updateStyleElement();
+  }
 </script>
 
 <article
@@ -125,10 +160,10 @@
   class:editable
   class:opacity-20={ghost}
   style:pointer-events={!allowPointerEvents ? "none" : "auto"}
-  style:background-color={backgroundColor}
+  style:background-color="var(--card)"
   class:outline={allowBorder || open}
   class:shadow-sm={allowBorder || open}
-  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] outline-gray-200 dark:outline-gray-300 overflow-hidden rounded-sm"
+  class="group component-card size-full flex flex-col cursor-pointer z-10 p-0 relative outline-[1px] overflow-hidden rounded-sm"
 >
   <Toolbar
     {component}

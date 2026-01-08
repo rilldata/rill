@@ -12,6 +12,14 @@
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
   import { validateChartSchema } from "./validate";
+  import {
+    getComponentThemeOverrides,
+    mergeComponentTheme,
+  } from "../../utils/component-colors";
+  import {
+    COMPONENT_PATH_ROW_INDEX,
+    COMPONENT_PATH_COLUMN_INDEX,
+  } from "../../stores/canvas-entity";
 
   export let component: BaseChart<CanvasChartSpec>;
 
@@ -74,9 +82,48 @@
     time_filters,
     dimension_filters,
   };
+
+  // Get component item to access theme overrides
+  $: specStore = component.parent?.specStore;
+  $: canvasData = specStore ? $specStore?.data : undefined;
+  $: canvasRows = canvasData?.canvas?.rows ?? [];
+  $: rowIndex = (() => {
+    const idx = component.pathInYAML?.[COMPONENT_PATH_ROW_INDEX];
+    return typeof idx === "number" && idx >= 0 ? idx : -1;
+  })();
+  $: columnIndex = (() => {
+    const idx = component.pathInYAML?.[COMPONENT_PATH_COLUMN_INDEX];
+    return typeof idx === "number" && idx >= 0 ? idx : -1;
+  })();
+  $: item = (() => {
+    if (
+      rowIndex < 0 ||
+      columnIndex < 0 ||
+      !canvasRows ||
+      rowIndex >= canvasRows.length
+    ) {
+      return undefined;
+    }
+    const row = canvasRows[rowIndex];
+    if (!row?.items || columnIndex >= row.items.length) {
+      return undefined;
+    }
+    return row.items[columnIndex];
+  })();
+
+  // Get component theme overrides and merge with global theme
+  $: themeOverrides = getComponentThemeOverrides(item);
+  $: mergedTheme = mergeComponentTheme(
+    $theme?.spec,
+    themeOverrides,
+    $isThemeModeDark,
+  );
 </script>
 
-<div class="size-full flex flex-col overflow-hidden">
+<div
+  class="size-full flex flex-col overflow-hidden"
+  style="background-color: var(--card);"
+>
   {#if schema.isValid}
     {#if isFetching}
       <div class="flex items-center justify-center h-full w-full">
@@ -100,7 +147,7 @@
         measures={$measures}
         isCanvas
         themeMode={$isThemeModeDark ? "dark" : "light"}
-        theme={currentTheme}
+        theme={mergedTheme || currentTheme}
       />
     {/if}
   {:else}

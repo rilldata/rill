@@ -8,26 +8,34 @@
   export let componentType: CanvasComponentType;
   export let hasFilters: boolean;
 
-  const tabs = [
-    {
-      tab: "options",
-      label: "Options",
-    },
-  ];
+  $: tabs = (() => {
+    const tabList = [
+      {
+        tab: "options",
+        label: "Options",
+      },
+      {
+        tab: "style",
+        label: "Style",
+      },
+    ];
 
-  $: if (hasFilters) {
-    tabs.push({
-      tab: "filters",
-      label: "Filters",
-    });
-  }
+    if (hasFilters) {
+      tabList.push({
+        tab: "filters",
+        label: "Filters",
+      });
+    }
 
-  $: if (isChartComponentType(componentType)) {
-    tabs.push({
-      tab: "config",
-      label: "Config",
-    });
-  }
+    if (isChartComponentType(componentType)) {
+      tabList.push({
+        tab: "config",
+        label: "Config",
+      });
+    }
+
+    return tabList;
+  })();
 
   onMount(() => {
     currentTab = "options";

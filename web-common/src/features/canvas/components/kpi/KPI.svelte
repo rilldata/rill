@@ -159,26 +159,30 @@
               class="w-fit font-semibold ui-copy-inactive"
               class:text-red-500={primaryTotal && primaryTotal < 0}
             >
-              <PercentageChange
-                color="text-gray-500"
-                showPosSign
-                tabularNumber={false}
-                value={formatMeasurePercentageDifference(comparisonPercChange)}
-              />
+              <span style="color: var(--muted-foreground);">
+                <PercentageChange
+                  color=""
+                  showPosSign
+                  tabularNumber={false}
+                  value={formatMeasurePercentageDifference(
+                    comparisonPercChange,
+                  )}
+                />
+              </span>
             </span>
           {/if}
         {/if}
       </div>
 
       {#if comparisonLabel}
-        <p class="text-sm text-gray-400 break-words">
+        <p class="text-sm break-words" style="color: var(--muted-foreground);">
           vs {comparisonLabel?.toLowerCase()}
         </p>
       {/if}
     {/if}
 
     {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
-      <span class="text-gray-500">
+      <span style="color: var(--muted-foreground);">
         <RangeDisplay {interval} {timeGrain} />
       </span>
     {/if}
@@ -234,11 +238,8 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-gray-800;
-  }
-
-  :global(.dark) .measure-name {
-    @apply text-gray-900;
+    @apply text-center font-medium text-sm;
+    color: var(--foreground);
   }
 
   .spark-right .measure-name {
@@ -246,11 +247,8 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-gray-800;
-  }
-
-  :global(.dark) .big-number {
-    @apply text-gray-900;
+    @apply text-3xl font-medium;
+    color: var(--foreground);
   }
 
   .hovered-value {
@@ -272,7 +270,8 @@
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
-    @apply font-medium text-ellipsis text-gray-500;
+    @apply font-medium text-ellipsis;
+    color: var(--muted-foreground);
   }
 
   @container component-container (inline-size < 300px) {

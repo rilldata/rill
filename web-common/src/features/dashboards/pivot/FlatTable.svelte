@@ -250,13 +250,15 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply table-fixed;
+    background-color: var(--card);
   }
 
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30;
+    background-color: var(--card);
   }
 
   tbody .cell {
@@ -283,14 +285,17 @@
   }
 
   .header-cell {
-    @apply px-2 bg-surface size-full;
+    @apply px-2 size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply font-medium;
+    background-color: var(--card);
     height: var(--header-height);
+    color: var(--foreground);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2;
+    color: var(--foreground);
   }
 
   tr > td {
@@ -299,7 +304,8 @@
 
   /* The totals row */
   .with-measure tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+    @apply sticky z-20;
+    background-color: var(--card);
     top: var(--total-header-height);
   }
 

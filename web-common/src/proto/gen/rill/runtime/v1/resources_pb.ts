@@ -4989,18 +4989,18 @@ export class CanvasItem extends Message<CanvasItem> {
   widthUnit = "";
 
   /**
-   * Background color for light mode. Overrides theme's card color when set.
+   * Theme override for light mode. Merges with global theme, component overrides take precedence.
    *
-   * @generated from field: optional string background_color_light = 11;
+   * @generated from field: optional rill.runtime.v1.ThemeColors light_theme_override = 17;
    */
-  backgroundColorLight?: string;
+  lightThemeOverride?: ThemeColors;
 
   /**
-   * Background color for dark mode. Overrides theme's card color when set.
+   * Theme override for dark mode. Merges with global theme, component overrides take precedence.
    *
-   * @generated from field: optional string background_color_dark = 12;
+   * @generated from field: optional rill.runtime.v1.ThemeColors dark_theme_override = 18;
    */
-  backgroundColorDark?: string;
+  darkThemeOverride?: ThemeColors;
 
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
@@ -5014,8 +5014,8 @@ export class CanvasItem extends Message<CanvasItem> {
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "background_color_light", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 12, name: "background_color_dark", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 17, name: "light_theme_override", kind: "message", T: ThemeColors, opt: true },
+    { no: 18, name: "dark_theme_override", kind: "message", T: ThemeColors, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {

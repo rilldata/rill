@@ -3866,12 +3866,12 @@ definitions:
       widthUnit:
         type: string
         description: 'Unit of the width. Current possible values: empty string.'
-      backgroundColorLight:
-        type: string
-        description: Background color for light mode. Overrides theme's card color when set.
-      backgroundColorDark:
-        type: string
-        description: Background color for dark mode. Overrides theme's card color when set.
+      lightThemeOverride:
+        $ref: '#/definitions/v1ThemeColors'
+        description: Theme override for light mode. Merges with global theme, component overrides take precedence.
+      darkThemeOverride:
+        $ref: '#/definitions/v1ThemeColors'
+        description: Theme override for dark mode. Merges with global theme, component overrides take precedence.
   v1CanvasPreset:
     type: object
     properties:

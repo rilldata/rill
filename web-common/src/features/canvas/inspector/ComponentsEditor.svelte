@@ -11,7 +11,7 @@
   import ComponentTabs from "./ComponentTabs.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
-  import BackgroundColorEditor from "./BackgroundColorEditor.svelte";
+  import ThemeOverrideEditor from "./ThemeOverrideEditor.svelte";
   import { hasComponentFilters } from "./util";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 
@@ -47,7 +47,8 @@
   {#if componentType && component && rendererProperties}
     {#if currentTab === "options"}
       <ParamMapper {component} />
-      <BackgroundColorEditor {component} {fileArtifact} />
+    {:else if currentTab === "style"}
+      <ThemeOverrideEditor {component} {fileArtifact} />
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />
     {:else if currentTab === "config"}
