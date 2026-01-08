@@ -1,5 +1,4 @@
 ---
-name: Models
 description: Detailed instructions and examples for developing model resources in Rill
 ---
 

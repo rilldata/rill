@@ -30,7 +30,6 @@ type Options struct {
 
 // frontMatter represents the YAML front matter of an instruction file.
 type frontMatter struct {
-	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
 }
 
@@ -43,7 +42,7 @@ func Load(path string, opts Options) (*Instruction, error) {
 		return nil, fmt.Errorf("failed to read instruction file %q: %w", path, err)
 	}
 
-	return parseInstruction(content, opts)
+	return parseInstruction(path, content, opts)
 }
 
 // LoadAll loads all instruction files from the data directory recursively.
@@ -70,7 +69,7 @@ func LoadAll(opts Options) (map[string]*Instruction, error) {
 			return fmt.Errorf("failed to read instruction file %q: %w", path, err)
 		}
 
-		instruction, err := parseInstruction(content, opts)
+		instruction, err := parseInstruction(path, content, opts)
 		if err != nil {
 			return fmt.Errorf("failed to parse instruction file %q: %w", path, err)
 		}
@@ -89,7 +88,11 @@ func LoadAll(opts Options) (map[string]*Instruction, error) {
 }
 
 // parseInstruction parses an instruction file's content, extracting front matter and applying templates to the body.
-func parseInstruction(content []byte, opts Options) (*Instruction, error) {
+func parseInstruction(path string, content []byte, opts Options) (*Instruction, error) {
+	// Extract name from path
+	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+
+	// Parse front matter
 	fm, body, err := parseFrontMatter(content)
 	if err != nil {
 		return nil, err
@@ -102,7 +105,7 @@ func parseInstruction(content []byte, opts Options) (*Instruction, error) {
 	}
 
 	return &Instruction{
-		Name:        fm.Name,
+		Name:        name,
 		Description: fm.Description,
 		Body:        renderedBody,
 	}, nil

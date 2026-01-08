@@ -1,5 +1,4 @@
 ---
-name: Canvas Dashboards
 description: Detailed instructions and examples for developing canvas dashboard resources in Rill
 ---
 

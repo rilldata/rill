@@ -1,5 +1,4 @@
 ---
-name: Metrics Views
 description: Detailed instructions and examples for developing metrics view resources in Rill
 ---
 

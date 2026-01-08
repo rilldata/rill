@@ -1,5 +1,4 @@
 ---
-name: Themes
 description: Detailed instructions and examples for developing theme resources in Rill
 ---
 

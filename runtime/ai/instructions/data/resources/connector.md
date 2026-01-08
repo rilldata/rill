@@ -1,5 +1,4 @@
 ---
-name: Connectors
 description: Detailed instructions and examples for developing connector resources in Rill
 ---
 

@@ -1,5 +1,4 @@
 ---
-name: Explore Dashboards
 description: Detailed instructions and examples for developing explore dashboard resources in Rill
 ---
 
@@ -68,63 +67,63 @@ Use inline explores for simple cases where you want to keep the metrics view and
 
 ### Required properties
 
-| Property | Description |
-|----------|-------------|
-| `type` | Must be `explore` |
+| Property       | Description                        |
+| -------------- | ---------------------------------- |
+| `type`         | Must be `explore`                  |
 | `metrics_view` | Name of the metrics view to render |
 
 ### Display properties
 
-| Property | Description |
-|----------|-------------|
-| `display_name` | Human-readable name shown in the UI |
-| `description` | Description text for the dashboard |
-| `banner` | Custom banner message displayed at the top of the dashboard |
+| Property       | Description                                                 |
+| -------------- | ----------------------------------------------------------- |
+| `display_name` | Human-readable name shown in the UI                         |
+| `description`  | Description text for the dashboard                          |
+| `banner`       | Custom banner message displayed at the top of the dashboard |
 
 ### Field selection
 
-| Property | Description |
-|----------|-------------|
+| Property     | Description                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------- |
 | `dimensions` | Dimensions to expose. Use `'*'` for all (default), a list of names, or `exclude:` to omit specific dimensions |
-| `measures` | Measures to expose. Use `'*'` for all (default), a list of names, or `exclude:` to omit specific measures |
+| `measures`   | Measures to expose. Use `'*'` for all (default), a list of names, or `exclude:` to omit specific measures     |
 
 ### Time configuration
 
-| Property | Description |
-|----------|-------------|
-| `time_ranges` | List of time range presets available in the dropdown. Uses ISO 8601 durations (e.g., `P7D`, `P30D`) or Rill extensions (e.g., `rill-WTD`, `rill-MTD`) |
-| `time_zones` | List of IANA time zones to pin at the top of the time zone selector |
-| `lock_time_zone` | When `true`, locks the dashboard to the first time zone in `time_zones` (or UTC if none specified) |
-| `allow_custom_time_range` | When `false`, hides the custom time range picker. Defaults to `true` |
+| Property                  | Description                                                                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `time_ranges`             | List of time range presets available in the dropdown. Uses ISO 8601 durations (e.g., `P7D`, `P30D`) or Rill extensions (e.g., `rill-WTD`, `rill-MTD`) |
+| `time_zones`              | List of IANA time zones to pin at the top of the time zone selector                                                                                   |
+| `lock_time_zone`          | When `true`, locks the dashboard to the first time zone in `time_zones` (or UTC if none specified)                                                    |
+| `allow_custom_time_range` | When `false`, hides the custom time range picker. Defaults to `true`                                                                                  |
 
 ### Defaults
 
 The `defaults:` block configures the initial dashboard state when a user first loads it:
 
-| Property | Description |
-|----------|-------------|
-| `defaults.time_range` | Initial time range selection |
-| `defaults.dimensions` | Initial dimensions to display |
-| `defaults.measures` | Initial measures to display |
-| `defaults.comparison_mode` | Initial comparison mode: `none`, `time`, or `dimension` |
+| Property                        | Description                                                  |
+| ------------------------------- | ------------------------------------------------------------ |
+| `defaults.time_range`           | Initial time range selection                                 |
+| `defaults.dimensions`           | Initial dimensions to display                                |
+| `defaults.measures`             | Initial measures to display                                  |
+| `defaults.comparison_mode`      | Initial comparison mode: `none`, `time`, or `dimension`      |
 | `defaults.comparison_dimension` | For `dimension` comparison mode, the dimension to compare by |
 
 ### Theming
 
-| Property | Description |
-|----------|-------------|
-| `theme` | Name of a theme resource, or an inline theme definition with `colors.primary` and `colors.secondary` |
+| Property | Description                                                                                          |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| `theme`  | Name of a theme resource, or an inline theme definition with `colors.primary` and `colors.secondary` |
 
 ### Security
 
-| Property | Description |
-|----------|-------------|
+| Property          | Description                                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `security.access` | Expression controlling who can access the dashboard. Uses templating with user attributes like `{{ .user.admin }}` or `{{ .user.email }}` |
 
 ### Embedding
 
-| Property | Description |
-|----------|-------------|
+| Property            | Description                                              |
+| ------------------- | -------------------------------------------------------- |
 | `embeds.hide_pivot` | When `true`, hides the pivot table view in embedded mode |
 
 ## Common time range presets
