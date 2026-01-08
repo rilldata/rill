@@ -122,11 +122,10 @@ export class FunnelChartProvider {
     const topNStageQueryOptionsStore = derived(
       [runtime, timeAndFilterStore],
       ([$runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const instanceId = $runtime.instanceId;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!stageDimensionName &&
           !isMultiMeasure &&
           !Array.isArray(config.stage?.sort);
@@ -158,11 +157,10 @@ export class FunnelChartProvider {
     const queryOptionsStore = derived(
       [runtime, timeAndFilterStore, topNStageQuery],
       ([$runtime, $timeAndFilterStore, $topNStageQuery]) => {
-        const { timeRange, where } = $timeAndFilterStore;
+        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
+          (!hasTimeSeries || (!!timeRange?.start && !!timeRange?.end)) &&
           !!measures?.length &&
           (isMultiMeasure || !!dimensions?.length) &&
           (!isMultiMeasure &&

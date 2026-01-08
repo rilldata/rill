@@ -125,6 +125,159 @@ test.describe("Embeds", () => {
       ).toBeTruthy();
     });
 
+    test("getThemeMode returns current theme mode", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 2001, method: "getThemeMode" },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some(
+          (msg) =>
+            msg.includes(`"method":"getThemeMode"`) ||
+            (msg.includes(`"id":2001`) &&
+              (msg.includes(`"themeMode":"light"`) ||
+                msg.includes(`"themeMode":"dark"`) ||
+                msg.includes(`"themeMode":"system"`))),
+        ),
+      ).toBeTruthy();
+    });
+
+    test("setThemeMode changes theme to dark", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 2002,
+            method: "setThemeMode",
+            params: "dark",
+          },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      // Check that dark class is applied to the document
+      const hasDarkClass = await frame
+        .locator("html.dark")
+        .count()
+        .then((count) => count > 0);
+      expect(hasDarkClass).toBeTruthy();
+      expect(
+        logMessages.some((msg) => msg.includes(`{"id":2002,"result":true}`)),
+      ).toBeTruthy();
+    });
+
+    test("setThemeMode changes theme to light", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      // First set to dark
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 2003,
+            method: "setThemeMode",
+            params: "dark",
+          },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      // Then set to light
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 2004,
+            method: "setThemeMode",
+            params: "light",
+          },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      // Check that dark class is not present
+      const hasDarkClass = await frame
+        .locator("html.dark")
+        .count()
+        .then((count) => count > 0);
+      expect(hasDarkClass).toBeFalsy();
+      expect(
+        logMessages.some((msg) => msg.includes(`{"id":2004,"result":true}`)),
+      ).toBeTruthy();
+    });
+
+    test("setThemeMode changes theme to system", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 2005,
+            method: "setThemeMode",
+            params: "system",
+          },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some((msg) => msg.includes(`{"id":2005,"result":true}`)),
+      ).toBeTruthy();
+    });
+
+    test("setThemeMode rejects invalid theme mode", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 2006,
+            method: "setThemeMode",
+            params: "invalid",
+          },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some(
+          (msg) =>
+            msg.includes(`"id":2006`) &&
+            msg.includes(`"error"`) &&
+            msg.includes(`themeMode`),
+        ),
+      ).toBeTruthy();
+    });
+
     test.describe("embedded explore with initial state", () => {
       test.use({
         embeddedInitialState:
@@ -148,7 +301,7 @@ test.describe("Embeds", () => {
         expect(
           logMessages.some((msg) =>
             msg.includes(
-              "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+              "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+('Instacart')",
             ),
           ),
         ).toBeTruthy();
@@ -166,7 +319,7 @@ test.describe("Embeds", () => {
       const frame = embedPage.frameLocator("iframe");
 
       await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
-        /Advertising Spend Overall\s+\$3,900\s+\+\$1,858 \+91%\s+vs previous day/m,
+        /Advertising Spend Overall\s+\$3,900\s+\+\$1,858 \+91%\s+vs previous period/m,
       );
     });
 
@@ -184,7 +337,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            "tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
+            "tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+('Instacart')",
           ),
         ),
       ).toBeTruthy();
@@ -214,7 +367,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
@@ -245,6 +398,62 @@ test.describe("Embeds", () => {
       );
       expect(
         logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
+      ).toBeTruthy();
+    });
+
+    test("getThemeMode returns current theme mode for canvas", async ({
+      embedPage,
+    }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 3001, method: "getThemeMode" },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some(
+          (msg) =>
+            msg.includes(`"id":3001`) &&
+            (msg.includes(`"themeMode":"light"`) ||
+              msg.includes(`"themeMode":"dark"`) ||
+              msg.includes(`"themeMode":"system"`)),
+        ),
+      ).toBeTruthy();
+    });
+
+    test("setThemeMode works for canvas", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 3002,
+            method: "setThemeMode",
+            params: "dark",
+          },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      const hasDarkClass = await frame
+        .locator("html.dark")
+        .count()
+        .then((count) => count > 0);
+      expect(hasDarkClass).toBeTruthy();
+      expect(
+        logMessages.some((msg) => msg.includes(`{"id":3002,"result":true}`)),
       ).toBeTruthy();
     });
 
@@ -301,6 +510,16 @@ test.describe("Embeds", () => {
         exact: true,
       })
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_explore","to":"auction_explore"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Time range is still the default
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
@@ -310,6 +529,16 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"auction_explore","to":"bids_canvas"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Time range is still the default
     await expect(frame.getByText("Last 24 hours")).toBeVisible();
 
@@ -328,6 +557,16 @@ test.describe("Embeds", () => {
     await frame
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Old selection has persisted
     await expect(frame.getByText("Last 14 days")).toBeVisible();
 
@@ -338,11 +577,30 @@ test.describe("Embeds", () => {
       .first()
       .click();
 
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_explore","to":"bids_canvas"}}`,
+        ),
+      ),
+    ).toBeTruthy();
+
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_canvas","to":"dashboardListing"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Check that the dashboards are listed
     await expect(
       frame.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
@@ -353,16 +611,44 @@ test.describe("Embeds", () => {
 
     // Go to `Programmatic Ads Auction` using the links on home
     await frame.getByRole("link", { name: "Programmatic Ads Bids" }).click();
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"dashboardListing","to":"bids_explore"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Old selection has persisted
     await expect(frame.getByText("Last 14 Days")).toBeVisible();
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"bids_explore","to":"dashboardListing"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Go to `Bids Canvas Dashboard` using the links on home
     await frame
       .getByRole("link", { name: "Bids Canvas Dashboard" })
       .first()
       .click();
+
+    await embedPage.waitForTimeout(500);
+
+    expect(
+      logMessages.some((msg) =>
+        msg.includes(
+          `{"method":"navigation","params":{"from":"dashboardListing","to":"bids_canvas"}}`,
+        ),
+      ),
+    ).toBeTruthy();
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
   });

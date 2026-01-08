@@ -13,7 +13,7 @@ import (
 )
 
 func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
-	var project, path string
+	var project, path, branch string
 
 	statusCmd := &cobra.Command{
 		Use:   "describe [<project-name>] <type> <name>",
@@ -42,12 +42,13 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				Org:     ch.Org,
 				Project: project,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
 			}
 
-			depl := proj.ProdDeployment
+			depl := proj.Deployment
 			if depl == nil {
 				return fmt.Errorf("no production deployment found for project %q", project)
 			}
@@ -86,6 +87,7 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	statusCmd.Flags().StringVar(&project, "project", "", "Project name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	statusCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return statusCmd
 }

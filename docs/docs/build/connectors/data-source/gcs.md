@@ -251,17 +251,14 @@ SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
 
 ---
 
-## Deploying to Rill Cloud
+## Deploy to Rill Cloud
 
-When deploying your project to Rill Cloud, you must use either Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials will not work in the cloud environment.
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide Service Account JSON or HMAC Keys for Google Cloud Storage used in your project. Please refer to our [connector YAML reference docs](/reference/project-files/connectors#gcs) for more information.
 
-To manually configure your environment variables, run:
-
-```bash
-rill env configure
+If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials by pushing the `Deploy` button to update your project or by running the following command in the CLI:
 ```
-
-The CLI will interactively walk you through configuring all required credentials for your connectors.
+rill env push
+```
 
 ---
 

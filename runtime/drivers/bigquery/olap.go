@@ -52,7 +52,15 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 // Query implements drivers.OLAPStore.
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, resErr error) {
 	if c.config.LogQueries {
-		c.logger.Info("bigquery query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("bigquery query", fields...)
 	}
 	client, err := c.getClient(ctx)
 	if err != nil {

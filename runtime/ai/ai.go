@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	goruntime "runtime"
@@ -58,6 +59,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &DevelopModel{Runtime: rt})
 	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
+	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
 
@@ -96,6 +98,11 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		if err != nil {
 			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
 		}
+		retrieveUntilMessageID := session.SharedUntilMessageID
+		if session.OwnerID == opts.Claims.UserID || opts.Claims.SkipChecks {
+			// If the user owns the session or skipCheck enabled, they can see all messages.
+			retrieveUntilMessageID = ""
+		}
 
 		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
 		if err != nil {
@@ -114,6 +121,10 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 				ContentType: MessageContentType(m.ContentType),
 				Content:     m.Content,
 			})
+			// only load messages up to and including that retrieveUntilMessageID; messages are ordered by "Index" ascending.
+			if m.ID == retrieveUntilMessageID {
+				break
+			}
 		}
 	}
 	if opts.SessionID == "" {
@@ -132,8 +143,9 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
-	// Check access: for now, only allow users to access their own sessions
-	if opts.Claims.UserID != session.OwnerID {
+	// Check access: for now, only allow users to access their own sessions or shared sessions with trimmed messages.
+	// Checking !SkipChecks to ensure access for superusers and for Rill Developer (where auth is disabled and SkipChecks is true).
+	if opts.Claims.UserID != session.OwnerID && !opts.Claims.SkipChecks && session.SharedUntilMessageID == "" {
 		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 
@@ -181,10 +193,75 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	}, nil
 }
 
+// ForkSession creates a new session cloned from an existing session.
+func (r *Runner) ForkSession(ctx context.Context, opts *SessionOptions) (string, error) {
+	if opts.SessionID == "" {
+		return "", errors.New("cannot fork session: SessionID is empty")
+	}
+
+	session, err := r.Session(ctx, opts)
+	if err != nil {
+		return "", fmt.Errorf("failed to load session to fork: %w", err)
+	}
+
+	forked := &drivers.AISession{
+		ID:                  uuid.NewString(),
+		InstanceID:          opts.InstanceID,
+		OwnerID:             opts.Claims.UserID,
+		Title:               session.CatalogSession().Title + " (forked)",
+		UserAgent:           opts.UserAgent,
+		ForkedFromSessionID: session.ID(),
+		CreatedOn:           time.Now(),
+		UpdatedOn:           time.Now(),
+	}
+
+	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to open catalog: %w", err)
+	}
+	defer release()
+
+	err = catalog.InsertAISession(ctx, forked)
+	if err != nil {
+		return "", fmt.Errorf("failed to fork session: %w", err)
+	}
+	// Map of old message IDs to new message IDs
+	oldToNewMessageID := make(map[string]string)
+	oldToNewMessageID[""] = ""
+	// Clone messages
+	for _, m := range session.Messages() {
+		id := uuid.NewString()
+		oldToNewMessageID[m.ID] = id
+		pid, ok := oldToNewMessageID[m.ParentID]
+		if !ok {
+			return "", fmt.Errorf("failed to clone message %q: parent message %q not found", m.ID, m.ParentID)
+		}
+		newMsg := &drivers.AIMessage{
+			ID:          id,
+			ParentID:    pid,
+			SessionID:   forked.ID,
+			CreatedOn:   time.Now(),
+			UpdatedOn:   time.Now(),
+			Index:       m.Index,
+			Role:        string(m.Role),
+			Type:        string(m.Type),
+			Tool:        m.Tool,
+			ContentType: string(m.ContentType),
+			Content:     m.Content,
+		}
+		err = catalog.InsertAIMessage(ctx, newMsg)
+		if err != nil {
+			return "", fmt.Errorf("failed to clone message %q: %w", m.ID, err)
+		}
+	}
+
+	return forked.ID, nil
+}
+
 // Tool is an interface for an AI tool.
 type Tool[In, Out any] interface {
 	Spec() *mcp.Tool
-	CheckAccess(context.Context) bool
+	CheckAccess(context.Context) (bool, error)
 	Handler(ctx context.Context, args In) (Out, error)
 }
 
@@ -192,21 +269,79 @@ type Tool[In, Out any] interface {
 type CompiledTool struct {
 	Name                  string
 	Spec                  *mcp.Tool
-	CheckAccess           func(context.Context) bool
+	CheckAccess           func(context.Context) (bool, error)
 	UnmarshalArgs         func(content string) (any, error)
 	UnmarshalResult       func(content string) (any, error)
 	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
 	RegisterWithMCPServer func(srv *mcp.Server)
 }
 
+// AsProto converts the CompiledTool to a protocol buffer representation.
+func (t *CompiledTool) AsProto() (*aiv1.Tool, error) {
+	var meta *structpb.Struct
+	if t.Spec.Meta != nil {
+		var err error
+		meta, err = structpb.NewStruct(t.Spec.Meta)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert meta for tool %q: %w", t.Name, err)
+		}
+	}
+
+	var inputSchema string
+	if t.Spec.InputSchema != nil {
+		inputSchemaBytes, err := json.Marshal(t.Spec.InputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal input schema for tool %q: %w", t.Name, err)
+		}
+		inputSchema = string(inputSchemaBytes)
+
+		// OpenAI currently does not accept object schemas without explicit properties.
+		// So for now, we skip such schemas.
+		if s, ok := t.Spec.InputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
+			inputSchema = ""
+		}
+	}
+
+	var outputSchema string
+	if t.Spec.OutputSchema != nil {
+		outputSchemaBytes, err := json.Marshal(t.Spec.OutputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal output schema for tool %q: %w", t.Name, err)
+		}
+		outputSchema = string(outputSchemaBytes)
+
+		// For consistency with input schema, skip object schemas without explicit properties.
+		if s, ok := t.Spec.OutputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
+			outputSchema = ""
+		}
+	}
+
+	return &aiv1.Tool{
+		Name:         t.Spec.Name,
+		DisplayName:  t.Spec.Title,
+		Description:  t.Spec.Description,
+		Meta:         meta,
+		InputSchema:  inputSchema,
+		OutputSchema: outputSchema,
+	}, nil
+}
+
 // RegisterTool registers a new tool with the Runner.
 func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 	spec := t.Spec()
 	if spec.InputSchema == nil {
-		spec.InputSchema, _ = schemaFor[In](false)
+		var err error
+		spec.InputSchema, err = schemaFor[In](false)
+		if err != nil {
+			panic(fmt.Sprintf("failed to infer input schema for tool %q: %v", spec.Name, err))
+		}
 	}
 	if spec.OutputSchema == nil {
-		spec.OutputSchema, _ = schemaFor[Out](true)
+		var err error
+		spec.OutputSchema, err = schemaFor[Out](true)
+		if err != nil {
+			panic(fmt.Sprintf("failed to infer output schema for tool %q: %v", spec.Name, err))
+		}
 	}
 
 	s.Tools[spec.Name] = &CompiledTool{
@@ -461,6 +596,14 @@ func (s *BaseSession) Title() string {
 	return s.dto.Title
 }
 
+func (s *BaseSession) Shared() bool {
+	return s.dto.SharedUntilMessageID != ""
+}
+
+func (s *BaseSession) Forked() bool {
+	return s.dto.ForkedFromSessionID != ""
+}
+
 func (s *BaseSession) UpdateTitle(ctx context.Context, title string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -473,6 +616,14 @@ func (s *BaseSession) UpdateUserAgent(ctx context.Context, userAgent string) err
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.dto.UserAgent = userAgent
+	s.dtoDirty = true
+	return nil
+}
+
+func (s *BaseSession) UpdateSharedUntilMessageID(ctx context.Context, messageID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dto.SharedUntilMessageID = messageID
 	s.dtoDirty = true
 	return nil
 }
@@ -898,7 +1049,11 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 			if !ok {
 				return nil, fmt.Errorf("unknown tool %q", opts.Tool)
 			}
-			if !t.CheckAccess(ctx) {
+			ok, err := t.CheckAccess(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check access for tool %q: %w", opts.Tool, err)
+			}
+			if !ok {
 				return nil, fmt.Errorf("access denied to tool %q", opts.Tool)
 			}
 			return t.JSONHandler(ctx, argsJSON)
@@ -941,6 +1096,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			opts.MaxIterations = 1
 		}
 	}
+	if opts.MaxIterations == 1 && len(opts.Tools) > 0 {
+		return errors.New("max iterations must be greater than 1 when using tools")
+	}
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -949,28 +1107,18 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
-		if !tool.CheckAccess(ctx) {
+		ok, err := tool.CheckAccess(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to check access for tool %q: %w", toolName, err)
+		}
+		if !ok {
 			continue
 		}
-		var inputSchema string
-		if tool.Spec.InputSchema != nil {
-			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)
-			if err != nil {
-				return fmt.Errorf("failed to marshal input schema for tool %q: %w", toolName, err)
-			}
-			inputSchema = string(inputSchemaBytes)
-
-			// OpenAI currently does not accept object schemas without explicit properties.
-			// So for now, we skip such schemas.
-			if s, ok := tool.Spec.InputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
-				inputSchema = ""
-			}
+		toolPB, err := tool.AsProto()
+		if err != nil {
+			return fmt.Errorf("failed to convert tool to proto: %w", err)
 		}
-		tools = append(tools, &aiv1.Tool{
-			Name:        tool.Spec.Name,
-			Description: tool.Spec.Description,
-			InputSchema: inputSchema,
-		})
+		tools = append(tools, toolPB)
 	}
 
 	// Prepare output schema.
@@ -991,7 +1139,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			var err error
 			outputSchema, err = jsonschema.ForType(outType.Elem(), &jsonschema.ForOptions{})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to infer schema for output type: %w", err)
 			}
 		}
 	}
@@ -1057,7 +1205,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			final := i+1 == opts.MaxIterations
 			if final {
 				tools = nil
-				messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				if i != 0 {
+					messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				}
 			}
 
 			// Truncate messages to fit within LLM context window.

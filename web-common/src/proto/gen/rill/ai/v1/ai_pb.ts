@@ -20,6 +20,13 @@ export class Tool extends Message<Tool> {
   name = "";
 
   /**
+   * The display name of the tool
+   *
+   * @generated from field: string display_name = 4;
+   */
+  displayName = "";
+
+  /**
    * A human-readable description of the tool
    *
    * @generated from field: string description = 2;
@@ -27,11 +34,25 @@ export class Tool extends Message<Tool> {
   description = "";
 
   /**
+   * Metadata about the tool
+   *
+   * @generated from field: google.protobuf.Struct meta = 5;
+   */
+  meta?: Struct;
+
+  /**
    * JSON Schema defining the expected parameters for the tool (as JSON string)
    *
    * @generated from field: string input_schema = 3;
    */
   inputSchema = "";
+
+  /**
+   * JSON Schema defining the expected output of the tool (as JSON string)
+   *
+   * @generated from field: string output_schema = 6;
+   */
+  outputSchema = "";
 
   constructor(data?: PartialMessage<Tool>) {
     super();
@@ -42,8 +63,11 @@ export class Tool extends Message<Tool> {
   static readonly typeName = "rill.ai.v1.Tool";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "meta", kind: "message", T: Struct },
     { no: 3, name: "input_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "output_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Tool {

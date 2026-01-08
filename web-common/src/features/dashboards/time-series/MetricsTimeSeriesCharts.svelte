@@ -23,6 +23,7 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
@@ -35,7 +36,7 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -55,10 +56,14 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import {
     getAllowedGrains,
+    isGrainAllowed,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { Tooltip } from "bits-ui";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const { rillTime } = featureFlags;
 
@@ -81,7 +86,6 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
-    dashboardStore,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -269,15 +273,20 @@
 
   $: timeGrainOptions = getAllowedGrains(minTimeGrain);
 
+  $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
+
   $: annotationsForMeasures = renderedMeasures.map((measure) =>
     getAnnotationsForMeasure({
       instanceId,
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,
-      selectedTimezone: $dashboardStore.selectedTimezone,
     }),
   );
+
+  let grainDropdownOpen = false;
+
+  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
@@ -323,8 +332,15 @@
     );
   }
 
-  let open = false;
+  function maybeClearMeasureSelection() {
+    // Range selection should only clear when scrub range is cleared.
+    if (!measureSelection.isRangeSelection()) {
+      measureSelection.clear();
+    }
+  }
 </script>
+
+<svelte:window on:click={maybeClearMeasureSelection} />
 
 <TimeSeriesChartContainer
   enableFullWidth={showTimeDimensionDetail}
@@ -332,6 +348,7 @@
   start={startValue}
   {workspaceWidth}
   {timeSeriesWidth}
+  bottom={showTimeDimensionDetail ? 25 : 10}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
@@ -352,8 +369,8 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime && activeTimeGrain}
-        <DropdownMenu.Root bind:open>
+      {#if $rillTime && effectiveGrain}
+        <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild let:builder>
             <button
               {...builder}
@@ -361,11 +378,28 @@
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
               by <b>
-                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                {V1TimeGrainToDateTimeUnit[effectiveGrain]}
               </b>
-              <span class:-rotate-90={open} class="transition-transform">
+              <span
+                class:-rotate-90={grainDropdownOpen}
+                class="transition-transform"
+              >
                 <CaretDownIcon />
               </span>
+              {#if !grainAllowed && minTimeGrain && activeTimeGrain}
+                <Tooltip.Root portal="body">
+                  <Tooltip.Trigger>
+                    <AlertCircleOutline className="size-3.5 " />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
+                    <TooltipContent>
+                      <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
+                      aggregation not supported on this dashboard. Displaying by
+                      <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
+                    </TooltipContent>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
             </button>
           </DropdownMenu.Trigger>
 

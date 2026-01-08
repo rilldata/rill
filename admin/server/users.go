@@ -664,14 +664,16 @@ func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.Organization
 
 func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUser {
 	return &adminv1.ProjectMemberUser{
-		UserId:       m.ID,
-		UserEmail:    m.Email,
-		UserName:     m.DisplayName,
-		UserPhotoUrl: m.PhotoURL,
-		RoleName:     m.RoleName,
-		OrgRoleName:  m.OrgRoleName,
-		CreatedOn:    timestamppb.New(m.CreatedOn),
-		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+		UserId:            m.ID,
+		UserEmail:         m.Email,
+		UserName:          m.DisplayName,
+		UserPhotoUrl:      m.PhotoURL,
+		RoleName:          m.RoleName,
+		OrgRoleName:       m.OrgRoleName,
+		CreatedOn:         timestamppb.New(m.CreatedOn),
+		UpdatedOn:         timestamppb.New(m.UpdatedOn),
+		Resources:         resourceNamesToPB(m.Resources),
+		RestrictResources: m.RestrictResources,
 	}
 }
 
@@ -690,16 +692,18 @@ func orgInviteToPB(i *database.OrganizationInviteWithRole) *adminv1.Organization
 	return &adminv1.OrganizationInvite{
 		Email:     i.Email,
 		RoleName:  i.RoleName,
-		InvitedBy: i.InvitedBy,
+		InvitedBy: safeStr(i.InvitedBy),
 	}
 }
 
 func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 	return &adminv1.ProjectInvite{
-		Email:       i.Email,
-		RoleName:    i.RoleName,
-		OrgRoleName: i.OrgRoleName,
-		InvitedBy:   i.InvitedBy,
+		Email:             i.Email,
+		RoleName:          i.RoleName,
+		OrgRoleName:       i.OrgRoleName,
+		InvitedBy:         safeStr(i.InvitedBy),
+		RestrictResources: i.RestrictResources,
+		Resources:         resourceNamesToPB(i.Resources),
 	}
 }
 
@@ -766,4 +770,15 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 		}
 	}
 	return nil, status.Error(codes.NotFound, "token not found")
+}
+
+func resourceNamesToPB(resources []database.ResourceName) []*adminv1.ResourceName {
+	rs := make([]*adminv1.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		rs = append(rs, &adminv1.ResourceName{
+			Type: r.Type,
+			Name: r.Name,
+		})
+	}
+	return rs
 }

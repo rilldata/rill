@@ -45,11 +45,12 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
+				// don't set restrict_resources and resources to keep current restrictions
 				_, err = client.SetProjectMemberUserRole(cmd.Context(), &adminv1.SetProjectMemberUserRoleRequest{
 					Org:     ch.Org,
 					Project: projectName,
 					Email:   email,
-					Role:    role,
+					Role:    &role,
 				})
 				if err != nil {
 					return err

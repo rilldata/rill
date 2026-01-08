@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -27,7 +28,7 @@ type AnalystAgentArgs struct {
 	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	Where      *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
 	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
 	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
@@ -53,31 +54,39 @@ func (r *AnalystAgentResult) ToLLM() *aiv1.ContentBlock {
 }
 
 func (t *AnalystAgent) Spec() *mcp.Tool {
+	// It can't automatically infer schemas that use the metricsview.Expression type, so we manually do that here.
+	inputSchema, err := jsonschema.For[*AnalystAgentArgs](&jsonschema.ForOptions{
+		TypeSchemas: metricsview.TypeSchemas(),
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to infer input schema: %w", err))
+	}
+
 	return &mcp.Tool{
 		Name:        AnalystAgentName,
 		Title:       "Analyst Agent",
 		Description: "Agent that assists with data analysis tasks.",
+		InputSchema: inputSchema,
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Analyzing…",
-			"openai/toolInvocation/invoked":  "Completed analysis",
+			"openai/toolInvocation/invoking": "Analyzing...",
+			"openai/toolInvocation/invoked":  "Analysis completed",
 		},
 	}
 }
 
-func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
+func (t *AnalystAgent) CheckAccess(ctx context.Context) (bool, error) {
+	// Must be allowed to use AI and query metrics
 	s := GetSession(ctx)
-
-	// Must be allowed to use AI features
-	if !s.Claims().Can(runtime.UseAI) {
-		return false
+	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.ReadMetrics) {
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {
@@ -96,14 +105,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 		metricsViewName = metricsView.Meta.Name.Name
 
-		_, err = s.CallTool(ctx, RoleAssistant, "query_metrics_view_summary", nil, &QueryMetricsViewSummaryArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = s.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
@@ -113,7 +122,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
 	if first && args.Explore == "" {
-		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
+		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
 		}
@@ -122,9 +131,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
-		tools = append(tools, "list_metrics_views", "get_metrics_view")
+		tools = append(tools, ListMetricsViewsName, GetMetricsViewName)
 	}
-	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
+	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName)
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
@@ -190,6 +199,7 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 			return "", err
 		}
 	}
+	data["forked"] = session.Forked()
 
 	// Generate the system prompt
 	return executeTemplate(`<role>
@@ -226,6 +236,13 @@ Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets
 2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view  
 3. **Scope**: Use "query_metrics_view_summary" to determine the span of available data
+{{ end }}
+
+{{ if .forked }}
+Important instructions regarding access permissions:
+This conversation has been transferred and the new owner may have different access permissions.
+If you start seeing access errors like "action not allowed"", "resource not found" (for resources earlier available) etc., consider repeating metadata listings and lookups.
+If you run into such issues, explicitly mention to the user that this may be due to conversation forking and that they may not have access to the data that the previous user had.
 {{ end }}
 
 **Phase 2: analysis (loop)**

@@ -110,7 +110,7 @@ export async function fetchTimeRanges({
         metricsViewName,
         requestBody,
       ),
-    staleTime: Infinity,
+    staleTime: 60,
   });
 
   return response;

@@ -15,14 +15,8 @@ import {
 import {
   type V1Expression,
   V1Operation,
-  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect } from "vitest";
-
-const CONSISTENT_TIME_RANGE_SUMMARY: V1TimeRangeSummary = {
-  min: "2025-10-01T00:00:00Z",
-  max: "2025-11-01T00:00:00Z",
-};
 
 describe("parseTimeRangeFromFilters", () => {
   const TestCases: {
@@ -51,10 +45,8 @@ describe("parseTimeRangeFromFilters", () => {
         "2025-10-10T10:00:00Z",
       ),
       expectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date("2025-10-01T00:00:00Z"),
-        end: new Date("2025-10-10T10:00:00Z"),
-      },
+        name: "earliest to 2025-10-10T10:00:00.000Z",
+      } as DashboardTimeControls,
     },
     {
       title: "less than or equals time dimension filter",
@@ -64,10 +56,8 @@ describe("parseTimeRangeFromFilters", () => {
         "2025-10-10T10:00:00Z",
       ),
       expectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date("2025-10-01T00:00:00Z"),
-        end: new Date("2025-10-10T11:00:00Z"),
-      },
+        name: "earliest to 2025-10-10T11:00:00.000Z",
+      } as DashboardTimeControls,
     },
     {
       title: "greater than time dimension filter",
@@ -77,10 +67,8 @@ describe("parseTimeRangeFromFilters", () => {
         "2025-10-10T10:00:00Z",
       ),
       expectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date("2025-10-10T11:00:00Z"),
-        end: new Date("2025-11-01T00:00:00Z"),
-      },
+        name: "2025-10-10T11:00:00.000Z to watermark",
+      } as DashboardTimeControls,
     },
     {
       title: "greater than or equals time dimension filter",
@@ -90,10 +78,8 @@ describe("parseTimeRangeFromFilters", () => {
         "2025-10-10T10:00:00Z",
       ),
       expectedTimeRange: {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date("2025-10-10T10:00:00Z"),
-        end: new Date("2025-11-01T00:00:00Z"),
-      },
+        name: "2025-10-10T10:00:00.000Z to watermark",
+      } as DashboardTimeControls,
     },
     {
       title:
@@ -126,7 +112,6 @@ describe("parseTimeRangeFromFilters", () => {
           expression,
           AD_BIDS_TIMESTAMP_DIMENSION,
           "UTC",
-          CONSISTENT_TIME_RANGE_SUMMARY,
         ),
       ).toEqual(expectedTimeRange);
     });

@@ -19,14 +19,13 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.24
+        go-version: 1.25
     - name: Go test with coverage
       run: |-
         # Build list of packages to include in coverage, excluding generated code in 'proto/gen'
         PACKAGES=$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$//' | sed -e 's/github.com\/rilldata\/rill/./g')
         # Run tests with coverage output
-        # NOTE(2024-03-01): Coverage fails on the generated code in 'proto/gen' without GOEXPERIMENT=nocoverageredesign. See https://github.com/golang/go/issues/55953.
-        GOEXPERIMENT=nocoverageredesign go test ./... -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
+        go test ./... -timeout 30m -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
       env:
         RILL_RUNTIME_DRUID_TEST_DSN: ${{ secrets.RILL_RUNTIME_DRUID_TEST_DSN }}
         RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON }}

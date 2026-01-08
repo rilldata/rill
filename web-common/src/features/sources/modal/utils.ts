@@ -85,7 +85,7 @@ export function hasOnlyDsn(
 
 /**
  * Applies ClickHouse Cloud-specific default requirements for connector values.
- * - For ClickHouse Cloud: enforces `ssl: true` and `port: "8443"`
+ * - For ClickHouse Cloud: enforces `ssl: true`
  * - Otherwise returns values unchanged
  */
 export function applyClickHouseCloudRequirements(
@@ -93,8 +93,15 @@ export function applyClickHouseCloudRequirements(
   connectorType: ClickHouseConnectorType,
   values: Record<string, unknown>,
 ): Record<string, unknown> {
-  if (connectorName === "clickhouse" && connectorType === "clickhouse-cloud") {
-    return { ...values, ssl: true, port: "8443" } as Record<string, unknown>;
+  // Only force SSL for ClickHouse Cloud when the user is using individual params.
+  // DSN strings encapsulate their own protocol, so we should not inject `ssl` there.
+  const isDsnBased = "dsn" in values;
+  const shouldEnforceSSL =
+    connectorName === "clickhouse" &&
+    connectorType === "clickhouse-cloud" &&
+    !isDsnBased;
+  if (shouldEnforceSSL) {
+    return { ...values, ssl: true } as Record<string, unknown>;
   }
   return values;
 }

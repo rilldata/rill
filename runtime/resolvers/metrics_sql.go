@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -25,6 +26,8 @@ type metricsSQLProps struct {
 	TimeZone string `mapstructure:"time_zone"`
 	// AdditionalWhere is a filter to apply to the metrics SQL. (additional WHERE clause)
 	AdditionalWhere *metricsview.Expression `mapstructure:"additional_where"`
+	// AdditionalWhereByMetricsView is a map of metrics view names to filters to apply to the metrics SQL.
+	AdditionalWhereByMetricsView map[string]*metricsview.Expression `mapstructure:"additional_where_by_metrics_view"`
 	// AdditionalTimeRange is a time range filter to apply to the metrics SQL.
 	AdditionalTimeRange *metricsview.TimeRange `mapstructure:"additional_time_range"`
 }
@@ -39,7 +42,7 @@ type metricsSQLArgs struct {
 // The compiler preserves templating in the SQL, allowing the regular SQL resolver to handle SQL templating rules.
 func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	props := &metricsSQLProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
 	if props.SQL == "" {
@@ -48,10 +51,12 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
-		span.SetAttributes(attribute.String("metrics_sql", props.SQL))
-		span.SetAttributes(attribute.Bool("has_additional_where", props.AdditionalWhere != nil))
-		span.SetAttributes(attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil))
-		span.SetAttributes(attribute.Bool("has_additional_time_zone", props.TimeZone != ""))
+		span.SetAttributes(
+			attribute.String("metrics_sql", props.SQL),
+			attribute.String("time_zone", props.TimeZone),
+			attribute.Bool("has_additional_where", props.AdditionalWhere != nil || len(props.AdditionalWhereByMetricsView) > 0),
+			attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil),
+		)
 	}
 
 	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -95,7 +100,11 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}
-			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, sec, sqlArgs.Priority)
+			var userAttrs map[string]any
+			if opts.Claims != nil {
+				userAttrs = opts.Claims.UserAttributes
+			}
+			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, sec, sqlArgs.Priority, userAttrs)
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}
@@ -111,6 +120,9 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 
 	// Inject the additional where clause if provided
 	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
+	if where, ok := props.AdditionalWhereByMetricsView[query.MetricsView]; ok {
+		query.Where = applyAdditionalWhere(query.Where, where)
+	}
 
 	// Inject the additional time range if provided
 	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
@@ -121,8 +133,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Build the options for the metrics resolver
-	metricProps := map[string]any{}
-	if err := mapstructure.WeakDecode(query, &metricProps); err != nil {
+	metricProps, err := query.AsMap()
+	if err != nil {
 		return nil, err
 	}
 	resolverOpts := &runtime.ResolverOptions{

@@ -27,6 +27,7 @@ const (
 	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
 	RuntimeService_EditInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/EditInstance"
 	RuntimeService_DeleteInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteInstance"
+	RuntimeService_ReloadConfig_FullMethodName            = "/rill.runtime.v1.RuntimeService/ReloadConfig"
 	RuntimeService_ListFiles_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListFiles"
 	RuntimeService_WatchFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchFiles"
 	RuntimeService_GetFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetFile"
@@ -38,6 +39,7 @@ const (
 	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
 	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_GenerateMetricsViewFile_FullMethodName = "/rill.runtime.v1.RuntimeService/GenerateMetricsViewFile"
+	RuntimeService_GenerateCanvasFile_FullMethodName      = "/rill.runtime.v1.RuntimeService/GenerateCanvasFile"
 	RuntimeService_GenerateResolver_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateResolver"
 	RuntimeService_GenerateRenderer_FullMethodName        = "/rill.runtime.v1.RuntimeService/GenerateRenderer"
 	RuntimeService_QueryResolver_FullMethodName           = "/rill.runtime.v1.RuntimeService/QueryResolver"
@@ -54,6 +56,9 @@ const (
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
+	RuntimeService_ShareConversation_FullMethodName       = "/rill.runtime.v1.RuntimeService/ShareConversation"
+	RuntimeService_ForkConversation_FullMethodName        = "/rill.runtime.v1.RuntimeService/ForkConversation"
+	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
@@ -83,6 +88,9 @@ type RuntimeServiceClient interface {
 	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
+	// ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+	// If the instance doesn't have an admin connector, this RPC does nothing.
+	ReloadConfig(ctx context.Context, in *ReloadConfigRequest, opts ...grpc.CallOption) (*ReloadConfigResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
@@ -106,6 +114,8 @@ type RuntimeServiceClient interface {
 	UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error)
 	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 	GenerateMetricsViewFile(ctx context.Context, in *GenerateMetricsViewFileRequest, opts ...grpc.CallOption) (*GenerateMetricsViewFileResponse, error)
+	// GenerateCanvasFile generates a canvas YAML file from a metrics view
+	GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error)
 	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
 	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
@@ -141,6 +151,14 @@ type RuntimeServiceClient interface {
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*GetConversationResponse, error)
+	// ShareConversation enables sharing of the conversation by adding metadata.
+	ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error)
+	// ForkConversation creates a new conversation by copying messages from an existing one.
+	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+	ForkConversation(ctx context.Context, in *ForkConversationRequest, opts ...grpc.CallOption) (*ForkConversationResponse, error)
+	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+	// Note that it covers all registered tools, but the current user may not have access to all of them.
+	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
 	// Complete runs a language model completion (LLM chat) using the configured AI connector.
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
@@ -233,6 +251,16 @@ func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteIns
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteInstanceResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_DeleteInstance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ReloadConfig(ctx context.Context, in *ReloadConfigRequest, opts ...grpc.CallOption) (*ReloadConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReloadConfigResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ReloadConfig_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -352,6 +380,16 @@ func (c *runtimeServiceClient) GenerateMetricsViewFile(ctx context.Context, in *
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateMetricsViewFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GenerateMetricsViewFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GenerateCanvasFile(ctx context.Context, in *GenerateCanvasFileRequest, opts ...grpc.CallOption) (*GenerateCanvasFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateCanvasFileResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GenerateCanvasFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -536,6 +574,36 @@ func (c *runtimeServiceClient) GetConversation(ctx context.Context, in *GetConve
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ShareConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ShareConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ForkConversation(ctx context.Context, in *ForkConversationRequest, opts ...grpc.CallOption) (*ForkConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForkConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ForkConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListToolsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListTools_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CompleteResponse)
@@ -608,6 +676,9 @@ type RuntimeServiceServer interface {
 	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
+	// ReloadConfig pulls the latest configuration from the admin service and triggers a repo pull.
+	// If the instance doesn't have an admin connector, this RPC does nothing.
+	ReloadConfig(context.Context, *ReloadConfigRequest) (*ReloadConfigResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
@@ -631,6 +702,8 @@ type RuntimeServiceServer interface {
 	UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error)
 	// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
 	GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error)
+	// GenerateCanvasFile generates a canvas YAML file from a metrics view
+	GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error)
 	// GenerateResolver generates resolver and resolver properties from a table or a metrics view
 	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
 	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
@@ -666,6 +739,14 @@ type RuntimeServiceServer interface {
 	ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error)
+	// ShareConversation enables sharing of the conversation by adding metadata.
+	ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error)
+	// ForkConversation creates a new conversation by copying messages from an existing one.
+	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+	ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error)
+	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
+	// Note that it covers all registered tools, but the current user may not have access to all of them.
+	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
 	// Complete runs a language model completion (LLM chat) using the configured AI connector.
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
 	// CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
@@ -708,6 +789,9 @@ func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInst
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
 }
+func (UnimplementedRuntimeServiceServer) ReloadConfig(context.Context, *ReloadConfigRequest) (*ReloadConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReloadConfig not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
 }
@@ -740,6 +824,9 @@ func (UnimplementedRuntimeServiceServer) UnpackEmpty(context.Context, *UnpackEmp
 }
 func (UnimplementedRuntimeServiceServer) GenerateMetricsViewFile(context.Context, *GenerateMetricsViewFileRequest) (*GenerateMetricsViewFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateMetricsViewFile not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GenerateCanvasFile(context.Context, *GenerateCanvasFileRequest) (*GenerateCanvasFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateCanvasFile not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateResolver not implemented")
@@ -788,6 +875,15 @@ func (UnimplementedRuntimeServiceServer) ListConversations(context.Context, *Lis
 }
 func (UnimplementedRuntimeServiceServer) GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShareConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForkConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTools not implemented")
 }
 func (UnimplementedRuntimeServiceServer) Complete(context.Context, *CompleteRequest) (*CompleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Complete not implemented")
@@ -962,6 +1058,24 @@ func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).DeleteInstance(ctx, req.(*DeleteInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ReloadConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReloadConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ReloadConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ReloadConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ReloadConfig(ctx, req.(*ReloadConfigRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1153,6 +1267,24 @@ func _RuntimeService_GenerateMetricsViewFile_Handler(srv interface{}, ctx contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).GenerateMetricsViewFile(ctx, req.(*GenerateMetricsViewFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GenerateCanvasFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateCanvasFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GenerateCanvasFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GenerateCanvasFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GenerateCanvasFile(ctx, req.(*GenerateCanvasFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1431,6 +1563,60 @@ func _RuntimeService_GetConversation_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ShareConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShareConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ShareConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ShareConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ShareConversation(ctx, req.(*ShareConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ForkConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForkConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ForkConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ForkConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ForkConversation(ctx, req.(*ForkConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListToolsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListTools(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListTools_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListTools(ctx, req.(*ListToolsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_Complete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CompleteRequest)
 	if err := dec(in); err != nil {
@@ -1536,6 +1722,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_DeleteInstance_Handler,
 		},
 		{
+			MethodName: "ReloadConfig",
+			Handler:    _RuntimeService_ReloadConfig_Handler,
+		},
+		{
 			MethodName: "ListFiles",
 			Handler:    _RuntimeService_ListFiles_Handler,
 		},
@@ -1574,6 +1764,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateMetricsViewFile",
 			Handler:    _RuntimeService_GenerateMetricsViewFile_Handler,
+		},
+		{
+			MethodName: "GenerateCanvasFile",
+			Handler:    _RuntimeService_GenerateCanvasFile_Handler,
 		},
 		{
 			MethodName: "GenerateResolver",
@@ -1630,6 +1824,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConversation",
 			Handler:    _RuntimeService_GetConversation_Handler,
+		},
+		{
+			MethodName: "ShareConversation",
+			Handler:    _RuntimeService_ShareConversation_Handler,
+		},
+		{
+			MethodName: "ForkConversation",
+			Handler:    _RuntimeService_ForkConversation_Handler,
+		},
+		{
+			MethodName: "ListTools",
+			Handler:    _RuntimeService_ListTools_Handler,
 		},
 		{
 			MethodName: "Complete",

@@ -117,13 +117,25 @@ function getPeriodToDateTestCases(): TestCase[] {
 
 function getLegacyISOTestCases(): TestCase[] {
   return [
-    [`P2M3D`, "Last 2 months and 3 days", false, undefined, undefined],
-    [`PT2H3M`, "Last 2 hours and 3 minutes", false, undefined, undefined],
+    [
+      `P2M3D`,
+      "Last 2 months and 3 days",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    [
+      `PT2H3M`,
+      "Last 2 hours and 3 minutes",
+      false,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+      undefined,
+    ],
     [
       `P2M3DT2H3M`,
       "Last 2 months, 3 days, 2 hours and 3 minutes",
       false,
-      undefined,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
       undefined,
     ],
   ];
@@ -131,17 +143,35 @@ function getLegacyISOTestCases(): TestCase[] {
 
 function getLegacyDAXTestCases(): TestCase[] {
   return [
-    ["rill-TD", "Today", false, undefined, undefined],
-    ["rill-WTD", "Week to Date", false, undefined, undefined],
-    ["rill-QTD", "Quarter to Date", false, undefined, undefined],
-    ["rill-MTD", "Month to Date", false, undefined, undefined],
-    ["rill-YTD", "Year to Date", false, undefined, undefined],
+    ["rill-TD", "Today", false, V1TimeGrain.TIME_GRAIN_HOUR, undefined],
+    ["rill-WTD", "Week to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    [
+      "rill-QTD",
+      "Quarter to Date",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    ["rill-MTD", "Month to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    ["rill-YTD", "Year to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
 
-    ["rill-PDC", "Yesterday", false, undefined, undefined],
-    ["rill-PWC", "Previous week", false, undefined, undefined],
-    ["rill-PQC", "Previous quarter", false, undefined, undefined],
-    ["rill-PMC", "Previous month", false, undefined, undefined],
-    ["rill-PYC", "Previous year", false, undefined, undefined],
+    ["rill-PDC", "Yesterday", false, V1TimeGrain.TIME_GRAIN_HOUR, undefined],
+    ["rill-PWC", "Previous week", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    [
+      "rill-PQC",
+      "Previous quarter",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    [
+      "rill-PMC",
+      "Previous month",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    ["rill-PYC", "Previous year", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
   ];
 }
 
@@ -180,7 +210,7 @@ describe("rill time", () => {
         `2025-02-20T01:23:45Z,2025-07-15T02:34:50Z`,
         `Custom`,
         false,
-        undefined,
+        V1TimeGrain.TIME_GRAIN_SECOND,
         undefined,
       ],
 

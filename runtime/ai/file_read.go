@@ -8,6 +8,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const ReadFileName = "read_file"
+
 type ReadFile struct {
 	Runtime *runtime.Runtime
 }
@@ -24,17 +26,18 @@ type ReadFileResult struct {
 
 func (t *ReadFile) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "read_file",
+		Name:        ReadFileName,
 		Title:       "Read file",
 		Description: "Reads the contents of a file in the Rill project",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Reading file...",
+			"openai/toolInvocation/invoked":  "Read file",
+		},
 	}
 }
 
-func (t *ReadFile) CheckAccess(ctx context.Context) bool {
-	// NOTE: Disabled pending further improvements
-	// s := GetSession(ctx)
-	// return s.Claims().Can(runtime.ReadRepo)
-	return false
+func (t *ReadFile) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
 }
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {
