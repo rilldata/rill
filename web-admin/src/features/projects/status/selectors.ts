@@ -69,16 +69,12 @@ function preloadConnectorQueries(
 
   // Only preload once per connector set
   if (preloadedQuerySubscriptions.has(preloadKey)) {
-    console.log("[ModelSize] Preload already exists for", preloadKey);
     return;
   }
-
-  console.log("[ModelSize] Preloading queries for", connectorArray, "on", new Date().toISOString());
 
   const subscriptions = new Set<() => void>();
 
   for (const connector of connectorArray) {
-    console.log("[ModelSize] Creating preload query for connector:", connector);
     const query = createConnectorServiceOLAPListTables(
       {
         instanceId,
@@ -92,15 +88,7 @@ function preloadConnectorQueries(
     );
 
     // Eagerly subscribe to keep the query alive
-    const unsubscribe = query.subscribe((result: any) => {
-      console.log(
-        `[ModelSize] Preloaded query for ${connector} updated:`,
-        "isLoading=",
-        result.isLoading,
-        "tableCount=",
-        result.data?.tables?.length || 0,
-      );
-    });
+    const unsubscribe = query.subscribe(() => {});
     subscriptions.add(unsubscribe);
   }
 
@@ -112,15 +100,10 @@ function createCachedStore(
   instanceId: string,
   connectorArray: string[],
 ) {
-  console.log("[ModelSize] createCachedStore called with cacheKey:", cacheKey);
-
   // Check if we already have a cached store
   if (modelSizesStoreCache.has(cacheKey)) {
-    console.log("[ModelSize] Found cached store for", cacheKey);
     return modelSizesStoreCache.get(cacheKey)!.store;
   }
-
-  console.log("[ModelSize] Creating new store for", cacheKey);
 
   // Preload queries immediately so they start running before store subscribers attach
   preloadConnectorQueries(instanceId, connectorArray);
@@ -176,9 +159,6 @@ function createCachedStore(
           }
         }
 
-        console.log(
-          `[ModelSize] Store updating for ${cacheKey}: tableCount=${sizeMap.size}, isLoading=${isLoading}`,
-        );
         set({ data: sizeMap, isLoading, isError });
       };
 

@@ -21,15 +21,7 @@
   $: ({ instanceId } = $runtime);
 
   $: resources = useResources(instanceId);
-  $: {
-    tableSizes = useModelTableSizes(instanceId, $resources.data?.resources);
-    console.log(
-      "[ProjectResources] Updated tableSizes, resourceCount=",
-      $resources.data?.resources?.length,
-      "sizeMapSize=",
-      $tableSizes?.data?.size,
-    );
-  }
+  $: tableSizes = useModelTableSizes(instanceId, $resources.data?.resources);
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,

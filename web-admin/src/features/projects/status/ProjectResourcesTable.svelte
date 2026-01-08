@@ -90,7 +90,6 @@
 
   // Columns must be reactive to update when tableSizes changes
   $: {
-    console.log("[ProjectResourcesTable] Updating columns, tableSizesMapSize=", tableSizes.size);
     columns = [
     {
       accessorKey: "title",
