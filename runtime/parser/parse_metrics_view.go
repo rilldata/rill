@@ -733,7 +733,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if tmp.Model != "" {
 			_, ok := p.Resources[ResourceName{Kind: ResourceKindModel, Name: tmp.Model}.Normalized()]
 			if ok {
-				r.Refs = nil
+				// clear older refs to connector, if any
+				for i, ref := range r.Refs {
+					if ref.Kind == ResourceKindConnector && ref.Name == node.Connector {
+						r.Refs = append(r.Refs[:i], r.Refs[i+1:]...)
+						break
+					}
+				}
 				return
 			}
 		}
