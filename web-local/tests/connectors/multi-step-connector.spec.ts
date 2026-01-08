@@ -184,4 +184,42 @@ test.describe("Multi-step connector wrapper", () => {
       page.getByRole("button", { name: /Test and Add data|Add data/i }),
     ).toBeVisible();
   });
+
+  test("GCS connector - Save Anyway cleared when advancing to model step after HMAC", async ({
+    page,
+  }) => {
+    // Skip test if environment variables are not set
+    if (
+      !process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY ||
+      !process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET
+    ) {
+      test.skip(
+        true,
+        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET environment variable is not set",
+      );
+    }
+
+    await page.getByRole("button", { name: "Add Asset" }).click();
+    await page.getByRole("menuitem", { name: "Add Data" }).click();
+
+    await page.locator("#gcs").click();
+    await page.waitForSelector('form[id*="gcs"]');
+
+    // Trigger Save Anyway on connector step by failing Test and Connect with HMAC.
+    await page.getByRole("radio", { name: "HMAC keys" }).click();
+    await page
+      .getByRole("textbox", { name: "Access Key ID" })
+      .fill(process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY!);
+    await page
+      .getByRole("textbox", { name: "Secret Access Key" })
+      .fill(process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET!);
+
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Test and Connect" })
+      .click();
+
+    const saveAnywayButton = page.getByRole("button", { name: "Save Anyway" });
+    await expect(saveAnywayButton).toBeHidden();
+  });
 });
