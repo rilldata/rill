@@ -24,8 +24,7 @@ type Instruction struct {
 
 // Options configures how instruction files are loaded and rendered.
 type Options struct {
-	// External indicates whether the instructions are being loaded for external use
-	// (e.g., Claude Skills or Cursor rules) or internal use (e.g., Rill's own agents).
+	// External indicates whether the instructions are being loaded for external use (e.g., Claude Skills or Cursor rules) or internal use (e.g., Rill's own agents).
 	External bool
 }
 
@@ -89,8 +88,7 @@ func LoadAll(opts Options) (map[string]*Instruction, error) {
 	return instructions, nil
 }
 
-// parseInstruction parses an instruction file's content, extracting front matter
-// and applying templates to the body.
+// parseInstruction parses an instruction file's content, extracting front matter and applying templates to the body.
 func parseInstruction(content []byte, opts Options) (*Instruction, error) {
 	fm, body, err := parseFrontMatter(content)
 	if err != nil {
@@ -113,7 +111,7 @@ func parseInstruction(content []byte, opts Options) (*Instruction, error) {
 // parseFrontMatter extracts YAML front matter from markdown content.
 // Front matter is expected to be delimited by "---" at the start and end.
 func parseFrontMatter(content []byte) (*frontMatter, string, error) {
-	contentStr := string(content)
+	contentStr := strings.TrimSpace(string(content))
 
 	// Check for front matter delimiter at the start
 	if !strings.HasPrefix(contentStr, "---\n") && !strings.HasPrefix(contentStr, "---\r\n") {
@@ -137,11 +135,7 @@ func parseFrontMatter(content []byte) (*frontMatter, string, error) {
 	body := rest[endIdx+4:] // Skip "\n---"
 
 	// Handle optional newline after closing delimiter
-	if strings.HasPrefix(body, "\n") {
-		body = body[1:]
-	} else if strings.HasPrefix(body, "\r\n") {
-		body = body[2:]
-	}
+	body = strings.TrimSpace(body)
 
 	// Parse the front matter YAML
 	var fm frontMatter
@@ -153,8 +147,7 @@ func parseFrontMatter(content []byte) (*frontMatter, string, error) {
 }
 
 // executeTemplate applies Go's template engine to the instruction body.
-// Uses custom delimiters "{%" and "%}" to avoid conflicts with Go template
-// syntax that may appear in example code within the instruction markdown.
+// Uses custom delimiters "{%" and "%}" to avoid conflicts with Go template syntax that may appear in example code within the instruction markdown.
 func executeTemplate(body string, opts Options) (string, error) {
 	tmpl, err := template.New("instruction").Delims("{%", "%}").Parse(body)
 	if err != nil {
