@@ -167,6 +167,11 @@
     return selectedAuthMethod;
   })();
 
+  // Clear Save Anyway whenever we leave the connector step so it can't bleed into the model step.
+  $: if (stepState.step === "source" && showSaveAnyway) {
+    showSaveAnyway = false;
+  }
+
   // CTA and disable state for multi-step connectors.
   $: isSubmitDisabled = isMultiStepConnectorDisabled(
     activeSchema,
