@@ -169,8 +169,7 @@ export function maybeRewriteToDuckDb(
       if (!formValues.create_secrets_from_connectors) {
         formValues.create_secrets_from_connectors = connector.name;
       }
-
-      break;
+    // falls through to rewrite as DuckDB
     case "local_file":
       connectorCopy.name = "duckdb";
 
