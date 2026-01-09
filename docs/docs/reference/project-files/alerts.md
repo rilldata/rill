@@ -142,7 +142,7 @@ _[object]_ - Notification configuration _(required)_
 
     - **`users`** - _[array of string]_ - An array of Slack user IDs to notify. 
 
-    - **`channels`** - _[array of string]_ - An array of Slack channel IDs to notify. 
+    - **`channels`** - _[array of string]_ - An array of Slack channel names to notify. 
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to. 
 
