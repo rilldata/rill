@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	_ "embed"
-
 	"github.com/google/jsonschema-go/jsonschema"
 	"gopkg.in/yaml.v3"
+
+	_ "embed"
 )
 
 //go:embed schema/project.schema.yaml
@@ -32,7 +32,6 @@ var resourceKindToDefinitionKey = map[ResourceKind]string{
 // It's populated lazily on first call to JSONSchemaForResourceType.
 var (
 	parsedSchemaOnce sync.Once
-	parsedSchemaErr  error
 	parsedSchema     *jsonschema.Schema
 )
 
@@ -41,11 +40,12 @@ var (
 func JSONSchemaForResourceType(resourceType ResourceKind) (*jsonschema.Schema, error) {
 	// Ensure the schema is parsed
 	parsedSchemaOnce.Do(func() {
-		parsedSchema, parsedSchemaErr = parseSchemaFromYAML(resourceYAMLSchema)
+		var err error
+		parsedSchema, err = parseSchemaFromYAML(resourceYAMLSchema)
+		if err != nil {
+			panic(fmt.Sprintf("failed to parse schema: %v", err))
+		}
 	})
-	if parsedSchemaErr != nil {
-		return nil, fmt.Errorf("failed to parse schema: %w", parsedSchemaErr)
-	}
 
 	// Look up the definition key for this resource type
 	defKey, ok := resourceKindToDefinitionKey[resourceType]
