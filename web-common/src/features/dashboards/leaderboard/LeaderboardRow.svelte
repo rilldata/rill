@@ -2,14 +2,10 @@
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
   import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
@@ -19,6 +15,7 @@
     deltaColumn,
     MEASURES_PADDING,
   } from "./leaderboard-widths";
+  import LeaderboardCell from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardCell.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -160,16 +157,9 @@
           }),
         );
 
-  function shiftClickHandler(label: string) {
-    let truncatedLabel = label?.toString();
-    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
-      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
-    }
-    copyToClipboard(
-      label,
-      `copied dimension value "${truncatedLabel}" to clipboard`,
-    );
-  }
+  $: dimensionCellClass = `relative size-full flex flex-none justify-between items-center leaderboard-label ${
+    atLeastOneActive ? "cursor-pointer" : ""
+  } ${excluded ? "ui-copy-disabled" : ""} ${!excluded && selected ? "ui-copy-strong" : ""}`;
 
   function onDimensionCellClick(e: MouseEvent) {
     // Check if user has selected text
@@ -211,30 +201,11 @@
       selectionIndex={itemData?.selectedIndex}
     />
   </td>
-  <td
-    role="button"
-    tabindex="0"
-    data-dimension-cell
-    class:ui-copy={!atLeastOneActive}
-    class:ui-copy-disabled={excluded}
-    class:ui-copy-strong={!excluded && selected}
-    on:click={modified({
-      shift: () => shiftClickHandler(dimensionValue),
-    })}
-    on:pointerover={() => {
-      if (dimensionValue) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString());
-      }
-    }}
-    on:focus={() => {
-      if (dimensionValue) {
-        // Always update the value in the store, but don't change visibility
-        cellInspectorStore.updateValue(dimensionValue.toString());
-      }
-    }}
-    class="relative size-full flex flex-none justify-between items-center leaderboard-label"
-    style:background={dimensionGradients}
+  <LeaderboardCell
+    value={dimensionValue}
+    type="dimension"
+    className={dimensionCellClass}
+    background={dimensionGradients}
   >
     <span class="truncate select-text">
       <FormattedDataType value={dimensionValue} truncate />
@@ -263,31 +234,15 @@
         </a>
       </span>
     {/if}
-  </td>
+  </LeaderboardCell>
 
   {#each Object.keys(values) as measureName}
-    <td
-      role="button"
-      tabindex="0"
-      data-measure-cell
-      on:click={modified({
-        shift: () => shiftClickHandler(values[measureName]?.toString() || ""),
-      })}
-      style:background={leaderboardMeasureNames.length === 1
+    <LeaderboardCell
+      value={values[measureName]?.toString() || ""}
+      type="measure"
+      background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
-      on:pointerover={() => {
-        const value = values[measureName]?.toString() || "";
-        if (value) {
-          cellInspectorStore.updateValue(value);
-        }
-      }}
-      on:focus={() => {
-        const value = values[measureName]?.toString() || "";
-        if (value) {
-          cellInspectorStore.updateValue(value);
-        }
-      }}
     >
       <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
         <FormattedDataType
@@ -301,29 +256,12 @@
       {#if showZigZags[measureName] && !isTimeComparisonActive && !isValidPercentOfTotal(measureName)}
         <LongBarZigZag />
       {/if}
-    </td>
+    </LeaderboardCell>
 
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
-      <td
-        role="button"
-        tabindex="0"
-        data-comparison-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(pctOfTotals[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = pctOfTotals[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = pctOfTotals[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
+      <LeaderboardCell
+        value={pctOfTotals[measureName]?.toString() || ""}
+        type="comparison"
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -332,30 +270,13 @@
         {#if showZigZags[measureName]}
           <LongBarZigZag />
         {/if}
-      </td>
+      </LeaderboardCell>
     {/if}
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-      <td
-        role="button"
-        tabindex="0"
-        data-comparison-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(deltaAbsMap[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = deltaAbsMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = deltaAbsMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
+      <LeaderboardCell
+        value={deltaAbsMap[measureName]?.toString() || ""}
+        type="comparison"
       >
         <FormattedDataType
           color="text-gray-500"
@@ -369,28 +290,13 @@
             : ""}
           truncate={true}
         />
-      </td>
+      </LeaderboardCell>
     {/if}
 
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-      <td
-        data-comparison-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(deltaRels[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = deltaRels[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = deltaRels[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
+      <LeaderboardCell
+        value={deltaRels[measureName]?.toString() || ""}
+        type="comparison"
       >
         <PercentageChange
           value={deltaRels[measureName]
@@ -401,16 +307,14 @@
         {#if showZigZags[measureName]}
           <LongBarZigZag />
         {/if}
-      </td>
+      </LeaderboardCell>
     {/if}
   {/each}
 </tr>
 
 <style lang="postcss">
   td {
-    @apply text-right p-0;
-    @apply px-2 relative;
-    height: 22px;
+    @apply bg-surface h-[22px] p-0 px-1 truncate text-right;
   }
 
   tr {
@@ -419,19 +323,6 @@
   }
 
   tr:hover {
-    @apply bg-gray-100;
-  }
-
-  td[data-comparison-cell] {
-    @apply bg-surface px-1 truncate;
-  }
-
-  td[data-dimension-cell] {
-    @apply sticky left-0 z-30 bg-surface;
-  }
-
-  tr:hover td[data-dimension-cell],
-  tr:hover td[data-comparison-cell] {
     @apply bg-gray-100;
   }
 
@@ -451,9 +342,5 @@
     pointer-events: auto;
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
-  }
-
-  td {
-    height: 22px !important;
   }
 </style>
