@@ -1,5 +1,3 @@
-export type ResizeEvent = UIEvent & { detail: { size: number } };
-
 export function dragTableCell(node) {
   let moving = false;
 
@@ -14,9 +12,7 @@ export function dragTableCell(node) {
 
       node.dispatchEvent(
         new CustomEvent("resize", {
-          detail: {
-            size: e.pageX - left,
-          },
+          detail: e.pageX - left,
         }),
       );
     }
