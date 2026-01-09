@@ -8,7 +8,7 @@ description: Detailed instructions and examples for developing model resources i
 
 Models are resources that specify ETL or transformation logic, outputting a tabular dataset to one of the project's connectors. They are typically found near the root of the project's DAG, referencing only connectors and other models.
 
-By default, models output data as a table with the same name as the model in the project's default OLAP connector. The core of a model is usually a `SELECT` SQL statement, which Rill executes as `CREATE TABLE <name> AS <SELECT statement>`.
+By default, models output data as a table with the same name as the model in the project's default OLAP connector. The core of a model is usually a `SELECT` SQL statement, which Rill executes as `CREATE TABLE <name> AS <SELECT statement>`. The SQL should be a plain SELECT query without a trailing semicolon.
 
 Models in Rill are similar to models in dbt, but support additional advanced features:
 - **Different input and output connectors:** Run a query in one database (e.g., BigQuery) and output results to another (e.g., DuckDB or ClickHouse).
@@ -33,6 +33,17 @@ Models are usually expensive resources that can take a long time to run. Create 
 **Exception:** Non-materialized models with the same input and output connector are cheap because they are created as SQL views rather than physical tables.
 
 **Development tip:** Use a "dev partition" to limit data processed during development. This speeds up iteration and avoids unnecessary costs. See the partitions section below for details.
+
+### Generating synthetic data for prototyping
+
+When developing models for prototyping or demonstration purposes where external data sources are not yet available, generate realistic synthetic data with these characteristics:
+- Use realistic column names and data types that match typical business scenarios
+- Always include a time/timestamp column for time-series analysis
+- Generate 6-12 months of historical data with approximately 10,000 rows to enable meaningful analysis
+- Space out timestamps realistically across the time period rather than clustering them
+- Use realistic data distributions (e.g., varying quantities, diverse categories, plausible geographic distributions)
+
+Only generate synthetic data when the user explicitly requests mock data or when required external sources don't exist in the project. If real data sources are available, always prefer using them.
 
 ## Materialization
 

@@ -157,6 +157,30 @@ rows:
 - `width: 4` - Third width; use for three equal charts
 - `width: 3` - Quarter width; use for four small components (minimum practical width)
 
+## Dashboard Composition Best Practices
+
+When building a new canvas dashboard, follow this recommended structure:
+
+1. **Row 1 - Context**: Start with a markdown component providing dashboard title and overview
+2. **Row 2 - Key Metrics**: Add a KPI grid with 2-4 of the most business-relevant measures
+3. **Row 3 - Primary Analysis**: Split into two halves:
+   - Left (width 6): A leaderboard showing top entities by a key dimension
+   - Right (width 6): A time-series chart (line_chart or stacked_bar) showing trends
+4. **Additional Rows**: Add 1-2 more rows with relevant charts based on the data
+
+**Choosing chart types:**
+- **Time-series analysis**: Use `line_chart` or `area_chart` with temporal x-axis
+- **Categorical comparisons**: Use `bar_chart` or `stacked_bar` with nominal x-axis
+- **Part-to-whole**: Use `donut_chart` or `stacked_bar_normalized`
+- **Two-dimensional patterns**: Use `heatmap`
+- **Dual-metric comparison**: Use `combo_chart` for two measures with different scales
+
+**Time dimension restrictions:**
+The time dimension (timeseries field from the metrics view) is special and can ONLY be used in the x-axis field for temporal charts. Never use the time dimension in:
+- Leaderboard dimensions
+- Color fields
+- Any other dimension configuration
+
 ## Component Types
 
 ### Markdown
@@ -633,6 +657,49 @@ combo_chart:
     type: quantitative
     mark: line
 ```
+
+### Funnel Chart
+
+Show flow through stages or conversion processes:
+
+```yaml
+funnel_chart:
+  metrics_view: conversion_metrics
+  title: "Conversion Funnel"
+  breakdownMode: dimension
+  color: stage
+  mode: width
+  stage:
+    field: funnel_stage
+    type: nominal
+    limit: 10
+  measure:
+    field: user_count
+    type: quantitative
+```
+
+**With multiple measures breakdown:**
+
+```yaml
+funnel_chart:
+  metrics_view: engagement_metrics
+  title: "Engagement Funnel"
+  breakdownMode: measures
+  color: value
+  mode: width
+  measure:
+    field: impressions
+    type: quantitative
+    fields:
+      - impressions
+      - clicks
+      - signups
+      - purchases
+```
+
+**Breakdown modes and color options:**
+- `breakdownMode: dimension` with `color: stage` (different colors per stage) or `color: measure` (similar colors by value)
+- `breakdownMode: measures` with `color: name` (different colors per measure) or `color: value` (similar colors by value)
 
 ### Pivot
 

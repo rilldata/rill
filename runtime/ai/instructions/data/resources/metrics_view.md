@@ -122,6 +122,25 @@ format_d3: ".1%"    # 12.3%
 format_d3: ",.0f"   # 1,235 (rounded, with thousands separator)
 ```
 
+### Best practices for dimensions and measures
+
+**Naming conventions:**
+- Use `snake_case` for the `name` field (e.g., `total_revenue`, `unique_users`)
+- Only add `display_name` and `description` if they provide meaningful context beyond what `name` conveys (display names auto-humanize from the name by default)
+- Ensure measure names don't collide with column names in the underlying table
+
+**Getting started with measures:**
+- Start with a `COUNT(*)` measure as a baseline (e.g., `total_records` or `total_events`)
+- Add `SUM()` measures for numeric columns that represent quantities or values
+- Use `humanize` as the default format preset unless the data has a specific format requirement
+- Keep initial measures simple using only `COUNT`, `SUM`, `AVG`, `MIN`, `MAX` aggregations
+- Add more complex expressions (ratios, conditional aggregations) only when needed
+
+**Dimension selection:**
+- Include all categorical columns (strings, enums, booleans) that users might want to filter or group by
+- Include date/timestamp columns as dimensions for time-based analysis beyond the main timeseries
+- Start with 5-10 dimensions; add more based on user needs
+
 ### Auto-generated explore
 
 When you create a metrics view, Rill automatically generates an explore dashboard with the same name, exposing all dimensions and measures. To customize the explore (you usually should not need to), add an `explore:` block:
