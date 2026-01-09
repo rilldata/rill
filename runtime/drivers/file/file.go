@@ -57,9 +57,11 @@ type driver struct {
 type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	AdminURL        string `mapstructure:"admin_url"`
-	Org             string `mapstructure:"org"`
-	AccessToken     string `mapstructure:"access_token"`
+
+	// admin client config, only used to fetch github tokens
+	AdminURL    string `mapstructure:"admin_url"`
+	Org         string `mapstructure:"org"`
+	AccessToken string `mapstructure:"access_token"`
 }
 
 // a smaller subset of relevant parts of rill.yaml
@@ -153,7 +155,7 @@ type connection struct {
 	driverConfig *configProperties
 	driverName   string
 
-	admin     *client.Client  // admin client for admin service
+	admin     *client.Client  // admin client for admin service, used to obtain github tokens
 	gitConfig *gitutil.Config // git config for repo
 	gitMu     sync.Mutex      // mutex to protect git operations
 
