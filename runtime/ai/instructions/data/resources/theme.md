@@ -44,6 +44,14 @@ Themes support multiple color formats:
 
 For consistency and clarity, we recommend using quoted hex values with the `#` prefix.
 
+## JSON Schema
+
+Here is a full JSON schema for the theme syntax:
+
+```
+{% json_schema_for_resource "theme" %}
+```
+
 ## Recommended Theme Structure
 
 The recommended approach uses separate `light:` and `dark:` blocks to define mode-specific colors. This ensures your dashboards look great in both light and dark modes.

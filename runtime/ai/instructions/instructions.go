@@ -10,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/rilldata/rill/runtime/parser"
 	"gopkg.in/yaml.v3"
 )
@@ -177,16 +178,26 @@ func executeTemplate(body string, opts Options) (string, error) {
 
 // jsonSchemaForResource is a template function that returns the JSON schema for a resource YAML file.
 // It takes a resource type string (e.g., "model", "metrics_view") and returns the schema definition.
+// It also handles the special case where resourceType is "rill.yaml".
 // The JSON schema itself is returned as a YAML-formatted string (hehe).
 func jsonSchemaForResource(resourceType string) (string, error) {
-	kind, err := parser.ParseResourceKind(resourceType)
-	if err != nil {
-		return "", fmt.Errorf("invalid resource type %q: %w", resourceType, err)
-	}
+	var schema *jsonschema.Schema
+	if resourceType == "rill.yaml" {
+		var err error
+		schema, err = parser.JSONSchemaForRillYAML()
+		if err != nil {
+			return "", fmt.Errorf("failed to get schema for rill.yaml: %w", err)
+		}
+	} else {
+		kind, err := parser.ParseResourceKind(resourceType)
+		if err != nil {
+			return "", fmt.Errorf("invalid resource type %q: %w", resourceType, err)
+		}
 
-	schema, err := parser.JSONSchemaForResourceType(kind)
-	if err != nil {
-		return "", fmt.Errorf("failed to get schema for resource type %q: %w", resourceType, err)
+		schema, err = parser.JSONSchemaForResourceType(kind)
+		if err != nil {
+			return "", fmt.Errorf("failed to get schema for resource type %q: %w", resourceType, err)
+		}
 	}
 
 	// Marshal schema to JSON, then convert to YAML for token efficiency

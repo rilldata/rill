@@ -11,10 +11,22 @@ import (
 	_ "embed"
 )
 
+//go:embed schema/rillyaml.schema.yaml
+var rillYAMLSchema string
+
 //go:embed schema/project.schema.yaml
 var resourceYAMLSchema string
 
-// resourceKindToDefinitionKey maps ResourceKind to the key in the schema definitions.
+// Utils for parsing rillYAMLSchema and resourceYAMLSchema
+var (
+	parsedRillYAMLSchemaOnce sync.Once
+	parsedRillYAMLSchema     *jsonschema.Schema
+
+	parsedResourceYAMLSchemaOnce sync.Once
+	parsedResourceYAMLSchema     *jsonschema.Schema
+)
+
+// resourceKindToDefinitionKey maps a ResourceKind to its key in project.schema.yaml.
 var resourceKindToDefinitionKey = map[ResourceKind]string{
 	ResourceKindSource:      "sources",
 	ResourceKindModel:       "models",
@@ -28,20 +40,27 @@ var resourceKindToDefinitionKey = map[ResourceKind]string{
 	ResourceKindConnector:   "connectors",
 }
 
-// parsedSchema holds the parsed JSON schema.
-// It's populated lazily on first call to JSONSchemaForResourceType.
-var (
-	parsedSchemaOnce sync.Once
-	parsedSchema     *jsonschema.Schema
-)
+// JSONSchemaForRillYAML returns the JSON schema for validating rill.yaml files.
+func JSONSchemaForRillYAML() (*jsonschema.Schema, error) {
+	// Ensure the schema is parsed
+	parsedRillYAMLSchemaOnce.Do(func() {
+		var err error
+		parsedRillYAMLSchema, err = parseSchemaFromYAML(rillYAMLSchema)
+		if err != nil {
+			panic(fmt.Sprintf("failed to parse schema: %v", err))
+		}
+	})
+
+	return parsedRillYAMLSchema, nil
+}
 
 // JSONSchemaForResourceType returns a JSON schema for validating the properties of a given resource type.
 // Note: You can use ParseResourceKind to get the ResourceKind from a string.
 func JSONSchemaForResourceType(resourceType ResourceKind) (*jsonschema.Schema, error) {
 	// Ensure the schema is parsed
-	parsedSchemaOnce.Do(func() {
+	parsedResourceYAMLSchemaOnce.Do(func() {
 		var err error
-		parsedSchema, err = parseSchemaFromYAML(resourceYAMLSchema)
+		parsedResourceYAMLSchema, err = parseSchemaFromYAML(resourceYAMLSchema)
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse schema: %v", err))
 		}
@@ -54,7 +73,7 @@ func JSONSchemaForResourceType(resourceType ResourceKind) (*jsonschema.Schema, e
 	}
 
 	// Get the definition from the schema
-	defSchema, ok := parsedSchema.Definitions[defKey]
+	defSchema, ok := parsedResourceYAMLSchema.Definitions[defKey]
 	if !ok {
 		return nil, fmt.Errorf("schema definition %q not found", defKey)
 	}
