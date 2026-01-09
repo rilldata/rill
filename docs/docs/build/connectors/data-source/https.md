@@ -5,74 +5,121 @@ sidebar_label: HTTPS
 sidebar_position: 25
 ---
 
-Import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project.
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 ## Overview
 
-The HTTPS connector allows you to import data from publicly accessible files hosted on web servers, CDNs, or cloud storage services. This is perfect for working with datasets that are regularly updated or shared publicly.
+The HTTPS connector allows you to import data from remote sources accessible via HTTP or HTTPS URLs into your Rill project. It supports publicly accessible files hosted on web servers, CDNs, or cloud storage services, making it perfect for working with datasets that are regularly updated or shared publicly.
 
+The connector supports various remote data sources:
 
-## Connect to HTTPS
+- **Public HTTP/HTTPS URLs**: Direct links to CSV, JSON, Parquet, and other data files hosted on web servers or CDNs
+- **Cloud Storage URLs**: Public links to files in Google Cloud Storage, Amazon S3, Azure Blob Storage, or other cloud providers
+- **REST API Endpoints**: Connect to REST APIs that return JSON, CSV, or other structured data formats. The connector can handle paginated responses and authenticated endpoints
 
-To connect to data via HTTPS, you have two options depending on your data source:
+The connector supports downloading and processing various file formats:
 
-1. **Use authenticated endpoints** (for private APIs or protected resources)
-2. **Use public URLs** (for publicly accessible files)
+- **CSV**: Comma-separated values files
+- **JSON**: JavaScript Object Notation files (including JSONL/NDJSON)
+- **Parquet**: Columnar data format
+- **Other formats**: Any format supported by DuckDB's file readers
 
-Choose the method that matches your data source requirements.
+## Using Public URLs
 
-### Authenticated Endpoints
+For publicly accessible files, you don't need to create a connector. Simply use the URL directly in your source or model configuration.
 
-If your endpoint requires authentication, create a `https` connector that can test your API key before importing data:
-
-```yaml
-type: connector 
-driver: https 
-path: "https://api.endpoint.com/v1" 
-
-headers:
-    Authorization: "Bearer {{ .env.connector.https.token }}"
-```
-
-### Public URLs
-
-For publicly accessible files, you can simply use the `https` connector to add data from your endpoint or publicly available file.
-
-## Adding an HTTPS Source
-
-### Option 1: Using the Rill UI
+### Using the UI
 
 1. In the left navigation pane, click the **"Add"** button and select data
 2. Select **"HTTPS"** from the connector options
 3. Enter your file's URL (e.g., `https://example.com/data.csv`)
 4. Click **"Add Data"**
 
+### Using Code
 
-
-
-### Option 2: Using Code
-
-Create a YAML configuration file in your project's `sources` directory:
+Create a model that reads directly from an HTTPS URL:
 
 ```yaml
 type: model
-connector: https
+materialize: true
 
-path: https://example.com/data.csv
+connector: duckdb
+
+sql: |
+  select * from read_csv('https://example.com/data.csv', auto_detect=true, ignore_errors=1, header=true)
 ```
 
-## Supported URL Types
+For REST API endpoints that return JSON:
 
-The HTTPS connector supports various remote data sources:
+```yaml
+type: model
+materialize: true
 
-- **Public HTTP/HTTPS URLs**: Direct links to CSV, JSON, Parquet, and other data files
-- **Cloud Storage URLs**: Public links to files in Google Cloud Storage, Amazon S3, or other cloud providers
+connector: duckdb
 
-## Authentication
+sql: |
+  select * from read_json('https://api.example.com/data.json', auto_detect=true)
+```
 
-### Local Development
+---
 
-When running Rill locally, you can use existing credentials configured on your machine for authenticated requests. If you don't have credentials configured, you'll need to define the key with `headers: "Authorization: Bearer token"`.
+## Using Authenticated Endpoints
+
+If your endpoint requires authentication, you need to follow a two-step process:
+
+1. **Create a connector** - Configure your HTTPS connector with authentication credentials
+2. **Create a source model** - Define which URL to ingest using the connector
+
+This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
+
+### Using the UI
+
+When you add an HTTPS data model through the Rill UI for authenticated endpoints, the process follows two steps:
+
+1. **Configure Authentication** - Set up your HTTPS connector with authentication headers
+2. **Configure Data Model** - Define which URL to ingest
+
+The UI will automatically create both the connector file and model file for you.
+
+### Manual Configuration
+
+If you prefer to configure manually, create two files:
+
+**Step 1: Create connector configuration**
+
+Create `connectors/my_https.yaml`:
+
+```yaml
+type: connector 
+driver: https 
+
+headers:
+    Authorization: "Bearer {{ .env.connector.https.token }}"
+```
+
+**Step 2: Create model configuration**
+
+Create `models/my_https_data.yaml`:
+
+```yaml
+type: model
+materialize: true
+
+connector: duckdb
+
+sql: |
+  select * from read_csv('https://api.example.com/data.csv', auto_detect=true, ignore_errors=1, header=true)
+```
+
+**Step 3: Add credentials to `.env`**
+
+```bash
+connector.https.token=your_api_token_here
+```
+
+:::note
+For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
+:::
 
 ## Deploy to Rill Cloud
 
@@ -83,13 +130,13 @@ If you subsequently add sources that require new credentials (or if you simply e
 rill env push
 ```
 
+
 ## Best Practices
 
-- **Use HTTPS URLs**: Prefer secure HTTPS connections over HTTP when possible
-- **Check File Accessibility**: Ensure your URLs are publicly accessible or properly authenticated
-- **Monitor File Size**: Large files may take longer to download and process
-- **Regular Updates**: Set up automated refreshes for frequently updated datasets
+- **Use HTTPS URLs**: Prefer secure HTTPS connections over HTTP when possible to protect data in transit
+- **Check File Accessibility**: Ensure your URLs are publicly accessible or properly authenticated before deployment
+- **Monitor File Size**: Large files may take longer to download and process. Consider using incremental models for large datasets
+- **Regular Updates**: Set up automated refreshes for frequently updated datasets using [model refresh configuration](/build/models/data-refresh)
+- **Error Handling**: Use `ignore_errors=1` in SQL functions when reading files to handle malformed rows gracefully
+- **Rate Limiting**: Be aware of API rate limits when connecting to REST API endpoints. Consider implementing retry logic or pagination handling
 
-## Reference
-
-For advanced configuration options and properties, see the [Connector YAML Reference](/reference/project-files/connectors#https).
