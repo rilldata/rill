@@ -422,6 +422,50 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	})
 }
 
+// ListBranches implements drivers.RepoStore.
+func (r *repo) ListBranches(ctx context.Context) ([]drivers.GitBranch, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// SwitchBranch implements drivers.RepoStore.
+func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
+	return drivers.ErrNotImplemented
+}
+
+// Status implements drivers.RepoStore.
+func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
+	if r.git == nil {
+		return &drivers.RepoStatus{}, nil
+	}
+
+	err := r.rlockEnsureReady(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer r.mu.RUnlock()
+
+	// run git fetch - only updates the remote tracking branch and not the working tree.
+	err = r.git.fetchCurrentBranch(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch current branch: %w", err)
+	}
+
+	// run git status
+	st, err := gitutil.RunGitStatus(r.git.repoDir, r.git.subpath, "origin")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Git status: %w", err)
+	}
+	return &drivers.RepoStatus{
+		IsGitRepo:     true,
+		Branch:        st.Branch,
+		RemoteURL:     st.RemoteURL,
+		ManagedRepo:   r.git.managedRepo,
+		LocalChanges:  st.LocalChanges,
+		LocalCommits:  st.LocalCommits,
+		RemoteCommits: st.RemoteCommits,
+	}, nil
+}
+
 // Pull implements drivers.RepoStore.
 func (r *repo) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
 	return r.pull(ctx, discardChanges, forceHandshake)

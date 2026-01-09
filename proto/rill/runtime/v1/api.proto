@@ -313,6 +313,43 @@ service RuntimeService {
   rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
   }
+
+  // Git APIs
+
+  // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
+  }
+
+  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+  // If there are any merge conflicts the pull is aborted.
+  // Force can be set to true to force the pull and overwrite any local changes.
+  rpc GitPull(GitPullRequest) returns (GitPullResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/pull",
+      body: "*"
+    };
+  }
+  
+  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+  // It only pushes the changes to the existing remote repo.
+  rpc GitPush(GitPushRequest) returns (GitPushResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/push",
+      body: "*"
+    };
+  }
+
+  rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
+  }
+
+  rpc SwitchBranch(SwitchBranchRequest) returns (SwitchBranchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/branches/switch",
+      body: "*"
+    };
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -1166,3 +1203,63 @@ message AnalyzedVariable {
   // List of resources that appear to use the connector.
   repeated ResourceName used_by = 8;
 }
+
+message ListGitBranchesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message ListGitBranchesResponse {
+  repeated GitBranch branches = 1;
+}
+
+message GitBranch {
+  string name = 1;
+  bool is_current = 2;
+  bool has_preview_deployment = 3;
+}
+
+message SwitchBranchRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string branch_name = 2;
+  bool create_if_not_exists = 3;
+  bool ignore_local_changes = 4;
+}
+
+message SwitchBranchResponse {}
+
+message GitStatusRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message GitStatusResponse {
+  // The current branch of the git repo.
+  string branch = 1;
+  // The remote url of the git repo.
+  string github_url = 2;
+  // If the repo is managed by Rill.
+  bool managed_git = 3;
+  // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+  bool local_changes = 4;
+  // local_commits returns number of local commits that are not pushed to the remote git repo.
+  int32 local_commits = 5;
+  // remote_commits returns number of remote commits not pulled yet.
+  int32 remote_commits = 6;
+}
+
+message GitPullRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool discard_local = 2;
+}
+
+message GitPullResponse {
+  // The output of the git pull command. Only set for unsuccessful pulls.
+  string output = 1; 
+}
+
+message GitPushRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_message = 2;
+  bool force = 3;
+}
+
+message GitPushResponse {}

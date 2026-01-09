@@ -1102,6 +1102,36 @@ export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
 }
 
+export interface V1GitBranch {
+  name?: string;
+  isCurrent?: boolean;
+  hasPreviewDeployment?: boolean;
+}
+
+export interface V1GitPullResponse {
+  /** The output of the git pull command. Only set for unsuccessful pulls. */
+  output?: string;
+}
+
+export interface V1GitPushResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GitStatusResponse {
+  /** The current branch of the git repo. */
+  branch?: string;
+  /** The remote url of the git repo. */
+  githubUrl?: string;
+  /** If the repo is managed by Rill. */
+  managedGit?: boolean;
+  /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
+  localChanges?: boolean;
+  /** local_commits returns number of local commits that are not pushed to the remote git repo. */
+  localCommits?: number;
+  /** remote_commits returns number of remote commits not pulled yet. */
+  remoteCommits?: number;
+}
+
 export type V1HealthResponseInstancesHealth = {
   [key: string]: V1InstanceHealth;
 };
@@ -1219,6 +1249,10 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  branches?: V1GitBranch[];
 }
 
 export interface V1ListInstancesResponse {
@@ -2336,6 +2370,10 @@ export interface V1Subquery {
   having?: V1Expression;
 }
 
+export interface V1SwitchBranchResponse {
+  [key: string]: unknown;
+}
+
 export interface V1TableCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2738,6 +2776,21 @@ export type RuntimeServiceGenerateResolverBody = {
   table?: string;
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
+};
+
+export type RuntimeServiceSwitchBranchBody = {
+  branchName?: string;
+  createIfNotExists?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitPullBody = {
+  discardLocal?: boolean;
+};
+
+export type RuntimeServiceGitPushBody = {
+  commitMessage?: string;
+  force?: boolean;
 };
 
 export type RuntimeServiceGetLogsParams = {
