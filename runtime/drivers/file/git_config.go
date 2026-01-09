@@ -2,14 +2,21 @@ package file
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+)
+
+var (
+	errProjectNotFound = errors.New("not connected to a rill project")
+	errAuthRequired    = errors.New("authentication required to perform this action")
 )
 
 // loadGitConfig loads the git configuration for the repository
@@ -17,6 +24,12 @@ import (
 func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error) {
 	if c.gitConfig != nil && !c.gitConfig.IsExpired() {
 		return c.gitConfig, nil
+	}
+
+	// get authenticated admin client
+	client, err := c.getAdminClient()
+	if err != nil {
+		return nil, err
 	}
 
 	// Build request
@@ -44,25 +57,30 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 			}
 		}
 	}
-	resp, err := c.admin.ListProjectsForFingerprint(ctx, req)
+	resp, err := client.ListProjectsForFingerprint(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	if len(resp.Projects) == 0 {
-		return nil, nil
+		return nil, errProjectNotFound
 	}
 
+	// filter by org
+	org, err := c.dotRill.GetDefaultOrg()
+	if err != nil {
+		return nil, err
+	}
 	orgFiltered := make([]*adminv1.Project, 0)
 	for _, p := range resp.Projects {
-		if p.OrgName == c.driverConfig.Org {
+		if p.OrgName == org {
 			orgFiltered = append(orgFiltered, p)
 		}
 	}
 	if len(orgFiltered) == 0 {
-		return nil, nil
+		return nil, errProjectNotFound
 	}
 	p := orgFiltered[0]
-	creds, err := c.admin.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+	creds, err := client.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
 		Org:     p.OrgName,
 		Project: p.Name,
 	})
@@ -82,7 +100,7 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 	return c.gitConfig, nil
 }
 
-func (c *connection) gitSignature(ctx context.Context, path string) (*object.Signature, error) {
+func (c *connection) gitSignature(ctx context.Context, client *client.Client, path string) (*object.Signature, error) {
 	repo, err := git.PlainOpen(path)
 	if err == nil {
 		cfg, err := repo.ConfigScoped(config.SystemScope)
@@ -96,8 +114,7 @@ func (c *connection) gitSignature(ctx context.Context, path string) (*object.Sig
 		}
 	}
 
-	// use email of rill user
-	userResp, err := c.admin.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	userResp, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -108,3 +125,49 @@ func (c *connection) gitSignature(ctx context.Context, path string) (*object.Sig
 		When:  time.Now(),
 	}, nil
 }
+
+func (c *connection) getAdminClient() (*client.Client, error) {
+	if c.admin != nil {
+		return c.admin, nil
+	}
+	accessToken, err := c.adminToken()
+	if err != nil {
+		return nil, err
+	}
+	if accessToken == "" {
+		return nil, errAuthRequired
+	}
+	adminURL, err := c.adminURL()
+	if err != nil {
+		return nil, err
+	}
+	admin, err := client.New(adminURL, accessToken, "rill-runtime")
+	if err != nil {
+		return nil, err
+	}
+	c.admin = admin
+	return c.admin, nil
+}
+
+func (c *connection) adminToken() (string, error) {
+	if c.driverConfig.AccessTokenOverride != "" {
+		return c.driverConfig.AccessTokenOverride, nil
+	}
+	return c.dotRill.GetAccessToken()
+}
+
+func (c *connection) adminURL() (string, error) {
+	if c.driverConfig.AdminURLOverride != "" {
+		return c.driverConfig.AdminURLOverride, nil
+	}
+	adminURL, err := c.dotRill.GetDefaultAdminURL()
+	if err != nil {
+		return "", err
+	}
+	if adminURL == "" {
+		adminURL = defaultAdminURL
+	}
+	return adminURL, nil
+}
+
+const defaultAdminURL = "https://admin.rilldata.com"

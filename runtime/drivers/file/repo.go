@@ -211,26 +211,25 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		return nil, err
 	}
 
-	// Get authenticated admin client
-	if c.driverConfig.AccessToken == "" {
-		// if not authenticated do not return local/remote changes info
-		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
-		if err != nil {
-			return nil, err
-		}
-		return &drivers.RepoStatus{
-			IsGitRepo: true,
-			Branch:    st.Branch,
-			RemoteURL: st.RemoteURL,
-			Subpath:   subPath,
-		}, nil
-	}
-
 	// get ephemeral git credentials
 	config, err := c.loadGitConfig(ctx)
 	if err != nil {
+		if errors.Is(err, errProjectNotFound) || errors.Is(err, errAuthRequired) {
+			// not connected to a rill project or not authenticated, return minimal status
+			st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
+			if err != nil {
+				return nil, err
+			}
+			return &drivers.RepoStatus{
+				IsGitRepo: true,
+				Branch:    st.Branch,
+				RemoteURL: st.RemoteURL,
+				Subpath:   subPath,
+			}, nil
+		}
 		return nil, err
 	}
+
 	// set remote
 	err = gitutil.GitFetch(ctx, gitPath, config)
 	if err != nil {
@@ -256,10 +255,6 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
 	if !c.isGitRepo() || !opts.UserTriggered {
 		return nil
-	}
-
-	if c.driverConfig.AccessToken == "" {
-		return errors.New("must authenticate before performing this action")
 	}
 
 	c.gitMu.Lock()
@@ -319,7 +314,11 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 		return errors.New("detected subpath within git repo does not match project subpath")
 	}
 
-	author, err := c.gitSignature(ctx, gitPath)
+	client, err := c.getAdminClient()
+	if err != nil {
+		return err
+	}
+	author, err := c.gitSignature(ctx, client, gitPath)
 	if err != nil {
 		return err
 	}

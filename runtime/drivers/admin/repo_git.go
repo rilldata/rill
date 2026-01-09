@@ -80,7 +80,7 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 
 		repo, err = git.PlainCloneContext(ctx, r.repoDir, false, cloneOptions)
 		if err != nil {
-			return nil
+			return err
 		}
 	} else {
 		// Repository exists, pull latest changes
@@ -259,7 +259,7 @@ func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message stri
 			Force:  true,
 		})
 		if err != nil {
-			resErr = errors.Join(err, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
+			resErr = errors.Join(resErr, fmt.Errorf("failed to checkout default branch %q: %w", r.defaultBranch, err))
 			return
 		}
 	}()

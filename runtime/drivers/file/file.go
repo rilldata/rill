@@ -10,6 +10,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -58,10 +59,10 @@ type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 
-	// admin client config, only used to fetch github tokens
-	AdminURL    string `mapstructure:"admin_url"`
-	Org         string `mapstructure:"org"`
-	AccessToken string `mapstructure:"access_token"`
+	// admin client config overrides, only used to fetch github tokens
+	AdminURLOverride    string `mapstructure:"admin_url_override"`
+	AccessTokenOverride string `mapstructure:"access_token_override"`
+	HomeDir             string `mapstructure:"home_dir"`
 }
 
 // a smaller subset of relevant parts of rill.yaml
@@ -90,17 +91,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
-	admin, err := client.New(conf.AdminURL, conf.AccessToken, "rill-runtime")
-	if err != nil {
-		return nil, fmt.Errorf("failed to open admin client: %w", err)
-	}
-
 	c := &connection{
 		logger:       logger,
 		root:         absPath,
 		driverConfig: conf,
 		driverName:   d.name,
-		admin:        admin,
+		dotRill:      dotrill.New(conf.HomeDir),
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -155,9 +151,10 @@ type connection struct {
 	driverConfig *configProperties
 	driverName   string
 
-	admin     *client.Client  // admin client for admin service, used to obtain github tokens
 	gitConfig *gitutil.Config // git config for repo
-	gitMu     sync.Mutex      // mutex to protect git operations
+	admin     *client.Client  // admin client for admin service, used to obtain github tokens
+	dotRill   dotrill.DotRill
+	gitMu     sync.Mutex // mutex to protect git related operations
 
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
@@ -187,6 +184,9 @@ func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 
 // Close implements drivers.Handle.
 func (c *connection) Close() error {
+	if c.admin != nil {
+		return c.admin.Close()
+	}
 	return nil
 }
 
