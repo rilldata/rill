@@ -50,9 +50,14 @@ Only generate synthetic data when the user explicitly requests mock data or when
 The `materialize:` property controls whether a model creates a physical table or a SQL view:
 
 - `materialize: true`: Creates a physical table. Use this for source models, expensive transformations, or when downstream queries need fast access.
-- `materialize: false`: Creates a SQL view. The query re-executes on every access. Only suitable for lightweight transformations where input and output connectors are the same.
+- `materialize: false`: Creates a SQL view. The query re-executes on every access. Only suitable for lightweight transformations where input and output connectors are the same that never reference external data.
 
 If `materialize` is omitted, it defaults to `true` for all cross-connector models and `false` for single-connector models (i.e. where the input and output connector is the same).
+
+In model files with a `.sql` extension, you can materialize by putting this on the first line of the file:
+```sql
+-- @materialize: true
+```
 
 **Best practices:**
 - Always materialize models that reference external data sources.

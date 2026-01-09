@@ -170,12 +170,14 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 
 	// Generate the user prompt
 	return executeTemplate(`
-You should develop a Rill project file based on the following task description: {{ .prompt }}
+You should develop a Rill project file based on the following task description:
+- Develop file at path: {{ .path }}
+{{ if .type }}- The file should be of type: {{ .type }}{{ end }}
+- Task description: {{ .prompt }}
 
 Here is some important context:
-- You should develop the file at path: {{ .path }}
-{{ if .type }}- The file should be of type: {{ .type }}{{ end }}
-- You are running as a sub-agent of a larger developer agent. Stay aligned on your specific task, avoid extra discovery, and report back your success or failure to the parent agent.
+- You are running as a sub-agent of a larger developer agent. Stay aligned on your specific task and avoid extra discovery.
+- When you call 'write_file', if it returns a parse or reconcile error, do your best to fix the issue and try again. If you think the error is unrelated to the current path, let the parent agent know to handle it.
 
 Here is some additional context that may or may not be relevant to your task:
 - The project's default OLAP connector is named {{ .default_olap_connector }} (driver: {{ .default_olap_driver }}).

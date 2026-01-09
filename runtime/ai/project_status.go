@@ -25,7 +25,7 @@ type ProjectStatusArgs struct {
 
 type ProjectStatusResult struct {
 	DefaultOLAPConnector string           `json:"default_olap_connector,omitempty" jsonschema:"The default OLAP connector configured in rill.yaml. May or may not exist as an explicit connector resource."`
-	VariablesNames       []string         `json:"variable_names,omitempty" jsonschema:"List of environment variable names present in the project. The values omitted for security."`
+	Env                  []string         `json:"env,omitempty" jsonschema:"List of environment variable names present in the project. Their values are omitted for security."`
 	Resources            []map[string]any `json:"resources" jsonschema:"List of resources and their status."`
 	ParseErrors          []map[string]any `json:"parse_errors" jsonschema:"List of parse errors encountered when parsing project files."`
 }
@@ -131,7 +131,7 @@ func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*
 
 	return &ProjectStatusResult{
 		DefaultOLAPConnector: instance.ResolveOLAPConnector(),
-		VariablesNames:       varNames,
+		Env:                  varNames,
 		Resources:            resources,
 		ParseErrors:          parseErrors,
 	}, nil

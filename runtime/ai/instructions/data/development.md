@@ -244,7 +244,7 @@ The following tools are typically available for project development:
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
 - `list_tables` and `get_table` for accessing the information schema of a database connector
-- `list_buckets` and `list_bucket_files` for exploring object stores; load files into models using SQL before querying them
+- `list_buckets` and `list_bucket_files` for exploring files in object stores like S3 or GCS; to preview file contents, load one file into a table using a model and query it with `query_sql`
 
 {% if .external %}
 
@@ -261,7 +261,10 @@ You may be running in an external editor that does not have Rill's MCP server co
 
 Avoid these mistakes when developing a project:
 - **Duplicating ETL logic**: Ingest data once, then derive from it within the project. Do not create multiple models that pull the same data from an external source.
-- **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. Non-materialized models become views, which re-execute on every query.
+- **Models as SQL files:** Always create new models as `.yaml` files, not `.sql` files (which are harder to extend later).
+- **Not creating connector files:** When Rill has native support for a connector (like S3 or BigQuery), always create a dedicated connector resource file for it.
+- **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. This also includes models that load external data using a native SQL function, like `read_parquet(...)` or `s3(...)`. Non-materialized models become views, which re-execute on every query.
+- **Referencing non-existant environment variables:** Only reference environment variables that are present in `.env` (returned in `env` from `project_status`). If you need the user to add another environment variable, stop and ask them to do so.
 - **Processing too much data in development**: Use dev partitions to limit data to a small subset (e.g., one day) during development. This speeds up iteration and avoids unnecessary costs.
 {% if not .external %}
 - **Doing too much introspection/profiling:** Reading files, introspecting connectors, profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
