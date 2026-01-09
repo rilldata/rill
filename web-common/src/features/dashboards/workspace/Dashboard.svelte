@@ -52,7 +52,8 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
+  $: ({ whereFilter, dimensionThresholdFilters, selectedTimeDimension } =
+    $dashboardStore);
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -99,6 +100,7 @@
   $: timeRange = {
     start,
     end,
+    timeDimension: selectedTimeDimension,
   };
 
   $: comparisonTimeRange = showTimeComparison

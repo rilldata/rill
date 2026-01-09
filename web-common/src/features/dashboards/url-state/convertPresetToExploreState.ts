@@ -206,6 +206,10 @@ function fromTimeRangesParams(
     partialExploreState.showTimeComparison = false;
   }
 
+  if (preset.timeDimension) {
+    partialExploreState.selectedTimeDimension = preset.timeDimension;
+  }
+
   return { partialExploreState, errors };
 }
 

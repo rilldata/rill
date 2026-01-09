@@ -157,6 +157,12 @@ function toTimeRangesUrl(
   const timeRangeParam = toTimeRangeParam(timeControlsState.selectedTimeRange);
   searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
 
+  const timeDimension = partialExploreState.selectedTimeDimension;
+
+  if (timeDimension) {
+    searchParams.set(ExploreStateURLParams.TimeDimension, timeDimension);
+  }
+
   maybeSetParam(searchParams, partialExploreState, "selectedTimezone");
 
   if ("selectedComparisonTimeRange" in partialExploreState) {
@@ -178,6 +184,13 @@ function toTimeRangesUrl(
         timeControlsState.selectedTimeRange?.interval ?? ""
       ] ?? "";
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
+  }
+
+  if (partialExploreState.selectedTimeDimension) {
+    searchParams.set(
+      ExploreStateURLParams.TimeDimension,
+      partialExploreState.selectedTimeDimension,
+    );
   }
 
   maybeSetParam(

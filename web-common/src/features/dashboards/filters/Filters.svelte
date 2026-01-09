@@ -76,7 +76,7 @@
       filters: { clearAllFilters, setTemporaryFilterName },
     },
     selectors: {
-      dimensions: { allDimensions },
+      dimensions: { allDimensions, timeDimensions },
       dimensionFilters: {
         dimensionHasFilter,
         getDimensionFilterItems,
@@ -158,7 +158,9 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: ({ whereFilter, selectedTimeDimension } = $dashboardStore);
+
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -184,6 +186,15 @@
       end: selectedTimeRange.end,
     };
 
+  $: primaryTimeDimension = metricsViewSpec.timeDimension;
+
+  $: timeDimensionOptions = $timeDimensions.map((timeDim) => {
+    return {
+      value: timeDim.name!,
+      label: timeDim.name!,
+    };
+  });
+
   $: maybeMinDate = allTimeRange?.start
     ? DateTime.fromJSDate(allTimeRange.start)
     : undefined;
@@ -204,6 +215,10 @@
       removeMeasureFilter(oldDimension, measureName);
     }
     setMeasureFilter(dimension, filter);
+  }
+
+  function onTimeDimensionSelect(column: string) {
+    metricsExplorerStore.setTimeDimension($exploreName, column);
   }
 
   function onPan(direction: "left" | "right") {
@@ -394,9 +409,13 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
+          {primaryTimeDimension}
+          {selectedTimeDimension}
           {showDefaultItem}
+          timeDimensions={timeDimensionOptions}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}
+          {onTimeDimensionSelect}
           {onSelectRange}
           {onTimeGrainSelect}
           {onSelectTimeZone}
@@ -443,7 +462,7 @@
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}

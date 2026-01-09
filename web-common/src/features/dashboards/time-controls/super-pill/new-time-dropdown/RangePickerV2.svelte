@@ -43,6 +43,7 @@
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
+  import { Clock, Check } from "lucide-svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true> | undefined;
@@ -60,6 +61,11 @@
   export let availableTimeZones: string[];
   export let lockTimeZone = false;
   export let showFullRange = true;
+  export let timeDimensions: { value: string; label: string }[];
+  export let primaryTimeDimension: string | undefined;
+  export let selectedTimeDimension: string | undefined;
+  export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
+    undefined;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
 
@@ -70,6 +76,7 @@
   let parsedTime: RillTime | undefined = undefined;
   let showCalendarPicker = false;
   let timeZonePickerOpen = false;
+  let timeAxisPickerOpen = false;
   let searchValue: string | undefined = timeString;
 
   $: if (timeString) {
@@ -378,7 +385,7 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 overflow-hidden hover:bg-gray-300 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     type="button"
@@ -414,6 +421,66 @@
                     timeZonePickerOpen = false;
                   }}
                 />
+              </Popover.Content>
+            </Popover.Root>
+          </div>
+        {/if}
+
+        {#if timeDimensions.length && onTimeDimensionSelect}
+          <div class="w-full h-fit px-1">
+            <div class="h-px w-full bg-gray-200 my-1" />
+
+            <Popover.Root portal="#rill-portal" bind:open={timeAxisPickerOpen}>
+              <Popover.Trigger
+                asChild
+                let:builder
+                id="time-axis-trigger-{context}"
+              >
+                <div
+                  {...builder}
+                  use:builder.action
+                  on:click={() => {
+                    showCalendarPicker = false;
+                  }}
+                  role="presentation"
+                  class="group h-7 overflow-hidden hover:bg-gray-300 flex-none rounded-sm w-full select-none flex items-center"
+                >
+                  <button
+                    class:font-bold={false}
+                    class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
+                  >
+                    <Clock size="14px" />
+                    <div class="mr-auto">Time axis</div>
+                    <div class="sr-only group-hover:not-sr-only">
+                      <SyntaxElement
+                        range={selectedTimeDimension || primaryTimeDimension}
+                      />
+                    </div>
+                    <CaretDownIcon className="-rotate-90" size="14px" />
+                  </button>
+                </div>
+              </Popover.Trigger>
+
+              <Popover.Content
+                align="center"
+                side="right"
+                sideOffset={12}
+                class="p-1 z-50"
+              >
+                {#each timeDimensions as { value, label } (value)}
+                  <button
+                    class="item"
+                    on:click={() => {
+                      onTimeDimensionSelect(value);
+                      timeAxisPickerOpen = false;
+                    }}
+                  >
+                    {label}
+                    {#if value === (selectedTimeDimension || primaryTimeDimension)}
+                      <Check class="size-4" color="var(--color-gray-800)" />
+                    {/if}
+                  </button>
+                {/each}
               </Popover.Content>
             </Popover.Root>
           </div>
@@ -465,3 +532,17 @@
     }}
   />
 {/if}
+
+<style lang="postcss">
+  .item {
+    @apply w-full relative justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
+  }
+
+  .item:hover {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  .separator {
+    @apply h-px w-full bg-gray-200 my-1;
+  }
+</style>
