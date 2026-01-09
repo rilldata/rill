@@ -59,6 +59,7 @@ components:
                 - OPERATION_NIN
                 - OPERATION_LIKE
                 - OPERATION_NLIKE
+                - OPERATION_CAST
             type: string
         v1AddOrganizationMemberUserResponse:
             properties:
