@@ -149,10 +149,14 @@ func (b *sqlExprBuilder) writeCast(cond *Condition) error {
 	}
 	b.writeString(" AS ")
 	switch v := cond.Expressions[1].Value.(type) {
-	case string:
-		b.writeString(v)
+	case runtimev1.Type:
+		typeStr, err := b.ast.Dialect.CastToDataType(v.Code)
+		if err != nil {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		b.writeString(typeStr)
 	case map[string]any:
-		// try to cast to runtimev1.Type_Code, because of serialization issues enums may be deserialized as map[string]any
+		// because of serialization runtimev1.Type will be deserialized as map[string]any
 		codeVal, ok := v["code"]
 		if !ok {
 			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
