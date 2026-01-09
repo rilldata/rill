@@ -67,6 +67,8 @@ export class AddDataFormManager {
   dsn: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
+  private initialParamsValues: Record<string, unknown>;
+  private initialDsnValues: Record<string, unknown>;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -74,6 +76,21 @@ export class AddDataFormManager {
   }
 
   private getSelectedAuthMethod?: () => string | undefined;
+  private resetConnectorForms() {
+    if (this.isMultiStepConnector) {
+      if (this.params?.form) {
+        (this.params.form as any).update(
+          () => ({ ...this.initialParamsValues }),
+          { taint: false } as any,
+        );
+      }
+      if (this.dsn?.form) {
+        (this.dsn.form as any).update(() => ({ ...this.initialDsnValues }), {
+          taint: false,
+        } as any);
+      }
+    }
+  }
 
   constructor(args: {
     connector: V1ConnectorDriver;
@@ -151,6 +168,7 @@ export class AddDataFormManager {
     const initialFormValues = getInitialFormValuesFromProperties(
       this.properties,
     );
+    this.initialParamsValues = initialFormValues;
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
@@ -167,7 +185,9 @@ export class AddDataFormManager {
     const dsnAdapter = yup(dsnSchema);
     type DsnOut = YupInfer<typeof dsnSchema, "yup">;
     type DsnIn = YupInferIn<typeof dsnSchema, "yup">;
-    this.dsn = superForm<DsnOut, any, DsnIn>(defaults(dsnAdapter), {
+    const initialDsnValues = defaults(dsnAdapter);
+    this.initialDsnValues = initialDsnValues;
+    this.dsn = superForm<DsnOut, any, DsnIn>(initialDsnValues, {
       SPA: true,
       validators: dsnAdapter,
       onUpdate: onDsnUpdate,
@@ -237,6 +257,7 @@ export class AddDataFormManager {
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
     setConnectorConfig({});
     setAuthMethod(null);
+    this.resetConnectorForms();
     setStep("source");
   }
 
@@ -401,12 +422,14 @@ export class AddDataFormManager {
           if (selectedAuthMethod === "public") {
             setConnectorConfig({});
             setAuthMethod(null);
+            this.resetConnectorForms();
             setStep("source");
             return;
           }
           await submitAddConnectorForm(queryClient, connector, values, false);
           setConnectorConfig({});
           setAuthMethod(null);
+          this.resetConnectorForms();
           setStep("source");
           return;
         } else if (this.formType === "source") {
