@@ -73,6 +73,12 @@ explore:
 		ai.GetMetricsViewName,
 		ai.QueryMetricsViewName,
 		ai.QueryMetricsViewSummaryName,
+		ai.ProjectStatusName,
+		ai.QuerySQLName,
+		ai.ListTablesName,
+		ai.ShowTableName,
+		ai.ListBucketsName,
+		ai.ListBucketObjectsName,
 	}
 	require.Len(t, tools.Tools, len(expectedTools))
 	for _, tool := range tools.Tools {

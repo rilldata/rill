@@ -47,7 +47,7 @@ func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
 	// Generate the prompts
-	systemPrompt, err := t.systemPrompt(ctx)
+	systemPrompt, err := t.systemPrompt()
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	}, nil
 }
 
-func (t *DeveloperAgent) systemPrompt(ctx context.Context) (string, error) {
+func (t *DeveloperAgent) systemPrompt() (string, error) {
 	instr, err := instructions.Load("development.md", instructions.Options{})
 	if err != nil {
 		return "", fmt.Errorf("failed to load developer agent system prompt: %w", err)
@@ -165,8 +165,8 @@ Task: {{ .prompt }}
 }
 
 // checkDeveloperAccess checks whether developer tools should be available in the current session.
-// If isAgentTool is true, it indicates that the check is being performed for an agent tool instead of a plain tool.
-func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, isAgentTool bool) (bool, error) {
+// If internal is true, it indicates that the tool should not be exposed to external clients (like MCP).
+func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, internal bool) (bool, error) {
 	// Must be able to use AI and edit the project
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.EditRepo) {
@@ -174,7 +174,7 @@ func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, isAgentTool 
 	}
 
 	// Don't expose agent tools to external clients (like MCP)
-	if isAgentTool {
+	if internal {
 		if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
 			return false, nil
 		}

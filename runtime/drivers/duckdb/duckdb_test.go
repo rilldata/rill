@@ -286,8 +286,8 @@ func TestDuckDBModeEnforcement(t *testing.T) {
 
 		// Test AsModelManager
 		manager, err := handle.AsModelManager("test")
-		require.ErrorContains(t, err, "model execution is disabled")
-		require.Nil(t, manager)
+		require.NoError(t, err)
+		require.NotNil(t, manager)
 	})
 
 	t.Run("read mode allows reading", func(t *testing.T) {

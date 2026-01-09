@@ -642,8 +642,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 
 		// Should be able to get model manager in readwrite mode
 		manager, err := conn.AsModelManager("default")
-		require.ErrorContains(t, err, "model execution is disabled")
-		require.Nil(t, manager)
+		require.NoError(t, err)
+		require.NotNil(t, manager)
 	})
 }
 

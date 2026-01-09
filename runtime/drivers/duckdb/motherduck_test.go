@@ -60,7 +60,7 @@ func TestMotherDuckModeEnforcement(t *testing.T) {
 
 		// Test AsModelManager
 		manager, err := handle.AsModelManager("test")
-		require.ErrorContains(t, err, "model execution is disabled")
-		require.Nil(t, manager)
+		require.NoError(t, err)
+		require.NotNil(t, manager)
 	})
 }
