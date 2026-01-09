@@ -264,6 +264,10 @@ export class AddDataFormManager {
   handleBack(onBack: () => void): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (this.isMultiStepConnector && stepState.step === "source") {
+      // Clear any connector form state when navigating back from the model step
+      setConnectorConfig(null);
+      setAuthMethod(null);
+      this.resetConnectorForms();
       setStep("connector");
     } else {
       onBack();
