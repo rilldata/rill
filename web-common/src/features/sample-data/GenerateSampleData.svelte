@@ -9,10 +9,12 @@
   import { object, string } from "yup";
   import IconButton from "../../components/button/IconButton.svelte";
   import SendIcon from "@rilldata/web-common/components/icons/SendIcon.svelte";
+  import { builderActions, getAttrs } from "bits-ui";
 
-  export let type: "button" | "modal" = "button";
-  export let initializeProject: boolean = false;
+  export let type: "init" | "home" | "modal";
   export let open = false;
+
+  const initializeProject = type === "init";
 
   $: ({ instanceId } = $runtime);
 
@@ -50,11 +52,20 @@
 
 <Dialog.Root bind:open>
   <Dialog.Trigger asChild let:builder>
-    {#if type === "button"}
+    {#if type === "init"}
       <Button builders={[builder]} large>
-        <SparklesIcon size="14px" />
+        <SparklesIcon size="14px" class="text-blue-500 rotate-90" />
         <span>Generate sample data</span>
       </Button>
+    {:else if type === "home"}
+      <button
+        class="button-home"
+        {...getAttrs([builder])}
+        use:builderActions={{ builders: [builder] }}
+      >
+        <SparklesIcon size="14px" class="text-blue-500 rotate-90" />
+        <span>Generate sample data</span>
+      </button>
     {:else}
       <div class="hidden"></div>
     {/if}
@@ -68,7 +79,7 @@
     >
       <Dialog.Header>
         <Dialog.Title class="flex flex-row items-center gap-x-1 text-blue-500">
-          <SparklesIcon size="16px" />
+          <SparklesIcon size="16px" class="rotate-90" />
           <span>Generate sample data</span>
         </Dialog.Title>
         <Dialog.Description>
@@ -104,6 +115,11 @@
   .prompt-input.empty::before {
     content: attr(data-placeholder);
     @apply text-gray-400 pointer-events-none absolute;
+  }
+
+  .button-home {
+    @apply flex flex-row text-center items-center justify-center gap-x-2 h-12;
+    @apply text-sm bg-card border rounded-md shadow-sm;
   }
 
   .error {

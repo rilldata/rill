@@ -36,7 +36,7 @@ type SSEConnectionManagerEvents = {
 /**
  * A wrapper around SSEFetchClient to manage status and reconnections
  */
-export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvents> {
+export class SSEConnectionManager {
   public status = writable<ConnectionStatus>(ConnectionStatus.CLOSED);
 
   public url: string;
@@ -62,8 +62,6 @@ export class SSEConnectionManager extends EventEmitter<SSEConnectionManagerEvent
   private connectionCount = 0;
 
   constructor(public params?: Params) {
-    super();
-
     if (params?.autoCloseTimeouts) {
       this.autoCloseThrottler = new Throttler(
         params.autoCloseTimeouts.normal,

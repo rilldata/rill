@@ -16,7 +16,10 @@ import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-import { getConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import {
+  ConversationManager,
+  getConversationManager,
+} from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 
 export const generatingSampleData = writable(false);
@@ -55,36 +58,20 @@ export async function generateSampleData(
       await featureFlags.ready;
     }
 
+    const developerChatEnabled = get(featureFlags.dashboardChat);
+
     generatingSampleData.set(true);
     const conversationManager = getConversationManager(instanceId, {
       conversationState: "browserStorage",
       agent: ToolName.DEVELOPER_AGENT,
     });
-    conversationManager.enterNewConversationMode();
+    // Since the user doesn't see the chat when dev chat is not enabled, older chat shouldn't interfere with this prompt.
+    if (!developerChatEnabled) conversationManager.enterNewConversationMode();
     const conversation = get(conversationManager.getCurrentConversation());
-
-    const developerChatEnabled = get(featureFlags.dashboardChat);
-    const showImportSourcePopup = !developerChatEnabled;
 
     let created = false;
     let lastReadFile: string | null = null;
     const messages = new Map<string, V1Message>();
-
-    const parseFile = (call: V1Message, result: V1Message) => {
-      try {
-        const resultContent = JSON.parse(result.contentData!);
-        const hasErroredOut =
-          !!resultContent.parse_error ||
-          resultContent.resources?.some((r) => !!r.reconcile_error);
-        if (hasErroredOut) return null;
-
-        const callContent = JSON.parse(call.contentData!);
-        return callContent.path as string;
-      } catch {
-        // json parse errors shouldn't happen. ignore if it ever does.
-      }
-      return null;
-    };
 
     const handleMessage = (msg: V1Message) => {
       messages.set(msg.id!, msg);
@@ -114,10 +101,12 @@ export async function generateSampleData(
           const path = parseFile(callMsg, msg);
           if (!path) break;
 
-          if (showImportSourcePopup) sourceImportedPath.set(path);
           created = true;
           overlay.set(null);
-          void goto(`/files${path}`);
+          if (developerChatEnabled) {
+            sourceImportedPath.set(path);
+            void goto(`/files${path}`);
+          }
           break;
         }
       }
@@ -149,7 +138,10 @@ export async function generateSampleData(
       await conversation.sendMessage({});
     }
 
-    await waitUntil(() => !get(conversation.isStreaming));
+    await waitUntil(
+      () => !get(conversation.isStreaming) && !get(conversation.streamError),
+      -1,
+    );
 
     handleMessageUnsub();
     generatingSampleData.set(false);
@@ -175,4 +167,52 @@ export async function generateSampleData(
       type: "error",
     });
   }
+}
+
+export function maybeNavigateToGeneratedFile(
+  conversationManager: ConversationManager,
+) {
+  let unsub: (() => void) | null = null;
+  const messages = new Map<string, V1Message>();
+
+  const conversationStore = conversationManager.getCurrentConversation();
+
+  return conversationStore.subscribe((conversation) => {
+    unsub?.();
+    messages.clear();
+    unsub = conversation.on("message", (msg) => {
+      messages.set(msg.id!, msg);
+
+      const isWriteFileToolResult =
+        msg.tool === ToolName.WRITE_FILE && msg.type === MessageType.RESULT;
+      if (!isWriteFileToolResult) return;
+
+      const callMsg = messages.get(msg.parentId ?? "");
+      if (!callMsg) return;
+
+      let path = parseFile(callMsg, msg);
+      if (!path) return;
+
+      if (!path.startsWith("/")) path = "/" + path;
+      console.log("Navigating to generated file", path);
+
+      void goto(`/files${path}`);
+    });
+  });
+}
+
+function parseFile(call: V1Message, result: V1Message) {
+  try {
+    const resultContent = JSON.parse(result.contentData!);
+    const hasErroredOut =
+      !!resultContent.parse_error ||
+      resultContent.resources?.some((r) => !!r.reconcile_error);
+    if (hasErroredOut) return null;
+
+    const callContent = JSON.parse(call.contentData!);
+    return callContent.path as string;
+  } catch {
+    // json parse errors shouldn't happen. ignore if it ever does.
+  }
+  return null;
 }

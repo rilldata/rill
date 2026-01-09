@@ -50,6 +50,6 @@
       </div>
     </button>
 
-    <GenerateSampleData initializeProject />
+    <GenerateSampleData type="init" />
   </div>
 </section>

@@ -40,7 +40,7 @@ type ConversationEvents = {
  * Handles streaming message sending, optimistic updates, and conversation-specific queries
  * for a single conversation using the streaming completion endpoint.
  */
-export class Conversation extends EventEmitter<ConversationEvents> {
+export class Conversation {
   // Public reactive state
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);

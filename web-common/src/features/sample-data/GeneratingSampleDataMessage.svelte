@@ -20,7 +20,7 @@
     {/each}
   </div>
   <div class="title">
-    <SparklesIcon size="14px" class="text-blue-500" />
+    <SparklesIcon size="16px" class="text-blue-500 rotate-90" />
     <span>Generating your sample data...</span>
   </div>
   <div class="description">
@@ -39,7 +39,7 @@
   }
 
   .loading-grid-cell {
-    @apply animate-pulse bg-accent rounded-lg;
+    @apply animate-pulse bg-indigo-100 rounded-lg;
   }
 
   .title {
