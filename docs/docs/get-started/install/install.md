@@ -117,3 +117,10 @@ brew install rilldata/tap/rill
 To uninstall Rill, you can use the following command:
 ```bash
 rill uninstall
+```
+
+---
+
+## Self-Hosting Rill
+
+For deploying Rill in your own infrastructure (on-premises or in your own cloud environment), see [Self-Hosting Rill](/get-started/install/self-host).

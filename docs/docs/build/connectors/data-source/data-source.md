@@ -9,25 +9,7 @@ className: connect-connect
 
 By default, Rill will use a managed embedded analytics engine (**DuckDB** or **ClickHouse**) to support data ingestion.  Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities. Once you have connected to your data source you can create [downstream models](/build/models), [metrics views](/build/metrics-view) and [visualize your data](/build/dashboards).
 
-:::tip using clickhouse?
-
-Don't forget to [create a managed ClickHouse server](/build/connectors/olap/clickhouse#rill-managed-clickhouse) before getting started!
-
-
-```yaml
-type: connector
-
-driver: clickhouse
-managed: true
-```
-
-:::
- 
-
-
-
 import ConnectorIcon from '@site/src/components/ConnectorIcon';
-
 
 In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
 
@@ -151,11 +133,33 @@ Rill supports connecting your data to both [DuckDB](/build/connectors/olap/duckd
 
 </div>
 
+## Data Lake Formats
+### DuckLake
+### Apache Iceberg
+
+<div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-DuckLake.png" alt="DuckLake" className="duckdb-icon"/>}
+    header="DuckLake"
+    content="Query data directly from object storage using DuckDB's data lakehouse capabilities."
+    link="/build/connectors/data-source/ducklake"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-IceBerg.svg" alt="DuckLake"/>}
+    header="Apache Iceberg"
+    content="Connect to Apache Iceberg tables for reliable, scalable data lake management."
+    link="/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+  />
+</div>
+
 ## Other Data Connectors
 ### External DuckDB
 ### Google Sheets
 ### HTTPS
 ### Local File
+### Python Scripts
 ### Salesforce
 
 
@@ -189,6 +193,14 @@ Rill supports connecting your data to both [DuckDB](/build/connectors/olap/duckd
     header="Local File"
     content="Read data from local files including CSV, JSON, Parquet, and compressed formats."
     link="/build/connectors/data-source/local-file"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+        icon={<img src="/img/build/connectors/icons/Logo-Python.svg" alt="Python" className="sheets-icon" />}
+
+    header="Python Scripts"
+    content="Use Python scripts to extract, transform, and load data from various sources using tools like dlt."
+    link="/build/connectors/data-source/python"
     linkLabel="Learn more"
   />
   <ConnectorIcon
