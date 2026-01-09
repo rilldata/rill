@@ -5,28 +5,6 @@ import {
 } from "../../entity-management/name-utils";
 
 export const getYupSchema = {
-  s3: yup.object().shape({
-    path: yup
-      .string()
-      .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
-      .required("S3 URI is required"),
-    aws_region: yup.string(),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
-  }),
-
-  gcs: yup.object().shape({
-    google_application_credentials: yup.string().optional(),
-    key_id: yup.string().optional(),
-    secret: yup.string().optional(),
-    path: yup
-      .string()
-      .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
-      .optional(),
-  }),
-
   https: yup.object().shape({
     path: yup
       .string()
@@ -63,21 +41,6 @@ export const getYupSchema = {
     google_application_credentials: yup
       .string()
       .required("Google application credentials is required"),
-  }),
-
-  azure: yup.object().shape({
-    path: yup
-      .string()
-      .matches(
-        /^azure:\/\//,
-        "Must be an Azure URI (e.g. azure://container/path)",
-      )
-      .required("Path is required"),
-    azure_storage_account: yup.string(),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
   }),
 
   postgres: yup.object().shape({

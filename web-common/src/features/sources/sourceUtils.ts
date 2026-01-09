@@ -165,6 +165,11 @@ export function maybeRewriteToDuckDb(
     case "gcs":
     case "https":
     case "azure":
+      // Ensure DuckDB creates a temporary secret for the original connector
+      if (!formValues.create_secrets_from_connectors) {
+        formValues.create_secrets_from_connectors = connector.name;
+      }
+    // falls through to rewrite as DuckDB
     case "local_file":
       connectorCopy.name = "duckdb";
 
@@ -211,6 +216,9 @@ export function prepareSourceFormData(
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
+
+  // Never carry connector auth selection into the source/model layer.
+  delete processedValues.auth_method;
 
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
