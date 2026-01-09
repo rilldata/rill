@@ -31,6 +31,7 @@ import type { DimensionThresholdFilter } from "../../dashboards/stores/explore-s
 import { convertExpressionToFilterParam } from "../../dashboards/url-state/filters/converters";
 import { FilterManager, type UIFilters } from "./filter-manager";
 import { getDimensionDisplayName } from "../../dashboards/filters/getDisplayName";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
 export type ParsedFilters = ReturnType<typeof initFilterBase>;
 
@@ -280,27 +281,46 @@ export class FilterState {
       ) ?? -1;
     let expr = wf.cond?.exprs?.[exprIndex];
 
-    const wasLikeFilter =
-      expr?.cond?.op === V1Operation.OPERATION_LIKE ||
-      expr?.cond?.op === V1Operation.OPERATION_NLIKE;
-
-    if (!expr?.cond?.exprs || wasLikeFilter) {
-      expr = createInExpression(dimensionName, [], exclude);
+    if (!expr?.cond?.exprs) {
+      expr = createInExpression(dimensionName, dimensionValues, exclude);
       wf.cond?.exprs?.push(expr);
       exprIndex = wf.cond!.exprs!.length - 1;
-    }
+    } else {
+      const wasLikeFilter =
+        expr?.cond?.op === V1Operation.OPERATION_LIKE ||
+        expr?.cond?.op === V1Operation.OPERATION_NLIKE;
 
-    const wasInListFilter = dimensionsWithInListFilter.includes(dimensionName);
-    if (wasInListFilter) {
-      dimensionsWithInListFilter.filter((d) => d !== dimensionName);
-    }
+      const wasInListFilter =
+        dimensionsWithInListFilter.includes(dimensionName);
 
-    dimensionValues.forEach((dimensionValue) => {
-      toggleDimensionFilterValue(expr, dimensionValue, !!isExclusiveFilter);
-    });
+      if (wasLikeFilter || wasInListFilter) {
+        eventBus.emit("notification", {
+          message: "Converted filter type to Select",
+          link: {
+            text: "Undo",
+            href: window.location.href,
+          },
+        });
 
-    if (expr?.cond?.exprs?.length === 1) {
-      wf.cond?.exprs?.splice(exprIndex, 1);
+        expr = createInExpression(dimensionName, dimensionValues, exclude);
+        wf.cond?.exprs?.splice(exprIndex, 1, expr);
+
+        if (wasInListFilter) {
+          dimensionsWithInListFilter.filter((d) => d !== dimensionName);
+        }
+      } else if (expr) {
+        dimensionValues.forEach((dimensionValue) => {
+          toggleDimensionFilterValue(
+            expr!,
+            dimensionValue,
+            !!isExclusiveFilter,
+          );
+        });
+
+        if (expr?.cond?.exprs?.length === 1) {
+          wf.cond?.exprs?.splice(exprIndex, 1);
+        }
+      }
     }
 
     return getFilterParam(
