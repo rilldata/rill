@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/runtime/ai/instructions"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -23,7 +24,8 @@ func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 The available templates are:
 - duckdb: Creates an empty Rill project configured to use DuckDB as the OLAP database.
 - clickhouse: Creates an empty Rill project configured to use ClickHouse as the OLAP database.
-- cursor: Adds Cursor rule files to an existing Rill project.
+- cursor: Adds Cursor rules in .cursor to an existing Rill project.
+- claude: Adds Claude Code instruction in .claude to an existing Rill project.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -62,20 +64,35 @@ The available templates are:
 				}
 				ch.Printf("Created a new Rill project at %q\n", targetPath)
 
-			// TODO: Implement using instructions from our agents
-			// case "cursor":
-			// 	if !cmdutil.HasRillProject(targetPath) {
-			// 		return fmt.Errorf("no Rill project found at %q; run `rill init` first to create an empty project.", targetPath)
-			// 	}
-			// 	repo, _, err := cmdutil.RepoForProjectPath(targetPath)
-			// 	if err != nil {
-			// 		return fmt.Errorf("failed to initialize repo: %w", err)
-			// 	}
-			// 	err = parser.InitCursorRules(ctx, repo, force)
-			// 	if err != nil {
-			// 		return fmt.Errorf("failed to add Cursor rules: %w", err)
-			// 	}
-			// 	ch.Printf("Added Cursor rules at %q\n", filepath.Join(targetPath, ".cursor", "rules"))
+			case "cursor":
+				if !cmdutil.HasRillProject(targetPath) {
+					return fmt.Errorf("no Rill project found at %q; run `rill init` first to create an empty project.", targetPath)
+				}
+				repo, _, err := cmdutil.RepoForProjectPath(targetPath)
+				if err != nil {
+					return fmt.Errorf("failed to initialize repo: %w", err)
+				}
+
+				err = instructions.InitCursorRules(ctx, repo, force)
+				if err != nil {
+					return fmt.Errorf("failed to add Cursor rules: %w", err)
+				}
+				ch.Printf("Added Cursor rules in .cursor\n")
+
+			case "claude":
+				if !cmdutil.HasRillProject(targetPath) {
+					return fmt.Errorf("no Rill project found at %q; run `rill init` first to create an empty project.", targetPath)
+				}
+				repo, _, err := cmdutil.RepoForProjectPath(targetPath)
+				if err != nil {
+					return fmt.Errorf("failed to initialize repo: %w", err)
+				}
+
+				err = instructions.InitClaudeCode(ctx, repo, force)
+				if err != nil {
+					return fmt.Errorf("failed to add Claude Code files: %w", err)
+				}
+				ch.Printf("Added Claude instructions in .claude\n")
 
 			default:
 				return fmt.Errorf("unknown template: %s", template)
