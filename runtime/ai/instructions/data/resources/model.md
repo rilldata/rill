@@ -36,7 +36,7 @@ Models are usually expensive resources that can take a long time to run. Create 
 
 ### Generating synthetic data for prototyping
 
-When developing models for prototyping or demonstration purposes where external data sources are not yet available, generate realistic synthetic data with these characteristics:
+When developing models for prototyping or demonstration purposes where external data sources are not yet available, generate a `SELECT` query that returns realistic synthetic data with these characteristics:
 - Use realistic column names and data types that match typical business scenarios
 - Always include a time/timestamp column for time-series analysis
 - Generate 6-12 months of historical data with approximately 10,000 rows to enable meaningful analysis
