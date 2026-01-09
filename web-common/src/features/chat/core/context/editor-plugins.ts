@@ -1,29 +1,25 @@
 import Mention, { type MentionOptions } from "@tiptap/extension-mention";
 import { Extension } from "@tiptap/core";
-import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/InlineContextPicker.svelte";
+import InlineContextPicker from "@rilldata/web-common/features/chat/core/context/picker/InlineContextPicker.svelte";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import InlineContextComponent from "@rilldata/web-common/features/chat/core/context/InlineContext.svelte";
-import {
-  convertContextToInlinePrompt,
-  parseInlineAttr,
-} from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 import type { EditorView } from "@tiptap/pm/view";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 import {
+  convertContextToInlinePrompt,
   INLINE_CHAT_CONTEXT_TAG,
   type InlineContext,
   normalizeInlineContext,
+  parseInlineAttr,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function getEditorPlugins({
-  enableMention,
   placeholder,
   onSubmit,
 }: {
-  enableMention: boolean;
   placeholder: string;
   onSubmit: () => void;
 }) {
@@ -37,12 +33,9 @@ export function getEditorPlugins({
       placeholder,
     }),
     EditorSubmitExtension.configure({ onSubmit, sharedEditorStore }),
+    configureInlineContextTipTapExtension(sharedEditorStore),
     UndoRedo,
   ];
-
-  if (enableMention) {
-    plugins.push(configureInlineContextTipTapExtension(sharedEditorStore));
-  }
 
   return plugins;
 }
@@ -83,11 +76,17 @@ const EditorSubmitExtension = Extension.create(() => {
           isShiftEnter = true;
           return this.editor.commands.enter();
         },
-        // Suppress up and down when context picker is open
+        // Suppress arrow keys when context picker is open
         ArrowDown: () => {
           return this.options.sharedEditorStore.contextOpen;
         },
         ArrowUp: () => {
+          return this.options.sharedEditorStore.contextOpen;
+        },
+        ArrowLeft: () => {
+          return this.options.sharedEditorStore.contextOpen;
+        },
+        ArrowRight: () => {
           return this.options.sharedEditorStore.contextOpen;
         },
       };
@@ -131,6 +130,10 @@ const InlineContextExtension = Mention.extend<InlineContextOptions>({
       measure: createAttributeEntry(null, "measure"),
       dimension: createAttributeEntry(null, "dimension"),
       timeRange: createAttributeEntry(null, "timeRange"),
+      filePath: createAttributeEntry(null, "filePath"),
+      model: createAttributeEntry(null, "model"),
+      column: createAttributeEntry(null, "column"),
+      columnType: createAttributeEntry(null, "columnType"),
     };
   },
 
@@ -321,7 +324,10 @@ function getTransactionForContext(
     .setNodeAttribute(pos, "metricsView", inlineChatContext.metricsView)
     .setNodeAttribute(pos, "measure", inlineChatContext.measure)
     .setNodeAttribute(pos, "dimension", inlineChatContext.dimension)
-    .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange);
+    .setNodeAttribute(pos, "timeRange", inlineChatContext.timeRange)
+    .setNodeAttribute(pos, "model", inlineChatContext.model)
+    .setNodeAttribute(pos, "column", inlineChatContext.column)
+    .setNodeAttribute(pos, "columnType", inlineChatContext.columnType);
 }
 
 function createAttributeEntry(defaultValue: string | null, key: string) {
