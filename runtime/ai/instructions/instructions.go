@@ -3,12 +3,14 @@ package instructions
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/rilldata/rill/runtime/parser"
 	"gopkg.in/yaml.v3"
 )
 
@@ -152,7 +154,11 @@ func parseFrontMatter(content []byte) (*frontMatter, string, error) {
 // executeTemplate applies Go's template engine to the instruction body.
 // Uses custom delimiters "{%" and "%}" to avoid conflicts with Go template syntax that may appear in example code within the instruction markdown.
 func executeTemplate(body string, opts Options) (string, error) {
-	tmpl, err := template.New("instruction").Delims("{%", "%}").Parse(body)
+	funcMap := template.FuncMap{
+		"json_schema_for_resource": jsonSchemaForResource,
+	}
+
+	tmpl, err := template.New("instruction").Delims("{%", "%}").Funcs(funcMap).Parse(body)
 	if err != nil {
 		return "", err
 	}
@@ -167,4 +173,38 @@ func executeTemplate(body string, opts Options) (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+// jsonSchemaForResource is a template function that returns the JSON schema for a resource YAML file.
+// It takes a resource type string (e.g., "model", "metrics_view") and returns the schema definition.
+// The JSON schema itself is returned as a YAML-formatted string (hehe).
+func jsonSchemaForResource(resourceType string) (string, error) {
+	kind, err := parser.ParseResourceKind(resourceType)
+	if err != nil {
+		return "", fmt.Errorf("invalid resource type %q: %w", resourceType, err)
+	}
+
+	schema, err := parser.JSONSchemaForResourceType(kind)
+	if err != nil {
+		return "", fmt.Errorf("failed to get schema for resource type %q: %w", resourceType, err)
+	}
+
+	// Marshal schema to JSON, then convert to YAML for token efficiency
+	jsonBytes, err := json.Marshal(schema)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal schema to JSON: %w", err)
+	}
+
+	// Convert JSON to YAML
+	var data any
+	if err := json.Unmarshal(jsonBytes, &data); err != nil {
+		return "", fmt.Errorf("failed to parse JSON for YAML conversion: %w", err)
+	}
+
+	yamlBytes, err := yaml.Marshal(data)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert schema to YAML: %w", err)
+	}
+
+	return strings.TrimSpace(string(yamlBytes)), nil
 }

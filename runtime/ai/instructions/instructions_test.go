@@ -13,7 +13,7 @@ func TestLoad(t *testing.T) {
 	require.NotNil(t, inst)
 
 	require.Equal(t, "development", inst.Name)
-	require.Equal(t, "A general introduction to Rill's concepts, resource types, and project development process", inst.Description)
+	require.Equal(t, "How to develop a Rill project with an introduction to Rill's concepts and resource types", inst.Description)
 	require.NotEmpty(t, inst.Body)
 	require.Contains(t, inst.Body, "# Instructions for developing a Rill project")
 }
@@ -132,4 +132,32 @@ sql: SELECT * FROM {{ ref "events" }}
 	inst, err := parseInstruction("test.md", []byte(content), Options{External: false})
 	require.NoError(t, err)
 	require.Contains(t, inst.Body, `{{ ref "events" }}`)
+}
+
+func TestJsonSchemaForResourceTemplateFunction(t *testing.T) {
+	// Test that the json_schema_for_resource template function works
+	content := `---
+description: Testing json_schema_for_resource function
+---
+
+Here is the model schema:
+{% json_schema_for_resource "model" %}`
+
+	inst, err := parseInstruction("test.md", []byte(content), Options{External: false})
+	require.NoError(t, err)
+	require.Contains(t, inst.Body, "title: Models YAML")
+	require.Contains(t, inst.Body, "const: model")
+}
+
+func TestJsonSchemaForResourceInvalidType(t *testing.T) {
+	// Test that the json_schema_for_resource template function fails gracefully with invalid type
+	content := `---
+description: Testing json_schema_for_resource with invalid type
+---
+
+{% json_schema_for_resource "invalid_type" %}`
+
+	_, err := parseInstruction("test.md", []byte(content), Options{External: false})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid resource type")
 }
