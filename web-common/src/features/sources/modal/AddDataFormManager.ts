@@ -25,6 +25,7 @@ import {
 } from "./constants";
 import {
   connectorStepStore,
+  resetConnectorStep,
   setConnectorConfig,
   setAuthMethod,
   setStep,
@@ -77,18 +78,11 @@ export class AddDataFormManager {
 
   private getSelectedAuthMethod?: () => string | undefined;
   private resetConnectorForms() {
-    if (this.isMultiStepConnector) {
-      if (this.params?.form) {
-        (this.params.form as any).update(
-          () => ({ ...this.initialParamsValues }),
-          { taint: false } as any,
-        );
-      }
-      if (this.dsn?.form) {
-        (this.dsn.form as any).update(() => ({ ...this.initialDsnValues }), {
-          taint: false,
-        } as any);
-      }
+    if (this.params?.form) {
+      (this.params.form as any).update(() => ({}), { taint: false } as any);
+    }
+    if (this.dsn?.form) {
+      (this.dsn.form as any).update(() => ({}), { taint: false } as any);
     }
   }
 
@@ -420,6 +414,8 @@ export class AddDataFormManager {
       try {
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
+          resetConnectorStep();
+          this.resetConnectorForms();
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
           // For public auth, skip Test & Connect and go straight to the next step.
@@ -438,6 +434,8 @@ export class AddDataFormManager {
           return;
         } else if (this.formType === "source") {
           await submitAddSourceForm(queryClient, connector, values);
+          resetConnectorStep();
+          this.resetConnectorForms();
           onClose();
         } else {
           await submitAddConnectorForm(queryClient, connector, values, false);

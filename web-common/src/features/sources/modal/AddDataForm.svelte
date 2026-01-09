@@ -59,7 +59,7 @@
 
   let formManager: AddDataFormManager | null = null;
 
-  if (!isMultiStepConnector) {
+  $: if (!isMultiStepConnector) {
     formManager = new AddDataFormManager({
       connector,
       formType,
@@ -70,10 +70,9 @@
     formHeight = formManager.formHeight;
   }
 
-  const isSourceForm = formManager?.isSourceForm ?? formType === "source";
-  const isConnectorForm =
-    formManager?.isConnectorForm ?? formType === "connector";
-  const onlyDsn = formManager ? hasOnlyDsn(connector, isConnectorForm) : false;
+  let isSourceForm = formType === "source";
+  let isConnectorForm = formType === "connector";
+  let onlyDsn = false;
   let activeAuthMethod: string | null = null;
   let prevAuthMethod: string | null = null;
   let multiStepSubmitDisabled = false;
@@ -106,7 +105,7 @@
   let paramsErrorDetails: string | undefined = undefined;
 
   // Form 2: DSN (non-multi-step)
-  let hasDsnFormOption = formManager?.hasDsnFormOption ?? false;
+  let hasDsnFormOption = false;
   let dsnFormId = "";
   let dsnProperties: ConnectorDriverProperty[] = [];
   let filteredDsnProperties: ConnectorDriverProperty[] = [];
@@ -119,7 +118,7 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  if (formManager) {
+  $: if (formManager) {
     paramsFormId = formManager.paramsFormId;
     properties = formManager.properties;
     filteredParamsProperties = formManager.filteredParamsProperties;
@@ -145,6 +144,16 @@
       submit: dsnSubmit,
       submitting: dsnSubmitting,
     } = formManager.dsn);
+
+    isSourceForm = formManager.isSourceForm;
+    isConnectorForm = formManager.isConnectorForm;
+    hasDsnFormOption = formManager.hasDsnFormOption;
+    onlyDsn = hasOnlyDsn(connector, isConnectorForm);
+  } else {
+    isSourceForm = formType === "source";
+    isConnectorForm = formType === "connector";
+    hasDsnFormOption = false;
+    onlyDsn = false;
   }
 
   let clickhouseError: string | null = null;
@@ -381,24 +390,29 @@
       ? clickhouseSubmitting && saveAnyway
       : submitting && saveAnyway;
 
-  handleOnUpdate =
-    formManager?.makeOnUpdate({
-      onClose,
-      queryClient,
-      getConnectionTab: () => connectionTab,
-      getSelectedAuthMethod: () => activeAuthMethod || undefined,
-      setParamsError: (message: string | null, details?: string) => {
-        paramsError = message;
-        paramsErrorDetails = details;
-      },
-      setDsnError: (message: string | null, details?: string) => {
-        dsnError = message;
-        dsnErrorDetails = details;
-      },
-      setShowSaveAnyway: (value: boolean) => {
-        showSaveAnyway = value;
-      },
-    }) ?? (async () => {});
+  if (formManager) {
+    const fm = formManager as AddDataFormManager;
+    handleOnUpdate =
+      fm.makeOnUpdate({
+        onClose,
+        queryClient,
+        getConnectionTab: () => connectionTab,
+        getSelectedAuthMethod: () => activeAuthMethod || undefined,
+        setParamsError: (message: string | null, details?: string) => {
+          paramsError = message;
+          paramsErrorDetails = details;
+        },
+        setDsnError: (message: string | null, details?: string) => {
+          dsnError = message;
+          dsnErrorDetails = details;
+        },
+        setShowSaveAnyway: (value: boolean) => {
+          showSaveAnyway = value;
+        },
+      }) ?? (async () => {});
+  } else {
+    handleOnUpdate = async () => {};
+  }
 
   async function handleFileUpload(file: File): Promise<string> {
     return formManager ? formManager.handleFileUpload(file) : "";
