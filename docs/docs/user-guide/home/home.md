@@ -3,7 +3,6 @@ title: "Getting Started with Rill Cloud"
 description: "Introduction to Rill Cloud, AI features, and management"
 sidebar_label: "Rill Cloud"
 sidebar_position: 0
-slug: "/user-guide/getting-started"
 ---
 import TileIcon from '@site/src/components/TileIcon';
 
@@ -14,7 +13,6 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
 <img src='/img/explore/dashboard101/rill-cloud-landing-page.png' class='rounded-gif' />
 <br />
 
-## Start Your Journey
 
 <div className="tile-icon-grid">
 <TileIcon
@@ -36,6 +34,12 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
   icon={<img src="/img/get-started/chart.svg" alt="Canvas" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
+  header="Public URL"
+  content="Save dashboard views as bookmarks and share them with your team. Share dashboards externally via public URLs without requiring Rill accounts."
+  link="/user-guide/dashboards/public-url"
+  icon={<img src="/img/get-started/share.svg" alt="Sharing" style={{ width: 24, height: 24 }} />}
+/>
+<TileIcon
   header="Reports"
   content="Set up automated email reports via email or Slack."
   link="/user-guide/reports/exports"
@@ -46,12 +50,6 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
   content="Set up alerts in Rill Cloud to received notifcations when cerain conditions are met."
   link="/user-guide/alerts"
   icon={<img src="/img/get-started/alert.svg" alt="Alerts" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Public URL"
-  content="Save dashboard views as bookmarks and share them with your team. Share dashboards externally via public URLs without requiring Rill accounts."
-  link="/user-guide/dashboards/bookmarks"
-  icon={<img src="/img/get-started/share.svg" alt="Sharing" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Administration"
