@@ -15,7 +15,13 @@ import {
   type SSEMessage,
 } from "@rilldata/web-common/runtime-client/sse-fetch-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, writable, type Readable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
 import { FeedbackState } from "./feedback/feedback-state";
 import type { FeedbackCategory, FeedbackSentiment } from "./feedback/types";
@@ -68,26 +74,42 @@ export class Conversation {
     RpcStatus
   >;
 
+  // Reactive store for conversationId - enables query to auto-update when ID changes
+  private readonly conversationIdStore: Writable<string>;
+
+  public get conversationId(): string {
+    return get(this.conversationIdStore);
+  }
+
+  private set conversationId(value: string) {
+    this.conversationIdStore.set(value);
+  }
+
   constructor(
     private readonly instanceId: string,
-    public conversationId: string,
+    initialConversationId: string,
     private readonly agent: string = ToolName.ANALYST_AGENT,
   ) {
-    // Create and store the conversation query
-    this.conversationQuery = createQuery(
-      getRuntimeServiceGetConversationQueryOptions(
-        this.instanceId,
-        this.conversationId,
-        {
-          query: {
-            enabled: this.conversationId !== NEW_CONVERSATION_ID,
+    this.conversationIdStore = writable(initialConversationId);
+
+    const queryOptionsStore = derived(
+      this.conversationIdStore,
+      ($conversationId) =>
+        getRuntimeServiceGetConversationQueryOptions(
+          this.instanceId,
+          $conversationId,
+          {
+            query: {
+              enabled: $conversationId !== NEW_CONVERSATION_ID,
+              staleTime: Infinity, // We manage cache manually during streaming
+            },
           },
-        },
-      ),
-      queryClient,
+        ),
     );
 
-    // Auto-hydrate feedback state when conversation data loads
+    this.conversationQuery = createQuery(queryOptionsStore, queryClient);
+
+    // Hydrate feedback state when conversation data loads
     this.conversationQuery.subscribe((query) => {
       if (query.data?.messages) {
         this.feedback.hydrateFromMessages(query.data.messages);
