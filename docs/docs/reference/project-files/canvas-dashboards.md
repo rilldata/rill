@@ -68,9 +68,11 @@ _[integer]_ - Vertical gap in pixels of the canvas
 
 ### `filters`
 
-_[object]_ - Indicates if filters should be enabled for the canvas. 
+_[object]_ - Configuration for filters on the canvas dashboard. 
 
   - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard. 
+
+  - **`pinned`** - _[array of string]_ - List of dimension names to pin as filters at the top of the canvas. 
 
 ### `allow_custom_time_range`
 
@@ -118,21 +120,15 @@ _[array of string]_ - Refers to the time zones that should be pinned to the top 
 
 ### `defaults`
 
-_[object]_ - defines the defaults YAML struct
+_[object]_ - Default preset state for the canvas dashboard.
   ```yaml
-  defaults: #define all the defaults within here
+  defaults:
     time_range: P1M
-    comparison_mode: dimension #time, none
-    comparison_dimension: filename
+    comparison_mode: time
+    comparison_dimension: region
     filters:
-      dimensions:
-        - dimension: country
-          values: ["US", "CA"]
-          mode: in_list
-      measures:
-        - measure: revenue
-          operator: gt
-          values: ["1000"]
+      metrics_view_name: "dimension = 'value'"
+      another_metrics_view: "country IN ('US', 'CA')"
   ```
  
 
@@ -140,43 +136,11 @@ _[object]_ - defines the defaults YAML struct
 
   - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values) 
 
-  - **`comparison_dimension`** - _[string]_ - for dimension mode, specify the comparison dimension by name 
+  - **`comparison_dimension`** - _[string]_ - For dimension mode, specify the comparison dimension by name 
 
-  - **`filters`** - _[object]_ - Default filter configuration 
-
-    - **`dimensions`** - _[array of object]_ - List of default dimension filters 
-
-      - **`dimension`** - _[string]_ - Name of the dimension to filter on 
-
-      - **`values`** - _[array of string]_ - List of values to filter by 
-
-      - **`limit`** - _[integer]_ - Maximum number of values to show in the filter 
-
-      - **`removable`** - _[boolean]_ - Whether the filter can be removed by the user 
-
-      - **`locked`** - _[boolean]_ - Whether the filter is locked and cannot be modified 
-
-      - **`hidden`** - _[boolean]_ - Whether the filter is hidden from the UI 
-
-      - **`mode`** - _[string]_ - Filter mode - select for dropdown, in_list for multi-select, contains for text search 
-
-      - **`exclude`** - _[boolean]_ - Whether to exclude the specified values instead of including them 
-
-    - **`measures`** - _[array of object]_ - List of default measure filters 
-
-      - **`measure`** - _[string]_ - Name of the measure to filter on 
-
-      - **`by_dimension`** - _[string]_ - Dimension to group the measure filter by 
-
-      - **`operator`** - _[string]_ - Operator for the measure filter (e.g., eq, gt, lt, gte, lte) 
-
-      - **`values`** - _[array of string]_ - List of values to filter by 
-
-      - **`removable`** - _[boolean]_ - Whether the filter can be removed by the user 
-
-      - **`locked`** - _[boolean]_ - Whether the filter is locked and cannot be modified 
-
-      - **`hidden`** - _[boolean]_ - Whether the filter is hidden from the UI 
+  - **`filters`** - _[object]_ - Default filter expressions per metrics view. Keys are metrics view names, values are SQL-like filter expressions.
+  Example: `metrics_view_name: "country IN ('US', 'CA') AND revenue > 1000"`
+ 
 
 ### `theme`
 
