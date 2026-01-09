@@ -156,7 +156,7 @@ func (b *sqlExprBuilder) writeCast(cond *Condition) error {
 		}
 		b.writeString(typeStr)
 	case map[string]any:
-		// because of serialization runtimev1.Type will be deserialized as map[string]any
+		// runtimev1.Type will be serialized as map[string]any
 		codeVal, ok := v["code"]
 		if !ok {
 			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
