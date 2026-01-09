@@ -5,10 +5,10 @@ sidebar_position: 33
 ---
 
 
-This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/build/models/) documentation.
+This file is used to define YAML models. For more information on our SQL models, see the [SQL models](/developer/build/models/) documentation.
 :::tip
 
-Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
+Both regular models and source models can use the Model YAML specification described on this page. While [SQL models](/developer/build/models) are perfect for simple transformations, Model YAML files provide advanced capabilities for complex data processing scenarios.
 
 **When to use Model YAML:**
 - **Partitions** - Optimize performance with data partitioning strategies
@@ -478,7 +478,7 @@ _[object]_ - Settings related to glob file matching.
 
 _[string]_ - Size of a batch (e.g., '100MB') 
 
-## Additional properties when `connector` is `local_file` or [named connector](/build/connectors/data-source/local-file) of local_file
+## Additional properties when `connector` is `local_file` or [named connector](/developer/build/connectors/data-source/local-file) of local_file
 
 ### `path`
 
