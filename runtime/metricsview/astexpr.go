@@ -148,7 +148,28 @@ func (b *sqlExprBuilder) writeCast(cond *Condition) error {
 		return err
 	}
 	b.writeString(" AS ")
-	b.writeString(cond.Expressions[1].Value.(string))
+	switch cond.Expressions[1].Value.(type) {
+	case string:
+		b.writeString(cond.Expressions[1].Value.(string))
+	case map[string]any:
+		// try to cast to runtimev1.Type_Code, because of serialization issues enums may be deserialized as map[string]any
+		codeVal, ok := cond.Expressions[1].Value.(map[string]any)["code"]
+		if !ok {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		codeFloat, ok := codeVal.(float64)
+		if !ok {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		code := runtimev1.Type_Code(int32(codeFloat))
+		typeStr, err := b.ast.Dialect.CastType(code)
+		if err != nil {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		b.writeString(typeStr)
+	default:
+		return fmt.Errorf("unsupported cast type: %T", cond.Expressions[1].Value)
+	}
 	b.writeByte(')')
 	return nil
 }

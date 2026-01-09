@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
@@ -511,16 +512,14 @@ func parseFuncCastCallInFilter(ctx context.Context, node *ast.FuncCastExpr, cont
 		if err != nil {
 			return nil, err
 		}
-		var castType string
-		if node.Tp.GetType() == mysql.TypeDatetime {
-			castType = "DateTime"
-		} else {
-			castType = "Timestamp"
-		}
 		return &metricsview.Expression{
 			Condition: &metricsview.Condition{
-				Operator:    metricsview.OperatorCast,
-				Expressions: []*metricsview.Expression{ex, {Value: castType}},
+				Operator: metricsview.OperatorCast,
+				Expressions: []*metricsview.Expression{
+					ex,
+					// using runtimev1.Type here instead of enum runtimev1.Type_Code to prevent confusion during unmarshalling while writing sql as enum will be serialized as a number
+					{Value: runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+				},
 			},
 		}, nil
 	default:
