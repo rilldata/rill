@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -59,7 +60,7 @@ var (
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv bool
-	services := &servicesCfg{}
+	services := &ServicesCfg{}
 
 	cmd := &cobra.Command{
 		Use:   "start [cloud|minimal|local|e2e]",
@@ -81,7 +82,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
 
-			return start(ch, preset, verbose, reset, refreshDotenv, services)
+			return Start(context.Background(), ch, preset, verbose, reset, refreshDotenv, services)
 		},
 	}
 
@@ -93,8 +94,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	return cmd
 }
 
-func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
-	ctx := graceful.WithCancelOnTerminate(context.Background())
+func Start(ctx context.Context, ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool, services *ServicesCfg) error {
+	ctx = graceful.WithCancelOnTerminate(ctx)
 
 	err := errors.Join(
 		checkGoVersion(),
@@ -188,47 +189,47 @@ func checkRillRepo() error {
 	return nil
 }
 
-type servicesCfg struct {
-	admin   bool
-	deps    bool
-	runtime bool
-	ui      bool
-	only    []string
-	except  []string
+type ServicesCfg struct {
+	Admin   bool
+	Deps    bool
+	Runtime bool
+	UI      bool
+	Only    []string
+	Except  []string
 }
 
-func (s *servicesCfg) addFlags(cmd *cobra.Command) {
-	cmd.Flags().StringSliceVar(&s.only, "only", []string{}, "Only start the listed services (options: admin, deps, runtime, ui)")
-	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
+func (s *ServicesCfg) addFlags(cmd *cobra.Command) {
+	cmd.Flags().StringSliceVar(&s.Only, "only", []string{}, "Only start the listed services (options: admin, deps, runtime, ui)")
+	cmd.Flags().StringSliceVar(&s.Except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
 }
 
-func (s *servicesCfg) parse() error {
-	if len(s.only) > 0 && len(s.except) > 0 {
+func (s *ServicesCfg) parse() error {
+	if len(s.Only) > 0 && len(s.Except) > 0 {
 		return errors.New("cannot use both --only and --except")
 	}
 
-	vals := s.except
+	vals := s.Except
 	def := true
-	if len(s.only) > 0 {
-		vals = s.only
+	if len(s.Only) > 0 {
+		vals = s.Only
 		def = false
 	}
 
-	s.admin = def
-	s.deps = def
-	s.runtime = def
-	s.ui = def
+	s.Admin = def
+	s.Deps = def
+	s.Runtime = def
+	s.UI = def
 
 	for _, v := range vals {
 		switch v {
 		case "admin":
-			s.admin = !def
+			s.Admin = !def
 		case "deps":
-			s.deps = !def
+			s.Deps = !def
 		case "runtime":
-			s.runtime = !def
+			s.Runtime = !def
 		case "ui":
-			s.ui = !def
+			s.UI = !def
 		default:
 			return fmt.Errorf("invalid service %q", v)
 		}
@@ -239,7 +240,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *ServicesCfg) error {
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -278,13 +279,13 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
-	if services.deps {
+	if services.Deps {
 		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
 	}
 
 	depsReadyCh := make(chan struct{})
 	g.Go(func() error {
-		if services.deps {
+		if services.Deps {
 			err := s.awaitPostgres(ctx, preset)
 			if err != nil {
 				return err
@@ -298,7 +299,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		return nil
 	})
 
-	if services.admin {
+	if services.Admin {
 		g.Go(func() error {
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
@@ -307,7 +308,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		})
 	}
 
-	if services.runtime {
+	if services.Runtime {
 		g.Go(func() error {
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
@@ -321,13 +322,13 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		if err := awaitClose(ctx, depsReadyCh); err != nil {
 			return err
 		}
-		if services.admin {
+		if services.Admin {
 			err := s.awaitAdmin(ctx)
 			if err != nil {
 				return err
 			}
 		}
-		if services.runtime {
+		if services.Runtime {
 			err := s.awaitRuntime(ctx)
 			if err != nil {
 				return err
@@ -338,7 +339,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	})
 
 	g.Go(func() error {
-		if !services.admin {
+		if !services.Admin {
 			return nil
 		}
 
@@ -352,7 +353,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		return nil
 	})
 
-	if services.ui {
+	if services.UI {
 		npmReadyCh := make(chan struct{})
 		g.Go(func() error {
 			err := s.runUIInstall(ctx)
@@ -373,7 +374,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	uiReadyCh := make(chan struct{})
 	g.Go(func() error {
-		if services.ui {
+		if services.UI {
 			err := s.awaitUI(ctx)
 			if err != nil {
 				return err
@@ -496,7 +497,7 @@ func (s cloud) runAdmin(ctx context.Context, verbose bool, preset string) (err e
 		cmd.Env = append(
 			cmd.Env,
 			// This differs from the usual dev provisioner set in not having a Clickhouse provisioner.
-			`RILL_ADMIN_PROVISIONER_SET_JSON={"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}`,
+			fmt.Sprintf(`RILL_ADMIN_PROVISIONER_SET_JSON={"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":%q,"audience_url":"http://localhost:8081"}]}}}`, stateDirectory()),
 			// Disable traces
 			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
 			// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
@@ -630,16 +631,16 @@ func (s cloud) awaitUI(ctx context.Context) error {
 
 type local struct{}
 
-func (s local) start(ctx context.Context, verbose, reset bool, services *servicesCfg) error {
+func (s local) start(ctx context.Context, verbose, reset bool, services *ServicesCfg) error {
 	g, ctx := errgroup.WithContext(ctx)
 
-	if services.runtime {
+	if services.Runtime {
 		g.Go(func() error { return s.runRuntime(ctx, verbose, reset) })
 	}
 
 	runtimeReadyCh := make(chan struct{})
 	g.Go(func() error {
-		if services.runtime {
+		if services.Runtime {
 			err := s.awaitRuntime(ctx)
 			if err != nil {
 				return err
@@ -649,7 +650,7 @@ func (s local) start(ctx context.Context, verbose, reset bool, services *service
 		return nil
 	})
 
-	if services.ui {
+	if services.UI {
 		npmReadyCh := make(chan struct{})
 		g.Go(func() error {
 			err := s.runUIInstall(ctx)
@@ -670,7 +671,7 @@ func (s local) start(ctx context.Context, verbose, reset bool, services *service
 
 	uiReadyCh := make(chan struct{})
 	g.Go(func() error {
-		if services.ui {
+		if services.UI {
 			err := s.awaitUI(ctx)
 			if err != nil {
 				return err
@@ -820,8 +821,21 @@ func awaitClose(ctx context.Context, chs ...<-chan struct{}) error {
 // newCmd initializes an exec.Cmd that sends SIGINT instead of SIGKILL when the ctx is canceled.
 func newCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, args...)
+
+	// Set up the process to be in its own process group
+	// This allows us to signal all child processes
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+
 	cmd.Cancel = func() error {
-		return cmd.Process.Signal(os.Interrupt)
+		fmt.Printf("SENDING os.Interrupt TO PROCESS\n")
+		// Send signal to the entire process group by using negative PID
+		// This ensures child processes (spawned by `go run`) also receive the signal
+		if cmd.Process != nil {
+			return syscall.Kill(-cmd.Process.Pid, syscall.SIGINT)
+		}
+		return nil
 	}
 	return cmd
 }
@@ -839,9 +853,13 @@ func lookupDotenv(key string) string {
 // stateDirectory returns the directory where the devtool's state is stored.
 // Deleting this directory will reset the state of the local development environment.
 func stateDirectory() string {
-	dir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
-	if dir == "" {
-		dir = "dev-cloud-state"
+	if key, ok := os.LookupEnv("RILL_DEVTOOL_STATE_DIRECTORY"); ok && key != "" {
+		fmt.Printf("RILL_DEVTOOL_STATE_DIRECTORY is set to %s\n", key)
+		return key
 	}
-	return dir
+	dir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
+	if dir != "" {
+		return dir
+	}
+	return "dev-cloud-state"
 }

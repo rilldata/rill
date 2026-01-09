@@ -1,0 +1,10 @@
+project: basic
+initial_wait_reconcile: 3s
+tests:
+  - name: test_model_result
+    command: rill query --sql "SELECT count(*) as cnt FROM model" --format csv
+    output: |
+      cnt
+      1
+
+      
