@@ -34,6 +34,7 @@
     <IconButton
       size={24}
       disabled={isDisabled}
+      ariaPressed={currentSentiment === "positive"}
       ariaLabel="Upvote response"
       on:click={handleUpvote}
     >
@@ -50,6 +51,7 @@
     <IconButton
       size={24}
       disabled={isDisabled}
+      ariaPressed={currentSentiment === "negative"}
       ariaLabel="Downvote response"
       on:click={handleDownvote}
     >

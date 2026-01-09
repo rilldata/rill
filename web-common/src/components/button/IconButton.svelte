@@ -19,6 +19,7 @@
   export let tooltipAlignment: Alignment = "middle";
   export let marginClasses = "";
   export let ariaLabel = "";
+  export let ariaPressed: boolean | undefined = undefined;
 </script>
 
 <Tooltip
@@ -30,6 +31,7 @@
     type="button"
     on:click
     aria-label={ariaLabel}
+    aria-pressed={ariaPressed}
     class:cursor-auto={disabled}
     class:rounded
     class="{marginClasses} grid place-items-center {disabled
