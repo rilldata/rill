@@ -11,7 +11,7 @@ func TestJSONSchemaForRillYAML(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, schema)
 	require.Equal(t, "Project YAML", schema.Title)
-	require.NotEmpty(t, schema.Properties, "schema should have properties")
+	require.NotEmpty(t, schema.AllOf, "schema should have properties")
 }
 
 func TestJSONSchemaForResourceType(t *testing.T) {
