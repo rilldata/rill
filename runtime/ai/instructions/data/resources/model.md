@@ -136,7 +136,7 @@ Available template variables:
 - `{{ .partition.uri }}`: Full URI of the matched file or directory
 - `{{ .partition.path }}`: Path portion without the scheme/bucket prefix
 
-By default, `glob:` matches files only, but you can pass `partition: directory` to have it emit leaf directory names instead.
+By default, `glob:` matches files only, but you can pass `partition: directory` to have it emit leaf directory names instead. When you use `partition: directory`, the partition's URI will not include an asterisk, so you have to append that in the SQL query, e.g. `{{ .partition.uri }}/*.parquet`.
 
 ### SQL-based partitions
 
@@ -173,6 +173,7 @@ Best practices for dev partitions:
 - Use mainly for fact tables, not (small) dimension tables
 - Don't use for derived models
 - When possible, limit data by time range (e.g. 1 day of data) rather than a row limit to get a representative sample of data
+- Never try to "guess" a dev partition, use introspection tools like `list_bucket_files` (if available) to find a real directory you can use
 
 ## Referencing other models
 
