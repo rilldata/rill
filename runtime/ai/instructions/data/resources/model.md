@@ -177,7 +177,7 @@ Use `{{ ref "model_name" }}` to reference parent models in SQL statements that u
 sql: SELECT * FROM {{ ref "events_raw" }} WHERE country = 'US'
 ```
 
-**Note:** If your SQL statement contains no other templating, the `ref` function is optional for DuckDB SQL snippets; Rill can in that case invoke DuckDB's SQL parser to automatically detects model references. This does not apply for non-DuckDB SQL models.
+**Note:** If your SQL statement contains no other templating, the `ref` function is optional for DuckDB SQL snippets; Rill can in that case invoke DuckDB's SQL parser to automatically detect model references. This does not apply for non-DuckDB SQL models.
 
 ## Refresh schedules
 

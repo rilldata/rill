@@ -9,8 +9,8 @@ description: Detailed instructions and examples for developing canvas dashboard 
 Canvas dashboards are free-form dashboard resources that display custom chart and table components laid out in a grid. They enable building overview and report-style dashboards with multiple visualizations, similar to traditional business intelligence tools.
 
 Canvas dashboards differ from explore dashboards in important ways:
-- **Explore dashboards** Best for explorative analysis, drill-down investigations, and letting users freely slice data by any dimension.
-- **Canvas dashboards** Best for fixed reports, executive summaries, or combining multiple metrics views into a single view.
+- **Explore dashboards:** Best for explorative analysis, drill-down investigations, and letting users freely slice data by any dimension.
+- **Canvas dashboards:** Best for fixed reports, executive summaries, or combining multiple metrics views into a single view.
 
 Canvas dashboards are lightweight resources found downstream of metrics views in the project DAG. Each component within a canvas fetches data individually, typically from a metrics view resource.
 

@@ -101,7 +101,7 @@ Here are some useful things to know when developing connectors:
 Models are resources that specify ETL or transformation logic that outputs a tabular dataset in one of the project's connectors.
 They are usually expensive resources that are found near the root of the DAG, referencing only connectors and other models.
 
-Model usually (and by default) output data as a table with the same name as the model in the project's default OLAP connector.
+Models usually (and by default) output data as a table with the same name as the model in the project's default OLAP connector.
 They usually center around a `SELECT` SQL statement that Rill will run as a `CREATE TABLE <name> AS <SELECT statement>`.
 This means models in Rill are similar to models in dbt, but they support some additional advanced features, namely:
 - Different input and output connectors (making it easy to e.g. run a query in BigQuery and output it to the default OLAP connector)
@@ -122,7 +122,7 @@ In development, you can avoid expensive operations by adding a "dev partition", 
 ### Metrics views
 
 Metrics views are resources that define queryable business metrics on top of a table in an OLAP database.
-They implement what other business intelligence tools calls a "semantic layer" or "metrics layer".
+They implement what other business intelligence tools call a "semantic layer" or "metrics layer".
 They are lightweight resources found downstream of connectors and models in the DAG.
 They power many user-facing features, such as dashboards, alerts, and scheduled reports.
 
@@ -134,7 +134,7 @@ Metrics views consist of:
 
 ### Explores
 
-Explore resources define an "explore dashboard", a opinionated dashboard type that comes baked into Rill.
+Explore resources define an "explore dashboard", an opinionated dashboard type that comes baked into Rill.
 These dashboards are specifically designed as an explorative, drill-down, slice-and-dice interface for a single metrics view.
 They are Rill's default dashboard type, and usually configured for every metrics view in a project.
 They are lightweight resources that are always found downstream of a metrics view in the DAG.
@@ -149,7 +149,7 @@ They enable users to build overview/report style dashboards with limited drill-d
 
 Canvas dashboards support a long list of component types, including line charts, bar charts, pie charts, markdown text, tables, and more.
 All components are defined in the canvas file, but each component is emitted as a separate resource of type `component`, which gets placed upstream of the canvas in the project DAG.
-Each canvas components fetches data individually, almost always from a metrics view resource; so you often find metrics view resources upstream of components in the DAG.
+Each canvas component fetches data individually, almost always from a metrics view resource; so you often find metrics view resources upstream of components in the DAG.
 
 ### Themes
 
@@ -181,7 +181,7 @@ Most projects don't define alerts directly as files; instead, users can define a
 
 ### Reports
 
-Reports are resources taht enable sending scheduled reports of data in the project.
+Reports are resources that enable sending scheduled reports of data in the project.
 They consists of a delivery schedule, a query to execute, and delivery settings.
 Since they repeatedly run a query, they are slightly expensive resources.
 They are usually found downstream of a metrics view in the DAG.

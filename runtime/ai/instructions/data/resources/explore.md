@@ -55,7 +55,7 @@ explore:
     time_range: P30D
 ```
 
-Use inline explores for simple cases where you want to keep the metrics view and its dashboard configuration together. Use separate explore files when you need multiple explores for
+Use inline explores for simple cases where you want to keep the metrics view and its dashboard configuration together. Use separate explore files when you need multiple explores for the same metrics view or more complex configurations.
 
 ## Example with annotations
 
