@@ -1,5 +1,3 @@
-import { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
-import { NEW_CONVERSATION_ID } from "@rilldata/web-common/features/chat/core/utils.ts";
 import {
   runtimeServiceUnpackEmpty,
   type V1Message,
@@ -10,14 +8,21 @@ import {
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
-import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
+import {
+  ConversationManager,
+  getConversationManager,
+} from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 
+export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
 
 export async function generateSampleData(
@@ -25,6 +30,8 @@ export async function generateSampleData(
   instanceId: string,
   userPrompt: string,
 ) {
+  const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
+
   try {
     if (initializeProject) {
       overlay.set({
@@ -48,47 +55,23 @@ export async function generateSampleData(
       });
 
       await projectResetPromise;
+      await featureFlags.ready;
     }
 
-    overlay.set({
-      title: `Hang tight! We're generating the data you requested.`,
-      detail: {
-        component: OptionCancelToAIAction,
-        props: {
-          onCancel: () => {
-            conversation.cancelStream();
-            cancelled = true;
-          },
-        },
-      },
+    const developerChatEnabled = get(featureFlags.dashboardChat);
+
+    generatingSampleData.set(true);
+    const conversationManager = getConversationManager(instanceId, {
+      conversationState: "browserStorage",
+      agent: ToolName.DEVELOPER_AGENT,
     });
-    const conversation = new Conversation(
-      instanceId,
-      NEW_CONVERSATION_ID,
-      ToolName.DEVELOPER_AGENT,
-    );
-    const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
-    conversation.draftMessage.set(agentPrompt);
+    // Since the user doesn't see the chat when dev chat is not enabled, older chat shouldn't interfere with this prompt.
+    if (!developerChatEnabled) conversationManager.enterNewConversationMode();
+    const conversation = get(conversationManager.getCurrentConversation());
 
     let created = false;
     let lastReadFile: string | null = null;
     const messages = new Map<string, V1Message>();
-
-    const parseFile = (call: V1Message, result: V1Message) => {
-      try {
-        const resultContent = JSON.parse(result.contentData!);
-        const hasErroredOut =
-          !!resultContent.parse_error ||
-          resultContent.resources?.some((r) => !!r.reconcile_error);
-        if (hasErroredOut) return null;
-
-        const callContent = JSON.parse(call.contentData!);
-        return callContent.path as string;
-      } catch {
-        // json parse errors shouldn't happen. ignore if it ever does.
-      }
-      return null;
-    };
 
     const handleMessage = (msg: V1Message) => {
       messages.set(msg.id!, msg);
@@ -102,7 +85,7 @@ export async function generateSampleData(
       switch (msg.tool) {
         // Sometimes AI detects that model is already present.
         case ToolName.READ_FILE: {
-          const callMsg = messages.get(msg.parentId!);
+          const callMsg = messages.get(msg.parentId ?? "");
           if (!callMsg) break;
 
           // Keep a copy of the file that was read.
@@ -112,16 +95,18 @@ export async function generateSampleData(
         }
 
         case ToolName.WRITE_FILE: {
-          const callMsg = messages.get(msg.parentId!);
+          const callMsg = messages.get(msg.parentId ?? "");
           if (!callMsg) break;
 
           const path = parseFile(callMsg, msg);
           if (!path) break;
 
-          sourceImportedPath.set(path);
           created = true;
           overlay.set(null);
-          void goto(`/files${path}`);
+          if (developerChatEnabled) {
+            sourceImportedPath.set(path);
+            void goto(`/files${path}`);
+          }
           break;
         }
       }
@@ -132,12 +117,34 @@ export async function generateSampleData(
 
     conversation.cancelStream();
 
-    await conversation.sendMessage({});
+    if (developerChatEnabled) {
+      overlay.set(null);
+      sidebarActions.startChat(agentPrompt);
+      await waitUntil(() => get(conversation.isStreaming));
+    } else {
+      overlay.set({
+        title: `Hang tight! We're generating the data you requested.`,
+        detail: {
+          component: OptionCancelToAIAction,
+          props: {
+            onCancel: () => {
+              conversation.cancelStream();
+              cancelled = true;
+            },
+          },
+        },
+      });
+      conversation.draftMessage.set(agentPrompt);
+      await conversation.sendMessage({});
+    }
 
-    await waitUntil(() => !get(conversation.isStreaming));
+    await waitUntil(
+      () => !get(conversation.isStreaming) && !get(conversation.streamError),
+      -1,
+    );
 
     handleMessageUnsub();
-    overlay.set(null);
+    generatingSampleData.set(false);
     if (cancelled) return;
     if (!created) {
       if (lastReadFile) {
@@ -151,11 +158,61 @@ export async function generateSampleData(
       }
       return;
     }
-  } catch {
+  } catch (err) {
+    console.error(err);
     overlay.set(null);
+    generatingSampleData.set(false);
     eventBus.emit("notification", {
       message: "Failed to generate sample data. Please try again.",
       type: "error",
     });
   }
+}
+
+export function maybeNavigateToGeneratedFile(
+  conversationManager: ConversationManager,
+) {
+  let unsub: (() => void) | null = null;
+  const messages = new Map<string, V1Message>();
+
+  const conversationStore = conversationManager.getCurrentConversation();
+
+  return conversationStore.subscribe((conversation) => {
+    unsub?.();
+    messages.clear();
+    unsub = conversation.on("message", (msg) => {
+      messages.set(msg.id!, msg);
+
+      const isWriteFileToolResult =
+        msg.tool === ToolName.WRITE_FILE && msg.type === MessageType.RESULT;
+      if (!isWriteFileToolResult) return;
+
+      const callMsg = messages.get(msg.parentId ?? "");
+      if (!callMsg) return;
+
+      let path = parseFile(callMsg, msg);
+      if (!path) return;
+
+      if (!path.startsWith("/")) path = "/" + path;
+      console.log("Navigating to generated file", path);
+
+      void goto(`/files${path}`);
+    });
+  });
+}
+
+function parseFile(call: V1Message, result: V1Message) {
+  try {
+    const resultContent = JSON.parse(result.contentData!);
+    const hasErroredOut =
+      !!resultContent.parse_error ||
+      resultContent.resources?.some((r) => !!r.reconcile_error);
+    if (hasErroredOut) return null;
+
+    const callContent = JSON.parse(call.contentData!);
+    return callContent.path as string;
+  } catch {
+    // json parse errors shouldn't happen. ignore if it ever does.
+  }
+  return null;
 }

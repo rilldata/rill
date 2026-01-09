@@ -13,7 +13,7 @@ import SnowflakeIcon from "../../components/icons/connectors/SnowflakeIcon.svelt
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
 import StarRocksIcon from "../../components/icons/connectors/StarRocksIcon.svelte";
 
-export const connectorIconMapping = {
+export const ConnectorIconMapping = {
   athena: AthenaIcon,
   bigquery: GoogleBigQueryIcon,
   clickhouse: ClickHouseIcon,
@@ -28,4 +28,9 @@ export const connectorIconMapping = {
   s3: AmazonS3Icon,
   snowflake: SnowflakeIcon,
   starrocks: StarRocksIcon,
+};
+
+export const ConnectorLabelMapping = {
+  duckdb: "DuckDB",
+  clickhouse: "ClickHouse",
 };

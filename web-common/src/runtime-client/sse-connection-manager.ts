@@ -179,7 +179,6 @@ export class SSEConnectionManager {
       void this.reconnect();
     } else {
       this.close();
-
       this.events.emit("close");
     }
   };

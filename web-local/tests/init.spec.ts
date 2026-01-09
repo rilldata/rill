@@ -1,6 +1,7 @@
 import { EXAMPLES } from "@rilldata/web-common/features/welcome/constants";
 import { expect } from "playwright/test";
 import { test } from "./setup/base";
+import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
 test.describe("Example project initialization", () => {
   EXAMPLES.forEach((example) => {
@@ -8,10 +9,11 @@ test.describe("Example project initialization", () => {
       test("should initialize new project", async ({ page }) => {
         await page.getByRole("link", { name: example.title }).click();
 
-        await page.waitForURL(`**/files/dashboards/${example.firstFile}`);
+        const [, fileName] = splitFolderAndFileName(example.firstFile);
+        await page.waitForURL(`**/files${example.firstFile}`);
 
         await expect(
-          page.getByRole("heading", { name: example.firstFile }),
+          page.getByRole("heading", { name: fileName }),
         ).toBeVisible();
       });
     });
