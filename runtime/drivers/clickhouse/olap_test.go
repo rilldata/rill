@@ -589,8 +589,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.Nil(t, executor)
 
 		// Should not be able to get model manager in read-only mode
-		manager, ok := conn.AsModelManager("default")
-		require.False(t, ok, "Model manager should not be available in read-only mode")
+		manager, err := conn.AsModelManager("default")
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, manager)
 	})
 
@@ -615,8 +615,8 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.Nil(t, executor)
 
 		// Should not be able to get model manager
-		manager, ok := conn.AsModelManager("default")
-		require.False(t, ok, "Model manager should not be available in explicit read-only mode")
+		manager, err := conn.AsModelManager("default")
+		require.ErrorContains(t, err, "model execution is disabled")
 		require.Nil(t, manager)
 	})
 
@@ -641,9 +641,9 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 		require.NotNil(t, executor)
 
 		// Should be able to get model manager in readwrite mode
-		manager, ok := conn.AsModelManager("default")
-		require.True(t, ok, "Model manager should be available in readwrite mode")
-		require.NotNil(t, manager)
+		manager, err := conn.AsModelManager("default")
+		require.ErrorContains(t, err, "model execution is disabled")
+		require.Nil(t, manager)
 	})
 }
 
