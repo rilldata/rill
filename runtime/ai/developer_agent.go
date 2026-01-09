@@ -197,12 +197,16 @@ func defaultOLAPInfo(ctx context.Context, rt *runtime.Runtime, instanceID string
 	}
 	olapConnector := inst.ResolveOLAPConnector()
 
-	// Open OLAP
-	olapCfg, err := rt.ConnectorConfig(ctx, instanceID, olapConnector)
+	// Open OLAP handle
+	olap, release, err := rt.AcquireHandle(ctx, instanceID, olapConnector)
 	if err != nil {
 		return "", "", false, err
 	}
-	olapModeReadwrite := olapCfg.Provision || olapCfg.Resolve()["mode"] == "readwrite"
+	defer release()
 
-	return olapConnector, olapCfg.Driver, olapModeReadwrite, nil
+	// Determine if OLAP can run models
+	_, err = olap.AsModelManager(instanceID)
+	olapModeReadwrite := err == nil
+
+	return olapConnector, olap.Driver(), olapModeReadwrite, nil
 }
