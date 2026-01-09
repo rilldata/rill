@@ -69,7 +69,25 @@ defaults:
 
 ```
 
+### Default Filters
 
+You can set default filter expressions that apply when users first load the dashboard. Filters are specified as a map where keys are metrics view names and values are SQL-like filter expressions.
+
+```yaml
+defaults:
+  time_range: P7D
+  comparison_mode: time
+  filters:
+    sales_metrics: "region IN ('US', 'CA', 'UK')"
+    orders_metrics: "status = 'completed' AND amount > 100"
+```
+
+The filter expression syntax supports:
+- Equality: `dimension = 'value'`
+- IN lists: `dimension IN ('value1', 'value2')`
+- Comparisons: `measure > 100`, `measure >= 50`
+- Logical operators: `AND`, `OR`
+- Combinations: `country IN ('US', 'CA') AND revenue > 1000`
 
 ## Time Ranges
 

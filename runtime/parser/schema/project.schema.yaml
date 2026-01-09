@@ -2137,11 +2137,16 @@ definitions:
             minimum: 0
           filters:
             type: object
-            description: Indicates if filters should be enabled for the canvas.
+            description: Configuration for filters on the canvas dashboard.
             properties:
               enable:
                 type: boolean
                 description: Toggles filtering functionality for the canvas dashboard.
+              pinned:
+                type: array
+                description: List of dimension names to pin as filters at the top of the canvas.
+                items:
+                  type: string
           allow_custom_time_range:
             type: boolean
             description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user.
@@ -2173,21 +2178,15 @@ definitions:
           defaults:
             type: object
             description: |
-              defines the defaults YAML struct
+              Default preset state for the canvas dashboard.
                 ```yaml
-                defaults: #define all the defaults within here
+                defaults:
                   time_range: P1M
-                  comparison_mode: dimension #time, none
-                  comparison_dimension: filename
+                  comparison_mode: time
+                  comparison_dimension: region
                   filters:
-                    dimensions:
-                      - dimension: country
-                        values: ["US", "CA"]
-                        mode: in_list
-                    measures:
-                      - measure: revenue
-                        operator: gt
-                        values: ["1000"]
+                    metrics_view_name: "dimension = 'value'"
+                    another_metrics_view: "country IN ('US', 'CA')"
                 ```
             properties:
               time_range:
@@ -2201,74 +2200,16 @@ definitions:
                   - time
                   - dimension
               comparison_dimension:
-                description: 'for dimension mode, specify the comparison dimension by name'
+                description: 'For dimension mode, specify the comparison dimension by name'
                 type: string
               filters:
                 type: object
-                description: Default filter configuration
-                properties:
-                  dimensions:
-                    type: array
-                    description: List of default dimension filters
-                    items:
-                      type: object
-                      properties:
-                        dimension:
-                          type: string
-                          description: Name of the dimension to filter on
-                        values:
-                          type: array
-                          items:
-                            type: string
-                          description: List of values to filter by
-                        limit:
-                          type: integer
-                          description: Maximum number of values to show in the filter
-                        removable:
-                          type: boolean
-                          description: Whether the filter can be removed by the user
-                        locked:
-                          type: boolean
-                          description: Whether the filter is locked and cannot be modified
-                        hidden:
-                          type: boolean
-                          description: Whether the filter is hidden from the UI
-                        mode:
-                          type: string
-                          enum: [select, in_list, contains]
-                          description: Filter mode - select for dropdown, in_list for multi-select, contains for text search
-                        exclude:
-                          type: boolean
-                          description: Whether to exclude the specified values instead of including them
-                  measures:
-                    type: array
-                    description: List of default measure filters
-                    items:
-                      type: object
-                      properties:
-                        measure:
-                          type: string
-                          description: Name of the measure to filter on
-                        by_dimension:
-                          type: string
-                          description: Dimension to group the measure filter by
-                        operator:
-                          type: string
-                          description: Operator for the measure filter (e.g., eq, gt, lt, gte, lte)
-                        values:
-                          type: array
-                          items:
-                            type: string
-                          description: List of values to filter by
-                        removable:
-                          type: boolean
-                          description: Whether the filter can be removed by the user
-                        locked:
-                          type: boolean
-                          description: Whether the filter is locked and cannot be modified
-                        hidden:
-                          type: boolean
-                          description: Whether the filter is hidden from the UI
+                description: |
+                  Default filter expressions per metrics view. Keys are metrics view names, values are SQL-like filter expressions.
+                  Example: `metrics_view_name: "country IN ('US', 'CA') AND revenue > 1000"`
+                additionalProperties:
+                  type: string
+                  description: SQL-like filter expression for the metrics view
           theme:
             oneOf:
               - type: string
