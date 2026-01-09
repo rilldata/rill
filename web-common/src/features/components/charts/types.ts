@@ -46,27 +46,7 @@ export type ChartSpec = ChartSpecBase & {
   vl_config?: string;
 };
 
-interface TimeRange {
-  time_range: {
-    start: string;
-    end: string;
-  };
-}
-
-export type ChartSpecAI =
-  | { chart_type: "bar_chart"; spec: CartesianChartSpec & TimeRange }
-  | { chart_type: "line_chart"; spec: CartesianChartSpec & TimeRange }
-  | { chart_type: "area_chart"; spec: CartesianChartSpec & TimeRange }
-  | { chart_type: "stacked_bar"; spec: CartesianChartSpec & TimeRange }
-  | {
-      chart_type: "stacked_bar_normalized";
-      spec: CartesianChartSpec & TimeRange;
-    }
-  | { chart_type: "donut_chart"; spec: CircularChartSpec & TimeRange }
-  | { chart_type: "pie_chart"; spec: CircularChartSpec & TimeRange }
-  | { chart_type: "funnel_chart"; spec: FunnelChartSpec & TimeRange }
-  | { chart_type: "heatmap"; spec: HeatmapChartSpec & TimeRange }
-  | { chart_type: "combo_chart"; spec: ComboChartSpec & TimeRange };
+// export type ComponentChartSpec =
 
 export type ChartType =
   | "bar_chart"
