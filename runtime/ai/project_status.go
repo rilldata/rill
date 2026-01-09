@@ -43,7 +43,7 @@ func (t *ProjectStatus) Spec() *mcp.Tool {
 }
 
 func (t *ProjectStatus) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAgentAccess(ctx, t.Runtime)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *ProjectStatus) Handler(ctx context.Context, args *ProjectStatusArgs) (*ProjectStatusResult, error) {

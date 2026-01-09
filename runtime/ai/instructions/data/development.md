@@ -237,8 +237,8 @@ Your workflow will depend on the kind of task you are undertaking. Here follows 
 The following tools are typically available for project development:
 {% if not .external %}
 - `file_list`, `file_search` and `file_read` for accessing existing files in the project
-- `file_write` for creating, updating or deleting a file in the project; this also waits for the file to be parsed/reconciled, returning any relevant resource status as part of the result
-- `develop_resource` for developing a specific resource, which you should always delegate to for developing a specific resource file
+- `develop_file` for delegating file development to a sub-agent, which handles writing and iterating on errors
+- `file_write` for directly creating, updating or deleting a file (available to sub-agents; waits for parse/reconcile and returns resource status)
 {% end %}
 - `project_status` for checking resource names and their current status (idle, running, error)
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
@@ -263,4 +263,8 @@ Avoid these mistakes when developing a project:
 - **Duplicating ETL logic**: Ingest data once, then derive from it within the project. Do not create multiple models that pull the same data from an external source.
 - **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. Non-materialized models become views, which re-execute on every query.
 - **Processing too much data in development**: Use dev partitions to limit data to a small subset (e.g., one day) during development. This speeds up iteration and avoids unnecessary costs.
-- **Doing too much introspection/profiling:** Introspecting connectors and profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
+{% if not .external %}
+- **Doing too much introspection/profiling:** Reading files, introspecting connectors, profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
+- **Not using the `develop_file` tool:** You should plan the changes you want to make first, then delegate each change separately to the `develop_file` tool. When calling `develop_file`, pass in any relevant context from your investigation/planning/profiling phase.
+- **Doing too much at a time:** Consider the minimal amount of work to accomplish your current task. It's better to make changes incrementally and let the user guide your work.
+{% end %}
