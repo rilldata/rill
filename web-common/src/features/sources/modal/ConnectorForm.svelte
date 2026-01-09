@@ -40,36 +40,36 @@
   export let handleBack: () => void = () => onBack();
   export let handleSkip: () => void = () => {};
 
-let handleOnUpdateFn: <
-  T extends Record<string, unknown>,
-  M = any,
-  In extends Record<string, unknown> = T,
->(event: {
-  form: import("sveltekit-superforms").SuperValidated<T, M, In>;
-  formEl: HTMLFormElement;
-  cancel: () => void;
-  result: Extract<ActionResult, { type: "success" | "failure" }>;
-}) => Promise<void> = async (_event) => {};
-const forwardOnUpdate = (e: any) => handleOnUpdateFn(e);
-let handleOnUpdate = handleOnUpdateFn;
+  let handleOnUpdateFn: <
+    T extends Record<string, unknown>,
+    M = any,
+    In extends Record<string, unknown> = T,
+  >(event: {
+    form: import("sveltekit-superforms").SuperValidated<T, M, In>;
+    formEl: HTMLFormElement;
+    cancel: () => void;
+    result: Extract<ActionResult, { type: "success" | "failure" }>;
+  }) => Promise<void> = async (_event) => {};
+  const forwardOnUpdate = (e: any) => handleOnUpdateFn(e);
+  let handleOnUpdate = handleOnUpdateFn;
 
-const formManager = new AddDataFormManager({
-  connector,
-  formType: "connector",
-  onParamsUpdate: forwardOnUpdate,
-  onDsnUpdate: (_e: any) => {},
-  getSelectedAuthMethod: () => activeAuthMethod ?? undefined,
-});
+  const formManager = new AddDataFormManager({
+    connector,
+    formType: "connector",
+    onParamsUpdate: forwardOnUpdate,
+    onDsnUpdate: (_e: any) => {},
+    getSelectedAuthMethod: () => activeAuthMethod ?? undefined,
+  });
 
-const paramsFormId = formManager.paramsFormId;
-const {
-  form: paramsForm,
-  errors: paramsErrors,
-  enhance: paramsEnhance,
-  tainted: paramsTainted,
-  submit: paramsSubmit,
-  submitting: paramsSubmitting,
-} = formManager.params;
+  const paramsFormId = formManager.paramsFormId;
+  const {
+    form: paramsForm,
+    errors: paramsErrors,
+    enhance: paramsEnhance,
+    tainted: paramsTainted,
+    submit: paramsSubmit,
+    submitting: paramsSubmitting,
+  } = formManager.params;
 
   const selectedAuthMethodStore = {
     subscribe: (run: (value: string) => void) =>
@@ -80,8 +80,8 @@ const {
   };
 
   $: stepState = $connectorStepStore as ConnectorStepState;
-let activeSchema: MultiStepFormSchema | null = null;
-let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
+  let activeSchema: MultiStepFormSchema | null = null;
+  let activeAuthInfo: ReturnType<typeof getRadioEnumOptions> | null = null;
   let selectedAuthMethod = "";
   let activeAuthMethod: string | null = null;
 
