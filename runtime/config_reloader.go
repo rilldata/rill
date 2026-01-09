@@ -6,6 +6,7 @@ import (
 	"maps"
 	"time"
 
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -93,7 +94,7 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		}
 		defer release()
 
-		err = repo.Pull(ctx, false, true)
+		err = repo.Pull(ctx, &drivers.PullOptions{ForceHandshake: true})
 		if err != nil {
 			r.rt.Logger.Error("ReloadConfig: failed to pull repo", zap.String("instance_id", inst.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
