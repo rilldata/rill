@@ -435,12 +435,11 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	if c.config.Mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		return nil, false
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
-	return c, true
+	return c, nil
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {

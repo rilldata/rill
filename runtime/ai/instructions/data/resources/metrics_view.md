@@ -31,7 +31,7 @@ model: events
 
 # Referencing an external table (connector defaults to project's default OLAP)
 connector: clickhouse  # Optional: specify if different from default
-model: my_external_table
+model: my_external_table # Note: Doesn't support dot syntax for database/schema name. Use the separate `database:` or `database_schema:` keys for that if relevant (but try without first and see if that works).
 ```
 
 **Note**: The `table:` property is a legacy alias for referencing external tables. Always prefer `model:` in new metrics views.
@@ -52,6 +52,8 @@ smallest_time_grain: hour      # Minimum granularity users can select
 first_day_of_week: 7           # Sunday (1=Monday, 7=Sunday)
 first_month_of_year: 4         # April (fiscal year starting in April)
 ```
+
+It is _strongly_ recommended that you add a primary timeseries to every metrics view you create (it makes for a much better dashboard experience).
 
 ### Dimensions
 
@@ -138,8 +140,11 @@ format_d3: ",.0f"   # 1,235 (rounded, with thousands separator)
 
 **Dimension selection:**
 - Include all categorical columns (strings, enums, booleans) that users might want to filter or group by
-- Include date/timestamp columns as dimensions for time-based analysis beyond the main timeseries
 - Start with 5-10 dimensions; add more based on user needs
+
+**Timeseries:**
+- If there is any date/timestamp column in the underlying table, pick the primary or most interesting one and add it under `dimensions:`
+- It is also _strongly_ recommended that you configure a primary time dimension using `timeseries:`
 
 ### Auto-generated explore
 
