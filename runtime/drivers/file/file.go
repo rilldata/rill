@@ -169,6 +169,7 @@ func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 
 // Close implements drivers.Handle.
 func (c *connection) Close() error {
+	c.watcher.Close()
 	return nil
 }
 
