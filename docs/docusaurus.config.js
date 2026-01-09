@@ -130,29 +130,40 @@ const config = {
             to: "/",
             label: "Docs",
             position: "left",
-            className: "navbar-docs-link",
             activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
           },
           {
-            to: "/reference/project-files",
+            type: "dropdown",
             label: "Reference",
             position: "left",
-            className: "navbar-reference-link",
-            activeBasePath: "/reference",
-          },
-          {
-            to: "/api/admin/",
-            label: "API",
-            position: "left",
-            className: "navbar-api-link",
-            activeBasePath: "/api/admin",
+            to: "/reference/project-files",
+            className: 'my-custom-dropdown',
+            activeBaseRegex: "^(/reference|/api/admin)",
+            items: [
+              {
+                to: "/reference/project-files",
+                label: "Project Files",
+              },
+              {
+                to: "/reference/cli",
+                label: "CLI",
+              },
+              {
+                to: "/reference/rill-iso-extensions",
+                label: "Rill ISO 8601",
+              },
+              {
+                to: "/api/admin/",
+                label: "REST API",
+              },
+
+            ],
           },
           {
             to: "/contact",
             label: "Contact Us",
             position: "left",
-            className: "navbar-contact-link",
-            activeBasePath: "/contact",
+            activeBaseRegex: "^/contact",
           },
 
 

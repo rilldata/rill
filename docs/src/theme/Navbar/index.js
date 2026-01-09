@@ -2,63 +2,7 @@ import { useColorMode } from '@docusaurus/theme-common';
 import Navbar from '@theme-original/Navbar';
 import { useEffect, useLayoutEffect } from 'react';
 
-const MOBILE_ICON_LINKS = [
-  {
-    href: 'https://github.com/rilldata/rill',
-    label: 'GitHub',
-    src: '/icons/Github.svg',
-  },
-  {
-    href: '/notes',
-    label: 'Release Notes',
-    src: '/icons/ReleaseNotes.svg',
-  },
-  {
-    href: 'https://www.rilldata.com/blog',
-    label: 'Blog',
-    src: '/icons/MessageSquareQuote.svg',
-  },
-];
-
-function createIconLink({ href, label, src }) {
-  const anchor = document.createElement('a');
-  anchor.href = href;
-  anchor.target = '_blank';
-  anchor.rel = 'noopener noreferrer';
-  anchor.className = 'mobile-nav-icon-link';
-  anchor.setAttribute('aria-label', label);
-
-  const img = document.createElement('img');
-  img.src = src;
-  img.alt = label;
-  img.width = 24;
-  img.height = 24;
-
-  anchor.appendChild(img);
-  return anchor;
-}
-
-function ensureSidebarIcons() {
-  const brand = document.querySelector('.navbar-sidebar__brand');
-  // Check if icons already exist
-  if (!brand || brand.querySelector('.mobile-nav-icon-links')) {
-    return;
-  }
-
-  const container = document.createElement('div');
-  container.className = 'mobile-nav-icon-links';
-
-  MOBILE_ICON_LINKS.forEach((link) => {
-    container.appendChild(createIconLink(link));
-  });
-
-  const closeButton = brand.querySelector('.navbar-sidebar__close');
-  if (closeButton) {
-    brand.insertBefore(container, closeButton);
-  } else {
-    brand.appendChild(container);
-  }
-}
+// Mobile icon functionality removed
 
 export default function NavbarWrapper(props) {
   // We only need colorMode to determine which icon to show.
@@ -80,9 +24,9 @@ export default function NavbarWrapper(props) {
       if (!iconContainer) {
         iconContainer = document.createElement('span');
         iconContainer.className = 'icon-container';
-        
+
         // Clear existing Docusaurus toggle content (text/emojis)
-        btn.innerHTML = ''; 
+        btn.innerHTML = '';
         btn.appendChild(iconContainer);
       }
 
@@ -90,7 +34,7 @@ export default function NavbarWrapper(props) {
       // If Dark Mode -> Show Sun (to switch to Light)
       // If Light Mode -> Show Moon (to switch to Dark)
       const isDark = colorMode === 'dark';
-      
+
       iconContainer.innerHTML = `
         <img 
           src="/icons/${isDark ? 'Sun' : 'Moon'}.svg" 
@@ -99,27 +43,128 @@ export default function NavbarWrapper(props) {
           height="24" 
         />
       `;
-      
+
       btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     });
   }, [colorMode]);
 
-  // Handle Mobile Sidebar Icons
-  useEffect(() => {
-    // Observer to inject icons when the mobile menu opens/renders
-    const observer = new MutationObserver(() => {
-      ensureSidebarIcons();
-    });
+  // Mobile sidebar icons removed - no longer needed
 
+  // Consolidated MutationObserver for navbar updates
+  useEffect(() => {
+    const markActiveDropdowns = () => {
+      // Target elements with both navbar__item and dropdown classes
+      const dropdownItems = document.querySelectorAll('.navbar__item.dropdown');
+      dropdownItems.forEach((dropdownItem) => {
+        const activeDropdownLink = dropdownItem.querySelector('.dropdown__link--active');
+        if (activeDropdownLink) {
+          dropdownItem.classList.add('navbar__dropdown--has-active');
+        } else {
+          dropdownItem.classList.remove('navbar__dropdown--has-active');
+        }
+      });
+    };
+
+    const markActiveNavItems = () => {
+      // Target non-dropdown navbar items
+      const navItems = document.querySelectorAll('.navbar__item:not(.dropdown)');
+      navItems.forEach((navItem) => {
+        const activeLink = navItem.querySelector('.navbar__link--active');
+        if (activeLink) {
+          navItem.classList.add('navbar__item--has-active-link');
+        } else {
+          navItem.classList.remove('navbar__item--has-active-link');
+        }
+      });
+    };
+
+    const addDataTextAttributes = () => {
+      const navLinks = document.querySelectorAll('.navbar__link');
+      navLinks.forEach((link) => {
+        // Only add if not already present
+        if (!link.hasAttribute('data-text')) {
+          const text = link.textContent?.trim() || '';
+          if (text) {
+            link.setAttribute('data-text', text);
+          }
+        }
+      });
+    };
+
+    const replaceCustomDropdownCarets = () => {
+      // Add custom SVG chevron for custom dropdown links
+      // CSS already hides the default caret, so we just need to add our custom one
+      const customDropdownLinks = document.querySelectorAll('.navbar__link.my-custom-dropdown');
+      customDropdownLinks.forEach((link) => {
+        const dropdownItem = link.closest('.navbar__item.dropdown');
+        if (dropdownItem && !link.hasAttribute('data-custom-chevron-added')) {
+          // Mark as processed
+          link.setAttribute('data-custom-chevron-added', 'true');
+
+          // Create a container for the custom chevron
+          let chevronContainer = link.querySelector('.custom-chevron');
+          if (!chevronContainer) {
+            chevronContainer = document.createElement('span');
+            chevronContainer.className = 'custom-chevron';
+            chevronContainer.style.position = 'absolute';
+            chevronContainer.style.right = '0.5rem';
+            chevronContainer.style.top = '30%';
+            chevronContainer.style.transform = 'translateY(0%)';
+            chevronContainer.style.transition = 'transform 0.2s ease';
+            chevronContainer.style.opacity = '0.7';
+            chevronContainer.style.width = '14px';
+            chevronContainer.style.height = '14px';
+            chevronContainer.style.display = 'block';
+            chevronContainer.style.pointerEvents = 'none';
+            link.style.position = 'relative';
+            link.appendChild(chevronContainer);
+          }
+
+          // Clear and add custom SVG chevron
+          chevronContainer.innerHTML = '';
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('height', '14px');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'currentColor');
+          svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          svg.style.width = '14px';
+          svg.style.height = '14px';
+          svg.style.display = 'block';
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('fill-rule', 'evenodd');
+          path.setAttribute('clip-rule', 'evenodd');
+          path.setAttribute('d', 'M19.189 9.43683C19.3842 9.63209 19.3842 9.94867 19.189 10.1439L11.9999 17.333L4.81075 10.1439C4.61549 9.94867 4.61549 9.63209 4.81075 9.43683L5.98898 8.2586C6.18424 8.06334 6.50082 8.06334 6.69609 8.2586L11.9999 13.5624L17.3036 8.2586C17.4989 8.06334 17.8155 8.06334 18.0108 8.2586L19.189 9.43683Z');
+
+          svg.appendChild(path);
+          chevronContainer.appendChild(svg);
+
+          // CSS will handle the rotation on hover/open
+        }
+      });
+    };
+
+    // Combined update function
+    const updateNavbar = () => {
+      markActiveDropdowns();
+      markActiveNavItems();
+      addDataTextAttributes();
+      replaceCustomDropdownCarets();
+    };
+
+    // Run on mount and when DOM changes
+    updateNavbar();
+
+    // Also run after a short delay to catch dynamically added elements
+    setTimeout(updateNavbar, 100);
+    setTimeout(updateNavbar, 500);
+    setTimeout(updateNavbar, 1000);
+
+    const observer = new MutationObserver(updateNavbar);
     observer.observe(document.body, { childList: true, subtree: true });
-    ensureSidebarIcons(); // Initial check
 
     return () => {
       observer.disconnect();
-      const existing = document.querySelector('.mobile-nav-icon-links');
-      if (existing) {
-        existing.remove();
-      }
     };
   }, []);
 
