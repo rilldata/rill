@@ -1,5 +1,9 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
-import { calculateEffectiveRowLimit } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
+import {
+  calculateEffectiveRowLimit,
+  MAX_ROW_EXPANSION_LIMIT,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -299,12 +303,26 @@ export function createPivotDataStore(
           readable(null);
 
         if (!isFlat) {
-          // Calculate the effective limit based on rowLimit, offset, and page size
+          // Use outermostRowLimit if set, otherwise fall back to rowLimit
+          const effectiveOutermostLimit =
+            config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+
+          // Calculate the effective limit based on outermostRowLimit, offset, and page size
+          // When outermostRowLimit is explicitly set, don't constrain by page size
+          const isExplicitOutermostLimit =
+            config.pivot.outermostRowLimit !== undefined;
           const limitToApply = calculateEffectiveRowLimit(
-            config.pivot.rowLimit,
+            effectiveOutermostLimit,
             rowOffset,
             NUM_ROWS_PER_PAGE,
+            !isExplicitOutermostLimit, // Don't respect page size for explicit outermost limit
           );
+
+          // Query for limit + 1 to detect if there's more data
+          const limitToQuery =
+            effectiveOutermostLimit !== undefined
+              ? (parseInt(limitToApply) + 1).toString()
+              : limitToApply;
 
           // Get sort order for the anchor dimension
           rowDimensionAxisQuery = getAxisForDimensions(
@@ -315,7 +333,7 @@ export function createPivotDataStore(
             whereFilter,
             sortPivotBy,
             timeRange,
-            limitToApply,
+            limitToQuery,
             rowOffset.toString(),
           );
         }
@@ -424,8 +442,29 @@ export function createPivotDataStore(
               globalTotalsResponse?.data?.data,
             );
 
-            const rowDimensionValues =
+            let rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
+
+            // Detect if there's more data for the outermost dimension
+            // and trim to the actual limit
+            let hasMoreRows = false;
+            const effectiveOutermostLimit =
+              config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+            if (!isFlat && effectiveOutermostLimit !== undefined) {
+              const isExplicitOutermostLimit =
+                config.pivot.outermostRowLimit !== undefined;
+              const limitToApply = calculateEffectiveRowLimit(
+                effectiveOutermostLimit,
+                rowOffset,
+                NUM_ROWS_PER_PAGE,
+                !isExplicitOutermostLimit, // Don't respect page size for explicit outermost limit
+              );
+              const actualLimit = parseInt(limitToApply);
+              if (rowDimensionValues.length > actualLimit) {
+                hasMoreRows = true;
+                rowDimensionValues = rowDimensionValues.slice(0, actualLimit);
+              }
+            }
 
             const totalColumns = getTotalColumnCount(totalsRowData);
 
@@ -603,6 +642,22 @@ export function createPivotDataStore(
                       const key = getPivotConfigKey(config);
                       expandedTableMap = {};
                       expandedTableMap[key] = tableDataExpanded;
+                    }
+
+                    // Add "Show more" row for outermost dimension if needed
+                    const effectiveOutermostLimit =
+                      config.pivot.outermostRowLimit ?? config.pivot.rowLimit;
+
+                    if (
+                      hasMoreRows &&
+                      effectiveOutermostLimit &&
+                      effectiveOutermostLimit < MAX_ROW_EXPANSION_LIMIT
+                    ) {
+                      const showMoreRow: PivotDataRow = {
+                        [anchorDimension]: SHOW_MORE_BUTTON,
+                        __currentLimit: effectiveOutermostLimit,
+                      } as PivotDataRow;
+                      tableDataExpanded = [...tableDataExpanded, showMoreRow];
                     }
 
                     const activeCell = config.pivot.activeCell;

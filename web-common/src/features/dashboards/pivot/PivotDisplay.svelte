@@ -150,6 +150,8 @@
               rowId,
               columnId,
             )}
+          setPivotOutermostRowLimit={(limit) =>
+            metricsExplorerStore.setPivotOutermostRowLimit($exploreName, limit)}
           setPivotRowLimitForExpanded={(expandIndex, limit) =>
             metricsExplorerStore.setPivotRowLimitForExpandedRow(
               $exploreName,
