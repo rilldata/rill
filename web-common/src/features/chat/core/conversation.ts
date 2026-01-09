@@ -298,7 +298,8 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt: request.prompt,
-      agent: this.agent,
+      // Don't send agent for feedback - let router handle user_feedback directly
+      agent: request.userFeedbackContext ? undefined : this.agent,
       userFeedbackContext: request.userFeedbackContext,
       ...request.context,
     };
