@@ -467,7 +467,7 @@ func (d Dialect) GetTimeDimensionParameter() string {
 	return "?"
 }
 
-func (d Dialect) CastType(typ runtimev1.Type_Code) (string, error) {
+func (d Dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	switch typ {
 	case runtimev1.Type_CODE_TIMESTAMP:
 		if d == DialectClickHouse {
