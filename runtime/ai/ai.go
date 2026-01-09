@@ -49,6 +49,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &RouterAgent{Runtime: rt})
 	RegisterTool(r, &AnalystAgent{Runtime: rt})
 	RegisterTool(r, &DeveloperAgent{Runtime: rt})
+	RegisterTool(r, &UserFeedback{Runtime: rt})
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
