@@ -449,6 +449,18 @@ func (d Dialect) GetTimeDimensionParameter() string {
 	return "?"
 }
 
+func (d Dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
+	switch typ {
+	case runtimev1.Type_CODE_TIMESTAMP:
+		if d == DialectClickHouse {
+			return "DateTime64", nil
+		}
+		return "TIMESTAMP", nil
+	default:
+		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
+	}
+}
+
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:

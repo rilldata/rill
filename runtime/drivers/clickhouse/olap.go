@@ -144,7 +144,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 			"prefer_global_in_and_join": 1,
 			"session_timezone":          "UTC",
 			"join_use_nulls":            1,
-		}
+		} // ideally add cast_string_to_date_time_mode='best_effort' but it is not supported in versions older than 25.6 so add it min supported version changes to 25.6
 
 		// Settings string to append to the query
 		var sqlSettings string
