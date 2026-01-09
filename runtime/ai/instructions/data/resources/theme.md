@@ -12,19 +12,18 @@ Themes are lightweight resources with no reconciliation cost. When a theme file 
 
 ## Core Concepts
 
-### Naming
-
-Like all Rill resources, theme names are derived from the filename. A file at `themes/brand.yaml` creates a theme named `brand`. Theme names should be lowercase and use underscores or hyphens for readability.
-
 ### Referencing themes
 
 Themes can be applied in two ways:
 
 1. **Project-wide** via `rill.yaml`:
-   ```yaml
-   # rill.yaml
-   theme: brand
-   ```
+  ```yaml
+  # rill.yaml
+  explores:
+    theme: brand
+  canvases:
+    theme: brand
+  ```
 
 2. **Per-dashboard** in an explore or canvas file:
    ```yaml
@@ -207,23 +206,3 @@ colors:
   primary: "#FF6A00"
   secondary: "#0F46A3"
 ```
-
-When reading existing projects, you may encounter:
-- `kind: theme` instead of `type: theme` (both work, but `type:` is preferred)
-- Hex values without quotes or `#` prefix (e.g., `primary: FF6A00`)
-
-When creating new themes, always use the `light:`/`dark:` structure with `type: theme`.
-
-## Best Practices
-
-1. **Start with primary and secondary**: These are the most visible colors and should reflect your brand identity.
-
-2. **Test in both modes**: Always define both `light:` and `dark:` blocks. Users may switch between modes, and defaults may not match your brand.
-
-3. **Ensure contrast**: Choose colors that provide sufficient contrast against backgrounds for readability.
-
-4. **Keep palettes harmonious**: When customizing qualitative palettes, choose colors that are visually distinct but work well together.
-
-5. **Use semantic colors for diverging palettes**: Red-to-blue or red-to-green diverging scales help users intuitively understand positive vs. negative values.
-
-6. **Consider color blindness**: Avoid relying solely on red/green distinctions. Include sufficient brightness differences between colors.

@@ -40,9 +40,7 @@ aws_access_key_id: "{{ .env.aws_access_key_id }}"
 aws_secret_access_key: "{{ .env.aws_secret_access_key }}"
 ```
 
-Supported template sources:
-- `{{ .env.xxx }}`: References environment variables from `.env`
-- `{{ .vars.xxx }}`: References project variables (useful for Rill Cloud deployments)
+NOTE: Some legacy projects use the deprecated `.vars` instead of `.env`.
 
 ### Managed connectors
 
@@ -60,7 +58,7 @@ When a managed connector is reconciled, Rill provisions the database infrastruct
 
 Control read/write access using the `mode` property:
 
-- `mode: read` or `mode: readonly`: Prevents Rill models from writing to this connector
+- `mode: read`: Prevents Rill models from writing to this connector
 - `mode: readwrite`: Allows both reading and writing (default for managed connectors)
 
 Use `mode: read` when connecting to external databases with pre-existing tables to prevent unintended modifications.
@@ -74,6 +72,7 @@ type: connector
 driver: clickhouse
 mode: readwrite
 
+# Use a local database in development to prevent overwriting data in the production cluster when iterating on changes.
 dev:
   managed: true
 
@@ -93,7 +92,6 @@ DuckDB is Rill's default embedded OLAP database. Key properties:
 
 - `managed: true`: Rill provisions and manages the database
 - `init_sql`: SQL to run at startup (install extensions, create secrets, attach databases)
-- `secrets`: Reference secrets from another connector by name
 
 For MotherDuck (cloud DuckDB), use the `path` property with `md:` prefix:
 
@@ -106,14 +104,14 @@ token: "{{ .env.motherduck_token }}"
 
 ### ClickHouse
 
-ClickHouse can be self-hosted or cloud-managed. Key properties:
+ClickHouse can be user-managed or Rill-managed. Key properties:
 
+- `managed: true`: Rill provisions and manages an empty Clickhouse cluster. If set, don't set any other connector properties.
 - `host`, `port`, `username`, `password`: Connection credentials
 - `database`: Target database name
 - `ssl: true`: Required for ClickHouse Cloud
-- `cluster`: Cluster name for distributed deployments
-- `dsn`: Alternative connection string format
-- `write_dsn`: Separate DSN for write operations (useful for read replicas)
+- `cluster`: Cluster name for multi-node Clickhouse clusters
+- `dsn`: Alternative connection string format (format: `clickhouse://host:port?username=<username>&...`)
 
 Common ports:
 - `8443`: HTTPS native protocol (ClickHouse Cloud)
@@ -125,28 +123,31 @@ Common ports:
 AWS S3 and S3-compatible storage. Key properties:
 
 - `aws_access_key_id`, `aws_secret_access_key`: AWS credentials
-- `region`: AWS region (use `auto` for automatic detection)
+- `region`: AWS region
 - `endpoint`: Custom endpoint for S3-compatible services (R2, MinIO, GCS interop)
+- `path_prefixes`: A list of bucket paths that the connector can access, e.g. `[s3://my-bucket]`; useful for improving bucket introspection
 
 ### GCS
 
 Google Cloud Storage. Key properties:
 
-- `google_application_credentials`: Service account JSON (can be file path or inline JSON)
+- `google_application_credentials`: Service account JSON (must be a literal JSON string value)
+- `key_id`: HMAC key ID to use instead of a service account JSON; required for direct use with DuckDB and Clickhouse through S3 compatibility
+- `secret`: HMAC secret to use instead of a service account JSON; required for direct use with DuckDB and Clickhouse through S3 compatibility
 
 ### BigQuery
 
 Google BigQuery. Key properties:
 
-- `project_id`: GCP project ID (required)
+- `project_id`: GCP project ID
 - `google_application_credentials`: Service account JSON
 
 ### Snowflake
 
 Snowflake data warehouse. Key properties:
 
-- `dsn`: Connection string with account, user, password, warehouse, database, schema
-- `parallel_fetch_limit`: Number of concurrent fetch operations
+- `account`, `user`, `privateKey`, `database`, `schema`, `warehouse`, `role`: Connection parameters
+- `dsn`: Connection string to use instead of separate connection parameters
 
 ### Postgres
 
@@ -164,12 +165,21 @@ Apache Druid. Can be configured via host/port or DSN:
 
 ### Redshift
 
-Amazon Redshift Serverless. Key properties:
+Amazon Redshift. Key properties:
 
 - `aws_access_key_id`, `aws_secret_access_key`: AWS credentials
 - `workgroup`: Redshift Serverless workgroup name
 - `region`: AWS region
 - `database`: Database name
+
+### Athena
+
+Amazon Athena. Key properties:
+
+- `aws_access_key_id`, `aws_secret_access_key`: AWS credentials
+- `workgroup`: Redshift Serverless workgroup name
+- `region`: AWS region
+- `output_location`: S3 path in format `s3://bucket/path` to store temporary query results in (Athena only)
 
 ### Other drivers
 
@@ -180,21 +190,23 @@ Amazon Redshift Serverless. Key properties:
 
 ## Examples
 
-### DuckDB: Minimal
-
-```yaml
-# connectors/duckdb.yaml
-type: connector
-driver: duckdb
-```
-
 ### DuckDB: Managed
+
+Explicit:
 
 ```yaml
 # connectors/duckdb.yaml
 type: connector
 driver: duckdb
 managed: true
+```
+
+or relying on defaults:
+
+```yaml
+# connectors/duckdb.yaml
+type: connector
+driver: duckdb
 ```
 
 ### DuckDB: With init_sql for S3 secrets
@@ -213,6 +225,8 @@ init_sql: |
   )
 ```
 
+This is now deprecated in favor of creating a dedicated `s3.yaml` connector file, which Rill will automatically load and create as a secret in DuckDB.
+
 ### DuckDB: With extensions
 
 ```yaml
@@ -225,7 +239,7 @@ init_sql: |
   LOAD spatial;
 ```
 
-### DuckDB: MotherDuck cloud database
+### DuckDB: MotherDuck database with existing tables
 
 ```yaml
 # connectors/motherduck.yaml
@@ -233,21 +247,8 @@ type: connector
 driver: duckdb
 path: "md:my_database"
 token: "{{ .env.motherduck_token }}"
-mode: read
 schema_name: main
-```
-
-### DuckDB: Attach external MySQL database
-
-```yaml
-# connectors/duckdb.yaml
-type: connector
-driver: duckdb
-
-init_sql: |
-  INSTALL mysql;
-  LOAD mysql;
-  ATTACH IF NOT EXISTS '{{ .env.mysql_dsn }}' AS mysqldb (TYPE MYSQL, READ_ONLY);
+mode: read
 ```
 
 ### ClickHouse: Cloud with SSL
@@ -264,21 +265,6 @@ database: "default"
 ssl: true
 ```
 
-### ClickHouse: Read-only external database
-
-```yaml
-# connectors/clickhouse.yaml
-type: connector
-driver: clickhouse
-mode: read
-host: "{{ .env.clickhouse_host }}"
-port: 9440
-username: "readonly"
-password: "{{ .env.clickhouse_password }}"
-database: "analytics"
-ssl: true
-```
-
 ### ClickHouse: Readwrite with cluster
 
 ```yaml
@@ -286,6 +272,7 @@ ssl: true
 type: connector
 driver: clickhouse
 mode: readwrite
+
 host: "{{ .env.clickhouse_host }}"
 port: 9440
 username: "{{ .env.clickhouse_user }}"
@@ -316,38 +303,7 @@ prod:
   ssl: true
 ```
 
-### ClickHouse: With separate read/write endpoints
-
-```yaml
-# connectors/clickhouse.yaml
-type: connector
-driver: clickhouse
-mode: readwrite
-enable_cache: true
-
-dev:
-  managed: true
-
-prod:
-  write_dsn: "clickhouse://write.example.com:9440?username=readwrite&password={{ .env.clickhouse_write_password }}&secure=true"
-  host: "read.example.com"
-  port: 9440
-  username: "readonly"
-  password: "{{ .env.clickhouse_read_password }}"
-  ssl: true
-```
-
-### S3: Basic with credentials
-
-```yaml
-# connectors/s3.yaml
-type: connector
-driver: s3
-aws_access_key_id: "{{ .env.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.aws_secret_access_key }}"
-```
-
-### S3: With region
+### S3: Basic with credentials and region
 
 ```yaml
 # connectors/s3.yaml
@@ -406,22 +362,6 @@ driver: snowflake
 dsn: "{{ .env.snowflake_dsn }}"
 ```
 
-### Snowflake: Dev/prod with different fetch limits
-
-```yaml
-# connectors/snowflake.yaml
-type: connector
-driver: snowflake
-
-dev:
-  dsn: "{{ .env.snowflake_dsn }}"
-  parallel_fetch_limit: 10
-
-prod:
-  dsn: "{{ .env.snowflake_dsn }}"
-  parallel_fetch_limit: 50
-```
-
 ### Postgres
 
 ```yaml
@@ -447,15 +387,6 @@ port: 8888
 username: "{{ .env.druid_user }}"
 password: "{{ .env.druid_password }}"
 ssl: true
-```
-
-### Druid: DSN-based
-
-```yaml
-# connectors/druid.yaml
-type: connector
-driver: druid
-dsn: "{{ .env.druid_dsn }}"
 ```
 
 ### Redshift: Serverless
@@ -500,12 +431,4 @@ controller_host: "{{ .env.pinot_controller_host }}"
 username: "{{ .env.pinot_user }}"
 password: "{{ .env.pinot_password }}"
 ssl: true
-```
-
-### HTTPS
-
-```yaml
-# connectors/https.yaml
-type: connector
-driver: https
 ```

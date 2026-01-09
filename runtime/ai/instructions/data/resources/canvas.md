@@ -9,8 +9,8 @@ description: Detailed instructions and examples for developing canvas dashboard 
 Canvas dashboards are free-form dashboard resources that display custom chart and table components laid out in a grid. They enable building overview and report-style dashboards with multiple visualizations, similar to traditional business intelligence tools.
 
 Canvas dashboards differ from explore dashboards in important ways:
-- **Explore dashboards** are opinionated, drill-down interfaces for a single metrics view with automatic filtering and comparison
-- **Canvas dashboards** are custom layouts with multiple chart types, markdown text, and components from one or more metrics views
+- **Explore dashboards** Best for explorative analysis, drill-down investigations, and letting users freely slice data by any dimension.
+- **Canvas dashboards** Best for fixed reports, executive summaries, or combining multiple metrics views into a single view.
 
 Canvas dashboards are lightweight resources found downstream of metrics views in the project DAG. Each component within a canvas fetches data individually, typically from a metrics view resource.
 
@@ -22,38 +22,42 @@ Canvas dashboards are lightweight resources found downstream of metrics views in
 
 ## Canvas Structure
 
-A canvas dashboard is defined in a YAML file with `type: canvas`. Here is the basic structure:
+A canvas dashboard is defined in a YAML file with `type: canvas`. Here is the basic structure (most canvas dashboards work great without any of the optional properties here):
 
 ```yaml
 type: canvas
 display_name: "Sales Overview Dashboard"
 
-# Default time settings for all components
-defaults:
-  time_range: P7D
-  comparison_mode: time
-
-# Optional theme reference
-theme: my_theme
-
-# Optional security access control
-security:
-  access: "'{{ .user.domain }}' == 'company.com'"
-
 # Optional filter settings
 filters:
   enable: true
+  pinned:
+    - region
+    - product_category
 
 # Optional time range presets
 time_ranges:
   - P7D
   - P30D
   - P90D
+  - inf
 
 # Optional maximum dashboard width
 max_width: 1400
 
-# Dashboard content organized in rows
+# Optional theme reference
+theme: my_theme
+
+# Default time settings for all components
+defaults:
+  time_range: P7D
+  comparison_mode: time
+
+# Optional security access control
+security:
+  access: "'{{ .user.domain }}' == 'company.com'"
+
+# Required dashboard content organized in rows
 rows:
   - height: 240px
     items:
@@ -71,24 +75,24 @@ rows:
           metrics_view: sales_metrics
           title: "Revenue Trend"
           x:
-            field: order_date
             type: temporal
+            field: event_time
           y:
-            field: total_revenue
             type: quantitative
+            field: total_revenue
       - width: 6
         bar_chart:
           metrics_view: sales_metrics
           title: "Revenue by Region"
           color: primary
           x:
-            field: region
             type: nominal
+            field: region
             limit: 10
             sort: -y
           y:
-            field: total_revenue
             type: quantitative
+            field: total_revenue
 ```
 
 ## Layout System
@@ -118,27 +122,33 @@ rows:
 Items within a row share the 12-unit width:
 
 ```yaml
-items:
-  - width: 12    # Full width (1 component per row)
-    markdown:
-      content: "# Dashboard Title"
+rows:
+  # Full width (1 component per row)
+  - items:
+    - width: 12
+      markdown:
+        content: "# Dashboard Title"
 
-  - width: 6     # Half width (2 components per row)
-    line_chart:
-      # ...
-  - width: 6
-    bar_chart:
-      # ...
+  # Half width (2 components per row)
+  - items:
+    - width: 6     
+      line_chart:
+        # ...
+    - width: 6
+      bar_chart:
+        # ...
 
-  - width: 4     # Third width (3 components per row)
-    donut_chart:
-      # ...
-  - width: 4
-    bar_chart:
-      # ...
-  - width: 4
-    area_chart:
-      # ...
+  # Third width (3 components per row)
+  - items:
+    - width: 4
+      donut_chart:
+        # ...
+    - width: 4
+      bar_chart:
+        # ...
+    - width: 4
+      area_chart:
+        # ...
 ```
 
 **Width guidelines:**
@@ -146,101 +156,6 @@ items:
 - `width: 6` - Half width; use for side-by-side comparisons
 - `width: 4` - Third width; use for three equal charts
 - `width: 3` - Quarter width; use for four small components (minimum practical width)
-
-## Dashboard Configuration
-
-### Defaults
-
-Set default time range and comparison mode for all components:
-
-```yaml
-defaults:
-  time_range: P7D          # ISO 8601 duration (P7D = 7 days, PT24H = 24 hours)
-  comparison_mode: time    # "time" or "none"
-```
-
-Common time ranges: `PT24H` (24 hours), `P7D` (7 days), `P14D` (14 days), `P30D` (30 days), `P90D` (90 days), `P12M` (12 months).
-
-### Theme
-
-Reference a theme resource for custom colors:
-
-```yaml
-theme: my_custom_theme
-```
-
-Or define inline theme colors:
-
-```yaml
-theme:
-  light:
-    primary: hsl(210, 100%, 50%)
-    secondary: hsl(150, 60%, 45%)
-```
-
-### Security
-
-Control dashboard access based on user attributes:
-
-```yaml
-security:
-  access: "'{{ .user.domain }}' == 'company.com'"
-```
-
-### Filters
-
-Enable or disable the filter panel and pin specific dimensions:
-
-```yaml
-filters:
-  enable: true
-  pinned:
-    - region
-    - product_category
-```
-
-### Time Range Presets
-
-Define available time range options:
-
-```yaml
-time_ranges:
-  # ISO 8601 durations
-  - PT6H         # 6 hours
-  - PT24H        # 24 hours
-  - P7D          # 7 days
-  - P14D         # 14 days
-  - P4W          # 4 weeks
-  - P3M          # 3 months
-  - P12M         # 12 months
-  - inf          # All time
-
-  # Rill-specific "to date" presets
-  - rill-TD      # Today
-  - rill-WTD     # Week to date
-  - rill-MTD     # Month to date
-  - rill-QTD     # Quarter to date
-  - rill-YTD     # Year to date
-
-  # Rill-specific "previous complete" presets
-  - rill-PDC     # Previous day complete
-  - rill-PWC     # Previous week complete
-  - rill-PMC     # Previous month complete
-  - rill-PQC     # Previous quarter complete
-  - rill-PYC     # Previous year complete
-```
-
-### Time Zone Options
-
-Define available timezone options for users:
-
-```yaml
-time_zones:
-  - UTC
-  - America/Los_Angeles
-  - America/New_York
-  - Europe/London
-```
 
 ## Component Types
 
@@ -966,161 +881,16 @@ bar_chart:
   # ... other config
 ```
 
-## Complete Examples
-
-### Simple KPI Dashboard
-
-```yaml
-type: canvas
-display_name: "Executive KPI Summary"
-defaults:
-  time_range: P7D
-  comparison_mode: time
-
-rows:
-  - height: 80px
-    items:
-      - width: 12
-        markdown:
-          content: |
-            # Executive Summary
-
-            Key performance metrics for the current period.
-          alignment:
-            horizontal: left
-            vertical: middle
-
-  - height: 240px
-    items:
-      - width: 12
-        kpi_grid:
-          metrics_view: business_metrics
-          measures:
-            - total_revenue
-            - gross_margin
-            - customer_count
-            - average_order_value
-          comparison:
-            - percent_change
-            - delta
-          sparkline: right
-```
-
-### Analytics Dashboard
-
-```yaml
-type: canvas
-display_name: "Sales Analytics"
-defaults:
-  time_range: P30D
-  comparison_mode: time
-filters:
-  enable: true
-
-rows:
-  - height: 60px
-    items:
-      - width: 12
-        markdown:
-          content: "# Sales Performance Dashboard"
-          alignment:
-            horizontal: left
-            vertical: middle
-
-  - height: 200px
-    items:
-      - width: 12
-        kpi_grid:
-          metrics_view: sales_metrics
-          measures:
-            - total_revenue
-            - order_count
-            - average_order_value
-          comparison:
-            - percent_change
-          sparkline: bottom
-
-  - height: 400px
-    items:
-      - width: 6
-        leaderboard:
-          metrics_view: sales_metrics
-          dimensions:
-            - product_category
-          measures:
-            - total_revenue
-            - order_count
-          num_rows: 10
-
-      - width: 6
-        stacked_bar:
-          metrics_view: sales_metrics
-          title: "Revenue Over Time"
-          color:
-            field: product_category
-            type: nominal
-            limit: 5
-          x:
-            field: order_date
-            type: temporal
-            limit: 30
-          y:
-            field: total_revenue
-            type: quantitative
-            zeroBasedOrigin: true
-
-  - height: 400px
-    items:
-      - width: 4
-        donut_chart:
-          metrics_view: sales_metrics
-          title: "Revenue by Region"
-          innerRadius: 50
-          color:
-            field: region
-            type: nominal
-            limit: 6
-          measure:
-            field: total_revenue
-            type: quantitative
-            showTotal: true
-
-      - width: 4
-        bar_chart:
-          metrics_view: sales_metrics
-          title: "Top Products"
-          color: primary
-          x:
-            field: product_name
-            type: nominal
-            limit: 8
-            sort: -y
-          y:
-            field: total_revenue
-            type: quantitative
-
-      - width: 4
-        line_chart:
-          metrics_view: sales_metrics
-          title: "Order Trend"
-          color: secondary
-          x:
-            field: order_date
-            type: temporal
-          y:
-            field: order_count
-            type: quantitative
-            zeroBasedOrigin: true
-```
-
-### Multi-Section Report
+## Complete Example
 
 ```yaml
 type: canvas
 display_name: "Monthly Business Report"
+
 defaults:
   time_range: P30D
   comparison_mode: time
+
 max_width: 1400
 theme: corporate_theme
 
