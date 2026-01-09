@@ -31,9 +31,12 @@ type UserFeedbackArgs struct {
 }
 
 // UserFeedbackResult represents the result of recording user feedback.
-// Note: Detailed attribution data is stored in the internal completion message for analytics.
+// For negative feedback, includes attribution prediction for analytics and LLM context.
 type UserFeedbackResult struct {
-	Response string `json:"response"`
+	Response             string  `json:"response"`
+	PredictedAttribution string  `json:"predicted_attribution,omitempty"`
+	AttributionReasoning string  `json:"attribution_reasoning,omitempty"`
+	SuggestedAction      *string `json:"suggested_action,omitempty"`
 }
 
 // FeedbackAttributionResult is the structured output type for AI attribution prediction.
@@ -91,7 +94,10 @@ func (t *UserFeedback) Handler(ctx context.Context, args *UserFeedbackArgs) (*Us
 	}
 
 	return &UserFeedbackResult{
-		Response: t.generateFeedbackResponse(attribution),
+		Response:             t.generateFeedbackResponse(attribution),
+		PredictedAttribution: attribution.PredictedAttribution,
+		AttributionReasoning: attribution.AttributionReasoning,
+		SuggestedAction:      attribution.SuggestedAction,
 	}, nil
 }
 
@@ -115,13 +121,16 @@ func (t *UserFeedback) predictAttribution(ctx context.Context, s *Session, feedb
 		}
 	}
 
-	// Ask the AI to analyze the feedback and determine why the user's expectations were not met
+	// Ask the AI to analyze the feedback and determine why the user's expectations were not met.
+	// UnwrapCall keeps attribution as an internal implementation detail - no separate messages are created.
+	// The attribution result is stored in the user_feedback result for analytics and LLM context.
 	var attribution FeedbackAttributionResult
 	err := s.Complete(ctx, "Feedback attribution", &attribution, &CompleteOptions{
 		Messages: []*aiv1.CompletionMessage{
 			NewTextCompletionMessage(RoleSystem, t.systemPrompt()),
 			NewTextCompletionMessage(RoleUser, t.buildAttributionPrompt(originalPrompt, targetMsg.Content, feedback)),
 		},
+		UnwrapCall: true,
 	})
 	if err != nil {
 		return nil, err

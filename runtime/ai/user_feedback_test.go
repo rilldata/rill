@@ -105,7 +105,7 @@ func TestUserFeedbackAttribution(t *testing.T) {
 
 			// Test negative feedback targeting the AI response
 			var res *ai.UserFeedbackResult
-			callResult, err := s.CallTool(t.Context(), ai.RoleUser, ai.UserFeedbackToolName, &res, &ai.UserFeedbackArgs{
+			_, err = s.CallTool(t.Context(), ai.RoleUser, ai.UserFeedbackToolName, &res, &ai.UserFeedbackArgs{
 				TargetMessageID: responseMsg.ID,
 				Sentiment:       "negative",
 				Comment:         c.comment,
@@ -114,16 +114,9 @@ func TestUserFeedbackAttribution(t *testing.T) {
 			require.NotNil(t, res)
 			require.Contains(t, res.Response, "Thanks for your feedback")
 
-			// Find and verify the attribution result from nested completion
-			var attribution ai.FeedbackAttributionResult
-			for _, msg := range s.Messages(ai.FilterByParent(callResult.Call.ID)) {
-				if msg.Tool == "Feedback attribution" && msg.Type == ai.MessageTypeResult {
-					err := json.Unmarshal([]byte(msg.Content), &attribution)
-					require.NoError(t, err)
-					break
-				}
-			}
-			require.Equal(t, c.wantAttribution, attribution.PredictedAttribution, "attribution: %+v", attribution)
+			// Verify attribution is included directly in the result (not as separate messages)
+			require.Equal(t, c.wantAttribution, res.PredictedAttribution, "result: %+v", res)
+			require.NotEmpty(t, res.AttributionReasoning, "attribution reasoning should not be empty")
 		})
 	}
 }
