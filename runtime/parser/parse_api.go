@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
+	"golang.org/x/exp/maps"
 )
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
@@ -92,11 +93,12 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Parse the resolver and its properties from the DataYAML
-	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
+	resolver, resolverProps, connector, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
 	if err != nil {
 		return err
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
+	node.addPostParseHook(connector, p.addConnectorRef(connector))
 
 	securityRules, err := tmp.Security.Proto()
 	if err != nil {
@@ -108,7 +110,7 @@ func (p *Parser) parseAPI(node *Node) error {
 		}
 	}
 
-	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs, maps.Values(node.postParseHooks))
 	if err != nil {
 		return err
 	}
