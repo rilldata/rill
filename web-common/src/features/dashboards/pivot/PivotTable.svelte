@@ -59,6 +59,9 @@
   export let setPivotRowLimitForExpanded:
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
+  export let onCellClickToFilter:
+    | ((rowId: string, columnId: string) => Promise<void>)
+    | undefined = undefined;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
@@ -222,8 +225,16 @@
 
     if (rowHeader) {
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
-    } else if (setPivotActiveCell && canShowDataViewer) {
-      setPivotActiveCell(rowId, columnId);
+    } else {
+      // Set active cell for dashboard (if enabled)
+      if (setPivotActiveCell && canShowDataViewer) {
+        setPivotActiveCell(rowId, columnId);
+      }
+
+      // Apply filters for canvas (if enabled)
+      if (onCellClickToFilter) {
+        onCellClickToFilter(rowId, columnId);
+      }
     }
   }
 
