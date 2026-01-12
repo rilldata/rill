@@ -22,14 +22,18 @@
   color: var(--ifm-color-black);
   text-decoration: none;
   font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.15s ease;
   
-    &:hover {
-      color: var(--ifm-color-primary);
-    }
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.03);
   }
-
-.navbar__item {
-  padding: 0.75rem 0.5rem;
+  
+  /* Active links don't need hover effect */
+  &.navbar__link--active:hover {
+    background-color: transparent;
+  }
 }
 
 /* Active navbar link - theme color */
@@ -37,44 +41,21 @@
 .navbar__item .navbar__link--active {
   color: var(--ifm-color-primary);
   text-decoration: underline;
-  text-decoration-thickness: 1px;
+  text-decoration-thickness: 2px;
   text-underline-offset: 14px;
   text-decoration-color: var(--ifm-color-primary);
   text-decoration-style: solid;
   text-decoration-skip-ink: none;
   text-decoration-skip: none;
-  text-decoration-skip-ink: none;
-}
-
-/* Hover effects with rounded corners for navbar items */
-.navbar .navbar__item {
-  border-radius: 0.375rem;
-  
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Standardized padding for consistent widths */
-  .navbar__link {
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
-  }
 }
 
 /* Dropdown items - black text, no decorations */
 /* Target elements with both navbar__item and dropdown classes */
 .navbar .navbar__item.dropdown {
-  /* Base styles for dropdown link */
+  /* Dropdown link - inherits base .navbar__link styles, only adds extra right padding for chevron */
   > .navbar__link {
-    color: var(--ifm-color-black);
-    text-decoration: none;
     position: relative;
     padding-right: 2rem;
-    &:hover {
-      color: var(--ifm-color-primary);
-      text-decoration: none;
-    }
-    
   }
   /* Hide the default chevron icon for custom dropdown links */
   &:has(.navbar__link.my-custom-dropdown) {
@@ -115,19 +96,12 @@
   &.navbar__dropdown--has-active > .navbar__link {
     color: var(--ifm-color-primary);
     text-decoration: underline;
-    text-decoration-thickness: 1px;
+    text-decoration-thickness: 2px;
     text-underline-offset: 14px;
     text-decoration-color: var(--ifm-color-primary);
     text-decoration-style: solid;
     text-decoration-skip-ink: none;
     text-decoration-skip: none;
-    text-decoration-skip-ink: none;
-
-  }
-  
-  /* Hover effect for dropdown */
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
   }
   
   /* Extend hover area downward to bridge gap to dropdown menu */
@@ -149,6 +123,24 @@
 /* Dropdown menu - add breathing room between trigger and popover */
 .navbar .dropdown__menu {
   margin-top: 8px;
+}
+
+/* Temporarily disable dropdown hover when closing - prevents re-opening from hover bridge */
+.navbar.navbar--closing-dropdown {
+  .navbar__item.dropdown {
+    /* Disable the hover bridge */
+    &::before {
+      pointer-events: none !important;
+    }
+    
+    /* Hide dropdown menu regardless of hover state */
+    .dropdown__menu {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  }
 }
 
 /* Dropdown menu items - black text with hover effects */
@@ -216,6 +208,12 @@
     &:hover,
     &:focus {
       color: var(--ifm-color-white);
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+    
+    /* Active links don't need hover effect */
+    &.navbar__link--active:hover {
+      background-color: transparent;
     }
   }
   
@@ -226,47 +224,10 @@
     color: var(--ifm-color-primary);
   }
   
-  /* Hover effects for navbar items in dark mode */
-  .navbar__item {
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-  }
-  
   .navbar__item.dropdown {
-    /* Base styles for dropdown link in dark mode */
-    > .navbar__link {
-      color: var(--ifm-color-white);
-      
-      &:hover,
-      &:focus {
-        color: var(--ifm-color-white);
-      }
-      
-    }
-    
     /* Active dropdown in dark mode - theme color */
     &.navbar__dropdown--has-active > .navbar__link {
       color: var(--ifm-color-primary);
-    }
-    
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-    
-    /* Extend hover area downward to bridge gap to dropdown menu */
-    position: relative;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      bottom: -8px;
-      left: 0;
-      right: 0;
-      height: 8px;
-      background: transparent;
-      pointer-events: auto;
-      z-index: 1000;
     }
   }
   

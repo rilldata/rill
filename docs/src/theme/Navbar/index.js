@@ -1,4 +1,5 @@
 import { useColorMode } from '@docusaurus/theme-common';
+import { useLocation } from '@docusaurus/router';
 import Navbar from '@theme-original/Navbar';
 import { useEffect, useLayoutEffect } from 'react';
 
@@ -8,6 +9,33 @@ export default function NavbarWrapper(props) {
   // We only need colorMode to determine which icon to show.
   // The toggle logic is handled by the original button's onClick.
   const { colorMode } = useColorMode();
+  const location = useLocation();
+
+  // Close all open dropdowns when route changes
+  // This fixes the issue where hover-based dropdowns stay open after clicking an item
+  useEffect(() => {
+    const closeAllDropdowns = () => {
+      // Remove dropdown--show class from all dropdowns
+      const openDropdowns = document.querySelectorAll('.navbar__item.dropdown.dropdown--show');
+      openDropdowns.forEach((dropdown) => {
+        dropdown.classList.remove('dropdown--show');
+      });
+
+      // Also reset aria-expanded attributes
+      const expandedLinks = document.querySelectorAll('.navbar__link[aria-expanded="true"]');
+      expandedLinks.forEach((link) => {
+        link.setAttribute('aria-expanded', 'false');
+      });
+
+      // Blur any focused navbar elements to prevent hover state from re-triggering
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.closest('.navbar__item.dropdown')) {
+        activeElement.blur();
+      }
+    };
+
+    closeAllDropdowns();
+  }, [location.pathname]);
 
   // Handle Dark Mode Toggle Icons
   // useLayoutEffect fires synchronously before paint, reducing flicker
@@ -155,7 +183,11 @@ export default function NavbarWrapper(props) {
     // Run on mount and when DOM changes
     updateNavbar();
 
-    // Also run after a short delay to catch dynamically added elements
+    // Staggered timeouts to handle dynamically rendered navbar elements.
+    // Docusaurus may hydrate or lazy-load navbar items at different times,
+    // especially for dropdowns and client-side navigation. These delays
+    // ensure our custom styling (data-text attrs, active states, chevrons)
+    // is applied even if elements render after initial mount.
     setTimeout(updateNavbar, 100);
     setTimeout(updateNavbar, 500);
     setTimeout(updateNavbar, 1000);
