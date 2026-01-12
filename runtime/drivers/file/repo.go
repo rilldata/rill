@@ -585,6 +585,19 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 		return "", err
 	}
 
+	// check that commit exists
+	repo, err := git.PlainOpen(gitPath)
+	if err != nil {
+		return "", err
+	}
+	_, err = repo.CommitObject(plumbing.NewHash(commitSHA))
+	if err != nil {
+		if errors.Is(err, plumbing.ErrObjectNotFound) {
+			return "", fmt.Errorf("commit %q not found", commitSHA)
+		}
+		return "", err
+	}
+
 	// commit existing changes if any
 	client, err := c.getAdminClient()
 	if err != nil {
