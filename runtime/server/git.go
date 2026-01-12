@@ -17,6 +17,9 @@ import (
 )
 
 func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBranchesRequest) (*runtimev1.ListGitBranchesResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -71,6 +74,9 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 }
 
 func (s *Server) GitSwitchBranch(ctx context.Context, req *runtimev1.GitSwitchBranchRequest) (*runtimev1.GitSwitchBranchResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -116,6 +122,9 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 }
 
 func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommitsRequest) (*runtimev1.ListGitCommitsResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -147,6 +156,9 @@ func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommi
 
 // GitCommit implements RuntimeService.
 func (s *Server) GitCommit(ctx context.Context, req *runtimev1.GitCommitRequest) (*runtimev1.GitCommitResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -164,6 +176,9 @@ func (s *Server) GitCommit(ctx context.Context, req *runtimev1.GitCommitRequest)
 
 // RestoreGitCommit implements RuntimeService.
 func (s *Server) RestoreGitCommit(ctx context.Context, req *runtimev1.RestoreGitCommitRequest) (*runtimev1.RestoreGitCommitResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err

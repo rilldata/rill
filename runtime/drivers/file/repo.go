@@ -225,7 +225,7 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 	}
 
 	cfg, err := c.loadGitConfig(ctx)
-	if err != nil && !errors.Is(err, errProjectNotFound) && !errors.Is(err, errAuthRequired) {
+	if err != nil && !errors.Is(err, errProjectNotFound) && !errors.Is(err, drivers.ErrNotAuthenticated) {
 		return nil, "", err
 	}
 	var remoteName string
@@ -257,14 +257,6 @@ func (c *connection) ListBranches(ctx context.Context) ([]string, string, error)
 				break
 			}
 			remoteName = r.Config().Name
-		}
-	}
-
-	// if authenticated, fetch all branches
-	if remoteName != "" {
-		err = gitutil.GitFetch(ctx, gitPath, cfg)
-		if err != nil {
-			return nil, "", err
 		}
 	}
 
@@ -330,43 +322,9 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 		return err
 	}
 
-	// Check if branch exists
-	branchRef := plumbing.NewBranchReferenceName(branchName)
-	_, err = repo.Reference(branchRef, true)
-	branchExists := err == nil
-
-	if !branchExists {
-		if !createIfNotExists {
-			return git.ErrBranchNotFound
-		}
-
-		// Create new branch from HEAD
-		head, err := repo.Head()
-		if err != nil {
-			return err
-		}
-
-		// Create the branch reference
-		err = repo.CreateBranch(&config.Branch{
-			Name:   branchName,
-			Remote: "origin",
-			Merge:  plumbing.NewBranchReferenceName(branchName),
-		})
-		if err != nil {
-			return err
-		}
-
-		// Create the reference pointing to HEAD's commit
-		ref := plumbing.NewHashReference(branchRef, head.Hash())
-		err = repo.Storer.SetReference(ref)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Checkout the branch
 	err = w.Checkout(&git.CheckoutOptions{
-		Branch: branchRef,
+		Branch: plumbing.NewBranchReferenceName(branchName),
+		Create: createIfNotExists,
 		Force:  ignoreLocalChanges,
 	})
 	if err != nil {
@@ -464,7 +422,7 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	// get ephemeral git credentials
 	config, err := c.loadGitConfig(ctx)
 	if err != nil {
-		if errors.Is(err, errProjectNotFound) || errors.Is(err, errAuthRequired) {
+		if errors.Is(err, errProjectNotFound) || errors.Is(err, drivers.ErrNotAuthenticated) {
 			// not connected to a rill project or not authenticated, return minimal status
 			st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
 			if err != nil {
@@ -542,7 +500,7 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 func (c *connection) Commit(ctx context.Context, message string) (string, error) {
 	// If its a Git repository, commit the changes with the given message to the current branch.
 	if !c.isGitRepo() {
-		return "", nil
+		return "", errors.New("not a git repository")
 	}
 
 	c.gitMu.Lock()
@@ -554,7 +512,7 @@ func (c *connection) Commit(ctx context.Context, message string) (string, error)
 	}
 
 	client, err := c.getAdminClient()
-	if err != nil && !errors.Is(err, errAuthRequired) { // allow committing without auth
+	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) { // allow committing without auth
 		return "", err
 	}
 	author, err := c.gitSignature(ctx, client, gitPath)
@@ -634,7 +592,7 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 func (c *connection) CommitAndPush(ctx context.Context, message string, force bool) error {
 	// If its a Git repository, commit and push the changes with the given message to the current branch.
 	if !c.isGitRepo() {
-		return nil
+		return errors.New("not a git repository")
 	}
 
 	c.gitMu.Lock()

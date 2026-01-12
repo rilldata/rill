@@ -169,24 +169,6 @@ func (r *gitRepo) pullInner(ctx context.Context, force bool) error {
 	return nil
 }
 
-func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return err
-	}
-	head, err := repo.Head()
-	if err != nil {
-		return err
-	}
-	err = repo.FetchContext(ctx, &git.FetchOptions{
-		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return err
-	}
-	return nil
-}
-
 // editable returns true if its allowed to edit files in the repository.
 // Will be true for dev deployments with an edit branch, and false for prod deployments that serve files on the default branch.
 func (r *gitRepo) editable() bool {
@@ -390,6 +372,24 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error
 		return "", err
 	}
 	return hash.String(), nil
+}
+
+func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
+	repo, err := git.PlainOpen(r.repoDir)
+	if err != nil {
+		return err
+	}
+	head, err := repo.Head()
+	if err != nil {
+		return err
+	}
+	err = repo.FetchContext(ctx, &git.FetchOptions{
+		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		return err
+	}
+	return nil
 }
 
 // resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.

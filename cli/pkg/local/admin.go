@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+// localAdminService implements drivers.AdminService by using user's admin token stored locally and calling Rill's admin API.
+// TODO: revisit this implementation.
 type localAdminService struct {
 	ch   *cmdutil.Helper
 	root string
@@ -58,7 +60,7 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 	if err != nil {
 		return nil, err
 	}
-	project := projects[0]
+	project := projects[0] // InferProjects always returns at least one project in case of no error
 
 	resp, err := client.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
 		Org:     project.OrgName,

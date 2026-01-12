@@ -42,6 +42,9 @@ type RepoStore interface {
 	// The function does not return until the context is cancelled or an error occurs.
 	Watch(ctx context.Context, cb WatchCallback) error
 
+	// ListCommits returns a list of commits in reverse chronological order.
+	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
+	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)
 	// Status returns the current status of the repository.
 	Status(ctx context.Context) (*RepoStatus, error)
 	// Pull synchronizes local and remote state.
@@ -65,9 +68,6 @@ type RepoStore interface {
 	// MergeToBranch merges the current branch to the specified branch.
 	// In case of merge conflicts, prefer current changes if force is true else return an error without merging.
 	MergeToBranch(ctx context.Context, branch string, force bool) error
-	// ListCommits returns a list of commits in reverse chronological order.
-	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
-	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)
 }
 
 // FileInfo contains metadata about a file.
