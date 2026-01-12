@@ -8621,6 +8621,13 @@ export class ListUsergroupMemberUsersResponse extends Message<ListUsergroupMembe
    */
   nextPageToken = "";
 
+  /**
+   * Total number of members in the user group
+   *
+   * @generated from field: uint32 total_count = 3;
+   */
+  totalCount = 0;
+
   constructor(data?: PartialMessage<ListUsergroupMemberUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8631,6 +8638,7 @@ export class ListUsergroupMemberUsersResponse extends Message<ListUsergroupMembe
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: UsergroupMemberUser, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "total_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupMemberUsersResponse {

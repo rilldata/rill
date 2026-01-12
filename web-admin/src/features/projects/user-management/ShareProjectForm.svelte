@@ -207,6 +207,8 @@
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
+  $: userGroupMemberUsersCount =
+    $listUsergroupMemberUsers?.data?.totalCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
   $: projectInvitesList =
@@ -415,8 +417,8 @@
               <li>{user.userName}</li>
             </div>
           {/each}
-          {#if userGroupMemberUsers.length > 6}
-            <li>and {userGroupMemberUsers.length - 6} more</li>
+          {#if userGroupMemberUsersCount > 6}
+            <li>and {userGroupMemberUsersCount - 6} more</li>
           {/if}
         </ul>
       </TooltipContent>

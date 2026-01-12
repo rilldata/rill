@@ -56,8 +56,8 @@
     },
   );
 
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  $: userGroupMemberUsersCount =
+    $listUsergroupMemberUsers?.data?.totalCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
 

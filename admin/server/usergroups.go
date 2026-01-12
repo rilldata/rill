@@ -692,6 +692,11 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 		return nil, err
 	}
 
+	count, err := s.admin.DB.CountUsergroupMemberUsers(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	nextToken := ""
 	if len(members) >= pageSize {
 		nextToken = marshalPageToken(members[len(members)-1].Email)
@@ -705,6 +710,7 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 	return &adminv1.ListUsergroupMemberUsersResponse{
 		Members:       dtos,
 		NextPageToken: nextToken,
+		TotalCount:    uint32(count),
 	}, nil
 }
 

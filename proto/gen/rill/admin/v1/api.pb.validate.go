@@ -24089,6 +24089,8 @@ func (m *ListUsergroupMemberUsersResponse) validate(all bool) error {
 
 	// no validation rules for NextPageToken
 
+	// no validation rules for TotalCount
+
 	if len(errors) > 0 {
 		return ListUsergroupMemberUsersResponseMultiError(errors)
 	}
