@@ -7,8 +7,7 @@ import {
   type InlineContext,
   InlineContextType,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
-import { getActiveFileArtifactStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
+import { getActiveResourceStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 import {
   getClientFilteredResourcesQueryOptions,
   ResourceKind,
@@ -18,6 +17,7 @@ import { derived, type Readable } from "svelte/store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
+import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
 
 /**
  * Creates a store that contains a 2-level list of sources/model resources.
@@ -32,11 +32,11 @@ export function getModelsPickerOptions(
     getClientFilteredResourcesQueryOptions(ResourceKind.Model),
     queryClient,
   );
-  const activeFileArtifactStore = getActiveFileArtifactStore();
+  const activeResourceStore = getActiveResourceStore();
 
   return derived(
-    [runtime, modelResourcesQuery, activeFileArtifactStore],
-    ([{ instanceId }, modelResourcesResp, activeFileArtifact], set) => {
+    [runtime, modelResourcesQuery, activeResourceStore],
+    ([{ instanceId }, modelResourcesResp, activeResource], set) => {
       const models = modelResourcesResp.data ?? [];
       const modelPickerItems: PickerItem[] = [];
       const modelQueryOptions: ReturnType<
@@ -47,8 +47,8 @@ export function getModelsPickerOptions(
         const modelName = res.meta?.name?.name ?? "";
 
         const currentlyActive =
-          activeFileArtifact.resource?.kind === ResourceKind.Model &&
-          activeFileArtifact.resource?.name === modelName;
+          activeResource?.kind === ResourceKind.Model &&
+          activeResource?.name === modelName;
         const modelContext = {
           type: InlineContextType.Model,
           model: modelName,

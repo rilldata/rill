@@ -26,17 +26,8 @@ export type InlineContext = {
 };
 
 export function getIdForContext(ctx: InlineContext) {
-  return `${ctx.type}__${ctx.value}`;
-}
-
-export function inlineContextsAreEqual(
-  ctx1: InlineContext,
-  ctx2: InlineContext,
-) {
-  if (ctx1.type !== ctx2.type || ctx1.value !== ctx2.value) return false;
-  const parentValuesAreEqual =
-    ctx1.metricsView === ctx2.metricsView && ctx1.model === ctx2.model;
-  return parentValuesAreEqual;
+  const parentIdPart = ctx.metricsView ?? ctx.model;
+  return `${ctx.type}__${ctx.value}${parentIdPart ? `__${parentIdPart}` : ""}`;
 }
 
 export function inlineContextIsWithin(src: InlineContext, tar: InlineContext) {

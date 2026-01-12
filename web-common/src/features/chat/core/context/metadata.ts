@@ -8,6 +8,10 @@ import type {
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
+/**
+ * Metadata used to map a value to a label.
+ * Currently only metrics view metadata exists but it is meant for any type.
+ */
 export type InlineContextMetadata = Record<string, MetricsViewMetadata>;
 export type MetricsViewMetadata = {
   metricsViewSpec: V1MetricsViewSpec;

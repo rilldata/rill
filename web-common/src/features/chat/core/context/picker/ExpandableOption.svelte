@@ -3,8 +3,7 @@
   import { getAttrs, builderActions } from "bits-ui";
   import { ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import type { Readable } from "svelte/store";
-  import { ensureInView } from "@rilldata/web-common/features/chat/core/context/picker/ensure-in-view.ts";
-  import type { PickerTreeNode } from "@rilldata/web-common/features/chat/core/context/picker/tree/build-picker-tree.ts";
+  import type { PickerTreeNode } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
   import type { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
   import {
     getIdForContext,
@@ -14,7 +13,7 @@
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
   import type { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import LeafOption from "@rilldata/web-common/features/chat/core/context/picker/tree/LeafOption.svelte";
+  import SimpleOption from "@rilldata/web-common/features/chat/core/context/picker/SimpleOption.svelte";
 
   export let node: PickerTreeNode;
   export let selectedChatContext: InlineContext | null;
@@ -34,8 +33,7 @@
     ? getIdForContext(selectedChatContext)
     : null;
 
-  const focusedItemStore = keyboardNavigationManager.focusedItemStore;
-  const ensureIsFocused = keyboardNavigationManager.ensureIsFocused;
+  const { focusedItemStore, enhancePickerNode } = keyboardNavigationManager;
   $: focusedItem = $focusedItemStore;
   $: focused = focusedItem?.id === item.id;
   $: selected = item.id === selectedItemId;
@@ -66,8 +64,7 @@
       type="button"
       {...getAttrs([builder])}
       use:builderActions={{ builders: [builder] }}
-      use:ensureInView={focused}
-      use:ensureIsFocused={item}
+      use:enhancePickerNode={item}
       on:click={onClick}
     >
       <input
@@ -77,7 +74,7 @@
         class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
       />
       <div class="min-w-3.5">
-        {#if $openStore}
+        {#if $openStore && node.children.length}
           <ChevronDownIcon size="12px" strokeWidth={4} />
         {:else if icon}
           <svelte:component this={icon} size="12px" />
@@ -118,7 +115,7 @@
             {focusEditor}
           />
         {:else}
-          <LeafOption
+          <SimpleOption
             item={child.item}
             {selectedChatContext}
             {keyboardNavigationManager}

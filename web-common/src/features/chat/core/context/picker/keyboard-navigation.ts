@@ -1,7 +1,13 @@
-import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import { get, writable } from "svelte/store";
 import type { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 import type { InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+
+type KeyboardNavigationManagerEvents = {
+  select: InlineContext;
+  "item-focused": PickerItem | null;
+};
 
 export class KeyboardNavigationManager {
   public readonly focusedItemStore = writable<PickerItem | null>(null);
@@ -10,10 +16,12 @@ export class KeyboardNavigationManager {
   private itemIdToIndex = new Map<string, number>();
   private focusedIndex = -1;
 
-  public constructor(
-    private readonly uiState: ContextPickerUIState,
-    private onSelect: (ctx: InlineContext) => void,
-  ) {}
+  private events = new EventEmitter<KeyboardNavigationManagerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+
+  public constructor(private readonly uiState: ContextPickerUIState) {}
 
   public setPickerItems(
     pickerItems: PickerItem[],
@@ -59,7 +67,7 @@ export class KeyboardNavigationManager {
     if (parentIndex == undefined || parentIndex === -1) return;
 
     this.uiState.collapse(focusedItem.parentId ?? "");
-    // Focuse the parent after collapsing.
+    // Focus the parent after collapsing.
     this.focusedIndex = parentIndex;
     this.updateFocusedItem();
   }
@@ -88,7 +96,7 @@ export class KeyboardNavigationManager {
         break;
       case "Enter": {
         const focusedItem = get(this.focusedItemStore);
-        if (focusedItem) this.onSelect(focusedItem.context);
+        if (focusedItem) this.events.emit("select", focusedItem.context);
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -97,12 +105,29 @@ export class KeyboardNavigationManager {
     }
   }
 
-  public ensureIsFocused = (node: Node, item: PickerItem) => {
+  /**
+   * Enhances a picker node with keyboard navigation support. Focus can be changed using keyboard shortcuts, up and down arrows.
+   * 1. Hovering should update the focused item to support using keyboard after hovering.
+   * 2. When a focused item changes, scroll it into view.
+   *
+   * Note that we are using mouse move instead of enter/exit.
+   * This prevents focus changing when the layout changes, but the mouse doesn't move.
+   *
+   * For focusing items, using "focused" independently can have a feedback loop when focused using the mouse.
+   */
+  public enhancePickerNode = (node: HTMLElement, item: PickerItem) => {
     const onMouseEnter = () => this.focusItem(item);
     node.addEventListener("mousemove", onMouseEnter);
+    const itemFocusedUnsub = this.events.on("item-focused", (focusedItem) => {
+      if (focusedItem?.id === item.id) {
+        node.scrollIntoView({ block: "nearest" });
+      }
+    });
+
     return {
       destroy() {
         node.removeEventListener("mousemove", onMouseEnter);
+        itemFocusedUnsub();
       },
     };
   };
@@ -114,7 +139,9 @@ export class KeyboardNavigationManager {
   }
 
   private updateFocusedItem() {
-    this.focusedItemStore.set(this.pickerItems[this.focusedIndex] ?? null);
+    const newFocusedItem = this.pickerItems[this.focusedIndex] ?? null;
+    this.focusedItemStore.set(newFocusedItem);
+    this.events.emit("item-focused", newFocusedItem);
   }
 
   private getUpdatedIndex(

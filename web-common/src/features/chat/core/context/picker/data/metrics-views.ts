@@ -2,7 +2,6 @@ import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/das
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { derived, type Readable } from "svelte/store";
-import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import {
   getIdForContext,
@@ -20,6 +19,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { MessageType } from "@rilldata/web-common/features/chat/core/types.ts";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
 
 /**
  * Creates a store that contains a 2-level list of options for each valid metrics view.

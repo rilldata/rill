@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { writable } from "svelte/store";
   import {
     getIdForContext,
@@ -16,10 +17,10 @@
   import * as Kbd from "@rilldata/web-common/components/kbd";
   import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
   import { getFilteredPickerItems } from "@rilldata/web-common/features/chat/core/context/picker/filters.ts";
-  import { buildPickerTree } from "@rilldata/web-common/features/chat/core/context/picker/tree/build-picker-tree.ts";
+  import { buildPickerTree } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
   import { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
-  import NonLeafOption from "@rilldata/web-common/features/chat/core/context/picker/tree/NonLeafOption.svelte";
-  import LeafOption from "@rilldata/web-common/features/chat/core/context/picker/tree/LeafOption.svelte";
+  import ExpandableOption from "@rilldata/web-common/features/chat/core/context/picker/ExpandableOption.svelte";
+  import SimpleOption from "@rilldata/web-common/features/chat/core/context/picker/SimpleOption.svelte";
 
   export let selectedChatContext: InlineContext | null = null;
   export let searchText: string = "";
@@ -39,10 +40,7 @@
   const filteredOptions = getFilteredPickerItems(uiState, searchTextStore);
   $: pickerTree = buildPickerTree($filteredOptions);
 
-  const keyboardNavigationManager = new KeyboardNavigationManager(
-    uiState,
-    onSelect,
-  );
+  const keyboardNavigationManager = new KeyboardNavigationManager(uiState);
   $: keyboardNavigationManager.setPickerItems(
     $filteredOptions,
     $expandedParentsStore,
@@ -89,6 +87,10 @@
       },
     };
   }
+
+  onMount(() => {
+    return keyboardNavigationManager.on("select", onSelect);
+  });
 </script>
 
 <svelte:window on:keydown={(e) => keyboardNavigationManager.handleKeyDown(e)} />
@@ -97,28 +99,35 @@
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
 <div class="inline-chat-context-dropdown" use:positionHandler={refNode}>
-  {#each pickerTree.rootNodes as rootNode (rootNode.item.id)}
-    {#if rootNode.item.hasChildren}
-      <NonLeafOption
-        node={rootNode}
-        {selectedChatContext}
-        {keyboardNavigationManager}
-        {uiState}
-        {searchTextStore}
-        {onSelect}
-        {focusEditor}
-      />
+  <div class="dropdown-content">
+    {#each pickerTree.rootNodes as rootNode (rootNode.item.id)}
+      {@const showBoundary = pickerTree.boundaryIndices.has(rootNode.item.id)}
+      {#if showBoundary}
+        <div class="section-boundary"></div>
+      {/if}
+
+      {#if rootNode.item.hasChildren}
+        <ExpandableOption
+          node={rootNode}
+          {selectedChatContext}
+          {keyboardNavigationManager}
+          {uiState}
+          {searchTextStore}
+          {onSelect}
+          {focusEditor}
+        />
+      {:else}
+        <SimpleOption
+          item={rootNode.item}
+          {selectedChatContext}
+          {keyboardNavigationManager}
+          {onSelect}
+        />
+      {/if}
     {:else}
-      <LeafOption
-        item={rootNode.item}
-        {selectedChatContext}
-        {keyboardNavigationManager}
-        {onSelect}
-      />
-    {/if}
-  {:else}
-    <div class="contents-empty">No matches found</div>
-  {/each}
+      <div class="contents-empty">No matches found</div>
+    {/each}
+  </div>
   <div class="inline-chat-navigation">
     <Kbd.Group>
       <Kbd.Root><ArrowUp size="12px" /></Kbd.Root>
@@ -135,8 +144,12 @@
 
 <style lang="postcss">
   .inline-chat-context-dropdown {
-    @apply flex flex-col absolute top-0 left-0 p-1.5 z-50 w-[400px] max-h-[500px] overflow-auto;
+    @apply flex flex-col absolute top-0 left-0 p-1.5 z-50;
     @apply border rounded-md bg-popover text-popover-foreground shadow-md;
+  }
+
+  .dropdown-content {
+    @apply flex flex-col w-[400px] max-h-[500px] overflow-auto;
   }
 
   .inline-chat-navigation {
@@ -146,5 +159,9 @@
 
   .contents-empty {
     @apply px-2 py-1.5 w-full ui-copy-inactive;
+  }
+
+  .section-boundary {
+    @apply border-b;
   }
 </style>

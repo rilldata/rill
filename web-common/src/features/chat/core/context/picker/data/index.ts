@@ -1,9 +1,9 @@
 import { derived, get, readable, type Readable } from "svelte/store";
-import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { getMetricsViewPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/metrics-views.ts";
 import { getModelsPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/models.ts";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
+import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
 
 /**
  * Creates a store that contains a list of options for each valid metrics view and sources/models.

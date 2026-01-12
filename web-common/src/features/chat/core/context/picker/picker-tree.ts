@@ -1,5 +1,14 @@
-import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
-import { InlineContextType } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import { type InlineContext } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+
+export type PickerItem = {
+  id: string;
+  context: InlineContext;
+  parentId?: string; // undefined for top-level items
+  recentlyUsed?: boolean;
+  currentlyActive?: boolean;
+  childrenLoading?: boolean;
+  hasChildren?: boolean;
+};
 
 export type PickerTreeNode = {
   item: PickerItem;
@@ -29,17 +38,21 @@ export function buildPickerTree(pickerItems: PickerItem[]): PickerTree {
 
   // Calculate boundary indices to show border around.
   const boundaryIndices = new Set<string>();
-  let prevType: InlineContextType | null = null;
-  pickerItems.forEach((item) => {
-    if (item.currentlyActive || item.recentlyUsed) {
-      boundaryIndices.add(item.id);
+  let prevItem: PickerItem | null = null;
+  rootNodes.forEach((rootNode) => {
+    if (rootNode.item.currentlyActive || rootNode.item.recentlyUsed) {
+      boundaryIndices.add(rootNode.item.id);
       return;
     }
 
-    if (!prevType || prevType !== item.context.type) return;
+    if (prevItem?.context?.type === rootNode.item.context.type) {
+      prevItem = rootNode.item;
+      return;
+    }
 
-    prevType = item.context.type;
-    boundaryIndices.add(item.id);
+    const isFirstBoundary = prevItem === null && boundaryIndices.size === 0;
+    if (!isFirstBoundary) boundaryIndices.add(rootNode.item.id);
+    prevItem = rootNode.item;
   });
 
   return {

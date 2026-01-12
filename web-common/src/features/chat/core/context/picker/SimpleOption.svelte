@@ -1,13 +1,12 @@
 <script lang="ts">
-  import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/types.ts";
   import {
     getIdForContext,
     type InlineContext,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
-  import { ensureInView } from "@rilldata/web-common/features/chat/core/context/picker/ensure-in-view.ts";
   import { InlineContextConfig } from "@rilldata/web-common/features/chat/core/context/config.ts";
   import { CheckIcon } from "lucide-svelte";
+  import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
 
   export let item: PickerItem;
   export let selectedChatContext: InlineContext | null;
@@ -20,8 +19,7 @@
     ? getIdForContext(selectedChatContext)
     : null;
 
-  const focusedItemStore = keyboardNavigationManager.focusedItemStore;
-  const ensureIsFocused = keyboardNavigationManager.ensureIsFocused;
+  const { focusedItemStore, enhancePickerNode } = keyboardNavigationManager;
   $: focusedItem = $focusedItemStore;
   $: focused = focusedItem?.id === item.id;
   $: selected = item.id === selectedItemId;
@@ -32,8 +30,7 @@
   class:focused
   type="button"
   on:click={() => onSelect(item.context)}
-  use:ensureInView={focused}
-  use:ensureIsFocused={item}
+  use:enhancePickerNode={item}
 >
   <div class="context-item-checkbox">
     {#if selected}
