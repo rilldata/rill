@@ -96,6 +96,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		root:         absPath,
 		driverConfig: conf,
 		driverName:   d.name,
+		dotRill:      dotrill.New(conf.HomeDir),
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -150,6 +151,11 @@ type connection struct {
 	driverConfig *configProperties
 	driverName   string
 
+	gitConfig *gitutil.Config // git config for repo
+	admin     *client.Client  // admin client for admin service, used to obtain github tokens
+	dotRill   dotrill.DotRill
+	gitMu     sync.Mutex // mutex to protect git related operations
+
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
 
@@ -183,6 +189,10 @@ func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 
 // Close implements drivers.Handle.
 func (c *connection) Close() error {
+	c.watcher.Close()
+	if c.admin != nil {
+		return c.admin.Close()
+	}
 	return nil
 }
 

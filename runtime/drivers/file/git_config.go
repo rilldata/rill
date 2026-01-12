@@ -114,6 +114,7 @@ func (c *connection) gitSignature(ctx context.Context, client *client.Client, pa
 		}
 	}
 
+<<<<<<< HEAD
 	if client == nil {
 		return &object.Signature{
 			Name:  "Rill Runtime",
@@ -121,6 +122,8 @@ func (c *connection) gitSignature(ctx context.Context, client *client.Client, pa
 			When:  time.Now(),
 		}, nil
 	}
+=======
+>>>>>>> origin/main
 	userResp, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err
