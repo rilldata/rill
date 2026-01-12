@@ -92,3 +92,9 @@ latest.txt
 # Claude resources
 CLAUDE.md
 .claude/
+# Temporary placeholder files for Cursor worktree sync
+slack-bot/src/storage-interface.ts
+slack-bot/STORAGE_OPTIONS.md
+
+# Entire slack-bot directory - migrated to Go implementation in admin/server/slack.go
+slack-bot/
