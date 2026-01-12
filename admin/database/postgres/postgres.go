@@ -3342,6 +3342,226 @@ func (c *connection) InsertGitRepoTransfer(ctx context.Context, fromRemote, toRe
 	return res, nil
 }
 
+// Slack workspace methods
+
+func (c *connection) FindSlackWorkspace(ctx context.Context, teamID string) (*database.SlackWorkspace, error) {
+	res := &database.SlackWorkspace{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM slack_workspaces WHERE team_id = $1", teamID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("slack workspace", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindSlackWorkspacesForCustomer(ctx context.Context, customerID string) ([]*database.SlackWorkspace, error) {
+	var res []*database.SlackWorkspace
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM slack_workspaces WHERE customer_id = $1 ORDER BY created_on", customerID)
+	if err != nil {
+		return nil, parseErr("slack workspaces", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertSlackWorkspace(ctx context.Context, opts *database.InsertSlackWorkspaceOptions) (*database.SlackWorkspace, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.SlackWorkspace{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO slack_workspaces (team_id, team_name, customer_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (team_id) DO UPDATE SET
+			team_name = COALESCE(EXCLUDED.team_name, slack_workspaces.team_name),
+			customer_id = COALESCE(EXCLUDED.customer_id, slack_workspaces.customer_id),
+			updated_on = now()
+		RETURNING *`,
+		opts.TeamID, opts.TeamName, opts.CustomerID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("slack workspace", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateSlackWorkspace(ctx context.Context, id string, opts *database.UpdateSlackWorkspaceOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE slack_workspaces
+		SET team_name = COALESCE($1, team_name),
+		    customer_id = COALESCE($2, customer_id),
+		    updated_on = now()
+		WHERE id = $3`,
+		opts.TeamName, opts.CustomerID, id,
+	)
+	return checkUpdateRow("slack workspace", res, err)
+}
+
+// Slack user token methods
+
+func (c *connection) FindSlackUserToken(ctx context.Context, workspaceID, userID string) (*database.SlackUserToken, error) {
+	res := &database.SlackUserToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT * FROM slack_user_tokens
+		WHERE workspace_id = $1 AND user_id = $2`,
+		workspaceID, userID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("slack user token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindSlackUserTokenWithSecret(ctx context.Context, workspaceID, userID string) (*database.SlackUserTokenWithSecret, error) {
+	res := &database.SlackUserToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT * FROM slack_user_tokens
+		WHERE workspace_id = $1 AND user_id = $2`,
+		workspaceID, userID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("slack user token", err)
+	}
+
+	// Decrypt token
+	decrypted, err := c.decrypt(res.TokenEncrypted, getStringValue(res.TokenEncryptionKeyID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt token: %w", err)
+	}
+
+	return &database.SlackUserTokenWithSecret{
+		SlackUserToken: res,
+		Token:          string(decrypted),
+	}, nil
+}
+
+func (c *connection) InsertSlackUserToken(ctx context.Context, opts *database.InsertSlackUserTokenOptions) (*database.SlackUserToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	// Encrypt token
+	encrypted, encKeyID, err := c.encrypt([]byte(opts.Token))
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt token: %w", err)
+	}
+
+	res := &database.SlackUserToken{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO slack_user_tokens (workspace_id, user_id, token_encrypted, token_encryption_key_id)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (workspace_id, user_id) DO UPDATE SET
+			token_encrypted = EXCLUDED.token_encrypted,
+			token_encryption_key_id = EXCLUDED.token_encryption_key_id,
+			updated_on = now()
+		RETURNING *`,
+		opts.WorkspaceID, opts.UserID, encrypted, encKeyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("slack user token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateSlackUserToken(ctx context.Context, id string, token string) error {
+	// Encrypt token
+	encrypted, encKeyID, err := c.encrypt([]byte(token))
+	if err != nil {
+		return fmt.Errorf("failed to encrypt token: %w", err)
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE slack_user_tokens
+		SET token_encrypted = $1,
+		    token_encryption_key_id = $2,
+		    updated_on = now()
+		WHERE id = $3`,
+		encrypted, encKeyID, id,
+	)
+	return checkUpdateRow("slack user token", res, err)
+}
+
+// getStringValue safely gets string value from pointer
+func getStringValue(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func (c *connection) DeleteSlackUserToken(ctx context.Context, workspaceID, userID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM slack_user_tokens
+		WHERE workspace_id = $1 AND user_id = $2`,
+		workspaceID, userID,
+	)
+	return checkDeleteRow("slack user token", res, err)
+}
+
+// Slack conversation methods
+
+func (c *connection) FindSlackConversation(ctx context.Context, workspaceID, channelID string, threadTS *string) (*database.SlackConversation, error) {
+	res := &database.SlackConversation{}
+	var err error
+	if threadTS == nil {
+		err = c.getDB(ctx).QueryRowxContext(ctx, `
+			SELECT * FROM slack_conversations
+			WHERE workspace_id = $1 AND channel_id = $2 AND thread_ts IS NULL`,
+			workspaceID, channelID,
+		).StructScan(res)
+	} else {
+		err = c.getDB(ctx).QueryRowxContext(ctx, `
+			SELECT * FROM slack_conversations
+			WHERE workspace_id = $1 AND channel_id = $2 AND thread_ts = $3`,
+			workspaceID, channelID, *threadTS,
+		).StructScan(res)
+	}
+	if err != nil {
+		return nil, parseErr("slack conversation", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertSlackConversation(ctx context.Context, opts *database.InsertSlackConversationOptions) (*database.SlackConversation, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.SlackConversation{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO slack_conversations (workspace_id, channel_id, thread_ts, rill_conversation_id, user_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (workspace_id, channel_id, thread_ts) DO UPDATE SET
+			rill_conversation_id = EXCLUDED.rill_conversation_id,
+			user_id = EXCLUDED.user_id,
+			last_activity = now()
+		RETURNING *`,
+		opts.WorkspaceID, opts.ChannelID, opts.ThreadTS, opts.RillConversationID, opts.UserID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("slack conversation", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateSlackConversation(ctx context.Context, id string, opts *database.UpdateSlackConversationOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE slack_conversations
+		SET rill_conversation_id = $1,
+		    last_activity = now()
+		WHERE id = $2`,
+		opts.RillConversationID, id,
+	)
+	return checkUpdateRow("slack conversation", res, err)
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project

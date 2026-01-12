@@ -61,6 +61,11 @@ type Options struct {
 	GithubManagedAccount   string
 	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
 	AssetsBucket string
+	// Slack bot configuration
+	SlackBotToken      string
+	SlackSigningSecret string
+	SlackDefaultOrg    string
+	SlackDefaultProject string
 }
 
 type Server struct {
@@ -75,6 +80,10 @@ type Server struct {
 	issuer        *runtimeauth.Issuer
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
+	slackPool     *slackEventWorkerPool
+	slackTracker  *messageUpdateTracker
+	slackMutex    *messageUpdateMutex
+	slackDedup    *slackEventDeduplicator
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -123,7 +132,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
-	return &Server{
+	srv := &Server{
 		logger:        logger,
 		admin:         adm,
 		opts:          opts,
@@ -132,7 +141,17 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		issuer:        issuer,
 		limiter:       limiter,
 		activity:      activityClient,
-	}, nil
+		slackTracker:  newMessageUpdateTracker(),
+		slackMutex:    newMessageUpdateMutex(),
+		slackDedup:    newSlackEventDeduplicator(),
+	}
+
+	// Initialize Slack worker pool if Slack is configured
+	if opts.SlackBotToken != "" && opts.SlackSigningSecret != "" {
+		srv.slackPool = newSlackEventWorkerPool(srv)
+	}
+
+	return srv, nil
 }
 
 // Starts the HTTP server.
@@ -141,6 +160,24 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Gracefully shutdown Slack worker pool on context cancellation
+	go func() {
+		<-ctx.Done()
+		if s.slackPool != nil {
+			s.logger.Info("shutting down Slack worker pool")
+			s.slackPool.shutdown()
+		}
+		if s.slackTracker != nil {
+			s.slackTracker.shutdown()
+		}
+		if s.slackMutex != nil {
+			s.slackMutex.shutdown()
+		}
+		if s.slackDedup != nil {
+			s.slackDedup.shutdown()
+		}
+	}()
 
 	return graceful.ServeHTTP(ctx, handler, graceful.ServeOptions{
 		Port:     s.opts.HTTPPort,
@@ -226,6 +263,11 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
+
+	// Add Slack-related endpoints (not gRPC handlers, just regular endpoints on /slack/*)
+	if s.opts.SlackBotToken != "" && s.opts.SlackSigningSecret != "" {
+		s.registerSlackEndpoints(mux)
+	}
 
 	// Add project assets endpoint.
 	mux.Handle("/v1/assets/{asset_id}/download", observability.Middleware("assets", s.logger, s.authenticator.HTTPMiddleware(httputil.Handler(s.assetHandler))))

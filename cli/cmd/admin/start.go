@@ -101,6 +101,10 @@ type Config struct {
 	OrbIntegratedTaxProvider          string `default:"avalara" split_words:"true"`
 	StripeAPIKey                      string `split_words:"true"`
 	StripeWebhookSecret               string `split_words:"true"`
+	SlackBotToken                     string `split_words:"true"`
+	SlackSigningSecret                string `split_words:"true"`
+	SlackDefaultOrg                   string `split_words:"true"`
+	SlackDefaultProject               string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -347,6 +351,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					AllowedOrigins:         conf.AllowedOrigins,
+					SlackBotToken:          conf.SlackBotToken,
+					SlackSigningSecret:     conf.SlackSigningSecret,
+					SlackDefaultOrg:        conf.SlackDefaultOrg,
+					SlackDefaultProject:    conf.SlackDefaultProject,
 					SessionKeyPairs:        keyPairs,
 					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
 					AuthDomain:             conf.AuthDomain,

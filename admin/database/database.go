@@ -350,6 +350,25 @@ type DB interface {
 
 	FindGitRepoTransfer(ctx context.Context, remote string) (*GitRepoTransfer, error)
 	InsertGitRepoTransfer(ctx context.Context, fromRemote, toRemote string) (*GitRepoTransfer, error)
+
+	// Slack workspace methods
+	FindSlackWorkspace(ctx context.Context, teamID string) (*SlackWorkspace, error)
+	FindSlackWorkspacesForCustomer(ctx context.Context, customerID string) ([]*SlackWorkspace, error)
+	InsertSlackWorkspace(ctx context.Context, opts *InsertSlackWorkspaceOptions) (*SlackWorkspace, error)
+	UpdateSlackWorkspace(ctx context.Context, id string, opts *UpdateSlackWorkspaceOptions) error
+
+	// Slack user token methods
+	FindSlackUserToken(ctx context.Context, workspaceID, userID string) (*SlackUserToken, error)
+	// FindSlackUserTokenWithSecret returns the token with decrypted secret (use with caution)
+	FindSlackUserTokenWithSecret(ctx context.Context, workspaceID, userID string) (*SlackUserTokenWithSecret, error)
+	InsertSlackUserToken(ctx context.Context, opts *InsertSlackUserTokenOptions) (*SlackUserToken, error)
+	UpdateSlackUserToken(ctx context.Context, id string, token string) error // Plain token - will be encrypted internally
+	DeleteSlackUserToken(ctx context.Context, workspaceID, userID string) error
+
+	// Slack conversation methods
+	FindSlackConversation(ctx context.Context, workspaceID, channelID string, threadTS *string) (*SlackConversation, error)
+	InsertSlackConversation(ctx context.Context, opts *InsertSlackConversationOptions) (*SlackConversation, error)
+	UpdateSlackConversation(ctx context.Context, id string, opts *UpdateSlackConversationOptions) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -1484,4 +1503,78 @@ type ProjectMemberServiceWithProject struct {
 type GitRepoTransfer struct {
 	From string `db:"from_git_remote"`
 	To   string `db:"to_git_remote"`
+}
+
+// SlackWorkspace represents a Slack workspace/team.
+type SlackWorkspace struct {
+	ID         string    `db:"id"`
+	TeamID     string    `db:"team_id"`
+	TeamName   *string   `db:"team_name"`
+	CustomerID *string   `db:"customer_id"`
+	CreatedOn  time.Time `db:"created_on"`
+	UpdatedOn  time.Time `db:"updated_on"`
+}
+
+// InsertSlackWorkspaceOptions defines options for inserting a new SlackWorkspace.
+type InsertSlackWorkspaceOptions struct {
+	TeamID     string
+	TeamName   *string
+	CustomerID *string
+}
+
+// UpdateSlackWorkspaceOptions defines options for updating a SlackWorkspace.
+type UpdateSlackWorkspaceOptions struct {
+	TeamName   *string
+	CustomerID *string
+}
+
+// SlackUserToken represents an encrypted Rill PAT for a Slack user in a workspace.
+type SlackUserToken struct {
+	ID                 string    `db:"id"`
+	WorkspaceID        string    `db:"workspace_id"`
+	UserID             string    `db:"user_id"`
+	TokenEncrypted     []byte    `db:"token_encrypted"`
+	TokenEncryptionKeyID *string `db:"token_encryption_key_id"`
+	CreatedOn          time.Time `db:"created_on"`
+	UpdatedOn          time.Time `db:"updated_on"`
+}
+
+// SlackUserTokenWithSecret includes the decrypted token (use with caution).
+type SlackUserTokenWithSecret struct {
+	*SlackUserToken
+	Token string // Decrypted token
+}
+
+// InsertSlackUserTokenOptions defines options for inserting a new SlackUserToken.
+// Token should be the plain Rill PAT - it will be encrypted by the database layer.
+type InsertSlackUserTokenOptions struct {
+	WorkspaceID string
+	UserID      string
+	Token       string // Plain token - will be encrypted internally
+}
+
+// SlackConversation represents a conversation state between Slack and Rill.
+type SlackConversation struct {
+	ID                 string    `db:"id"`
+	WorkspaceID        string    `db:"workspace_id"`
+	ChannelID          string    `db:"channel_id"`
+	ThreadTS           *string   `db:"thread_ts"`
+	RillConversationID string    `db:"rill_conversation_id"`
+	UserID             string    `db:"user_id"`
+	LastActivity       time.Time `db:"last_activity"`
+	CreatedOn          time.Time `db:"created_on"`
+}
+
+// InsertSlackConversationOptions defines options for inserting a new SlackConversation.
+type InsertSlackConversationOptions struct {
+	WorkspaceID        string
+	ChannelID          string
+	ThreadTS           *string
+	RillConversationID string
+	UserID             string
+}
+
+// UpdateSlackConversationOptions defines options for updating a SlackConversation.
+type UpdateSlackConversationOptions struct {
+	RillConversationID string
 }
