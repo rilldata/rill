@@ -1,0 +1,96 @@
+package ai
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
+)
+
+const ShowTableName = "show_table"
+
+type ShowTable struct {
+	Runtime *runtime.Runtime
+}
+
+var _ Tool[*ShowTableArgs, *ShowTableResult] = (*ShowTable)(nil)
+
+type ShowTableArgs struct {
+	Connector      string `json:"connector,omitempty" jsonschema:"Optional OLAP connector name. Defaults to the instance's default OLAP connector."`
+	Table          string `json:"table" jsonschema:"The name of the table to describe."`
+	Database       string `json:"database,omitempty" jsonschema:"Optional database name for connectors that support multiple databases."`
+	DatabaseSchema string `json:"database_schema,omitempty" jsonschema:"Optional database schema name."`
+}
+
+type ShowTableResult struct {
+	Name              string       `json:"name"`
+	IsView            bool         `json:"is_view"`
+	Columns           []ColumnInfo `json:"columns"`
+	PhysicalSizeBytes int64        `json:"physical_size_bytes,omitempty" jsonschema:"The physical size of the table in bytes. If 0 or omitted, size information is not available."`
+}
+
+type ColumnInfo struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+func (t *ShowTable) Spec() *mcp.Tool {
+	return &mcp.Tool{
+		Name:        ShowTableName,
+		Title:       "Show Table",
+		Description: "Show schema and column information for a table in an OLAP connector.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Getting table schema...",
+			"openai/toolInvocation/invoked":  "Got table schema",
+		},
+	}
+}
+
+func (t *ShowTable) CheckAccess(ctx context.Context) (bool, error) {
+	return checkDeveloperAgentAccess(ctx, t.Runtime)
+}
+
+func (t *ShowTable) Handler(ctx context.Context, args *ShowTableArgs) (*ShowTableResult, error) {
+	if args.Table == "" {
+		return nil, fmt.Errorf("table name is required")
+	}
+
+	s := GetSession(ctx)
+
+	// Get OLAP handle
+	olap, release, err := t.Runtime.OLAP(ctx, s.InstanceID(), args.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	// Lookup the table
+	table, err := olap.InformationSchema().Lookup(ctx, args.Database, args.DatabaseSchema, args.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load physical size
+	_ = olap.InformationSchema().LoadPhysicalSize(ctx, []*drivers.OlapTable{table})
+
+	// Build result
+	result := &ShowTableResult{
+		Name:              table.Name,
+		IsView:            table.View,
+		PhysicalSizeBytes: table.PhysicalSizeBytes,
+		Columns:           make([]ColumnInfo, 0),
+	}
+
+	if table.Schema != nil {
+		for _, field := range table.Schema.Fields {
+			result.Columns = append(result.Columns, ColumnInfo{
+				Name: field.Name,
+				Type: field.Type.Code.String(),
+			})
+		}
+	}
+
+	return result, nil
+}

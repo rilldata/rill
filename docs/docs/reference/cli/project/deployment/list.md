@@ -1,20 +1,21 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project deployments stop
+title: rill project deployment list
 ---
-## rill project deployments stop
+## rill project deployment list
 
-Stop a deployment by branch
+List all deployments for a project
 
 ```
-rill project deployments stop [<project>] <branch> [flags]
+rill project deployment list [<project>] [flags]
 ```
 
 ### Flags
 
 ```
-      --path string      Project directory (default ".")
-      --project string   Project name
+      --environment string   Filter deployments by environment (prod/dev)
+      --path string          Project directory (default ".")
+      --project string       Project name
 ```
 
 ### Global flags
@@ -29,5 +30,5 @@ rill project deployments stop [<project>] <branch> [flags]
 
 ### SEE ALSO
 
-* [rill project deployments](deployments.md)	 - Manage project deployments
+* [rill project deployment](deployment.md)	 - Manage project deployments
 
