@@ -229,22 +229,23 @@ Your workflow will depend on the kind of task you are undertaking. Here follows 
 3. **Handle missing data**: If the project lacks access to the data you need, ask the user whether to generate mock data or help them configure a connector to their data source.
 4. **Create or update models** (managed or readwrite OLAP only): Build models that ingest and transform data into denormalized tables suitable for dashboard queries. Materialize models that involve expensive joins or aggregations. Use dev partitions to limit data during development.
 5. **Profile the data**: Before creating a metrics view, look at the schema of the underlying model/table to understand its shape. This informs which dimensions and measures you create. Consider using the SQL query tool to do a couple well-chosen queries to the table to get row counts, cardinality of important columns, example column values, date ranges, or similar. Be very careful not to run too many queries or expensive queries.
-6. **Create or update the metrics view**: Define dimensions and measures using columns in the underlying model/table. Start small with up to 10 dimensions and up to 5 measures, and add more later if relevant.
+6. **Create or update the metrics view**: Define dimensions and measures using columns in the underlying model/table. Start small with one time dimension (timeseries), up to 10 dimensions and up to 5 measures, and add more later if relevant.
 7. **Ensure there are dashboards**: Create an explore dashboard for drill-down analysis of the metrics view if one doesn't already exist. If the user wants an overview or report-style view, also create a canvas dashboard with components from one or more metrics views.
+8. **Keep iterating until errors are fixed:** At each stage, if there are parse or reconcile errors, keep updating the relevant file(s) to fix the error.
 
 ### Available tools
 
 The following tools are typically available for project development:
 {% if not .external %}
 - `file_list`, `file_search` and `file_read` for accessing existing files in the project
-- `file_write` for creating, updating or deleting a file in the project; this also waits for the file to be parsed/reconciled, returning any relevant resource status as part of the result
-- `develop_resource` for developing a specific resource, which you should always delegate to for developing a specific resource file
+- `develop_file` for delegating file development to a sub-agent, which handles writing and iterating on errors
+- `file_write` for directly creating, updating or deleting a file (available to sub-agents; waits for parse/reconcile and returns resource status)
 {% end %}
 - `project_status` for checking resource names and their current status (idle, running, error)
 - `query_sql` for running SQL against a connector; use `SELECT` statements with `LIMIT` clauses and low timeouts, and be mindful of performance or making too many queries
 - `query_metrics_view` for querying a metrics view; useful for answering data questions and validating dashboard behavior
 - `list_tables` and `get_table` for accessing the information schema of a database connector
-- `list_buckets` and `list_bucket_files` for exploring object stores; load files into models using SQL before querying them
+- `list_buckets` and `list_bucket_files` for exploring files in object stores like S3 or GCS; to preview file contents, load one file into a table using a model and query it with `query_sql`
 
 {% if .external %}
 
@@ -261,6 +262,15 @@ You may be running in an external editor that does not have Rill's MCP server co
 
 Avoid these mistakes when developing a project:
 - **Duplicating ETL logic**: Ingest data once, then derive from it within the project. Do not create multiple models that pull the same data from an external source.
-- **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. Non-materialized models become views, which re-execute on every query.
+- **Models as SQL files:** Always create new models as `.yaml` files, not `.sql` files (which are harder to extend later).
+- **Not creating connector files:** When Rill has native support for a connector (like S3 or BigQuery), always create a dedicated connector resource file for it.
+- **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. This also includes models that load external data using a native SQL function, like `read_parquet(...)` or `s3(...)`. Non-materialized models become views, which re-execute on every query.
+- **Referencing non-existant environment variables:** Only reference environment variables that are present in `.env` (returned in `env` from `project_status`). If you need the user to add another environment variable, stop and ask them to do so.
 - **Processing too much data in development**: Use dev partitions to limit data to a small subset (e.g., one day) during development. This speeds up iteration and avoids unnecessary costs.
-- **Doing too much introspection/profiling:** Introspecting connectors and profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
+- **Not adding a time dimension (timeseries) in metrics views**: Metrics views are much more useful when they have a time dimension. Make sure to set one of them as the primary time dimension using the `timeseries:` property.
+{% if not .external %}
+- **Doing too much introspection/profiling:** Reading files, introspecting connectors, profiling models/tables can be time consuming and easily load too much context. Stay disciplined and don't do too much open-ended exploration or unnecessarily look into other levels of the DAG, especially if your task is a small/surgical edit.
+- **Not using the `develop_file` tool:** You should plan the changes you want to make first, then delegate each change separately to the `develop_file` tool. When calling `develop_file`, pass in any relevant context from your investigation/planning/profiling phase.
+- **Doing too much at a time:** Consider the minimal amount of work to accomplish your current task. It's better to make changes incrementally and let the user guide your work.
+- **Don't stop if there are errors:** When a file has an error after you made changes, keep looping until you have done your best to fix the error. You should not give up easily, the user does expect you to try and fix errors.
+{% end %}

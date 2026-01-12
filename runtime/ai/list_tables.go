@@ -48,7 +48,7 @@ func (t *ListTables) Spec() *mcp.Tool {
 }
 
 func (t *ListTables) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAgentAccess(ctx, t.Runtime)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *ListTables) Handler(ctx context.Context, args *ListTablesArgs) (*ListTablesResult, error) {

@@ -50,7 +50,7 @@ func (t *ListBucketObjects) Spec() *mcp.Tool {
 }
 
 func (t *ListBucketObjects) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAgentAccess(ctx, t.Runtime)
+	return checkDeveloperAccess(ctx, t.Runtime, false)
 }
 
 func (t *ListBucketObjects) Handler(ctx context.Context, args *ListBucketObjectsArgs) (*ListBucketObjectsResult, error) {
