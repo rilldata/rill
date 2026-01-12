@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project deployments create
+title: rill project deployment create
 ---
-## rill project deployments create
+## rill project deployment create
 
 Create a deployment for a specific branch
 
 ```
-rill project deployments create [<project>] <branch> [flags]
+rill project deployment create [<project>] <branch> [flags]
 ```
 
 ### Flags
@@ -31,5 +31,5 @@ rill project deployments create [<project>] <branch> [flags]
 
 ### SEE ALSO
 
-* [rill project deployments](deployments.md)	 - Manage project deployments
+* [rill project deployment](deployment.md)	 - Manage project deployments
 

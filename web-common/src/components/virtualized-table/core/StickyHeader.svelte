@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import { dragTableCell } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -7,19 +7,20 @@
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
 
-  const dispatch = createEventDispatcher();
-
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let borderRight = false;
+  export let bgClass = "";
   export let onClick: undefined | (() => void) = undefined;
   export let onShiftClick: undefined | (() => void) = undefined;
-
-  export let bgClass = "";
+  export let onResetColumnWidth: () => void = () => {};
+  export let onBlur: () => void = () => {};
+  export let onFocus: () => void = () => {};
+  export let onResize: (size: number) => void = () => {};
 
   let isResizing = false;
-  let resizeSuppressTimeout;
+  let resizeSuppressTimeout: ReturnType<typeof setTimeout>;
 
   function suppressClickAfterResize() {
     isResizing = true;
@@ -49,27 +50,19 @@
       : "border-b border-b-1 border-r border-r-1 border border-t-0 border-l-0 bg-gray-100");
 
   const borderClassesInnerDiv = isDimensionTable ? "" : "whitespace-nowrap";
-
-  function focus() {
-    dispatch("focus");
-  }
-
-  function blur() {
-    dispatch("blur");
-  }
 </script>
 
 <button
-  on:mouseover={focus}
-  on:mouseleave={blur}
-  on:focus={focus}
-  on:blur={blur}
-  on:click={(e) => {
+  on:mouseover={onFocus}
+  on:mouseleave={onBlur}
+  on:focus={onFocus}
+  on:blur={onBlur}
+  on:click={async (e) => {
     if (isResizing) {
       e.stopPropagation();
       return;
     }
-    modified({ shift: onShiftClick, click: onClick })(e);
+    await modified({ shift: onShiftClick, click: onClick })(e);
   }}
   style:transform="translate{position === 'left' ? 'Y' : 'X'}({header.start}px)"
   style:padding-right={position === "left" ? "0px" : "10px"}
@@ -98,11 +91,11 @@
         role="columnheader"
         tabindex="0"
         use:dragTableCell
-        on:resize
-        on:resizeend={suppressClickAfterResize}
-        on:dblclick={() => {
-          dispatch("reset-column-width");
+        on:resize={(e) => {
+          onResize(e.detail);
         }}
+        on:resizeend={suppressClickAfterResize}
+        on:dblclick={onResetColumnWidth}
         on:click|stopPropagation
         class="absolute top-0 right-0 cursor-col-resize grid place-items-end"
         style:padding-right="1.25px"

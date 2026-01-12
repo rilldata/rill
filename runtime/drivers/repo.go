@@ -10,6 +10,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first")
+
 // RepoStore is implemented by drivers capable of storing project code files.
 // All paths start with '/' and are relative to the repo root.
 type RepoStore interface {
@@ -39,10 +41,12 @@ type RepoStore interface {
 	// The function does not return until the context is cancelled or an error occurs.
 	Watch(ctx context.Context, cb WatchCallback) error
 
+	// Status returns the current status of the repository.
+	Status(ctx context.Context) (*RepoStatus, error)
 	// Pull synchronizes local and remote state.
 	// If discardChanges is true, it will discard any local changes made using Put/Rename/etc. and force synchronize to the remote state.
 	// If forceHandshake is true, it will re-verify any cached config. Specifically, this should be used when external config changes, such as the Git branch or file archive ID.
-	Pull(ctx context.Context, discardChanges, forceHandshake bool) error
+	Pull(ctx context.Context, opts *PullOptions) error
 	// CommitAndPush commits local changes to the remote repository and pushes them.
 	CommitAndPush(ctx context.Context, message string, force bool) error
 	// CommitHash returns a unique ID for the state of the remote files currently served (does not change on uncommitted local changes).
@@ -100,6 +104,26 @@ func IsIgnored(path string, additionalIgnoredPaths []string) bool {
 		}
 	}
 	return false
+}
+
+type RepoStatus struct {
+	// IsGitRepo indicates if the repo is backed by a Git repository.
+	IsGitRepo     bool
+	Branch        string
+	RemoteURL     string
+	Subpath       string
+	ManagedRepo   bool
+	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
+	LocalCommits  int32
+	RemoteCommits int32
+}
+
+type PullOptions struct {
+	ForceHandshake bool
+
+	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
+	UserTriggered  bool
+	DiscardChanges bool
 }
 
 // ignoredPaths is a list of paths that are always ignored by the parser.

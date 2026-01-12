@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project deployments show
+title: rill project deployment start
 ---
-## rill project deployments show
+## rill project deployment start
 
-Show details of a deployment
+Start a deployment by branch
 
 ```
-rill project deployments show [<project>] <branch> [flags]
+rill project deployment start [<project>] <branch> [flags]
 ```
 
 ### Flags
@@ -29,5 +29,5 @@ rill project deployments show [<project>] <branch> [flags]
 
 ### SEE ALSO
 
-* [rill project deployments](deployments.md)	 - Manage project deployments
+* [rill project deployment](deployment.md)	 - Manage project deployments
 

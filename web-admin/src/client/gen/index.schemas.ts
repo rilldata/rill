@@ -58,6 +58,7 @@ export const Runtimev1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1AddOrganizationMemberUserResponse {
@@ -646,9 +647,12 @@ The URL uses HTTPS with embedded username/password. */
   gitSubpath?: string;
   /** The branch to use for the deployment. */
   gitBranch?: string;
-  /** A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution. */
-  gitEditBranch?: string;
+  /** Whether editing is allowed. Set to true for dev deployments. */
+  editable?: boolean;
+  /** Primary branch of the project. */
+  primaryBranch?: string;
+  /** Whether the git repo is managed by Rill. */
+  managedGitRepo?: boolean;
   /** Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa). */
   archiveDownloadUrl?: string;
   /** A stable ID for the archive returned from archive_download_url. */
