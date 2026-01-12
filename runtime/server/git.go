@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -33,22 +34,21 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 		if errors.Is(err, runtime.ErrAdminNotConfigured) && s.adminOverride != nil {
 			admin = s.adminOverride
 			release = func() {}
+		} else {
+			return nil, err
 		}
-		return nil, err
 	}
 	defer release()
 
 	deployments, err := admin.ListDeployments(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, drivers.ErrNotAuthenticated) && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 		return nil, fmt.Errorf("failed to list deployments: %w", err)
 	}
 
 	// Map deployments to branches with deployments
-	deploymentMap := make(map[string]*drivers.Deployment)
+	deploymentMap := make(map[string]*drivers.Deployment, len(deployments))
 	for _, d := range deployments {
-		if d.Branch != currentBranch {
-			deploymentMap[d.Branch] = d
-		}
+		deploymentMap[d.Branch] = d
 	}
 
 	res := make([]*runtimev1.GitBranch, 0, len(branches))
@@ -59,7 +59,7 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 		deployment, ok := deploymentMap[branch]
 		if ok {
 			b.HasDeployment = true
-			b.Editable = deployment.Editable
+			b.EditableDeployment = deployment.Editable
 		}
 		res = append(res, b)
 	}
@@ -70,21 +70,21 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 	}, nil
 }
 
-func (s *Server) SwitchBranch(ctx context.Context, req *runtimev1.SwitchBranchRequest) (*runtimev1.SwitchBranchResponse, error) {
+func (s *Server) GitSwitchBranch(ctx context.Context, req *runtimev1.GitSwitchBranchRequest) (*runtimev1.GitSwitchBranchResponse, error) {
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	err = repo.SwitchBranch(ctx, req.BranchName, req.CreateIfNotExists, req.IgnoreLocalChanges)
+	err = repo.SwitchBranch(ctx, req.Branch, req.Create, req.IgnoreLocalChanges)
 	if err != nil {
 		if errors.Is(err, git.ErrBranchNotFound) {
-			return nil, status.Errorf(codes.NotFound, "branch %s not found", req.BranchName)
+			return nil, status.Errorf(codes.NotFound, "branch %s not found", req.Branch)
 		}
 		return nil, fmt.Errorf("failed to switch git branch: %w", err)
 	}
-	return &runtimev1.SwitchBranchResponse{}, nil
+	return &runtimev1.GitSwitchBranchResponse{}, nil
 }
 
 // GitStatus implements RuntimeService.
@@ -177,6 +177,23 @@ func (s *Server) RestoreGitCommit(ctx context.Context, req *runtimev1.RestoreGit
 	return &runtimev1.RestoreGitCommitResponse{
 		NewCommitSha: newCommitSHA,
 	}, nil
+}
+
+func (s *Server) GitMergeToBranch(ctx context.Context, req *runtimev1.GitMergeToBranchRequest) (*runtimev1.GitMergeToBranchResponse, error) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
+		return nil, ErrForbidden
+	}
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	err = repo.MergeToBranch(ctx, req.Branch, req.Force)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to merge: %v", err)
+	}
+	return &runtimev1.GitMergeToBranchResponse{}, nil
 }
 
 // GitPull implements RuntimeService.

@@ -46,8 +46,10 @@ import type {
   RuntimeServiceGetModelPartitionsParams,
   RuntimeServiceGetResourceParams,
   RuntimeServiceGitCommitBody,
+  RuntimeServiceGitMergeToBranchBody,
   RuntimeServiceGitPullBody,
   RuntimeServiceGitPushBody,
+  RuntimeServiceGitSwitchBranchBody,
   RuntimeServiceListConversationsParams,
   RuntimeServiceListFilesParams,
   RuntimeServiceListGitCommitsParams,
@@ -59,7 +61,6 @@ import type {
   RuntimeServiceRenameFileBody,
   RuntimeServiceRestoreGitCommitBody,
   RuntimeServiceShareConversationBody,
-  RuntimeServiceSwitchBranchBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -91,9 +92,11 @@ import type {
   V1GetModelPartitionsResponse,
   V1GetResourceResponse,
   V1GitCommitResponse,
+  V1GitMergeToBranchResponse,
   V1GitPullResponse,
   V1GitPushResponse,
   V1GitStatusResponse,
+  V1GitSwitchBranchResponse,
   V1HealthResponse,
   V1InstanceHealthResponse,
   V1IssueDevJWTRequest,
@@ -115,7 +118,6 @@ import type {
   V1RenameFileResponse,
   V1RestoreGitCommitResponse,
   V1ShareConversationResponse,
-  V1SwitchBranchResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -3222,37 +3224,37 @@ export function createRuntimeServiceListGitBranches<
   return query;
 }
 
-export const runtimeServiceSwitchBranch = (
+export const runtimeServiceGitSwitchBranch = (
   instanceId: string,
-  runtimeServiceSwitchBranchBody: RuntimeServiceSwitchBranchBody,
+  runtimeServiceGitSwitchBranchBody: RuntimeServiceGitSwitchBranchBody,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1SwitchBranchResponse>({
+  return httpClient<V1GitSwitchBranchResponse>({
     url: `/v1/instances/${instanceId}/git/branches/switch`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: runtimeServiceSwitchBranchBody,
+    data: runtimeServiceGitSwitchBranchBody,
     signal,
   });
 };
 
-export const getRuntimeServiceSwitchBranchMutationOptions = <
+export const getRuntimeServiceGitSwitchBranchMutationOptions = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+    Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
     TError,
-    { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+    { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+  Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
   TError,
-  { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+  { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
   TContext
 > => {
-  const mutationKey = ["runtimeServiceSwitchBranch"];
+  const mutationKey = ["runtimeServiceGitSwitchBranch"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -3262,44 +3264,45 @@ export const getRuntimeServiceSwitchBranchMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
-    { instanceId: string; data: RuntimeServiceSwitchBranchBody }
+    Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
+    { instanceId: string; data: RuntimeServiceGitSwitchBranchBody }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
-    return runtimeServiceSwitchBranch(instanceId, data);
+    return runtimeServiceGitSwitchBranch(instanceId, data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type RuntimeServiceSwitchBranchMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>
+export type RuntimeServiceGitSwitchBranchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>
 >;
-export type RuntimeServiceSwitchBranchMutationBody =
-  RuntimeServiceSwitchBranchBody;
-export type RuntimeServiceSwitchBranchMutationError = ErrorType<RpcStatus>;
+export type RuntimeServiceGitSwitchBranchMutationBody =
+  RuntimeServiceGitSwitchBranchBody;
+export type RuntimeServiceGitSwitchBranchMutationError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceSwitchBranch = <
+export const createRuntimeServiceGitSwitchBranch = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(
   options?: {
     mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+      Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
       TError,
-      { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+      { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  Awaited<ReturnType<typeof runtimeServiceSwitchBranch>>,
+  Awaited<ReturnType<typeof runtimeServiceGitSwitchBranch>>,
   TError,
-  { instanceId: string; data: RuntimeServiceSwitchBranchBody },
+  { instanceId: string; data: RuntimeServiceGitSwitchBranchBody },
   TContext
 > => {
-  const mutationOptions = getRuntimeServiceSwitchBranchMutationOptions(options);
+  const mutationOptions =
+    getRuntimeServiceGitSwitchBranchMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -3490,6 +3493,98 @@ export function createRuntimeServiceListGitCommits<
   return query;
 }
 
+/**
+ * @summary GitMergeToBranch merges current branch to the specified branch.
+Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+It restores back to the original branch after the merge.
+ */
+export const runtimeServiceGitMergeToBranch = (
+  instanceId: string,
+  runtimeServiceGitMergeToBranchBody: RuntimeServiceGitMergeToBranchBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GitMergeToBranchResponse>({
+    url: `/v1/instances/${instanceId}/git/merge`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGitMergeToBranchBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGitMergeToBranchMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGitMergeToBranch"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+    { instanceId: string; data: RuntimeServiceGitMergeToBranchBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGitMergeToBranch(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGitMergeToBranchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>
+>;
+export type RuntimeServiceGitMergeToBranchMutationBody =
+  RuntimeServiceGitMergeToBranchBody;
+export type RuntimeServiceGitMergeToBranchMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary GitMergeToBranch merges current branch to the specified branch.
+Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+It restores back to the original branch after the merge.
+ */
+export const createRuntimeServiceGitMergeToBranch = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGitMergeToBranch>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGitMergeToBranchBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceGitMergeToBranchMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 If there are any merge conflicts the pull is aborted.
@@ -3780,7 +3875,7 @@ export const createRuntimeServiceRestoreGitCommit = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+ * @summary GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
  */
 export const runtimeServiceGitStatus = (
   instanceId: string,
@@ -3839,7 +3934,7 @@ export type RuntimeServiceGitStatusQueryResult = NonNullable<
 export type RuntimeServiceGitStatusQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+ * @summary GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
  */
 
 export function createRuntimeServiceGitStatus<

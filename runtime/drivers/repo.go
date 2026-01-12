@@ -61,7 +61,10 @@ type RepoStore interface {
 	// ListBranches returns a list of branch names and the current branch name.
 	ListBranches(ctx context.Context) ([]string, string, error)
 	// SwitchBranch switches to the specified branch. If createIfNotExists is true, creates the branch if it doesn't exist.
-	SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error
+	SwitchBranch(ctx context.Context, branch string, createIfNotExists, ignoreLocalChanges bool) error
+	// MergeToBranch merges the current branch to the specified branch.
+	// In case of merge conflicts, prefer current changes if force is true else return an error without merging.
+	MergeToBranch(ctx context.Context, branch string, force bool) error
 	// ListCommits returns a list of commits in reverse chronological order.
 	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
 	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)

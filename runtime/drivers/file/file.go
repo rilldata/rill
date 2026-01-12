@@ -158,11 +158,6 @@ type connection struct {
 
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
-
-	gitConfig *gitutil.Config // git config for repo
-	admin     *client.Client  // admin client for admin service, used to obtain github tokens
-	dotRill   dotrill.DotRill
-	gitMu     sync.Mutex // mutex to protect git related operations
 }
 
 // Ping implements drivers.Handle.

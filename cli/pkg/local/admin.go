@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -25,7 +24,7 @@ func newLocalAdminService(ch *cmdutil.Helper, root string) drivers.AdminService 
 }
 
 // GetAlertMetadata implements drivers.AdminService.
-func (l *localAdminService) GetAlertMetadata(ctx context.Context, alertName string, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID string, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+func (l *localAdminService) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
@@ -35,17 +34,21 @@ func (l *localAdminService) GetDeploymentConfig(ctx context.Context) (*drivers.D
 }
 
 // GetReportMetadata implements drivers.AdminService.
-func (l *localAdminService) GetReportMetadata(ctx context.Context, reportName string, ownerID string, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (l *localAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
 // ProvisionConnector implements drivers.AdminService.
-func (l *localAdminService) ProvisionConnector(ctx context.Context, name string, driver string, args map[string]any) (map[string]any, error) {
+func (l *localAdminService) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
 // ListDeployments implements drivers.AdminService.
 func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {
+	if l.ch.AdminToken() == "" {
+		return nil, drivers.ErrNotAuthenticated
+	}
+
 	client, err := l.ch.Client()
 	if err != nil {
 		return nil, err
@@ -54,9 +57,6 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 	projects, err := l.ch.InferProjects(ctx, l.ch.Org, l.root)
 	if err != nil {
 		return nil, err
-	}
-	if len(projects) == 0 {
-		return nil, fmt.Errorf("no project found in the current directory")
 	}
 	project := projects[0]
 

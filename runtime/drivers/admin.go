@@ -2,8 +2,11 @@ package drivers
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+var ErrNotAuthenticated = errors.New("not authenticated")
 
 type AdminService interface {
 	GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)

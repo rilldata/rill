@@ -316,13 +316,17 @@ service RuntimeService {
 
   // Git APIs
 
-  // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  rpc ListGitCommits(ListGitCommitsRequest) returns (ListGitCommitsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/commits"};
+  }
+
+  // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
   rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
   }
 
-  rpc ListGitCommits(ListGitCommitsRequest) returns (ListGitCommitsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/commits"};
+  rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
   }
 
   // GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
@@ -342,6 +346,23 @@ service RuntimeService {
     };
   }
 
+  // GitMergeToBranch merges current branch to the specified branch.
+  // Note: this is not the same as `git merge <branch>`, but rather `git checkout <branch>` followed by `git merge <current-branch>`.
+  // It restores back to the original branch after the merge.
+  rpc GitMergeToBranch(GitMergeToBranchRequest) returns (GitMergeToBranchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/merge",
+      body: "*"
+    };
+  }
+
+  rpc GitSwitchBranch(GitSwitchBranchRequest) returns (GitSwitchBranchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/branches/switch",
+      body: "*"
+    };
+  }
+
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
   // Force can be set to true to force the pull and overwrite any local changes.
@@ -357,17 +378,6 @@ service RuntimeService {
   rpc GitPush(GitPushRequest) returns (GitPushResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/git/push",
-      body: "*"
-    };
-  }
-
-  rpc ListGitBranches(ListGitBranchesRequest) returns (ListGitBranchesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/branches"};
-  }
-
-  rpc SwitchBranch(SwitchBranchRequest) returns (SwitchBranchResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/git/branches/switch",
       body: "*"
     };
   }
@@ -1225,29 +1235,24 @@ message AnalyzedVariable {
   repeated ResourceName used_by = 8;
 }
 
-message ListGitBranchesRequest {
+message ListGitCommitsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  uint32 page_size = 2;
+  string page_token = 3;
 }
 
-message ListGitBranchesResponse {
-  string current_branch = 1;
-  repeated GitBranch branches = 2;
+message ListGitCommitsResponse {
+  repeated GitCommit commits = 1;
+  string next_page_token = 2;
 }
 
-message GitBranch {
-  string name = 1;
-  bool has_deployment = 2;
-  bool editable = 3;
+message GitCommit {
+  string commit_sha = 1;
+  string author_name = 2;
+  string author_email = 3;
+  google.protobuf.Timestamp committed_on = 4;
+  string message = 5;
 }
-
-message SwitchBranchRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string branch_name = 2;
-  bool create_if_not_exists = 3;
-  bool ignore_local_changes = 4;
-}
-
-message SwitchBranchResponse {}
 
 message GitStatusRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
@@ -1268,23 +1273,19 @@ message GitStatusResponse {
   int32 remote_commits = 6;
 }
 
-message ListGitCommitsRequest {
+message ListGitBranchesRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  uint32 page_size = 2;
-  string page_token = 3;
 }
 
-message ListGitCommitsResponse {
-  repeated GitCommit commits = 1;
-  string next_page_token = 2;
+message ListGitBranchesResponse {
+  string current_branch = 1;
+  repeated GitBranch branches = 2;
 }
 
-message GitCommit {
-  string commit_sha = 1;
-  string author_name = 2;
-  string author_email = 3;
-  google.protobuf.Timestamp committed_on = 4;
-  string message = 5;
+message GitBranch {
+  string name = 1;
+  bool has_deployment = 2;
+  bool editable_deployment = 3;
 }
 
 message GitCommitRequest {
@@ -1307,6 +1308,27 @@ message RestoreGitCommitResponse {
   string new_commit_sha = 1;
 }
 
+message GitMergeToBranchRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string branch = 2;
+  // In case of merge conflicts, prefer current changes.
+  bool force = 3;
+}
+
+message GitMergeToBranchResponse {
+  // The output of the git merge command. Only set for unsuccessful merges.
+  string output = 1;
+}
+
+message GitSwitchBranchRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string branch = 2;
+  bool create = 3;
+  bool ignore_local_changes = 4;
+}
+
+message GitSwitchBranchResponse {}
+
 message GitPullRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   bool discard_local = 2;
@@ -1314,7 +1336,7 @@ message GitPullRequest {
 
 message GitPullResponse {
   // The output of the git pull command. Only set for unsuccessful pulls.
-  string output = 1; 
+  string output = 1;
 }
 
 message GitPushRequest {

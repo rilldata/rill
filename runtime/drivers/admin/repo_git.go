@@ -204,23 +204,23 @@ func (r *gitRepo) root() string {
 // commitToDefaultBranch auto-commits any current changes to the default branch of the repository. This is only allowed if editable is true.
 // This is done to checkpoint progress when the handle is closed.
 // If there are conflicts, it should drop any local changes.
-func (r *gitRepo) commitToDefaultBranch(ctx context.Context) error {
+func (r *gitRepo) commitToDefaultBranch(ctx context.Context, message string) (string, error) {
 	if !r.editable() {
-		return fmt.Errorf("cannot commit to the default branch because it is not configured")
+		return "", fmt.Errorf("cannot commit to the default branch because it is not configured")
 	}
 
 	r.h.logger.Info("commitToDefaultBranch", observability.ZapCtx(ctx))
 	repo, err := git.PlainOpen(r.repoDir)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	err = r.commitAll(repo, "Checkpoint commit")
+	hash, err := r.commitAll(repo, message)
 	if err != nil {
 		if errors.Is(err, git.ErrEmptyCommit) {
-			return nil // No changes to commit
+			return "", nil // No changes to commit
 		}
-		return fmt.Errorf("failed to commit changes to edit branch: %w", err)
+		return "", fmt.Errorf("failed to commit changes to edit branch: %w", err)
 	}
 
 	// Push the changes to the remote edit branch
@@ -232,9 +232,9 @@ func (r *gitRepo) commitToDefaultBranch(ctx context.Context) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to push changes to remote default branch: %w", err)
+		return "", fmt.Errorf("failed to push changes to remote default branch: %w", err)
 	}
-	return nil
+	return hash, nil
 }
 
 // commitAndPush commits changes to the repository and pushes them to the remote.
@@ -248,7 +248,7 @@ func (r *gitRepo) commitAndPushToPrimaryBranch(ctx context.Context, message stri
 	if err != nil {
 		return fmt.Errorf("failed to open repository: %w", err)
 	}
-	err = r.commitAll(repo, message)
+	_, err = r.commitAll(repo, message)
 	if err != nil {
 		if errors.Is(err, git.ErrEmptyCommit) {
 			return nil // No changes to commit
@@ -366,20 +366,20 @@ func (r *gitRepo) commitTimestamp() (time.Time, error) {
 	return commit.Author.When, nil
 }
 
-func (r *gitRepo) commitAll(repo *git.Repository, message string) error {
+func (r *gitRepo) commitAll(repo *git.Repository, message string) (string, error) {
 	worktree, err := repo.Worktree()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = worktree.AddWithOptions(&git.AddOptions{
 		All: true, // Add all changes
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = worktree.Commit(message, &git.CommitOptions{
+	hash, err := worktree.Commit(message, &git.CommitOptions{
 		All: true, // Commit all changes
 		Author: &object.Signature{
 			Name:  "Rill Runtime",
@@ -387,27 +387,9 @@ func (r *gitRepo) commitAll(repo *git.Repository, message string) error {
 		},
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
-}
-
-func (r *gitRepo) fetchCurrentBranch(ctx context.Context) error {
-	repo, err := git.PlainOpen(r.repoDir)
-	if err != nil {
-		return err
-	}
-	head, err := repo.Head()
-	if err != nil {
-		return err
-	}
-	err = repo.FetchContext(ctx, &git.FetchOptions{
-		RefSpecs: []config.RefSpec{config.RefSpec(fmt.Sprintf("refs/heads/%s:refs/remotes/origin/%s", head.Name().Short(), head.Name().Short()))},
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return err
-	}
-	return nil
+	return hash.String(), nil
 }
 
 // resetToRemoteTrackingBranch resets to the commit pointed by the remote tracking branch.
