@@ -1108,6 +1108,14 @@ export interface V1GitBranch {
   editable?: boolean;
 }
 
+export interface V1GitCommit {
+  commitSha?: string;
+  authorName?: string;
+  authorEmail?: string;
+  committedOn?: string;
+  message?: string;
+}
+
 export interface V1GitCommitResponse {
   commitSha?: string;
 }
@@ -1258,6 +1266,11 @@ export interface V1ListFilesResponse {
 export interface V1ListGitBranchesResponse {
   currentBranch?: string;
   branches?: V1GitBranch[];
+}
+
+export interface V1ListGitCommitsResponse {
+  commits?: V1GitCommit[];
+  nextPageToken?: string;
 }
 
 export interface V1ListInstancesResponse {
@@ -2795,6 +2808,11 @@ export type RuntimeServiceSwitchBranchBody = {
 
 export type RuntimeServiceGitCommitBody = {
   commitMessage?: string;
+};
+
+export type RuntimeServiceListGitCommitsParams = {
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type RuntimeServiceGitPullBody = {

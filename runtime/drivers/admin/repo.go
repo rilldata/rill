@@ -433,6 +433,11 @@ func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotE
 	return drivers.ErrNotImplemented
 }
 
+// ListCommits implements drivers.RepoStore.
+func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([]drivers.Commit, string, error) {
+	return nil, "", drivers.ErrNotImplemented
+}
+
 // Status implements drivers.RepoStore.
 func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if r.git == nil {

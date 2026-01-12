@@ -5883,6 +5883,159 @@ export class GitStatusResponse extends Message$1<GitStatusResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.ListGitCommitsRequest
+ */
+export class ListGitCommitsRequest extends Message$1<ListGitCommitsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: uint32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListGitCommitsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListGitCommitsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGitCommitsRequest {
+    return new ListGitCommitsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGitCommitsRequest {
+    return new ListGitCommitsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGitCommitsRequest {
+    return new ListGitCommitsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGitCommitsRequest | PlainMessage<ListGitCommitsRequest> | undefined, b: ListGitCommitsRequest | PlainMessage<ListGitCommitsRequest> | undefined): boolean {
+    return proto3.util.equals(ListGitCommitsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ListGitCommitsResponse
+ */
+export class ListGitCommitsResponse extends Message$1<ListGitCommitsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.GitCommit commits = 1;
+   */
+  commits: GitCommit[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListGitCommitsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListGitCommitsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "commits", kind: "message", T: GitCommit, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGitCommitsResponse {
+    return new ListGitCommitsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGitCommitsResponse {
+    return new ListGitCommitsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGitCommitsResponse {
+    return new ListGitCommitsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGitCommitsResponse | PlainMessage<ListGitCommitsResponse> | undefined, b: ListGitCommitsResponse | PlainMessage<ListGitCommitsResponse> | undefined): boolean {
+    return proto3.util.equals(ListGitCommitsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.GitCommit
+ */
+export class GitCommit extends Message$1<GitCommit> {
+  /**
+   * @generated from field: string commit_sha = 1;
+   */
+  commitSha = "";
+
+  /**
+   * @generated from field: string author_name = 2;
+   */
+  authorName = "";
+
+  /**
+   * @generated from field: string author_email = 3;
+   */
+  authorEmail = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp committed_on = 4;
+   */
+  committedOn?: Timestamp;
+
+  /**
+   * @generated from field: string message = 5;
+   */
+  message = "";
+
+  constructor(data?: PartialMessage<GitCommit>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GitCommit";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "author_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "author_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "committed_on", kind: "message", T: Timestamp },
+    { no: 5, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitCommit {
+    return new GitCommit().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GitCommit {
+    return new GitCommit().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GitCommit {
+    return new GitCommit().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GitCommit | PlainMessage<GitCommit> | undefined, b: GitCommit | PlainMessage<GitCommit> | undefined): boolean {
+    return proto3.util.equals(GitCommit, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GitCommitRequest
  */
 export class GitCommitRequest extends Message$1<GitCommitRequest> {

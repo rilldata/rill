@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -111,6 +112,36 @@ func (s *Server) GitStatus(ctx context.Context, req *runtimev1.GitStatusRequest)
 		LocalChanges:  gs.LocalChanges,
 		LocalCommits:  gs.LocalCommits,
 		RemoteCommits: gs.RemoteCommits,
+	}, nil
+}
+
+func (s *Server) ListGitCommits(ctx context.Context, req *runtimev1.ListGitCommitsRequest) (*runtimev1.ListGitCommitsResponse, error) {
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	pageSize := pagination.ValidPageSize(req.PageSize, 20)
+	commits, nextPageToken, err := repo.ListCommits(ctx, req.PageToken, pageSize)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list git commits: %v", err)
+	}
+
+	res := make([]*runtimev1.GitCommit, 0, len(commits))
+	for _, c := range commits {
+		res = append(res, &runtimev1.GitCommit{
+			CommitSha:   c.CommitSha,
+			AuthorName:  c.AuthorName,
+			AuthorEmail: c.AuthorEmail,
+			Message:     c.CommitMessage,
+			CommittedOn: c.CommittedOn,
+		})
+	}
+
+	return &runtimev1.ListGitCommitsResponse{
+		Commits:       res,
+		NextPageToken: nextPageToken,
 	}, nil
 }
 

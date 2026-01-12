@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -24,6 +22,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
+	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Root implements drivers.RepoStore.
@@ -342,6 +342,77 @@ func (c *connection) SwitchBranch(ctx context.Context, branchName string, create
 	}
 
 	return nil
+}
+
+// ListCommits implements drivers.RepoStore.
+func (c *connection) ListCommits(ctx context.Context, pageToken string, limit int) ([]drivers.Commit, string, error) {
+	if !c.isGitRepo() {
+		return nil, "", errors.New("not a git repository")
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, _, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		return nil, "", err
+	}
+
+	repo, err := git.PlainOpen(gitPath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Determine starting point: page token or HEAD
+	var fromHash plumbing.Hash
+	if pageToken != "" {
+		fromHash = plumbing.NewHash(pageToken)
+	} else {
+		head, err := repo.Head()
+		if err != nil {
+			return nil, "", err
+		}
+		fromHash = head.Hash()
+	}
+
+	// Get commit iterator starting from the determined hash
+	commitIter, err := repo.Log(&git.LogOptions{
+		From:  fromHash,
+		Order: git.LogOrderCommitterTime,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	defer commitIter.Close()
+
+	var commits []drivers.Commit
+	var nextPageToken string
+	for {
+		if limit > 0 && len(commits) >= limit {
+			// Peek next commit to get the next page token
+			nextCommit, err := commitIter.Next()
+			if err == nil {
+				nextPageToken = nextCommit.Hash.String()
+			}
+			break
+		}
+		commit, err := commitIter.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, "", err
+		}
+		commits = append(commits, drivers.Commit{
+			CommitSha:     commit.Hash.String(),
+			AuthorName:    commit.Author.Name,
+			AuthorEmail:   commit.Author.Email,
+			CommitMessage: commit.Message,
+			CommittedOn:   timestamppb.New(commit.Committer.When),
+		})
+	}
+
+	return commits, nextPageToken, nil
 }
 
 func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {

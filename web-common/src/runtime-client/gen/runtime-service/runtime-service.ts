@@ -50,6 +50,7 @@ import type {
   RuntimeServiceGitPushBody,
   RuntimeServiceListConversationsParams,
   RuntimeServiceListFilesParams,
+  RuntimeServiceListGitCommitsParams,
   RuntimeServiceListInstancesParams,
   RuntimeServiceListResourcesParams,
   RuntimeServicePutFileBody,
@@ -102,6 +103,7 @@ import type {
   V1ListExamplesResponse,
   V1ListFilesResponse,
   V1ListGitBranchesResponse,
+  V1ListGitCommitsResponse,
   V1ListInstancesResponse,
   V1ListNotifierConnectorsResponse,
   V1ListResourcesResponse,
@@ -3387,6 +3389,107 @@ export const createRuntimeServiceGitCommit = <
 
   return createMutation(mutationOptions, queryClient);
 };
+export const runtimeServiceListGitCommits = (
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListGitCommitsResponse>({
+    url: `/v1/instances/${instanceId}/git/commits`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceListGitCommitsQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+) => {
+  return [
+    `/v1/instances/${instanceId}/git/commits`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getRuntimeServiceListGitCommitsQueryOptions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListGitCommitsQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>
+  > = ({ signal }) => runtimeServiceListGitCommits(instanceId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type RuntimeServiceListGitCommitsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListGitCommits>>
+>;
+export type RuntimeServiceListGitCommitsQueryError = ErrorType<RpcStatus>;
+
+export function createRuntimeServiceListGitCommits<
+  TData = Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceListGitCommitsParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof runtimeServiceListGitCommits>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getRuntimeServiceListGitCommitsQueryOptions(
+    instanceId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
 If there are any merge conflicts the pull is aborted.

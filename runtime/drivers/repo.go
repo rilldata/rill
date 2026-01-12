@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var ErrRemoteAhead = fmt.Errorf("remote ahead of local state, please pull first")
@@ -61,6 +62,9 @@ type RepoStore interface {
 	ListBranches(ctx context.Context) ([]string, string, error)
 	// SwitchBranch switches to the specified branch. If createIfNotExists is true, creates the branch if it doesn't exist.
 	SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error
+	// ListCommits returns a list of commits in reverse chronological order.
+	// fromCommit is the commit SHA to start from (empty for HEAD). Returns commits and next page token.
+	ListCommits(ctx context.Context, fromCommit string, limit int) (commits []Commit, nextPageToken string, err error)
 }
 
 // FileInfo contains metadata about a file.
@@ -132,6 +136,15 @@ type PullOptions struct {
 	// If userTriggered is true, the latest changes will be pulled from the remote repository honouring DiscardChanges.
 	UserTriggered  bool
 	DiscardChanges bool
+}
+
+// Commit represents a git commit.
+type Commit struct {
+	CommitSha     string
+	AuthorName    string
+	AuthorEmail   string
+	CommitMessage string
+	CommittedOn   *timestamppb.Timestamp
 }
 
 // ignoredPaths is a list of paths that are always ignored by the parser.

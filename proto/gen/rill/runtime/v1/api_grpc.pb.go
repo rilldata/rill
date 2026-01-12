@@ -64,6 +64,7 @@ const (
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
 	RuntimeService_GitCommit_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitCommit"
 	RuntimeService_RestoreGitCommit_FullMethodName        = "/rill.runtime.v1.RuntimeService/RestoreGitCommit"
 	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
@@ -176,6 +177,7 @@ type RuntimeServiceClient interface {
 	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
 	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error)
 	// RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
@@ -686,6 +688,16 @@ func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusReque
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListGitCommits(ctx context.Context, in *ListGitCommitsRequest, opts ...grpc.CallOption) (*ListGitCommitsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGitCommitsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListGitCommits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) GitCommit(ctx context.Context, in *GitCommitRequest, opts ...grpc.CallOption) (*GitCommitResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GitCommitResponse)
@@ -850,6 +862,7 @@ type RuntimeServiceServer interface {
 	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
 	// GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
 	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error)
 	// GitCommit commits the local changes to the git repo equivalent to `git commit -am <message>` command.
 	GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error)
 	// RestoreGitCommit creates a new commit that restores the state of the repo to the specified commit SHA.
@@ -1008,6 +1021,9 @@ func (UnimplementedRuntimeServiceServer) AnalyzeVariables(context.Context, *Anal
 }
 func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListGitCommits(context.Context, *ListGitCommitsRequest) (*ListGitCommitsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGitCommits not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GitCommit(context.Context, *GitCommitRequest) (*GitCommitResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GitCommit not implemented")
@@ -1830,6 +1846,24 @@ func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListGitCommits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGitCommitsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListGitCommits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListGitCommits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListGitCommits(ctx, req.(*ListGitCommitsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_GitCommit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GitCommitRequest)
 	if err := dec(in); err != nil {
@@ -2108,6 +2142,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GitStatus",
 			Handler:    _RuntimeService_GitStatus_Handler,
+		},
+		{
+			MethodName: "ListGitCommits",
+			Handler:    _RuntimeService_ListGitCommits_Handler,
 		},
 		{
 			MethodName: "GitCommit",

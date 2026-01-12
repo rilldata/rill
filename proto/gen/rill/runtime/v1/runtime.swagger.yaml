@@ -1265,6 +1265,34 @@ paths:
                 type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/commits:
+    get:
+      operationId: RuntimeService_ListGitCommits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGitCommitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/git/pull:
     post:
       summary: |-
@@ -5292,6 +5320,20 @@ definitions:
         type: boolean
       editable:
         type: boolean
+  v1GitCommit:
+    type: object
+    properties:
+      commitSha:
+        type: string
+      authorName:
+        type: string
+      authorEmail:
+        type: string
+      committedOn:
+        type: string
+        format: date-time
+      message:
+        type: string
   v1GitCommitResponse:
     type: object
     properties:
@@ -5524,6 +5566,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1GitBranch'
+  v1ListGitCommitsResponse:
+    type: object
+    properties:
+      commits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GitCommit'
+      nextPageToken:
+        type: string
   v1ListInstancesResponse:
     type: object
     properties:
