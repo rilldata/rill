@@ -825,17 +825,15 @@ components:
                 archiveId:
                     description: A stable ID for the archive returned from archive_download_url.
                     type: string
+                editable:
+                    description: Whether editing is allowed. Set to true for dev deployments.
+                    type: boolean
                 expiresOn:
                     description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
                     format: date-time
                     type: string
                 gitBranch:
                     description: The branch to use for the deployment.
-                    type: string
-                gitEditBranch:
-                    description: |-
-                        A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-                        This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
                     type: string
                 gitSubpath:
                     description: Optional subpath within the Git repository to use as the project root.
@@ -848,6 +846,12 @@ components:
                 lastUpdatedOn:
                     description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
                     format: date-time
+                    type: string
+                managedGitRepo:
+                    description: Whether the git repo is managed by Rill.
+                    type: boolean
+                primaryBranch:
+                    description: Primary branch of the project.
                     type: string
             type: object
         v1GetReportMetaResponse:
