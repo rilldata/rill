@@ -5594,6 +5594,10 @@ definitions:
           $ref: '#/definitions/v1UsergroupMemberUser'
       nextPageToken:
         type: string
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of members in the usergroup
   v1ListUsergroupsForOrganizationAndUserResponse:
     type: object
     properties:

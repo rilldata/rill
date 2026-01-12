@@ -150,6 +150,7 @@ type DB interface {
 
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*UsergroupMemberUser, error)
+	CountUsergroupMemberUsers(ctx context.Context, groupID string) (int, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
