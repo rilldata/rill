@@ -34,7 +34,7 @@
 />
 
 <div
-  class="color-wrapper"
+  class="color-wrapper bg-input"
   class:small
   class:pointer-events-none={disabled}
   class:bg-gray-50={disabled}
@@ -242,7 +242,7 @@
 
   .color-wrapper {
     @apply py-[5px] px-[5px] pr-3;
-    @apply h-8 w-full border border-gray-300 rounded-[2px];
+    @apply h-8 w-full border rounded-[2px];
     @apply flex gap-x-3;
   }
 

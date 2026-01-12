@@ -177,7 +177,7 @@
         <input
           bind:value={searchValue}
           placeholder="Search..."
-          class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+          class="w-full px-2 py-1 border rounded text-sm"
         />
       </slot>
     </div>
@@ -249,7 +249,7 @@
               class:mb-7={isLastItem}
               style:pointer-events={isDragItem ? "none" : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center text-foreground hover:bg-accent rounded-sm"
               class:cursor-grab={draggable}
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}

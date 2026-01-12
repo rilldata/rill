@@ -210,7 +210,9 @@
 
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Reference</h3>
+      <h3 class="mt-1 px-2 uppercase text-muted-foreground font-semibold">
+        Reference
+      </h3>
       {#each options as { id, label, description, timestamp } (id)}
         {#if id !== RillTimeLabel.Watermark || (id === RillTimeLabel.Watermark && !!timestamp)}
           <DropdownMenu.CheckboxItem
@@ -246,14 +248,12 @@
                 >
                   <TooltipContent class="w-60">
                     <div class="flex items-center justify-between">
-                      <span
-                        class="font-bold truncate text-gray-100 dark:text-gray-200"
-                      >
+                      <span class="font-bold truncate text-foreground">
                         {timestamp.toLocaleString(
                           DateTime.DATETIME_MED_WITH_SECONDS,
                         )}
                       </span>
-                      <SyntaxElement range={id} dark />
+                      <SyntaxElement range={id} />
                     </div>
 
                     {#if id !== RillTimeLabel.Now}
@@ -275,7 +275,9 @@
     <DropdownMenu.Separator class="my-0" />
 
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Grain</h3>
+      <h3 class="mt-1 px-2 uppercase text-muted-foreground font-semibold">
+        Grain
+      </h3>
 
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
@@ -288,14 +290,14 @@
           {V1TimeGrainToDateTimeUnit[option]}
         </DropdownMenu.CheckboxItem>
       {:else}
-        <div class="px-2 py-1 text-gray-500 flex justify-center italic">
+        <div class="px-2 py-1 text-muted-foreground flex justify-center italic">
           No valid grains available.
         </div>
       {/each}
     </DropdownMenu.Group>
 
     {#if dateTimeUnit}
-      <div class="bg-gray-100 border-t">
+      <div class="bg-gray-500 border-t rounded-b-sm">
         <div class="flex justify-between items-center p-2">
           <span>Anchor to period end</span>
 

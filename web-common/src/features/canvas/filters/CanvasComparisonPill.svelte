@@ -121,7 +121,7 @@
     @apply h-[26px] rounded-full;
     @apply overflow-hidden select-none;
   }
-
+  /* 
   :global(.wrapper > button) {
     @apply border;
   }
@@ -144,11 +144,5 @@
 
   :global(.wrapper > button:hover:not(:disabled)) {
     @apply bg-gray-50 cursor-pointer;
-  }
-
-  /* Doest apply to all instances except alert/report. So this seems unintentional
-  :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
-  }
-  */
+  } */
 </style>

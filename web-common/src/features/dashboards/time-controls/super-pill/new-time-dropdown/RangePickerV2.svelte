@@ -241,7 +241,7 @@
             <RangeDisplay {interval} {timeGrain} />
 
             <div
-              class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
+              class="font-bold bg-accent rounded-[2px] p-1 py-0 text-muted-foreground text-[11px]"
             >
               {zoneAbbreviation}
             </div>
@@ -332,7 +332,7 @@
               <button
                 type="button"
                 role="menuitem"
-                class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
+                class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-accent rounded-sm w-full select-none flex items-center"
                 on:click={() => {
                   handleRangeSelect("inf");
                 }}
@@ -347,7 +347,7 @@
 
         {#if allowCustomTimeRange}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1" />
+            <div class="h-px w-full bg-border my-1" />
             <button
               type="button"
               role="menuitem"
@@ -355,19 +355,22 @@
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
               }}
-              class="truncate w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
+              class="truncate text-foreground w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
               <div class="mr-auto">Custom</div>
 
-              <CaretDownIcon className="-rotate-90" size="14px" />
+              <CaretDownIcon
+                className="-rotate-90 text-muted-foreground"
+                size="14px"
+              />
             </button>
           </div>
         {/if}
 
         {#if !lockTimeZone}
           <div class="w-full h-fit px-1">
-            <div class="h-px w-full bg-gray-200 my-1" />
+            <div class="h-px w-full bg-border my-1" />
 
             <Popover.Root portal="#rill-portal" bind:open={timeZonePickerOpen}>
               <Popover.Trigger asChild let:builder>
@@ -378,19 +381,22 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 verflow-hidden hover:bg-accent flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     type="button"
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
-                    <Globe size="14px" />
-                    <div class="mr-auto">Time zone</div>
+                    <Globe size="14px" className="text-foreground" />
+                    <div class="mr-auto text-foreground">Time zone</div>
                     <div class="sr-only group-hover:not-sr-only">
                       <SyntaxElement range={zoneAbbreviation} />
                     </div>
-                    <CaretDownIcon className="-rotate-90" size="14px" />
+                    <CaretDownIcon
+                      className="-rotate-90 text-muted-foreground"
+                      size="14px"
+                    />
                   </button>
                 </div>
               </Popover.Trigger>

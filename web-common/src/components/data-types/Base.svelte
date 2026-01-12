@@ -2,10 +2,10 @@
   export let classes = "";
   export let isNull = false;
   export let truncate = false;
-  export let color = "text-gray-900";
+  export let color = "text-foreground";
 </script>
 
-<span class:truncate class="{classes} {color} select-text">
+<span class:truncate class="{classes} {color || 'text-foreground'} select-text">
   {#if isNull}
     <span class="text-gray-400">-</span>
   {:else}

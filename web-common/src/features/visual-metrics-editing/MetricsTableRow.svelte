@@ -163,7 +163,7 @@
   .editing-controls {
     height: 39px;
     width: 192px;
-    @apply bg-gray-50;
+    @apply bg-accent;
     @apply gap-x-2.5 px-4 py-2 flex items-center justify-center absolute top-0  z-50;
   }
 
@@ -180,7 +180,7 @@
   }
 
   tr:hover:not(.editing) {
-    @apply bg-gray-50;
+    @apply bg-accent;
   }
 
   tr:hover.selected {

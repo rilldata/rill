@@ -1,6 +1,5 @@
 <script lang="ts">
   export let range: string | undefined;
-  export let dark = false;
   export let onClick: ((range: string | undefined) => void) | undefined =
     undefined;
 </script>
@@ -9,7 +8,6 @@
   this={onClick ? "button" : "span"}
   role={onClick ? "button" : undefined}
   class="element"
-  class:dark
   on:click={() => onClick?.(range)}
 >
   {range}
@@ -17,16 +15,12 @@
 
 <style lang="postcss">
   .element {
-    @apply bg-slate-100 text-slate-500 rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
+    @apply bg-accent text-muted-foreground rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
     font-family: "Source Code Variable", monospace;
     @apply font-medium w-fit;
   }
 
-  .dark {
-    @apply bg-slate-600 text-slate-200;
-  }
-
   .element:hover {
-    @apply bg-slate-200;
+    @apply bg-gray-700;
   }
 </style>

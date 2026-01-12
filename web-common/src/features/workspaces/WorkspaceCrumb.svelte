@@ -104,7 +104,10 @@
   <svelte:self resources={upstreamResources} {allResources} upstream />
 
   {#if !componentsOnly}
-    <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
+    <CaretDownIcon
+      size="12px"
+      className="text-muted-foreground -rotate-90 flex-none"
+    />
   {/if}
 {/if}
 
@@ -116,7 +119,7 @@
           <svelte:element
             this={dropdown ? "button" : "a"}
             class:open
-            class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
+            class="text-muted-foreground px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}
             href={dropdown
               ? undefined
@@ -192,7 +195,7 @@
   }
 
   .selected {
-    @apply text-gray-900;
+    @apply text-gray-950;
   }
 
   .open {

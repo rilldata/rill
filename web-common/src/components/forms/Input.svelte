@@ -139,7 +139,7 @@
 
   {#if !options}
     <div
-      class="input-wrapper {textClass}"
+      class="input-wrapper {textClass} bg-input"
       style:width
       class:error-input-wrapper={!!errors?.length}
       style:font-family={fontFamily}
@@ -164,7 +164,7 @@
         <div
           {id}
           contenteditable
-          class="multiline-input"
+          class="multiline-input bg-input"
           class:pointer-events-none={disabled}
           {placeholder}
           role="textbox"
@@ -293,8 +293,8 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-1;
-    @apply bg-surface justify-center;
-    @apply border border-gray-300 rounded-[2px];
+    @apply justify-center;
+    @apply border  rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit;
   }
@@ -305,9 +305,9 @@
 
   input,
   .multiline-input {
-    @apply bg-surface p-0;
+    @apply p-0;
     @apply size-full;
-    @apply outline-none border-0;
+    @apply outline-none border-0 bg-input;
     @apply cursor-text;
     vertical-align: middle;
   }

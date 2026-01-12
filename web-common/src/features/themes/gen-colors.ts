@@ -1,7 +1,13 @@
+/**
+ * This file can be run using the script npm run gen:colors
+ * Generates a CSS file defining color variables for light and dark modes
+ * based on the pre-defined color palettes.
+ */
+
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { allColors } from "./colors.ts";
+import { definedDarkModeColors, definedLightModeColors } from "./colors.ts";
 import { createDarkVariation } from "./color-generation.ts";
 import { TailwindColorSpacing } from "./color-config.ts";
 import { execFile } from "child_process";
@@ -30,9 +36,13 @@ function generateCSSBlock(): string {
   let lightAssignments = "  /* LIGHT MODE ASSIGNMENT */\n";
   let darkAssignments = "  /* DARK MODE ASSIGNMENT */\n";
 
-  for (const [colorName, colorMap] of Object.entries(allColors)) {
+  for (const [colorName, colorMap] of Object.entries(definedLightModeColors)) {
     const colorList = Object.values(colorMap);
-    const darkVariants = createDarkVariation([...colorList]);
+    const predefinedDarkModeColors = definedDarkModeColors[colorName];
+    console.log({ predefinedDarkModeColors });
+    const darkVariants = predefinedDarkModeColors
+      ? Object.values(predefinedDarkModeColors)
+      : createDarkVariation([...colorList]);
 
     // Light and dark variables for each color and shade
     const lightVars = colorList

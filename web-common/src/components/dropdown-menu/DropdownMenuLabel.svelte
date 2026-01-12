@@ -13,7 +13,7 @@
 
 <DropdownMenuPrimitive.Label
   class={cn(
-    "px-2 py-1.5 text-xs text-gray-500 font-semibold",
+    "px-2 py-1.5 text-xs text-muted-foreground font-semibold",
     inset && "pl-8",
     className,
   )}

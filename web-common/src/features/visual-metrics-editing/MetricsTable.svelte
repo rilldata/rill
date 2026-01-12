@@ -259,10 +259,11 @@
 
   th {
     @apply text-left;
-    @apply pl-4 text-slate-500 bg-surface;
+    @apply pl-4 text-muted-foreground bg-surface;
     @apply border-b text-sm font-semibold;
     @apply truncate;
   }
+
   .row-insert-marker {
     @apply w-full h-[3px] bg-primary-300 absolute z-50;
     @apply -translate-y-1/2;

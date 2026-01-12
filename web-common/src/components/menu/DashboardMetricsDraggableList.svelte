@@ -102,7 +102,7 @@
     </Button>
   </Popover.Trigger>
   <Popover.Content
-    class="p-0 z-popover"
+    class="p-0 z-popover text-foreground"
     align="start"
     strategy="absolute"
     fitViewport={true}
@@ -132,7 +132,9 @@
             slot="header"
             class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b z-10"
           >
-            <h3 class="uppercase text-gray-500 font-semibold text-[11px]">
+            <h3
+              class="uppercase font-semibold text-[11px] text-muted-foreground"
+            >
               Shown {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             {#if selectedItems.length > 1}
@@ -145,7 +147,7 @@
             {/if}
           </div>
 
-          <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+          <div slot="empty" class="px-2 py-2 text-xs">
             {searchText
               ? `No matching ${type === "measure" ? "measures" : "dimensions"} shown`
               : `No ${type === "measure" ? "measures" : "dimensions"} shown`}
@@ -165,13 +167,15 @@
                 <Tooltip.Trigger class="w-full flex gap-x-1 items-center">
                   <DragHandle
                     size="16px"
-                    className="text-gray-400 pointer-events-none"
+                    className="fill-muted-foreground pointer-events-none"
                   />
-                  <span class="truncate flex-1 text-left pointer-events-none">
+                  <span
+                    class="truncate flex-1 text-left pointer-events-none text-foreground"
+                  >
                     {displayName}
                   </span>
                   <button
-                    class={`${toggleButtonBaseClass} ml-auto text-slate-500`}
+                    class={`${toggleButtonBaseClass} ml-auto text-muted-foreground`}
                     on:click|stopPropagation={() => removeSelectedItem(item.id)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
@@ -179,16 +183,16 @@
                     disabled={selectedItems.length === 1}
                     class:pointer-events-none={selectedItems.length === 1}
                     class:opacity-50={selectedItems.length === 1}
-                    aria-label={`Hide ${displayName}`}
+                    aria-label="Hide {displayName}"
                     data-testid="toggle-visibility-button"
                     type="button"
                   >
                     <EyeIcon size="18px" color="currentColor" />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content side="right" sideOffset={12} class="z-popover">
+                <Tooltip.Content side="right" sideOffset={18} class="z-popover">
                   <div
-                    class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                    class="bg-popover text-foreground rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                   >
                     {#if selectedItems.length === 1}
                       Must show at least one {type === "measure"
@@ -203,13 +207,13 @@
             {:else}
               <DragHandle
                 size="16px"
-                className="text-gray-400 pointer-events-none"
+                className="fill-muted-foreground pointer-events-none"
               />
               <span class="truncate flex-1 text-left pointer-events-none">
                 {displayName}
               </span>
               <button
-                class={`${toggleButtonBaseClass} ml-auto text-slate-500`}
+                class={`${toggleButtonBaseClass} ml-auto `}
                 on:click|stopPropagation={() => removeSelectedItem(item.id)}
                 on:mousedown|stopPropagation={() => {
                   // NO-OP
@@ -229,7 +233,7 @@
 
       <!-- Hidden Items Section -->
       {#if selectedItems.length < allItems.length}
-        <span class="flex-none h-px bg-slate-200 w-full" />
+        <span class="flex-none h-px bg-border w-full" />
         <div class="hidden-section flex flex-col flex-1 min-h-0 p-1.5 pt-0">
           <DraggableList
             items={hiddenDraggableItems}
@@ -240,10 +244,10 @@
           >
             <div
               slot="header"
-              class="flex-none flex py-1.5 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
+              class="flex-none flex py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
             >
               <h3
-                class="uppercase text-xs text-gray-500 font-semibold from-popover from-80% to-transparent bg-gradient-to-b"
+                class="uppercase text-[11px] font-semibold text-muted-foreground from-popover from-80% to-transparent bg-gradient-to-b"
               >
                 Hidden {type === "measure" ? "Measures" : "Dimensions"}
               </h3>
@@ -276,11 +280,13 @@
                   <Tooltip.Trigger
                     class="w-full flex gap-x-1 justify-between items-center"
                   >
-                    <span class="truncate flex-1 text-left pointer-events-none">
+                    <span
+                      class="truncate flex-1 text-left pointer-events-none text-foreground"
+                    >
                       {displayName}
                     </span>
                     <button
-                      class={`${toggleButtonBaseClass} text-slate-400`}
+                      class="{toggleButtonBaseClass} text-muted-foreground"
                       on:click|stopPropagation={() =>
                         handleHiddenItemClick({ item, index })}
                       aria-label={`Show ${displayName}`}
@@ -292,11 +298,11 @@
                   </Tooltip.Trigger>
                   <Tooltip.Content
                     side="right"
-                    sideOffset={12}
+                    sideOffset={18}
                     class="z-popover"
                   >
                     <div
-                      class="bg-gray-800 text-gray-50 rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                      class="bg-popover text-foreground rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                     >
                       {itemData.description}
                     </div>
@@ -307,7 +313,7 @@
                   {displayName}
                 </span>
                 <button
-                  class={`${toggleButtonBaseClass} text-slate-400`}
+                  class="{toggleButtonBaseClass} "
                   on:click|stopPropagation={() =>
                     handleHiddenItemClick({ item, index })}
                   aria-label={`Show ${displayName}`}
@@ -324,9 +330,3 @@
     </div>
   </Popover.Content>
 </Popover.Root>
-
-<style lang="postcss">
-  h3 {
-    @apply text-[11px] text-gray-500;
-  }
-</style>

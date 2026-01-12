@@ -57,10 +57,10 @@
   }
 
   .toggle {
-    @apply bg-surface outline outline-slate-200 outline-[1px];
+    @apply bg-accent;
   }
 
   .radio {
-    @apply h-fit bg-slate-100 p-[2px] rounded-[6px] flex;
+    @apply h-fit bg-surface border p-[1px] px-[1.5px] rounded-[6px] flex;
   }
 </style>

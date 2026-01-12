@@ -4,13 +4,13 @@
   style:min-width="200px"
 >
   <div
-    class="font-bold truncate text-gray-100 dark:text-gray-200"
+    class="font-bold truncate text-popover-foreground"
     aria-label="tooltip-name"
   >
     <slot name="name" />
   </div>
   <div
-    class="text-gray-300 justify-self-end pl-3"
+    class="text-popover-foreground justify-self-end pl-3"
     style:max-width="280px"
     aria-label="tooltip-name-description"
   >

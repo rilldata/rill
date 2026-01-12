@@ -334,16 +334,19 @@
 </script>
 
 <div class="relative w-full h-full" style={cssVarStyles}>
-  <regular-table class="w-full h-full tdd-table" bind:this={table} />
+  <regular-table
+    class="w-full h-full tdd-table text-gray-700 dark:text-muted-foreground"
+    bind:this={table}
+  />
 </div>
 
-<style>
+<style lang="postcss">
   :global(regular-table) {
     padding-left: 0px;
     padding-right: 0px;
   }
   :global(regular-table table) {
-    color: var(--color-gray-700);
+    color: inherit;
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;

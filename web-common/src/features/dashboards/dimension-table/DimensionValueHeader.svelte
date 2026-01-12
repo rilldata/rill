@@ -82,7 +82,7 @@
         >{column?.label || column?.name}</span
       >
       {#if $sortedByDimensionValue}
-        <div class="ui-copy-icon">
+        <div class="text-muted-foreground">
           {#if $sortedAscending}
             <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
               <ArrowDown size="12px" />

@@ -419,7 +419,7 @@
   }
 
   tr:hover {
-    @apply bg-gray-100;
+    @apply bg-accent;
   }
 
   td[data-comparison-cell] {
@@ -432,7 +432,7 @@
 
   tr:hover td[data-dimension-cell],
   tr:hover td[data-comparison-cell] {
-    @apply bg-gray-100;
+    @apply bg-accent;
   }
 
   .external-link-wrapper a {

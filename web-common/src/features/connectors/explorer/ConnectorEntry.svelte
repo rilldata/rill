@@ -44,7 +44,7 @@
         }}
       >
         <CaretDownIcon
-          className="transform transition-transform text-gray-400 {expanded
+          className="transform transition-transform text-muted-foreground {expanded
             ? 'rotate-0'
             : '-rotate-90'}"
           size="14px"
@@ -84,7 +84,7 @@
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-accent;
   }
 
   h4 {

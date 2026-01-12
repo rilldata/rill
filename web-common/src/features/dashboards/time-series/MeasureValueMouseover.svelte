@@ -68,7 +68,7 @@
         : "",
     pointColor: "var(--color-theme-700)",
     valueStyleClass: "font-semibold",
-    valueColorClass: "fill-gray-600",
+    valueColorClass: "fill-muted-foreground",
     labelColorClass:
       !comparisonIsPositive && showComparison
         ? "fill-red-500"

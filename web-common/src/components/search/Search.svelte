@@ -62,12 +62,12 @@
 >
   <button
     type="button"
-    class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon"
+    class="flex absolute inset-y-0 items-center pl-2 text-muted-foreground"
     on:click={() => {
       ref?.focus();
     }}
   >
-    <Search size={large ? "18px" : "16px"} />
+    <Search size={large ? "18px" : "16px"} className="text-muted-foreground" />
   </button>
   <svelte:element
     this={multiline ? "textarea" : "input"}
@@ -75,12 +75,12 @@
     type="text"
     autocomplete="off"
     class:focus={showBorderOnFocus}
-    class:bg-gray-50={background}
     class:border
+    class:bg-input={background}
     class:rounded-sm={rounded === "sm"}
     class:rounded-md={rounded === "md"}
     class:rounded-lg={rounded === "lg"}
-    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none"
+    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none text-muted-foreground placeholder-muted-foreground"
     class:h-full={large}
     {disabled}
     {placeholder}

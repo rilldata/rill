@@ -72,7 +72,7 @@
 />
 
 <nav
-  class="sidebar"
+  class="sidebar bg-surface dark:bg-background"
   class:hide={!$navigationOpen}
   class:resizing
   style:width="{width}px"
@@ -144,7 +144,7 @@
                 className="text-gray-400 transition-transform {!showConnectors &&
                   '-rotate-90'}"
               />
-              <h3>Data Explorer</h3>
+              <h3 class="text-foreground">Data Explorer</h3>
             </button>
 
             <div
@@ -175,7 +175,7 @@
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col flex-none relative overflow-hidden bg-surface;
+    @apply flex flex-col flex-none relative overflow-hidden;
     @apply h-full border-r z-0;
     @apply select-none;
     transition-property: width;
@@ -193,7 +193,7 @@
 
   .scroll-container {
     @apply overflow-y-auto overflow-x-hidden;
-    @apply h-full bg-surface;
+    @apply h-full;
   }
 
   .sidebar:not(.resizing) {

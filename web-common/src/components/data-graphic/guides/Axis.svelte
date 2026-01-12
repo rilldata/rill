@@ -17,7 +17,7 @@ This component will draw an axis on the specified side.
   export let fontSize: number | undefined = undefined;
   export let placement = "middle";
 
-  export let labelColor = "fill-gray-600";
+  export let labelColor = "fill-gray-600 dark:fill-foreground";
   export let measureFormatter: (
     v: number | string | null | undefined,
   ) => string | undefined | null = (v) => v?.toString();

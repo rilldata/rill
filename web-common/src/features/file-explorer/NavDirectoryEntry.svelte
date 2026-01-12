@@ -80,9 +80,9 @@
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
   {isProtectedDirectory
-    ? 'text-gray-500'
-    : 'text-gray-900 hover:text-gray-900'} 
-  font-medium hover:bg-slate-100"
+    ? 'text-gray-500 hover:text-gray-500 dark:text-gray-900 dark:hover:text-gray-900'
+    : 'text-foreground hover:text-foreground'} 
+  font-medium hover:bg-gray-300"
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
@@ -91,7 +91,9 @@
   aria-expanded={expanded}
 >
   <CaretDownIcon
-    className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
+    className="flex-none text-slate-400 {expanded
+      ? ''
+      : 'transform -rotate-90'}"
     size="14px"
   />
   <span class="truncate w-full" class:text-red-600={$hasErrors}>

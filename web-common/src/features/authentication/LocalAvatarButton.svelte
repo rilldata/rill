@@ -51,73 +51,73 @@
   let photoUrlErrored = false;
 </script>
 
-{#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
+<!-- {#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
   <div class="flex flex-row items-center h-7 mx-1.5">
     <Spinner size="16px" status={EntityStatus.Running} />
   </div>
-{:else if $user.data && $metadata.data}
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger
-      class="flex-none w-7"
-      aria-label="Avatar logged {loggedIn ? 'in' : 'out'}"
-    >
-      {#if loggedIn && !photoUrlErrored}
-        <Avatar
-          src={$user.data?.user?.photoUrl}
-          alt={$user.data?.user?.displayName || $user.data?.user?.email}
-          avatarSize="h-7 w-7"
-        />
-      {:else}
-        <NoUser />
-      {/if}
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content class="p-1">
-      {#if darkMode}
-        <ThemeToggle />
-        <DropdownMenu.Separator />
-      {/if}
+{:else} -->
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger
+    class="flex-none w-7"
+    aria-label="Avatar logged {loggedIn ? 'in' : 'out'}"
+  >
+    {#if loggedIn && !photoUrlErrored && $user.data && $metadata.data}
+      <Avatar
+        src={$user.data?.user?.photoUrl}
+        alt={$user.data?.user?.displayName || $user.data?.user?.email}
+        avatarSize="h-7 w-7"
+      />
+    {:else}
+      <NoUser />
+    {/if}
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content class="p-1">
+    {#if darkMode}
+      <ThemeToggle />
+      <DropdownMenu.Separator />
+    {/if}
 
-      <DropdownMenu.Item
-        href="https://docs.rilldata.com"
-        target="_blank"
-        rel="noreferrer noopener"
-        class="text-gray-800 font-normal"
-      >
-        Documentation
+    <DropdownMenu.Item
+      href="https://docs.rilldata.com"
+      target="_blank"
+      rel="noreferrer noopener"
+      class="text-gray-800 font-normal"
+    >
+      Documentation
+    </DropdownMenu.Item>
+    <DropdownMenu.Separator />
+
+    <DropdownMenu.Item
+      href="https://discord.gg/2ubRfjC7Rh"
+      target="_blank"
+      rel="noreferrer noopener"
+      class="text-gray-800 font-normal"
+    >
+      Join us on Discord
+    </DropdownMenu.Item>
+
+    {#if loggedIn}
+      <DropdownMenu.Item on:click={handlePylon}>
+        Contact Rill support
       </DropdownMenu.Item>
       <DropdownMenu.Separator />
-
       <DropdownMenu.Item
-        href="https://discord.gg/2ubRfjC7Rh"
-        target="_blank"
-        rel="noreferrer noopener"
+        href={logoutUrl}
+        rel="external"
         class="text-gray-800 font-normal"
       >
-        Join us on Discord
+        Logout
       </DropdownMenu.Item>
-
-      {#if loggedIn}
-        <DropdownMenu.Item on:click={handlePylon}>
-          Contact Rill support
-        </DropdownMenu.Item>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          href={logoutUrl}
-          rel="external"
-          class="text-gray-800 font-normal"
-        >
-          Logout
-        </DropdownMenu.Item>
-      {:else}
-        <DropdownMenu.Separator />
-        <DropdownMenu.Item
-          href={loginUrl}
-          rel="external"
-          class="text-gray-800 font-normal"
-        >
-          Log in / Sign up
-        </DropdownMenu.Item>
-      {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-{/if}
+    {:else}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        href={loginUrl}
+        rel="external"
+        class="text-gray-800 font-normal"
+      >
+        Log in / Sign up
+      </DropdownMenu.Item>
+    {/if}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
+<!-- {/if} -->

@@ -152,7 +152,7 @@
     </Tooltip>
 
     {#if sorted}
-      <div class="mt-0.5 ui-copy-icon">
+      <div class="mt-0.5 text-muted-foreground">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
             <ArrowDown size="12px" />

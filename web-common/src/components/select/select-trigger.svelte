@@ -31,7 +31,7 @@
   bind:el
   disabled={locked || disabled}
   class={cn(
-    "flex h-8 w-full items-center relative justify-between rounded-[2px] border border-gray-300 bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 [&>span]:line-clamp-1",
+    "flex h-8 w-full items-center relative justify-between rounded-[2px] border bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 [&>span]:line-clamp-1",
     className,
   )}
   {...$$restProps}
@@ -58,7 +58,7 @@
     </Tooltip>
   {/if}
   <div class="caret transition-transform">
-    <CaretDownIcon size="12px" className="fill-gray-600" />
+    <CaretDownIcon size="12px" className="fill-muted-foreground" />
   </div>
 </SelectPrimitive.Trigger>
 

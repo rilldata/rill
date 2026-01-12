@@ -35,7 +35,7 @@
         border={false}
         background={false}
       />
-      <button class="ui-copy-icon" on:click={reset}>
+      <button class="text-muted-foreground" on:click={reset}>
         <Cancel size="16px" />
       </button>
     </div>

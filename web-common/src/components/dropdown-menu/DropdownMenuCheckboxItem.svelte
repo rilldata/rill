@@ -22,8 +22,6 @@
   export let showXForSelected: $$Props["showXForSelected"] = false;
   export let checkRight: $$Props["checkRight"] = false;
   export { className as class };
-
-  const iconColor = "var(--color-gray-800)";
 </script>
 
 <svelte:element
@@ -36,7 +34,7 @@
     {checked}
     role="menuitem"
     class={cn(
-      "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",
+      "relative flex cursor-pointer text-foreground select-none items-center rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",
       className,
       checkRight && "flex-row-reverse justify-between",
     )}
@@ -53,8 +51,7 @@
       {#if checked}
         <svelte:component
           this={showXForSelected ? X : Check}
-          class={checkSize}
-          color={iconColor}
+          class="{checkSize} text-foreground"
         />
       {/if}
     </span>

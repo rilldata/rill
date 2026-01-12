@@ -393,7 +393,7 @@
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative h-full select-none"
+  class="w-full relative h-full select-none text-red-500"
 >
   <Pivot
     bind:this={pivot}

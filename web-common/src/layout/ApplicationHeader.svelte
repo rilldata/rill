@@ -89,7 +89,7 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage}>
+<header class:border-b={!onDeployPage} class="bg-surface dark:bg-gray-50">
   {#if !onDeployPage}
     <a href="/">
       <Rill />
@@ -135,7 +135,7 @@
 
 <style lang="postcss">
   header {
-    @apply w-full bg-surface box-border;
+    @apply w-full box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
   }

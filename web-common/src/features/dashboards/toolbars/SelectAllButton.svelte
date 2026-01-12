@@ -25,7 +25,7 @@
     {/if}
   </TooltipContent>
   <Button type="toolbar" onClick={onToggleSearchItems} {disabled}>
-    <div class="ui-copy-icon">
+    <div class="text-muted-foreground">
       <Inspect size={16} />
     </div>
     {areAllTableRowsSelected && !disabled ? "Deselect all" : "Select all"}

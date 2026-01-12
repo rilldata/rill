@@ -70,7 +70,7 @@
       for={id}
       class="{size === 'sm' ? 'text-xs' : 'text-sm'} flex items-center gap-x-1"
     >
-      <span class="text-gray-800 font-medium">
+      <span class="text-gray-800 dark:text-gray-950 font-medium">
         {label}
       </span>
       {#if optional}
@@ -114,8 +114,10 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {HeightBySize[size]} {width &&
-        `w-[${width}px]`} {minWidth && `min-w-[${minWidth}px]`} {ringFocus &&
+      class="bg-input flex px-3 gap-x-2 max-w-full {HeightBySize[
+        size
+      ]} {width && `w-[${width}px]`} {minWidth &&
+        `min-w-[${minWidth}px]`} {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''} {forcedTriggerStyle}"
@@ -125,7 +127,7 @@
         {placeholder}
         class="text-[{fontSize}px] {!selected
           ? 'text-gray-400'
-          : ''} w-full  text-left"
+          : 'text-gray-950'} w-full  text-left"
       />
     </Select.Trigger>
 

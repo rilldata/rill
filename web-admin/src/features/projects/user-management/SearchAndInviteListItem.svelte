@@ -101,7 +101,7 @@
     {/if}
   </div>
   {#if isSelected}
-    <Check size="16px" className="ui-copy-icon" />
+    <Check size="16px" className="text-muted-foreground" />
   {/if}
 </button>
 

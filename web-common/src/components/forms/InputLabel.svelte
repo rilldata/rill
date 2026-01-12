@@ -16,13 +16,17 @@
 <div class="label-wrapper">
   <label
     for={id}
-    class="line-clamp-1 {small ? 'text-xs' : 'text-sm'}"
+    class="line-clamp-1 {small
+      ? 'text-xs'
+      : 'text-sm'} text-gray-800 dark:text-gray-950"
     class:capitalize
     class:faint
   >
     {label}
     {#if optional}
-      <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
+      <span class="text-muted-foreground text-[12px] font-normal"
+        >(optional)</span
+      >
     {/if}
   </label>
   {#if hint}
@@ -30,7 +34,7 @@
       <svelte:element
         this={link ? "a" : "div"}
         {...link ? { href: link, target: "_blank" } : {}}
-        class="text-gray-500"
+        class="text-muted-foreground"
       >
         <InfoCircle size="13px" />
       </svelte:element>
@@ -48,7 +52,7 @@
   }
 
   label {
-    @apply font-medium text-gray-800;
+    @apply font-medium;
   }
 
   label.faint {

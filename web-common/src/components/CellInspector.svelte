@@ -161,9 +161,9 @@
           title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
         >
           {#if isLocked}
-            <Lock size="16" class="ui-copy-icon" />
+            <Lock size="16" class="text-muted-foreground" />
           {:else}
-            <Unlock size="16" class="ui-copy-icon" />
+            <Unlock size="16" class="text-muted-foreground" />
           {/if}
         </button>
       </div>

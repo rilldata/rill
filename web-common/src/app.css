@@ -16,10 +16,6 @@
     @apply text-gray-900 font-semibold;
   }
 
-  .ui-copy-icon {
-    @apply ui-copy-muted;
-  }
-
   .ui-copy-number {
     font-feature-settings:
       "case" 0,
@@ -54,7 +50,7 @@
   }
 
   .ui-copy-inactive {
-    @apply text-gray-500;
+    @apply text-muted-foreground;
   }
 
   .ui-copy-disabled {
@@ -119,8 +115,8 @@
     --accent-foreground: var(--color-gray-900);
     --destructive: var(--color-red-600);
     --destructive-foreground: var(--color-gray-50);
-    --border: var(--color-gray-200);
-    --input: var(--color-gray-200);
+    --border: var(--color-gray-300);
+    --input: var(--color-gray-50);
     --ring: var(--color-gray-950);
     --radius: 0.5rem;
 
@@ -271,29 +267,29 @@
 
   :root.dark {
     color-scheme: dark;
-    color: var(--color-gray-900);
+    color: var(--color-gray-950);
 
-    --surface: var(--color-gray-50);
+    --surface: var(--color-gray-200);
 
     /* SHADCN VARIABLES */
     --background: var(--color-gray-100);
-    /* --foreground: var(--color-gray-900); */
+    --foreground: var(--color-gray-950);
     /* --card: var(--surface); */
     /* --card-foreground: var(--color-gray-900); */
-    --popover: var(--color-gray-100);
-    /* --popover-foreground: var(--color-gray-900); */
+    --popover: var(--color-gray-400);
+    --popover-foreground: var(--color-gray-950);
     /* --primary: var(--color-primary-950); */
     /* --primary-foreground: var(--color-primary-50); */
     /* --secondary: var(--color-secondary-100); */
-    /* --secondary-foreground: var(--color-secondary-950); */
+    --secondary-foreground: var(--color-gray-950);
     --muted: var(--color-gray-200);
-    /* --muted-foreground: var(--color-gray-500); */
-    --accent: var(--color-gray-300);
-    /* --accent-foreground: var(--color-gray-900); */
+    --muted-foreground: #a3a3a3;
+    --accent: var(--color-gray-600);
+    --accent-foreground: var(--color-gray-950);
     /* --destructive: var(--color-red-600); */
     /* --destructive-foreground: var(--color-gray-50); */
-    --border: var(--color-gray-200);
-    /* --input: var(--color-gray-200); */
+    --border: var(--color-gray-600);
+    --input: var(--color-gray-400);
     /* --ring: var(--color-gray-950); */
 
     --color-theme-50: var(--color-theme-dark-50, var(--color-primary-dark-50));

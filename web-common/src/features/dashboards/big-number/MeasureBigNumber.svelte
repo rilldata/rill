@@ -140,14 +140,14 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 ui-copy-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
+      class="line-clamp-2 ui-copy-muted dark:text-muted-foreground hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
     </h2>
     <div
       role="button"
-      class="ui-copy-muted relative w-full h-full overflow-hidden text-ellipsis"
+      class="ui-copy-muted dark:text-foreground relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
       on:mouseover={handleMouseOver}
