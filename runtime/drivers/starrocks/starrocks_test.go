@@ -144,7 +144,7 @@ func TestDatabaseTypeToRuntimeType(t *testing.T) {
 		{"DATETIME", "CODE_TIMESTAMP", false},
 		{"DATE", "CODE_DATE", false},
 		{"JSON", "CODE_JSON", false},
-		{"DECIMAL(10,2)", "CODE_DECIMAL", false},
+		{"DECIMAL(10,2)", "CODE_STRING", false}, // DECIMAL returns string for precision
 		{"ARRAY", "CODE_ARRAY", false},
 		{"UNKNOWN_TYPE", "", true}, // unsupported type returns error
 	}

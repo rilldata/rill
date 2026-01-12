@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	_ "github.com/go-sql-driver/mysql" // MySQL driver for database/sql
 )
 
 const (
