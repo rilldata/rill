@@ -19,7 +19,6 @@
   export let organization: string;
   export let project: string;
 
-  let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
 
@@ -36,7 +35,7 @@
       undefined,
       {
         query: {
-          enabled: open,
+          enabled: accessDropdownOpen,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
@@ -49,15 +48,15 @@
     undefined,
     {
       query: {
-        enabled: open,
+        enabled: accessDropdownOpen,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
     },
   );
 
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  $: userGroupMemberUsersCount =
+    $listUsergroupMemberUsers?.data?.totalCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
 

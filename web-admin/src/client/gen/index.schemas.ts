@@ -852,6 +852,7 @@ export interface V1ListUserAuthTokensResponse {
 export interface V1ListUsergroupMemberUsersResponse {
   members?: V1UsergroupMemberUser[];
   nextPageToken?: string;
+  totalCount?: number;
 }
 
 export interface V1ListUsergroupsForOrganizationAndUserResponse {

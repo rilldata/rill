@@ -1080,6 +1080,15 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 	return res, nil
 }
 
+func (c *connection) CountUsergroupMemberUsers(ctx context.Context, groupID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM usergroups_users WHERE usergroup_id = $1", groupID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("usergroup member count", err)
+	}
+	return count, nil
+}
+
 func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
 	if err != nil {
