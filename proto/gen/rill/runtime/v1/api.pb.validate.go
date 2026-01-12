@@ -13745,6 +13745,8 @@ func (m *ListGitBranchesResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for CurrentBranch
+
 	for idx, item := range m.GetBranches() {
 		_, _ = idx, item
 
@@ -13883,9 +13885,9 @@ func (m *GitBranch) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for IsCurrent
+	// no validation rules for HasDeployment
 
-	// no validation rules for HasPreviewDeployment
+	// no validation rules for Editable
 
 	if len(errors) > 0 {
 		return GitBranchMultiError(errors)
@@ -14550,6 +14552,8 @@ func (m *GitCommitResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for CommitSha
 
 	if len(errors) > 0 {
 		return GitCommitResponseMultiError(errors)

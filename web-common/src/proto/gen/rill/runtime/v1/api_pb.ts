@@ -5593,7 +5593,12 @@ export class ListGitBranchesRequest extends Message$1<ListGitBranchesRequest> {
  */
 export class ListGitBranchesResponse extends Message$1<ListGitBranchesResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.GitBranch branches = 1;
+   * @generated from field: string current_branch = 1;
+   */
+  currentBranch = "";
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.GitBranch branches = 2;
    */
   branches: GitBranch[] = [];
 
@@ -5605,7 +5610,8 @@ export class ListGitBranchesResponse extends Message$1<ListGitBranchesResponse> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ListGitBranchesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "branches", kind: "message", T: GitBranch, repeated: true },
+    { no: 1, name: "current_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "branches", kind: "message", T: GitBranch, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGitBranchesResponse {
@@ -5635,14 +5641,14 @@ export class GitBranch extends Message$1<GitBranch> {
   name = "";
 
   /**
-   * @generated from field: bool is_current = 2;
+   * @generated from field: bool has_deployment = 2;
    */
-  isCurrent = false;
+  hasDeployment = false;
 
   /**
-   * @generated from field: bool has_preview_deployment = 3;
+   * @generated from field: bool editable = 3;
    */
-  hasPreviewDeployment = false;
+  editable = false;
 
   constructor(data?: PartialMessage<GitBranch>) {
     super();
@@ -5653,8 +5659,8 @@ export class GitBranch extends Message$1<GitBranch> {
   static readonly typeName = "rill.runtime.v1.GitBranch";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "is_current", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "has_preview_deployment", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "has_deployment", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitBranch {
@@ -5923,6 +5929,11 @@ export class GitCommitRequest extends Message$1<GitCommitRequest> {
  * @generated from message rill.runtime.v1.GitCommitResponse
  */
 export class GitCommitResponse extends Message$1<GitCommitResponse> {
+  /**
+   * @generated from field: string commit_sha = 1;
+   */
+  commitSha = "";
+
   constructor(data?: PartialMessage<GitCommitResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5931,6 +5942,7 @@ export class GitCommitResponse extends Message$1<GitCommitResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GitCommitResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GitCommitResponse {

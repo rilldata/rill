@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
@@ -423,8 +424,8 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 }
 
 // ListBranches implements drivers.RepoStore.
-func (r *repo) ListBranches(ctx context.Context) ([]drivers.GitBranch, error) {
-	return nil, drivers.ErrNotImplemented
+func (r *repo) ListBranches(ctx context.Context) ([]string, string, error) {
+	return nil, "", drivers.ErrNotImplemented
 }
 
 // SwitchBranch implements drivers.RepoStore.
@@ -467,13 +468,13 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 }
 
 // Pull implements drivers.RepoStore.
-func (r *repo) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
-	return r.pull(ctx, discardChanges, forceHandshake)
+func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
+	return r.pull(ctx, opts.DiscardChanges, opts.ForceHandshake)
 }
 
 // Commit implements drivers.RepoStore.
-func (r *repo) Commit(ctx context.Context, message string) error {
-	return drivers.ErrNotImplemented
+func (r *repo) Commit(ctx context.Context, message string) (string, error) {
+	return "", drivers.ErrNotImplemented
 }
 
 // CommitAndPush implements drivers.RepoStore.

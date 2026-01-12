@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -54,6 +58,11 @@ type driver struct {
 type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+
+	// admin client config overrides, only used to fetch github tokens
+	AdminURLOverride    string `mapstructure:"admin_url_override"`
+	AccessTokenOverride string `mapstructure:"access_token_override"`
+	HomeDir             string `mapstructure:"home_dir"`
 }
 
 // a smaller subset of relevant parts of rill.yaml
@@ -143,6 +152,11 @@ type connection struct {
 
 	watcher     *filewatcher.LazyWatcher
 	ignorePaths []string
+
+	gitConfig *gitutil.Config // git config for repo
+	admin     *client.Client  // admin client for admin service, used to obtain github tokens
+	dotRill   dotrill.DotRill
+	gitMu     sync.Mutex // mutex to protect git related operations
 }
 
 // Ping implements drivers.Handle.

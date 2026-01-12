@@ -4,19 +4,24 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/filewatcher"
 )
@@ -199,9 +204,9 @@ func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error 
 }
 
 // ListBranches implements drivers.RepoStore.
-func (c *connection) ListBranches(ctx context.Context) ([]drivers.GitBranch, error) {
+func (c *connection) ListBranches(ctx context.Context) ([]string, string, error) {
 	if !c.isGitRepo() {
-		return nil, errors.New("not a git repository")
+		return nil, "", errors.New("not a git repository")
 	}
 
 	c.gitMu.Lock()
@@ -209,45 +214,34 @@ func (c *connection) ListBranches(ctx context.Context) ([]drivers.GitBranch, err
 
 	gitPath, _, err := gitutil.InferRepoRootAndSubpath(c.root)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	repo, err := git.PlainOpen(gitPath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	// Fetch remote branches and preview deployments if authenticated
-	var gitConfig *gitutil.Config
-	previewBranches := make(map[string]bool)
-	if c.driverConfig.AccessToken != "" {
-		gitConfig, err = c.loadGitConfig(ctx)
-		if err == nil && gitConfig != nil {
-			// fetch to get latest remote branches
-			_ = gitutil.GitFetch(ctx, gitPath, gitConfig)
+	// List all remotes
+	remotes, err := repo.Remotes()
+	if err != nil {
+		return nil, "", err
+	}
 
-			// fetch preview branches from deployments
-			depls, err := c.admin.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
-				Org:     c.driverConfig.Org,
-				Project: c.project.Name,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			for _, d := range depls.Deployments {
-				if !d.Editable && d.Id != c.project.PrimaryDeploymentId {
-					previewBranches[d.Branch] = true
-				}
-			}
+	var remoteName string
+	for _, r := range remotes {
+		if r.Config().Name == "__rill_remote" {
+			remoteName = r.Config().Name
+			break
 		}
+		remoteName = r.Config().Name
 	}
 
 	// List all references (local and remote)
 	branchSet := make(map[string]bool)
 	refs, err := repo.References()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	err = refs.ForEach(func(ref *plumbing.Reference) error {
@@ -260,34 +254,24 @@ func (c *connection) ListBranches(ctx context.Context) ([]drivers.GitBranch, err
 		if refName.IsRemote() {
 			// Strip "<remote>/" prefix to get branch name
 			// Skip HEAD reference
-			if branchName, ok := strings.CutPrefix(refName.Short(), gitConfig.RemoteName()+"/"); ok && branchName != "HEAD" {
+			if branchName, ok := strings.CutPrefix(refName.Short(), remoteName+"/"); ok && branchName != "HEAD" {
 				branchSet[branchName] = true
 			}
 		}
-
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Get current branch
 	head, err := repo.Head()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	currentBranch := head.Name().Short()
 
-	branches := make([]drivers.GitBranch, 0, len(branchSet))
-	for name := range branchSet {
-		branches = append(branches, drivers.GitBranch{
-			Name:                 name,
-			IsCurrent:            name == currentBranch,
-			HasPreviewDeployment: previewBranches[name],
-		})
-	}
-
-	return branches, nil
+	return maps.Keys(branchSet), currentBranch, nil
 }
 
 // SwitchBranch implements drivers.RepoStore.
@@ -414,15 +398,9 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 }
 
 // Pull implements drivers.RepoStore.
-func (c *connection) Pull(ctx context.Context, discardChanges, forceHandshake bool) error {
-	// TODO: If its a Git repository, pull the current branch. Otherwise, this is a no-op.
-	return nil
-}
-
-// Commit implements drivers.RepoStore.
-func (c *connection) Commit(ctx context.Context, message string) error {
-	// If its a Git repository, commit the changes with the given message to the current branch.
-	if !c.isGitRepo() {
+func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error {
+	// If its a Git repository, pull the current branch. Otherwise, this is a no-op.
+	if !c.isGitRepo() || !opts.UserTriggered {
 		return nil
 	}
 
@@ -431,20 +409,62 @@ func (c *connection) Commit(ctx context.Context, message string) error {
 
 	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
 	if err != nil {
+		// Not a git repo
 		return err
 	}
 
-	author, err := c.gitSignature(ctx, gitPath)
+	gitConfig, err := c.loadGitConfig(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, err = gitCommitAll(gitPath, subpath, message, author)
+	if gitConfig.Subpath != subpath {
+		// should not happen
+		return errors.New("detected subpath within git repo does not match project subpath")
+	}
+
+	remote, err := gitConfig.FullyQualifiedRemote()
 	if err != nil {
 		return err
 	}
 
+	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, gitConfig.RemoteName())
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// Commit implements drivers.RepoStore.
+func (c *connection) Commit(ctx context.Context, message string) (string, error) {
+	// If its a Git repository, commit the changes with the given message to the current branch.
+	if !c.isGitRepo() {
+		return "", nil
+	}
+
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
+
+	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		return "", err
+	}
+
+	client, err := c.getAdminClient()
+	if err != nil && !errors.Is(err, errAuthRequired) { // allow committing without auth
+		return "", err
+	}
+	author, err := c.gitSignature(ctx, client, gitPath)
+	if err != nil {
+		return "", err
+	}
+
+	hash, err := gitCommitAll(gitPath, subpath, message, author)
+	if err != nil {
+		return "", err
+	}
+
+	return hash, nil
 }
 
 // RestoreCommit implements drivers.RepoStore.
@@ -463,7 +483,11 @@ func (c *connection) RestoreCommit(ctx context.Context, commitSHA string) (strin
 	}
 
 	// commit existing changes if any
-	author, err := c.gitSignature(ctx, gitPath)
+	client, err := c.getAdminClient()
+	if err != nil {
+		return "", err
+	}
+	author, err := c.gitSignature(ctx, client, gitPath)
 	if err != nil {
 		return "", err
 	}
@@ -504,4 +528,60 @@ func (c *connection) CommitHash(ctx context.Context) (string, error) {
 // CommitTimestamp implements drivers.RepoStore.
 func (c *connection) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	return time.Time{}, nil
+}
+
+func (c *connection) isGitRepo() bool {
+	_, err := git.PlainOpen(c.root)
+	return err == nil
+}
+
+func gitCommitAll(path, subpath, message string, author *object.Signature) (string, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return "", err
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return "", fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	// Stage all changes (git add -A for the subpath)
+	var stagingPath string
+	if subpath != "" {
+		stagingPath = filepath.Join(subpath, "**")
+	} else {
+		stagingPath = "."
+	}
+	if err := wt.AddWithOptions(&git.AddOptions{Glob: stagingPath}); err != nil {
+		return "", fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// Commit the changes (git commit -m)
+	if message == "" {
+		message = "Auto committed by Rill"
+	}
+	hash, err := wt.Commit(message, &git.CommitOptions{Author: author, AllowEmptyCommits: false})
+	if err != nil {
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return "", fmt.Errorf("failed to commit files to git: %w", err)
+		}
+		// empty commit - nothing to commit
+		return "", nil
+	}
+	return hash.String(), nil
+}
+
+func restoreToCommit(path, subpath, commithash string) error {
+	var args []string
+	args = append(args, "-C", path, "restore", "--source", commithash, "--staged", "--worktree")
+	if subpath != "" {
+		args = append(args, "--", subpath)
+	}
+	cmd := exec.Command("git", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to restore to commit: %s, %w", string(output), err)
+	}
+	return nil
 }

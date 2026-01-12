@@ -21,23 +21,51 @@ func (s *Server) ListGitBranches(ctx context.Context, req *runtimev1.ListGitBran
 	}
 	defer release()
 
-	branches, err := repo.ListBranches(ctx)
+	branches, currentBranch, err := repo.ListBranches(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list branches: %w", err)
 	}
 
-	// Convert to GitBranch objects with is_current flag
+	// List all deployments
+	admin, release, err := s.runtime.Admin(ctx, req.InstanceId)
+	if err != nil {
+		if errors.Is(err, runtime.ErrAdminNotConfigured) && s.adminOverride != nil {
+			admin = s.adminOverride
+			release = func() {}
+		}
+		return nil, err
+	}
+	defer release()
+
+	deployments, err := admin.ListDeployments(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list deployments: %w", err)
+	}
+
+	// Map deployments to branches with deployments
+	deploymentMap := make(map[string]*drivers.Deployment)
+	for _, d := range deployments {
+		if d.Branch != currentBranch {
+			deploymentMap[d.Branch] = d
+		}
+	}
+
 	res := make([]*runtimev1.GitBranch, 0, len(branches))
 	for _, branch := range branches {
-		res = append(res, &runtimev1.GitBranch{
-			Name:                 branch.Name,
-			IsCurrent:            branch.IsCurrent,
-			HasPreviewDeployment: branch.HasPreviewDeployment,
-		})
+		b := &runtimev1.GitBranch{
+			Name: branch,
+		}
+		deployment, ok := deploymentMap[branch]
+		if ok {
+			b.HasDeployment = true
+			b.Editable = deployment.Editable
+		}
+		res = append(res, b)
 	}
 
 	return &runtimev1.ListGitBranchesResponse{
-		Branches: res,
+		CurrentBranch: currentBranch,
+		Branches:      res,
 	}, nil
 }
 
@@ -94,11 +122,13 @@ func (s *Server) GitCommit(ctx context.Context, req *runtimev1.GitCommitRequest)
 	}
 	defer release()
 
-	err = repo.Commit(ctx, req.CommitMessage)
+	hash, err := repo.Commit(ctx, req.CommitMessage)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
 	}
-	return &runtimev1.GitCommitResponse{}, nil
+	return &runtimev1.GitCommitResponse{
+		CommitSha: hash,
+	}, nil
 }
 
 // RestoreGitCommit implements RuntimeService.

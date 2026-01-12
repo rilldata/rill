@@ -1226,13 +1226,14 @@ message ListGitBranchesRequest {
 }
 
 message ListGitBranchesResponse {
-  repeated GitBranch branches = 1;
+  string current_branch = 1;
+  repeated GitBranch branches = 2;
 }
 
 message GitBranch {
   string name = 1;
-  bool is_current = 2;
-  bool has_preview_deployment = 3;
+  bool has_deployment = 2;
+  bool editable = 3;
 }
 
 message SwitchBranchRequest {
@@ -1268,7 +1269,9 @@ message GitCommitRequest {
   string commit_message = 2;
 }
 
-message GitCommitResponse {}
+message GitCommitResponse {
+  string commit_sha = 1;
+}
 
 // Request message for RuntimeService.RestoreGitCommit
 message RestoreGitCommitRequest {

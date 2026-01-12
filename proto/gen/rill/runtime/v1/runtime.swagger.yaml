@@ -5288,12 +5288,15 @@ definitions:
     properties:
       name:
         type: string
-      isCurrent:
+      hasDeployment:
         type: boolean
-      hasPreviewDeployment:
+      editable:
         type: boolean
   v1GitCommitResponse:
     type: object
+    properties:
+      commitSha:
+        type: string
   v1GitPullResponse:
     type: object
     properties:
@@ -5514,6 +5517,8 @@ definitions:
   v1ListGitBranchesResponse:
     type: object
     properties:
+      currentBranch:
+        type: string
       branches:
         type: array
         items:

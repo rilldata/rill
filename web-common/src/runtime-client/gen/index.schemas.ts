@@ -1104,12 +1104,12 @@ export interface V1GetTableResponse {
 
 export interface V1GitBranch {
   name?: string;
-  isCurrent?: boolean;
-  hasPreviewDeployment?: boolean;
+  hasDeployment?: boolean;
+  editable?: boolean;
 }
 
 export interface V1GitCommitResponse {
-  [key: string]: unknown;
+  commitSha?: string;
 }
 
 export interface V1GitPullResponse {
@@ -1256,6 +1256,7 @@ export interface V1ListFilesResponse {
 }
 
 export interface V1ListGitBranchesResponse {
+  currentBranch?: string;
   branches?: V1GitBranch[];
 }
 
