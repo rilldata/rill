@@ -1,13 +1,14 @@
 import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
+import * as yupLib from "yup";
 import {
-  yup,
+  yup as yupAdapter,
   type Infer as YupInfer,
   type InferIn as YupInferIn,
 } from "sveltekit-superforms/adapters";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
-import { getValidationSchemaForConnector, dsnSchema } from "./FormValidation";
+import { getValidationSchemaForConnector } from "./FormValidation";
 import {
   getInitialFormValuesFromProperties,
   inferSourceName,
@@ -16,7 +17,11 @@ import {
   submitAddConnectorForm,
   submitAddSourceForm,
 } from "./submitAddDataForm";
-import { normalizeConnectorError } from "./utils";
+import {
+  normalizeConnectorError,
+  applyClickHouseCloudRequirements,
+  isEmpty,
+} from "./utils";
 import {
   FORM_HEIGHT_DEFAULT,
   FORM_HEIGHT_TALL,
@@ -25,9 +30,7 @@ import {
 } from "./constants";
 import {
   connectorStepStore,
-  resetConnectorStep,
   setConnectorConfig,
-  setAuthMethod,
   setStep,
   type ConnectorStepState,
 } from "./connectorStepStore";
@@ -36,10 +39,44 @@ import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
-import { applyClickHouseCloudRequirements } from "./utils";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
 import { findRadioEnumKey } from "../../templates/schema-utils";
+
+const dsnSchema = yupLib.object({
+  dsn: yupLib.string().required("DSN is required"),
+});
+
+export type ClickhouseUiState = {
+  properties: ConnectorDriverProperty[];
+  filteredProperties: ConnectorDriverProperty[];
+  dsnProperties: ConnectorDriverProperty[];
+  isSubmitDisabled: boolean;
+  formId: string;
+  submitting: boolean;
+  enforcedConnectionTab?: "parameters" | "dsn";
+  shouldClearErrors?: boolean;
+};
+
+type SuperFormStore = {
+  update: (
+    updater: (value: Record<string, unknown>) => Record<string, unknown>,
+    options?: any,
+  ) => void;
+};
+
+type ClickhouseStateArgs = {
+  connectorType: ClickHouseConnectorType;
+  connectionTab: "parameters" | "dsn";
+  paramsFormValues: Record<string, unknown>;
+  dsnFormValues: Record<string, unknown>;
+  paramsErrors: Record<string, unknown>;
+  dsnErrors: Record<string, unknown>;
+  paramsForm: SuperFormStore;
+  dsnForm: SuperFormStore;
+  paramsSubmitting: boolean;
+  dsnSubmitting: boolean;
+};
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -68,8 +105,8 @@ export class AddDataFormManager {
   dsn: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
-  private initialParamsValues: Record<string, unknown>;
-  private initialDsnValues: Record<string, unknown>;
+  private clickhouseInitialValues: Record<string, unknown>;
+  private clickhousePrevConnectorType?: ClickHouseConnectorType;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -77,14 +114,6 @@ export class AddDataFormManager {
   }
 
   private getSelectedAuthMethod?: () => string | undefined;
-  private resetConnectorForms() {
-    if (this.params?.form) {
-      (this.params.form as any).update(() => ({}), { taint: false } as any);
-    }
-    if (this.dsn?.form) {
-      (this.dsn.form as any).update(() => ({}), { taint: false } as any);
-    }
-  }
 
   constructor(args: {
     connector: V1ConnectorDriver;
@@ -153,16 +182,12 @@ export class AddDataFormManager {
     const paramsAdapter = getValidationSchemaForConnector(
       connector.name as string,
       formType,
-      {
-        isMultiStepConnector: this.isMultiStepConnector,
-      },
     );
     type ParamsOut = Record<string, unknown>;
     type ParamsIn = Record<string, unknown>;
     const initialFormValues = getInitialFormValuesFromProperties(
       this.properties,
     );
-    this.initialParamsValues = initialFormValues;
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
@@ -176,18 +201,26 @@ export class AddDataFormManager {
     });
 
     // Superforms: dsn
-    const dsnAdapter = yup(dsnSchema);
+    const dsnAdapter = yupAdapter(dsnSchema);
     type DsnOut = YupInfer<typeof dsnSchema, "yup">;
     type DsnIn = YupInferIn<typeof dsnSchema, "yup">;
-    const initialDsnValues = defaults(dsnAdapter);
-    this.initialDsnValues = initialDsnValues;
-    this.dsn = superForm<DsnOut, any, DsnIn>(initialDsnValues, {
+    this.dsn = superForm<DsnOut, any, DsnIn>(defaults(dsnAdapter), {
       SPA: true,
       validators: dsnAdapter,
       onUpdate: onDsnUpdate,
       resetForm: false,
       validationMethod: "onsubmit",
     });
+
+    // ClickHouse-specific defaults
+    this.clickhouseInitialValues =
+      connector.name === "clickhouse"
+        ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
+        : {};
+    this.clickhousePrevConnectorType =
+      connector.name === "clickhouse"
+        ? ("self-hosted" as ClickHouseConnectorType)
+        : undefined;
   }
 
   get isSourceForm(): boolean {
@@ -220,9 +253,6 @@ export class AddDataFormManager {
     // Only show for connector forms (not sources)
     if (!isConnectorForm) return false;
 
-    // ClickHouse has its own error handling
-    if (this.connector.name === "clickhouse") return false;
-
     // Need a submission result to show the button
     if (!event?.result) return false;
 
@@ -250,18 +280,12 @@ export class AddDataFormManager {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
     setConnectorConfig({});
-    setAuthMethod(null);
-    this.resetConnectorForms();
     setStep("source");
   }
 
   handleBack(onBack: () => void): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (this.isMultiStepConnector && stepState.step === "source") {
-      // Clear any connector form state when navigating back from the model step
-      setConnectorConfig(null);
-      setAuthMethod(null);
-      this.resetConnectorForms();
       setStep("connector");
     } else {
       onBack();
@@ -319,6 +343,145 @@ export class AddDataFormManager {
     return "Test and Add data";
   }
 
+  computeClickhouseState(args: ClickhouseStateArgs): ClickhouseUiState | null {
+    if (this.connector.name !== "clickhouse") return null;
+    const {
+      connectorType,
+      connectionTab,
+      paramsFormValues,
+      dsnFormValues,
+      paramsErrors,
+      dsnErrors,
+      paramsForm,
+      paramsSubmitting,
+      dsnSubmitting,
+    } = args;
+
+    // Keep connector_type in sync on the params form
+    paramsForm.update(
+      ($form: any) => ({
+        ...$form,
+        connector_type: connectorType,
+      }),
+      { taint: false } as any,
+    );
+
+    // Apply defaults when the ClickHouse connector type changes
+    if (
+      connectorType === "rill-managed" &&
+      Object.keys(paramsFormValues ?? {}).length > 1
+    ) {
+      paramsForm.update(
+        () => ({ managed: true, connector_type: "rill-managed" }),
+        { taint: false } as any,
+      );
+    } else if (
+      this.clickhousePrevConnectorType === "rill-managed" &&
+      connectorType === "self-hosted"
+    ) {
+      paramsForm.update(
+        () => ({ ...this.clickhouseInitialValues, managed: false }),
+        { taint: false } as any,
+      );
+    } else if (
+      this.clickhousePrevConnectorType !== "clickhouse-cloud" &&
+      connectorType === "clickhouse-cloud"
+    ) {
+      paramsForm.update(
+        () => ({
+          ...this.clickhouseInitialValues,
+          managed: false,
+          port: "8443",
+          ssl: true,
+        }),
+        { taint: false } as any,
+      );
+    } else if (
+      this.clickhousePrevConnectorType === "clickhouse-cloud" &&
+      connectorType === "self-hosted"
+    ) {
+      paramsForm.update(
+        () => ({ ...this.clickhouseInitialValues, managed: false }),
+        { taint: false } as any,
+      );
+    }
+    this.clickhousePrevConnectorType = connectorType;
+
+    const enforcedConnectionTab =
+      connectorType === "rill-managed" ? ("parameters" as const) : undefined;
+    const activeConnectionTab = enforcedConnectionTab ?? connectionTab;
+
+    const properties =
+      connectorType === "rill-managed"
+        ? (this.connector.sourceProperties ?? [])
+        : (this.connector.configProperties ?? []);
+
+    const filteredProperties = properties.filter(
+      (property) =>
+        !property.noPrompt &&
+        property.key !== "managed" &&
+        (activeConnectionTab !== "dsn" ? property.key !== "dsn" : true),
+    );
+
+    const dsnProperties =
+      this.connector.configProperties?.filter(
+        (property) => property.key === "dsn",
+      ) ?? [];
+
+    const isSubmitDisabled = (() => {
+      if (connectorType === "rill-managed") {
+        for (const property of filteredProperties) {
+          if (property.required) {
+            const key = String(property.key);
+            const value = paramsFormValues?.[key];
+            if (isEmpty(value) || (paramsErrors?.[key] as any)?.length)
+              return true;
+          }
+        }
+        return false;
+      }
+      if (activeConnectionTab === "dsn") {
+        for (const property of dsnProperties) {
+          if (property.required) {
+            const key = String(property.key);
+            const value = dsnFormValues?.[key];
+            if (isEmpty(value) || (dsnErrors?.[key] as any)?.length)
+              return true;
+          }
+        }
+        return false;
+      }
+
+      for (const property of filteredProperties) {
+        if (property.required && property.key !== "managed") {
+          const key = String(property.key);
+          const value = paramsFormValues?.[key];
+          if (isEmpty(value) || (paramsErrors?.[key] as any)?.length)
+            return true;
+        }
+      }
+      if (connectorType === "clickhouse-cloud" && !paramsFormValues?.ssl)
+        return true;
+      return false;
+    })();
+
+    const submitting =
+      activeConnectionTab === "dsn" ? dsnSubmitting : paramsSubmitting;
+    const formId =
+      activeConnectionTab === "dsn" ? this.dsnFormId : this.paramsFormId;
+
+    return {
+      properties,
+      filteredProperties,
+      dsnProperties,
+      isSubmitDisabled,
+      formId,
+      submitting,
+      enforcedConnectionTab,
+      shouldClearErrors: connectorType === "rill-managed",
+    };
+  }
+
   makeOnUpdate(args: {
     onClose: () => void;
     queryClient: any;
@@ -369,8 +532,7 @@ export class AddDataFormManager {
         stepState.step === "connector" &&
         selectedAuthMethod === "public"
       ) {
-        setConnectorConfig({});
-        setAuthMethod(null);
+        setConnectorConfig(values);
         setStep("source");
         return;
       }
@@ -379,7 +541,6 @@ export class AddDataFormManager {
         const sourceValidator = getValidationSchemaForConnector(
           connector.name as string,
           "source",
-          { isMultiStepConnector: true },
         );
         const result = await sourceValidator.validate(values);
         if (!result.success) {
@@ -414,28 +575,20 @@ export class AddDataFormManager {
       try {
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
-          resetConnectorStep();
-          this.resetConnectorForms();
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
           // For public auth, skip Test & Connect and go straight to the next step.
           if (selectedAuthMethod === "public") {
-            setConnectorConfig({});
-            setAuthMethod(null);
-            this.resetConnectorForms();
+            setConnectorConfig(values);
             setStep("source");
             return;
           }
           await submitAddConnectorForm(queryClient, connector, values, false);
-          setConnectorConfig({});
-          setAuthMethod(null);
-          this.resetConnectorForms();
+          setConnectorConfig(values);
           setStep("source");
           return;
         } else if (this.formType === "source") {
           await submitAddSourceForm(queryClient, connector, values);
-          resetConnectorStep();
-          this.resetConnectorForms();
           onClose();
         } else {
           await submitAddConnectorForm(queryClient, connector, values, false);
