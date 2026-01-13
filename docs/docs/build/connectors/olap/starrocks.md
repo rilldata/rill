@@ -26,7 +26,7 @@ driver: starrocks
 host: <HOSTNAME>
 port: 9030
 username: <USERNAME>
-password: "{{ .env.connector.starrocks.password }}"
+password: "{{ .env.STARROCKS_PASSWORD }}"
 catalog: default_catalog
 database: <DATABASE>
 ssl: false
@@ -40,7 +40,7 @@ Rill can also connect to StarRocks using a DSN connection string. StarRocks uses
 type: connector
 driver: starrocks
 
-dsn: "{{ .env.connector.starrocks.dsn }}"
+dsn: "{{ .env.STARROCKS_DSN }}"
 ```
 
 The DSN format is:
@@ -80,7 +80,7 @@ driver: starrocks
 host: starrocks-fe.example.com
 port: 9030
 username: analyst
-password: "{{ .env.connector.starrocks.password }}"
+password: "{{ .env.STARROCKS_PASSWORD }}"
 catalog: iceberg_catalog
 database: my_database
 ```

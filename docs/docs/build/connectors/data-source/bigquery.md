@@ -45,7 +45,7 @@ type: connector
 
 driver: bigquery
 
-google_application_credentials: "{{ .env.connector.bigquery.google_application_credentials }}"
+google_application_credentials: "{{ .env.GOOGLE_APPLICATION_CREDENTIALS }}"
 project_id: "rilldata"
 ```
 

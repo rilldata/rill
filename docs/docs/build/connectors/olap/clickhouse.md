@@ -36,7 +36,7 @@ driver: clickhouse
 host: <HOSTNAME>
 port: <PORT>
 username: <USERNAME>
-password: "{{ .env.connector.clickhouse.password }}"
+password: "{{ .env.CLICKHOUSE_PASSWORD }}"
 ssl: true # required for ClickHouse Cloud
 ```
 
@@ -62,7 +62,7 @@ Once the file is created, it will be added directly to the `.env` file in the pr
 type: connector
 driver: clickhouse
 
-dsn: "{{ .env.connector.clickhouse.dsn }}"
+dsn: "{{ .env.CLICKHOUSE_DSN }}"
 ```
 
 :::info Check your port
