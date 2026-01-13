@@ -10,10 +10,6 @@
   export let errors: Record<string, any>;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
-  export let formId: string | undefined = undefined;
-  export let enhance: any = undefined;
-  export let onSubmit: (e?: Event) => void = () => {};
-  export let className = "pb-5 flex-grow overflow-y-auto";
 
   const radioDisplay = "radio";
 
@@ -216,64 +212,57 @@
   }
 </script>
 
-<form
-  id={formId}
-  class={className}
-  use:enhance
-  on:submit|preventDefault={onSubmit}
->
-  {#if schema}
-    {#each renderOrder as [key, prop] (key)}
-      {#if isRadioEnum(prop)}
-        <div class="py-1.5 first:pt-0 last:pb-0">
-          {#if prop.title}
-            <div class="text-sm font-medium mb-3">{prop.title}</div>
-          {/if}
-          <Radio
-            bind:value={$form[key]}
-            options={radioOptions(prop)}
-            name={`${key}-radio`}
-          >
-            <svelte:fragment slot="custom-content" let:option>
-              {#if groupedFields.get(key)}
-                {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
-                  <div class="py-1.5 first:pt-0 last:pb-0">
-                    <SchemaField
-                      id={childKey}
-                      prop={childProp}
-                      optional={!isRequired(childKey)}
-                      errors={errors?.[childKey]}
-                      bind:value={$form[childKey]}
-                      bind:checked={$form[childKey]}
-                      {onStringInputChange}
-                      {handleFileUpload}
-                      options={isRadioEnum(childProp)
-                        ? radioOptions(childProp)
-                        : undefined}
-                      name={`${childKey}-radio`}
-                    />
-                  </div>
-                {/each}
-              {/if}
-            </svelte:fragment>
-          </Radio>
-        </div>
-      {:else}
-        <div class="py-1.5 first:pt-0 last:pb-0">
-          <SchemaField
-            id={key}
-            {prop}
-            optional={!isRequired(key)}
-            errors={errors?.[key]}
-            bind:value={$form[key]}
-            bind:checked={$form[key]}
-            {onStringInputChange}
-            {handleFileUpload}
-            options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
-            name={`${key}-radio`}
-          />
-        </div>
-      {/if}
-    {/each}
-  {/if}
-</form>
+{#if schema}
+  {#each renderOrder as [key, prop] (key)}
+    {#if isRadioEnum(prop)}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        {#if prop.title}
+          <div class="text-sm font-medium mb-3">{prop.title}</div>
+        {/if}
+        <Radio
+          bind:value={$form[key]}
+          options={radioOptions(prop)}
+          name={`${key}-radio`}
+        >
+          <svelte:fragment slot="custom-content" let:option>
+            {#if groupedFields.get(key)}
+              {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
+                <div class="py-1.5 first:pt-0 last:pb-0">
+                  <SchemaField
+                    id={childKey}
+                    prop={childProp}
+                    optional={!isRequired(childKey)}
+                    errors={errors?.[childKey]}
+                    bind:value={$form[childKey]}
+                    bind:checked={$form[childKey]}
+                    {onStringInputChange}
+                    {handleFileUpload}
+                    options={isRadioEnum(childProp)
+                      ? radioOptions(childProp)
+                      : undefined}
+                    name={`${childKey}-radio`}
+                  />
+                </div>
+              {/each}
+            {/if}
+          </svelte:fragment>
+        </Radio>
+      </div>
+    {:else}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        <SchemaField
+          id={key}
+          {prop}
+          optional={!isRequired(key)}
+          errors={errors?.[key]}
+          bind:value={$form[key]}
+          bind:checked={$form[key]}
+          {onStringInputChange}
+          {handleFileUpload}
+          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          name={`${key}-radio`}
+        />
+      </div>
+    {/if}
+  {/each}
+{/if}
