@@ -538,6 +538,75 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
+    post:
+      summary: |-
+        ForkConversation creates a new conversation by copying messages from an existing one.
+        If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+      operationId: RuntimeService_ForkConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ForkConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.ForkConversation
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/conversations/{conversationId}/share:
+    post:
+      summary: ShareConversation enables sharing of the conversation by adding metadata.
+      operationId: RuntimeService_ShareConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ShareConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              untilMessageId:
+                type: string
+                description: |-
+                  optional message ID up to which to share otherwise share all current messages
+                  only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+                  It supports a special value of "none" to unshare the conversation.
+            title: Request message for RuntimeService.ShareConversation
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
     get:
       summary: |-
@@ -1116,6 +1185,89 @@ paths:
               metricsView:
                 type: string
                 description: table and connector should not be provided if metrics_view is provided.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/pull:
+    post:
+      summary: |-
+        GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+        If there are any merge conflicts the pull is aborted.
+        Force can be set to true to force the pull and overwrite any local changes.
+      operationId: RuntimeService_GitPull
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPullResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              discardLocal:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/push:
+    post:
+      summary: |-
+        GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+        It only pushes the changes to the existing remote repo.
+      operationId: RuntimeService_GitPush
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPushResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+              force:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/status:
+    get:
+      summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+      operationId: RuntimeService_GitStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs:
@@ -3369,6 +3521,7 @@ definitions:
       - DIMENSION_TYPE_UNSPECIFIED
       - DIMENSION_TYPE_CATEGORICAL
       - DIMENSION_TYPE_TIME
+      - DIMENSION_TYPE_GEOSPATIAL
     default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
@@ -3524,6 +3677,8 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
+      - CODE_POINT
+      - CODE_POLYGON
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   protobufAny:
@@ -4917,6 +5072,13 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
+  v1ForkConversationResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+        title: new conversation ID
+    title: Response message for RuntimeService.ForkConversation
   v1GenerateCanvasFileResponse:
     type: object
     properties:
@@ -4955,6 +5117,9 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Message'
+      isOwner:
+        type: boolean
+        title: would be false for shared conversations accessed by non-owners
     title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object
@@ -5008,6 +5173,37 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GitPullResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git pull command. Only set for unsuccessful pulls.
+  v1GitPushResponse:
+    type: object
+  v1GitStatusResponse:
+    type: object
+    properties:
+      branch:
+        type: string
+        description: The current branch of the git repo.
+      githubUrl:
+        type: string
+        description: The remote url of the git repo.
+      managedGit:
+        type: boolean
+        description: If the repo is managed by Rill.
+      localChanges:
+        type: boolean
+        description: local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+      localCommits:
+        type: integer
+        format: int32
+        description: local_commits returns number of local commits that are not pushed to the remote git repo.
+      remoteCommits:
+        type: integer
+        format: int32
+        description: remote_commits returns number of remote commits not pulled yet.
   v1HealthResponse:
     type: object
     properties:
@@ -6466,6 +6662,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object
@@ -7051,6 +7248,9 @@ definitions:
       resource:
         $ref: '#/definitions/v1ResourceName'
         description: this rules resolves to rules that provides access to whatever is needed to access this resource.
+  v1ShareConversationResponse:
+    type: object
+    title: Response message for RuntimeService.ShareConversation
   v1Source:
     type: object
     properties:

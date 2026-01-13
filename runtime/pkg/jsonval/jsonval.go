@@ -105,12 +105,38 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		v2, _ := new(big.Rat).SetFrac(v.Value, denom).Float64()
 		return v2, nil
 	case map[string]any:
+		// We need to handle DuckDB geometry points returned with this type
+		if t != nil && t.Code == runtimev1.Type_CODE_POINT {
+			return []any{v["x"], v["y"]}, nil
+		}
+		// Generic case
 		var t2 *runtimev1.StructType
 		if t != nil {
 			t2 = t.StructType
 		}
 		return toMap(v, t2)
 	case []any:
+		// We need to handle DuckDB geometry polygons returned with this type
+		if t != nil && t.Code == runtimev1.Type_CODE_POLYGON {
+			outer := make([]any, len(v))
+			for i, v2 := range v {
+				v2, ok := v2.([]any)
+				if !ok {
+					continue
+				}
+				inner := make([]any, len(v2))
+				for j, v3 := range v2 {
+					v3, ok := v3.(map[string]any)
+					if !ok {
+						continue
+					}
+					inner[j] = []any{v3["x"], v3["y"]}
+				}
+				outer[i] = inner
+			}
+			return outer, nil
+		}
+		// Generic case
 		return toSlice(v, t)
 	case map[any]any:
 		var t2 *runtimev1.MapType
@@ -128,8 +154,9 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		return ms, nil
 	case net.IP:
 		return v.String(), nil
-	case orb.Point:
-		return []any{v[0], v[1]}, nil
+	case orb.Point, orb.Polygon:
+		// These orb types already support JSON marshaling to our desired format (GeoJSON compatible)
+		return v, nil
 	case *net.IP:
 		if v != nil {
 			return ToValue(*v, t)

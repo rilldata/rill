@@ -20,7 +20,8 @@
   import type { ConnectorType } from "./types";
   import { dsnSchema, getYupSchema } from "./yupSchemas";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
-  import { isEmpty, normalizeErrors } from "./utils";
+  import { normalizeErrors } from "../../templates/error-utils";
+  import { isEmpty } from "./utils";
   import {
     CONNECTOR_TYPE_OPTIONS,
     CONNECTION_TAB_OPTIONS,

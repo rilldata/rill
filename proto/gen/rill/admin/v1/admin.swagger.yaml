@@ -2284,11 +2284,13 @@ paths:
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
+              metricsViewFilters:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
                 description: |-
-                  Optional filter to apply as a row filter in queries.
-                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+                  Optional metrics view to filter mapping to apply as row filters in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
               fields:
                 type: array
                 items:
@@ -4459,6 +4461,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
@@ -5241,11 +5244,15 @@ definitions:
       gitBranch:
         type: string
         description: The branch to use for the deployment.
-      gitEditBranch:
+      editable:
+        type: boolean
+        description: Whether editing is allowed. Set to true for dev deployments.
+      primaryBranch:
         type: string
-        description: |-
-          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+        description: Primary branch of the project.
+      managedGitRepo:
+        type: boolean
+        description: Whether the git repo is managed by Rill.
       archiveDownloadUrl:
         type: string
         description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
@@ -5648,8 +5655,10 @@ definitions:
         type: string
       resourceName:
         type: string
-      filter:
-        $ref: '#/definitions/v1Expression'
+      metricsViewFilters:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
       fields:
         type: array
         items:

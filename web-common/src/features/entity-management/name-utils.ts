@@ -21,8 +21,22 @@ export function getName(name: string, others: string[]): string {
   const set = new Set(others.map((other) => other.toLowerCase()));
 
   let result = name;
+  const incrementableSuffix = /(.+)_([0-9]+)$/;
 
   while (set.has(result.toLowerCase())) {
+    // Special-case for "s3": don't roll over to "s4", append suffix instead.
+    if (name.toLowerCase() === "s3") {
+      const match = incrementableSuffix.exec(result);
+      if (match) {
+        const base = match[1];
+        const number = Number.parseInt(match[2], 10) + 1;
+        result = `${base}_${number}`;
+        continue;
+      }
+      result = `${name}_1`;
+      continue;
+    }
+
     result = INCREMENT.exec(result)?.[1]
       ? result.replace(INCREMENT, (m) => (+m + 1).toString())
       : `${result}_1`;

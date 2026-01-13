@@ -58,6 +58,7 @@ export const Runtimev1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1AddOrganizationMemberUserResponse {
@@ -646,9 +647,12 @@ The URL uses HTTPS with embedded username/password. */
   gitSubpath?: string;
   /** The branch to use for the deployment. */
   gitBranch?: string;
-  /** A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution. */
-  gitEditBranch?: string;
+  /** Whether editing is allowed. Set to true for dev deployments. */
+  editable?: boolean;
+  /** Primary branch of the project. */
+  primaryBranch?: string;
+  /** Whether the git repo is managed by Rill. */
+  managedGitRepo?: boolean;
   /** Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa). */
   archiveDownloadUrl?: string;
   /** A stable ID for the archive returned from archive_download_url. */
@@ -865,6 +869,10 @@ export interface V1ListWhitelistedDomainsResponse {
 
 export type V1MagicAuthTokenAttributes = { [key: string]: unknown };
 
+export type V1MagicAuthTokenMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
+
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
@@ -879,7 +887,7 @@ export interface V1MagicAuthToken {
   resources?: V1ResourceName[];
   resourceType?: string;
   resourceName?: string;
-  filter?: V1Expression;
+  metricsViewFilters?: V1MagicAuthTokenMetricsViewFilters;
   fields?: string[];
   state?: string;
   displayName?: string;
@@ -1964,6 +1972,14 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
+/**
+ * Optional metrics view to filter mapping to apply as row filters in queries.
+This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+ */
+export type AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters = {
+  [key: string]: V1Expression;
+};
+
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
@@ -1971,7 +1987,9 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   resourceType?: string;
   /** Name of the resource to grant access to. */
   resourceName?: string;
-  filter?: V1Expression;
+  /** Optional metrics view to filter mapping to apply as row filters in queries.
+This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries. */
+  metricsViewFilters?: AdminServiceIssueMagicAuthTokenBodyMetricsViewFilters;
   /** Optional list of fields to limit access to. If empty, no field access rule will be added.
 This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
   fields?: string[];

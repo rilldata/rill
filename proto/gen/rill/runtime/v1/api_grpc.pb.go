@@ -56,11 +56,16 @@ const (
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
+	RuntimeService_ShareConversation_FullMethodName       = "/rill.runtime.v1.RuntimeService/ShareConversation"
+	RuntimeService_ForkConversation_FullMethodName        = "/rill.runtime.v1.RuntimeService/ForkConversation"
 	RuntimeService_ListTools_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListTools"
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
+	RuntimeService_GitStatus_FullMethodName               = "/rill.runtime.v1.RuntimeService/GitStatus"
+	RuntimeService_GitPull_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPull"
+	RuntimeService_GitPush_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GitPush"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -149,6 +154,11 @@ type RuntimeServiceClient interface {
 	ListConversations(ctx context.Context, in *ListConversationsRequest, opts ...grpc.CallOption) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(ctx context.Context, in *GetConversationRequest, opts ...grpc.CallOption) (*GetConversationResponse, error)
+	// ShareConversation enables sharing of the conversation by adding metadata.
+	ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error)
+	// ForkConversation creates a new conversation by copying messages from an existing one.
+	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+	ForkConversation(ctx context.Context, in *ForkConversationRequest, opts ...grpc.CallOption) (*ForkConversationResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
@@ -160,6 +170,15 @@ type RuntimeServiceClient interface {
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
+	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -567,6 +586,26 @@ func (c *runtimeServiceClient) GetConversation(ctx context.Context, in *GetConve
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ShareConversation(ctx context.Context, in *ShareConversationRequest, opts ...grpc.CallOption) (*ShareConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ShareConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ShareConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ForkConversation(ctx context.Context, in *ForkConversationRequest, opts ...grpc.CallOption) (*ForkConversationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForkConversationResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ForkConversation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListToolsResponse)
@@ -620,6 +659,36 @@ func (c *runtimeServiceClient) AnalyzeVariables(ctx context.Context, in *Analyze
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AnalyzeVariablesResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_AnalyzeVariables_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitStatus(ctx context.Context, in *GitStatusRequest, opts ...grpc.CallOption) (*GitStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitStatusResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitPull(ctx context.Context, in *GitPullRequest, opts ...grpc.CallOption) (*GitPullResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPullResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitPull_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GitPush(ctx context.Context, in *GitPushRequest, opts ...grpc.CallOption) (*GitPushResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitPushResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GitPush_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -712,6 +781,11 @@ type RuntimeServiceServer interface {
 	ListConversations(context.Context, *ListConversationsRequest) (*ListConversationsResponse, error)
 	// GetConversation returns a specific AI chat conversation.
 	GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error)
+	// ShareConversation enables sharing of the conversation by adding metadata.
+	ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error)
+	// ForkConversation creates a new conversation by copying messages from an existing one.
+	// If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+	ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error)
 	// ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
 	// Note that it covers all registered tools, but the current user may not have access to all of them.
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
@@ -723,6 +797,15 @@ type RuntimeServiceServer interface {
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
 	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
+	// GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+	GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error)
+	// GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+	// If there are any merge conflicts the pull is aborted.
+	// Force can be set to true to force the pull and overwrite any local changes.
+	GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error)
+	// GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+	// It only pushes the changes to the existing remote repo.
+	GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -844,6 +927,12 @@ func (UnimplementedRuntimeServiceServer) ListConversations(context.Context, *Lis
 func (UnimplementedRuntimeServiceServer) GetConversation(context.Context, *GetConversationRequest) (*GetConversationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConversation not implemented")
 }
+func (UnimplementedRuntimeServiceServer) ShareConversation(context.Context, *ShareConversationRequest) (*ShareConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ShareConversation not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ForkConversation(context.Context, *ForkConversationRequest) (*ForkConversationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForkConversation not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTools not implemented")
 }
@@ -858,6 +947,15 @@ func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJ
 }
 func (UnimplementedRuntimeServiceServer) AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeVariables not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitStatus(context.Context, *GitStatusRequest) (*GitStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitStatus not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitPull(context.Context, *GitPullRequest) (*GitPullResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPull not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GitPush(context.Context, *GitPushRequest) (*GitPushResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GitPush not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -1525,6 +1623,42 @@ func _RuntimeService_GetConversation_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ShareConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShareConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ShareConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ShareConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ShareConversation(ctx, req.(*ShareConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ForkConversation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForkConversationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ForkConversation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ForkConversation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ForkConversation(ctx, req.(*ForkConversationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListToolsRequest)
 	if err := dec(in); err != nil {
@@ -1604,6 +1738,60 @@ func _RuntimeService_AnalyzeVariables_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).AnalyzeVariables(ctx, req.(*AnalyzeVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitStatus(ctx, req.(*GitStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPullRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitPull(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitPull_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitPull(ctx, req.(*GitPullRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GitPush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GitPushRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GitPush(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GitPush_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GitPush(ctx, req.(*GitPushRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1752,6 +1940,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GetConversation_Handler,
 		},
 		{
+			MethodName: "ShareConversation",
+			Handler:    _RuntimeService_ShareConversation_Handler,
+		},
+		{
+			MethodName: "ForkConversation",
+			Handler:    _RuntimeService_ForkConversation_Handler,
+		},
+		{
 			MethodName: "ListTools",
 			Handler:    _RuntimeService_ListTools_Handler,
 		},
@@ -1766,6 +1962,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AnalyzeVariables",
 			Handler:    _RuntimeService_AnalyzeVariables_Handler,
+		},
+		{
+			MethodName: "GitStatus",
+			Handler:    _RuntimeService_GitStatus_Handler,
+		},
+		{
+			MethodName: "GitPull",
+			Handler:    _RuntimeService_GitPull_Handler,
+		},
+		{
+			MethodName: "GitPush",
+			Handler:    _RuntimeService_GitPush_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

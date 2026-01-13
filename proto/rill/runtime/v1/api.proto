@@ -258,6 +258,23 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // ShareConversation enables sharing of the conversation by adding metadata.
+  rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/share",
+      body: "*"
+    };
+  }
+
+  // ForkConversation creates a new conversation by copying messages from an existing one.
+  // If its the owner then all messages will be copied, otherwise only messages up to the session.SharedUntilMessageID are copied.
+  rpc ForkConversation(ForkConversationRequest) returns (ForkConversationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/fork",
+      body: "*"
+    };
+  }
+
   // ListTools lists metadata about all AI tools that calls to Complete(Streaming) may invoke.
   // Note that it covers all registered tools, but the current user may not have access to all of them.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
@@ -295,6 +312,32 @@ service RuntimeService {
   // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
   rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
+  }
+
+  // Git APIs
+  
+  // GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/git/status"};
+  }
+
+  // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+  // If there are any merge conflicts the pull is aborted.
+  // Force can be set to true to force the pull and overwrite any local changes.
+  rpc GitPull(GitPullRequest) returns (GitPullResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/pull",
+      body: "*"
+    };
+  }
+  
+  // GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+  // It only pushes the changes to the existing remote repo.
+  rpc GitPush(GitPushRequest) returns (GitPushResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/git/push",
+      body: "*"
+    };
   }
 }
 
@@ -1024,6 +1067,31 @@ message GetConversationRequest {
 message GetConversationResponse {
   Conversation conversation = 1;
   repeated Message messages = 2;
+  bool is_owner = 3; // would be false for shared conversations accessed by non-owners
+}
+
+// Request message for RuntimeService.ShareConversation
+message ShareConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // optional message ID up to which to share otherwise share all current messages
+  // only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+  // It supports a special value of "none" to unshare the conversation.
+  string until_message_id = 3;
+}
+
+// Response message for RuntimeService.ShareConversation
+message ShareConversationResponse {}
+
+// Request message for RuntimeService.ForkConversation
+message ForkConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.ForkConversation
+message ForkConversationResponse {
+  string conversation_id = 1; // new conversation ID
 }
 
 // Request message for RuntimeService.ListTools
@@ -1124,3 +1192,40 @@ message AnalyzedVariable {
   // List of resources that appear to use the connector.
   repeated ResourceName used_by = 8;
 }
+
+message GitStatusRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message GitStatusResponse {
+  // The current branch of the git repo.
+  string branch = 1;
+  // The remote url of the git repo.
+  string github_url = 2;
+  // If the repo is managed by Rill.
+  bool managed_git = 3;
+  // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+  bool local_changes = 4;
+  // local_commits returns number of local commits that are not pushed to the remote git repo.
+  int32 local_commits = 5;
+  // remote_commits returns number of remote commits not pulled yet.
+  int32 remote_commits = 6;
+}
+
+message GitPullRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool discard_local = 2;
+}
+
+message GitPullResponse {
+  // The output of the git pull command. Only set for unsuccessful pulls.
+  string output = 1; 
+}
+
+message GitPushRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string commit_message = 2;
+  bool force = 3;
+}
+
+message GitPushResponse {}

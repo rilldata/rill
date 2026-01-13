@@ -446,11 +446,37 @@ func (d Dialect) AnyValueExpression(expr string) string {
 	return fmt.Sprintf("ANY_VALUE(%s)", expr)
 }
 
+func (d Dialect) MinDimensionExpression(expr string) string {
+	if d == DialectDruid {
+		return fmt.Sprintf("EARLIEST(%s)", expr) // since MIN on string column is not supported
+	}
+	return fmt.Sprintf("MIN(%s)", expr)
+}
+
+func (d Dialect) MaxDimensionExpression(expr string) string {
+	if d == DialectDruid {
+		return fmt.Sprintf("LATEST(%s)", expr) // since MAX on string column is not supported
+	}
+	return fmt.Sprintf("MAX(%s)", expr)
+}
+
 func (d Dialect) GetTimeDimensionParameter() string {
 	if d == DialectPinot {
 		return "CAST(? AS TIMESTAMP)"
 	}
 	return "?"
+}
+
+func (d Dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
+	switch typ {
+	case runtimev1.Type_CODE_TIMESTAMP:
+		if d == DialectClickHouse {
+			return "DateTime64", nil
+		}
+		return "TIMESTAMP", nil
+	default:
+		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
+	}
 }
 
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {

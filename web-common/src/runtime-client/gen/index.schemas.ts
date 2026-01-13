@@ -80,6 +80,7 @@ export const MetricsViewSpecDimensionType = {
   DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
   DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
   DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+  DIMENSION_TYPE_GEOSPATIAL: "DIMENSION_TYPE_GEOSPATIAL",
 } as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
@@ -179,6 +180,8 @@ export const TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
+  CODE_POINT: "CODE_POINT",
+  CODE_POLYGON: "CODE_POLYGON",
 } as const;
 
 export interface ProtobufAny {
@@ -1028,6 +1031,10 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+export interface V1ForkConversationResponse {
+  conversationId?: string;
+}
+
 export interface V1GenerateCanvasFileResponse {
   /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
@@ -1059,6 +1066,7 @@ export interface V1GenerateResolverResponse {
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
   messages?: V1Message[];
+  isOwner?: boolean;
 }
 
 export interface V1GetExploreResponse {
@@ -1092,6 +1100,30 @@ export type V1GetTableResponseSchema = { [key: string]: string };
 
 export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
+}
+
+export interface V1GitPullResponse {
+  /** The output of the git pull command. Only set for unsuccessful pulls. */
+  output?: string;
+}
+
+export interface V1GitPushResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GitStatusResponse {
+  /** The current branch of the git repo. */
+  branch?: string;
+  /** The remote url of the git repo. */
+  githubUrl?: string;
+  /** If the repo is managed by Rill. */
+  managedGit?: boolean;
+  /** local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo. */
+  localChanges?: boolean;
+  /** local_commits returns number of local commits that are not pushed to the remote git repo. */
+  localCommits?: number;
+  /** remote_commits returns number of remote commits not pulled yet. */
+  remoteCommits?: number;
 }
 
 export type V1HealthResponseInstancesHealth = {
@@ -1921,6 +1953,7 @@ export const V1Operation = {
   OPERATION_NIN: "OPERATION_NIN",
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
 export interface V1ParseError {
@@ -2284,6 +2317,10 @@ export interface V1SecurityRuleTransitiveAccess {
   resource?: V1ResourceName;
 }
 
+export interface V1ShareConversationResponse {
+  [key: string]: unknown;
+}
+
 export interface V1Source {
   spec?: V1SourceSpec;
   state?: V1SourceState;
@@ -2602,6 +2639,15 @@ export type RuntimeServiceListConversationsParams = {
   userAgentPattern?: string;
 };
 
+export type RuntimeServiceForkConversationBody = { [key: string]: unknown };
+
+export type RuntimeServiceShareConversationBody = {
+  /** optional message ID up to which to share otherwise share all current messages
+only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
+It supports a special value of "none" to unshare the conversation. */
+  untilMessageId?: string;
+};
+
 export type ConnectorServiceListBucketsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -2717,6 +2763,15 @@ export type RuntimeServiceGenerateResolverBody = {
   table?: string;
   /** table and connector should not be provided if metrics_view is provided. */
   metricsView?: string;
+};
+
+export type RuntimeServiceGitPullBody = {
+  discardLocal?: boolean;
+};
+
+export type RuntimeServiceGitPushBody = {
+  commitMessage?: string;
+  force?: boolean;
 };
 
 export type RuntimeServiceGetLogsParams = {

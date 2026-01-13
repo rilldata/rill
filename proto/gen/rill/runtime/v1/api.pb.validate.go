@@ -11530,6 +11530,8 @@ func (m *GetConversationResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for IsOwner
+
 	if len(errors) > 0 {
 		return GetConversationResponseMultiError(errors)
 	}
@@ -11609,6 +11611,466 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetConversationResponseValidationError{}
+
+// Validate checks the field values on ShareConversationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ShareConversationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ShareConversationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ShareConversationRequestMultiError, or nil if none found.
+func (m *ShareConversationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ShareConversationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_ShareConversationRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ShareConversationRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := ShareConversationRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for UntilMessageId
+
+	if len(errors) > 0 {
+		return ShareConversationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ShareConversationRequestMultiError is an error wrapping multiple validation
+// errors returned by ShareConversationRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ShareConversationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ShareConversationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ShareConversationRequestMultiError) AllErrors() []error { return m }
+
+// ShareConversationRequestValidationError is the validation error returned by
+// ShareConversationRequest.Validate if the designated constraints aren't met.
+type ShareConversationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ShareConversationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ShareConversationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ShareConversationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ShareConversationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ShareConversationRequestValidationError) ErrorName() string {
+	return "ShareConversationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ShareConversationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sShareConversationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ShareConversationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ShareConversationRequestValidationError{}
+
+var _ShareConversationRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on ShareConversationResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ShareConversationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ShareConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ShareConversationResponseMultiError, or nil if none found.
+func (m *ShareConversationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ShareConversationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ShareConversationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ShareConversationResponseMultiError is an error wrapping multiple validation
+// errors returned by ShareConversationResponse.ValidateAll() if the
+// designated constraints aren't met.
+type ShareConversationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ShareConversationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ShareConversationResponseMultiError) AllErrors() []error { return m }
+
+// ShareConversationResponseValidationError is the validation error returned by
+// ShareConversationResponse.Validate if the designated constraints aren't met.
+type ShareConversationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ShareConversationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ShareConversationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ShareConversationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ShareConversationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ShareConversationResponseValidationError) ErrorName() string {
+	return "ShareConversationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ShareConversationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sShareConversationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ShareConversationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ShareConversationResponseValidationError{}
+
+// Validate checks the field values on ForkConversationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ForkConversationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ForkConversationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ForkConversationRequestMultiError, or nil if none found.
+func (m *ForkConversationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ForkConversationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_ForkConversationRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := ForkConversationRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := ForkConversationRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ForkConversationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ForkConversationRequestMultiError is an error wrapping multiple validation
+// errors returned by ForkConversationRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ForkConversationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ForkConversationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ForkConversationRequestMultiError) AllErrors() []error { return m }
+
+// ForkConversationRequestValidationError is the validation error returned by
+// ForkConversationRequest.Validate if the designated constraints aren't met.
+type ForkConversationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ForkConversationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ForkConversationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ForkConversationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ForkConversationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ForkConversationRequestValidationError) ErrorName() string {
+	return "ForkConversationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ForkConversationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sForkConversationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ForkConversationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ForkConversationRequestValidationError{}
+
+var _ForkConversationRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on ForkConversationResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ForkConversationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ForkConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ForkConversationResponseMultiError, or nil if none found.
+func (m *ForkConversationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ForkConversationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConversationId
+
+	if len(errors) > 0 {
+		return ForkConversationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ForkConversationResponseMultiError is an error wrapping multiple validation
+// errors returned by ForkConversationResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ForkConversationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ForkConversationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ForkConversationResponseMultiError) AllErrors() []error { return m }
+
+// ForkConversationResponseValidationError is the validation error returned by
+// ForkConversationResponse.Validate if the designated constraints aren't met.
+type ForkConversationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ForkConversationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ForkConversationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ForkConversationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ForkConversationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ForkConversationResponseValidationError) ErrorName() string {
+	return "ForkConversationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ForkConversationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sForkConversationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ForkConversationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ForkConversationResponseValidationError{}
 
 // Validate checks the field values on ListToolsRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -13145,6 +13607,667 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = AnalyzedVariableValidationError{}
+
+// Validate checks the field values on GitStatusRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitStatusRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitStatusRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitStatusRequestMultiError, or nil if none found.
+func (m *GitStatusRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitStatusRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GitStatusRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GitStatusRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GitStatusRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitStatusRequestMultiError is an error wrapping multiple validation errors
+// returned by GitStatusRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GitStatusRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitStatusRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitStatusRequestMultiError) AllErrors() []error { return m }
+
+// GitStatusRequestValidationError is the validation error returned by
+// GitStatusRequest.Validate if the designated constraints aren't met.
+type GitStatusRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitStatusRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitStatusRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitStatusRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitStatusRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitStatusRequestValidationError) ErrorName() string { return "GitStatusRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitStatusRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitStatusRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitStatusRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitStatusRequestValidationError{}
+
+var _GitStatusRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GitStatusResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitStatusResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitStatusResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitStatusResponseMultiError, or nil if none found.
+func (m *GitStatusResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitStatusResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Branch
+
+	// no validation rules for GithubUrl
+
+	// no validation rules for ManagedGit
+
+	// no validation rules for LocalChanges
+
+	// no validation rules for LocalCommits
+
+	// no validation rules for RemoteCommits
+
+	if len(errors) > 0 {
+		return GitStatusResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitStatusResponseMultiError is an error wrapping multiple validation errors
+// returned by GitStatusResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GitStatusResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitStatusResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitStatusResponseMultiError) AllErrors() []error { return m }
+
+// GitStatusResponseValidationError is the validation error returned by
+// GitStatusResponse.Validate if the designated constraints aren't met.
+type GitStatusResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitStatusResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitStatusResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitStatusResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitStatusResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitStatusResponseValidationError) ErrorName() string {
+	return "GitStatusResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GitStatusResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitStatusResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitStatusResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitStatusResponseValidationError{}
+
+// Validate checks the field values on GitPullRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *GitPullRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitPullRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GitPullRequestMultiError,
+// or nil if none found.
+func (m *GitPullRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitPullRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GitPullRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GitPullRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for DiscardLocal
+
+	if len(errors) > 0 {
+		return GitPullRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitPullRequestMultiError is an error wrapping multiple validation errors
+// returned by GitPullRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GitPullRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitPullRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitPullRequestMultiError) AllErrors() []error { return m }
+
+// GitPullRequestValidationError is the validation error returned by
+// GitPullRequest.Validate if the designated constraints aren't met.
+type GitPullRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitPullRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitPullRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitPullRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitPullRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitPullRequestValidationError) ErrorName() string { return "GitPullRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitPullRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitPullRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitPullRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitPullRequestValidationError{}
+
+var _GitPullRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GitPullResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitPullResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitPullResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitPullResponseMultiError, or nil if none found.
+func (m *GitPullResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitPullResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Output
+
+	if len(errors) > 0 {
+		return GitPullResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitPullResponseMultiError is an error wrapping multiple validation errors
+// returned by GitPullResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GitPullResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitPullResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitPullResponseMultiError) AllErrors() []error { return m }
+
+// GitPullResponseValidationError is the validation error returned by
+// GitPullResponse.Validate if the designated constraints aren't met.
+type GitPullResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitPullResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitPullResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitPullResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitPullResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitPullResponseValidationError) ErrorName() string { return "GitPullResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitPullResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitPullResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitPullResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitPullResponseValidationError{}
+
+// Validate checks the field values on GitPushRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *GitPushRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitPushRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GitPushRequestMultiError,
+// or nil if none found.
+func (m *GitPushRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitPushRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GitPushRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GitPushRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for CommitMessage
+
+	// no validation rules for Force
+
+	if len(errors) > 0 {
+		return GitPushRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitPushRequestMultiError is an error wrapping multiple validation errors
+// returned by GitPushRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GitPushRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitPushRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitPushRequestMultiError) AllErrors() []error { return m }
+
+// GitPushRequestValidationError is the validation error returned by
+// GitPushRequest.Validate if the designated constraints aren't met.
+type GitPushRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitPushRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitPushRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitPushRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitPushRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitPushRequestValidationError) ErrorName() string { return "GitPushRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitPushRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitPushRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitPushRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitPushRequestValidationError{}
+
+var _GitPushRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GitPushResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GitPushResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GitPushResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GitPushResponseMultiError, or nil if none found.
+func (m *GitPushResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GitPushResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GitPushResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GitPushResponseMultiError is an error wrapping multiple validation errors
+// returned by GitPushResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GitPushResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GitPushResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GitPushResponseMultiError) AllErrors() []error { return m }
+
+// GitPushResponseValidationError is the validation error returned by
+// GitPushResponse.Validate if the designated constraints aren't met.
+type GitPushResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GitPushResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GitPushResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GitPushResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GitPushResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GitPushResponseValidationError) ErrorName() string { return "GitPushResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GitPushResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGitPushResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GitPushResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GitPushResponseValidationError{}
 
 // Validate checks the field values on ConnectorDriver_Property with the rules
 // defined in the proto definition for this message. If any rules are
