@@ -3,6 +3,7 @@
   import {
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
+    getConnectorServiceOLAPListTablesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -42,6 +43,19 @@
             undefined,
           ),
         });
+
+        // Invalidate table queries
+        void queryClient.invalidateQueries({
+          queryKey: getConnectorServiceOLAPListTablesQueryKey({
+            instanceId,
+            connector: "",
+          }),
+        });
+
+        // Invalidate table metadata
+        void queryClient.invalidateQueries({
+          queryKey: ["tableMetadata", instanceId],
+        });
       });
   }
 </script>
@@ -71,9 +85,6 @@
       data={$resources?.data?.resources}
       tableSizes={$tableSizes?.data ?? new Map()}
     />
-    {#if $tableSizes?.isLoading}
-      <div class="mt-2 text-xs text-gray-500">Loading model sizes...</div>
-    {/if}
   {/if}
 </section>
 

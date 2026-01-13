@@ -5,8 +5,11 @@ import {
 import {
   createRuntimeServiceListResources,
   createConnectorServiceOLAPListTables,
+  createConnectorServiceOLAPGetTable,
+  createQueryServiceQuery,
   type V1ListResourcesResponse,
   type V1Resource,
+  type V1OlapTableInfo,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
@@ -245,4 +248,141 @@ export function useModelTableSizes(
   const cacheKey = `${instanceId}:${connectorArray.join(",")}`;
 
   return createCachedStore(cacheKey, instanceId, connectorArray);
+}
+
+export function useTablesList(instanceId: string, connector: string = "") {
+  return createConnectorServiceOLAPListTables(
+    {
+      instanceId,
+      connector,
+    },
+    {
+      query: {
+        enabled: !!instanceId,
+        refetchInterval: createSmartRefetchInterval,
+      },
+    },
+  );
+}
+
+export function useTableMetadata(
+  instanceId: string,
+  connector: string = "",
+  tables: V1OlapTableInfo[] | undefined,
+) {
+  // If no tables, return empty store immediately
+  if (!tables || tables.length === 0) {
+    return readable(
+      {
+        data: { columnCounts: new Map<string, number>(), rowCounts: new Map<string, number | "error">(), isView: new Map<string, boolean>() },
+        isLoading: false,
+        isError: false,
+      },
+      () => {},
+    );
+  }
+
+  return readable(
+    {
+      data: { columnCounts: new Map<string, number>(), rowCounts: new Map<string, number | "error">(), isView: new Map<string, boolean>() },
+      isLoading: true,
+      isError: false,
+    },
+    (set) => {
+      const columnCounts = new Map<string, number>();
+      const rowCounts = new Map<string, number | "error">();
+      const isView = new Map<string, boolean>();
+      const tableNames = (tables ?? []).map((t) => t.name).filter((n) => !!n) as string[];
+      const subscriptions: Array<() => void> = [];
+
+      let completedCount = 0;
+      const totalOperations = tableNames.length * 2; // Column + row count fetches
+
+      // Helper to update and notify
+      const updateAndNotify = () => {
+        const isLoading = completedCount < totalOperations;
+        set({
+          data: { columnCounts, rowCounts, isView },
+          isLoading,
+          isError: false,
+        });
+      };
+
+      // Fetch column counts and row counts for each table
+      for (const tableName of tableNames) {
+        // Fetch column count and view status
+        const columnQuery = createConnectorServiceOLAPGetTable(
+          {
+            instanceId,
+            connector,
+            table: tableName,
+          },
+          {
+            query: {
+              enabled: !!instanceId && !!tableName,
+            },
+          },
+        );
+
+        const columnUnsubscribe = columnQuery.subscribe((result) => {
+          if (result.data?.schema?.fields) {
+            columnCounts.set(tableName, result.data.schema.fields.length);
+          }
+          // Capture the view field from the response
+          if (result.data?.view !== undefined) {
+            isView.set(tableName, result.data.view);
+          }
+          completedCount++;
+          updateAndNotify();
+        });
+
+        subscriptions.push(columnUnsubscribe);
+
+        // Fetch row count using TanStack Query to manage JWT lifecycle
+        const rowCountQuery = createQueryServiceQuery(
+          {
+            instanceId,
+            queryServiceQueryBody: {
+              sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+            },
+          },
+          undefined,
+          {
+            mutation: {
+              onSuccess: (response: any) => {
+                console.log(`[RowCount TQuery] Success for ${tableName}:`, response);
+                if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+                  const firstRow = response.data[0] as any;
+                  const count = parseInt(String(firstRow?.count ?? 0), 10);
+                  rowCounts.set(tableName, isNaN(count) ? "error" : count);
+                } else {
+                  rowCounts.set(tableName, "error");
+                }
+                completedCount++;
+                updateAndNotify();
+              },
+              onError: (error: any) => {
+                console.error(`[RowCount TQuery] Error for ${tableName}:`, error);
+                rowCounts.set(tableName, "error");
+                completedCount++;
+                updateAndNotify();
+              },
+            },
+          },
+        );
+
+        // Trigger the mutation
+        const rowCountUnsubscribe = rowCountQuery.subscribe(() => {
+          // This ensures the mutation lifecycle is active
+        });
+
+        subscriptions.push(rowCountUnsubscribe);
+      }
+
+      // Return cleanup function
+      return () => {
+        subscriptions.forEach((unsub) => unsub());
+      };
+    },
+  );
 }
