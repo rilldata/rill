@@ -138,7 +138,7 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 		idleWaits:      make(map[int]idleWait),
 		queue:          make(map[string]*runtimev1.ResourceName),
 		queueUpdatedCh: make(chan struct{}, 1),
-		timeline:       schedule.New(nameStr),
+		timeline:       schedule.New[string, *runtimev1.ResourceName](nameStr),
 		invocations:    make(map[string]*invocation),
 		completed:      make(chan *invocation),
 	}
