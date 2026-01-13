@@ -267,20 +267,20 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	// Uses OS environment variable fallback for cloud credentials.
 	switch name {
 	case "s3", "athena", "redshift":
-		res.setPresetWithOSFallback("aws_access_key_id", vars["aws_access_key_id"], vars)
-		res.setPresetWithOSFallback("aws_secret_access_key", vars["aws_secret_access_key"], vars)
-		res.setPresetWithOSFallback("aws_session_token", vars["aws_session_token"], vars)
+		res.setPresetWithOSFallback("aws_access_key_id", vars["aws_access_key_id"])
+		res.setPresetWithOSFallback("aws_secret_access_key", vars["aws_secret_access_key"])
+		res.setPresetWithOSFallback("aws_session_token", vars["aws_session_token"])
 	case "azure":
-		res.setPresetWithOSFallback("azure_storage_account", vars["azure_storage_account"], vars)
-		res.setPresetWithOSFallback("azure_storage_key", vars["azure_storage_key"], vars)
-		res.setPresetWithOSFallback("azure_storage_sas_token", vars["azure_storage_sas_token"], vars)
-		res.setPresetWithOSFallback("azure_storage_connection_string", vars["azure_storage_connection_string"], vars)
+		res.setPresetWithOSFallback("azure_storage_account", vars["azure_storage_account"])
+		res.setPresetWithOSFallback("azure_storage_key", vars["azure_storage_key"])
+		res.setPresetWithOSFallback("azure_storage_sas_token", vars["azure_storage_sas_token"])
+		res.setPresetWithOSFallback("azure_storage_connection_string", vars["azure_storage_connection_string"])
 	case "gcs":
-		res.setPresetWithOSFallback("google_application_credentials", vars["google_application_credentials"], vars)
+		res.setPresetWithOSFallback("google_application_credentials", vars["google_application_credentials"])
 	case "bigquery":
-		res.setPresetWithOSFallback("google_application_credentials", vars["google_application_credentials"], vars)
+		res.setPresetWithOSFallback("google_application_credentials", vars["google_application_credentials"])
 	case "motherduck":
-		res.setPresetWithOSFallback("token", vars["token"], vars)
+		res.setPresetWithOSFallback("token", vars["token"])
 		res.setPreset("dsn", "", true)
 	case "local_file":
 		// The "local_file" connector needs to know the repo root.
@@ -390,7 +390,7 @@ func (c *ConnectorConfig) setPreset(k, v string, force bool) {
 
 // setPresetWithOSFallback sets a preset value, falling back to OS environment variable if the value is empty.
 // It tracks whether the value came from OS env in the OSEnvVars map.
-func (c *ConnectorConfig) setPresetWithOSFallback(k, v string, vars map[string]string) {
+func (c *ConnectorConfig) setPresetWithOSFallback(k, v string) {
 	if v != "" {
 		// Value found in .env or project variables
 		if c.Preset == nil {
