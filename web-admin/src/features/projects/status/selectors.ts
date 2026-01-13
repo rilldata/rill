@@ -338,45 +338,33 @@ export function useTableMetadata(
 
         subscriptions.push(columnUnsubscribe);
 
-        // Fetch row count using TanStack Query to manage JWT lifecycle
-        const rowCountQuery = createQueryServiceQuery(
-          {
-            instanceId,
-            queryServiceQueryBody: {
-              sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
-            },
-          },
-          undefined,
-          {
-            mutation: {
-              onSuccess: (response: any) => {
-                console.log(`[RowCount TQuery] Success for ${tableName}:`, response);
-                if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
-                  const firstRow = response.data[0] as any;
-                  const count = parseInt(String(firstRow?.count ?? 0), 10);
-                  rowCounts.set(tableName, isNaN(count) ? "error" : count);
-                } else {
-                  rowCounts.set(tableName, "error");
-                }
-                completedCount++;
-                updateAndNotify();
-              },
-              onError: (error: any) => {
-                console.error(`[RowCount TQuery] Error for ${tableName}:`, error);
-                rowCounts.set(tableName, "error");
-                completedCount++;
-                updateAndNotify();
-              },
-            },
-          },
-        );
+        // Fetch row count using TanStack Query mutation
+        const rowCountMutation = createQueryServiceQuery();
 
-        // Trigger the mutation
-        const rowCountUnsubscribe = rowCountQuery.subscribe(() => {
-          // This ensures the mutation lifecycle is active
+        // Subscribe to mutation state changes
+        const mutationUnsub = rowCountMutation.subscribe((mutationState: any) => {
+          if (mutationState.isSuccess && mutationState.data?.data) {
+            const firstRow = mutationState.data.data[0] as any;
+            const count = parseInt(String(firstRow?.count ?? 0), 10);
+            rowCounts.set(tableName, isNaN(count) ? "error" : count);
+            completedCount++;
+            updateAndNotify();
+          } else if (mutationState.isError) {
+            rowCounts.set(tableName, "error");
+            completedCount++;
+            updateAndNotify();
+          }
         });
 
-        subscriptions.push(rowCountUnsubscribe);
+        // CRITICAL: Trigger the mutation with .mutate()
+        rowCountMutation.mutate({
+          instanceId,
+          queryServiceQueryBody: {
+            sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+          },
+        });
+
+        subscriptions.push(mutationUnsub);
       }
 
       // Return cleanup function
