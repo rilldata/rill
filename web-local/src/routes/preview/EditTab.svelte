@@ -1,18 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
     resourceIconMapping,
     resourceColorMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { workspaces as workspaceStore } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
-  import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
-  import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
-  import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import { resourceSectionState } from "./resource-section-store";
@@ -34,40 +27,6 @@
   let hoveredResource: string | null = null;
   let contextMenuResource: string | null = null;
   let contextMenuPos: { x: number; y: number } | null = null;
-
-  // Workspace mapping
-  const workspaceComponents = new Map([
-    [ResourceKind.Source, ModelWorkspace],
-    [ResourceKind.Model, ModelWorkspace],
-    [ResourceKind.MetricsView, MetricsWorkspace],
-    [ResourceKind.Explore, ExploreWorkspace],
-    [ResourceKind.Canvas, CanvasWorkspace],
-  ]);
-
-  // URL parameter parsing (simplified)
-  $: selectedFilePath = $page.url.searchParams.get("file");
-
-  // Create FileArtifact for the selected file
-  $: fileArtifact = selectedFilePath
-    ? fileArtifacts.getFileArtifact(selectedFilePath)
-    : null;
-
-  // Get the resource kind from fileArtifact to determine workspace
-  $: resourceKind = fileArtifact ? ($fileArtifact.resourceName?.kind as ResourceKind | null) : null;
-
-  // Get the workspace component for this resource kind
-  $: workspaceComponent = resourceKind
-    ? workspaceComponents.get(resourceKind)
-    : null;
-
-  // Fetch file content when fileArtifact changes and force viz mode
-  $: if (fileArtifact && selectedFilePath) {
-    fileArtifact.fetchContent();
-
-    // Force viz mode (no code editor)
-    const ws = workspaceStore.get(selectedFilePath);
-    ws.view.set("viz");
-  }
 
   async function loadResources() {
     try {
@@ -421,22 +380,15 @@
   </div>
 
   <!-- Main Content -->
-  <div class="flex-1 overflow-hidden flex flex-col">
-    {#if workspaceComponent && fileArtifact}
-      <svelte:component this={workspaceComponent} {fileArtifact} />
-    {:else}
-      <!-- Empty state -->
-      <div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-        <div class="text-center">
-          <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Edit Resources
-          </p>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            Click a resource from the sidebar to edit it
-          </p>
-        </div>
-      </div>
-    {/if}
+  <div class="flex-1 overflow-hidden flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+    <div class="text-center">
+      <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        Edit Resources
+      </p>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Click a resource from the sidebar to edit it
+      </p>
+    </div>
   </div>
 
   <!-- Context Menu -->
