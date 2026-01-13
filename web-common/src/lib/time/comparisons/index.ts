@@ -219,8 +219,6 @@ export function getAvailableComparisonsForTimeRange(
     );
   }
 
-  console.log({ comparisons });
-
   return comparisons;
 }
 
