@@ -26,6 +26,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -41,14 +42,14 @@
   let failedInvites: string[] = [];
   let selectedProjects: string[] = [];
   let projectDropdownOpen = false;
-  let selectedRole: "admin" | "editor" | "viewer" = "viewer";
+  let selectedRole: OrgUserRoles = OrgUserRoles.Viewer;
   let roleDropdownOpen = false;
   let hasAutoSelectedProject = false;
 
   function resetDialogState() {
     failedInvites = [];
     selectedProjects = [];
-    selectedRole = "viewer";
+    selectedRole = OrgUserRoles.Viewer;
     hasAutoSelectedProject = false;
     projectDropdownOpen = false;
     roleDropdownOpen = false;
