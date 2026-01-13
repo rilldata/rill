@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -55,6 +56,9 @@ type TemplateData struct {
 	Self        TemplateResource
 	Resolve     func(ref ResourceName) (string, error)
 	Lookup      func(name ResourceName) (TemplateResource, error)
+	// OSEnvVars tracks variables that were resolved from OS environment instead of .env files.
+	// This is used to show warnings in the UI when credentials come from OS env.
+	OSEnvVars map[string]bool
 }
 
 // TemplateResource contains data for a resource for injection into a template.
@@ -270,6 +274,7 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 	}
 
 	// Add func to access environment variables (case-insensitive)
+	// Falls back to OS environment variables if not found in .env files
 	funcMap["env"] = func(name string) (string, error) {
 		if name == "" {
 			return "", fmt.Errorf(`"env" requires a variable name argument`)
@@ -281,6 +286,23 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 		// Try case-insensitive match
 		for key, value := range data.Variables {
 			if strings.EqualFold(key, name) {
+				return value, nil
+			}
+		}
+		// Fallback to OS environment variable
+		if value := os.Getenv(name); value != "" {
+			// Track that this variable came from OS env
+			if data.OSEnvVars != nil {
+				data.OSEnvVars[name] = true
+			}
+			return value, nil
+		}
+		// Try case-insensitive OS env lookup (check common variations)
+		for _, variant := range []string{strings.ToUpper(name), strings.ToLower(name)} {
+			if value := os.Getenv(variant); value != "" {
+				if data.OSEnvVars != nil {
+					data.OSEnvVars[variant] = true
+				}
 				return value, nil
 			}
 		}
@@ -300,12 +322,60 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 		return "", err
 	}
 
-	// Split variables that contain dots into nested maps.
-	var vars map[string]any
-	if len(data.Variables) > 0 {
-		vars = map[string]any{}
-	}
+	// Extract variable references from the template to check for OS env fallback.
+	// Variables like "env.AWS_ACCESS_KEY_ID" need to be populated from OS env if not in data.Variables.
+	referencedVars := extractVariablesFromTemplate(t.Tree)
+
+	varsWithOSFallback := make(map[string]string, len(data.Variables))
 	for k, v := range data.Variables {
+		varsWithOSFallback[k] = v
+	}
+
+	// Check for OS env fallback for referenced variables not in data.Variables
+	for _, refVar := range referencedVars {
+		// Handle env.VAR_NAME references
+		if strings.HasPrefix(refVar, "env.") {
+			varName := strings.TrimPrefix(refVar, "env.")
+			// Check if already in variables (case-insensitive check)
+			// If found with different case, also add with the case the template expects
+			foundKey := ""
+			for k := range varsWithOSFallback {
+				if strings.EqualFold(k, varName) {
+					foundKey = k
+					break
+				}
+			}
+			if foundKey != "" {
+				// If the case doesn't match exactly, also add with the expected case
+				if foundKey != varName {
+					varsWithOSFallback[varName] = varsWithOSFallback[foundKey]
+				}
+				continue
+			}
+			// Try OS env fallback (try exact case, uppercase, and lowercase)
+			if osVal := os.Getenv(varName); osVal != "" {
+				varsWithOSFallback[varName] = osVal
+				if data.OSEnvVars != nil {
+					data.OSEnvVars[varName] = true
+				}
+			} else if osVal := os.Getenv(strings.ToUpper(varName)); osVal != "" {
+				varsWithOSFallback[varName] = osVal
+				if data.OSEnvVars != nil {
+					data.OSEnvVars[strings.ToUpper(varName)] = true
+				}
+			} else if osVal := os.Getenv(strings.ToLower(varName)); osVal != "" {
+				varsWithOSFallback[varName] = osVal
+				if data.OSEnvVars != nil {
+					data.OSEnvVars[strings.ToLower(varName)] = true
+				}
+			}
+		}
+	}
+
+	// Split variables that contain dots into nested maps.
+	// Always initialize vars to ensure .env.X access doesn't fail on nil map.
+	vars := map[string]any{}
+	for k, v := range varsWithOSFallback {
 		// Note: We always add the full variable name (including dots) at the top level.
 		vars[k] = v
 

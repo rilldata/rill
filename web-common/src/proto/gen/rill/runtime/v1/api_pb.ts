@@ -4041,6 +4041,14 @@ export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
    */
   errorMessage = "";
 
+  /**
+   * Variables that were resolved from OS environment instead of .env files.
+   * Used to show warnings in the UI when credentials come from OS env.
+   *
+   * @generated from field: repeated string os_env_variables = 12;
+   */
+  osEnvVariables: string[] = [];
+
   constructor(data?: PartialMessage<AnalyzedConnector>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4060,6 +4068,7 @@ export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
     { no: 7, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
     { no: 9, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "os_env_variables", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzedConnector {

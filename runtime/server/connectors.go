@@ -99,6 +99,12 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 			}
 		}
 
+		// Convert OS env vars map to slice
+		var osEnvVars []string
+		for k := range cfg.OSEnvVars {
+			osEnvVars = append(osEnvVars, k)
+		}
+
 		c := &runtimev1.AnalyzedConnector{
 			Name:               connector.Name,
 			Driver:             driverSpecToPB(connector.Driver, connector.Spec),
@@ -110,6 +116,7 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 			ProvisionArgs:      provisionArgsPB,
 			HasAnonymousAccess: connector.AnonymousAccess,
 			UsedBy:             nil,
+			OsEnvVariables:     osEnvVars,
 		}
 
 		for _, r := range connector.Resources {

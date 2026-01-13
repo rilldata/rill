@@ -958,6 +958,9 @@ message AnalyzedConnector {
   repeated ResourceName used_by = 8;
   // Error message if the connector is misconfigured
   string error_message = 9;
+  // Variables that were resolved from OS environment instead of .env files.
+  // Used to show warnings in the UI when credentials come from OS env.
+  repeated string os_env_variables = 12;
 }
 
 // Request message for RuntimeService.ListConnectorDrivers

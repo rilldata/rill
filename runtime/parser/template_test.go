@@ -223,6 +223,99 @@ func TestEnvFunction(t *testing.T) {
 	}
 }
 
+func TestOSEnvFallback(t *testing.T) {
+	// Set OS environment variables for testing
+	t.Setenv("TEST_OS_ENV_VAR", "os_value")
+	t.Setenv("AWS_ACCESS_KEY_ID", "test_key_id")
+	t.Setenv("aws_secret_access_key", "test_secret")
+
+	tests := []struct {
+		name      string
+		template  string
+		data      TemplateData
+		want      string
+		wantErr   bool
+		osEnvVars []string // Expected OS env vars that were used
+	}{
+		{
+			name:     "env function falls back to OS env",
+			template: `key={{ env "TEST_OS_ENV_VAR" }}`,
+			data: TemplateData{
+				Variables: map[string]string{}, // Empty - no .env vars
+				OSEnvVars: make(map[string]bool),
+			},
+			want:      "key=os_value",
+			wantErr:   false,
+			osEnvVars: []string{"TEST_OS_ENV_VAR"},
+		},
+		{
+			name:     "dot notation falls back to OS env",
+			template: `key={{ .env.TEST_OS_ENV_VAR }}`,
+			data: TemplateData{
+				Variables: map[string]string{}, // Empty - no .env vars
+				OSEnvVars: make(map[string]bool),
+			},
+			want:      "key=os_value",
+			wantErr:   false,
+			osEnvVars: []string{"TEST_OS_ENV_VAR"},
+		},
+		{
+			name:     "AWS credentials from OS env",
+			template: `SELECT '{{ env "AWS_ACCESS_KEY_ID" }}' as key, '{{ env "aws_secret_access_key" }}' as secret`,
+			data: TemplateData{
+				Variables: map[string]string{},
+				OSEnvVars: make(map[string]bool),
+			},
+			want:      "SELECT 'test_key_id' as key, 'test_secret' as secret",
+			wantErr:   false,
+			osEnvVars: []string{"AWS_ACCESS_KEY_ID", "aws_secret_access_key"},
+		},
+		{
+			name:     "AWS credentials from OS env using dot notation",
+			template: `SELECT '{{ .env.AWS_ACCESS_KEY_ID }}' as key, '{{ .env.aws_secret_access_key }}' as secret`,
+			data: TemplateData{
+				Variables: map[string]string{},
+				OSEnvVars: make(map[string]bool),
+			},
+			want:      "SELECT 'test_key_id' as key, 'test_secret' as secret",
+			wantErr:   false,
+			osEnvVars: []string{"AWS_ACCESS_KEY_ID", "aws_secret_access_key"},
+		},
+		{
+			name:     ".env takes precedence over OS env",
+			template: `key={{ env "TEST_OS_ENV_VAR" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"TEST_OS_ENV_VAR": "dotenv_value",
+				},
+				OSEnvVars: make(map[string]bool),
+			},
+			want:      "key=dotenv_value",
+			wantErr:   false,
+			osEnvVars: []string{}, // Should NOT use OS env
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved, err := ResolveTemplate(tt.template, tt.data, false)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, resolved)
+
+				// Check that the expected OS env vars were tracked
+				for _, envVar := range tt.osEnvVars {
+					require.True(t, tt.data.OSEnvVars[envVar], "Expected OS env var %s to be tracked", envVar)
+				}
+				// Check that no extra OS env vars were tracked
+				require.Equal(t, len(tt.osEnvVars), len(tt.data.OSEnvVars), "Unexpected OS env vars tracked")
+			}
+		})
+	}
+}
+
 func TestAsSQLList(t *testing.T) {
 	tests := []struct {
 		name     string

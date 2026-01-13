@@ -351,6 +351,9 @@ export interface V1AnalyzedConnector {
   hasAnonymousAccess?: boolean;
   usedBy?: V1ResourceName[];
   errorMessage?: string;
+  /** Variables that were resolved from OS environment instead of .env files.
+Used to show warnings in the UI when credentials come from OS env. */
+  osEnvVariables?: string[];
 }
 
 export interface V1AnalyzedVariable {

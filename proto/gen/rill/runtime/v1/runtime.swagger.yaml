@@ -3958,6 +3958,13 @@ definitions:
       errorMessage:
         type: string
         title: Error message if the connector is misconfigured
+      osEnvVariables:
+        type: array
+        items:
+          type: string
+        description: |-
+          Variables that were resolved from OS environment instead of .env files.
+          Used to show warnings in the UI when credentials come from OS env.
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
   v1AnalyzedVariable:
     type: object

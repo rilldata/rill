@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -255,22 +256,23 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
 	// NOTE: This switches on connector.Name, not connector.Type, because this only applies to implicit connectors.
+	// Uses OS environment variable fallback for cloud credentials.
 	switch name {
 	case "s3", "athena", "redshift":
-		res.setPreset("aws_access_key_id", vars["aws_access_key_id"], false)
-		res.setPreset("aws_secret_access_key", vars["aws_secret_access_key"], false)
-		res.setPreset("aws_session_token", vars["aws_session_token"], false)
+		res.setPresetWithOSFallback("aws_access_key_id", vars["aws_access_key_id"], vars)
+		res.setPresetWithOSFallback("aws_secret_access_key", vars["aws_secret_access_key"], vars)
+		res.setPresetWithOSFallback("aws_session_token", vars["aws_session_token"], vars)
 	case "azure":
-		res.setPreset("azure_storage_account", vars["azure_storage_account"], false)
-		res.setPreset("azure_storage_key", vars["azure_storage_key"], false)
-		res.setPreset("azure_storage_sas_token", vars["azure_storage_sas_token"], false)
-		res.setPreset("azure_storage_connection_string", vars["azure_storage_connection_string"], false)
+		res.setPresetWithOSFallback("azure_storage_account", vars["azure_storage_account"], vars)
+		res.setPresetWithOSFallback("azure_storage_key", vars["azure_storage_key"], vars)
+		res.setPresetWithOSFallback("azure_storage_sas_token", vars["azure_storage_sas_token"], vars)
+		res.setPresetWithOSFallback("azure_storage_connection_string", vars["azure_storage_connection_string"], vars)
 	case "gcs":
-		res.setPreset("google_application_credentials", vars["google_application_credentials"], false)
+		res.setPresetWithOSFallback("google_application_credentials", vars["google_application_credentials"], vars)
 	case "bigquery":
-		res.setPreset("google_application_credentials", vars["google_application_credentials"], false)
+		res.setPresetWithOSFallback("google_application_credentials", vars["google_application_credentials"], vars)
 	case "motherduck":
-		res.setPreset("token", vars["token"], false)
+		res.setPresetWithOSFallback("token", vars["token"], vars)
 		res.setPreset("dsn", "", true)
 	case "local_file":
 		// The "local_file" connector needs to know the repo root.
@@ -308,6 +310,7 @@ func resolveConnectorProperties(environment string, vars map[string]string, c *r
 	td := parser.TemplateData{
 		Environment: environment,
 		Variables:   vars,
+		OSEnvVars:   make(map[string]bool),
 	}
 
 	for _, k := range c.TemplatedProperties {
@@ -339,6 +342,9 @@ type ConnectorConfig struct {
 	Provision bool
 	// ProvisionArgs provide provisioning args for when ProvisionName is set.
 	ProvisionArgs map[string]any
+	// OSEnvVars tracks variables that were resolved from OS environment instead of .env files.
+	// This is used to show warnings in the UI when credentials come from OS env.
+	OSEnvVars map[string]bool
 }
 
 // Resolve returns the final resolved connector configuration.
@@ -371,4 +377,47 @@ func (c *ConnectorConfig) setPreset(k, v string, force bool) {
 		c.Preset = make(map[string]any)
 	}
 	c.Preset[k] = v
+}
+
+// setPresetWithOSFallback sets a preset value, falling back to OS environment variable if the value is empty.
+// It tracks whether the value came from OS env in the OSEnvVars map.
+func (c *ConnectorConfig) setPresetWithOSFallback(k, v string, vars map[string]string) {
+	if v != "" {
+		// Value found in .env or project variables
+		if c.Preset == nil {
+			c.Preset = make(map[string]any)
+		}
+		c.Preset[k] = v
+		return
+	}
+
+	// Try OS environment variable fallback
+	// Check exact match first
+	if osVal := os.Getenv(k); osVal != "" {
+		if c.Preset == nil {
+			c.Preset = make(map[string]any)
+		}
+		c.Preset[k] = osVal
+		c.trackOSEnvVar(k)
+		return
+	}
+
+	// Try uppercase variant (common for env vars like AWS_ACCESS_KEY_ID)
+	upperKey := strings.ToUpper(k)
+	if osVal := os.Getenv(upperKey); osVal != "" {
+		if c.Preset == nil {
+			c.Preset = make(map[string]any)
+		}
+		c.Preset[k] = osVal
+		c.trackOSEnvVar(upperKey)
+		return
+	}
+}
+
+// trackOSEnvVar marks a variable as coming from OS environment.
+func (c *ConnectorConfig) trackOSEnvVar(name string) {
+	if c.OSEnvVars == nil {
+		c.OSEnvVars = make(map[string]bool)
+	}
+	c.OSEnvVars[name] = true
 }
