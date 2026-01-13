@@ -40,6 +40,7 @@ export function compileConnectorYAML(
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
     connectorInstanceName?: string;
+    existingEnvBlob?: string;
   },
 ) {
   // Add instructions to the top of the file
@@ -103,7 +104,7 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
-          options?.connectorInstanceName,
+          options?.existingEnvBlob,
         )} }}"`;
       }
 
@@ -131,16 +132,19 @@ export async function updateDotEnvWithSecrets(
 
   // Get the existing .env file
   let blob: string;
+  let originalBlob: string;
   try {
     const file = await queryClient.fetchQuery({
       queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
       queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
     });
     blob = file.blob || "";
+    originalBlob = blob; // Keep original for conflict detection
   } catch (error) {
     // Handle the case where the .env file does not exist
     if (error?.response?.data?.message?.includes("no such file")) {
       blob = "";
+      originalBlob = "";
     } else {
       throw error;
     }
@@ -161,6 +165,7 @@ export async function updateDotEnvWithSecrets(
   }
 
   // Update the blob with the new secrets
+  // Use originalBlob for conflict detection so all secrets use consistent naming
   secretKeys.forEach((key) => {
     if (!key || !formValues[key]) {
       return;
@@ -169,7 +174,7 @@ export async function updateDotEnvWithSecrets(
     const connectorSecretKey = makeDotEnvConnectorKey(
       connector.name as string,
       key,
-      connectorInstanceName,
+      originalBlob,
     );
 
     blob = replaceOrAddEnvVariable(
@@ -224,15 +229,92 @@ export function deleteEnvVariable(
   return newBlob;
 }
 
+/**
+ * Get a generic ALL_CAPS environment variable name
+ * Generic properties (AWS, Google, etc.) use no prefix
+ * Driver-specific properties use DriverName_PropertyKey format
+ */
+function getGenericEnvVarName(driverName: string, propertyKey: string): string {
+  // Generic properties that don't need a driver prefix
+  const genericProperties = new Set([
+    // Google Cloud credentials
+    "google_application_credentials",
+    "key_id",
+    "secret",
+    // AWS credentials (used by S3, Athena, Redshift, etc.)
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    // Azure
+    "azure_storage_connection_string",
+    "azure_storage_key",
+    "azure_storage_sas_token",
+    "azure_storage_account",
+    // Snowflake
+    "privateKey",
+
+  ]);
+
+  // Convert property key to SCREAMING_SNAKE_CASE
+  const propertyKeyUpper = propertyKey
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/[._-]+/g, "_")
+    .toUpperCase();
+
+  // If it's a generic property, return just the property name
+  if (genericProperties.has(propertyKey.toLowerCase())) {
+    return propertyKeyUpper;
+  }
+
+  // Otherwise, use DriverName_PropertyKey format
+  const driverNameUpper = driverName
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/[._-]+/g, "_")
+    .toUpperCase();
+
+  return `${driverNameUpper}_${propertyKeyUpper}`;
+}
+
+/**
+ * Check if an environment variable exists in the env blob
+ */
+function envVarExists(envBlob: string, varName: string): boolean {
+  const lines = envBlob.split("\n");
+  return lines.some((line) => line.startsWith(`${varName}=`));
+}
+
+/**
+ * Find the next available environment variable name by appending _1, _2, etc.
+ */
+function findAvailableEnvVarName(
+  envBlob: string,
+  baseName: string,
+): string {
+  let varName = baseName;
+  let counter = 1;
+
+  while (envVarExists(envBlob, varName)) {
+    varName = `${baseName}_${counter}`;
+    counter++;
+  }
+
+  return varName;
+}
+
 export function makeDotEnvConnectorKey(
   driverName: string,
   key: string,
-  connectorInstanceName?: string,
+  existingEnvBlob?: string,
 ) {
-  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
-  // This enables configuring multiple connectors that use the same driver with unique env keys.
-  const nameToUse = connectorInstanceName || driverName;
-  return `connector.${nameToUse}.${key}`;
+  // Generate generic ALL_CAPS environment variable name
+  const baseGenericName = getGenericEnvVarName(driverName, key);
+
+  // If no existing env blob is provided, just return the base generic name
+  if (!existingEnvBlob) {
+    return baseGenericName;
+  }
+
+  // Check for conflicts and append _# if necessary
+  return findAvailableEnvVarName(existingEnvBlob, baseGenericName);
 }
 
 export async function updateRillYAMLWithOlapConnector(
