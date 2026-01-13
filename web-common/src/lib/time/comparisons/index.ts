@@ -195,24 +195,6 @@ export function getAvailableComparisonsForTimeRange(
       return false;
     }
 
-    console.log(
-      comparison,
-      isComparisonInsideBounds(
-        boundStart,
-        boundEnd,
-        start,
-        end,
-        // treat a custom comparison as contiguous.
-        comparison,
-        timezone,
-      ),
-      !isRangeLargerThanDuration(
-        start,
-        end,
-        TIME_COMPARISON[comparison].offsetIso,
-      ),
-    );
-
     return (
       isComparisonInsideBounds(
         boundStart,
