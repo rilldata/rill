@@ -332,8 +332,7 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 		sb.WriteString(d.EscapeIdentifier(db))
 		sb.WriteString(".")
 	}
-	// schema isn't supported for ClickHouse, Druid and Pinot
-	if schema != "" && !(d == DialectClickHouse || d == DialectDruid || d == DialectPinot) {
+	if schema != "" {
 		sb.WriteString(d.EscapeIdentifier(schema))
 		sb.WriteString(".")
 	}
