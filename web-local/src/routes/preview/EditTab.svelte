@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
     resourceIconMapping,
     resourceColorMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { workspaces as workspaceStore } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
+  import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
+  import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
+  import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import { resourceSectionState } from "./resource-section-store";
@@ -18,6 +23,16 @@
     path?: string;
   }
 
+  const workspaceComponents = new Map([
+    [ResourceKind.Source, ModelWorkspace],
+    [ResourceKind.Model, ModelWorkspace],
+    [ResourceKind.MetricsView, MetricsWorkspace],
+    [ResourceKind.Explore, ExploreWorkspace],
+    [ResourceKind.Canvas, CanvasWorkspace],
+    [null, null],
+    [undefined, null],
+  ]);
+
   let allResources: Resource[] = [];
   let metricsResources: Resource[] = [];
   let exploreResources: Resource[] = [];
@@ -27,6 +42,10 @@
   let hoveredResource: string | null = null;
   let contextMenuResource: string | null = null;
   let contextMenuPos: { x: number; y: number } | null = null;
+
+  let selectedResource: Resource | null = null;
+  let fileArtifact: any = null;
+  let workspace: any = null;
 
   async function loadResources() {
     try {
@@ -107,7 +126,24 @@
 
   function navigateToEditor(resource: Resource) {
     if (!resource.path) return;
-    goto(`/edit${resource.path}`);
+    selectedResource = resource;
+  }
+
+  $: if (selectedResource && selectedResource.path) {
+    fileArtifact = fileArtifacts.getFileArtifact(selectedResource.path);
+    fileArtifact.fetchContent();
+
+    // Force viz mode
+    const ws = workspaceStore.get(selectedResource.path);
+    ws.view.set("viz");
+  } else {
+    fileArtifact = null;
+    workspace = null;
+  }
+
+  $: if (fileArtifact) {
+    const kind = selectedResource?.kind as ResourceKind | undefined;
+    workspace = workspaceComponents.get(kind);
   }
 
   function getStatusIcon(resource: Resource): string {
@@ -380,15 +416,21 @@
   </div>
 
   <!-- Main Content -->
-  <div class="flex-1 overflow-hidden flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-    <div class="text-center">
-      <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-        Edit Resources
-      </p>
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        Click a resource from the sidebar to edit it
-      </p>
-    </div>
+  <div class="flex-1 overflow-hidden flex flex-col">
+    {#if workspace && fileArtifact}
+      <svelte:component this={workspace} {fileArtifact} />
+    {:else}
+      <div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+        <div class="text-center">
+          <p class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Edit Resources
+          </p>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Click a resource from the sidebar to edit it
+          </p>
+        </div>
+      </div>
+    {/if}
   </div>
 
   <!-- Context Menu -->
