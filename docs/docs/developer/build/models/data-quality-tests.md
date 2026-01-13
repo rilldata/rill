@@ -14,7 +14,7 @@ Tests are defined in your model's YAML file using the `tests:` property. Each te
 
 :::tip Using live connectors? Use alerts instead
 
-Data quality tests run when models refresh, which means they only work with models that Rill manages. If you're using [live connectors](/build/connectors/olap) (ClickHouse, Druid, Pinot, StarRocks, etc.) where data lives in external systems, use [alerts](/build/alerts) to monitor data quality on a schedule instead.
+Data quality tests run when models refresh, which means they only work with models that Rill manages. If you're using [live connectors](/developer/build/connectors/olap) (ClickHouse, Druid, Pinot, StarRocks, etc.) where data lives in external systems, use [alerts](/developer/build/alerts) to monitor data quality on a schedule instead.
 
 :::
 

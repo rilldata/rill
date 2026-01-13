@@ -11,7 +11,7 @@ To create a custom API, create a new YAML file under the `apis` directory in you
 
 ## Metrics SQL API
 
-You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/build/metrics-view). 
+You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/developer/build/metrics-view). 
 It should have the following structure:
     
 ```yaml
@@ -19,7 +19,7 @@ type: api
 metrics_sql: SELECT publisher, domain, total_records FROM ad_bids_metrics
 ```
 
-For complete documentation on Metrics SQL API, including querying fundamentals, examples, supported SQL features, templating, and OpenAPI specs, see the [Metrics SQL API documentation](/build/metrics-view/metrics-sql).
+For complete documentation on Metrics SQL API, including querying fundamentals, examples, supported SQL features, templating, and OpenAPI specs, see the [Metrics SQL API documentation](/developer/build/metrics-view/metrics-sql).
 
 
 

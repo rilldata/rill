@@ -74,7 +74,7 @@ Alternatively, you can use dot notation directly without assigning a variable:
 
 The `metrics_sql_rows` function returns an array of rows that you can iterate over with `{{ range }}`. Access columns using either `{{ $row.column_name }}` (when using named variables) or `{{ .column_name }}` (when using dot notation).
 
-For more information on Metrics SQL syntax and capabilities, see the [Metrics SQL API documentation](/build/metrics-view/metrics-sql).
+For more information on Metrics SQL syntax and capabilities, see the [Metrics SQL API documentation](/developer/build/metrics-view/metrics-sql).
 
 ## Image
 
