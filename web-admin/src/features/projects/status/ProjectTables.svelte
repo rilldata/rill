@@ -2,10 +2,12 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ProjectTablesTable from "./ProjectTablesTable.svelte";
+  import ProjectTablesRowCounts from "./ProjectTablesRowCounts.svelte";
   import { useTablesList, useTableMetadata } from "./selectors";
 
   let tablesList: any;
   let tableMetadata: any;
+  let rowCounts: Map<string, number | "loading" | "error"> = new Map();
 
   $: ({ instanceId } = $runtime);
 
@@ -25,10 +27,15 @@
       Error loading tables: {$tablesList.error?.message}
     </div>
   {:else if $tablesList.data}
+    <ProjectTablesRowCounts
+      {instanceId}
+      tables={$tablesList?.data?.tables ?? []}
+      bind:rowCounts
+    />
     <ProjectTablesTable
       tables={$tablesList?.data?.tables ?? []}
       columnCounts={$tableMetadata?.data?.columnCounts ?? new Map()}
-      rowCounts={$tableMetadata?.data?.rowCounts ?? new Map()}
+      {rowCounts}
       isView={$tableMetadata?.data?.isView ?? new Map()}
     />
     {#if $tableMetadata?.isLoading}

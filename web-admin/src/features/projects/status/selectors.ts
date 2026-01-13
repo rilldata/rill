@@ -6,15 +6,14 @@ import {
   createRuntimeServiceListResources,
   createConnectorServiceOLAPListTables,
   createConnectorServiceOLAPGetTable,
-  queryServiceQuery,
   type V1ListResourcesResponse,
   type V1Resource,
   type V1OlapTableInfo,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { readable, get } from "svelte/store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { readable } from "svelte/store";
+import { httpClient } from "@rilldata/web-common/runtime-client/http-client";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -266,6 +265,38 @@ export function useTablesList(instanceId: string, connector: string = "") {
   );
 }
 
+export async function fetchRowCount(
+  instanceId: string,
+  tableName: string,
+): Promise<number | "error"> {
+  try {
+    console.log(`[RowCount] Fetching count for ${tableName}...`);
+    const response = await httpClient<{ data: any[] }>({
+      url: `/v1/instances/${instanceId}/query`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: {
+        sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+      },
+    });
+
+    console.log(`[RowCount] ${tableName} response:`, response);
+
+    if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+      const firstRow = response.data[0] as any;
+      const count = parseInt(String(firstRow?.count ?? 0), 10);
+      console.log(`[RowCount] ${tableName} success - count:`, count);
+      return isNaN(count) ? "error" : count;
+    }
+
+    console.warn(`[RowCount] ${tableName} unexpected response structure:`, response);
+    return "error";
+  } catch (error: any) {
+    console.error(`[RowCount] ${tableName} error:`, error);
+    return "error";
+  }
+}
+
 export function useTableMetadata(
   instanceId: string,
   connector: string = "",
@@ -297,7 +328,7 @@ export function useTableMetadata(
       const subscriptions: Array<() => void> = [];
 
       let completedCount = 0;
-      const totalOperations = tableNames.length * 2; // Column + row count fetches
+      const totalOperations = tableNames.length; // Only column counts; row counts fetched at component level
 
       // Helper to update and notify
       const updateAndNotify = () => {
@@ -339,61 +370,10 @@ export function useTableMetadata(
 
         subscriptions.push(columnUnsubscribe);
 
-        // Fetch row count using direct httpClient function
-        // Wait for JWT to be available before making the request
-        (async () => {
-          try {
-            // Wait for JWT token to be available (with timeout)
-            let jwtReady = false;
-            let waitAttempts = 0;
-            const maxWaitAttempts = 50; // ~5 seconds with 100ms intervals
-
-            while (!jwtReady && waitAttempts < maxWaitAttempts) {
-              const runtimeState = get(runtime);
-              if (runtimeState?.jwt?.token && runtimeState.jwt.token !== "") {
-                jwtReady = true;
-              } else {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                waitAttempts++;
-              }
-            }
-
-            if (!jwtReady) {
-              console.warn(`[RowCount] ${tableName} JWT not available after timeout`);
-              rowCounts.set(tableName, "error");
-              completedCount++;
-              updateAndNotify();
-              return;
-            }
-
-            console.log(`[RowCount] Fetching count for ${tableName}...`);
-            const response = await queryServiceQuery(
-              instanceId,
-              {
-                sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
-              },
-            );
-
-            console.log(`[RowCount] ${tableName} response:`, response);
-
-            // Extract count from response
-            if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
-              const firstRow = response.data[0] as any;
-              const count = parseInt(String(firstRow?.count ?? 0), 10);
-              console.log(`[RowCount] ${tableName} success - count:`, count);
-              rowCounts.set(tableName, isNaN(count) ? "error" : count);
-            } else {
-              console.warn(`[RowCount] ${tableName} unexpected response structure:`, response);
-              rowCounts.set(tableName, "error");
-            }
-          } catch (error: any) {
-            console.error(`[RowCount] ${tableName} error:`, error);
-            rowCounts.set(tableName, "error");
-          }
-
-          completedCount++;
-          updateAndNotify();
-        })();
+        // Initialize row count as not yet fetched
+        // Row counts will be fetched separately at the component level where JWT is guaranteed ready
+        completedCount++;
+        updateAndNotify();
       }
 
       // Return cleanup function
