@@ -25,6 +25,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pullEnv bool
 	var noUI bool
 	var noOpen bool
+	var preview bool = true
+	var classic bool
 	var logFormat string
 	var envVars, envVarsOld []string
 	var environment string
@@ -143,6 +145,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			allowedOrigins = append(allowedOrigins, localURL)
 
+			// Handle classic mode flag - disable preview if classic is set
+			if classic {
+				preview = false
+			}
+
 			ch.Interactive = false // Disable interactive mode for the app server
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Ch:             ch,
@@ -157,6 +164,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
 				ServeUI:        !noUI,
+				Preview:        preview,
 			})
 			if err != nil {
 				return err
@@ -165,7 +173,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID, _ := ch.CurrentUserID(cmd.Context())
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
+			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, preview, userID, tlsCertPath, tlsKeyPath)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -182,6 +190,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
+	startCmd.Flags().BoolVar(&classic, "classic", false, "Use classic developer mode instead of preview mode")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")

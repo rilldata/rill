@@ -175,6 +175,11 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
    */
   adminUrl = "";
 
+  /**
+   * @generated from field: bool preview_mode = 14;
+   */
+  previewMode = false;
+
   constructor(data?: PartialMessage<GetMetadataResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -196,6 +201,7 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
     { no: 11, name: "grpc_port", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "login_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "admin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "preview_mode", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMetadataResponse {

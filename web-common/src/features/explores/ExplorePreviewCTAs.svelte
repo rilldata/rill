@@ -19,6 +19,7 @@
   import { featureFlags } from "../feature-flags";
 
   export let exploreName: string;
+  export let inPreviewMode = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -48,7 +49,7 @@
     {/if}
     <GlobalDimensionSearch />
   </StateManagersProvider>
-  {#if !$readOnly}
+  {#if !$readOnly && !inPreviewMode}
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild let:builder>
         <Button type="secondary" builders={[builder]}>

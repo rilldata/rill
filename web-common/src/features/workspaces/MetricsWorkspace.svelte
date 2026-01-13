@@ -21,6 +21,8 @@
   import VisualMetrics from "./VisualMetrics.svelte";
 
   export let fileArtifact: FileArtifact;
+  export let hideCodeToggle = false;
+  export let inPreviewMode = false;
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -82,17 +84,19 @@
     onTitleChange={onChangeCallback}
     showInspectorToggle={$selectedView === "code" && isModelingSupported}
     slot="header"
-    codeToggle
+    codeToggle={!hideCodeToggle}
     titleInput={fileName}
   >
     <div class="flex gap-x-2" slot="cta">
-      {#if isOldMetricsView}
-        <PreviewButton
-          href="/explore/{metricsViewName}"
-          disabled={errors.length > 0}
-        />
-      {:else}
-        <GoToDashboardButton {resource} />
+      {#if !inPreviewMode}
+        {#if isOldMetricsView}
+          <PreviewButton
+            href="/explore/{metricsViewName}"
+            disabled={errors.length > 0}
+          />
+        {:else}
+          <GoToDashboardButton {resource} />
+        {/if}
       {/if}
     </div>
   </WorkspaceHeader>

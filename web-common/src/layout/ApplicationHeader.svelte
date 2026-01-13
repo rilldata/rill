@@ -25,6 +25,9 @@
   const { darkMode, deploy, developerChat } = featureFlags;
 
   export let mode: string;
+  export let logoHref: string = "/";
+  export let breadcrumbResourceHref: ((resourceName: string, resourceKind: string) => string) | undefined = undefined;
+  export let showModelsInBreadcrumb: boolean = true;
 
   $: ({ instanceId } = $runtime);
 
@@ -52,13 +55,34 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  $: dashboardOptions = getBreadcrumbOptions(explores, canvases);
+  $: dashboardOptions = (() => {
+    const options = getBreadcrumbOptions(explores, canvases);
+
+    // Customize hrefs if custom href function is provided
+    if (breadcrumbResourceHref) {
+      const customOptions = new Map<string, PathOption>();
+      options.forEach((option, key) => {
+        const customOption = { ...option };
+
+        // Determine resource kind based on option
+        const isExplore = option.section === "explore";
+        const isCanvas = option.section === "canvas";
+        const resourceKind = isExplore ? "explore" : isCanvas ? "canvas" : "resource";
+
+        customOption.href = breadcrumbResourceHref(key, resourceKind);
+        customOptions.set(key, customOption);
+      });
+      return customOptions;
+    }
+
+    return options;
+  })();
 
   $: projectPath = <PathOption>{
     label: projectTitle,
     section: "project",
     depth: -1,
-    href: "/",
+    href: logoHref,
   };
 
   $: pathParts = [
@@ -91,7 +115,7 @@
 
 <header class:border-b={!onDeployPage}>
   {#if !onDeployPage}
-    <a href="/">
+    <a href={logoHref}>
       <Rill />
     </a>
 
@@ -119,9 +143,9 @@
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
-        <ExplorePreviewCTAs exploreName={dashboardName} />
+        <ExplorePreviewCTAs exploreName={dashboardName} inPreviewMode={true} />
       {:else if route.id?.includes("canvas")}
-        <CanvasPreviewCTAs canvasName={dashboardName} />
+        <CanvasPreviewCTAs canvasName={dashboardName} inPreviewMode={true} />
       {/if}
     {:else if showDeveloperChat}
       <ChatToggle />

@@ -110,6 +110,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
 		AdminUrl:         s.app.ch.AdminURL(),
+		PreviewMode:      s.metadata.PreviewMode,
 	}), nil
 }
 
@@ -949,6 +950,7 @@ type localMetadata struct {
 	IsDev            bool   `json:"is_dev"`
 	AnalyticsEnabled bool   `json:"analytics_enabled"`
 	Readonly         bool   `json:"readonly"`
+	PreviewMode      bool   `json:"preview_mode"`
 	GRPCPort         int    `json:"grpc_port"`
 }
 

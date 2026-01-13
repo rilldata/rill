@@ -52,6 +52,7 @@ type App struct {
 	BaseLogger            *zap.Logger
 	Verbose               bool
 	Debug                 bool
+	Preview               bool
 	ProjectPath           string
 	ch                    *cmdutil.Helper
 	observabilityShutdown observability.ShutdownFunc
@@ -75,6 +76,7 @@ type AppOptions struct {
 	LocalURL       string
 	AllowedOrigins []string
 	ServeUI        bool
+	Preview        bool
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -336,6 +338,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		BaseLogger:            logger,
 		Verbose:               opts.Verbose,
 		Debug:                 opts.Debug,
+		Preview:               opts.Preview,
 		ProjectPath:           projectPath,
 		ch:                    opts.Ch,
 		observabilityShutdown: shutdown,
@@ -374,7 +377,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly, preview bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := a.ch.DotRill.AnalyticsInfo()
 	if err != nil {
@@ -394,6 +397,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
+		PreviewMode:      preview,
 	}
 
 	// Create the local server handler

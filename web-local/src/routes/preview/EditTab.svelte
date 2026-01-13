@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
     resourceIconMapping,
@@ -115,8 +117,17 @@
     }
   }
 
-  onMount(() => {
-    loadResources();
+  onMount(async () => {
+    await loadResources();
+
+    // Restore selected resource from URL query parameter
+    const resourceName = $page.url.searchParams.get("resource");
+    if (resourceName) {
+      const resource = allResources.find((r) => r.name === resourceName);
+      if (resource) {
+        selectedResource = resource;
+      }
+    }
   });
 
   // Retry when runtime becomes available
@@ -124,9 +135,14 @@
     loadResources();
   }
 
-  function navigateToEditor(resource: Resource) {
+  async function navigateToEditor(resource: Resource) {
     if (!resource.path) return;
     selectedResource = resource;
+
+    // Update URL with query parameter
+    const url = new URL($page.url);
+    url.searchParams.set("resource", resource.name);
+    await goto(url);
   }
 
   $: if (selectedResource && selectedResource.path) {
@@ -202,7 +218,9 @@
   <div class="w-80 max-w-sm border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex flex-col">
     <!-- Header -->
     <div class="p-4 border-b border-gray-200 dark:border-gray-800">
-      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Resources</h2>
+      <h2 class="text-sm font-semibold text-gray-900 dark:text-white">
+        {selectedResource?.name || "Resources"}
+      </h2>
     </div>
 
     <!-- Content -->
@@ -405,20 +423,27 @@
 
     <!-- Footer -->
     <div class="border-t border-gray-200 dark:border-gray-800 p-3 space-y-2">
-      <button
-        on:click={loadResources}
-        disabled={loading}
-        class="w-full px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50"
-      >
-        {loading ? "Refreshing..." : "Refresh"}
-      </button>
+      <div class="flex items-center justify-between gap-2">
+        {#if selectedResource?.path}
+          <span class="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {selectedResource.path}
+          </span>
+        {/if}
+        <button
+          on:click={loadResources}
+          disabled={loading}
+          class="flex-shrink-0 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- Main Content -->
   <div class="flex-1 overflow-hidden flex flex-col">
     {#if workspace && fileArtifact}
-      <svelte:component this={workspace} {fileArtifact} />
+      <svelte:component this={workspace} {fileArtifact} hideCodeToggle={true} />
     {:else}
       <div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
         <div class="text-center">

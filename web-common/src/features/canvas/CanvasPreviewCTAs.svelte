@@ -5,6 +5,7 @@
   import { featureFlags } from "../feature-flags";
 
   export let canvasName: string;
+  export let inPreviewMode = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -14,7 +15,7 @@
   const { readOnly } = featureFlags;
 </script>
 
-{#if !$readOnly}
+{#if !$readOnly && !inPreviewMode}
   <div class="flex gap-2 flex-shrink-0 ml-auto">
     <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
   </div>

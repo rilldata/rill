@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dev } from "$app/environment";
   import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
@@ -27,6 +28,7 @@
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
+  import DevModeNav from "./dev-mode-nav.svelte";
   import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
@@ -40,8 +42,13 @@
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
+  let isPreviewMode = false;
+
   onMount(async () => {
     const config = await localServiceGetMetadata();
+
+    // Always enable preview mode for development
+    isPreviewMode = true;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
@@ -73,7 +80,12 @@
 
   $: ({ route } = $page);
 
-  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
+  $: isDevMode = route.id?.includes("preview") ||
+    route.id?.includes("edit") ||
+    route.id?.includes("status") ||
+    route.id?.includes("settings");
+
+  $: mode = isPreviewMode ? "Preview" : "Developer";
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -82,13 +94,22 @@
       {#if data.initialized}
         <BannerCenter />
         <RepresentingUserBanner />
-        <ApplicationHeader {mode} />
+        <ApplicationHeader
+          {mode}
+          logoHref={isPreviewMode ? "/preview" : "/"}
+          breadcrumbResourceHref={isPreviewMode ? (name, kind) => `/edit?resource=${name}` : undefined}
+        />
+        {#if isDevMode}
+          <DevModeNav />
+        {/if}
         {#if $deploy}
           <RemoteProjectManager />
         {/if}
       {/if}
 
-      <slot />
+      <div class="flex-1 overflow-hidden">
+        <slot />
+      </div>
     </div>
   </FileAndResourceWatcher>
 </QueryClientProvider>
@@ -117,5 +138,10 @@
   /* Prevent trackpad navigation (like other code editors, like vscode.dev). */
   :global(body) {
     overscroll-behavior: none;
+  }
+
+  /* Remove border from application header */
+  :global(header) {
+    border-bottom: none !important;
   }
 </style>
