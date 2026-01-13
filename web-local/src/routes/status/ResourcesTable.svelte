@@ -2,33 +2,26 @@
   import VirtualizedTable from "@rilldata/web-common/components/table/VirtualizedTable.svelte";
   import ResourceTypeBadge from "@rilldata/web-common/features/entity-management/ResourceTypeBadge.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    createRuntimeServiceCreateTrigger,
-    getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
-    type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import type { ColumnDef } from "@tanstack/svelte-table";
-  import { flexRender } from "@tanstack/svelte-table";
   import ActionsCell from "@rilldata/web-common/features/projects/status/ActionsCell.svelte";
   import NameCell from "@rilldata/web-common/features/projects/status/NameCell.svelte";
   import RefreshCell from "@rilldata/web-common/features/projects/status/RefreshCell.svelte";
-  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
   import ResourceErrorMessage from "@rilldata/web-common/features/projects/status/ResourceErrorMessage.svelte";
+  import {
+    V1ReconcileStatus,
+    type V1Resource,
+  } from "@rilldata/web-common/runtime-client";
+  import type { ColumnDef } from "@tanstack/svelte-table";
+  import { flexRender } from "@tanstack/svelte-table";
+  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
 
   export let data: V1Resource[];
+  export let onRefresh: () => void;
 
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
   let dialogResourceKind = "";
   let dialogRefreshType: "full" | "incremental" = "full";
-
   let openDropdownResourceKey = "";
-
-  const createTrigger = createRuntimeServiceCreateTrigger();
-  const queryClient = useQueryClient();
 
   const openRefreshDialog = (
     resourceName: string,
@@ -54,35 +47,8 @@
   };
 
   const handleRefresh = async () => {
-    if (dialogResourceKind === ResourceKind.Model) {
-      await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: {
-          models: [
-            {
-              model: dialogResourceName,
-              full: dialogRefreshType === "full",
-            },
-          ],
-        },
-      });
-    } else {
-      await $createTrigger.mutateAsync({
-        instanceId: $runtime.instanceId,
-        data: {
-          resources: [{ kind: dialogResourceKind, name: dialogResourceName }],
-        },
-      });
-    }
-
-    await queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
-        undefined,
-      ),
-    });
-
     closeRefreshDialog();
+    onRefresh();
   };
 
   // Create columns definition as a constant to prevent unnecessary re-creation
@@ -186,7 +152,9 @@
   ];
 
   $: tableData = data.filter(
-    (resource) => resource.meta.name.kind !== ResourceKind.Component,
+    (resource) =>
+      resource.meta.name.kind !== ResourceKind.Component &&
+      resource.meta.name.kind !== ResourceKind.ProjectParser,
   );
 </script>
 
