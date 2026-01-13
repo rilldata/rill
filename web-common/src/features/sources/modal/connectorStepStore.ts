@@ -18,7 +18,7 @@ export function setStep(step: ConnectorStep) {
   connectorStepStore.update((state) => ({ ...state, step }));
 }
 
-export function setConnectorConfig(config: Record<string, unknown> | null) {
+export function setConnectorConfig(config: Record<string, unknown>) {
   connectorStepStore.update((state) => ({ ...state, connectorConfig: config }));
 }
 
