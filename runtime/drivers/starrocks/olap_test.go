@@ -1286,7 +1286,7 @@ func testAllTypesOutput(t *testing.T, olap drivers.OLAPStore) {
 		{"ARRAY<T>", "CODE_ARRAY", "string (JSON)"},
 		{"MAP<K,V>", "CODE_MAP", "string (JSON)"},
 		{"STRUCT<...>", "CODE_STRUCT", "string (JSON)"},
-		{"VARBINARY", "CODE_BYTES", "[]uint8"},
+		{"VARBINARY", "CODE_STRING", "string"},
 		{"HLL", "N/A", "use hll_cardinality()"},
 		{"BITMAP", "N/A", "use bitmap_count()"},
 		{"NULL", "N/A", "<nil>"},

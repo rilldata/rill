@@ -136,17 +136,51 @@ func TestDatabaseTypeToRuntimeType(t *testing.T) {
 		expected  string
 		expectErr bool
 	}{
+		// Boolean types
 		{"BOOLEAN", "CODE_BOOL", false},
+		{"BOOL", "CODE_BOOL", false},
+
+		// Integer types
+		{"TINYINT", "CODE_INT8", false},
+		{"SMALLINT", "CODE_INT16", false},
 		{"INT", "CODE_INT32", false},
+		{"INTEGER", "CODE_INT32", false},
 		{"BIGINT", "CODE_INT64", false},
+		{"LARGEINT", "CODE_INT128", false},
+
+		// Floating point types
+		{"FLOAT", "CODE_FLOAT32", false},
 		{"DOUBLE", "CODE_FLOAT64", false},
-		{"VARCHAR(255)", "CODE_STRING", false},
-		{"DATETIME", "CODE_TIMESTAMP", false},
-		{"DATE", "CODE_DATE", false},
-		{"JSON", "CODE_JSON", false},
 		{"DECIMAL(10,2)", "CODE_STRING", false}, // DECIMAL returns string for precision
+
+		// String types
+		{"CHAR(10)", "CODE_STRING", false},
+		{"VARCHAR(255)", "CODE_STRING", false},
+		{"STRING", "CODE_STRING", false},
+		{"TEXT", "CODE_STRING", false},
+
+		// Binary types (same as MySQL - returns CODE_STRING)
+		{"BINARY", "CODE_STRING", false},
+		{"VARBINARY", "CODE_STRING", false},
+		{"BLOB", "CODE_STRING", false},
+
+		// Date/Time types
+		{"DATE", "CODE_DATE", false},
+		{"DATETIME", "CODE_TIMESTAMP", false},
+		{"TIMESTAMP", "CODE_TIMESTAMP", false},
+
+		// Semi-structured types
+		{"JSON", "CODE_JSON", false},
+		{"JSONB", "CODE_JSON", false},
 		{"ARRAY", "CODE_ARRAY", false},
-		{"UNKNOWN_TYPE", "", true}, // unsupported type returns error
+		{"MAP", "CODE_MAP", false},
+		{"STRUCT", "CODE_STRUCT", false},
+
+		// Unsupported types (aggregate-only types)
+		{"HLL", "", true},
+		{"BITMAP", "", true},
+		{"PERCENTILE", "", true},
+		{"UNKNOWN_TYPE", "", true},
 	}
 
 	for _, tt := range tests {

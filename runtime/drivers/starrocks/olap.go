@@ -197,7 +197,8 @@ func (c *connection) databaseTypeToRuntimeType(dbType string) (*runtimev1.Type, 
 		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT}, nil
 	case "BINARY", "VARBINARY", "BLOB":
 		// Note: StarRocks doesn't have BLOB type, but MySQL driver may report VARBINARY as BLOB
-		return &runtimev1.Type{Code: runtimev1.Type_CODE_BYTES}, nil
+		// Use CODE_STRING like MySQL driver for consistency
+		return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 	default:
 		return nil, errUnsupportedType
 	}
