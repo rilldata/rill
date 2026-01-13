@@ -27,20 +27,17 @@
 
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  function refreshAllSourcesAndModels() {
-    void $createTrigger
-      .mutateAsync({
+  async function refreshAllSourcesAndModels() {
+    await $createTrigger.mutateAsync({
+      instanceId,
+      data: { all: true },
+    });
+    await queryClient.invalidateQueries({
+      queryKey: getRuntimeServiceListResourcesQueryKey(
         instanceId,
-        data: { all: true },
-      })
-      .then(() => {
-        void queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceListResourcesQueryKey(
-            instanceId,
-            undefined,
-          ),
-        });
-      });
+        undefined,
+      ),
+    });
   }
 </script>
 

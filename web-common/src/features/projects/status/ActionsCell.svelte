@@ -4,7 +4,9 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { RefreshCcwIcon } from "lucide-svelte";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
+  export let resource: V1Resource | undefined = undefined;
   export let resourceKind: string;
   export let resourceName: string;
   export let canRefresh: boolean;
@@ -15,6 +17,8 @@
   ) => void;
   export let isDropdownOpen: boolean;
   export let onDropdownOpenChange: (isOpen: boolean) => void;
+
+  $: isIncrementalModel = resource?.model?.spec?.incremental ?? false;
 </script>
 
 {#if canRefresh}
@@ -37,17 +41,19 @@
             <span class="ml-2">Full Refresh</span>
           </div>
         </DropdownMenu.Item>
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={() => {
-            onClickRefreshDialog(resourceName, resourceKind, "incremental");
-          }}
-        >
-          <div class="flex items-center">
-            <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Incremental Refresh</span>
-          </div>
-        </DropdownMenu.Item>
+        {#if isIncrementalModel}
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              onClickRefreshDialog(resourceName, resourceKind, "incremental");
+            }}
+          >
+            <div class="flex items-center">
+              <RefreshCcwIcon size="12px" />
+              <span class="ml-2">Incremental Refresh</span>
+            </div>
+          </DropdownMenu.Item>
+        {/if}
       {:else}
         <DropdownMenu.Item
           class="font-normal flex items-center"

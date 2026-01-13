@@ -13,6 +13,7 @@
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
+  import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import {
     initPosthog,
     posthogIdentify,
@@ -88,6 +89,8 @@
 
   $: mode = isPreviewMode ? "Preview" : "Developer";
 
+  $: onDeployPage = isDeployPage($page);
+
   $: previewModeStore.set(isPreviewMode);
 </script>
 
@@ -102,7 +105,7 @@
           logoHref={isPreviewMode ? "/preview" : "/"}
           breadcrumbResourceHref={(name, kind) => `/${kind}/${name}`}
         />
-        {#if isPreviewMode && !$page.url.pathname.startsWith('/files')}
+        {#if isPreviewMode && !$page.url.pathname.startsWith('/files') && !onDeployPage}
           <DevModeNav />
         {/if}
         {#if $deploy}
@@ -110,7 +113,7 @@
         {/if}
       {/if}
 
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 overflow-hidden bg-white">
         <slot />
       </div>
     </div>

@@ -8,18 +8,72 @@
     AlertDialogTitle,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let open = false;
   export let name: string;
-  export let onRefresh: () => void;
+  export let resourceKind: string;
+  export let onRefresh: () => Promise<void> | void;
   export let refreshType: "full" | "incremental" = "full";
 
-  function handleRefresh() {
+  let isLoading = false;
+  let error: string | null = null;
+
+  async function handleRefresh() {
     try {
-      onRefresh();
+      isLoading = true;
+      error = null;
+
+      if (!$runtime?.instanceId || !$runtime?.host) {
+        throw new Error("Runtime not initialized");
+      }
+
+      const requestBody = resourceKind === ResourceKind.Model
+        ? {
+            models: [
+              {
+                model: name,
+                full: refreshType === "full",
+              },
+            ],
+          }
+        : {
+            resources: [
+              {
+                kind: resourceKind,
+                name: name,
+              },
+            ],
+          };
+
+      const url = `${$runtime.host}/v1/instances/${$runtime.instanceId}/trigger`;
+      console.log("Triggering refresh for", { resourceKind, name, refreshType, url, requestBody });
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("Refresh response:", { status: response.status, statusText: response.statusText });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Refresh error response:", errorText);
+        throw new Error(`Failed to trigger refresh: ${response.statusText}`);
+      }
+
+      console.log("Refresh triggered successfully, reloading resources...");
+      await onRefresh();
       open = false;
-    } catch (error) {
-      console.error("Failed to refresh resource:", error);
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Unknown error";
+      console.error("Failed to refresh resource:", err);
+    } finally {
+      isLoading = false;
     }
   }
 </script>
@@ -42,16 +96,22 @@
             Refreshing this resource will update all dependent resources.
           {/if}
         </div>
+        {#if error}
+          <div class="mt-3 text-red-500 text-sm">{error}</div>
+        {/if}
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button
         type="plain"
-        onClick={() => {
+        on:click={() => {
           open = false;
-        }}>Cancel</Button
+        }}
+        disabled={isLoading}>Cancel</Button
       >
-      <Button type="primary" onClick={handleRefresh}>Yes, refresh</Button>
+      <Button type="primary" on:click={handleRefresh} disabled={isLoading}>
+        {isLoading ? "Refreshing..." : "Yes, refresh"}
+      </Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

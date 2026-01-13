@@ -2,9 +2,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ResourcesTable from "./ResourcesTable.svelte";
-  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   let resources: V1Resource[] = [];
@@ -12,7 +10,6 @@
   let isError = false;
   let error: Error | null = null;
   let hasReconcilingResources = false;
-  let isConfirmDialogOpen = false;
 
   async function loadResources() {
     try {
@@ -59,34 +56,6 @@
     return () => clearInterval(interval);
   });
 
-  function refreshAllSourcesAndModels() {
-    isConfirmDialogOpen = true;
-  }
-
-  function handleRefreshConfirmed() {
-    try {
-      if (!$runtime?.instanceId || !$runtime?.host) {
-        throw new Error("Runtime not initialized");
-      }
-
-      fetch(
-        `${$runtime.host}/v1/instances/${$runtime.instanceId}/triggers`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            all: true,
-          }),
-        },
-      ).then(() => loadResources()).catch((err) => {
-        console.error("Error refreshing resources:", err);
-      });
-    } catch (err) {
-      console.error("Error refreshing resources:", err);
-    }
-  }
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
@@ -104,8 +73,3 @@
     <ResourcesTable data={resources} onRefresh={loadResources} />
   {/if}
 </section>
-
-<RefreshAllSourcesAndModelsConfirmDialog
-  bind:open={isConfirmDialogOpen}
-  onRefresh={handleRefreshConfirmed}
-/>

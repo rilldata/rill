@@ -15,7 +15,7 @@
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
 
   export let data: V1Resource[];
-  export let onRefresh: () => void;
+  export let onRefresh: () => Promise<void> | void;
 
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
@@ -48,7 +48,7 @@
 
   const handleRefresh = async () => {
     closeRefreshDialog();
-    onRefresh();
+    await onRefresh();
   };
 
   // Create columns definition as a constant to prevent unnecessary re-creation
@@ -132,6 +132,7 @@
         if (!isRowReconciling) {
           const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
           return flexRender(ActionsCell, {
+            resource: row.original,
             resourceKind: row.original.meta.name.kind,
             resourceName: row.original.meta.name.name,
             canRefresh:
@@ -167,6 +168,7 @@
 <RefreshResourceConfirmDialog
   bind:open={isConfirmDialogOpen}
   name={dialogResourceName}
+  resourceKind={dialogResourceKind}
   refreshType={dialogRefreshType}
   onRefresh={handleRefresh}
 />

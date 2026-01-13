@@ -120,13 +120,17 @@
             class:open
             class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}
+            class:disabled={upstream && $previewModeStore}
             href={dropdown
               ? undefined
               : exampleResource
-                ? $previewModeStore
-                  ? `/edit?resource=${resourceName}`
-                  : `/files${exampleResource?.meta?.filePaths?.[0] ?? filePath}`
+                ? upstream && $previewModeStore
+                  ? "#"
+                  : $previewModeStore
+                    ? `/edit?resource=${resourceName}`
+                    : `/files${exampleResource?.meta?.filePaths?.[0] ?? filePath}`
                 : "#"}
+            on:click={upstream && $previewModeStore ? (e) => e.preventDefault() : undefined}
             {...dropdown ? builder : {}}
             use:builderActions={{ builders: dropdown ? [builder] : [] }}
           >
@@ -145,9 +149,12 @@
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
               <DropdownMenu.Item
-                href={$previewModeStore
-                  ? `/edit?resource=${resource?.meta?.name?.name}`
-                  : `/files${resource?.meta?.filePaths?.[0] ?? filePath}`}
+                disabled={upstream && $previewModeStore}
+                href={upstream && $previewModeStore
+                  ? "#"
+                  : $previewModeStore
+                    ? `/edit?resource=${resource?.meta?.name?.name}`
+                    : `/files${resource?.meta?.filePaths?.[0] ?? filePath}`}
               >
                 {#if kind}
                   <svelte:component
@@ -195,6 +202,14 @@
   a:hover,
   button:hover {
     @apply text-gray-700;
+  }
+
+  .disabled {
+    @apply text-gray-400;
+  }
+
+  .disabled:hover {
+    @apply text-gray-400;
   }
 
   .selected {
