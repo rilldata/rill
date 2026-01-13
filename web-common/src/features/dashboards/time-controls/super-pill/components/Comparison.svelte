@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
     type DashboardTimeControls,
@@ -12,6 +11,7 @@
   import RangeDisplay from "./RangeDisplay.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { getComparisonInterval } from "@rilldata/web-common/features/canvas/stores/time-state";
 
   type Option = {
     name: TimeComparisonOption;
@@ -36,6 +36,7 @@
   ) => void;
   export let allowCustomTimeRange: boolean = true;
   export let minTimeGrain: V1TimeGrain | undefined;
+  export let timeGrain: V1TimeGrain | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = false;
@@ -71,16 +72,20 @@
       currentInterval.start &&
       currentInterval.end
     ) {
-      const comparisonTimeRange = getComparisonRange(
-        currentInterval.start.toJSDate(),
-        currentInterval.end.toJSDate(),
+      const comparisonTimeRange = getComparisonInterval(
+        currentInterval,
         comparisonOption,
+        zone,
       );
+
+      if (!comparisonTimeRange) {
+        return;
+      }
 
       onSelectComparisonRange(
         comparisonOption,
-        comparisonTimeRange.start,
-        comparisonTimeRange.end,
+        comparisonTimeRange.start.toJSDate(),
+        comparisonTimeRange.end.toJSDate(),
       );
     }
   }
@@ -111,7 +116,7 @@
         {:else}
           <b class="line-clamp-1">{label}</b>
           {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} timeGrain={selectedComparison?.interval} />
+            <RangeDisplay {interval} {timeGrain} />
           {/if}
         {/if}
       </div>

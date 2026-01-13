@@ -10,6 +10,7 @@ export function prettyFormatTimeRange(
   interval: Interval | undefined,
   grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
 ) {
+  console.log("WHAT", grain, interval?.toISO());
   if (!interval?.isValid || !interval.start || !interval.end)
     return "Invalid interval";
 

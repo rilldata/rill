@@ -178,6 +178,7 @@ function getDefaultComparisonFields(
       timeRange,
       undefined,
       allTimeRange,
+      defaultExplorePreset.timezone,
     );
   }
 

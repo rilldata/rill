@@ -6,13 +6,14 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration, Interval } from "luxon";
-import { getTimeWidth, transformDate } from "../transforms";
+import { getTimeWidth } from "../transforms";
 import {
   type RelativeTimeTransformation,
   TimeComparisonOption,
   TimeOffsetType,
   TimeRangePreset,
 } from "../types";
+import { getComparisonInterval } from "@rilldata/web-common/features/canvas/stores/time-state";
 
 export function getComparisonTransform(
   start: Date,
@@ -40,22 +41,6 @@ export function getComparisonTransform(
       duration: TIME_COMPARISON[comparison].offsetIso,
     };
   }
-}
-
-/** takes a start and end, and performs transformDate accordingly.
- * Contiguous periods (for instance "last 6 hours" or a custom range) is handled
- * a bit differently.
- */
-export function getComparisonRange(
-  start: Date,
-  end: Date,
-  comparison: TimeComparisonOption,
-) {
-  const transform = getComparisonTransform(start, end, comparison);
-  return {
-    start: transformDate(start, [transform]),
-    end: transformDate(end, [transform]),
-  };
 }
 
 /**
@@ -96,15 +81,34 @@ export function isComparisonInsideBounds(
   start: Date,
   end: Date,
   comparison: TimeComparisonOption,
+  timeZone: string,
 ) {
-  // compute comparison start and ends.
-  const { start: comparisonStart, end: comparisonEnd } = getComparisonRange(
-    start,
-    end,
-    comparison,
+  const interval = Interval.fromDateTimes(
+    DateTime.fromJSDate(start),
+    DateTime.fromJSDate(end),
   );
+  if (!interval.isValid) {
+    return false;
+  }
+  const maxInterval = Interval.fromDateTimes(
+    DateTime.fromJSDate(boundStart),
+    DateTime.fromJSDate(boundEnd),
+  );
+  // compute comparison start and ends.
+  const comparisonInterval = getComparisonInterval(
+    interval,
+    comparison,
+    timeZone,
+  );
+
+  if (!comparisonInterval || !comparisonInterval.isValid) {
+    return false;
+  }
   // check if comparison bounds are inside the bounds.
-  return comparisonStart >= boundStart && comparisonEnd <= boundEnd;
+  return (
+    maxInterval.contains(comparisonInterval.start) &&
+    maxInterval.contains(comparisonInterval.end)
+  );
 }
 
 export function isRangeLargerThanDuration(
@@ -132,12 +136,25 @@ function isLastPeriodDuplicate(
   start: Date,
   end: Date,
   comparisonOptions: Array<TimeComparisonOption>,
+  zone: string,
 ) {
-  const lastPeriod = getComparisonRange(
-    start,
-    end,
-    TimeComparisonOption.CONTIGUOUS,
+  const interval = Interval.fromDateTimes(
+    DateTime.fromJSDate(start, { zone }),
+    DateTime.fromJSDate(end, { zone }),
   );
+
+  if (!interval.isValid) {
+    return false;
+  }
+  const lastPeriod = getComparisonInterval(
+    interval,
+    TimeComparisonOption.CONTIGUOUS,
+    zone,
+  );
+
+  if (!lastPeriod || !lastPeriod.isValid) {
+    return false;
+  }
 
   comparisonOptions = comparisonOptions.filter(
     (option) =>
@@ -146,14 +163,14 @@ function isLastPeriodDuplicate(
   );
 
   return comparisonOptions.some((option) => {
-    const { start: comparisonStart, end: comparisonEnd } = getComparisonRange(
-      start,
-      end,
-      option,
-    );
+    const periodComparison = getComparisonInterval(interval, option, zone);
+
     return (
-      comparisonStart.getTime() === lastPeriod.start.getTime() &&
-      comparisonEnd.getTime() === lastPeriod.end.getTime()
+      lastPeriod &&
+      lastPeriod.isValid &&
+      periodComparison &&
+      lastPeriod.start.equals(periodComparison?.start) &&
+      lastPeriod.end.equals(periodComparison?.end)
     );
   });
 }
@@ -172,6 +189,7 @@ export function getAvailableComparisonsForTimeRange(
   start: Date,
   end: Date,
   comparisonOptions: TimeComparisonOption[],
+  timezone: string,
 ) {
   let comparisons = comparisonOptions.filter((comparison) => {
     if (comparison === TimeComparisonOption.CUSTOM) {
@@ -186,6 +204,7 @@ export function getAvailableComparisonsForTimeRange(
         end,
         // treat a custom comparison as contiguous.
         comparison,
+        timezone,
       ) &&
       !isRangeLargerThanDuration(
         start,
@@ -195,7 +214,7 @@ export function getAvailableComparisonsForTimeRange(
     );
   });
 
-  if (isLastPeriodDuplicate(start, end, comparisonOptions)) {
+  if (isLastPeriodDuplicate(start, end, comparisonOptions, timezone)) {
     comparisons = comparisons.filter(
       (comparison) => comparison !== TimeComparisonOption.CONTIGUOUS,
     );
@@ -211,6 +230,7 @@ export function getTimeComparisonParametersForComponent(
   boundEnd: Date | null | undefined,
   currentStart: Date | null | undefined,
   currentEnd: Date | null | undefined,
+  timezone: string,
 ) {
   if (
     !comparisonOption ||
@@ -226,20 +246,35 @@ export function getTimeComparisonParametersForComponent(
     };
   }
 
-  const { start, end } = getComparisonRange(
-    currentStart,
-    currentEnd,
+  const interval = Interval.fromDateTimes(
+    DateTime.fromJSDate(currentStart).setZone(timezone),
+    DateTime.fromJSDate(currentEnd).setZone(timezone),
+  );
+
+  if (!interval.isValid) {
+    return {
+      start: undefined,
+      end: undefined,
+      isComparisonRangeAvailable: false,
+    };
+  }
+
+  const comparisonInterval = getComparisonInterval(
+    interval,
     comparisonOption,
+    timezone,
   );
 
   const isComparisonRangeAvailable = isComparisonInsideBounds(
     boundStart,
     boundEnd,
-    start,
-    end,
+    interval.start.toJSDate(),
+    interval.end.toJSDate(),
     comparisonOption,
+    timezone,
   );
-
+  const start = comparisonInterval?.start.toJSDate();
+  const end = comparisonInterval?.end.toJSDate();
   return {
     start,
     end,

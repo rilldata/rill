@@ -175,6 +175,7 @@ function getDefaultComparisonTimeRangeName(
     timeRange,
     undefined,
     allTimeRange,
+    timezone,
   );
 
   return comparisonTimeRangeName;

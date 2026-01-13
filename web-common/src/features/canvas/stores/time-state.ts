@@ -428,7 +428,7 @@ const timeGrainToComparisonOptionMap: Record<
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
 };
 
-function getComparisonInterval(
+export function getComparisonInterval(
   interval: Interval<true> | undefined,
   comparisonRange: string | undefined,
   activeTimeZone: string,

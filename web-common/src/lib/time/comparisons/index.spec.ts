@@ -1,10 +1,11 @@
 import {
   getAvailableComparisonsForTimeRange,
-  getComparisonRange,
   isComparisonInsideBounds,
 } from ".";
 import { TimeComparisonOption } from "../types";
 import { describe, it, expect } from "vitest";
+import { getComparisonInterval } from "@rilldata/web-common/features/canvas/stores/time-state";
+import { DateTime, Interval } from "luxon";
 
 const contiguousAndCustomComparisonRanges = [
   // contiguous cases
@@ -89,23 +90,28 @@ const periodicComparisonTests = [
   },
 ];
 
-const getComparisonRangeTests = [
+const getComparisonIntervalTests = [
   ...contiguousAndCustomComparisonRanges,
   ...periodicComparisonTests,
 ];
 
-describe("getComparisonRange", () => {
-  getComparisonRangeTests.forEach((test) => {
+describe("getComparisonInterval", () => {
+  getComparisonIntervalTests.forEach((test) => {
     it(test.description, () => {
       const { start, end, comparison } = test.input;
       const { start: expectedStart, end: expectedEnd } = test.output;
-      const { start: actualStart, end: actualEnd } = getComparisonRange(
-        start,
-        end,
+      const interval = Interval.fromDateTimes(
+        DateTime.fromJSDate(start, { zone: "UTC" }),
+        DateTime.fromJSDate(end, { zone: "UTC" }),
+      ) as Interval<true>;
+
+      const comparisonInterval = getComparisonInterval(
+        interval,
         comparison,
+        "UTC",
       );
-      expect(actualStart).toEqual(expectedStart);
-      expect(actualEnd).toEqual(expectedEnd);
+      expect(comparisonInterval?.start.toJSDate()).toEqual(expectedStart);
+      expect(comparisonInterval?.end.toJSDate()).toEqual(expectedEnd);
     });
   });
 });
@@ -139,6 +145,7 @@ describe("isComparisonInsideBounds", () => {
         rangeStart,
         rangeEnd,
         input,
+        "UTC",
       );
       expect(actual).toEqual(output);
     });
@@ -245,6 +252,7 @@ describe("getAvailableComparisonsForTimeRange", () => {
         start,
         end,
         [...(Object.values(TimeComparisonOption) as TimeComparisonOption[])],
+        "UTC",
       );
       expect(actual).toEqual(test.output);
     });
