@@ -213,7 +213,7 @@
 
 <svelte:window on:click={closeContextMenu} />
 
-<div class="h-full w-full flex">
+<div class="h-full w-full flex bg-white dark:bg-gray-950">
   <!-- Sidebar -->
   <div class="w-80 max-w-sm border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex flex-col">
     <!-- Header -->

@@ -86,6 +86,7 @@
     slot="header"
     codeToggle={!hideCodeToggle}
     titleInput={fileName}
+    {inPreviewMode}
   >
     <div class="flex gap-x-2" slot="cta">
       {#if !inPreviewMode}
