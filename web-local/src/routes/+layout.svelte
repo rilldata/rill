@@ -50,7 +50,7 @@
     const config = await localServiceGetMetadata();
 
     // Always enable preview mode for development
-    isPreviewMode = true;
+    isPreviewMode = false;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;

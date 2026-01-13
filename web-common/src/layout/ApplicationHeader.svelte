@@ -145,12 +145,10 @@
   {/if}
 
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
-    {#if mode === "Preview"}
-      {#if route.id?.includes("explore")}
-        <ExplorePreviewCTAs exploreName={dashboardName} inPreviewMode={true} />
-      {:else if route.id?.includes("canvas")}
-        <CanvasPreviewCTAs canvasName={dashboardName} inPreviewMode={true} />
-      {/if}
+    {#if route.id?.includes("explore")}
+      <ExplorePreviewCTAs exploreName={dashboardName} inPreviewMode={mode === "Preview"} />
+    {:else if route.id?.includes("canvas")}
+      <CanvasPreviewCTAs canvasName={dashboardName} inPreviewMode={mode === "Preview"} />
     {:else if showDeveloperChat}
       <ChatToggle />
     {/if}
