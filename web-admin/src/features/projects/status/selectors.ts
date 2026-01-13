@@ -12,8 +12,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { readable } from "svelte/store";
-import { httpClient } from "@rilldata/web-common/runtime-client/http-client";
+import { readable, get } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -271,25 +271,53 @@ export async function fetchRowCount(
 ): Promise<number | "error"> {
   try {
     console.log(`[RowCount] Fetching count for ${tableName}...`);
-    const response = await httpClient<{ data: any[] }>({
-      url: `/v1/instances/${instanceId}/query`,
+
+    // Get runtime state to access JWT and host
+    const runtimeState = get(runtime);
+    const host = runtimeState?.host || "";
+    const jwt = runtimeState?.jwt?.token;
+
+    if (!jwt) {
+      console.error(`[RowCount] ${tableName} JWT token not available`);
+      return "error";
+    }
+
+    const url = `${host}/v1/instances/${instanceId}/query`;
+    console.log(`[RowCount] ${tableName} requesting:`, url);
+
+    const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: {
-        sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt}`,
       },
+      body: JSON.stringify({
+        sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+      }),
     });
 
-    console.log(`[RowCount] ${tableName} response:`, response);
+    console.log(`[RowCount] ${tableName} status:`, response.status);
 
-    if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
-      const firstRow = response.data[0] as any;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[RowCount] ${tableName} HTTP error ${response.status}:`,
+        errorText,
+      );
+      return "error";
+    }
+
+    const data = await response.json();
+    console.log(`[RowCount] ${tableName} response:`, data);
+
+    if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+      const firstRow = data.data[0] as any;
       const count = parseInt(String(firstRow?.count ?? 0), 10);
       console.log(`[RowCount] ${tableName} success - count:`, count);
       return isNaN(count) ? "error" : count;
     }
 
-    console.warn(`[RowCount] ${tableName} unexpected response structure:`, response);
+    console.warn(`[RowCount] ${tableName} unexpected response structure:`, data);
     return "error";
   } catch (error: any) {
     console.error(`[RowCount] ${tableName} error:`, error);
