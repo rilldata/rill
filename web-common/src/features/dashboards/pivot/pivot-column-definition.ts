@@ -9,7 +9,7 @@ import {
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { convertISOStringToJSDateWithSameTimeAsDashboardTimeZone } from "@rilldata/web-common/lib/time/timezone";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
@@ -100,7 +100,7 @@ function createColumnDefinitionForDimensions(
         ) {
           const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
 
-          const dt = convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
+          const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
             value,
             timeConfig?.timeZone || "UTC",
           );
@@ -168,7 +168,7 @@ function formatDimensionValue(
 
     const timeGrain = getTimeGrainFromDimension(dimension);
 
-    const dt = convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
+    const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
       value,
       timeConfig?.timeZone || "UTC",
     );

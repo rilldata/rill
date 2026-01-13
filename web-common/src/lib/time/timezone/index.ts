@@ -19,7 +19,7 @@ function getDSToffset(start: Date, end: Date) {
 // As such, if a data point falls on midnight in the selected timezone,
 // the returned Date object will also represent midnight in the user's system timezone.
 
-export function convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
+export function convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
   isoString: string,
   selectedTimezone: string,
 ) {
@@ -29,6 +29,23 @@ export function convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
     zone: selectedTimezone,
   })
     .setZone(systemTimeZone, { keepLocalTime: true })
+    .toJSDate();
+}
+
+export function setJSDateTimeValueToTimeValueInSelectedTimeZone(
+  date: Date | undefined,
+  selectedTimeZone: string,
+) {
+  if (!date) return undefined;
+
+  const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return DateTime.fromJSDate(date, {
+    zone: selectedTimeZone,
+  })
+    .setZone(systemTimeZone, {
+      keepLocalTime: true,
+    })
     .toJSDate();
 }
 

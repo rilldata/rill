@@ -7,7 +7,6 @@ import {
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import type {
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
@@ -16,8 +15,9 @@ import type {
 import type { DateTimeUnit } from "luxon";
 import { get } from "svelte/store";
 import {
-  convertISOStringToJSDateWithSameTimeAsDashboardTimeZone,
+  convertISOStringToJSDateWithSameTimeAsSelectedTimeZone,
   removeZoneOffset,
+  setJSDateTimeValueToTimeValueInSelectedTimeZone,
 } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
@@ -38,23 +38,15 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(
-  d,
-  offsetDuration: string,
-  zone: string,
-  grainDuration: string,
-) {
+export function toComparisonKeys(d, offsetDuration: string, zone: string) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
         acc[`comparison.${key}`] = value;
       });
     } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = adjustOffsetForZone(
-        d[key],
-        zone,
-        grainDuration,
-      );
+      acc[`comparison.${key}`] =
+        setJSDateTimeValueToTimeValueInSelectedTimeZone(d[key], zone);
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
@@ -123,7 +115,7 @@ export function prepareTimeSeries(
       return emptyPt;
     }
 
-    const ts = convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
+    const ts = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
       originalPt.ts,
       zone,
     );
@@ -138,12 +130,7 @@ export function prepareTimeSeries(
       ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(
-        comparisonPt || {},
-        offsetDuration,
-        zone,
-        timeGrainDuration,
-      ),
+      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
     };
   });
 }

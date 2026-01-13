@@ -15,7 +15,7 @@ import type {
   FieldConfig,
 } from "./types";
 import { getChroma } from "../../themes/theme-utils";
-import { convertISOStringToJSDateWithSameTimeAsDashboardTimeZone } from "@rilldata/web-common/lib/time/timezone";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -130,7 +130,7 @@ export function adjustDataForTimeZone(
     const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
       adjustedDatum[timeField] =
-        convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
+        convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
           datum[timeField] as string,
           selectedTimezone,
         );
