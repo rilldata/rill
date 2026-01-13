@@ -14,6 +14,7 @@
   } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
@@ -98,6 +99,7 @@
       )
       .join(", ");
   }
+
 </script>
 
 {#if upstreamResources.length}
@@ -121,7 +123,9 @@
             href={dropdown
               ? undefined
               : exampleResource
-                ? `/files${exampleResource?.meta?.filePaths?.[0]}`
+                ? $previewModeStore
+                  ? `/edit?resource=${resourceName}`
+                  : `/files${exampleResource?.meta?.filePaths?.[0]}`
                 : "#"}
             {...dropdown ? builder : {}}
             use:builderActions={{ builders: dropdown ? [builder] : [] }}
@@ -141,7 +145,9 @@
             {#each resources as resource (resource?.meta?.name?.name)}
               {@const kind = resource?.meta?.name?.kind}
               <DropdownMenu.Item
-                href="/files{resource?.meta?.filePaths?.[0] ?? '/'}"
+                href={$previewModeStore
+                  ? `/edit?resource=${resource?.meta?.name?.name}`
+                  : `/files${resource?.meta?.filePaths?.[0] ?? '/'}`}
               >
                 {#if kind}
                   <svelte:component

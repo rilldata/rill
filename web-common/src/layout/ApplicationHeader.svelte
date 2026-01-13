@@ -128,15 +128,19 @@
         <Breadcrumbs {pathParts} {currentPath} />
       {/if}
     {:else if mode === "Developer"}
-      <InputWithConfirm
-        size="md"
-        bumpDown
-        type="Project"
-        textClass="font-medium"
-        value={projectTitle}
-        onConfirm={submitTitleChange}
-        showIndicator={unsavedFileCount > 0}
-      />
+      {#if $exploresQuery?.data}
+        <Breadcrumbs {pathParts} {currentPath} />
+      {:else}
+        <InputWithConfirm
+          size="md"
+          bumpDown
+          type="Project"
+          textClass="font-medium"
+          value={projectTitle}
+          onConfirm={submitTitleChange}
+          showIndicator={unsavedFileCount > 0}
+        />
+      {/if}
     {/if}
   {/if}
 

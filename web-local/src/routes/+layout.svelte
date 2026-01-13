@@ -12,6 +12,7 @@
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import {
     initPosthog,
     posthogIdentify,
@@ -48,7 +49,7 @@
     const config = await localServiceGetMetadata();
 
     // Always enable preview mode for development
-    isPreviewMode = false;
+    isPreviewMode = true;
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
@@ -86,6 +87,8 @@
     route.id?.includes("settings");
 
   $: mode = isPreviewMode ? "Preview" : "Developer";
+
+  $: previewModeStore.set(isPreviewMode);
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -97,9 +100,9 @@
         <ApplicationHeader
           {mode}
           logoHref={isPreviewMode ? "/preview" : "/"}
-          breadcrumbResourceHref={isPreviewMode ? (name, kind) => `/edit?resource=${name}` : undefined}
+          breadcrumbResourceHref={(name, kind) => `/${kind}/${name}`}
         />
-        {#if isDevMode}
+        {#if isPreviewMode && !$page.url.pathname.startsWith('/files')}
           <DevModeNav />
         {/if}
         {#if $deploy}
