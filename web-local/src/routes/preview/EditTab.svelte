@@ -126,9 +126,27 @@
       const resource = allResources.find((r) => r.name === resourceName);
       if (resource) {
         selectedResource = resource;
+
+        // Clean URL if there are other parameters
+        if ($page.url.search !== `?resource=${encodeURIComponent(resourceName)}`) {
+          const url = new URL($page.url);
+          url.search = `?resource=${encodeURIComponent(resourceName)}`;
+          goto(url, { replaceState: true });
+        }
       }
     }
   });
+
+  // Watch for query parameter changes and update selected resource
+  $: {
+    const resourceName = $page.url.searchParams.get("resource");
+    if (resourceName && allResources.length) {
+      const resource = allResources.find((r) => r.name === resourceName);
+      if (resource && selectedResource?.name !== resource.name) {
+        selectedResource = resource;
+      }
+    }
+  }
 
   // Retry when runtime becomes available
   $: if ($runtime?.instanceId && $runtime?.host && error?.includes("Waiting")) {
@@ -139,9 +157,9 @@
     if (!resource.path) return;
     selectedResource = resource;
 
-    // Update URL with query parameter
+    // Update URL with clean query parameter
     const url = new URL($page.url);
-    url.searchParams.set("resource", resource.name);
+    url.search = `?resource=${encodeURIComponent(resource.name)}`;
     await goto(url);
   }
 

@@ -125,7 +125,7 @@
               : exampleResource
                 ? $previewModeStore
                   ? `/edit?resource=${resourceName}`
-                  : `/files${exampleResource?.meta?.filePaths?.[0]}`
+                  : `/files${exampleResource?.meta?.filePaths?.[0] ?? filePath}`
                 : "#"}
             {...dropdown ? builder : {}}
             use:builderActions={{ builders: dropdown ? [builder] : [] }}
@@ -147,7 +147,7 @@
               <DropdownMenu.Item
                 href={$previewModeStore
                   ? `/edit?resource=${resource?.meta?.name?.name}`
-                  : `/files${resource?.meta?.filePaths?.[0] ?? '/'}`}
+                  : `/files${resource?.meta?.filePaths?.[0] ?? filePath}`}
               >
                 {#if kind}
                   <svelte:component
