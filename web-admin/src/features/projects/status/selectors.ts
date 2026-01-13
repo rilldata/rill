@@ -338,33 +338,38 @@ export function useTableMetadata(
 
         subscriptions.push(columnUnsubscribe);
 
-        // Fetch row count using TanStack Query mutation
-        const rowCountMutation = createQueryServiceQuery();
+        // Fetch row count using TanStack Query
+        const rowCountQuery = createQueryServiceQuery(
+          {
+            instanceId,
+            queryServiceQueryBody: {
+              sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+            },
+          },
+          undefined,
+          {
+            query: {
+              enabled: true,
+            },
+          },
+        );
 
-        // Subscribe to mutation state changes
-        const mutationUnsub = rowCountMutation.subscribe((mutationState: any) => {
-          if (mutationState.isSuccess && mutationState.data?.data) {
-            const firstRow = mutationState.data.data[0] as any;
+        // Subscribe to query state changes
+        const queryUnsub = rowCountQuery.subscribe((state: any) => {
+          if (state.isSuccess && state.data?.data) {
+            const firstRow = state.data.data[0] as any;
             const count = parseInt(String(firstRow?.count ?? 0), 10);
             rowCounts.set(tableName, isNaN(count) ? "error" : count);
             completedCount++;
             updateAndNotify();
-          } else if (mutationState.isError) {
+          } else if (state.isError) {
             rowCounts.set(tableName, "error");
             completedCount++;
             updateAndNotify();
           }
         });
 
-        // CRITICAL: Trigger the mutation with .mutate()
-        rowCountMutation.mutate({
-          instanceId,
-          queryServiceQueryBody: {
-            sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
-          },
-        });
-
-        subscriptions.push(mutationUnsub);
+        subscriptions.push(queryUnsub);
       }
 
       // Return cleanup function
