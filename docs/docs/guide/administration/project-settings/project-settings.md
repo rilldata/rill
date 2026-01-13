@@ -7,7 +7,7 @@ sidebar_position: 20
 Once an organization is created, you can populate it with projects. Each project has its own set of sources, models, metrics views, and explore dashboards. A defined object in a project cannot be shared to another project.
 
 :::info GitHub Integration
-Projects can be connected to a GitHub repository for continuous deployment. See [GitHub Integration](/user-guide/administration/project-settings/github-integration) for details on connecting and managing repository connections.
+Projects can be connected to a GitHub repository for continuous deployment. See [GitHub Integration](/guide/administration/project-settings/github-integration) for details on connecting and managing repository connections.
 ::: 
 
 ## Project
@@ -31,7 +31,7 @@ You can select the `Refresh all sources and models` in the Status page or run a 
 
 
 ### Managing Project settings
-You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials]( /user-guide/administration/project-settings/variables-and-credentials).
+You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials]( /guide/administration/project-settings/variables-and-credentials).
 
 <img src = '/img/manage/project-management/project-settings.png' class='rounded-gif' />
 <br />

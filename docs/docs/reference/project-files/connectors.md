@@ -1048,7 +1048,7 @@ openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 # Convert URL safe format for Snowflake
 cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
 ```
-See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+See: https://docs.snowflake.com/en/guide/key-pair-auth
 :::
  
 

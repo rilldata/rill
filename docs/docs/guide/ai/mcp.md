@@ -33,7 +33,7 @@ sidebar_position: 05
 The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It is currently designed primarily for data analysts, not data engineers, and focuses on consuming Rill metrics views—not creating them.
 
 :::tip Looking for AI Chat in Rill Cloud?
-If you want to chat with your data directly in your browser without any setup, check out [AI Chat](/user-guide/ai/ai-chat), which uses the same MCP technology but is built right into Rill Cloud.
+If you want to chat with your data directly in your browser without any setup, check out [AI Chat](/guide/ai/ai-chat), which uses the same MCP technology but is built right into Rill Cloud.
 :::
 
 ## Why use MCP with Rill?
@@ -41,7 +41,7 @@ Instead of blindly exposing your entire data warehouse to external platforms in 
 
 Rill offers two ways to use MCP:
 - **Rill MCP Server** (this guide) - Connect external AI assistants like Claude Desktop to your Rill projects
-- **[AI Chat](/user-guide/ai/ai-chat)** - Built-in chat interface in Rill Cloud with zero setup required
+- **[AI Chat](/guide/ai/ai-chat)** - Built-in chat interface in Rill Cloud with zero setup required
 
 You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results.
 
@@ -147,7 +147,7 @@ rill token issue
 ```
 
 :::tip Learn more about user tokens
-For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/user-guide/administration/access-tokens/user-tokens.
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/guide/administration/access-tokens/user-tokens.
 :::
 
 ### Configure Claude Desktop
@@ -264,9 +264,9 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 
 
 ## Conclusion
-While [Explore dashboards](/user-guide/dashboards/dashboard-101) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
+While [Explore dashboards](/guide/dashboards/dashboard-101) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
 
-**Want AI chat directly in Rill Cloud?** Check out [AI Chat](/user-guide/ai/ai-chat) for a browser-based experience that uses the same MCP technology with zero setup required.
+**Want AI chat directly in Rill Cloud?** Check out [AI Chat](/guide/ai/ai-chat) for a browser-based experience that uses the same MCP technology with zero setup required.
 
 
 ## Need help?

@@ -128,18 +128,18 @@ const config = {
         items: [
           {
             to: "/",
-            label: "Developer Docs",
+            label: "Developer",
             position: "left",
             className: "navbar-docs-link",
             activeBaseRegex: "^(?!/(reference|api|contact|notes|user-guide)).*", // Keep Docs active for all doc pages
 
           },
           {
-            to: "/user-guide/home",
-            label: "User Guide",
+            to: "/guide/home",
+            label: "Guide",
             position: "left",
             className: "navbar-user-guide-link",
-            activeBaseRegex: "^/user-guide.*", // Keep Docs active for all doc pages
+            activeBaseRegex: "^/guide.*", // Keep Docs active for all doc pages
           },
           {
             to: "/reference/project-files",
@@ -294,15 +294,15 @@ const config = {
           },
           {
             from: '/share/user-management',
-            to: '/user-guide/administration/users-and-access/user-management',
+            to: '/guide/administration/users-and-access/user-management',
           },
           {
             from: '/share/roles-permissions',
-            to: '/user-guide/administration/users-and-access/roles-permissions',
+            to: '/guide/administration/users-and-access/roles-permissions',
           },
           {
             from: '/share/scheduled-reports',
-            to: '/user-guide/reports/exports',
+            to: '/guide/reports/exports',
           },
           {
             from: '/concepts/developerVsCloud',
@@ -1300,15 +1300,15 @@ const config = {
             to: '/developer/other/granting/google-bigquery',
           },
           // ============================================
-          // /manage/* → /user-guide/administration/*
+          // /manage/* → /guide/administration/*
           // ============================================
           {
             from: '/manage',
-            to: '/user-guide/administration',
+            to: '/guide/administration',
           },
           {
             from: '/manage/index',
-            to: '/user-guide/administration',
+            to: '/guide/administration',
           },
           {
             from: '/manage/security',
@@ -1316,35 +1316,35 @@ const config = {
           },
           {
             from: '/manage/organization-management',
-            to: '/user-guide/administration/organization-settings',
+            to: '/guide/administration/organization-settings',
           },
           {
             from: '/manage/project-management',
-            to: '/user-guide/administration/project-settings',
+            to: '/guide/administration/project-settings',
           },
           {
             from: '/manage/project-management/variables-and-credentials',
-            to: '/user-guide/administration/project-settings/variables-and-credentials',
+            to: '/guide/administration/project-settings/variables-and-credentials',
           },
           {
             from: '/manage/roles-permissions',
-            to: '/user-guide/administration/users-and-access/roles-permissions',
+            to: '/guide/administration/users-and-access/roles-permissions',
           },
           {
             from: '/manage/user-management',
-            to: '/user-guide/administration/users-and-access/user-management',
+            to: '/guide/administration/users-and-access/user-management',
           },
           {
             from: '/manage/usergroup-management',
-            to: '/user-guide/administration/users-and-access/usergroup-management',
+            to: '/guide/administration/users-and-access/usergroup-management',
           },
           {
             from: '/manage/service-tokens',
-            to: '/user-guide/administration/access-tokens/service-tokens',
+            to: '/guide/administration/access-tokens/service-tokens',
           },
           {
             from: '/manage/user-tokens',
-            to: '/user-guide/administration/access-tokens/user-tokens',
+            to: '/guide/administration/access-tokens/user-tokens',
           },
           {
             from: '/manage/account-management/billing',
@@ -1371,79 +1371,79 @@ const config = {
             to: '/developer/other/granting/google-bigquery',
           },
           // ============================================
-          // /explore/* → /user-guide/*
+          // /explore/* → /guide/*
           // ============================================
           {
             from: '/explore',
-            to: '/user-guide/dashboards',
+            to: '/guide/dashboards',
           },
           {
             from: '/explore/index',
-            to: '/user-guide/dashboards',
+            to: '/guide/dashboards',
           },
           {
             from: '/explore/ai-chat',
-            to: '/user-guide/ai/ai-chat',
+            to: '/guide/ai/ai-chat',
           },
           {
             from: '/explore/mcp',
-            to: '/user-guide/ai/mcp',
+            to: '/guide/ai/mcp',
           },
           {
             from: '/explore/alerts',
-            to: '/user-guide/alerts',
+            to: '/guide/alerts',
           },
           {
             from: '/explore/bookmarks',
-            to: '/user-guide/dashboards/bookmarks',
+            to: '/guide/dashboards/bookmarks',
           },
           {
             from: '/explore/canvas',
-            to: '/user-guide/dashboards/canvas',
+            to: '/guide/dashboards/canvas',
           },
           {
             from: '/explore/exports',
-            to: '/user-guide/reports/exports',
+            to: '/guide/reports/exports',
           },
           {
             from: '/explore/filters',
-            to: '/user-guide/dashboards/filters',
+            to: '/guide/dashboards/filters',
           },
           {
             from: '/explore/filters/filters',
-            to: '/user-guide/dashboards/filters',
+            to: '/guide/dashboards/filters',
           },
           {
             from: '/explore/filters/time-series',
-            to: '/user-guide/dashboards/time-series',
+            to: '/guide/dashboards/time-series',
           },
           {
             from: '/explore/public-url',
-            to: '/user-guide/dashboards/public-url',
+            to: '/guide/dashboards/public-url',
           },
           {
             from: '/explore/time-series',
-            to: '/user-guide/dashboards/time-series',
+            to: '/guide/dashboards/time-series',
           },
           {
             from: '/explore/dashboard-101',
-            to: '/user-guide/dashboards/dashboard-101',
+            to: '/guide/dashboards/dashboard-101',
           },
           {
             from: '/explore/dashboard-101/dashboard-101',
-            to: '/user-guide/dashboards/dashboard-101',
+            to: '/guide/dashboards/dashboard-101',
           },
           {
             from: '/explore/dashboard-101/multi-metrics',
-            to: '/user-guide/dashboards/dashboard-101/multi-metrics',
+            to: '/guide/dashboards/dashboard-101/multi-metrics',
           },
           {
             from: '/explore/dashboard-101/pivot',
-            to: '/user-guide/dashboards/dashboard-101/pivot',
+            to: '/guide/dashboards/dashboard-101/pivot',
           },
           {
             from: '/explore/dashboard-101/tdd',
-            to: '/user-guide/dashboards/dashboard-101/tdd',
+            to: '/guide/dashboards/dashboard-101/tdd',
           },
           // ============================================
           // /reference/* → /developer/build/* or /reference/*

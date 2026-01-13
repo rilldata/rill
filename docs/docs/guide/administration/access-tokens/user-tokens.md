@@ -60,7 +60,7 @@ User tokens inherit your personal permissions from your user account:
 - **Project permissions** - Your role in specific projects (admin, editor, viewer)
 - **Security policies** - Applied based on your user attributes (email, domain, groups)
 
-For more details on roles, see [Roles and Permissions](/user-guide/administration/users-and-access/roles-permissions).
+For more details on roles, see [Roles and Permissions](/guide/administration/users-and-access/roles-permissions).
 
 ## Managing User Tokens
 

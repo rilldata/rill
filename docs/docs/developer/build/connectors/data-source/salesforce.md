@@ -21,7 +21,7 @@ When using Rill Developer on your local machine, you will need to provide your c
 
 :::tip Updating the project environmental variable
 
-If you've already deployed to Rill Cloud, you can either [push/pull the credential]( /user-guide/administration/project-settings/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
+If you've already deployed to Rill Cloud, you can either [push/pull the credential]( /guide/administration/project-settings/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
 ```
 rill env push
 rill env pull

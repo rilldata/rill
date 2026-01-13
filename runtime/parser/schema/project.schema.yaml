@@ -1001,7 +1001,7 @@ definitions:
                 # Convert URL safe format for Snowflake
                 cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                 ```
-                See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                See: https://docs.snowflake.com/en/guide/key-pair-auth
                 :::
             authenticator:
               type: string
@@ -1848,7 +1848,7 @@ definitions:
             description: Refers to the description for the metrics view
           ai_instructions:
             type: string
-            description: Extra instructions for [AI agents](/user-guide/ai/mcp). Used to guide natural language question answering and routing.
+            description: Extra instructions for [AI agents](/guide/ai/mcp). Used to guide natural language question answering and routing.
           parent:
             type: string
             description: Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view

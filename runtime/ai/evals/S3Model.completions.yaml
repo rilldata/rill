@@ -1154,7 +1154,7 @@
                             # Convert URL safe format for Snowflake
                             cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                             ```
-                            See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                            See: https://docs.snowflake.com/en/guide/key-pair-auth
                             :::
                         type: string
                     role:
@@ -2565,7 +2565,7 @@
                             # Convert URL safe format for Snowflake
                             cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                             ```
-                            See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                            See: https://docs.snowflake.com/en/guide/key-pair-auth
                             :::
                         type: string
                     role:
@@ -3985,7 +3985,7 @@
                             # Convert URL safe format for Snowflake
                             cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                             ```
-                            See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                            See: https://docs.snowflake.com/en/guide/key-pair-auth
                             :::
                         type: string
                     role:
@@ -5414,7 +5414,7 @@
                             # Convert URL safe format for Snowflake
                             cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                             ```
-                            See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+                            See: https://docs.snowflake.com/en/guide/key-pair-auth
                             :::
                         type: string
                     role:

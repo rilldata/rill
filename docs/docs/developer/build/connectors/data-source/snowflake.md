@@ -47,7 +47,7 @@ See the full documentation to set up [private key authentication](#using-keypair
 
 :::info Finding the Snowflake account identifier
 
-To determine your [Snowflake account identifier](https://docs.snowflake.com/en/user-guide/admin-account-identifier), one easy way is to check your Snowflake account URL. The account identifier to use in your connection string should be everything before `.snowflakecomputing.com`!
+To determine your [Snowflake account identifier](https://docs.snowflake.com/en/guide/admin-account-identifier), one easy way is to check your Snowflake account URL. The account identifier to use in your connection string should be everything before `.snowflakecomputing.com`!
 
 :::
 
@@ -87,7 +87,7 @@ You can use keypair authentication for enhanced security when connecting to Snow
 
 #### Generate a private key
 
-Please refer to the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/key-pair-auth) on how to configure an unencrypted private key to use in Rill.
+Please refer to the [Snowflake documentation](https://docs.snowflake.com/en/guide/key-pair-auth) on how to configure an unencrypted private key to use in Rill.
 
 The Snowflake Go Driver only supports **unencrypted PKCS#8 keys**. Make sure to include the `-nocrypt` flag, as encrypted keys are not supported. You can generate one using: 
 

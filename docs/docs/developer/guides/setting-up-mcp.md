@@ -17,7 +17,7 @@ Before you begin, make sure you have:
 - An MCP Client (Claude Desktop, ChatGPT Desktop, etc.)
 - **Access to a [Rill Project](https://ui.rilldata.com/)** 
 
-For detailed steps, please refer to our documentation on [MCP Servers](/user-guide/ai/mcp)
+For detailed steps, please refer to our documentation on [MCP Servers](/guide/ai/mcp)
 
 ## Step 1: Access your Rill Project's AI tab.
 
@@ -27,7 +27,7 @@ For detailed steps, please refer to our documentation on [MCP Servers](/user-gui
 In your project's AI tab, you'll be able to create a user token (personal access token) and copy the MCP config.json directly in the UI. Simply paste this into your application of choice.
 
 :::tip Learn more about user tokens
-For details on creating, managing, and using personal access tokens, see [User Tokens](/user-guide/administration/access-tokens/user-tokens.
+For details on creating, managing, and using personal access tokens, see [User Tokens](/guide/administration/access-tokens/user-tokens.
 :::
 
 

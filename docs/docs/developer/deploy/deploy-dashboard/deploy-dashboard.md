@@ -9,7 +9,7 @@ sidebar_position: 00
 ## Overview
 
 
-Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](/user-guide/dashboards/dashboard-101), [embed Rill](/developer/integrate/embedding) into other applications, and more!
+Deploying dashboards from Rill Developer allows you to share dashboards with other users, leverage [Rill Cloud capabilities](/guide/dashboards/dashboard-101), [embed Rill](/developer/integrate/embedding) into other applications, and more!
 
 The flow diagram below shows two options for deploying an existing project. 
 
@@ -41,7 +41,7 @@ Starting from **v0.48**, we have introduced the possibility to push dashboards _
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />
 
-Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/user-guide/administration/users-and-access/user-management) section. 
+Now that you project has been deployed to Rill Cloud, you will need to ensure that your users have access! Please refer to the [user management](/guide/administration/users-and-access/user-management) section. 
 
 If you make changes locally on Rill Developer, you will need to push the contents to Rill Cloud by selecting the `Update` button.
 

@@ -11,7 +11,7 @@ Rill Cloud includes powerful AI capabilities to help you explore and understand 
 
 ## AI Chat
 
-**[AI Chat](/user-guide/ai/ai-chat)** is built directly into Rill Cloud, allowing you to:
+**[AI Chat](/guide/ai/ai-chat)** is built directly into Rill Cloud, allowing you to:
 - Ask questions about your data in natural language
 - Get instant insights without writing SQL queries
 - Explore metrics and dimensions conversationally
@@ -21,7 +21,7 @@ AI Chat understands your project's metrics views, measures, and dimensions, prov
 
 ## Rill MCP Server
 
-The **[Rill MCP Server](/user-guide/ai/mcp)** connects your Rill projects to external AI assistants like Claude Desktop using the Model Context Protocol. This enables you to:
+The **[Rill MCP Server](/guide/ai/mcp)** connects your Rill projects to external AI assistants like Claude Desktop using the Model Context Protocol. This enables you to:
 - Query your Rill data from Claude Desktop or other MCP-compatible tools
 - Get governed, accurate analytics through AI assistants
 - Maintain security and access controls while using external AI tools

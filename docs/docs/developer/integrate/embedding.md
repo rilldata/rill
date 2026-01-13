@@ -50,7 +50,7 @@ rill service create <service_name> --project <project_name> --project-role viewe
 ```
 
 :::info
-For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/user-guide/administration/access-tokens/service-tokens). Also see the [CLI reference](/reference/cli/service) for command details.
+For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/guide/administration/access-tokens/service-tokens). Also see the [CLI reference](/reference/cli/service) for command details.
 :::
 
 :::caution

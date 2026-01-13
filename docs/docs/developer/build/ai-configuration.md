@@ -7,7 +7,7 @@ sidebar_position: 55
 
 # AI Configuration
 
-Rill's AI capabilities, including [AI Chat](/user-guide/ai/ai-chat) and the [MCP Server](/user-guide/ai/mcp), rely on context to provide accurate and relevant answers. You can provide additional context using the `ai_instructions` field in your project configuration files.
+Rill's AI capabilities, including [AI Chat](/guide/ai/ai-chat) and the [MCP Server](/guide/ai/mcp), rely on context to provide accurate and relevant answers. You can provide additional context using the `ai_instructions` field in your project configuration files.
 
 LLMs give their best results when they have good context. For a conversation with Rill Data, this means things like clarifying project-specific terms, routing questions to the correct metrics view, or defining business rules. Rather than expecting the user to provide this context every time, you can add `ai_instructions` to your project. This adds the context automatically for every conversation.
 
@@ -97,10 +97,10 @@ ai_instructions: |
 
 ## Visualization Tips 
 
-When using the [Rill MCP Server](/user-guide/ai/mcp) with external AI clients like Claude, you can provide specific instructions on how to visualize data. Since the MCP server returns structured data, the AI client is responsible for rendering it.
+When using the [Rill MCP Server](/guide/ai/mcp) with external AI clients like Claude, you can provide specific instructions on how to visualize data. Since the MCP server returns structured data, the AI client is responsible for rendering it.
 
 :::note Visualization tips affect all AI interactions
-Visualization instructions added to `rill.yaml` will affect both [Rill Chat](/user-guide/ai/ai-chat) responses and external AI clients via the MCP Server. If you only want visualization tips to apply to external AI clients (like Claude Desktop), consider adding them to your client-specific configuration files instead:
+Visualization instructions added to `rill.yaml` will affect both [Rill Chat](/guide/ai/ai-chat) responses and external AI clients via the MCP Server. If you only want visualization tips to apply to external AI clients (like Claude Desktop), consider adding them to your client-specific configuration files instead:
 - **Claude Desktop**: Add to `claude_desktop_config.json` or `Claude.md` in your project
 - **Cursor**: Add to `.cursorrules` or `AGENT.md` in your project
 - **Other AI clients**: Check your client's documentation for where to add custom instructions

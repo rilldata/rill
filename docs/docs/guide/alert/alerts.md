@@ -3,7 +3,7 @@ title: "Alerts"
 description: Setting up Alerts in Rill
 sidebar_label: "Alerts"
 sidebar_position: 40
-slug: "/user-guide/alerts"
+slug: "/guide/alerts"
 ---
 
 <div style={{ 
@@ -62,7 +62,7 @@ To avoid getting over alerted, consider adding a metric filter to avoid long tai
 - Creating a filter on customers with less than 100 logins <u>but</u> filtered to more than 100 users to alert on active user drops within active accounts.
 - Creating a filter against campaigns with a greater than 20% decrease in spend <u>but</u> filtered to spend greater than $1000 to avoid large percentage changes on small campaigns.
 
-For more information, refer to our documentation on [metric filters](/user-guide/dashboards/filters#filter-by-measures).
+For more information, refer to our documentation on [metric filters](/guide/dashboards/filters#filter-by-measures).
 :::
 
 ### Criteria

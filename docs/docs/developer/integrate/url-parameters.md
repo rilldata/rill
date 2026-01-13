@@ -424,5 +424,5 @@ The state string passed to `setState` should use the same format as the URL quer
 
 - [Embed Dashboards](/developer/integrate/embedding) - Learn how to embed Rill dashboards
 - [Embed Iframe API](/developer/integrate/embed-iframe-api) - Programmatically control embedded dashboards
-- [Time Series Filter]/user-guide/dashboards/time-series/time-series) - Detailed guide on time range syntax and usage
+- [Time Series Filter]/guide/dashboards/time-series/time-series) - Detailed guide on time range syntax and usage
 

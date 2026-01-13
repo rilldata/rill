@@ -85,7 +85,7 @@ gs://rilldata-public/auction_data.parquet
 
 Rill's AI-powered dashboard creation makes it easy to go from data to insights in seconds. The system automatically generates relevant visualizations and suggests key metrics based on your data.
 
-Select the model's side menu and select "Generate dashboard with AI". Watch as Rill configures your metrics view and creates an Explore dashboard. Once finished, you can navigate the different features of our [Explore dashboard](/user-guide/dashboards).
+Select the model's side menu and select "Generate dashboard with AI". Watch as Rill configures your metrics view and creates an Explore dashboard. Once finished, you can navigate the different features of our [Explore dashboard](/guide/dashboards).
 
 <div style={{ 
   position: "relative", 

@@ -222,7 +222,7 @@ WHERE status = '{{ .env.string_var }}'
 
 ## AI Configuration
 
-You can provide context and instructions for AI tools (like [AI Chat](/user-guide/ai/ai-chat) and [MCP](/user-guide/ai/mcp)) using the `ai_instructions` field. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs.
+You can provide context and instructions for AI tools (like [AI Chat](/guide/ai/ai-chat) and [MCP](/guide/ai/mcp)) using the `ai_instructions` field. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs.
 
 For detailed instructions and examples on how to configure AI instructions at both the project and metrics view levels, please refer to our [AI Configuration guide](/developer/build/ai-configuration).
 
