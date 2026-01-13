@@ -51,8 +51,6 @@ const connectorSubmissions = new Map<
     promise: Promise<void>;
     connectorName: string;
     completed: boolean;
-    originalEnvBlob?: string;
-    newEnvBlob?: string;
   }
 >();
 
@@ -162,8 +160,6 @@ async function saveConnectorAnyway(
   formValues: AddDataFormValues,
   newConnectorName: string,
   instanceId?: string,
-  preComputedEnvBlob?: string,
-  originalEnvBlob?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
 
@@ -176,19 +172,14 @@ async function saveConnectorAnyway(
   // Mark to avoid rollback by concurrent submissions
   savedAnywayPaths.add(newConnectorFilePath);
 
-  // Use pre-computed env blob if provided to avoid re-computing and getting _1 suffix
-  // when the first attempt already added the variable
-  let newEnvBlob = preComputedEnvBlob;
-  if (!newEnvBlob) {
-    // Fallback to computing if not provided (for backwards compatibility)
-    newEnvBlob = await updateDotEnvWithSecrets(
-      queryClient,
-      connector,
-      formValues,
-      "connector",
-      newConnectorName,
-    );
-  }
+  // Update .env file with secrets (keep ordering consistent with Test and Connect)
+  const newEnvBlob = await updateDotEnvWithSecrets(
+    queryClient,
+    connector,
+    formValues,
+    "connector",
+    newConnectorName,
+  );
 
   await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
@@ -198,12 +189,10 @@ async function saveConnectorAnyway(
   });
 
   // Always create/overwrite to ensure the connector file is created immediately
-  // Use originalEnvBlob (before modifications) to check conflicts, not the modified blob
   await runtimeServicePutFile(resolvedInstanceId, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
-      existingEnvBlob: originalEnvBlob,
     }),
     create: true,
     createOnly: false,
@@ -254,16 +243,12 @@ export async function submitAddConnectorForm(
       const newConnectorName = existingSubmission.connectorName;
 
       // Proceed immediately with Save Anyway logic
-      // Use the pre-computed env blobs from the concurrent Test and Connect operation
-      // to ensure consistent variable naming (e.g., GOOGLE_APPLICATION_CREDENTIALS not _2)
       await saveConnectorAnyway(
         queryClient,
         connector,
         formValues,
         newConnectorName,
         instanceId,
-        existingSubmission.newEnvBlob,
-        existingSubmission.originalEnvBlob,
       );
       return;
     } else if (!existingSubmission.completed) {
@@ -305,13 +290,6 @@ export async function submitAddConnectorForm(
         newConnectorName,
       );
 
-      // Store the computed blobs in the submission so concurrent "Save Anyway" can reuse them
-      const submission = connectorSubmissions.get(uniqueConnectorSubmissionKey);
-      if (submission) {
-        submission.originalEnvBlob = originalEnvBlob;
-        submission.newEnvBlob = newEnvBlob;
-      }
-
       if (saveAnyway) {
         // Save Anyway: bypass reconciliation entirely via centralized helper
         await saveConnectorAnyway(
@@ -320,8 +298,6 @@ export async function submitAddConnectorForm(
           formValues,
           newConnectorName,
           instanceId,
-          newEnvBlob,
-          originalEnvBlob,
         );
         return;
       }
@@ -346,7 +322,6 @@ export async function submitAddConnectorForm(
           path: newConnectorFilePath,
           blob: compileConnectorYAML(connector, formValues, {
             connectorInstanceName: newConnectorName,
-            existingEnvBlob: originalEnvBlob,
           }),
           create: true,
           createOnly: false,
