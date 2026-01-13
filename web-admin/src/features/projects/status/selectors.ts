@@ -265,7 +265,6 @@ export function useTablesList(instanceId: string, connector: string = "") {
   );
 }
 
-
 export function useTableMetadata(
   instanceId: string,
   connector: string = "",
@@ -275,7 +274,11 @@ export function useTableMetadata(
   if (!tables || tables.length === 0) {
     return readable(
       {
-        data: { columnCounts: new Map<string, number>(), rowCounts: new Map<string, number | "error">(), isView: new Map<string, boolean>() },
+        data: {
+          columnCounts: new Map<string, number>(),
+          rowCounts: new Map<string, number | "error">(),
+          isView: new Map<string, boolean>(),
+        },
         isLoading: false,
         isError: false,
       },
@@ -285,7 +288,11 @@ export function useTableMetadata(
 
   return readable(
     {
-      data: { columnCounts: new Map<string, number>(), rowCounts: new Map<string, number | "error">(), isView: new Map<string, boolean>() },
+      data: {
+        columnCounts: new Map<string, number>(),
+        rowCounts: new Map<string, number | "error">(),
+        isView: new Map<string, boolean>(),
+      },
       isLoading: true,
       isError: false,
     },
@@ -293,7 +300,9 @@ export function useTableMetadata(
       const columnCounts = new Map<string, number>();
       const rowCounts = new Map<string, number | "error">();
       const isView = new Map<string, boolean>();
-      const tableNames = (tables ?? []).map((t) => t.name).filter((n) => !!n) as string[];
+      const tableNames = (tables ?? [])
+        .map((t) => t.name)
+        .filter((n) => !!n) as string[];
       const subscriptions: Array<() => void> = [];
 
       let completedCount = 0;

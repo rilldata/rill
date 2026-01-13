@@ -38,7 +38,7 @@ test.describe("Project Status - Tables", () => {
     if (tableNames.some((name) => name.includes("auction_data_model"))) {
       // Find the row containing auction_data_model
       const auctionRow = adminPage.locator(
-        'tbody tr:has(td:has-text("auction_data_model"))'
+        'tbody tr:has(td:has-text("auction_data_model"))',
       );
       await expect(auctionRow).toBeVisible();
 
@@ -78,7 +78,9 @@ test.describe("Project Status - Tables", () => {
     ];
 
     for (const tableName of expectedTables) {
-      const row = adminPage.locator(`tbody tr:has(td:has-text("${tableName}"))`);
+      const row = adminPage.locator(
+        `tbody tr:has(td:has-text("${tableName}"))`,
+      );
       // These tables might not exist in all environments, so we don't assert they exist
       // but if they do, we verify their structure
       const isVisible = await row.isVisible().catch(() => false);
@@ -101,7 +103,7 @@ test.describe("Project Status - Tables", () => {
 
     // Wait for the page to load
     await expect(
-      adminPage.getByRole("heading", { name: "Tables" })
+      adminPage.getByRole("heading", { name: "Tables" }),
     ).toBeVisible();
 
     // If no tables, it should show the table container (possibly with no data message)
@@ -118,7 +120,7 @@ test.describe("Project Status - Tables", () => {
 
     // Wait for tables heading
     await expect(
-      adminPage.getByRole("heading", { name: "Tables" })
+      adminPage.getByRole("heading", { name: "Tables" }),
     ).toBeVisible();
 
     // Get the Row Count column (3rd data column, index 2)
@@ -136,7 +138,7 @@ test.describe("Project Status - Tables", () => {
         // Should be a number, or "loading", "error", or "-"
         expect(
           /^\d+$|^loading$|^error$|^-$/.test(trimmedCount) ||
-            trimmedCount === ""
+            trimmedCount === "",
         ).toBeTruthy();
       }
     }

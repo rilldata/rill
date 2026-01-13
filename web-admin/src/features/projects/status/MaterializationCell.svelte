@@ -6,7 +6,10 @@
   export let physicalSizeBytes: string | number | undefined;
 
   $: isLikelyView =
-    isView === true || physicalSizeBytes === "-1" || physicalSizeBytes === 0 || !physicalSizeBytes;
+    isView === true ||
+    physicalSizeBytes === "-1" ||
+    physicalSizeBytes === 0 ||
+    !physicalSizeBytes;
 
   $: label = isLikelyView ? "View" : "Table";
   $: icon = isLikelyView ? Code2 : Database;
