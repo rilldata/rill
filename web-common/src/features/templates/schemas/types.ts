@@ -43,6 +43,9 @@ export type JSONSchemaCondition = {
 
 export type JSONSchemaConstraint = {
   required?: string[];
+  properties?: Record<string, JSONSchemaField>;
+  // Allow custom keywords or overrides in constraints
+  [key: string]: unknown;
 };
 
 export type JSONSchemaConditional = {
@@ -59,6 +62,7 @@ export type JSONSchemaObject = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   allOf?: JSONSchemaConditional[];
+  oneOf?: JSONSchemaConstraint[];
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;
