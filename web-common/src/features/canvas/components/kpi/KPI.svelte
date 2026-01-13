@@ -2,6 +2,7 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
   import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -86,6 +87,34 @@
     const delta = currentValue - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
   }
+
+  function handleBigNumberMouseOver() {
+    const displayValue =
+      hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
+    if (displayValue !== undefined && displayValue !== null) {
+      cellInspectorStore.updateValue(displayValue.toString());
+    }
+  }
+
+  function handleBigNumberFocus() {
+    const displayValue =
+      hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
+    if (displayValue !== undefined && displayValue !== null) {
+      cellInspectorStore.updateValue(displayValue.toString());
+    }
+  }
+
+  function handleComparisonMouseOver() {
+    if (comparisonVal !== undefined && comparisonVal !== null) {
+      cellInspectorStore.updateValue(comparisonVal.toString());
+    }
+  }
+
+  function handleComparisonFocus() {
+    if (comparisonVal !== undefined && comparisonVal !== null) {
+      cellInspectorStore.updateValue(comparisonVal.toString());
+    }
+  }
 </script>
 
 <div class="wrapper" class:spark-right={isSparkRight}>
@@ -107,6 +136,10 @@
     <div
       class="big-number h-9 grid place-content-center"
       class:hovered-value={hoveredPoints?.[0]?.value != null}
+      role="button"
+      tabindex="0"
+      on:mouseover={handleBigNumberMouseOver}
+      on:focus={handleBigNumberFocus}
     >
       {#if primaryTotalResult.isError}
         <AlertTriangleIcon class=" text-red-300" size="34px" />
@@ -131,7 +164,13 @@
           <div class="loading h-[14px] w-6"></div>
         {:else if comparisonTotalResult.data}
           {#if comparisonOptions?.includes("previous")}
-            <span class="comparison-value">
+            <span
+              class="comparison-value"
+              role="button"
+              tabindex="0"
+              on:mouseover={handleComparisonMouseOver}
+              on:focus={handleComparisonFocus}
+            >
               {measureValueFormatter(comparisonVal)}
             </span>
           {/if}
