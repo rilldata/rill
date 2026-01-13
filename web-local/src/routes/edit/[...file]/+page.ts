@@ -34,12 +34,15 @@ export const load = async ({ params: { file }, parent }) => {
       fileArtifact,
     };
   } catch (e) {
-    const statusCode = e.response.status;
+    const statusCode = e?.response?.status;
+    const errorMessage = e?.response?.data?.message || e?.message || "Unknown error";
 
     if (statusCode === 404 || statusCode === 400) {
       throw error(404, "File not found: " + path);
+    } else if (statusCode) {
+      throw error(statusCode, errorMessage);
     } else {
-      throw error(e.response.status, e.response.data?.message);
+      throw error(500, errorMessage);
     }
   }
 };
