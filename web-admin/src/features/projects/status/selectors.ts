@@ -6,7 +6,7 @@ import {
   createRuntimeServiceListResources,
   createConnectorServiceOLAPListTables,
   createConnectorServiceOLAPGetTable,
-  createQueryServiceQuery,
+  queryServiceQuery,
   type V1ListResourcesResponse,
   type V1Resource,
   type V1OlapTableInfo,
@@ -338,71 +338,38 @@ export function useTableMetadata(
 
         subscriptions.push(columnUnsubscribe);
 
-        // Fetch row count using TanStack Query
-        const rowCountQuery = createQueryServiceQuery(
-          {
-            instanceId,
-            queryServiceQueryBody: {
-              sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
-            },
-          },
-          undefined,
-          {
-            query: {
-              enabled: true,
-            },
-          },
-        );
+        // Fetch row count using direct httpClient function
+        // The httpClient automatically handles JWT auth
+        (async () => {
+          try {
+            console.log(`[RowCount] Fetching count for ${tableName}...`);
+            const response = await queryServiceQuery(
+              instanceId,
+              {
+                sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+              },
+            );
 
-        // Subscribe to query state changes
-        let rowCountProcessed = false;
-        const queryUnsub = rowCountQuery.subscribe((state: any) => {
-          console.log(`[RowCount] ${tableName} state:`, {
-            isLoading: state.isLoading,
-            isFetching: state.isFetching,
-            isSuccess: state.isSuccess,
-            isError: state.isError,
-            data: state.data,
-            error: state.error,
-            failureReason: state.failureReason
-          });
+            console.log(`[RowCount] ${tableName} response:`, response);
 
-          // Only process once to avoid double-counting
-          if (!rowCountProcessed) {
-            // Check if we have data in the response
-            if (state.data) {
-              console.log(`[RowCount] ${tableName} data structure:`, state.data);
-
-              // Try different paths to find the actual row data
-              let rows: any[] | undefined;
-              if (Array.isArray(state.data)) {
-                rows = state.data;
-              } else if (Array.isArray(state.data?.data)) {
-                rows = state.data.data;
-              } else if (Array.isArray(state.data?.results)) {
-                rows = state.data.results;
-              }
-
-              if (rows && rows.length > 0) {
-                const firstRow = rows[0] as any;
-                const count = parseInt(String(firstRow?.count ?? 0), 10);
-                console.log(`[RowCount] ${tableName} success - count:`, count);
-                rowCounts.set(tableName, isNaN(count) ? "error" : count);
-                rowCountProcessed = true;
-                completedCount++;
-                updateAndNotify();
-              }
-            } else if (state.failureReason || state.error) {
-              console.error(`[RowCount] ${tableName} error:`, state.failureReason || state.error);
+            // Extract count from response
+            if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+              const firstRow = response.data[0] as any;
+              const count = parseInt(String(firstRow?.count ?? 0), 10);
+              console.log(`[RowCount] ${tableName} success - count:`, count);
+              rowCounts.set(tableName, isNaN(count) ? "error" : count);
+            } else {
+              console.warn(`[RowCount] ${tableName} unexpected response structure:`, response);
               rowCounts.set(tableName, "error");
-              rowCountProcessed = true;
-              completedCount++;
-              updateAndNotify();
             }
+          } catch (error: any) {
+            console.error(`[RowCount] ${tableName} error:`, error);
+            rowCounts.set(tableName, "error");
           }
-        });
 
-        subscriptions.push(queryUnsub);
+          completedCount++;
+          updateAndNotify();
+        })();
       }
 
       // Return cleanup function
