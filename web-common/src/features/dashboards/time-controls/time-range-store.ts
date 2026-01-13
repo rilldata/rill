@@ -198,7 +198,14 @@ export function timeComparisonOptionsSelector([
     timezone,
   );
 
-  return timeComparisonOptions.map((co, i) => {
+  const options: {
+    name: TimeComparisonOption;
+    key: number;
+    start: Date;
+    end: Date;
+  }[] = [];
+
+  timeComparisonOptions.forEach((co, i) => {
     const interval = Interval.fromDateTimes(
       DateTime.fromJSDate(selectedTimeRange.start, { zone: timezone }),
       DateTime.fromJSDate(selectedTimeRange.end, { zone: timezone }),
@@ -208,13 +215,16 @@ export function timeComparisonOptionsSelector([
       co,
       timezone,
     );
-    return {
+    if (!comparisonTimeRange) return;
+    options.push({
       name: co,
       key: i,
       start: comparisonTimeRange?.start.toJSDate(),
       end: comparisonTimeRange?.end.toJSDate(),
-    };
+    });
   });
+
+  return options;
 }
 
 export function getValidComparisonOption(

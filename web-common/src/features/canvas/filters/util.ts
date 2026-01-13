@@ -40,17 +40,31 @@ export function getComparisonOptionsForCanvas(
     DateTime.fromJSDate(selectedTimeRange.end, { zone: timezone }),
   );
 
-  return timeComparisonOptions.map((co, i) => {
+  if (!interval.isValid) {
+    return [];
+  }
+
+  const options: {
+    name: TimeComparisonOption;
+    key: number;
+    start: Date;
+    end: Date;
+  }[] = [];
+
+  timeComparisonOptions.forEach((co, i) => {
     const comparisonTimeRange = getComparisonInterval(
       interval as Interval<true>,
       co,
       timezone,
     );
-    return {
+    if (!comparisonTimeRange) return;
+    options.push({
       name: co,
       key: i,
-      start: comparisonTimeRange?.start.toJSDate(),
-      end: comparisonTimeRange?.end.toJSDate(),
-    };
+      start: comparisonTimeRange.start.toJSDate(),
+      end: comparisonTimeRange.end.toJSDate(),
+    });
   });
+
+  return options;
 }
