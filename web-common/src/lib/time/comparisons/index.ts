@@ -195,6 +195,24 @@ export function getAvailableComparisonsForTimeRange(
       return false;
     }
 
+    console.log(
+      comparison,
+      isComparisonInsideBounds(
+        boundStart,
+        boundEnd,
+        start,
+        end,
+        // treat a custom comparison as contiguous.
+        comparison,
+        timezone,
+      ),
+      !isRangeLargerThanDuration(
+        start,
+        end,
+        TIME_COMPARISON[comparison].offsetIso,
+      ),
+    );
+
     return (
       isComparisonInsideBounds(
         boundStart,
@@ -218,6 +236,8 @@ export function getAvailableComparisonsForTimeRange(
       (comparison) => comparison !== TimeComparisonOption.CONTIGUOUS,
     );
   }
+
+  console.log({ comparisons });
 
   return comparisons;
 }
@@ -337,6 +357,15 @@ export function getComparisonInterval(
       interval.start.minus(duration),
       interval.end.minus(duration),
     );
+    // If this didn't work, it's likely because we fell on a boundary case
+    // such as looking at March 31st and subtracting a month
+    // We can fall back to adding the duration to the start date
+    if (!comparisonInterval.isValid) {
+      comparisonInterval = Interval.fromDateTimes(
+        interval.start.minus(duration),
+        interval.start.minus(duration).plus(interval.toDuration()),
+      );
+    }
   } else {
     const normalizedRange = comparisonRange.replace(",", "/");
     comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>

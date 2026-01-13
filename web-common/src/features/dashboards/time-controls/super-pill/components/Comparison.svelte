@@ -38,6 +38,8 @@
   export let timeGrain: V1TimeGrain | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
+  $: console.log({ timeComparisonOptionsState });
+
   let open = false;
   let showSelector = false;
 

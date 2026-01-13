@@ -57,6 +57,7 @@ export function getComparisonOptionsForCanvas(
       co,
       timezone,
     );
+
     if (!comparisonTimeRange) return;
     options.push({
       name: co,
