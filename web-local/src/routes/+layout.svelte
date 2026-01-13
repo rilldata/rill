@@ -113,7 +113,7 @@
         {/if}
       {/if}
 
-      <div class="flex-1 overflow-hidden bg-white">
+      <div class="flex-1 overflow-hidden" class:bg-white={onDeployPage}>
         <slot />
       </div>
     </div>

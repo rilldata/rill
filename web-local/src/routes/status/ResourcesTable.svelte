@@ -12,31 +12,11 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
 
   export let data: V1Resource[];
-  export let onRefresh: () => Promise<void> | void;
+  export let onRefresh: () => void;
 
-  let isConfirmDialogOpen = false;
-  let dialogResourceName = "";
-  let dialogResourceKind = "";
-  let dialogRefreshType: "full" | "incremental" = "full";
   let openDropdownResourceKey = "";
-
-  const openRefreshDialog = (
-    resourceName: string,
-    resourceKind: string,
-    refreshType: "full" | "incremental",
-  ) => {
-    dialogResourceName = resourceName;
-    dialogResourceKind = resourceKind;
-    dialogRefreshType = refreshType;
-    isConfirmDialogOpen = true;
-  };
-
-  const closeRefreshDialog = () => {
-    isConfirmDialogOpen = false;
-  };
 
   const setDropdownOpen = (resourceKey: string, isOpen: boolean) => {
     openDropdownResourceKey = isOpen ? resourceKey : "";
@@ -44,11 +24,6 @@
 
   const isDropdownOpen = (resourceKey: string) => {
     return openDropdownResourceKey === resourceKey;
-  };
-
-  const handleRefresh = async () => {
-    closeRefreshDialog();
-    await onRefresh();
   };
 
   // Create columns definition as a constant to prevent unnecessary re-creation
@@ -132,13 +107,13 @@
         if (!isRowReconciling) {
           const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
           return flexRender(ActionsCell, {
-            resource: row.original,
             resourceKind: row.original.meta.name.kind,
             resourceName: row.original.meta.name.name,
             canRefresh:
               row.original.meta.name.kind === ResourceKind.Model ||
               row.original.meta.name.kind === ResourceKind.Source,
-            onClickRefreshDialog: openRefreshDialog,
+            resource: row.original,
+            onRefresh,
             isDropdownOpen: isDropdownOpen(resourceKey),
             onDropdownOpenChange: (isOpen: boolean) =>
               setDropdownOpen(resourceKey, isOpen),
@@ -163,12 +138,4 @@
   data={tableData}
   {columns}
   columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
-/>
-
-<RefreshResourceConfirmDialog
-  bind:open={isConfirmDialogOpen}
-  name={dialogResourceName}
-  resourceKind={dialogResourceKind}
-  refreshType={dialogRefreshType}
-  onRefresh={handleRefresh}
 />

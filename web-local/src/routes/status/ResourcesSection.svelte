@@ -56,6 +56,34 @@
     return () => clearInterval(interval);
   });
 
+  async function refreshAllSourcesAndModels() {
+    try {
+      if (!$runtime?.instanceId || !$runtime?.host) {
+        throw new Error("Runtime not initialized");
+      }
+
+      const response = await fetch(
+        `${$runtime.host}/v1/instances/${$runtime.instanceId}/trigger`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            all: true,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to refresh resources: ${response.statusText}`);
+      }
+
+      await loadResources();
+    } catch (err) {
+      console.error("Error refreshing resources:", err);
+    }
+  }
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
