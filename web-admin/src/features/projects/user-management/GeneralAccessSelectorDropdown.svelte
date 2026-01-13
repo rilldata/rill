@@ -44,18 +44,11 @@
 
   // Use ListOrganizationMemberUsergroups with includeCounts to get the usersCount
   // for autogroup:members, which specifically excludes guest users
+  // Query is always enabled so the count displays immediately (not just when dropdown opens)
   $: listOrgMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(
-      organization,
-      { includeCounts: true },
-      {
-        query: {
-          enabled: accessDropdownOpen,
-          refetchOnMount: true,
-          refetchOnWindowFocus: true,
-        },
-      },
-    );
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      includeCounts: true,
+    });
 
   // Get the user count from the autogroup:members group (excludes guests)
   $: autogroupMembersGroup = $listOrgMemberUsergroups?.data?.members?.find(
