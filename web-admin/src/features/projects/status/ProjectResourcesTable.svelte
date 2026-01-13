@@ -13,7 +13,6 @@
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
   import ActionsCell from "./ActionsCell.svelte";
-  import ModelSizeCell from "./ModelSizeCell.svelte";
   import NameCell from "./NameCell.svelte";
   import RefreshCell from "./RefreshCell.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";

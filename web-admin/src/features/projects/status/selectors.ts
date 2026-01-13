@@ -13,7 +13,6 @@ import {
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { readable } from "svelte/store";
-import { httpClient } from "@rilldata/web-common/runtime-client/http-client";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -259,7 +258,6 @@ export function useTablesList(instanceId: string, connector: string = "") {
     {
       query: {
         enabled: !!instanceId,
-        refetchInterval: createSmartRefetchInterval,
       },
     },
   );
