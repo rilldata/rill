@@ -148,10 +148,7 @@
 
   function navigateToEditor(resource: Resource) {
     if (!resource.path) return;
-
-    const url = new URL($page.url);
-    url.searchParams.set("file", resource.path);
-    goto(url.toString());
+    goto(`/edit${resource.path}`);
   }
 
   function getStatusIcon(resource: Resource): string {
