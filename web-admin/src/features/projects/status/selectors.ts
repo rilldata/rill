@@ -355,17 +355,27 @@ export function useTableMetadata(
         );
 
         // Subscribe to query state changes
+        let rowCountProcessed = false;
         const queryUnsub = rowCountQuery.subscribe((state: any) => {
-          if (state.isSuccess && state.data?.data) {
-            const firstRow = state.data.data[0] as any;
-            const count = parseInt(String(firstRow?.count ?? 0), 10);
-            rowCounts.set(tableName, isNaN(count) ? "error" : count);
-            completedCount++;
-            updateAndNotify();
-          } else if (state.isError) {
-            rowCounts.set(tableName, "error");
-            completedCount++;
-            updateAndNotify();
+          console.log(`[RowCount] ${tableName}:`, state);
+
+          // Only process once to avoid double-counting
+          if (!rowCountProcessed) {
+            if (state.data?.data && Array.isArray(state.data.data)) {
+              const firstRow = state.data.data[0] as any;
+              const count = parseInt(String(firstRow?.count ?? 0), 10);
+              console.log(`[RowCount] ${tableName} success - count:`, count);
+              rowCounts.set(tableName, isNaN(count) ? "error" : count);
+              rowCountProcessed = true;
+              completedCount++;
+              updateAndNotify();
+            } else if (state.error) {
+              console.error(`[RowCount] ${tableName} error:`, state.error);
+              rowCounts.set(tableName, "error");
+              rowCountProcessed = true;
+              completedCount++;
+              updateAndNotify();
+            }
           }
         });
 
