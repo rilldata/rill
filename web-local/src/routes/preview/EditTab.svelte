@@ -56,7 +56,7 @@
       if (data?.resources) {
         for (const resource of Object.values(data.resources || {})) {
           const resourceName = resource.meta?.name?.name || "Unknown";
-          const filePath = resource.meta?.file_paths?.[0] || "";
+          const filePath = resource.meta?.filePaths?.[0] || "";
 
           // Detect resource type from which property exists
           let kind = "Unknown";
