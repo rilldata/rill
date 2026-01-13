@@ -265,38 +265,6 @@ export function useTablesList(instanceId: string, connector: string = "") {
   );
 }
 
-export async function fetchRowCount(
-  instanceId: string,
-  tableName: string,
-): Promise<number | "error"> {
-  try {
-    console.log(`[RowCount] Fetching count for ${tableName}...`);
-
-    const data = await httpClient<{ data: any[] }>({
-      url: `/v1/instances/${instanceId}/query`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: {
-        sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
-      },
-    });
-
-    console.log(`[RowCount] ${tableName} response:`, data);
-
-    if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-      const firstRow = data.data[0] as any;
-      const count = parseInt(String(firstRow?.count ?? 0), 10);
-      console.log(`[RowCount] ${tableName} success - count:`, count);
-      return isNaN(count) ? "error" : count;
-    }
-
-    console.warn(`[RowCount] ${tableName} unexpected response structure:`, data);
-    return "error";
-  } catch (error: any) {
-    console.error(`[RowCount] ${tableName} error:`, error);
-    return "error";
-  }
-}
 
 export function useTableMetadata(
   instanceId: string,
