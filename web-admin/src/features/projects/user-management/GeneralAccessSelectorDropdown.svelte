@@ -3,7 +3,7 @@
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceRemoveProjectMemberUsergroup,
     createAdminServiceAddProjectMemberUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationMemberUsers,
   } from "@rilldata/web-admin/client";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -19,7 +19,6 @@
   export let organization: string;
   export let project: string;
 
-  let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
 
@@ -36,28 +35,28 @@
       undefined,
       {
         query: {
-          enabled: open,
+          enabled: accessDropdownOpen,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
       },
     );
 
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+  // Use ListOrganizationMemberUsers with pageSize: 1 to efficiently get the totalCount
+  // This avoids fetching all users and provides the accurate total count
+  $: listOrgMemberUsers = createAdminServiceListOrganizationMemberUsers(
     organization,
-    "autogroup:members",
-    undefined,
+    { pageSize: 1 },
     {
       query: {
-        enabled: open,
+        enabled: accessDropdownOpen,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
       },
     },
   );
 
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  $: userGroupMemberUsersCount = $listOrgMemberUsers?.data?.totalCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
 
