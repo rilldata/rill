@@ -77,6 +77,7 @@ export class AddDataFormManager {
   }
 
   private getSelectedAuthMethod?: () => string | undefined;
+  private getConnectorName?: () => string | undefined;
   private resetConnectorForms() {
     if (this.params?.form) {
       (this.params.form as any).update(() => ({}), { taint: false } as any);
@@ -92,6 +93,7 @@ export class AddDataFormManager {
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
     onDsnUpdate: (event: SuperFormUpdateEvent) => void;
     getSelectedAuthMethod?: () => string | undefined;
+    getConnectorName?: () => string | undefined;
   }) {
     const {
       connector,
@@ -99,10 +101,12 @@ export class AddDataFormManager {
       onParamsUpdate,
       onDsnUpdate,
       getSelectedAuthMethod,
+      getConnectorName,
     } = args;
     this.connector = connector;
     this.formType = formType;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
+    this.getConnectorName = getConnectorName;
 
     // Layout height
     this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
@@ -426,7 +430,13 @@ export class AddDataFormManager {
             setStep("source");
             return;
           }
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+            this.getConnectorName?.(),
+          );
           setConnectorConfig({});
           setAuthMethod(null);
           this.resetConnectorForms();
@@ -438,7 +448,13 @@ export class AddDataFormManager {
           this.resetConnectorForms();
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+            this.getConnectorName?.(),
+          );
           onClose();
         }
       } catch (e) {
@@ -656,6 +672,7 @@ export class AddDataFormManager {
         this.connector,
         processedValues,
         true,
+        this.getConnectorName?.(),
       );
       return { ok: true } as const;
     } catch (e) {

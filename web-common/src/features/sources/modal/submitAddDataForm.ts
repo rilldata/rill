@@ -173,12 +173,11 @@ async function saveConnectorAnyway(
   savedAnywayPaths.add(newConnectorFilePath);
 
   // Update .env file with secrets (keep ordering consistent with Test and Connect)
-  const newEnvBlob = await updateDotEnvWithSecrets(
+  const { blob: newEnvBlob, envKeyMap } = await updateDotEnvWithSecrets(
     queryClient,
     connector,
     formValues,
     "connector",
-    newConnectorName,
   );
 
   await runtimeServicePutFile(resolvedInstanceId, {
@@ -192,7 +191,7 @@ async function saveConnectorAnyway(
   await runtimeServicePutFile(resolvedInstanceId, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
-      connectorInstanceName: newConnectorName,
+      envKeyMap,
     }),
     create: true,
     createOnly: false,
@@ -215,6 +214,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
+  userProvidedConnectorName?: string,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -222,10 +222,13 @@ export async function submitAddConnectorForm(
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
 
-  const newConnectorName = getName(
-    connector.name as string,
-    fileArtifacts.getNamesForKind(ResourceKind.Connector),
-  );
+  // Use user-provided connector name or auto-generate one
+  const newConnectorName =
+    userProvidedConnectorName ||
+    getName(
+      connector.name as string,
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
 
   // Check if there's already an ongoing submission for this connector
   const existingSubmission = connectorSubmissions.get(
@@ -282,12 +285,11 @@ export async function submitAddConnectorForm(
 
       // Capture original .env and compute updated contents up front
       originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-      const newEnvBlob = await updateDotEnvWithSecrets(
+      const { blob: newEnvBlob, envKeyMap } = await updateDotEnvWithSecrets(
         queryClient,
         connector,
         formValues,
         "connector",
-        newConnectorName,
       );
 
       if (saveAnyway) {
@@ -322,6 +324,7 @@ export async function submitAddConnectorForm(
           path: newConnectorFilePath,
           blob: compileConnectorYAML(connector, formValues, {
             connectorInstanceName: newConnectorName,
+            envKeyMap,
           }),
           create: true,
           createOnly: false,

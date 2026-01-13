@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -9,6 +10,8 @@
   } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
@@ -29,6 +32,7 @@
 
   import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import { connectorStepStore } from "./connectorStepStore";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -44,6 +48,19 @@
   let showSaveAnyway = false;
   let connectionTab: ConnectorType = "parameters";
   let formHeight = FORM_HEIGHT_DEFAULT;
+
+  // Derived form type flags (must be before formManager creation)
+  let isSourceForm = formType === "source";
+  let isConnectorForm = formType === "connector";
+
+  // Connector name field (only for S3, Azure, GCS connectors in connector forms)
+  const hasConnectorNameField =
+    formType === "connector" &&
+    ["s3", "gcs", "azure"].includes(connector.name ?? "");
+  let connectorName = hasConnectorNameField
+    ? (connector.name ?? "connector")
+    : "";
+  let connectorNameError = "";
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: <
@@ -66,12 +83,46 @@
       onParamsUpdate: (e: any) => handleOnUpdate(e),
       onDsnUpdate: (e: any) => handleOnUpdate(e),
       getSelectedAuthMethod: () => undefined,
+      getConnectorName: () =>
+        hasConnectorNameField ? connectorName : undefined,
     });
     formHeight = formManager.formHeight;
   }
 
-  let isSourceForm = formType === "source";
-  let isConnectorForm = formType === "connector";
+  // Auto-generate unique connector name and validate (only for S3, Azure, GCS)
+  $: if (hasConnectorNameField) {
+    const existingConnectorNames = fileArtifacts.getNamesForKind(
+      ResourceKind.Connector,
+    );
+    const baseConnectorName = connector.name ?? "connector";
+
+    if (!connectorName || connectorName === baseConnectorName) {
+      // Auto-generate unique name
+      let uniqueName = baseConnectorName;
+      let counter = 1;
+      while (existingConnectorNames.includes(uniqueName)) {
+        uniqueName = `${baseConnectorName}_${counter}`;
+        counter++;
+      }
+      connectorName = uniqueName;
+      connectorNameError = "";
+    } else if (existingConnectorNames.includes(connectorName)) {
+      // User provided a name that already exists, auto-suggest unique variant
+      let uniqueName = connectorName;
+      let counter = 1;
+      while (existingConnectorNames.includes(uniqueName)) {
+        uniqueName = `${connectorName}_${counter}`;
+        counter++;
+      }
+      connectorName = uniqueName;
+      connectorNameError = "";
+    } else if (!connectorName.trim()) {
+      connectorNameError = "Connector name cannot be empty.";
+    } else {
+      connectorNameError = "";
+    }
+  }
+
   let onlyDsn = false;
   let activeAuthMethod: string | null = null;
   let prevAuthMethod: string | null = null;
@@ -89,6 +140,9 @@
   let multiStepSaveAnywayHandler: () => Promise<void> = async () => {};
   let multiStepHandleBack: () => void = () => onBack();
   let multiStepHandleSkip: () => void = () => {};
+  let connectorStepState: any = null;
+
+  $: connectorStepState = $connectorStepStore;
 
   // Form 1: Individual parameters (non-multi-step)
   let paramsFormId = "";
@@ -167,6 +221,11 @@
   let clickhouseShowSaveAnyway: boolean = false;
 
   $: isSubmitDisabled = (() => {
+    // Check connector name error for S3, Azure, GCS connectors
+    if (hasConnectorNameField && connectorNameError) {
+      return true;
+    }
+
     if (isMultiStepConnector) {
       return multiStepSubmitDisabled;
     }
@@ -433,6 +492,19 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div class="flex flex-col flex-grow {formHeight} overflow-y-auto p-6">
+      {#if hasConnectorNameField && (!isMultiStepConnector || connectorStepState?.step === "connector")}
+        <div class="mb-6 pb-4 border-b border-gray-200">
+          <Input
+            id="connector-name"
+            label="Connector Name"
+            placeholder="e.g., my_s3"
+            optional={false}
+            bind:value={connectorName}
+            errors={connectorNameError ? [connectorNameError] : []}
+            alwaysShowError
+          />
+        </div>
+      {/if}
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}

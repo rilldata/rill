@@ -39,7 +39,7 @@ export function compileConnectorYAML(
   options?: {
     fieldFilter?: (property: ConnectorDriverProperty) => boolean;
     orderedProperties?: ConnectorDriverProperty[];
-    connectorInstanceName?: string;
+    envKeyMap?: Map<string, string>;
   },
 ) {
   // Add instructions to the top of the file
@@ -76,6 +76,18 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
       )
       .map((property) => property.key) || [];
 
+  // Use the provided envKeyMap, or calculate keys if not provided
+  const envKeyMap = options?.envKeyMap ?? new Map<string, string>();
+  if (!options?.envKeyMap) {
+    // Fallback: calculate keys without uniqueness checking (should only happen for previews)
+    secretPropertyKeys
+      .filter((secretKey): secretKey is string => !!secretKey)
+      .forEach((secretKey) => {
+        const baseEnvKey = makeDotEnvConnectorKey(secretKey);
+        envKeyMap.set(secretKey, baseEnvKey);
+      });
+  }
+
   // Compile key value pairs in the order of properties
   const compiledKeyValues = properties
     .filter((property) => {
@@ -100,11 +112,8 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          connector.name as string,
-          key,
-          options?.connectorInstanceName,
-        )} }}"`;
+        const envKey = envKeyMap.get(key) ?? makeDotEnvConnectorKey(key);
+        return `${key}: "{{ .env.${envKey} }}"`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -125,8 +134,7 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
-  connectorInstanceName?: string,
-): Promise<string> {
+): Promise<{ blob: string; envKeyMap: Map<string, string> }> {
   const instanceId = get(runtime).instanceId;
 
   // Get the existing .env file
@@ -156,8 +164,9 @@ export async function updateDotEnvWithSecrets(
     .map((property) => property.key);
 
   // In reality, all connectors have secret keys, but this is a safeguard
+  const envKeyMap = new Map<string, string>();
   if (!secretKeys) {
-    return blob;
+    return { blob, envKeyMap };
   }
 
   // Update the blob with the new secrets
@@ -166,11 +175,13 @@ export async function updateDotEnvWithSecrets(
       return;
     }
 
-    const connectorSecretKey = makeDotEnvConnectorKey(
-      connector.name as string,
-      key,
-      connectorInstanceName,
-    );
+    let connectorSecretKey = makeDotEnvConnectorKey(key);
+
+    // Ensure the key is unique by appending _1, _2, etc. if needed
+    connectorSecretKey = getUniqueDotEnvKey(blob, connectorSecretKey);
+
+    // Track the mapping from property key to env key
+    envKeyMap.set(key, connectorSecretKey);
 
     blob = replaceOrAddEnvVariable(
       blob,
@@ -179,7 +190,29 @@ export async function updateDotEnvWithSecrets(
     );
   });
 
-  return blob;
+  return { blob, envKeyMap };
+}
+
+export function getUniqueDotEnvKey(
+  existingEnvBlob: string,
+  baseKey: string,
+): string {
+  const lines = existingEnvBlob.split("\n");
+  const existingKeys = new Set(
+    lines.map((line) => line.split("=")[0]).filter((k) => k.trim() !== ""),
+  );
+
+  if (!existingKeys.has(baseKey)) {
+    return baseKey;
+  }
+
+  // Find next available number suffix
+  let counter = 1;
+  while (existingKeys.has(`${baseKey}_${counter}`)) {
+    counter++;
+  }
+
+  return `${baseKey}_${counter}`;
 }
 
 export function replaceOrAddEnvVariable(
@@ -224,15 +257,11 @@ export function deleteEnvVariable(
   return newBlob;
 }
 
-export function makeDotEnvConnectorKey(
-  driverName: string,
-  key: string,
-  connectorInstanceName?: string,
-) {
-  // Note: The connector instance name is used when provided, otherwise fall back to driver name.
-  // This enables configuring multiple connectors that use the same driver with unique env keys.
-  const nameToUse = connectorInstanceName || driverName;
-  return `connector.${nameToUse}.${key}`;
+export function makeDotEnvConnectorKey(key: string): string {
+  // Convert property key to SCREAMING_SNAKE_CASE
+  // This creates semantic env variable names like GOOGLE_APPLICATION_CREDENTIALS
+  const normalizedKey = key.toUpperCase().replace(/[\s\-]/g, "_");
+  return normalizedKey;
 }
 
 export async function updateRillYAMLWithOlapConnector(
