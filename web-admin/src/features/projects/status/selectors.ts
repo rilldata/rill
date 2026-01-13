@@ -12,8 +12,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { readable, get } from "svelte/store";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { readable } from "svelte/store";
+import { httpClient } from "@rilldata/web-common/runtime-client/http-client";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -272,42 +272,15 @@ export async function fetchRowCount(
   try {
     console.log(`[RowCount] Fetching count for ${tableName}...`);
 
-    // Get runtime state to access JWT and host
-    const runtimeState = get(runtime);
-    const host = runtimeState?.host || "";
-    const jwt = runtimeState?.jwt?.token;
-
-    if (!jwt) {
-      console.error(`[RowCount] ${tableName} JWT token not available`);
-      return "error";
-    }
-
-    const url = `${host}/v1/instances/${instanceId}/query`;
-    console.log(`[RowCount] ${tableName} requesting:`, url);
-
-    const response = await fetch(url, {
+    const data = await httpClient<{ data: any[] }>({
+      url: `/v1/instances/${instanceId}/query`,
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${jwt}`,
-      },
-      body: JSON.stringify({
+      headers: { "Content-Type": "application/json" },
+      data: {
         sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
-      }),
+      },
     });
 
-    console.log(`[RowCount] ${tableName} status:`, response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `[RowCount] ${tableName} HTTP error ${response.status}:`,
-        errorText,
-      );
-      return "error";
-    }
-
-    const data = await response.json();
     console.log(`[RowCount] ${tableName} response:`, data);
 
     if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
