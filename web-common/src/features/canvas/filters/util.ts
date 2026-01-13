@@ -4,7 +4,7 @@ import {
   TimeRangePreset,
   type DashboardTimeControls,
 } from "@rilldata/web-common/lib/time/types";
-import { getComparisonInterval } from "../stores/time-state";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 import { DateTime, Interval } from "luxon";
 
 export function getComparisonOptionsForCanvas(

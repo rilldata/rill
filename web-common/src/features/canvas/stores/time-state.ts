@@ -25,6 +25,7 @@ import {
 } from "@rilldata/web-common/lib/time/new-grains";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
 import type { TimeManager } from "./time-manager";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type MinMax = {
   min: DateTime<true>;
@@ -427,39 +428,3 @@ const timeGrainToComparisonOptionMap: Record<
   [V1TimeGrain.TIME_GRAIN_YEAR]: TimeComparisonOption.YEAR,
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
 };
-
-export function getComparisonInterval(
-  interval: Interval<true> | undefined,
-  comparisonRange: string | undefined,
-  activeTimeZone: string,
-): Interval<true> | undefined {
-  if (!interval || !comparisonRange) return undefined;
-
-  let comparisonInterval: Interval | undefined = undefined;
-
-  const COMPARISON_DURATIONS = {
-    "rill-PP": interval.toDuration(),
-    "rill-PD": { days: 1 },
-    "rill-PW": { weeks: 1 },
-    "rill-PM": { months: 1 },
-    "rill-PQ": { quarter: 1 },
-    "rill-PY": { years: 1 },
-  };
-
-  const duration =
-    COMPARISON_DURATIONS[comparisonRange as keyof typeof COMPARISON_DURATIONS];
-
-  if (duration) {
-    comparisonInterval = Interval.fromDateTimes(
-      interval.start.minus(duration),
-      interval.end.minus(duration),
-    );
-  } else {
-    const normalizedRange = comparisonRange.replace(",", "/");
-    comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>
-      dt.setZone(activeTimeZone),
-    );
-  }
-
-  return comparisonInterval.isValid ? comparisonInterval : undefined;
-}

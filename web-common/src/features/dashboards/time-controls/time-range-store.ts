@@ -30,7 +30,7 @@ import {
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { RillTime } from "../url-state/time-ranges/RillTime";
 import { DateTime, Interval } from "luxon";
-import { getComparisonInterval } from "../../canvas/stores/time-state";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;

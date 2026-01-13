@@ -60,7 +60,7 @@ import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { parseRillTime } from "../url-state/time-ranges/parser";
 import type { RillTime } from "../url-state/time-ranges/RillTime";
 import { DateTime, Interval } from "luxon";
-import { getComparisonInterval } from "../../canvas/stores/time-state";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type

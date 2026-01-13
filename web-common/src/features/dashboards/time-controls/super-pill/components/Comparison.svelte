@@ -11,8 +11,7 @@
   import RangeDisplay from "./RangeDisplay.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
-  import { getComparisonInterval } from "@rilldata/web-common/features/canvas/stores/time-state";
-
+  import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
   type Option = {
     name: TimeComparisonOption;
     key: number;

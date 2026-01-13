@@ -13,7 +13,6 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "../types";
-import { getComparisonInterval } from "@rilldata/web-common/features/canvas/stores/time-state";
 
 export function getComparisonTransform(
   start: Date,
@@ -310,4 +309,40 @@ export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
     default:
       return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset ?? comparisonTimeRange.expression ?? "")}`;
   }
+}
+
+export function getComparisonInterval(
+  interval: Interval<true> | undefined,
+  comparisonRange: string | undefined,
+  activeTimeZone: string,
+): Interval<true> | undefined {
+  if (!interval || !comparisonRange) return undefined;
+
+  let comparisonInterval: Interval | undefined = undefined;
+
+  const COMPARISON_DURATIONS = {
+    "rill-PP": interval.toDuration(),
+    "rill-PD": { days: 1 },
+    "rill-PW": { weeks: 1 },
+    "rill-PM": { months: 1 },
+    "rill-PQ": { quarter: 1 },
+    "rill-PY": { years: 1 },
+  };
+
+  const duration =
+    COMPARISON_DURATIONS[comparisonRange as keyof typeof COMPARISON_DURATIONS];
+
+  if (duration) {
+    comparisonInterval = Interval.fromDateTimes(
+      interval.start.minus(duration),
+      interval.end.minus(duration),
+    );
+  } else {
+    const normalizedRange = comparisonRange.replace(",", "/");
+    comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>
+      dt.setZone(activeTimeZone),
+    );
+  }
+
+  return comparisonInterval.isValid ? comparisonInterval : undefined;
 }
