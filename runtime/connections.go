@@ -217,9 +217,17 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		}
 
 		res.Driver = c.Type
-		res.Project, err = resolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
+		var osEnvVars map[string]bool
+		res.Project, osEnvVars, err = resolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
 		if err != nil {
 			return nil, err
+		}
+		// Merge OS env vars from template resolution
+		for k := range osEnvVars {
+			if res.OSEnvVars == nil {
+				res.OSEnvVars = make(map[string]bool)
+			}
+			res.OSEnvVars[k] = true
 		}
 		if c.Provision {
 			res.Provision = c.Provision
@@ -301,9 +309,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 // resolveConnectorProperties resolves templating in the provided connector's properties.
 // It always returns a clone of the properties, even if no templating is found, so the output is safe for further mutations.
-func resolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]any, error) {
+// Also returns a map of OS env vars that were used during template resolution.
+func resolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]any, map[string]bool, error) {
 	if c.Config == nil {
-		return make(map[string]any), nil
+		return make(map[string]any), nil, nil
 	}
 	res := c.Config.AsMap()
 
@@ -320,12 +329,12 @@ func resolveConnectorProperties(environment string, vars map[string]string, c *r
 		}
 		v, err := parser.ResolveTemplateRecursively(v, td, true)
 		if err != nil {
-			return nil, fmt.Errorf("failed to resolve template: %w", err)
+			return nil, nil, fmt.Errorf("failed to resolve template: %w", err)
 		}
 		res[k] = v
 	}
 
-	return res, nil
+	return res, td.OSEnvVars, nil
 }
 
 // ConnectorConfig holds and resolves connector configuration.

@@ -1,5 +1,8 @@
 <script lang="ts">
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import WarningIcon from "../../../components/icons/WarningIcon.svelte";
+  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import { Tag } from "../../../components/tag";
   import {
     type V1AnalyzedConnector,
@@ -30,6 +33,10 @@
   // Show connectors that can provide table browsing (OLAP, SQL stores, or warehouses)
   $: canBrowseTables =
     implementsOlap || implementsSqlStore || implementsWarehouse;
+
+  // Check if connector uses OS environment variables
+  $: usesOsEnv =
+    connector.osEnvVariables && connector.osEnvVariables.length > 0;
 </script>
 
 <!-- Show all connectors that support table browsing -->
@@ -60,6 +67,27 @@
 
         <h4>{connector.name}</h4>
 
+        {#if usesOsEnv}
+          <Tooltip location="right" alignment="middle" distance={8}>
+            <span class="os-env-warning">
+              <WarningIcon size="12px" color="#f97316" />
+            </span>
+            <TooltipContent slot="tooltip-content">
+              <div class="os-env-tooltip">
+                <p class="font-medium">Using OS environment variables</p>
+                <p class="text-gray-400 text-xs mt-1">
+                  Credentials from shell environment (not .env files):
+                </p>
+                <ul class="text-xs text-gray-300 mt-1">
+                  {#each connector.osEnvVariables ?? [] as varName}
+                    <li>{varName}</li>
+                  {/each}
+                </ul>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        {/if}
+
         {#if isOlapConnector}
           <Tag height={16} class="ml-auto">OLAP</Tag>
         {/if}
@@ -89,5 +117,17 @@
 
   h4 {
     @apply text-xs font-medium;
+  }
+
+  .os-env-warning {
+    @apply flex items-center;
+  }
+
+  .os-env-tooltip {
+    @apply p-2 max-w-xs;
+  }
+
+  .os-env-tooltip ul {
+    @apply list-disc list-inside;
   }
 </style>

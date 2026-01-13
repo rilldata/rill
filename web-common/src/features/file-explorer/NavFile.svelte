@@ -7,6 +7,9 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
@@ -21,7 +24,10 @@
     MetricsEventSpace,
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import {
+    type V1ResourceName,
+    createRuntimeServiceAnalyzeConnectors,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { Save, Settings } from "lucide-svelte";
   import type { Readable } from "svelte/store";
@@ -77,6 +83,18 @@
 
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
+  // Check if this connector uses OS environment variables
+  $: isConnector = resourceKind === ResourceKind.Connector;
+  $: connectors = isConnector
+    ? createRuntimeServiceAnalyzeConnectors(instanceId)
+    : null;
+  $: analyzedConnector = $connectors?.data?.connectors?.find(
+    (c) => c.name === $resourceName?.name,
+  );
+  $: usesOsEnv =
+    analyzedConnector?.osEnvVariables &&
+    analyzedConnector.osEnvVariables.length > 0;
+
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
     behaviourEvent
@@ -131,9 +149,33 @@
         />
       {/if}
     </div>
-    <span class="truncate w-full" class:text-red-600={$hasErrors}>
+    <span
+      class="truncate w-full"
+      class:text-red-600={$hasErrors}
+      class:text-orange-500={usesOsEnv && !$hasErrors}
+    >
       {fileName}
     </span>
+    {#if usesOsEnv}
+      <Tooltip location="right" alignment="middle" distance={8}>
+        <span class="flex-none">
+          <WarningIcon size="12px" color="#f97316" />
+        </span>
+        <TooltipContent slot="tooltip-content">
+          <div class="p-2 max-w-xs">
+            <p class="font-medium">Using OS environment variables</p>
+            <p class="text-gray-400 text-xs mt-1">
+              Credentials from shell environment (not .env files):
+            </p>
+            <ul class="text-xs text-gray-300 mt-1 list-disc list-inside">
+              {#each analyzedConnector?.osEnvVariables ?? [] as varName}
+                <li>{varName}</li>
+              {/each}
+            </ul>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    {/if}
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
