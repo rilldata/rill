@@ -15,7 +15,10 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 import { get } from "svelte/store";
-import { removeZoneOffset } from "../../../lib/time/timezone";
+import {
+  convertISOStringToJSDateWithSameTimeAsDashboardTimeZone,
+  removeZoneOffset,
+} from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
@@ -119,7 +122,11 @@ export function prepareTimeSeries(
     if (!originalPt?.ts) {
       return emptyPt;
     }
-    const ts = adjustOffsetForZone(originalPt.ts, zone, timeGrainDuration);
+
+    const ts = convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
+      originalPt.ts,
+      zone,
+    );
 
     if (!ts || typeof ts === "string") {
       return emptyPt;

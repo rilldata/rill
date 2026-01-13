@@ -41,7 +41,6 @@ export function convertISOStringToJSDateWithSameTimeAsDashboardTimeZone(
  */
 export function removeLocalTimezoneOffset(dt: Date, grainDuration = "PT0S") {
   const endTime = getOffset(dt, grainDuration, TimeOffsetType.ADD);
-  console.log({ endTime });
   const dstOffset = getDSToffset(dt, endTime);
   return new Date(dt.getTime() + (dt.getTimezoneOffset() + dstOffset) * 60000);
 }
