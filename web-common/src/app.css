@@ -281,7 +281,7 @@
     --surface-foreground: #d1d5db;
     --sidebar-foreground: #fafafa;
 
-    /* --card: var(--surface); */
+    --card: var(--sidebar);
     /* --card-foreground: var(--color-gray-900); */
     --popover: var(--color-gray-400);
     --popover-foreground: var(--color-gray-950);
@@ -290,7 +290,7 @@
     /* --primary-foreground: var(--color-primary-50); */
     /* --secondary: var(--color-secondary-100); */
     --secondary-foreground: var(--color-gray-950);
-    --muted: var(--color-gray-200);
+    --muted: var(--color-gray-100);
     --muted-foreground: #a3a3a3;
     --accent: var(--color-gray-600);
     --accent-foreground: var(--color-gray-950);

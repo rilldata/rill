@@ -307,7 +307,7 @@
   .multiline-input {
     @apply p-0;
     @apply size-full;
-    @apply outline-none border-0 bg-input;
+    @apply outline-none border-0 bg-input placeholder-muted-foreground;
     @apply cursor-text;
     vertical-align: middle;
   }

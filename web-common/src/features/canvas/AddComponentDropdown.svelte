@@ -109,7 +109,7 @@
     <div class="flex flex-col" role="presentation" on:mouseenter={onMouseEnter}>
       {#each menuItems as { id, label, icon } (id)}
         <DropdownMenu.Item
-          class="flex flex-row gap-x-2"
+          class="flex flex-row gap-x-2 text-foreground"
           on:click={() => {
             if (id === "bar_chart") {
               handleChartItemClick();
@@ -118,7 +118,7 @@
             }
           }}
         >
-          <svelte:component this={icon} color="var(--color-gray-600)" />
+          <svelte:component this={icon} color="var(--muted-foreground)" />
           {label}
         </DropdownMenu.Item>
       {/each}
