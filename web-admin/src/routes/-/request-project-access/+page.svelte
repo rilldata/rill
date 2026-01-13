@@ -49,10 +49,10 @@
 <AccessRequestContainer>
   <Lock
     size="40px"
-    className={requested ? "text-gray-600" : "text-primary-600"}
+    className={requested ? "text-muted-foreground" : "text-primary-600"}
   />
   <h2 class="text-lg font-normal">Request access to this project</h2>
-  <div class="text-slate-500 text-base">
+  <div class="text-muted-foreground text-base">
     You can view <b>{project}</b> once your request is approved.
   </div>
   <Button
@@ -68,7 +68,7 @@
     {#if errorMessage}
       <div>{errorMessage}</div>
     {:else}
-      <div class="text-slate-500">
+      <div class="text-muted-foreground">
         Your request has been sent to the project admin. You’ll get an email
         when it’s approved.
       </div>

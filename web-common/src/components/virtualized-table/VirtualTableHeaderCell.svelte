@@ -32,7 +32,7 @@
       slot="pin-button"
       title={"Toggle pin column"}
       aria-label={pinned ? "Unpin column" : "Pin column"}
-      class="pin-button duration-100 justify-self-end group-hover:block hidden text-gray-900"
+      class="pin-button duration-100 justify-self-end group-hover:block hidden text-foreground"
       on:mouseenter
       on:click
     >

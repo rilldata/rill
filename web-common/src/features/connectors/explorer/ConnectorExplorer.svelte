@@ -55,6 +55,6 @@
   .message {
     @apply pl-2 pr-3.5 py-2;
     @apply flex flex-none;
-    @apply text-gray-500;
+    @apply text-muted-foreground;
   }
 </style>

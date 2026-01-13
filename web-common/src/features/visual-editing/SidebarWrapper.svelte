@@ -31,7 +31,7 @@
   .secondary {
     @apply flex flex-col gap-y-1;
     @apply text-sm font-semibold;
-    @apply bg-slate-50;
+    @apply bg-gray-50;
     @apply px-5 pt-2;
   }
 </style>

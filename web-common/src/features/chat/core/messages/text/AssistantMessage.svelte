@@ -25,6 +25,6 @@
   .chat-message-content {
     @apply py-2;
     @apply text-sm leading-relaxed break-words;
-    @apply text-gray-700;
+    @apply text-surface-foreground;
   }
 </style>

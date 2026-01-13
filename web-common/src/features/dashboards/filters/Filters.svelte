@@ -414,7 +414,7 @@
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
-            <span class="text-gray-600 italic">
+            <span class="text-muted-foreground italic">
               as of <Timestamp
                 id="filter-bar-as-of"
                 italic

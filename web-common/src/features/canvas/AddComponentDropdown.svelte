@@ -64,10 +64,11 @@
       <button
         {...builder}
         use:builder.action
-        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-slate-200 w-full"
+        class="pointer-events-auto shadow-sm hover:shadow-md flex bg-surface h-[84px] flex-col justify-center gap-2 items-center rounded-md border border-gray-200 w-full"
       >
-        <PlusCircle class="w-6 h-6 text-slate-500" />
-        <span class="text-sm font-medium text-slate-500">Add widget</span>
+        <PlusCircle class="w-6 h-6 text-muted-foreground" />
+        <span class="text-sm font-medium text-muted-foreground">Add widget</span
+        >
       </button>
     {:else if floatingForm}
       <button
@@ -94,7 +95,7 @@
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
         class:bg-gray-50={open}
-        class="pointer-events-auto bg-surface active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-slate-500 disabled:opacity-50"
+        class="pointer-events-auto bg-surface active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-muted-foreground disabled:opacity-50"
         on:mouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />

@@ -148,7 +148,7 @@
       {#if textInputPrefix}
         <div
           class:text-sm={size !== "xl"}
-          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 border-r border-gray-300 text-base px-2 mr-2"
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-muted-foreground border-r border-gray-300 text-base px-2 mr-2"
         >
           {textInputPrefix}
         </div>
@@ -313,7 +313,7 @@
   }
 
   input:disabled {
-    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+    @apply bg-gray-50 text-muted-foreground cursor-not-allowed;
   }
 
   input {
@@ -356,6 +356,6 @@
   }
 
   .description {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-muted-foreground;
   }
 </style>

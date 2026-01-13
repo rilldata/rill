@@ -92,7 +92,7 @@
     clone.style.zIndex = "50";
 
     clone.classList.add(
-      "bg-slate-100",
+      "bg-gray-100",
       "cursor-grabbing",
       "shadow-md",
       "outline",
@@ -194,7 +194,7 @@
       on:mousedown={handleMouseDown}
     >
       {#if filteredItems.length === 0}
-        <div class="px-2 py-2 text-xs text-gray-500">
+        <div class="px-2 py-2 text-xs text-muted-foreground">
           <slot name="empty" {searchValue}>
             {searchValue ? "No matching items" : "No items"}
           </slot>
@@ -223,7 +223,7 @@
               class:mb-7={isLastItem}
               style:pointer-events={isDragItem ? "none" : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm text-left"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-gray-50 rounded-sm text-left"
               class:cursor-grab={draggable}
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}

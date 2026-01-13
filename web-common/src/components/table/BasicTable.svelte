@@ -101,7 +101,7 @@
           role="columnheader"
           tabindex="0"
           class="pl-{header.column.columnDef.meta?.marginLeft ||
-            '4'} py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate text-sm"
+            '4'} py-2 font-semibold text-muted-foreground text-left flex flex-row items-center gap-x-1 truncate text-sm"
           on:click={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
@@ -145,14 +145,16 @@
       {#if emptyIcon}
         <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
       {/if}
-      <span class="text-gray-600 font-semibold text-sm">{emptyText}</span>
+      <span class="text-muted-foreground font-semibold text-sm"
+        >{emptyText}</span
+      >
     </div>
   {/each}
 </div>
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .row {

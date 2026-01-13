@@ -194,7 +194,7 @@
                 on:mouseleave={() =>
                   (tooltipValue =
                     measureValueFormatterUnabridged(value) ?? "no data")}
-                class="w-fit ui-copy-inactive"
+                class="w-fit text-muted-foreground"
                 class:text-red-500={!isComparisonPositive}
               >
                 <WithTween

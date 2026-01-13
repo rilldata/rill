@@ -134,7 +134,7 @@
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-background slide"
+      class="border-b w-fit min-w-full flex flex-col bg-sidebar slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
@@ -162,7 +162,8 @@
       <PivotDisplay {isEmbedded} />
     {:else}
       <div
-        class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
+        class="flex gap-x-1 overflow-hidden slide pb-0"
+        class:gap-y-2={showTimeDimensionDetail}
         class:flex-col={showTimeDimensionDetail}
         class:flex-row={!showTimeDimensionDetail}
         class:left-shift={extraLeftPadding}
@@ -170,7 +171,8 @@
         class:size-full={!$dynamicHeight}
       >
         <div
-          class="pt-2 flex-none"
+          class="flex-none pl-4"
+          class:pt-2={!showTimeDimensionDetail}
           style:width={showTimeDimensionDetail ? "auto" : `${metricsWidth}px`}
         >
           {#key exploreName}
@@ -188,7 +190,6 @@
         </div>
 
         {#if showTimeDimensionDetail && expandedMeasureName}
-          <hr class="border-t -ml-4" />
           <TimeDimensionDisplay
             {exploreName}
             {expandedMeasureName}

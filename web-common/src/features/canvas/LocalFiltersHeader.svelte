@@ -90,7 +90,7 @@
   <div
     class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
   >
-    <Filter size="16px" className="text-gray-400" />
+    <Filter size="16px" className="text-muted-foreground" />
 
     <FilterChipsReadOnly
       metricsViewNames={[$specStore.metrics_view]}

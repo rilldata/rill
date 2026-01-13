@@ -46,7 +46,7 @@
   /* seed-label removed */
 
   .header p {
-    @apply text-sm text-gray-500 mt-1;
+    @apply text-sm text-muted-foreground mt-1;
   }
 
   .graph-wrapper {

@@ -96,7 +96,7 @@
   {:else}
     <FormSection title="Slack notifications">
       <svelte:fragment slot="description">
-        <span class="text-sm text-slate-600">
+        <span class="text-sm text-muted-foreground">
           Slack has not been configured for this project. Read the <a
             href="https://docs.rilldata.com/explore/alerts#configuring-slack-targets"
             target="_blank"

@@ -33,7 +33,7 @@
 
 <div class="flex flex-row gap-2 items-center truncate">
   <button
-    class="hover:bg-slate-100 rounded-sm p-0.5 flex-none"
+    class="hover:bg-gray-100 rounded-sm p-0.5 flex-none"
     on:click={toggleShowValue}
   >
     <svelte:component
@@ -48,7 +48,7 @@
       <button on:click={onCopy} class="truncate">
         <span
           class:italic={isEmpty}
-          class="text-sm text-gray-800 font-medium truncate"
+          class="text-sm text-foreground font-medium truncate"
           class:cursor-pointer={showValue}
           title={value}
         >

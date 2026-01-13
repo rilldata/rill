@@ -155,7 +155,11 @@
 
   :global(.wrapper > button) {
     @apply border text-foreground;
-    @apply px-2 flex items-center justify-center bg-surface dark:bg-background;
+    @apply px-2 flex items-center justify-center bg-sidebar;
+  }
+
+  :global(.dark > .wrapper > button) {
+    @apply bg-background;
   }
 
   :global(.wrapper > button:focus) {

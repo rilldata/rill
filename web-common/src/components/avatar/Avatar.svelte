@@ -31,7 +31,7 @@
       avatarSize,
       `flex items-center justify-center overflow-hidden rounded-full border`,
       {
-        "border-dashed bg-transparent border-slate-400": !src && !alt,
+        "border-dashed bg-transparent border-gray-400": !src && !alt,
         [`border-transparent ${bgColor}`]:
           (!src && alt) || (loadingStatus === "error" && alt),
       },
@@ -50,7 +50,7 @@
         {getInitials(alt)}
       </Avatar.Fallback>
     {:else}
-      <Avatar.Fallback class={cn(fontSize, "text-slate-400")}>
+      <Avatar.Fallback class={cn(fontSize, "text-muted-foreground")}>
         <svg
           class="mt-[6px]"
           width="24"

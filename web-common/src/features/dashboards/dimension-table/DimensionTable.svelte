@@ -273,11 +273,11 @@ TableCells – the cell contents.
             cellLabel="Filter dimension value"
           />
         {:else if isFetching || $selectedValues.isFetching}
-          <div class="flex text-gray-500 justify-center mt-[30vh]">
+          <div class="flex text-muted-foreground justify-center mt-[30vh]">
             Loading...
           </div>
         {:else}
-          <div class="flex text-gray-500 justify-center mt-[30vh]">
+          <div class="flex text-muted-foreground justify-center mt-[30vh]">
             No results to show
           </div>
         {/if}

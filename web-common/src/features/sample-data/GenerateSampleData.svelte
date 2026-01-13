@@ -94,7 +94,7 @@
 
   .prompt-input.empty::before {
     content: attr(data-placeholder);
-    @apply text-gray-400 pointer-events-none absolute;
+    @apply text-muted-foreground pointer-events-none absolute;
   }
 
   .error {

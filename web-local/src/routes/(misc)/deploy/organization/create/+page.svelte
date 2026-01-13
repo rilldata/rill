@@ -16,7 +16,7 @@
 </script>
 
 <div class="text-xl">Let’s create your first organization</div>
-<div class="text-base text-gray-500">
+<div class="text-base text-muted-foreground">
   Create an organization to deploy this project to. <a
     href="https://docs.rilldata.com/reference/cli/org/create"
     target="_blank">See docs</a

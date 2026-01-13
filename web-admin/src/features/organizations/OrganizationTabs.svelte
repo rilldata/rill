@@ -35,7 +35,7 @@
   $: selectedIndex = tabs?.findLastIndex((t) => pathname.startsWith(t.route));
 </script>
 
-<div>
+<div class="bg-surface dark:bg-background">
   {#if showTabs}
     <nav>
       {#each tabs as tab, i (tab.route)}

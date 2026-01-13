@@ -98,13 +98,13 @@
               minHeight="auto"
               maxHeight="300px"
             >
-              <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+              <div slot="empty" class="px-2 py-2 text-xs text-muted-foreground">
                 No sort item found
               </div>
               <div slot="item" let:item class="flex items-center gap-x-1">
                 <DragHandle
                   size="16px"
-                  className="text-gray-400 pointer-events-none"
+                  className="text-muted-foreground pointer-events-none"
                 />
                 <span class="text-xs truncate">{item.value}</span>
               </div>

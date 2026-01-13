@@ -14,7 +14,7 @@
 <div class="flex flex-col bg-surface {padding} gap-y-3 rounded">
   <div class="flex flex-col">
     <span
-      class="flex flex-row items-center gap-1 text-base text-medium text-slate-900"
+      class="flex flex-row items-center gap-1 text-base text-medium text-foreground"
     >
       <div>{title}</div>
       {#if $$slots["tooltip-content"]}
@@ -33,7 +33,7 @@
     {#if $$slots["description"]}
       <slot name="description" />
     {:else if description}
-      <span class="text-sm text-slate-600">{description}</span>
+      <span class="text-sm text-muted-foreground">{description}</span>
     {/if}
   </div>
   {#if enabled}

@@ -343,7 +343,9 @@
 <Inspector filePath={path}>
   <SidebarWrapper title="Edit dashboard">
     {#if autoSave}
-      <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+      <p class="text-muted-foreground text-sm">
+        Changes below will be auto-saved.
+      </p>
     {/if}
 
     <Input
@@ -520,7 +522,7 @@
     <!-- <svelte:fragment slot="footer"> -->
     {#if viewingDashboard}
       <footer
-        class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
+        class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-muted-foreground"
       >
         <p>
           For more options,

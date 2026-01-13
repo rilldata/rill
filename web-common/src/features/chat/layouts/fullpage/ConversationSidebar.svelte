@@ -180,11 +180,11 @@
   }
 
   .conversation-title {
-    @apply text-xs text-gray-700 truncate;
+    @apply text-xs text-surface-foreground truncate;
   }
 
   .no-conversations {
-    @apply py-6 px-4 text-center text-gray-500 text-xs;
+    @apply py-6 px-4 text-center text-muted-foreground text-xs;
   }
 
   /* Responsive behavior */

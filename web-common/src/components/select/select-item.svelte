@@ -42,7 +42,7 @@
     </span>
   </div>
   {#if description}
-    <div class="text-gray-500">
+    <div class="text-muted-foreground">
       {description}
     </div>
   {/if}

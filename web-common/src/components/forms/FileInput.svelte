@@ -112,7 +112,7 @@
         {/each}
       </div>
     {:else}
-      <Viz size="28px" class="text-gray-400 pointer-events-none" />
+      <Viz size="28px" class="text-muted-foreground pointer-events-none" />
       <div class="container-flex-col pointer-events-none">
         <span class="upload-title"> Upload an image </span>
         {#if multiple}
@@ -155,11 +155,11 @@
   }
 
   .upload-title {
-    @apply text-sm font-medium text-left text-gray-500;
+    @apply text-sm font-medium text-left text-muted-foreground;
   }
 
   .upload-description {
-    @apply text-xs font-normal text-gray-400;
+    @apply text-xs font-normal text-muted-foreground;
   }
 
   .upload-preview {

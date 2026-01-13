@@ -431,7 +431,7 @@
   .dnd-zone {
     @apply w-full max-w-full rounded-sm;
     @apply flex flex-col;
-    @apply gap-y-2 py-0  text-gray-500;
+    @apply gap-y-2 py-0  text-muted-foreground;
   }
 
   .horizontal {

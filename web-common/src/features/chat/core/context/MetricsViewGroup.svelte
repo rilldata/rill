@@ -187,7 +187,7 @@
 
   .context-item-label {
     @apply text-sm grow;
-    @apply overflow-hidden whitespace-nowrap text-ellipsis;
+    @apply overflow-hidden whitespace-nowrap text-ellipsis text-surface-foreground;
   }
 
   .context-item {
@@ -195,9 +195,11 @@
     @apply cursor-default select-none rounded-sm outline-none;
     @apply text-sm text-left text-wrap break-words;
   }
+
   .context-item:hover {
     @apply cursor-pointer;
   }
+
   .context-item.highlight {
     @apply bg-accent text-accent-foreground;
   }

@@ -35,7 +35,7 @@
       bgGray
       on:click={handleNewConversation}
     >
-      <PlusIcon className="text-gray-500" />
+      <PlusIcon className="text-muted-foreground" />
     </IconButton>
 
     <ConversationHistoryMenu
@@ -45,12 +45,12 @@
     />
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
-      <Close className="text-gray-500" />
+      <Close className="text-muted-foreground" />
     </IconButton>
   </div>
 </div>
 
-<style>
+<style lang="postcss">
   .chatbot-header {
     display: flex;
     align-items: center;
@@ -62,13 +62,13 @@
     min-height: 1.5rem;
   }
   .chatbot-title {
+    @apply text-muted-foreground text-sm font-semibold;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 180px;
-    color: #111827;
-    font-size: 0.75rem;
   }
+
   .chatbot-header-actions {
     display: flex;
     align-items: center;

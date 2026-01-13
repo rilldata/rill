@@ -88,9 +88,9 @@
       "bg-primary-50",
       "bg-primary-100",
       "bg-primary-200",
-      "bg-slate-50",
-      "bg-slate-100",
-      "bg-slate-200",
+      "bg-gray-50",
+      "bg-gray-100",
+      "bg-gray-200",
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
@@ -210,7 +210,7 @@
       x - tableData?.fixedColCount,
     );
     if (x > 0) {
-      element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
+      element.classList.remove("bg-gray-50", "bg-gray-100", "bg-gray-200");
       element.classList.add(cellBgColor);
     }
     if (x === 0) {
@@ -227,7 +227,7 @@
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${value.value === null ? "italic text-gray-500" : ""} ${fontWeight}">${total}</div></div>`;
+        <div class="truncate text-xs ${value.value === null ? "italic text-muted-foreground" : ""} ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs pointer-events-none font-semibold text-right flex items-center justify-end gap-2" >
         ${total}
@@ -393,7 +393,7 @@
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative h-full select-none text-red-500"
+  class="w-full relative h-full select-none pl-4 bg-gray-50"
 >
   <Pivot
     bind:this={pivot}

@@ -146,8 +146,8 @@
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
-        ? 'bg-slate-200'
-        : 'hover:bg-slate-100'} px-2 py-1"
+        ? 'bg-gray-200'
+        : 'hover:bg-gray-100'} px-2 py-1"
     >
       <span class="capitalize">{role ? `${role}` : "-"}</span>
       {#if isDropdownOpen}
@@ -159,39 +159,39 @@
     <DropdownMenu.Content align="start" class="w-[200px]">
       {#if organizationPermissions.manageOrgAdmins}
         <DropdownMenu.Item
-          class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+          class="font-normal flex flex-col items-start hover:bg-gray-50 {role ===
           'admin'
-            ? 'bg-slate-100'
+            ? 'bg-gray-100'
             : ''}"
           on:click={() => handleSetRole(OrgUserRoles.Admin)}
         >
-          <span class="text-xs font-medium text-slate-700">Admin</span>
-          <span class="text-[11px] text-slate-500"
+          <span class="text-xs font-medium text-surface-foreground">Admin</span>
+          <span class="text-[11px] text-muted-foreground"
             >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
           >
         </DropdownMenu.Item>
       {/if}
       <DropdownMenu.Item
-        class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+        class="font-normal flex flex-col items-start hover:bg-gray-50 {role ===
         'editor'
-          ? 'bg-slate-100'
+          ? 'bg-gray-100'
           : ''}"
         on:click={() => handleSetRole(OrgUserRoles.Editor)}
       >
-        <span class="text-xs font-medium text-slate-700">Editor</span>
-        <span class="text-[11px] text-slate-500"
+        <span class="text-xs font-medium text-surface-foreground">Editor</span>
+        <span class="text-[11px] text-muted-foreground"
           >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
         >
       </DropdownMenu.Item>
       <DropdownMenu.Item
-        class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
+        class="font-normal flex flex-col items-start hover:bg-gray-50 {role ===
         'viewer'
-          ? 'bg-slate-100'
+          ? 'bg-gray-100'
           : ''}"
         on:click={() => handleSetRole(OrgUserRoles.Viewer)}
       >
-        <span class="text-xs font-medium text-slate-700">Viewer</span>
-        <span class="text-[11px] text-slate-500"
+        <span class="text-xs font-medium text-surface-foreground">Viewer</span>
+        <span class="text-[11px] text-muted-foreground"
           >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>

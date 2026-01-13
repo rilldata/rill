@@ -240,7 +240,7 @@
 
 <style lang="postcss">
   * {
-    @apply border-slate-200;
+    @apply border-gray-200;
   }
 
   .resize-bar {
@@ -285,12 +285,12 @@
   .header-cell {
     @apply px-2 bg-surface size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-gray-800 font-medium;
+    @apply text-foreground font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-gray-800;
+    @apply size-full p-1 px-2 text-foreground;
   }
 
   tr > td {
@@ -310,7 +310,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
 
   tr:hover .active-cell {

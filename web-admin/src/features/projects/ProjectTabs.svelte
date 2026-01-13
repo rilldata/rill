@@ -69,7 +69,7 @@
   }
 </script>
 
-<div>
+<div class="bg-surface dark:bg-background">
   <nav>
     {#each tabs as tab, i (tab.route)}
       {#if tab.hasPermission}

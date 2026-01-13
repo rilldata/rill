@@ -29,7 +29,7 @@
 
 <style lang="postcss">
   a {
-    @apply bg-no-repeat bg-center bg-cover;
+    @apply bg-no-repeat bg-center border bg-cover;
     @apply relative select-none;
     @apply size-60 rounded-md;
     @apply flex flex-col items-center justify-center gap-y-2;
@@ -38,12 +38,16 @@
 
     box-shadow:
       0px 2px 3px rgba(15, 23, 42, 0.06),
-      0px 1px 3px rgba(15, 23, 42, 0.08),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.12);
+      0px 1px 3px rgba(15, 23, 42, 0.08);
   }
 
   .gradient {
-    @apply bg-gradient-to-b from-surface to-slate-50;
+    @apply bg-gradient-to-b from-surface to-gray-50;
+  }
+
+  :global(.dark) .gradient {
+    @apply bg-gray-300;
+    background-image: linear-gradient(#6b6b6b33 34%, #00000033);
   }
 
   a[aria-disabled="true"] {

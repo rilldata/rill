@@ -103,10 +103,14 @@
 <div class="flex flex-col w-full">
   {#if label}
     <div class="flex items-center gap-x-1">
-      <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
+      <label for={id} class="text-foreground text-sm font-medium">{label}</label
+      >
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500" style="transform:translateY(-.5px)">
+          <div
+            class="text-muted-foreground"
+            style="transform:translateY(-.5px)"
+          >
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -115,7 +119,7 @@
         </Tooltip>
       {/if}
       {#if description}
-        <div class="text-sm text-slate-600">{description}</div>
+        <div class="text-sm text-muted-foreground">{description}</div>
       {/if}
     </div>
   {/if}
@@ -132,7 +136,7 @@
         {#each values.slice(0, lastIdx) as _, i}
           {@const hasError = errors?.[i]?.length}
           <div
-            class="flex items-center text-gray-600 text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
+            class="flex items-center text-muted-foreground text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
             class:border-gray-300={!hasError}
             class:border-red-300={hasError}
             class:bg-red-50={hasError}
@@ -148,7 +152,7 @@
                 size="12px"
                 class="{hasError
                   ? 'text-red-600'
-                  : 'text-gray-500'} cursor-pointer"
+                  : 'text-muted-foreground'} cursor-pointer"
               />
             </IconButton>
           </div>

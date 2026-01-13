@@ -24,7 +24,7 @@
   let active = false;
 
   const toggleButtonBaseClass =
-    "flex h-[26px] w-[42px] items-center justify-center rounded-sm transition-colors hover:bg-slate-200 hover:text-slate-700 active:bg-slate-300 disabled:text-slate-300 disabled:cursor-not-allowed";
+    "flex h-[26px] w-[42px] items-center justify-center rounded-sm transition-colors hover:bg-gray-200 hover:text-surface-foreground active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
 
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
@@ -259,7 +259,7 @@
               </button>
             </div>
 
-            <div slot="empty" class="px-2 py-2 text-xs text-gray-500">
+            <div slot="empty" class="px-2 py-2 text-xs text-muted-foreground">
               {searchText
                 ? `No matching hidden ${type === "measure" ? "measures" : "dimensions"}`
                 : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}

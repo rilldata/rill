@@ -1,1 +1,1 @@
-<span class="text-gray-600">/</span>
+<span class="text-muted-foreground">/</span>

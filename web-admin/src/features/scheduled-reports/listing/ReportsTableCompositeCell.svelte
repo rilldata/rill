@@ -30,7 +30,7 @@
   <div class="flex gap-x-2 items-center min-h-[20px]">
     <ReportIcon size={"14px"} color={reportColor} />
     <span
-      class="text-gray-700 text-sm font-semibold group-hover:text-primary-600 truncate"
+      class="text-surface-foreground text-sm font-semibold group-hover:text-primary-600 truncate"
     >
       {title}
     </span>
@@ -43,7 +43,7 @@
     {/if}
   </div>
   <div
-    class="flex gap-x-1 text-gray-500 text-xs font-normal min-h-[16px] overflow-hidden"
+    class="flex gap-x-1 text-muted-foreground text-xs font-normal min-h-[16px] overflow-hidden"
   >
     {#if !lastRun}
       <span class="shrink-0">Hasn't run yet</span>

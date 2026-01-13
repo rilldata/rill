@@ -9,7 +9,7 @@
 
 <div class="header-cell" class:sorted>
   {#if type}
-    <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+    <DataTypeIcon suppressTooltip color={"text-muted-foreground"} {type} />
   {/if}
 
   <p class="truncate w-full grow text-left">

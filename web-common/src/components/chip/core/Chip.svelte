@@ -181,7 +181,7 @@
   }
 
   .exclude {
-    @apply bg-gray-50 text-gray-600;
+    @apply bg-gray-50 text-muted-foreground;
   }
 
   .exclude:hover,
@@ -197,18 +197,18 @@
 
   .time {
     @apply rounded-2xl;
-    @apply bg-surface border-slate-200 text-slate-800;
+    @apply bg-surface border-gray-200 text-foreground;
   }
 
   .time:hover,
   .time.active,
   .time:active {
-    @apply bg-slate-50;
+    @apply bg-gray-50;
   }
 
   .time.active,
   .time:active {
-    @apply border-slate-400;
+    @apply border-gray-400;
   }
 
   .amber {
@@ -225,7 +225,7 @@
 
   .gray,
   .gray.theme {
-    @apply bg-gray-100 border-gray-300 text-gray-600;
+    @apply bg-gray-100 border-gray-300 text-muted-foreground;
   }
 
   .gray:hover,

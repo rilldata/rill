@@ -77,7 +77,7 @@
         />
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 border-l flex flex-col w-64 p-3">
+        <div class="bg-gray-50 border-l flex flex-col w-64 p-3">
           <CalendarPlusDateInput
             {interval}
             {zone}

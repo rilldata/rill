@@ -99,15 +99,17 @@
             {#if isFiltered}
               <!-- Filtered empty state: no results match search -->
               <div class="flex flex-col gap-y-2 items-center text-sm">
-                <div class="text-gray-600 font-semibold">
+                <div class="text-muted-foreground font-semibold">
                   No {kind}s match your search
                 </div>
-                <div class="text-gray-500">Try adjusting your search terms</div>
+                <div class="text-muted-foreground">
+                  Try adjusting your search terms
+                </div>
               </div>
             {:else}
               <!-- Custom empty state via slot, or fallback -->
               <slot name="empty">
-                <div class="text-gray-600 text-sm font-semibold">
+                <div class="text-muted-foreground text-sm font-semibold">
                   You don't have any {kind}s yet
                 </div>
               </slot>
@@ -151,6 +153,6 @@
 
   /* Hover effect on list items */
   .resource-list-item:hover {
-    @apply bg-slate-50;
+    @apply bg-gray-50;
   }
 </style>

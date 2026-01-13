@@ -127,15 +127,15 @@
   }
 
   button.addBorder {
-    @apply border border-dashed border-slate-300;
+    @apply border border-dashed border-gray-300;
   }
 
   button:hover {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
 
   button:active,
   .active {
-    @apply bg-slate-200;
+    @apply bg-gray-200;
   }
 </style>

@@ -38,10 +38,10 @@
   class:small
   class:pointer-events-none={disabled}
   class:bg-gray-50={disabled}
-  class:text-gray-400={disabled}
+  class:text-muted-foreground={disabled}
 >
   {#if labelFirst}
-    <p class:small class:text-gray-500={disabled} class="label-first">
+    <p class:small class:text-muted-foreground={disabled} class="label-first">
       {label}
     </p>
     <div class="input-button-container">
@@ -211,7 +211,7 @@
       }}
     />
 
-    <p class:small class:text-gray-500={disabled}>{label}</p>
+    <p class:small class:text-muted-foreground={disabled}>{label}</p>
   {/if}
 </div>
 

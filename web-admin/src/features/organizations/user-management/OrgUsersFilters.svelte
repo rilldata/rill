@@ -12,8 +12,8 @@
 <DropdownMenu.Root bind:open={isDropdownOpen}>
   <DropdownMenu.Trigger
     class="min-w-[210px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {isDropdownOpen
-      ? 'bg-slate-200'
-      : 'hover:bg-slate-100'} px-2 py-1"
+      ? 'bg-gray-200'
+      : 'hover:bg-gray-100'} px-2 py-1"
   >
     <span class="capitalize"
       >{filterSelection === "all" ? "All users" : filterSelection}</span

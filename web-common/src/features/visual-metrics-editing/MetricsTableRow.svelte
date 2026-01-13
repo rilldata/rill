@@ -75,10 +75,10 @@
       <button
         class:opacity-0={!hovered}
         disabled={!hovered || disableDrag}
-        class="text-gray-500 disabled:cursor-not-allowed"
+        class="disabled:cursor-not-allowed"
         on:mousedown={handleDragStart}
       >
-        <DragHandle size="16px" />
+        <DragHandle size="16px" className="fill-muted-foreground" />
       </button>
 
       <Checkbox onChange={onCheckedChange} checked={selected} />
@@ -87,7 +87,10 @@
 
   <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
     {#if !name && item instanceof YAMLDimension && item.resourceName}
-      <span class="text-gray-500" title="This name was inherited automatically">
+      <span
+        class="text-muted-foreground"
+        title="This name was inherited automatically"
+      >
         {item.resourceName}
       </span>
     {:else}

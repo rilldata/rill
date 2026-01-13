@@ -116,7 +116,10 @@
         >
           <h4 class="title">{chartTitle}</h4>
           {#if "metrics_view" in $spec}
-            <Filter size="16px" className="text-gray-400 flex-shrink-0" />
+            <Filter
+              size="16px"
+              className="text-muted-foreground flex-shrink-0"
+            />
             <FilterChipsReadOnly
               metricsViewNames={[$spec.metrics_view]}
               dimensions={$dimensions}
@@ -163,7 +166,7 @@
     font-size: 15px;
     line-height: 26px;
     @apply flex-shrink-0;
-    @apply font-medium text-gray-800 truncate;
+    @apply font-medium text-foreground truncate;
   }
 
   .chip-scroll-container {

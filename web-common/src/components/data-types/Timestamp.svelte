@@ -14,7 +14,7 @@
 <Base
   {truncate}
   {isNull}
-  classes="ui-copy-number font-semibold {customStyle} text-gray-800 {inTable &&
+  classes="ui-copy-number font-semibold {customStyle} text-foreground {inTable &&
     'text-left'}"
   {color}
 >

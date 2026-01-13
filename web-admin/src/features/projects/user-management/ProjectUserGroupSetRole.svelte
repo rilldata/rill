@@ -126,8 +126,8 @@
 <DropdownMenu.Root bind:open={isOpen}>
   <DropdownMenu.Trigger
     class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen
-      ? 'bg-slate-200'
-      : 'hover:bg-slate-100'} px-2 py-1"
+      ? 'bg-gray-200'
+      : 'hover:bg-gray-100'} px-2 py-1"
     disabled={!manageOrgAdmins && group.roleName === ProjectUserRoles.Admin}
   >
     {group.roleName ? capitalize(group.roleName) : "-"}
@@ -144,12 +144,12 @@
       <DropdownMenu.Item
         class="font-normal flex flex-col items-start py-2 {group.roleName ===
         'admin'
-          ? 'bg-slate-100'
+          ? 'bg-gray-100'
           : ''}"
         on:click={() => handleRoleSelect(ProjectUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
-        <span class="text-xs text-gray-600"
+        <span class="text-xs text-muted-foreground"
           >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
         >
       </DropdownMenu.Item>
@@ -158,12 +158,12 @@
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'editor'
-        ? 'bg-slate-100'
+        ? 'bg-gray-100'
         : ''}"
       on:click={() => handleRoleSelect(ProjectUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
-      <span class="text-xs text-gray-600"
+      <span class="text-xs text-muted-foreground"
         >{PROJECT_ROLES_DESCRIPTION_MAP.editor}</span
       >
     </DropdownMenu.Item>
@@ -171,12 +171,12 @@
     <DropdownMenu.Item
       class="font-normal flex flex-col items-start py-2 {group.roleName ===
       'viewer'
-        ? 'bg-slate-100'
+        ? 'bg-gray-100'
         : ''}"
       on:click={() => handleRoleSelect(ProjectUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
-      <span class="text-xs text-gray-600"
+      <span class="text-xs text-muted-foreground"
         >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
       >
     </DropdownMenu.Item>

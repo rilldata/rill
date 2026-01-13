@@ -98,7 +98,10 @@
           id="allow-domain"
           class="mt-1"
         />
-        <Label for="allow-domain" class="font-normal text-gray-700 text-sm">
+        <Label
+          for="allow-domain"
+          class="font-normal text-surface-foreground text-sm"
+        >
           Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
           email address to join this project as a <b>Viewer</b>.
           <a

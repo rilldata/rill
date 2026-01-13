@@ -25,7 +25,7 @@
   {#if searchBarOpen}
     <div
       transition:slideRight={{}}
-      class="flex items-center gap-x-2 pr-2 w-60 bg-slate-50 border border-primary-300"
+      class="flex items-center gap-x-2 pr-2 w-60 bg-gray-50 border border-primary-300"
     >
       <Search
         bind:value={searchText}
@@ -41,7 +41,7 @@
     </div>
   {:else}
     <Button
-      class="flex items-center gap-x-2 p-1.5 text-gray-800"
+      class="flex items-center gap-x-2 p-1.5 text-foreground"
       onClick={() => (searchBarOpen = !searchBarOpen)}
       type="secondary"
       compact

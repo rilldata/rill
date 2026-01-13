@@ -158,7 +158,6 @@
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
       onChange={(color) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         handleColorChange(color, true);
       }}
     />
@@ -171,7 +170,6 @@
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
       onChange={(color) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         handleColorChange(color, false);
       }}
     />

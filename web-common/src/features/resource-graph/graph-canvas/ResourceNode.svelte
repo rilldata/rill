@@ -298,11 +298,11 @@
   }
 
   .meta {
-    @apply text-xs text-gray-500 capitalize;
+    @apply text-xs text-muted-foreground capitalize;
   }
 
   .status {
-    @apply text-xs text-gray-400 italic;
+    @apply text-xs text-muted-foreground italic;
   }
 
   .status.error {

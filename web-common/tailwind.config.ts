@@ -40,6 +40,10 @@ export default {
       colors: {
         background: oklabString("background"),
         foreground: oklabString("foreground"),
+        neutral: {
+          DEFAULT: oklabString("subtle"),
+          foreground: oklabString("subtle-foreground"),
+        },
         card: {
           DEFAULT: oklabString("card"),
           foreground: oklabString("card-foreground"),
@@ -47,6 +51,7 @@ export default {
         popover: {
           DEFAULT: oklabString("popover"),
           foreground: oklabString("popover-foreground"),
+          footer: oklabString("popover-footer"),
         },
         primary: {
           DEFAULT: oklabString("color-primary-500"),
@@ -73,7 +78,14 @@ export default {
         border: oklabString("border"),
         input: oklabString("input"),
         ring: oklabString("ring"),
-        surface: oklabString("surface"),
+        sidebar: {
+          DEFAULT: oklabString("sidebar"),
+          foreground: oklabString("sidebar-foreground"),
+        },
+        surface: {
+          DEFAULT: oklabString("surface"),
+          foreground: oklabString("surface-foreground"),
+        },
         theme: {
           DEFAULT: oklabString("color-theme-500"),
           foreground: oklabString("theme-foreground"),

@@ -31,7 +31,7 @@
 
 {#if isQuotaError}
   <CTAHeader variant="bold">{deployError.title}</CTAHeader>
-  <p class="text-base text-gray-500 text-left w-[500px]">
+  <p class="text-base text-muted-foreground text-left w-[500px]">
     <PricingDetails extraText={deployError.message} />
   </p>
   <Button type="primary" href={planUpgradeUrl} wide>Upgrade</Button>

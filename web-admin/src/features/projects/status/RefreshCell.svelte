@@ -39,5 +39,5 @@
     </TooltipContent>
   </Tooltip>
 {:else}
-  <span class="text-gray-500">-</span>
+  <span class="text-muted-foreground">-</span>
 {/if}

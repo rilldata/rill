@@ -9,7 +9,7 @@
 </script>
 
 <div
-  class="flex flex-none px-2 py-[3px] max-h-[26px] border bg-surface border-slate-200 text-slate-800 rounded-2xl"
+  class="flex flex-none px-2 py-[3px] max-h-[26px] border bg-surface border-gray-200 text-foreground rounded-2xl"
 >
   <Tooltip.Root portal="body">
     <Tooltip.Trigger>

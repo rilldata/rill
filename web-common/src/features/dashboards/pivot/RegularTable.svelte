@@ -9,7 +9,7 @@
   import { cellInspectorStore } from "../stores/cell-inspector-store";
 
   const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
-  const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
+  const NULL_CELL = `<div class="null-cell text-muted-foreground">-</div>`;
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];
@@ -335,7 +335,7 @@
 
 <div class="relative w-full h-full" style={cssVarStyles}>
   <regular-table
-    class="w-full h-full tdd-table text-gray-700 dark:text-muted-foreground"
+    class="w-full h-full tdd-table text-surface-foreground dark:text-muted-foreground"
     bind:this={table}
   />
 </div>

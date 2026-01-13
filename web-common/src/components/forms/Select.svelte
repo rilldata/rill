@@ -70,16 +70,20 @@
       for={id}
       class="{size === 'sm' ? 'text-xs' : 'text-sm'} flex items-center gap-x-1"
     >
-      <span class="text-gray-800 dark:text-gray-950 font-medium">
+      <span class="text-foreground dark:text-foreground font-medium">
         {label}
       </span>
       {#if optional}
-        <span class="text-gray-500">(optional)</span>
+        <span class="text-muted-foreground">(optional)</span>
       {/if}
       {#if tooltip}
         <Tooltip.Root portal="body">
           <Tooltip.Trigger>
-            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+            <InfoIcon
+              class="text-muted-foreground"
+              size="14px"
+              strokeWidth={2}
+            />
           </Tooltip.Trigger>
           <Tooltip.Content side="right">
             {#each tooltip.split(/\n/gm) as line (line)}
@@ -126,8 +130,8 @@
       <Select.Value
         {placeholder}
         class="text-[{fontSize}px] {!selected
-          ? 'text-gray-400'
-          : 'text-gray-950'} w-full  text-left"
+          ? 'text-muted-foreground'
+          : 'text-foreground'} w-full  text-left"
       />
     </Select.Trigger>
 
@@ -177,7 +181,9 @@
             {/if}
           </Select.Item>
         {:else}
-          <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
+          <div class="px-2.5 py-1.5 text-muted-foreground">
+            No results found
+          </div>
         {/each}
         {#if onAddNew}
           <SelectSeparator />

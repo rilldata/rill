@@ -77,6 +77,7 @@
     <div class="chat-input-section">
       <div class="chat-input-wrapper">
         <ChatInput
+          fullPage
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}

@@ -33,7 +33,7 @@
             p-0
             pr-1
             border-transparent
-            hover:border-slate-200"
+            hover:border-gray-200"
       style="
                 max-width: 100%;
 

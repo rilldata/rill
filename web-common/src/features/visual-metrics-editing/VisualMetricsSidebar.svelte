@@ -291,7 +291,7 @@
           <Label class="font-medium text-sm" for="auto-save">{label}</Label>
           {#if hint}
             <Tooltip location="left">
-              <div class="text-gray-500">
+              <div class="text-muted-foreground">
                 <InfoCircle size="13px" />
               </div>
               <TooltipContent slot="tooltip-content">
@@ -341,7 +341,7 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <p>
+    <p class="text-muted-foreground">
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
         edit in YAML

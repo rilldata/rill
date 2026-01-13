@@ -107,7 +107,7 @@
 
 <style lang="postcss">
   :global(.canvas-markdown) {
-    @apply text-gray-900;
+    @apply text-foreground;
   }
   :global(.canvas-markdown h1) {
     font-size: 24px;
@@ -165,7 +165,7 @@
     @apply text-sm my-1;
   }
   :global(.canvas-markdown blockquote) {
-    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-gray-600;
+    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-muted-foreground;
   }
   :global(.canvas-markdown code) {
     @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;

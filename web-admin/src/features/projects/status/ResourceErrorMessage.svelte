@@ -18,13 +18,13 @@
   {:else if message}
     <Tooltip distance={8}>
       <button
-        class="hover:bg-slate-100 rounded p-1 active:bg-slate-200 group"
+        class="hover:bg-gray-100 rounded p-1 active:bg-gray-200 group"
         on:click={() =>
           copyToClipboard(message, "Copied error message to clipboard")}
       >
         <CopyIcon
           size="18px"
-          className="text-gray-500 hidden group-hover:block"
+          className="text-muted-foreground hidden group-hover:block"
         />
 
         <CancelCircle size="18px" className="text-red-500 group-hover:hidden" />

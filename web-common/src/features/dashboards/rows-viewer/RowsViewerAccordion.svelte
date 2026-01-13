@@ -163,7 +163,7 @@
   <div class="bar">
     <button
       aria-label="Toggle rows viewer"
-      class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
+      class="text-xs text-foreground rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
       on:click={toggle}
     >
       <span class:rotate-180={isOpen}>

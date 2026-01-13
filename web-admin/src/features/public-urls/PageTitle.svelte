@@ -2,6 +2,6 @@
   export let title: string;
 </script>
 
-<h1 class="px-2 text-gray-800 font-medium">
+<h1 class="px-2 text-foreground font-medium">
   {title}
 </h1>

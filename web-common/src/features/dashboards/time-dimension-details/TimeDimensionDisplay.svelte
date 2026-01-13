@@ -190,9 +190,11 @@
   });
 </script>
 
+<svelte:window on:keydown={handleKeyDown} />
+
 <div
-  class="h-full w-full flex flex-col"
-  aria-label={`${expandedMeasureName} Time Dimension Display`}
+  class="h-full w-full flex flex-col border-t bg-gray-50"
+  aria-label="{expandedMeasureName} Time Dimension Display"
 >
   <TDDHeader
     {areAllTableRowsSelected}
@@ -216,7 +218,7 @@
           We encountered an error while loading the data. Please try refreshing
           the page.
         </div>
-        <div class="text-gray-600">
+        <div class="text-muted-foreground">
           If the issue persists, please contact us on <a
             target="_blank"
             rel="noopener noreferrer"
@@ -259,10 +261,10 @@
     <div class="w-full" style:height="calc(100% - 200px)">
       <div class="flex flex-col items-center justify-center h-full text-sm">
         <Compare size="32px" />
-        <div class="font-semibold text-gray-600 mt-1">
+        <div class="font-semibold text-muted-foreground mt-1">
           No comparison dimension selected
         </div>
-        <div class="text-gray-600">
+        <div class="text-muted-foreground">
           To see more values, select a comparison dimension above.
         </div>
       </div>
@@ -270,10 +272,8 @@
   {:else if comparing === "dimension" && formattedData?.rowCount === 1}
     <div class="w-full h-full">
       <div class="flex flex-col items-center h-full text-sm">
-        <div class="text-gray-600">No search results to show</div>
+        <div class="text-muted-foreground">No search results to show</div>
       </div>
     </div>
   {/if}
 </div>
-
-<svelte:window on:keydown={handleKeyDown} />

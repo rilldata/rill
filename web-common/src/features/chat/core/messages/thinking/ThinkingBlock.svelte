@@ -99,11 +99,11 @@
   .thinking-header {
     @apply w-full flex items-center gap-1.5 py-1;
     @apply bg-transparent border-none cursor-pointer;
-    @apply text-xs text-gray-500 transition-colors;
+    @apply text-xs text-muted-foreground transition-colors;
   }
 
   .thinking-header:hover {
-    @apply text-gray-600;
+    @apply text-muted-foreground;
   }
 
   .thinking-icon {
@@ -119,15 +119,15 @@
   }
 
   .thinking-content :global(*) {
-    @apply text-gray-500;
+    @apply text-muted-foreground;
   }
 
   .thinking-content :global(strong),
   .thinking-content :global(b) {
-    @apply text-gray-600 font-semibold;
+    @apply text-muted-foreground font-semibold;
   }
 
   .thinking-content :global(a) {
-    @apply text-gray-600 underline;
+    @apply text-muted-foreground underline;
   }
 </style>

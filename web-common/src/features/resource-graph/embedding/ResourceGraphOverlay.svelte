@@ -180,11 +180,11 @@
   }
 
   .graph-overlay__eyebrow {
-    @apply text-xs uppercase text-gray-500 tracking-wide;
+    @apply text-xs uppercase text-muted-foreground tracking-wide;
   }
 
   .graph-overlay__title h2 {
-    @apply text-lg font-semibold text-gray-900 leading-snug;
+    @apply text-lg font-semibold text-foreground leading-snug;
   }
 
   .graph-overlay__actions {
@@ -200,11 +200,11 @@
   }
 
   .graph-overlay__close {
-    @apply rounded-full border border-gray-200 text-gray-500 p-1;
+    @apply rounded-full border border-gray-200 text-muted-foreground p-1;
   }
 
   .graph-overlay__close:hover {
-    @apply text-gray-700 border-gray-300;
+    @apply text-surface-foreground border-gray-300;
   }
 
   .graph-overlay__body {
@@ -216,7 +216,7 @@
   }
 
   .graph-overlay__state {
-    @apply text-sm text-gray-600 m-auto text-center max-w-sm;
+    @apply text-sm text-muted-foreground m-auto text-center max-w-sm;
   }
 
   .graph-overlay__error {

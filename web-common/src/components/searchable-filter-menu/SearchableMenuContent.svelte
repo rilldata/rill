@@ -154,8 +154,8 @@
 <style lang="postcss">
   footer {
     height: 42px;
-    @apply border-t border-slate-300;
-    @apply bg-slate-100;
+    @apply border-t border-gray-300;
+    @apply bg-gray-100;
     @apply flex flex-row flex-none items-center justify-end;
     @apply gap-x-2 p-2 px-3.5;
   }

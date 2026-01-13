@@ -80,7 +80,7 @@
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
   {isProtectedDirectory
-    ? 'text-gray-500 hover:text-gray-500 dark:text-gray-900 dark:hover:text-gray-900'
+    ? 'text-muted-foreground hover:text-muted-foreground dark:text-foreground dark:hover:text-foreground'
     : 'text-foreground hover:text-foreground'} 
   font-medium hover:bg-gray-300"
   {id}
@@ -91,7 +91,7 @@
   aria-expanded={expanded}
 >
   <CaretDownIcon
-    className="flex-none text-slate-400 {expanded
+    className="flex-none text-muted-foreground {expanded
       ? ''
       : 'transform -rotate-90'}"
     size="14px"

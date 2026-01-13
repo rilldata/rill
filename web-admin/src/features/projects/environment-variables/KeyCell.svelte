@@ -37,7 +37,7 @@
 <div class="truncate flex flex-col">
   <Tooltip distance={6} location="top">
     <button on:click={onCopy} class="truncate text-start" title={name}>
-      <span class="source-code text-sm text-gray-800 font-medium truncate">
+      <span class="source-code text-sm text-foreground font-medium truncate">
         {name}
       </span>
     </button>
@@ -47,7 +47,7 @@
     </TooltipContent>
   </Tooltip>
 
-  <span class="text-xs text-gray-500 font-normal truncate">
+  <span class="text-xs text-muted-foreground font-normal truncate">
     {environmentLabel}
   </span>
 </div>

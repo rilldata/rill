@@ -327,7 +327,7 @@
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
-          color="text-gray-500"
+          color="text-muted-foreground"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
@@ -358,7 +358,7 @@
         }}
       >
         <FormattedDataType
-          color="text-gray-500"
+          color="text-muted-foreground"
           type="INTEGER"
           value={deltaAbsMap[measureName]
             ? formatters[measureName]?.(deltaAbsMap[measureName])
@@ -396,7 +396,7 @@
           value={deltaRels[measureName]
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
-          color="text-gray-500"
+          color="text-muted-foreground"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />

@@ -81,7 +81,6 @@
       href="https://docs.rilldata.com"
       target="_blank"
       rel="noreferrer noopener"
-      class="text-gray-800 font-normal"
     >
       Documentation
     </DropdownMenu.Item>
@@ -91,7 +90,6 @@
       href="https://discord.gg/2ubRfjC7Rh"
       target="_blank"
       rel="noreferrer noopener"
-      class="text-gray-800 font-normal"
     >
       Join us on Discord
     </DropdownMenu.Item>
@@ -101,20 +99,12 @@
         Contact Rill support
       </DropdownMenu.Item>
       <DropdownMenu.Separator />
-      <DropdownMenu.Item
-        href={logoutUrl}
-        rel="external"
-        class="text-gray-800 font-normal"
-      >
+      <DropdownMenu.Item href={logoutUrl} rel="external">
         Logout
       </DropdownMenu.Item>
     {:else}
       <DropdownMenu.Separator />
-      <DropdownMenu.Item
-        href={loginUrl}
-        rel="external"
-        class="text-gray-800 font-normal"
-      >
+      <DropdownMenu.Item href={loginUrl} rel="external">
         Log in / Sign up
       </DropdownMenu.Item>
     {/if}

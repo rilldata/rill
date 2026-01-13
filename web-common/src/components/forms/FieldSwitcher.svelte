@@ -24,7 +24,7 @@
   }
 
   button:hover:not(.selected) {
-    @apply bg-slate-50;
+    @apply bg-gray-50;
   }
 
   .option-wrapper {

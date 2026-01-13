@@ -29,7 +29,7 @@
 
 <style lang="postcss">
   .plan-container {
-    @apply w-[800px] border border-slate-200 m-5;
+    @apply w-[800px] border border-gray-200 m-5;
   }
 
   .plan-title {
@@ -39,6 +39,6 @@
 
   .plan-footer {
     @apply flex flex-row items-center;
-    @apply bg-slate-50 text-slate-500 border-t border-slate-200;
+    @apply bg-gray-50 text-muted-foreground border-t border-gray-200;
   }
 </style>

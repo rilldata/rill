@@ -5,15 +5,15 @@
 
 @layer utilities {
   .ui-copy {
-    @apply text-gray-900;
+    @apply text-foreground;
   }
 
   .ui-copy-muted {
-    @apply text-gray-800 dark:text-gray-800;
+    @apply text-foreground dark:text-foreground;
   }
 
   .ui-copy-strong {
-    @apply text-gray-900 font-semibold;
+    @apply text-foreground font-semibold;
   }
 
   .ui-copy-number {
@@ -59,13 +59,13 @@
 
   /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
   .ui-copy-disabled-faint {
-    @apply text-gray-400;
+    @apply text-muted-foreground;
   }
 
   .ui-copy-code {
     font-family: var(--monospace);
     font-size: 11px;
-    @apply text-gray-600;
+    @apply text-muted-foreground;
   }
 
   .ui-measure-bar-included {
@@ -96,15 +96,15 @@
 
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
     --surface: hsl(0deg 0% 100%);
-    /* white */
 
-    /* SHADCN VARIABLES */
+    /* SEMANTIC VARIABLES */
     --background: var(--color-gray-50);
     --foreground: var(--color-gray-900);
     --card: var(--surface);
     --card-foreground: var(--color-gray-900);
     --popover: var(--surface);
     --popover-foreground: var(--color-gray-900);
+    --popover-footer: var(--color-gray-100);
     --primary: var(--color-primary-950);
     --primary-foreground: var(--color-primary-50);
     --secondary: var(--color-secondary-100);
@@ -118,6 +118,9 @@
     --border: var(--color-gray-300);
     --input: var(--color-gray-50);
     --ring: var(--color-gray-950);
+    --surface-foreground: var(--color-gray-700);
+    --sidebar: var(--surface);
+    --sidebar-foreground: var(--surface-foreground);
     --radius: 0.5rem;
 
     --color-theme-50: var(
@@ -269,15 +272,20 @@
     color-scheme: dark;
     color: var(--color-gray-950);
 
+    /* SEMANTIC VARIABLES */
+    --background: var(--color-gray-50);
+    --sidebar: var(--color-gray-100);
     --surface: var(--color-gray-200);
 
-    /* SHADCN VARIABLES */
-    --background: var(--color-gray-100);
     --foreground: var(--color-gray-950);
+    --surface-foreground: #d1d5db;
+    --sidebar-foreground: #fafafa;
+
     /* --card: var(--surface); */
     /* --card-foreground: var(--color-gray-900); */
     --popover: var(--color-gray-400);
     --popover-foreground: var(--color-gray-950);
+    --popover-footer: var(--color-gray-500);
     /* --primary: var(--color-primary-950); */
     /* --primary-foreground: var(--color-primary-50); */
     /* --secondary: var(--color-secondary-100); */
@@ -289,7 +297,8 @@
     /* --destructive: var(--color-red-600); */
     /* --destructive-foreground: var(--color-gray-50); */
     --border: var(--color-gray-600);
-    --input: var(--color-gray-400);
+    --input: var(--color-gray-500);
+
     /* --ring: var(--color-gray-950); */
 
     --color-theme-50: var(--color-theme-dark-50, var(--color-primary-dark-50));
@@ -430,7 +439,7 @@
     --color-qualitative-24: hsl(110deg 55% 60%);
 
     --editor-selection: #304e75;
-    --line-highlight: #26262659;
+    --line-highlight: var(--color-gray-400);
   }
 
   h1,

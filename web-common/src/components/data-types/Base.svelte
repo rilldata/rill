@@ -7,7 +7,7 @@
 
 <span class:truncate class="{classes} {color || 'text-foreground'} select-text">
   {#if isNull}
-    <span class="text-gray-400">-</span>
+    <span class="text-muted-foreground">-</span>
   {:else}
     <slot />
   {/if}

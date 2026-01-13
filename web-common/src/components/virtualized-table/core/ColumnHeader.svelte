@@ -96,7 +96,11 @@
           : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
       >
         {#if showDataIcon}
-          <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+          <DataTypeIcon
+            suppressTooltip
+            color={"text-muted-foreground"}
+            {type}
+          />
         {/if}
         <span
           class="text-ellipsis
@@ -169,8 +173,8 @@
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
           transition:fly={{ duration: 200, y: 4 }}
-          class:text-gray-900={pinned}
-          class:text-gray-400={!pinned}
+          class:text-foreground={pinned}
+          class:text-muted-foreground={!pinned}
           class="   duration-100 justify-self-end"
           on:click={() => {
             dispatch("pin");

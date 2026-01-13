@@ -175,7 +175,10 @@
 {/if}
 
 {#if downstreamResources.length}
-  <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
+  <CaretDownIcon
+    size="12px"
+    className="text-muted-foreground -rotate-90 flex-none"
+  />
 
   <svelte:self resources={downstreamResources} {allResources} downstream />
 {/if}
@@ -191,15 +194,15 @@
 
   a:hover,
   button:hover {
-    @apply text-gray-700;
+    @apply text-surface-foreground;
   }
 
   .selected {
-    @apply text-gray-950;
+    @apply text-foreground;
   }
 
   .open {
-    @apply bg-slate-200 rounded-[2px] text-gray-700;
+    @apply bg-gray-200 rounded-[2px] text-surface-foreground;
   }
 
   .graph-trigger {

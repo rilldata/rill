@@ -73,7 +73,7 @@
   <CheckCircle size="40px" className="text-primary-500" />
   <h2 class="text-lg font-normal">Grant access to this project</h2>
   {#if $requestAccess.data}
-    <div class="text-slate-500 text-base">
+    <div class="text-muted-foreground text-base">
       Select a role for <b>{$requestAccess.data.email}</b> to access the project
       <b>{project}</b>.
     </div>

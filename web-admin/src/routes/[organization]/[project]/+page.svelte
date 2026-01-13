@@ -39,21 +39,21 @@
           </DelayedContent>
         {:else if isErrorDisplayName}
           <h1
-            class="text-4xl font-semibold text-gray-900"
+            class="text-4xl font-semibold text-foreground"
             aria-label="Project title"
           >
             Welcome to <span class="text-primary-600">{project}</span>
           </h1>
         {:else}
           <h1
-            class="text-4xl font-semibold text-gray-900"
+            class="text-4xl font-semibold text-foreground"
             aria-label="Project title"
           >
             Welcome to <span class="text-primary-600">{projectDisplayName}</span
             >
           </h1>
         {/if}
-        <p class="text-lg text-gray-600">
+        <p class="text-lg text-muted-foreground">
           {#if $chat}
             Ask questions about your data, or explore your dashboards below
           {:else}
@@ -72,7 +72,7 @@
 
     <!-- Dashboards Section -->
     <div class="flex flex-col gap-y-4">
-      <h2 class="text-xl font-semibold text-gray-900">Dashboards</h2>
+      <h2 class="text-xl font-semibold text-foreground">Dashboards</h2>
       <DashboardsTable isPreview />
     </div>
   </div>

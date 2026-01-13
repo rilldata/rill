@@ -35,8 +35,8 @@
   transition-transform duration-100`;
 
   $: textStyle = disabled
-    ? "text-gray-400"
-    : "text-gray-700 hover:text-gray-900 ";
+    ? "text-muted-foreground"
+    : "text-surface-foreground hover:text-foreground ";
 
   $: bgStyle = disabled
     ? "bg-surface"

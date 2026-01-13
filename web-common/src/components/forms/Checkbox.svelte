@@ -51,13 +51,13 @@
     <label for={$$props.id} class="flex items-center text-sm gap-x-1">
       {label}
       {#if optional}
-        <span class="text-gray-500 text-[12px] font-normal capitalize"
+        <span class="text-muted-foreground text-[12px] font-normal capitalize"
           >(optional)</span
         >
       {/if}
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500">
+          <div class="text-muted-foreground">
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="240px" slot="tooltip-content">

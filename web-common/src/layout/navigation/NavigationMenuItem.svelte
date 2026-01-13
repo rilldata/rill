@@ -21,11 +21,7 @@
         <slot name="icon" />
       </div>
     {/if}
-    <div
-      class:ui-copy={!disabled}
-      class:ui-copy-disabled={disabled}
-      class="text-left"
-    >
+    <div class:ui-copy-disabled={disabled} class="text-left">
       <slot />
 
       <div

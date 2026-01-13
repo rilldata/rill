@@ -123,7 +123,7 @@
               on:click={() => {
                 recents.set([]);
               }}
-              class="text-[10px] text-gray-500">Clear recents</button
+              class="text-[10px] text-muted-foreground">Clear recents</button
             >
           {/if}
         </div>
@@ -171,7 +171,9 @@
           </DropdownMenu.CheckboxItem>
         {:else}
           <DropdownMenu.Group>
-            <p class="pt-0 pb-2 text-gray-500 text-center">No options found</p>
+            <p class="pt-0 pb-2 text-muted-foreground text-center">
+              No options found
+            </p>
           </DropdownMenu.Group>
         {/each}
       </DropdownMenu.Group>

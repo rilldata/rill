@@ -23,7 +23,7 @@
       <button
         aria-label="Switch to {view === 'viz' ? 'visual' : view} editor"
         id="{view}-toggle"
-        class="size-[22px] z-10 hover:brightness-75"
+        class="size-[22px] z-10 hover:brightness-75 p-0"
         on:click={() => {
           if (selectedView === "code") {
             selectedView = "viz";
@@ -61,6 +61,6 @@
   }
 
   .radio {
-    @apply h-fit bg-surface border p-[1px] px-[1.5px] rounded-[6px] flex;
+    @apply h-fit bg-surface border p-0.5 rounded-[6px] flex;
   }
 </style>

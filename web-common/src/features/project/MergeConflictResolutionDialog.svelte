@@ -30,7 +30,7 @@
             <h3 class="text-base font-medium text-black">
               What are merge conflicts?
             </h3>
-            <div class="text-sm text-slate-600">
+            <div class="text-sm text-muted-foreground">
               Conflicts occur when same part of the file has been changed in
               different ways. You need to choose which version to keep.
             </div>

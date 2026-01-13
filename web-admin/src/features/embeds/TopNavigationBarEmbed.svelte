@@ -59,10 +59,13 @@
         <ol class="flex items-center pl-4">
           {#if !onProjectPage}
             <div class="flex gap-x-2">
-              <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
+              <a
+                class="text-muted-foreground hover:text-muted-foreground"
+                href="/-/embed"
+              >
                 Home
               </a>
-              <span class="text-gray-600">/</span>
+              <span class="text-muted-foreground">/</span>
             </div>
           {/if}
 

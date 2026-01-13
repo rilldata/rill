@@ -135,7 +135,7 @@
   }
 
   .primary:disabled {
-    @apply bg-slate-400;
+    @apply bg-gray-400;
   }
 
   .primary.theme {
@@ -208,18 +208,18 @@
   .secondary.loading,
   .ghost.loading,
   .dashed.loading {
-    @apply bg-slate-50;
-    @apply border-slate-300;
-    @apply text-slate-600;
+    @apply bg-gray-50;
+    @apply border-gray-300;
+    @apply text-muted-foreground;
   }
 
   .secondary:disabled,
   .dashed:disabled {
-    @apply text-slate-400 bg-slate-50 border-slate-300;
+    @apply text-muted-foreground bg-gray-50 border-gray-300;
   }
 
   .ghost:disabled {
-    @apply bg-transparent text-slate-400;
+    @apply bg-transparent text-muted-foreground;
   }
 
   .secondary:active:hover,
@@ -243,21 +243,21 @@
   /* PLAIN STYLES */
 
   .plain {
-    @apply bg-transparent text-slate-600;
-    @apply border border-slate-300;
+    @apply bg-transparent text-muted-foreground;
+    @apply border;
   }
 
   .plain:hover {
-    @apply bg-slate-100;
+    @apply bg-gray-200;
   }
 
   .plain:active,
   .plain.selected {
-    @apply bg-slate-200;
+    @apply bg-gray-200;
   }
 
   .plain.disabled {
-    @apply text-slate-400;
+    @apply text-muted-foreground;
   }
 
   /* SUBTLE STYLES */
@@ -276,11 +276,11 @@
   }
 
   .subtle.loading {
-    @apply bg-slate-50 text-slate-600;
+    @apply bg-gray-50 text-muted-foreground;
   }
 
   .subtle:disabled {
-    @apply text-slate-400 bg-slate-50;
+    @apply text-muted-foreground/30 bg-gray-50;
   }
 
   /* LINK STYLES */
@@ -299,11 +299,11 @@
   }
 
   .link.loading {
-    @apply text-slate-600;
+    @apply text-muted-foreground;
   }
 
   .link:disabled {
-    @apply text-slate-400;
+    @apply text-muted-foreground;
   }
 
   .link.theme {
@@ -322,7 +322,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-gray-700 dark:text-muted-foreground p-0;
+    @apply text-muted-foreground p-0;
   }
 
   .text:hover {
@@ -335,11 +335,11 @@
   }
 
   .text.loading {
-    @apply text-slate-600;
+    @apply text-muted-foreground;
   }
 
   .text:disabled {
-    @apply text-slate-400;
+    @apply text-muted-foreground/30;
   }
 
   .text.theme:hover {
@@ -354,22 +354,22 @@
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply font-normal text-gray-800 dark:text-muted-foreground;
+    @apply font-normal text-foreground;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
   }
 
   .toolbar:hover {
-    @apply bg-slate-600/15;
+    @apply bg-gray-600/15;
   }
 
   .toolbar:active,
   .toolbar.selected {
-    @apply bg-slate-600/15;
+    @apply bg-gray-600/15;
   }
 
   .toolbar:disabled {
-    @apply text-slate-400;
+    @apply text-muted-foreground;
   }
 
   .text.theme:hover {
@@ -397,7 +397,7 @@
   }
 
   .danger.primary:disabled {
-    @apply bg-slate-400;
+    @apply bg-gray-400;
   }
 
   .danger.secondary {
@@ -412,13 +412,13 @@
   }
 
   .danger.secondary:disabled {
-    @apply text-slate-400;
-    @apply bg-slate-50;
-    @apply border-slate-300;
+    @apply text-muted-foreground;
+    @apply bg-gray-50;
+    @apply border-gray-300;
   }
 
   .danger.text {
-    @apply text-slate-600 p-0;
+    @apply text-muted-foreground p-0;
   }
 
   .danger.text:hover {
@@ -488,15 +488,15 @@
   .add {
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
-    @apply border border-dashed border-slate-300;
+    @apply border border-dashed border-gray-300;
     @apply bg-surface px-0;
   }
 
   .gray:not(:hover) {
-    @apply text-slate-600 border-slate-300;
+    @apply text-muted-foreground border-gray-300;
   }
 
   .gray:not(.ghost):not(:hover) {
-    @apply bg-slate-50;
+    @apply bg-gray-50;
   }
 </style>

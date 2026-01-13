@@ -44,7 +44,7 @@
   suppress={!isClipboardApiSupported()}
 >
   <button
-    class="text-{align} text-gray-500"
+    class="text-{align} text-muted-foreground"
     style:line-height={1.1}
     on:click={modified({
       shift: () => {

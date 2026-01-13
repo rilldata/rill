@@ -92,7 +92,7 @@
 >
   <div
     class="day {overlapClass}"
-    class:text-gray-400={outOfMonth}
+    class:text-muted-foreground={outOfMonth}
     class:potential={!!potentialInterval}
     class:anchor={areSameDay(anchorDay, date)}
   >

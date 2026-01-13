@@ -552,7 +552,7 @@
   }
 
   .state {
-    @apply flex h-full w-full items-center justify-center text-sm text-gray-500;
+    @apply flex h-full w-full items-center justify-center text-sm text-muted-foreground;
   }
 
   .state.error {

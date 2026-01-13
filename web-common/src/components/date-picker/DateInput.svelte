@@ -186,7 +186,7 @@
 
 <style lang="postcss">
   .input-wrapper {
-    @apply h-8 px-2 w-full rounded-md border border-gray-300 flex bg-surface;
+    @apply h-8 px-2 w-full rounded-md border flex bg-input;
     @apply items-center justify-between;
   }
 

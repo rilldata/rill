@@ -172,7 +172,7 @@
           isNull={value === null || value === undefined}
           {type}
           value={formattedValue || value}
-          color="text-gray-500"
+          color="text-muted-foreground"
         />
       </button>
     </BarAndLabel>

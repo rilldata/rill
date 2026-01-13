@@ -68,11 +68,11 @@
   }
 
   .file-path-link {
-    @apply text-gray-600 font-mono;
+    @apply text-muted-foreground font-mono;
   }
 
   .file-path-link:hover {
-    @apply text-gray-800 underline;
+    @apply text-foreground underline;
   }
 
   .new-badge {
@@ -81,7 +81,7 @@
   }
 
   .no-changes-message {
-    @apply p-3 text-xs text-gray-500 italic;
+    @apply p-3 text-xs text-muted-foreground italic;
   }
 
   .diff-view {

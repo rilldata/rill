@@ -17,11 +17,11 @@
 >
   <div class="flex flex-row gap-x-1">
     {#if dragData.isDir}
-      <Folder className="text-gray-400" size="14px" />
+      <Folder className="text-muted-foreground" size="14px" />
     {:else}
       <svelte:component
         this={dragData.kind ? resourceIconMapping[dragData.kind] : File}
-        className="text-gray-400"
+        className="text-muted-foreground"
         size="14px"
       />
     {/if}
@@ -31,7 +31,7 @@
 
 <style lang="postcss">
   .portal-item {
-    @apply shadow-lg shadow-slate-300;
+    @apply shadow-lg shadow-gray-300;
     @apply z-50;
     @apply absolute pointer-events-none;
   }

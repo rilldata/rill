@@ -49,7 +49,7 @@
           <Tooltip location="bottom" alignment="start">
             <div class="title-with-icon">
               <h1 class:faint class="title">{title}</h1>
-              <InfoCircle className="text-gray-500" size="16px" />
+              <InfoCircle className="text-muted-foreground" size="16px" />
             </div>
             <TooltipContent slot="tooltip-content">
               {description}
@@ -73,7 +73,7 @@
     {:else if !title && showDescriptionAsTooltip && description}
       <div class="header-row">
         <Tooltip location="bottom" alignment="start" distance={4}>
-          <InfoCircle className="text-gray-500" size="16px" />
+          <InfoCircle className="text-muted-foreground" size="16px" />
           <TooltipContent slot="tooltip-content">
             {description}
           </TooltipContent>
@@ -107,16 +107,16 @@
     font-size: 15px;
     line-height: 26px;
     @apply flex-shrink-0;
-    @apply font-medium text-gray-800 truncate;
+    @apply font-medium text-foreground truncate;
   }
 
   .title.faint {
-    @apply text-gray-500;
+    @apply text-muted-foreground;
   }
 
   .description {
     font-size: 13px;
     @apply flex-shrink-0;
-    @apply text-gray-500 font-normal leading-none;
+    @apply text-muted-foreground font-normal leading-none;
   }
 </style>

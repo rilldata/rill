@@ -246,7 +246,7 @@
             >
           </div>
         {:else if projects.length === 0}
-          <div class="text-xs text-slate-500">No projects</div>
+          <div class="text-xs text-muted-foreground">No projects</div>
         {:else}
           <Dropdown.Root
             bind:open={projectDropdownOpen}
@@ -254,8 +254,8 @@
           >
             <Dropdown.Trigger
               class="min-w-[260px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {projectDropdownOpen
-                ? 'bg-slate-200'
-                : 'hover:bg-slate-100'} px-2 py-1"
+                ? 'bg-gray-200'
+                : 'hover:bg-gray-100'} px-2 py-1"
             >
               <span>
                 {selectedProjectsLabel}
@@ -287,8 +287,8 @@
         <Dropdown.Root bind:open={roleDropdownOpen}>
           <Dropdown.Trigger
             class="min-w-[180px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {roleDropdownOpen
-              ? 'bg-slate-200'
-              : 'hover:bg-slate-100'} px-2 py-1"
+              ? 'bg-gray-200'
+              : 'hover:bg-gray-100'} px-2 py-1"
           >
             <span>{selectedRoleLabel}</span>
             {#if roleDropdownOpen}

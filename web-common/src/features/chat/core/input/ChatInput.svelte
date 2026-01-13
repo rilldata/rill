@@ -15,6 +15,7 @@
   export let noMargin = false;
   export let height: string | undefined = undefined;
   export let config: ChatConfig;
+  export let inline = false;
 
   let value = "";
 
@@ -113,6 +114,7 @@
 </script>
 
 <form
+  class:inline
   class="chat-input-form"
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
@@ -148,8 +150,12 @@
 <style lang="postcss">
   .chat-input-form {
     @apply flex flex-col gap-1 py-1 mx-4 mb-4;
-    @apply bg-background border rounded-md;
+    @apply border rounded-md bg-input;
     transition: border-color 0.2s;
+  }
+
+  .inline {
+    @apply bg-background;
   }
 
   .chat-input-form:focus-within {
@@ -171,7 +177,7 @@
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
-    @apply text-gray-400 pointer-events-none absolute;
+    @apply text-muted-foreground pointer-events-none absolute;
   }
 
   .stop-icon {

@@ -201,7 +201,7 @@
       <div class="flex flex-col items-start">
         Model
         {#if !isModelingSupported}
-          <span class="text-gray-500 text-xs">
+          <span class="text-muted-foreground text-xs">
             Requires a supported OLAP driver
           </span>
         {/if}
@@ -245,7 +245,9 @@
         <div class="flex flex-col items-start">
           Explore dashboard
           {#if metricsViews.length === 0}
-            <span class="text-gray-500 text-xs"> Requires a metrics view </span>
+            <span class="text-muted-foreground text-xs">
+              Requires a metrics view
+            </span>
           {/if}
         </div>
       </div>
@@ -268,7 +270,9 @@
         <div class="flex flex-col items-start">
           Canvas dashboard
           {#if metricsViews.length === 0}
-            <span class="text-gray-500 text-xs"> Requires a metrics view </span>
+            <span class="text-muted-foreground text-xs">
+              Requires a metrics view
+            </span>
           {/if}
         </div>
       </div>
@@ -318,7 +322,7 @@
         <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
-              className="text-gray-900"
+              className="text-foreground"
               size="16px"
             />
             Report
@@ -326,7 +330,7 @@
           <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
-              className="text-gray-900"
+              className="text-foreground"
               size="16px"
             />
             Alert

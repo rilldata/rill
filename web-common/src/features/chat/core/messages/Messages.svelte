@@ -147,7 +147,7 @@
     @apply flex flex-col;
     @apply items-center justify-center;
     @apply h-full text-center;
-    @apply text-gray-500;
+    @apply text-muted-foreground;
   }
 
   .chat-messages.fullpage .chat-empty {
@@ -156,20 +156,20 @@
 
   .chat-empty-title {
     @apply text-base font-semibold;
-    @apply text-gray-700 mb-1;
+    @apply text-surface-foreground mb-1;
   }
 
   .chat-messages.fullpage .chat-empty-title {
     @apply text-2xl font-semibold;
-    @apply text-gray-900 mb-2;
+    @apply text-foreground mb-2;
   }
 
   .chat-empty-subtitle {
-    @apply text-xs text-gray-500;
+    @apply text-xs text-muted-foreground;
   }
 
   .chat-messages.fullpage .chat-empty-subtitle {
-    @apply text-base text-gray-500;
+    @apply text-base text-muted-foreground;
   }
 
   @media (max-width: 640px) {

@@ -51,12 +51,18 @@
 
 <style lang="postcss">
   pre {
-    background: #f7f7f7;
-    border: 1px solid #ececec;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    @apply bg-sidebar;
     border-radius: 4px;
     padding: 1em;
     overflow: auto;
     margin: 0;
+  }
+
+  code {
+    text-shadow: none;
+  }
+
+  :global(.operator) {
+    background: none !important;
   }
 </style>

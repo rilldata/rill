@@ -96,7 +96,7 @@
     <span class="text-sm text-white font-semibold">{getInitials(name)}</span>
   </div>
   <div class="flex flex-col text-left">
-    <span class="text-sm font-medium text-gray-900 flex flex-row gap-x-1">
+    <span class="text-sm font-medium text-foreground flex flex-row gap-x-1">
       {name}
     </span>
     <Tooltip location="right" alignment="start" distance={8}>
@@ -108,7 +108,7 @@
         on:focus={() => (hovered = true)}
         on:blur={() => (hovered = false)}
       >
-        <span class="text-xs text-gray-500">
+        <span class="text-xs text-muted-foreground">
           {usersCount} user{usersCount === 1 ? "" : "s"}
         </span>
       </div>

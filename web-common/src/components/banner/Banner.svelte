@@ -91,11 +91,11 @@
   }
 
   .info.app-banner {
-    @apply bg-slate-100;
+    @apply bg-gray-100;
   }
   .info .banner-message,
   .info :global(svg) {
-    @apply text-slate-700;
+    @apply text-surface-foreground;
   }
 
   .warning.app-banner {

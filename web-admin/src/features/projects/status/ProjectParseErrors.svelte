@@ -61,7 +61,7 @@
         {parserReconcileError}
       </div>
     {:else}
-      <div class="text-gray-600">None!</div>
+      <div class="text-muted-foreground">None!</div>
     {/if}
   {/if}
 </section>

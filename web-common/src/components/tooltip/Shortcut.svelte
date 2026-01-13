@@ -1,3 +1,3 @@
-<div class="text-right text-gray-400">
+<div class="text-right text-muted-foreground">
   <slot />
 </div>

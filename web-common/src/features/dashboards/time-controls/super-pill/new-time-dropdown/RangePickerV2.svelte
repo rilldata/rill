@@ -427,7 +427,7 @@
       </div>
 
       {#if showCalendarPicker}
-        <div class="bg-slate-50 border-l p-3 size-full">
+        <div class="bg-gray-50 dark:bg-gray-300 border-l p-3 size-full">
           <CalendarPlusDateInput
             {interval}
             {zone}

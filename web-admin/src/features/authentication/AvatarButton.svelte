@@ -73,13 +73,11 @@
       </ProjectAccessControls>
       <DropdownMenu.Item
         href={`/${params.organization}/${params.project}/-/alerts`}
-        class="text-gray-800 font-normal"
       >
         Alerts
       </DropdownMenu.Item>
       <DropdownMenu.Item
         href={`/${params.organization}/${params.project}/-/reports`}
-        class="text-gray-800 font-normal"
       >
         Reports
       </DropdownMenu.Item>
@@ -92,7 +90,6 @@
       href="https://docs.rilldata.com"
       target="_blank"
       rel="noreferrer noopener"
-      class="text-gray-800 font-normal"
     >
       Documentation
     </DropdownMenu.Item>
@@ -100,18 +97,12 @@
       href="https://discord.gg/2ubRfjC7Rh"
       target="_blank"
       rel="noreferrer noopener"
-      class="text-gray-800 font-normal"
     >
       Join us on Discord
     </DropdownMenu.Item>
     <DropdownMenu.Item on:click={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      on:click={redirectToLogout}
-      class="text-gray-800 font-normal"
-    >
-      Logout
-    </DropdownMenu.Item>
+    <DropdownMenu.Item on:click={redirectToLogout}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

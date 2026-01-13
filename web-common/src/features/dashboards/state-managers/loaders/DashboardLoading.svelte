@@ -23,7 +23,7 @@
       </div>
       {#if $loadingForLongTime}
         <h1
-          class="text-lg font-semibold text-gray-800 text-center"
+          class="text-lg font-semibold text-foreground text-center"
           transition:fade|local={{ duration: 50 }}
         >
           Loading your dashboard...If this is taking a while, your database may

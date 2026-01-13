@@ -37,7 +37,7 @@
   {#if connector.name}
     <li class="connector-entry">
       <button
-        class="connector-entry-header"
+        class="connector-entry-header text-foreground"
         aria-label={connector.name}
         on:click={() => {
           store.toggleItem(connectorName);

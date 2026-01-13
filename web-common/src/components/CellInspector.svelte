@@ -154,7 +154,9 @@
       <div
         class="flex justify-between items-center p-2 border-b border-gray-200 bg-surface rounded-t-lg"
       >
-        <span class="text-xs text-gray-500 font-medium">Cell Inspector</span>
+        <span class="text-xs text-muted-foreground font-medium"
+          >Cell Inspector</span
+        >
         <button
           class="p-1 hover:bg-gray-100 rounded transition-colors"
           on:click={toggleLock}
@@ -175,17 +177,17 @@
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-gray-500 italic">No value</span>
+          <span class="text-sm text-muted-foreground italic">No value</span>
         {:else}
           <span
-            class="whitespace-pre-wrap break-words text-sm text-gray-800 w-full"
+            class="whitespace-pre-wrap break-words text-sm text-foreground w-full"
             class:font-mono={isJson}>{formatValue(value)}</span
           >
         {/if}
       </div>
       <!-- Fixed footer -->
       <div
-        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-gray-500 bg-surface rounded-b-lg"
+        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-muted-foreground bg-surface rounded-b-lg"
       >
         <div class="flex gap-2">
           <span>

@@ -18,7 +18,7 @@
     for={id}
     class="line-clamp-1 {small
       ? 'text-xs'
-      : 'text-sm'} text-gray-800 dark:text-gray-950"
+      : 'text-sm'} text-foreground dark:text-foreground"
     class:capitalize
     class:faint
   >
@@ -56,6 +56,6 @@
   }
 
   label.faint {
-    @apply text-gray-500;
+    @apply text-muted-foreground;
   }
 </style>

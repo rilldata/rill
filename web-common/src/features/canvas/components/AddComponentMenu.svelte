@@ -26,7 +26,9 @@
         <DropdownMenu.Item on:click={() => addComponent(item.id)}>
           <div class="flex flex-row gap-x-2">
             <svelte:component this={item.icon} />
-            <span class="text-gray-700 text-xs font-normal">{item.label}</span>
+            <span class="text-surface-foreground text-xs font-normal"
+              >{item.label}</span
+            >
           </div>
         </DropdownMenu.Item>
       {/each}

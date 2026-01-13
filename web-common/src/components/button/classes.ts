@@ -1,15 +1,15 @@
-export const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
+export const disabledClasses = `disabled:cursor-not-allowed disabled:text-surface-foreground disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
 
 export const levels = {
   info: {
     primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-primary-300`,
     secondary:
-      "text-gray-800 border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-primary-300",
+      "text-foreground border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-surface-foreground hover:border-gray-300 focus:ring-primary-300",
     highlighted:
-      "text-gray-500 border hover:bg-gray-200 hover:text-gray-600 focus:ring-primary-300 shadow-lg rounded-sm h-8",
-    text: "text-gray-900 hover:bg-gray-300 focus:ring-primary-300",
+      "text-muted-foreground border hover:bg-gray-200 hover:text-muted-foreground focus:ring-primary-300 shadow-lg rounded-sm h-8",
+    text: "text-foreground hover:bg-gray-300 focus:ring-primary-300",
     dashed:
-      "text-gray-800 border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-primary-300",
+      "text-foreground border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-surface-foreground hover:border-gray-300 focus:ring-primary-300",
   },
   error: {
     primary:

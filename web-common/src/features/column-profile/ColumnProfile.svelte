@@ -80,7 +80,7 @@
   bind:this={container}
   class="pl-{indentLevel === 1
     ? '10'
-    : '4'} pr-5 pb-2 flex justify-between text-gray-500 pt-1"
+    : '4'} pr-5 pb-2 flex justify-between text-muted-foreground pt-1"
   class:flex-col={containerWidth < 325}
 >
   <select bind:value={sortMethod} class={native_select} style:font-size="11px">
