@@ -251,7 +251,6 @@ function getGenericEnvVarName(driverName: string, propertyKey: string): string {
     "azure_storage_account",
     // Snowflake
     "privateKey",
-
   ]);
 
   // Convert property key to SCREAMING_SNAKE_CASE
@@ -285,10 +284,7 @@ function envVarExists(envBlob: string, varName: string): boolean {
 /**
  * Find the next available environment variable name by appending _1, _2, etc.
  */
-function findAvailableEnvVarName(
-  envBlob: string,
-  baseName: string,
-): string {
+function findAvailableEnvVarName(envBlob: string, baseName: string): string {
   let varName = baseName;
   let counter = 1;
 
