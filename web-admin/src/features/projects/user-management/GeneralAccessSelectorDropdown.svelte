@@ -3,7 +3,7 @@
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceRemoveProjectMemberUsergroup,
     createAdminServiceAddProjectMemberUsergroup,
-    createAdminServiceListOrganizationMemberUsers,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -42,21 +42,26 @@
       },
     );
 
-  // Use ListOrganizationMemberUsers with pageSize: 1 to efficiently get the totalCount
-  // This avoids fetching all users and provides the accurate total count
-  $: listOrgMemberUsers = createAdminServiceListOrganizationMemberUsers(
-    organization,
-    { pageSize: 1 },
-    {
-      query: {
-        enabled: accessDropdownOpen,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
+  // Use ListOrganizationMemberUsergroups with includeCounts to get the usersCount
+  // for autogroup:members, which specifically excludes guest users
+  $: listOrgMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(
+      organization,
+      { includeCounts: true },
+      {
+        query: {
+          enabled: accessDropdownOpen,
+          refetchOnMount: true,
+          refetchOnWindowFocus: true,
+        },
       },
-    },
-  );
+    );
 
-  $: userGroupMemberUsersCount = $listOrgMemberUsers?.data?.totalCount ?? 0;
+  // Get the user count from the autogroup:members group (excludes guests)
+  $: autogroupMembersGroup = $listOrgMemberUsergroups?.data?.members?.find(
+    (group) => group.groupName === "autogroup:members",
+  );
+  $: userGroupMemberUsersCount = autogroupMembersGroup?.usersCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
 
