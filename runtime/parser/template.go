@@ -279,9 +279,8 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 			return value, nil
 		}
 		// Try case-insensitive match
-		lowerName := strings.ToLower(name)
 		for key, value := range data.Variables {
-			if strings.ToLower(key) == lowerName {
+			if strings.EqualFold(key, name) {
 				return value, nil
 			}
 		}

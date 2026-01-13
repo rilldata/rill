@@ -126,7 +126,7 @@ export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
-  connectorInstanceName?: string,
+  _connectorInstanceName?: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
