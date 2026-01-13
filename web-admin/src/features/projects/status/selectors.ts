@@ -13,7 +13,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { readable } from "svelte/store";
+import { readable, get } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -339,9 +340,32 @@ export function useTableMetadata(
         subscriptions.push(columnUnsubscribe);
 
         // Fetch row count using direct httpClient function
-        // The httpClient automatically handles JWT auth
+        // Wait for JWT to be available before making the request
         (async () => {
           try {
+            // Wait for JWT token to be available (with timeout)
+            let jwtReady = false;
+            let waitAttempts = 0;
+            const maxWaitAttempts = 50; // ~5 seconds with 100ms intervals
+
+            while (!jwtReady && waitAttempts < maxWaitAttempts) {
+              const runtimeState = get(runtime);
+              if (runtimeState?.jwt?.token && runtimeState.jwt.token !== "") {
+                jwtReady = true;
+              } else {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                waitAttempts++;
+              }
+            }
+
+            if (!jwtReady) {
+              console.warn(`[RowCount] ${tableName} JWT not available after timeout`);
+              rowCounts.set(tableName, "error");
+              completedCount++;
+              updateAndNotify();
+              return;
+            }
+
             console.log(`[RowCount] Fetching count for ${tableName}...`);
             const response = await queryServiceQuery(
               instanceId,
