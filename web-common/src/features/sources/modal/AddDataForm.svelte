@@ -3,32 +3,32 @@
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import {
-    type ConnectorDriverProperty,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
   import type { AddDataFormType, ConnectorType } from "./types";
-  import AddClickHouseForm from "./AddClickHouseForm.svelte";
-  import ConnectorForm from "./ConnectorForm.svelte";
+  import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { hasOnlyDsn, isEmpty } from "./utils";
+  import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
-    FORM_HEIGHT_DEFAULT,
-    MULTI_STEP_CONNECTORS,
   } from "./constants";
-
+  import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
-
-  import { AddDataFormManager } from "./AddDataFormManager";
+  import {
+    AddDataFormManager,
+    type ClickhouseUiState,
+  } from "./AddDataFormManager";
+  import ClickhouseFormRenderer from "./ClickhouseFormRenderer.svelte";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import { get, type Writable } from "svelte/store";
+  import { getConnectorSchema } from "./connector-schemas";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -36,14 +36,9 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  const isMultiStepConnector =
-    formType === "connector" &&
-    MULTI_STEP_CONNECTORS.includes(connector.name ?? "");
-
   let saveAnyway = false;
   let showSaveAnyway = false;
   let connectionTab: ConnectorType = "parameters";
-  let formHeight = FORM_HEIGHT_DEFAULT;
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: <
@@ -57,121 +52,122 @@
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) => Promise<void> = async (_event) => {};
 
-  let formManager: AddDataFormManager | null = null;
+  const formManager = new AddDataFormManager({
+    connector,
+    formType,
+    onParamsUpdate: (e: any) => handleOnUpdate(e),
+    onDsnUpdate: (e: any) => handleOnUpdate(e),
+    getSelectedAuthMethod: () =>
+      get(connectorStepStore).selectedAuthMethod ?? undefined,
+  });
 
-  $: if (!isMultiStepConnector) {
-    formManager = new AddDataFormManager({
-      connector,
-      formType,
-      onParamsUpdate: (e: any) => handleOnUpdate(e),
-      onDsnUpdate: (e: any) => handleOnUpdate(e),
-      getSelectedAuthMethod: () => undefined,
-    });
-    formHeight = formManager.formHeight;
-  }
-
-  let isSourceForm = formType === "source";
-  let isConnectorForm = formType === "connector";
-  let onlyDsn = false;
+  const isMultiStepConnector = formManager.isMultiStepConnector;
+  const isSourceForm = formManager.isSourceForm;
+  const isConnectorForm = formManager.isConnectorForm;
+  const onlyDsn = hasOnlyDsn(connector, isConnectorForm);
   let activeAuthMethod: string | null = null;
   let prevAuthMethod: string | null = null;
+  let stepState = $connectorStepStore;
   let multiStepSubmitDisabled = false;
   let multiStepButtonLabel = "";
   let multiStepLoadingCopy = "";
+  let shouldShowSkipLink = false;
   let primaryButtonLabel = "";
   let primaryLoadingCopy = "";
-  let shouldShowSkipLink = false;
-  let multiStepYamlPreview = "";
-  let multiStepYamlPreviewTitle = "Connector preview";
-  let multiStepSubmitting = false;
-  let multiStepShowSaveAnyway = false;
-  let multiStepSaveAnywayLoading = false;
-  let multiStepSaveAnywayHandler: () => Promise<void> = async () => {};
-  let multiStepHandleBack: () => void = () => onBack();
-  let multiStepHandleSkip: () => void = () => {};
 
-  // Form 1: Individual parameters (non-multi-step)
-  let paramsFormId = "";
-  let properties: ConnectorDriverProperty[] = [];
-  let filteredParamsProperties: ConnectorDriverProperty[] = [];
-  let multiStepFormId = "";
-  let paramsForm: any = null;
-  let paramsErrors: any = null;
-  let paramsEnhance: any = null;
-  let paramsTainted: any = null;
-  let paramsSubmit: any = null;
-  let paramsSubmitting: any = null;
+  $: stepState = $connectorStepStore;
+
+  // Form 1: Individual parameters
+  const paramsFormId = formManager.paramsFormId;
+  const properties = formManager.properties;
+  const filteredParamsProperties = formManager.filteredParamsProperties;
+  let multiStepFormId = paramsFormId;
+  const {
+    form: paramsForm,
+    errors: paramsErrors,
+    enhance: paramsEnhance,
+    tainted: paramsTainted,
+    submit: paramsSubmit,
+    submitting: paramsSubmitting,
+  } = formManager.params;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // Form 2: DSN (non-multi-step)
-  let hasDsnFormOption = false;
-  let dsnFormId = "";
-  let dsnProperties: ConnectorDriverProperty[] = [];
-  let filteredDsnProperties: ConnectorDriverProperty[] = [];
-  let dsnForm: any = null;
-  let dsnErrors: any = null;
-  let dsnEnhance: any = null;
-  let dsnTainted: any = null;
-  let dsnSubmit: any = null;
-  let dsnSubmitting: any = null;
+  // Form 2: DSN
+  // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
+  const hasDsnFormOption = formManager.hasDsnFormOption;
+  const dsnFormId = formManager.dsnFormId;
+  const dsnProperties = formManager.dsnProperties;
+  const filteredDsnProperties = formManager.filteredDsnProperties;
+  const {
+    form: dsnForm,
+    errors: dsnErrors,
+    enhance: dsnEnhance,
+    tainted: dsnTainted,
+    submit: dsnSubmit,
+    submitting: dsnSubmitting,
+  } = formManager.dsn;
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  $: if (formManager) {
-    paramsFormId = formManager.paramsFormId;
-    properties = formManager.properties;
-    filteredParamsProperties = formManager.filteredParamsProperties;
-    multiStepFormId = paramsFormId;
-    ({
-      form: paramsForm,
-      errors: paramsErrors,
-      enhance: paramsEnhance,
-      tainted: paramsTainted,
-      submit: paramsSubmit,
-      submitting: paramsSubmitting,
-    } = formManager.params);
-
-    hasDsnFormOption = formManager.hasDsnFormOption;
-    dsnFormId = formManager.dsnFormId;
-    dsnProperties = formManager.dsnProperties;
-    filteredDsnProperties = formManager.filteredDsnProperties;
-    ({
-      form: dsnForm,
-      errors: dsnErrors,
-      enhance: dsnEnhance,
-      tainted: dsnTainted,
-      submit: dsnSubmit,
-      submitting: dsnSubmitting,
-    } = formManager.dsn);
-
-    isSourceForm = formManager.isSourceForm;
-    isConnectorForm = formManager.isConnectorForm;
-    hasDsnFormOption = formManager.hasDsnFormOption;
-    onlyDsn = hasOnlyDsn(connector, isConnectorForm);
-  } else {
-    isSourceForm = formType === "source";
-    isConnectorForm = formType === "connector";
-    hasDsnFormOption = false;
-    onlyDsn = false;
-  }
-
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
-  let clickhouseFormId: string = "";
-  let clickhouseSubmitting: boolean;
-  let clickhouseIsSubmitDisabled: boolean;
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
-  let clickhouseParamsForm;
-  let clickhouseDsnForm;
-  let clickhouseShowSaveAnyway: boolean = false;
+  let clickhouseUiState: ClickhouseUiState | null = null;
+  let clickhouseSaving = false;
+  let effectiveClickhouseSubmitting = false;
+  const paramsFormStore = paramsForm as unknown as Writable<
+    Record<string, any>
+  >;
+  const dsnFormStore = dsnForm as unknown as Writable<Record<string, any>>;
+
+  const connectorSchema = getConnectorSchema(connector.name ?? "");
+  const hasSchema = Boolean(connectorSchema);
+
+  // ClickHouse-specific derived state handled by the manager
+  $: if (connector.name === "clickhouse") {
+    clickhouseUiState = formManager.computeClickhouseState({
+      connectorType: clickhouseConnectorType,
+      connectionTab,
+      paramsFormValues: $paramsForm,
+      dsnFormValues: $dsnForm,
+      paramsErrors: $paramsErrors,
+      dsnErrors: $dsnErrors,
+      paramsForm,
+      dsnForm,
+      paramsSubmitting: $paramsSubmitting,
+      dsnSubmitting: $dsnSubmitting,
+    });
+
+    if (
+      clickhouseUiState?.enforcedConnectionTab &&
+      clickhouseUiState.enforcedConnectionTab !== connectionTab
+    ) {
+      connectionTab = clickhouseUiState.enforcedConnectionTab;
+    }
+
+    if (clickhouseUiState?.shouldClearErrors) {
+      clickhouseError = null;
+      clickhouseErrorDetails = undefined;
+    }
+  } else {
+    clickhouseUiState = null;
+  }
+
+  $: effectiveClickhouseSubmitting =
+    connector.name === "clickhouse"
+      ? clickhouseSaving || clickhouseUiState?.submitting || false
+      : submitting;
+
+  // Hide Save Anyway once we advance to the model step in multi-step flows.
+  $: if (isMultiStepConnector && stepState.step === "source") {
+    showSaveAnyway = false;
+  }
 
   $: isSubmitDisabled = (() => {
     if (isMultiStepConnector) {
       return multiStepSubmitDisabled;
     }
-
-    if (!formManager) return true;
 
     if (onlyDsn || connectionTab === "dsn") {
       // DSN form: check required DSN properties
@@ -205,12 +201,10 @@
   })();
 
   $: formId = isMultiStepConnector
-    ? multiStepFormId
-    : (formManager?.getActiveFormId({ connectionTab, onlyDsn }) ?? "");
+    ? multiStepFormId || formManager.getActiveFormId({ connectionTab, onlyDsn })
+    : formManager.getActiveFormId({ connectionTab, onlyDsn });
 
   $: submitting = (() => {
-    if (isMultiStepConnector) return multiStepSubmitting;
-    if (!formManager) return false;
     if (onlyDsn || connectionTab === "dsn") {
       return $dsnSubmitting;
     } else {
@@ -220,16 +214,14 @@
 
   $: primaryButtonLabel = isMultiStepConnector
     ? multiStepButtonLabel
-    : formManager
-      ? formManager.getPrimaryButtonLabel({
-          isConnectorForm,
-          step: isSourceForm ? "source" : "connector",
-          submitting,
-          clickhouseConnectorType,
-          clickhouseSubmitting,
-          selectedAuthMethod: activeAuthMethod ?? undefined,
-        })
-      : "";
+    : formManager.getPrimaryButtonLabel({
+        isConnectorForm,
+        step: stepState.step,
+        submitting,
+        clickhouseConnectorType,
+        clickhouseSubmitting: effectiveClickhouseSubmitting,
+        selectedAuthMethod: activeAuthMethod ?? undefined,
+      });
 
   $: primaryLoadingCopy = (() => {
     if (connector.name === "clickhouse") return "Connecting...";
@@ -246,43 +238,13 @@
     saveAnyway = false;
   }
 
-  $: isSubmitting = submitting;
-
-  $: ctaDisabled =
+  $: isSubmitting =
     connector.name === "clickhouse"
-      ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-      : isMultiStepConnector
-        ? multiStepSubmitting || multiStepSubmitDisabled
-        : submitting || isSubmitDisabled;
-  $: ctaLoading =
-    connector.name === "clickhouse"
-      ? clickhouseSubmitting
-      : isMultiStepConnector
-        ? multiStepSubmitting
-        : submitting;
-  $: ctaLoadingCopy = isMultiStepConnector
-    ? multiStepLoadingCopy
-    : primaryLoadingCopy;
-  $: ctaLabel = isMultiStepConnector
-    ? multiStepButtonLabel
-    : primaryButtonLabel;
-  $: ctaFormId =
-    connector.name === "clickhouse"
-      ? clickhouseFormId
-      : isMultiStepConnector
-        ? multiStepFormId
-        : formId;
+      ? effectiveClickhouseSubmitting
+      : submitting;
 
-  $: effectiveYaml = isMultiStepConnector ? multiStepYamlPreview : yamlPreview;
-  $: effectiveYamlTitle = isMultiStepConnector
-    ? multiStepYamlPreviewTitle
-    : isSourceForm
-      ? "Model preview"
-      : "Connector preview";
-
-  // Reset errors when form is modified (non-multi-step paths)
+  // Reset errors when form is modified
   $: (() => {
-    if (isMultiStepConnector || !formManager) return;
     if (onlyDsn || connectionTab === "dsn") {
       if ($dsnTainted) dsnError = null;
     } else {
@@ -290,9 +252,8 @@
     }
   })();
 
-  // Clear errors when switching tabs (non-multi-step paths)
+  // Clear errors when switching tabs
   $: (() => {
-    if (isMultiStepConnector || !formManager) return;
     if (hasDsnFormOption) {
       if (connectionTab === "dsn") {
         paramsError = null;
@@ -310,26 +271,18 @@
       return;
     }
 
-    // Multi-step connectors delegate to the container handler
-    if (isMultiStepConnector) {
-      await multiStepSaveAnywayHandler();
-      return;
-    }
-
-    if (!formManager) return;
-
     // For other connectors, use manager helper
     saveAnyway = true;
     const values =
       connector.name === "clickhouse"
         ? connectionTab === "dsn"
-          ? $clickhouseDsnForm
-          : $clickhouseParamsForm
+          ? $dsnForm
+          : $paramsForm
         : onlyDsn || connectionTab === "dsn"
           ? $dsnForm
           : $paramsForm;
     if (connector.name === "clickhouse") {
-      clickhouseSubmitting = true;
+      clickhouseSaving = true;
     }
     const result = await formManager.saveConnectorAnyway({
       queryClient,
@@ -357,69 +310,53 @@
     }
     saveAnyway = false;
     if (connector.name === "clickhouse") {
-      clickhouseSubmitting = false;
+      clickhouseSaving = false;
     }
   }
 
-  $: yamlPreview = isMultiStepConnector
-    ? multiStepYamlPreview
-    : formManager
-      ? formManager.computeYamlPreview({
-          connectionTab,
-          onlyDsn,
-          filteredParamsProperties,
-          filteredDsnProperties,
-          stepState: undefined,
-          isMultiStepConnector,
-          isConnectorForm,
-          paramsFormValues: $paramsForm,
-          dsnFormValues: $dsnForm,
-          clickhouseConnectorType,
-          clickhouseParamsValues: $clickhouseParamsForm,
-          clickhouseDsnValues: $clickhouseDsnForm,
-        })
-      : "";
+  $: yamlPreview = formManager.computeYamlPreview({
+    connectionTab,
+    onlyDsn,
+    filteredParamsProperties,
+    filteredDsnProperties,
+    stepState,
+    isMultiStepConnector,
+    isConnectorForm,
+    paramsFormValues: $paramsForm,
+    dsnFormValues: $dsnForm,
+    clickhouseConnectorType,
+    clickhouseParamsValues: $paramsForm,
+    clickhouseDsnValues: $dsnForm,
+  });
   $: isClickhouse = connector.name === "clickhouse";
-  $: shouldShowSaveAnywayButton =
-    isConnectorForm &&
-    (clickhouseShowSaveAnyway ||
-      (isMultiStepConnector ? multiStepShowSaveAnyway : showSaveAnyway));
-  $: saveAnywayLoading = isMultiStepConnector
-    ? multiStepSaveAnywayLoading
-    : isClickhouse
-      ? clickhouseSubmitting && saveAnyway
-      : submitting && saveAnyway;
+  $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
+  $: saveAnywayLoading = isClickhouse
+    ? effectiveClickhouseSubmitting && saveAnyway
+    : submitting && saveAnyway;
 
-  if (formManager) {
-    const fm = formManager as AddDataFormManager;
-    handleOnUpdate =
-      fm.makeOnUpdate({
-        onClose,
-        queryClient,
-        getConnectionTab: () => connectionTab,
-        getSelectedAuthMethod: () => activeAuthMethod || undefined,
-        setParamsError: (message: string | null, details?: string) => {
-          paramsError = message;
-          paramsErrorDetails = details;
-        },
-        setDsnError: (message: string | null, details?: string) => {
-          dsnError = message;
-          dsnErrorDetails = details;
-        },
-        setShowSaveAnyway: (value: boolean) => {
-          showSaveAnyway = value;
-        },
-      }) ?? (async () => {});
-  } else {
-    handleOnUpdate = async () => {};
-  }
+  handleOnUpdate = formManager.makeOnUpdate({
+    onClose,
+    queryClient,
+    getConnectionTab: () => connectionTab,
+    getSelectedAuthMethod: () => activeAuthMethod || undefined,
+    setParamsError: (message: string | null, details?: string) => {
+      paramsError = message;
+      paramsErrorDetails = details;
+    },
+    setDsnError: (message: string | null, details?: string) => {
+      dsnError = message;
+      dsnErrorDetails = details;
+    },
+    setShowSaveAnyway: (value: boolean) => {
+      showSaveAnyway = value;
+    },
+  });
 
   async function handleFileUpload(file: File): Promise<string> {
-    return formManager ? formManager.handleFileUpload(file) : "";
+    return formManager.handleFileUpload(file);
   }
 
   function onStringInputChange(event: Event) {
-    if (!formManager) return;
     formManager.onStringInputChange(
       event,
       $paramsTainted as Record<string, boolean> | null | undefined,
@@ -432,47 +369,26 @@
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
-    <div class="flex flex-col flex-grow {formHeight} overflow-y-auto p-6">
+    <div
+      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+    >
       {#if connector.name === "clickhouse"}
-        <AddClickHouseForm
-          {connector}
-          {onClose}
-          setError={(error, details) => {
-            clickhouseError = error;
-            clickhouseErrorDetails = details;
-          }}
-          bind:formId={clickhouseFormId}
-          bind:isSubmitting={clickhouseSubmitting}
-          bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
-          bind:connectorType={clickhouseConnectorType}
+        <ClickhouseFormRenderer
           bind:connectionTab
-          bind:paramsForm={clickhouseParamsForm}
-          bind:dsnForm={clickhouseDsnForm}
-          bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          bind:clickhouseConnectorType
+          {clickhouseUiState}
+          {paramsFormId}
+          {paramsEnhance}
+          {paramsSubmit}
+          {paramsErrors}
+          {paramsFormStore}
+          {dsnFormId}
+          {dsnEnhance}
+          {dsnSubmit}
+          {dsnErrors}
+          {dsnFormStore}
+          {onStringInputChange}
         />
-      {:else if isMultiStepConnector}
-        {#key connector.name}
-          <ConnectorForm
-            {connector}
-            {onClose}
-            {onBack}
-            bind:isSubmitDisabled={multiStepSubmitDisabled}
-            bind:primaryButtonLabel={multiStepButtonLabel}
-            bind:primaryLoadingCopy={multiStepLoadingCopy}
-            bind:formId={multiStepFormId}
-            bind:yamlPreview={multiStepYamlPreview}
-            bind:yamlPreviewTitle={multiStepYamlPreviewTitle}
-            bind:isSubmitting={multiStepSubmitting}
-            bind:showSaveAnyway={multiStepShowSaveAnyway}
-            bind:saveAnywayLoading={multiStepSaveAnywayLoading}
-            bind:saveAnywayHandler={multiStepSaveAnywayHandler}
-            bind:handleBack={multiStepHandleBack}
-            bind:handleSkip={multiStepHandleSkip}
-            bind:shouldShowSkipLink
-            bind:paramsError
-            bind:paramsErrorDetails
-          />
-        {/key}
       {:else if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}
@@ -511,6 +427,7 @@
           </TabsContent>
         </Tabs>
       {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
+        <!-- Connector with only DSN - show DSN form directly -->
         <AddDataFormSection
           id={dsnFormId}
           enhance={dsnEnhance}
@@ -522,6 +439,40 @@
             errors={$dsnErrors}
             {onStringInputChange}
             uploadFile={handleFileUpload}
+          />
+        </AddDataFormSection>
+      {:else if isMultiStepConnector}
+        <MultiStepConnectorFlow
+          {connector}
+          {formManager}
+          {paramsForm}
+          {paramsErrors}
+          {paramsEnhance}
+          {paramsSubmit}
+          {paramsFormId}
+          {onStringInputChange}
+          {handleFileUpload}
+          submitting={$paramsSubmitting}
+          bind:activeAuthMethod
+          bind:isSubmitDisabled={multiStepSubmitDisabled}
+          bind:primaryButtonLabel={multiStepButtonLabel}
+          bind:primaryLoadingCopy={multiStepLoadingCopy}
+          bind:formId={multiStepFormId}
+          bind:shouldShowSkipLink
+        />
+      {:else if hasSchema}
+        <AddDataFormSection
+          id={paramsFormId}
+          enhance={paramsEnhance}
+          onSubmit={paramsSubmit}
+        >
+          <JSONSchemaFormRenderer
+            schema={connectorSchema}
+            step={isConnectorForm ? "connector" : "source"}
+            form={paramsForm}
+            errors={$paramsErrors}
+            {onStringInputChange}
+            {handleFileUpload}
           />
         </AddDataFormSection>
       {:else}
@@ -545,15 +496,9 @@
     <div
       class="w-full bg-surface-subtle border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button
-        onClick={() =>
-          isMultiStepConnector
-            ? multiStepHandleBack()
-            : formManager?.handleBack(onBack)}
-        type="tertiary"
+      <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
+        >Back</Button
       >
-        Back
-      </Button>
 
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}
@@ -569,14 +514,21 @@
         {/if}
 
         <Button
-          disabled={ctaDisabled}
-          loading={ctaLoading}
-          loadingCopy={ctaLoadingCopy}
-          form={ctaFormId}
+          disabled={connector.name === "clickhouse"
+            ? effectiveClickhouseSubmitting ||
+              (clickhouseUiState?.isSubmitDisabled ?? false)
+            : submitting || isSubmitDisabled}
+          loading={connector.name === "clickhouse"
+            ? effectiveClickhouseSubmitting
+            : submitting}
+          loadingCopy={primaryLoadingCopy}
+          form={connector.name === "clickhouse"
+            ? (clickhouseUiState?.formId ?? formId)
+            : formId}
           submitForm
           type="primary"
         >
-          {ctaLabel}
+          {primaryButtonLabel}
         </Button>
       </div>
     </div>
@@ -600,17 +552,23 @@
         />
       {/if}
 
-      <YamlPreview title={effectiveYamlTitle} yaml={effectiveYaml} />
+      <YamlPreview
+        title={isMultiStepConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
+      />
 
       {#if shouldShowSkipLink}
         <div class="text-sm leading-normal font-medium text-muted-foreground">
           Already connected? <button
             type="button"
             class="text-sm leading-normal text-primary-500 hover:text-primary-600 font-medium hover:underline break-all"
-            on:click={() =>
-              isMultiStepConnector
-                ? multiStepHandleSkip()
-                : formManager?.handleSkip()}
+            on:click={() => formManager.handleSkip()}
           >
             Import your data
           </button>
