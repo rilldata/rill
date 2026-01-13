@@ -65,6 +65,17 @@ func TestAnalyze(t *testing.T) {
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WITH SAMPLING <no value> .... <no value>`,
 			},
 		},
+		{
+			name:     "env function",
+			template: `SELECT * FROM {{ env "partner_table_name" }}`,
+			want: &TemplateMetadata{
+				Refs:                     []ResourceName{},
+				Config:                   map[string]any{},
+				Variables:                []string{},
+				UsesTemplating:           true,
+				ResolvedWithPlaceholders: `SELECT * FROM`,
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -110,6 +121,106 @@ func TestVariables(t *testing.T) {
 	}, false)
 	require.NoError(t, err)
 	require.Equal(t, "a=1 b.a=2 b.a=2", resolved)
+}
+
+func TestEnvFunction(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		data     TemplateData
+		want     string
+		wantErr  bool
+	}{
+		{
+			name:     "basic env function",
+			template: `SELECT * FROM {{ env "table_name" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"table_name": "my_table",
+				},
+			},
+			want:    "SELECT * FROM my_table",
+			wantErr: false,
+		},
+		{
+			name:     "env function with multiple vars",
+			template: `FROM {{ env "db" }}.{{ env "schema" }}.{{ env "table" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"db":     "mydb",
+					"schema": "public",
+					"table":  "users",
+				},
+			},
+			want:    "FROM mydb.public.users",
+			wantErr: false,
+		},
+		{
+			name:     "env function missing variable",
+			template: `SELECT * FROM {{ env "missing_var" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"table_name": "my_table",
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:     "env function with empty name",
+			template: `SELECT * FROM {{ env "" }}`,
+			data: TemplateData{
+				Variables: map[string]string{},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name:     "env function case insensitive - lowercase lookup",
+			template: `SELECT * FROM {{ env "table_name" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"TABLE_NAME": "my_table",
+				},
+			},
+			want:    "SELECT * FROM my_table",
+			wantErr: false,
+		},
+		{
+			name:     "env function case insensitive - uppercase lookup",
+			template: `SELECT * FROM {{ env "TABLE_NAME" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"table_name": "my_table",
+				},
+			},
+			want:    "SELECT * FROM my_table",
+			wantErr: false,
+		},
+		{
+			name:     "env function case insensitive - mixed case lookup",
+			template: `SELECT * FROM {{ env "TaBlE_NaMe" }}`,
+			data: TemplateData{
+				Variables: map[string]string{
+					"table_name": "my_table",
+				},
+			},
+			want:    "SELECT * FROM my_table",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved, err := ResolveTemplate(tt.template, tt.data, false)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, resolved)
+			}
+		})
+	}
 }
 
 func TestAsSQLList(t *testing.T) {
