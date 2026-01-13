@@ -680,6 +680,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
+    // Setting this to P1M prevents month over month comparisons for 31-day months
     offsetIso: "P31D",
     rillTimeOffset: "-1M",
   },
