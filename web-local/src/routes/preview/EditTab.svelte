@@ -44,34 +44,29 @@
     [ResourceKind.Canvas, CanvasWorkspace],
   ]);
 
-  // URL parameter parsing
-  $: selectedResourceName = $page.url.searchParams.get("resource");
-  $: selectedResourceKind = $page.url.searchParams.get("kind") as ResourceKind | null;
+  // URL parameter parsing (simplified)
+  $: selectedFilePath = $page.url.searchParams.get("file");
 
-  // Find the full resource object from allResources
-  $: selectedResource = allResources.find(
-    (r) => r.name === selectedResourceName && r.kind === selectedResourceKind,
-  ) ?? null;
-
-  // Get the workspace component for this resource kind
-  $: workspaceComponent = selectedResourceKind
-    ? workspaceComponents.get(selectedResourceKind)
+  // Create FileArtifact for the selected file
+  $: fileArtifact = selectedFilePath
+    ? fileArtifacts.getFileArtifact(selectedFilePath)
     : null;
 
-  // Create FileArtifact for the selected resource
-  $: fileArtifact = selectedResource?.path
-    ? fileArtifacts.getFileArtifact(selectedResource.path)
+  // Get the resource kind from fileArtifact to determine workspace
+  $: resourceKind = fileArtifact ? ($fileArtifact.resourceName?.kind as ResourceKind | null) : null;
+
+  // Get the workspace component for this resource kind
+  $: workspaceComponent = resourceKind
+    ? workspaceComponents.get(resourceKind)
     : null;
 
   // Fetch file content when fileArtifact changes and force viz mode
-  $: if (fileArtifact) {
+  $: if (fileArtifact && selectedFilePath) {
     fileArtifact.fetchContent();
 
     // Force viz mode (no code editor)
-    if (selectedResource?.path) {
-      const ws = workspaceStore.get(selectedResource.path);
-      ws.view.set("viz");
-    }
+    const ws = workspaceStore.get(selectedFilePath);
+    ws.view.set("viz");
   }
 
   async function loadResources() {
@@ -151,10 +146,11 @@
     loadResources();
   }
 
-  function navigateToEditor(resourceName: string, kind: ResourceKind | string) {
+  function navigateToEditor(resource: Resource) {
+    if (!resource.path) return;
+
     const url = new URL($page.url);
-    url.searchParams.set("resource", resourceName);
-    url.searchParams.set("kind", kind as string);
+    url.searchParams.set("file", resource.path);
     goto(url.toString());
   }
 
@@ -263,7 +259,7 @@
                   on:mouseleave={() => (hoveredResource = null)}
                 >
                   <button
-                    on:click={() => navigateToEditor(resource.name, resource.kind)}
+                    on:click={() => navigateToEditor(resource)}
                     on:contextmenu={(e) => handleContextMenu(e, resource.name)}
                     class="flex items-center gap-x-3 group px-4 py-3 w-full"
                   >
@@ -352,7 +348,7 @@
                   on:mouseleave={() => (hoveredResource = null)}
                 >
                   <button
-                    on:click={() => navigateToEditor(resource.name, resource.kind)}
+                    on:click={() => navigateToEditor(resource)}
                     on:contextmenu={(e) => handleContextMenu(e, resource.name)}
                     class="flex items-center gap-x-3 group px-4 py-3 w-full"
                   >
