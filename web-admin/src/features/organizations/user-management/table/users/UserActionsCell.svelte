@@ -7,7 +7,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-  import { Trash2Icon } from "lucide-svelte";
   import RemoveUserFromOrgConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemoveUserFromOrgConfirmDialog.svelte";
   import {
     createAdminServiceRemoveOrganizationMemberUser,
@@ -22,6 +21,7 @@
   export let isCurrentUser: boolean;
   export let organizationPermissions: V1OrganizationPermissions;
   export let isBillingContact: boolean;
+  export let pendingAcceptance: boolean = false;
   // Changing billing contact is not an action for this user. So handle it upstream
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
@@ -82,7 +82,7 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
-      {#if role === OrgUserRoles.Guest}
+      {#if role === OrgUserRoles.Guest && !pendingAcceptance}
         <DropdownMenu.Item
           class="font-normal flex items-center"
           on:click={onConvertToMember}
@@ -95,8 +95,7 @@
         type="destructive"
         on:click={onRemoveClick}
       >
-        <Trash2Icon size="12px" />
-        <span class="ml-2">Remove</span>
+        Remove
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
