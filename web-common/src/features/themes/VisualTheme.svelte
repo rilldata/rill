@@ -1,14 +1,10 @@
 <script lang="ts">
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
-  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
 
-  export let fileArtifact: FileArtifact;
   export let filePath: string;
-  export let errors: LineStatus[];
 
   let mode: "light" | "dark" = "light";
 

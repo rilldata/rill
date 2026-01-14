@@ -187,7 +187,7 @@
     </div>
     <table class="leaderboard-table">
       <tbody>
-        {#each leaderboardData as item, i}
+        {#each leaderboardData as item}
           {@const barLength = (item.value / maxLeaderboardValue) * 140}
           <tr class="leaderboard-row">
             <td
