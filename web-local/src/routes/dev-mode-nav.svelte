@@ -14,9 +14,9 @@
 
   const tabs = [
     { id: "preview", label: "Preview", path: "/preview" },
-    { id: "edit", label: "Edit", path: "/edit" },
+    // { id: "edit", label: "Edit", path: "/edit" },
     { id: "status", label: "Status", path: "/status" },
-    { id: "settings", label: "Settings", path: "/settings" },
+    // { id: "settings", label: "Settings", path: "/settings" },
   ];
 
   async function navigateTo(path: string) {

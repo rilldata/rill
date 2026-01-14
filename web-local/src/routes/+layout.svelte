@@ -50,7 +50,12 @@
     const config = await localServiceGetMetadata();
 
     // Always enable preview mode for development
-    isPreviewMode = false;
+    isPreviewMode = true;
+
+    // Redirect root to /preview when in preview mode
+    if (isPreviewMode && $page.url.pathname === "/") {
+      goto("/preview");
+    }
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
@@ -105,7 +110,7 @@
           logoHref={isPreviewMode ? "/preview" : "/"}
           breadcrumbResourceHref={(name, kind) => `/${kind}/${name}`}
         />
-        {#if isPreviewMode && !$page.url.pathname.startsWith('/files') && !onDeployPage}
+        {#if isPreviewMode && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}
           <DevModeNav />
         {/if}
         {#if $deploy}

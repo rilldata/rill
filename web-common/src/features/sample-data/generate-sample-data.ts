@@ -121,7 +121,12 @@ export async function generateSampleData(
           sourceImportedPath.set(path);
           created = true;
           overlay.set(null);
-          void goto(`/files${path}`);
+          // Determine redirect based on current route
+          const currentPath = window.location.pathname;
+          const redirectTo = currentPath.startsWith("/preview")
+            ? "/preview"
+            : `/files${path}`;
+          void goto(redirectTo);
           break;
         }
       }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import Card from "../../components/card/Card.svelte";
@@ -17,6 +18,9 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
+
+  // Determine redirect href based on current route
+  $: redirectHref = $page.url.pathname.startsWith("/preview") ? "/preview" : "/";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -77,6 +81,7 @@
     {#each EXAMPLES as example (example.name)}
       <Card
         redirect
+        href={redirectHref}
         imageUrl={example.image}
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}

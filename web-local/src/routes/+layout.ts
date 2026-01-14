@@ -32,9 +32,17 @@ export async function load({ url, depends, untrack }) {
 
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
 
+  const isPreviewMode = url.pathname.startsWith("/preview");
+
   const redirectPath = untrack(() => {
+    if (!url.searchParams.get("redirect")) return false;
+
+    // In preview mode, redirect to /preview instead of /files
+    if (isPreviewMode) {
+      return url.pathname !== "/preview" && "/preview";
+    }
+
     return (
-      !!url.searchParams.get("redirect") &&
       url.pathname !== `/files${firstDashboardFile?.path}` &&
       `/files${firstDashboardFile?.path}`
     );
