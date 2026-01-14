@@ -334,40 +334,41 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 	// Check for OS env fallback for referenced variables not in data.Variables
 	for _, refVar := range referencedVars {
 		// Handle env.VAR_NAME references
-		if strings.HasPrefix(refVar, "env.") {
-			varName := strings.TrimPrefix(refVar, "env.")
-			// Check if already in variables (case-insensitive check)
-			// If found with different case, also add with the case the template expects
-			foundKey := ""
-			for k := range varsWithOSFallback {
-				if strings.EqualFold(k, varName) {
-					foundKey = k
-					break
-				}
+		if !strings.HasPrefix(refVar, "env.") {
+			continue
+		}
+		varName := strings.TrimPrefix(refVar, "env.")
+		// Check if already in variables (case-insensitive check)
+		// If found with different case, also add with the case the template expects
+		foundKey := ""
+		for k := range varsWithOSFallback {
+			if strings.EqualFold(k, varName) {
+				foundKey = k
+				break
 			}
-			if foundKey != "" {
-				// If the case doesn't match exactly, also add with the expected case
-				if foundKey != varName {
-					varsWithOSFallback[varName] = varsWithOSFallback[foundKey]
-				}
-				continue
+		}
+		if foundKey != "" {
+			// If the case doesn't match exactly, also add with the expected case
+			if foundKey != varName {
+				varsWithOSFallback[varName] = varsWithOSFallback[foundKey]
 			}
-			// Try OS env fallback (try exact case, uppercase, and lowercase)
-			if osVal := os.Getenv(varName); osVal != "" {
-				varsWithOSFallback[varName] = osVal
-				if data.OSEnvVars != nil {
-					data.OSEnvVars[varName] = true
-				}
-			} else if osVal := os.Getenv(strings.ToUpper(varName)); osVal != "" {
-				varsWithOSFallback[varName] = osVal
-				if data.OSEnvVars != nil {
-					data.OSEnvVars[strings.ToUpper(varName)] = true
-				}
-			} else if osVal := os.Getenv(strings.ToLower(varName)); osVal != "" {
-				varsWithOSFallback[varName] = osVal
-				if data.OSEnvVars != nil {
-					data.OSEnvVars[strings.ToLower(varName)] = true
-				}
+			continue
+		}
+		// Try OS env fallback (try exact case, uppercase, and lowercase)
+		if osVal := os.Getenv(varName); osVal != "" {
+			varsWithOSFallback[varName] = osVal
+			if data.OSEnvVars != nil {
+				data.OSEnvVars[varName] = true
+			}
+		} else if osVal := os.Getenv(strings.ToUpper(varName)); osVal != "" {
+			varsWithOSFallback[varName] = osVal
+			if data.OSEnvVars != nil {
+				data.OSEnvVars[strings.ToUpper(varName)] = true
+			}
+		} else if osVal := os.Getenv(strings.ToLower(varName)); osVal != "" {
+			varsWithOSFallback[varName] = osVal
+			if data.OSEnvVars != nil {
+				data.OSEnvVars[strings.ToLower(varName)] = true
 			}
 		}
 	}
