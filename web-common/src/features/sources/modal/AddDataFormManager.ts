@@ -648,6 +648,22 @@ export class AddDataFormManager {
   ) => {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
+    const key = name || target.id;
+
+    // Clear stale field-level errors as soon as the user edits the input.
+    const clearFieldError = (store: any) => {
+      if (!store?.update || !key) return;
+      store.update(($errors: Record<string, unknown>) => {
+        if (!$errors || !Object.prototype.hasOwnProperty.call($errors, key)) {
+          return $errors;
+        }
+        const next = { ...$errors };
+        delete next[key];
+        return next;
+      });
+    };
+    clearFieldError(this.params.errors);
+    clearFieldError(this.dsn.errors);
     if (name === "path") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
