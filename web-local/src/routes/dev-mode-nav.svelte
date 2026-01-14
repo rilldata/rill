@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
+  import LocalProjectStatusIndicator from "./LocalProjectStatusIndicator.svelte";
 
   $: currentPath = $page.url.pathname;
 
@@ -29,11 +30,14 @@
     {#each tabs as tab (tab.id)}
       <button
         on:click={() => navigateTo(tab.path)}
-        class="px-4 py-3 text-sm font-medium transition-colors relative {activeTab === tab.id
+        class="px-4 py-3 text-sm font-medium transition-colors relative flex items-center gap-x-1 {activeTab === tab.id
           ? 'text-gray-900 dark:text-white'
           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
       >
         {tab.label}
+        {#if tab.id === "status"}
+          <LocalProjectStatusIndicator />
+        {/if}
         {#if activeTab === tab.id}
           <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
         {/if}

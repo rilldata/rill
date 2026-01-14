@@ -4,16 +4,18 @@
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
 
   const { darkMode } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: projectTitleQuery = useProjectTitle(instanceId);
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Project";
+  $: homeHref = $previewModeStore ? "/preview" : "/";
 </script>
 
 <header>
-  <a href="/" class="flex-shrink-0">
+  <a href={homeHref} class="flex-shrink-0">
     <Rill />
   </a>
 
