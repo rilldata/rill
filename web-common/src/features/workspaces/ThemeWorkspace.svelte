@@ -63,7 +63,7 @@
     {#if $selectedView === "code"}
       <ThemeEditor bind:autoSave={$autoSave} {fileArtifact} {errors} />
     {:else}
-      <VisualTheme {fileArtifact} {filePath} {errors} />
+      <VisualTheme {filePath} />
     {/if}
   </svelte:fragment>
 
