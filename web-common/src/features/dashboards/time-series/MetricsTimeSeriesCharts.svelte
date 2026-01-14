@@ -29,8 +29,6 @@
     type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     TimeRangePreset,
@@ -64,6 +62,7 @@
   import { Tooltip } from "bits-ui";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 
   const { rillTime } = featureFlags;
 
@@ -171,16 +170,17 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if (timeControlsReady && activeTimeGrain) {
+    const scrubRange = $exploreState?.selectedScrubRange;
+    const timeZone = $exploreState?.selectedTimezone;
+
     // adjust scrub values for Javascript's timezone changes
-    scrubStart = adjustOffsetForZone(
-      $exploreState?.selectedScrubRange?.start,
-      $exploreState?.selectedTimezone,
-      timeGrainToDuration(activeTimeGrain),
+    scrubStart = setJSDateTimeValueToTimeValueInSelectedTimeZone(
+      scrubRange?.start,
+      timeZone,
     );
-    scrubEnd = adjustOffsetForZone(
-      $exploreState?.selectedScrubRange?.end,
-      $exploreState?.selectedTimezone,
-      timeGrainToDuration(activeTimeGrain),
+    scrubEnd = setJSDateTimeValueToTimeValueInSelectedTimeZone(
+      scrubRange?.end,
+      timeZone,
     );
 
     const slicedData = isAllTime

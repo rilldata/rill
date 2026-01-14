@@ -12,7 +12,6 @@ export const developerChatConfig = {
   emptyChatLabel: "Happy to assist you make changes to the project",
   placeholder: "What change can I help you make...",
   minChatHeight: "min-h-[2.5rem]",
-  enableMention: false,
 } satisfies ChatConfig;
 
 /**

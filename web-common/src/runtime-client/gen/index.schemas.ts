@@ -1105,6 +1105,29 @@ export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
 }
 
+export interface V1GitBranch {
+  name?: string;
+  hasDeployment?: boolean;
+  editableDeployment?: boolean;
+}
+
+export interface V1GitCommit {
+  commitSha?: string;
+  authorName?: string;
+  authorEmail?: string;
+  committedOn?: string;
+  message?: string;
+}
+
+export interface V1GitCommitResponse {
+  commitSha?: string;
+}
+
+export interface V1GitMergeToBranchResponse {
+  /** The output of the git merge command. Only set for unsuccessful merges. */
+  output?: string;
+}
+
 export interface V1GitPullResponse {
   /** The output of the git pull command. Only set for unsuccessful pulls. */
   output?: string;
@@ -1127,6 +1150,10 @@ export interface V1GitStatusResponse {
   localCommits?: number;
   /** remote_commits returns number of remote commits not pulled yet. */
   remoteCommits?: number;
+}
+
+export interface V1GitSwitchBranchResponse {
+  [key: string]: unknown;
 }
 
 export type V1HealthResponseInstancesHealth = {
@@ -1246,6 +1273,16 @@ export interface V1ListExamplesResponse {
 
 export interface V1ListFilesResponse {
   files?: V1DirEntry[];
+}
+
+export interface V1ListGitBranchesResponse {
+  currentBranch?: string;
+  branches?: V1GitBranch[];
+}
+
+export interface V1ListGitCommitsResponse {
+  commits?: V1GitCommit[];
+  nextPageToken?: string;
 }
 
 export interface V1ListInstancesResponse {
@@ -2257,6 +2294,10 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RestoreGitCommitResponse {
+  newCommitSha?: string;
+}
+
 export interface V1Schedule {
   refUpdate?: boolean;
   disable?: boolean;
@@ -2768,6 +2809,27 @@ export type RuntimeServiceGenerateResolverBody = {
   metricsView?: string;
 };
 
+export type RuntimeServiceGitSwitchBranchBody = {
+  branch?: string;
+  create?: boolean;
+  ignoreLocalChanges?: boolean;
+};
+
+export type RuntimeServiceGitCommitBody = {
+  commitMessage?: string;
+};
+
+export type RuntimeServiceListGitCommitsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type RuntimeServiceGitMergeToBranchBody = {
+  branch?: string;
+  /** In case of merge conflicts, prefer current changes. */
+  force?: boolean;
+};
+
 export type RuntimeServiceGitPullBody = {
   discardLocal?: boolean;
 };
@@ -2776,6 +2838,8 @@ export type RuntimeServiceGitPushBody = {
   commitMessage?: string;
   force?: boolean;
 };
+
+export type RuntimeServiceRestoreGitCommitBody = { [key: string]: unknown };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
