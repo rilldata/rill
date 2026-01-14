@@ -31,6 +31,7 @@ import {
 import {
   connectorStepStore,
   setConnectorConfig,
+  setConnectorInstanceName,
   setStep,
   type ConnectorStepState,
 } from "./connectorStepStore";
@@ -292,6 +293,7 @@ export class AddDataFormManager {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
     setConnectorConfig({});
+    setConnectorInstanceName(null);
     setStep("source");
   }
 
@@ -587,7 +589,14 @@ export class AddDataFormManager {
 
       try {
         if (isMultiStepConnector && stepState.step === "source") {
-          await submitAddSourceForm(queryClient, connector, values);
+          const connectorInstanceName =
+            stepState.connectorInstanceName ?? undefined;
+          await submitAddSourceForm(
+            queryClient,
+            connector,
+            values,
+            connectorInstanceName,
+          );
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
           // For public auth, skip Test & Connect and go straight to the next step.
@@ -597,12 +606,19 @@ export class AddDataFormManager {
               "connector",
             );
             setConnectorConfig(connectorValues);
+            setConnectorInstanceName(null);
             setStep("source");
             return;
           }
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          const connectorInstanceName = await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+          );
           const connectorValues = this.filterValuesForStep(values, "connector");
           setConnectorConfig(connectorValues);
+          setConnectorInstanceName(connectorInstanceName);
           setStep("source");
           return;
         } else if (this.formType === "source") {
@@ -770,6 +786,9 @@ export class AddDataFormManager {
       const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
         connector,
         filteredValues,
+        {
+          connectorInstanceName: stepState?.connectorInstanceName || undefined,
+        },
       );
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
       if (isRewrittenToDuckDb) {

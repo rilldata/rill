@@ -48,9 +48,8 @@ const savedAnywayPaths = new Set<string>();
 const connectorSubmissions = new Map<
   string,
   {
-    promise: Promise<void>;
+    promise: Promise<string>;
     connectorName: string;
-    completed: boolean;
   }
 >();
 
@@ -215,7 +214,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
-): Promise<void> {
+): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
 
@@ -236,7 +235,6 @@ export async function submitAddConnectorForm(
     if (saveAnyway) {
       // If Save Anyway is clicked while Test and Connect is running,
       // proceed immediately without waiting for the ongoing operation
-      // Clean up the existing submission
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the ongoing operation
@@ -250,13 +248,12 @@ export async function submitAddConnectorForm(
         newConnectorName,
         instanceId,
       );
-      return;
-    } else if (!existingSubmission.completed) {
-      // If Test and Connect is clicked while another operation is running,
-      // wait for it to complete
-      await existingSubmission.promise;
-      return;
+      return newConnectorName;
     }
+
+    // If Test and Connect is clicked while another operation is running,
+    // wait for it to complete
+    return existingSubmission.promise;
   }
 
   // Create abort controller for this submission
@@ -299,7 +296,7 @@ export async function submitAddConnectorForm(
           newConnectorName,
           instanceId,
         );
-        return;
+        return newConnectorName;
       }
 
       /**
@@ -359,11 +356,12 @@ export async function submitAddConnectorForm(
 
       // Go to the new connector file
       await goto(`/files/${newConnectorFilePath}`);
+      return newConnectorName;
     } catch (error) {
       // If the operation was aborted, don't treat it as an error
       if (abortController.signal.aborted) {
         console.log("Operation was cancelled");
-        return;
+        return newConnectorName;
       }
 
       const shouldRollbackConnectorFile =
@@ -390,10 +388,7 @@ export async function submitAddConnectorForm(
     } finally {
       // Mark the submission as completed but keep the connector name around
       // so a subsequent "Save Anyway" can still reuse the same connector file
-      const submission = connectorSubmissions.get(uniqueConnectorSubmissionKey);
-      if (submission) {
-        submission.completed = true;
-      }
+      connectorSubmissions.delete(uniqueConnectorSubmissionKey);
     }
   })();
 
@@ -401,17 +396,18 @@ export async function submitAddConnectorForm(
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     connectorName: newConnectorName,
-    completed: false,
   });
 
   // Wait for the submission to complete
-  await submissionPromise;
+  const resolvedConnectorName = await submissionPromise;
+  return resolvedConnectorName;
 }
 
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  connectorInstanceName?: string,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -421,6 +417,7 @@ export async function submitAddSourceForm(
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
     connector,
     formValues,
+    { connectorInstanceName },
   );
 
   // Make a new <source>.yaml file

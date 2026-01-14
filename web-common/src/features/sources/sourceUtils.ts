@@ -156,9 +156,12 @@ export function getFileTypeFromPath(fileName) {
 export function maybeRewriteToDuckDb(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  options?: { connectorInstanceName?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of the connector, so that we don't overwrite the original
   const connectorCopy = { ...connector };
+  const secretConnectorName =
+    options?.connectorInstanceName || connector.name || "";
 
   switch (connector.name) {
     case "s3":
@@ -166,8 +169,8 @@ export function maybeRewriteToDuckDb(
     case "https":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector
-      if (!formValues.create_secrets_from_connectors) {
-        formValues.create_secrets_from_connectors = connector.name;
+      if (!formValues.create_secrets_from_connectors && secretConnectorName) {
+        formValues.create_secrets_from_connectors = secretConnectorName;
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -213,6 +216,7 @@ export function maybeRewriteToDuckDb(
 export function prepareSourceFormData(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  options?: { connectorInstanceName?: string },
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
@@ -248,6 +252,7 @@ export function prepareSourceFormData(
   const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
     connector,
     processedValues,
+    options,
   );
 
   return [rewrittenConnector, rewrittenFormValues];
