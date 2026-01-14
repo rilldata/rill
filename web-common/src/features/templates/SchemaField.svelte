@@ -23,6 +23,7 @@
 {#if prop["x-display"] === "file" || prop.format === "file"}
   <CredentialsInput
     {id}
+    label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
     {optional}
     bind:value
