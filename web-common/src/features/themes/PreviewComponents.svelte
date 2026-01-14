@@ -124,9 +124,19 @@
     divRows.length;
 
   const gradientId = `kpi-gradient-${Math.random().toString(36).substring(2, 11)}`;
+
+  // Leaderboard data
+  const leaderboardData = [
+    { rank: 1, name: "Electronics", value: 482000 },
+    { rank: 2, name: "Clothing", value: 356000 },
+    { rank: 3, name: "Home & Garden", value: 289000 },
+    { rank: 4, name: "Sports", value: 201000 },
+    { rank: 5, name: "Books", value: 145000 },
+  ];
+  const maxLeaderboardValue = Math.max(...leaderboardData.map((d) => d.value));
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 gap-3">
   <!-- KPI Component -->
   <div class="preview-card kpi-card" style="background-color: {cardColor};">
     <div class="kpi-data-wrapper">
@@ -165,6 +175,42 @@
         <span>Nov 30</span>
       </div>
     </div>
+  </div>
+
+  <!-- Leaderboard Component -->
+  <div
+    class="preview-card leaderboard-card"
+    style="background-color: {cardColor};"
+  >
+    <div class="chart-title text-gray-800 dark:text-gray-100">
+      Top Categories
+    </div>
+    <table class="leaderboard-table">
+      <tbody>
+        {#each leaderboardData as item, i}
+          {@const barLength = (item.value / maxLeaderboardValue) * 140}
+          <tr class="leaderboard-row">
+            <td
+              class="leaderboard-name"
+              style="background: linear-gradient(to right, var(--color-theme-100) {barLength}px, transparent {barLength}px);"
+            >
+              <span class="text-gray-700 dark:text-gray-300">{item.name}</span>
+            </td>
+            <td
+              class="leaderboard-value"
+              style="background: linear-gradient(to right, var(--color-theme-100) {Math.max(
+                0,
+                barLength - 90,
+              )}px, transparent {Math.max(0, barLength - 90)}px);"
+            >
+              <span class="text-gray-800 dark:text-gray-200"
+                >{formatValue(item.value)}</span
+              >
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   </div>
 
   <!-- Bar Chart Component -->
@@ -321,8 +367,8 @@
 
 <style lang="postcss">
   .preview-card {
-    @apply rounded-lg border p-4 shadow-sm border-gray-200;
-    min-height: 180px;
+    @apply rounded border p-3 shadow-sm border-gray-200;
+    min-height: 140px;
   }
 
   :global(.dark) .preview-card {
@@ -342,7 +388,7 @@
   }
 
   .kpi-value {
-    @apply text-3xl font-medium;
+    @apply text-xl font-medium;
   }
 
   .kpi-comparison {
@@ -368,7 +414,7 @@
 
   .kpi-sparkline-svg {
     @apply w-full overflow-visible;
-    height: 48px;
+    height: 32px;
   }
 
   .kpi-dates {
@@ -379,13 +425,43 @@
     @apply text-sm font-medium mb-2;
   }
 
+  .leaderboard-card {
+    @apply flex flex-col;
+  }
+
+  .leaderboard-table {
+    @apply w-full p-0 m-0 border-spacing-0 border-collapse table-fixed;
+  }
+
+  .leaderboard-row {
+    @apply cursor-pointer;
+    height: 22px;
+  }
+
+  .leaderboard-row:hover td {
+    background: linear-gradient(
+      to right,
+      var(--color-theme-200) var(--bar-length, 0px),
+      var(--color-gray-100) var(--bar-length, 0px)
+    ) !important;
+  }
+
+  .leaderboard-name {
+    @apply text-xs text-left px-2 truncate;
+    width: 90px;
+  }
+
+  .leaderboard-value {
+    @apply text-xs text-right px-2;
+  }
+
   .bar-chart-card {
     @apply flex flex-col;
   }
 
   .bar-chart-svg {
     @apply w-full flex-1;
-    min-height: 120px;
+    min-height: 90px;
   }
 
   .heatmap-card {
@@ -394,7 +470,7 @@
 
   .heatmap-svg {
     @apply w-full flex-1;
-    min-height: 110px;
+    min-height: 80px;
   }
 
   .axis-label {

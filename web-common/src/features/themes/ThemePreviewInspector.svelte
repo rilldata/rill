@@ -1,6 +1,5 @@
 <script lang="ts">
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -11,12 +10,6 @@
 
   export let filePath: string;
 
-  const INITIAL_HEIGHT = 380;
-  const MIN_HEIGHT = 180;
-  const MAX_HEIGHT = 500;
-
-  let isOpen = false;
-  let height = INITIAL_HEIGHT;
   let previewMode: "light" | "dark" = "light";
 
   // Get file content and parse YAML to create Theme object
@@ -30,7 +23,6 @@
   $: theme = themeData ? new Theme(themeData) : new Theme(undefined);
 
   // Extract colors directly from the parsed YAML (not from Theme class)
-  // The YAML has colors at the root level of light/dark, not under variables
   $: lightModeYaml = (themeData?.light || {}) as Record<string, string>;
   $: darkModeYaml = (themeData?.dark || {}) as Record<string, string>;
   $: currentModeYaml = previewMode === "light" ? lightModeYaml : darkModeYaml;
@@ -60,57 +52,28 @@
     currentModeYaml["card"] ||
     (previewMode === "light" ? "#ffffff" : "#374151");
 
-  async function toggle() {
-    isOpen = !isOpen;
-  }
-
   function handleModeChange(_: number, value: string) {
     previewMode = value.toLowerCase() as "light" | "dark";
   }
 </script>
 
-<div
-  class="relative w-full flex-none overflow-hidden flex flex-col bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
->
-  <Resizer
-    disabled={!isOpen}
-    dimension={height}
-    min={MIN_HEIGHT}
-    max={MAX_HEIGHT}
-    basis={INITIAL_HEIGHT}
-    onUpdate={(dimension) => (height = dimension)}
-    direction="NS"
-  />
-  <div class="bar">
-    <button
-      aria-label="Toggle color scheme preview"
-      class="text-xs text-gray-800 dark:text-gray-200 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 h-6 px-1.5 py-px flex items-center gap-1.5 transition-colors"
-      on:click={toggle}
-    >
-      <span class="transition-transform" class:rotate-180={isOpen}>
-        <CaretDownIcon size="14px" />
-      </span>
-      <span class="font-semibold">Color Scheme Preview</span>
-    </button>
-    {#if isOpen}
-      <div class="ml-auto pt-1">
-        <FieldSwitcher
-          small
-          fields={["Light", "Dark"]}
-          selected={previewMode === "light" ? 0 : 1}
-          onClick={handleModeChange}
-        />
-      </div>
-    {/if}
-  </div>
+<Inspector {filePath}>
+  <div class="preview-inspector">
+    <div class="preview-header">
+      <h3 class="preview-title">Preview</h3>
+      <FieldSwitcher
+        small
+        fields={["Light", "Dark"]}
+        selected={previewMode === "light" ? 0 : 1}
+        onClick={handleModeChange}
+      />
+    </div>
 
-  {#if isOpen}
     <div
-      class="overflow-y-auto px-4 py-4"
+      class="preview-content"
       class:dark={previewMode === "dark"}
-      style="height: {height - 28}px; background-color: {backgroundColor};"
+      style="background-color: {backgroundColor};"
     >
-      <!-- Wrap in ThemeProvider to apply the theme CSS -->
       <ThemeProvider {theme}>
         <PreviewComponents
           {sequentialColors}
@@ -121,15 +84,23 @@
         />
       </ThemeProvider>
     </div>
-  {/if}
-</div>
+  </div>
+</Inspector>
 
 <style lang="postcss">
-  .bar {
-    @apply flex items-center px-3 h-7 w-full bg-gray-50 border-b border-gray-200;
+  .preview-inspector {
+    @apply flex flex-col h-full;
   }
 
-  :global(.dark) .bar {
-    @apply bg-gray-950 border-gray-700;
+  .preview-header {
+    @apply flex items-center justify-between p-3 border-b border-gray-200;
+  }
+
+  .preview-title {
+    @apply text-sm font-semibold text-gray-900;
+  }
+
+  .preview-content {
+    @apply flex-1 overflow-y-auto p-3;
   }
 </style>
