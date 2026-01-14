@@ -90,23 +90,23 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	if annotationsChanged {
 		inst.Annotations = cfg.Annotations
 		for _, connector := range inst.Connectors {
-			if connector.Type == "duckdb" {
-				// update the connector config cpu memory_limit_gb and storage_limit_bytes for duckdb connector
-				rcfg, err := provisioner.NewRuntimeConfig(cfg.Config)
-				if err != nil {
-					return err
-				}
-				curConnectorConfig := connector.Config.AsMap()
-				curConnectorConfig["cpu"] = strconv.Itoa(rcfg.CPU)
-				curConnectorConfig["memory_limit_gb"] = strconv.Itoa(rcfg.MemoryGB)
-				curConnectorConfig["storage_limit_bytes"] = strconv.FormatInt(rcfg.StorageBytes, 10)
-				duckdbConfig, err := structpb.NewStruct(curConnectorConfig)
-				if err != nil {
-					return err
-				}
-				connector.Config = duckdbConfig
+			if connector.Type != "duckdb" {
+				continue
 			}
-
+			// update the connector config cpu memory_limit_gb and storage_limit_bytes for duckdb connector
+			rcfg, err := provisioner.NewRuntimeConfig(cfg.Config)
+			if err != nil {
+				return err
+			}
+			curConnectorConfig := connector.Config.AsMap()
+			curConnectorConfig["cpu"] = strconv.Itoa(rcfg.CPU)
+			curConnectorConfig["memory_limit_gb"] = strconv.Itoa(rcfg.MemoryGB)
+			curConnectorConfig["storage_limit_bytes"] = strconv.FormatInt(rcfg.StorageBytes, 10)
+			duckdbConfig, err := structpb.NewStruct(curConnectorConfig)
+			if err != nil {
+				return err
+			}
+			connector.Config = duckdbConfig
 		}
 	}
 
