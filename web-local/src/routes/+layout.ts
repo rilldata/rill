@@ -20,10 +20,10 @@ export async function load({ url, depends, untrack }) {
 
   // Fetch metadata to check preview mode - do this early to enable redirect before render
   const metadata = await localServiceGetMetadata();
-  const isPreviewMode = metadata.previewMode;
+  const previewMode = metadata.previewMode ?? false;
 
   // Redirect root to /preview when in preview mode (before any rendering)
-  if (isPreviewMode && url.pathname === "/") {
+  if (previewMode && url.pathname === "/") {
     throw redirect(303, "/preview");
   }
 
@@ -46,7 +46,7 @@ export async function load({ url, depends, untrack }) {
     if (!url.searchParams.get("redirect")) return false;
 
     // In preview mode, redirect to /preview instead of /files
-    if (isPreviewMode) {
+    if (previewMode) {
       return url.pathname !== "/preview" && "/preview";
     }
 
@@ -62,5 +62,5 @@ export async function load({ url, depends, untrack }) {
     throw redirect(303, redirectPath);
   }
 
-  return { initialized, isPreviewMode };
+  return { initialized, previewMode };
 }

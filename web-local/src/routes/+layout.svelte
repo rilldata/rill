@@ -44,8 +44,8 @@
 
   let removeJavascriptListeners: () => void;
 
-  // Use isPreviewMode from load function (already redirected in +layout.ts if needed)
-  $: isPreviewMode = data.isPreviewMode;
+  // previewMode comes from server (rill start --preview), defaults to false
+  $: previewMode = data.previewMode ?? false;
 
   onMount(async () => {
     const config = await localServiceGetMetadata();
@@ -85,11 +85,11 @@
     route.id?.includes("status") ||
     route.id?.includes("settings");
 
-  $: mode = isPreviewMode ? "Preview" : "Developer";
+  $: mode = previewMode ? "Preview" : "Developer";
 
   $: onDeployPage = isDeployPage($page);
 
-  $: previewModeStore.set(isPreviewMode);
+  $: previewModeStore.set(previewMode);
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -100,10 +100,10 @@
         <RepresentingUserBanner />
         <ApplicationHeader
           {mode}
-          logoHref={isPreviewMode ? "/preview" : "/"}
+          logoHref={previewMode ? "/preview" : "/"}
           breadcrumbResourceHref={(name, kind) => `/${kind}/${name}`}
         />
-        {#if isPreviewMode && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}
+        {#if previewMode && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}
           <DevModeNav />
         {/if}
         {#if $deploy}

@@ -17,7 +17,7 @@
       error = null;
       isLoading = true;
 
-      if (!$runtime?.instanceId || !$runtime?.host) {
+      if (!$runtime?.instanceId || $runtime?.host === undefined) {
         throw new Error("Runtime not initialized");
       }
 
@@ -58,7 +58,7 @@
 
   async function refreshAllSourcesAndModels() {
     try {
-      if (!$runtime?.instanceId || !$runtime?.host) {
+      if (!$runtime?.instanceId || $runtime?.host === undefined) {
         throw new Error("Runtime not initialized");
       }
 

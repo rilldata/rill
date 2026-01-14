@@ -24,7 +24,7 @@
       loading = true;
       error = null;
 
-      if (!$runtime?.host || !$runtime?.instanceId) {
+      if ($runtime?.host === undefined || !$runtime?.instanceId) {
         error = "Waiting for runtime to initialize...";
         loading = false;
         return;
