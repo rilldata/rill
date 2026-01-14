@@ -18,7 +18,9 @@ test.describe("Project Status - Tables", () => {
     await expect(tablesHeading).toBeVisible();
 
     // Verify the table structure with column headers (VirtualizedTable uses role="columnheader")
-    const headers = adminPage.locator('[role="columnheader"]');
+    // Use the #project-tables-table id to scope to the correct table
+    const tablesTable = adminPage.locator("#project-tables-table");
+    const headers = tablesTable.locator('[role="columnheader"]');
     await expect(headers.nth(0)).toContainText("Type");
     await expect(headers.nth(1)).toContainText("Name");
     // await expect(headers.nth(2)).toContainText("Row Count");
@@ -26,18 +28,14 @@ test.describe("Project Status - Tables", () => {
     await expect(headers.nth(4)).toContainText("Database Size");
 
     // Verify table rows are rendered (VirtualizedTable uses .row divs, skip the header row)
-    const tableContainer = adminPage
-      .locator("section")
-      .filter({ hasText: "Tables" })
-      .first();
-    const dataRows = tableContainer.locator(".row").filter({
+    const dataRows = tablesTable.locator(".row").filter({
       hasNot: adminPage.locator('[role="columnheader"]'),
     });
     const rowCount = await dataRows.count();
     expect(rowCount).toBeGreaterThan(0);
 
     // Verify specific table data if auction_data_model exists
-    const auctionRow = tableContainer.locator(".row", {
+    const auctionRow = tablesTable.locator(".row", {
       hasText: "auction_data_model",
     });
     const auctionRowExists = await auctionRow.isVisible().catch(() => false);
@@ -58,8 +56,8 @@ test.describe("Project Status - Tables", () => {
       await expect(auctionRow).toContainText("auction_data_model");
     }
 
-    // Verify the table container is visible
-    await expect(tableContainer).toBeVisible();
+    // Verify the table is visible
+    await expect(tablesTable).toBeVisible();
   });
 
   test("should handle empty table list gracefully", async ({ adminPage }) => {
@@ -94,14 +92,11 @@ test.describe("Project Status - Tables", () => {
       adminPage.getByRole("heading", { name: "Tables" }),
     ).toBeVisible();
 
-    // Get the Tables section
-    const tableContainer = adminPage
-      .locator("section")
-      .filter({ hasText: "Tables" })
-      .first();
+    // Get the Tables table by id
+    const tablesTable = adminPage.locator("#project-tables-table");
 
     // Get data rows (skip header row which has role="columnheader")
-    const dataRows = tableContainer.locator(".row").filter({
+    const dataRows = tablesTable.locator(".row").filter({
       hasNot: adminPage.locator('[role="columnheader"]'),
     });
     const rowCount = await dataRows.count();

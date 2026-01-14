@@ -24,6 +24,7 @@
   export let rowHeight = 46;
   export let containerHeight = 400;
   export let overscan = 1;
+  export let tableId: string | undefined = undefined;
 
   let containerElement: HTMLDivElement;
   let sorting: SortingState = [];
@@ -108,6 +109,7 @@
 </script>
 
 <div
+  id={tableId}
   class="flex flex-col border rounded-sm overflow-hidden"
   style:--grid-template-columns={columnLayout}
 >

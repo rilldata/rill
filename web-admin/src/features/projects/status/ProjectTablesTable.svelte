@@ -90,6 +90,7 @@
 
 {#key columnCounts && rowCounts}
   <VirtualizedTable
+    tableId="project-tables-table"
     data={tableData}
     {columns}
     columnLayout="minmax(60px, 0.5fr) minmax(150px, 3fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr)"
