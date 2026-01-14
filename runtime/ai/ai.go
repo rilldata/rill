@@ -56,12 +56,17 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
 
-	RegisterTool(r, &DevelopModel{Runtime: rt})
-	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
+	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
 	RegisterTool(r, &SearchFiles{Runtime: rt})
 	RegisterTool(r, &ReadFile{Runtime: rt})
 	RegisterTool(r, &WriteFile{Runtime: rt})
+	RegisterTool(r, &ProjectStatus{Runtime: rt})
+	RegisterTool(r, &QuerySQL{Runtime: rt})
+	RegisterTool(r, &ListTables{Runtime: rt})
+	RegisterTool(r, &ShowTable{Runtime: rt})
+	RegisterTool(r, &ListBuckets{Runtime: rt})
+	RegisterTool(r, &ListBucketObjects{Runtime: rt})
 
 	return r
 }
@@ -1379,6 +1384,16 @@ func (s *Session) UnmarshalMessageContent(m *Message) (any, error) {
 	default:
 		return m.Content, nil
 	}
+}
+
+// MustUnmarshalMessageContent is like UnmarshalMessageContent but panics on error.
+// This should only be used in tests.
+func (s *Session) MustUnmarshalMessageContent(m *Message) any {
+	res, err := s.UnmarshalMessageContent(m)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 // NewCompletionMessage converts the message to an aiv1.CompletionMessage

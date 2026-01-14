@@ -1187,6 +1187,89 @@ paths:
                 description: table and connector should not be provided if metrics_view is provided.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/git/pull:
+    post:
+      summary: |-
+        GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
+        If there are any merge conflicts the pull is aborted.
+        Force can be set to true to force the pull and overwrite any local changes.
+      operationId: RuntimeService_GitPull
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPullResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              discardLocal:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/push:
+    post:
+      summary: |-
+        GitPush pushes the local changes to the remote git repo equivalent to `git push` command.
+        It only pushes the changes to the existing remote repo.
+      operationId: RuntimeService_GitPush
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitPushResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              commitMessage:
+                type: string
+              force:
+                type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/git/status:
+    get:
+      summary: GitStatus returns the current status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
+      operationId: RuntimeService_GitStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GitStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/logs:
     get:
       summary: GetLogs returns recent logs from a controller
@@ -3438,6 +3521,7 @@ definitions:
       - DIMENSION_TYPE_UNSPECIFIED
       - DIMENSION_TYPE_CATEGORICAL
       - DIMENSION_TYPE_TIME
+      - DIMENSION_TYPE_GEOSPATIAL
     default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
@@ -3593,6 +3677,8 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
+      - CODE_POINT
+      - CODE_POLYGON
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   protobufAny:
@@ -5087,6 +5173,37 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GitPullResponse:
+    type: object
+    properties:
+      output:
+        type: string
+        description: The output of the git pull command. Only set for unsuccessful pulls.
+  v1GitPushResponse:
+    type: object
+  v1GitStatusResponse:
+    type: object
+    properties:
+      branch:
+        type: string
+        description: The current branch of the git repo.
+      githubUrl:
+        type: string
+        description: The remote url of the git repo.
+      managedGit:
+        type: boolean
+        description: If the repo is managed by Rill.
+      localChanges:
+        type: boolean
+        description: local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
+      localCommits:
+        type: integer
+        format: int32
+        description: local_commits returns number of local commits that are not pushed to the remote git repo.
+      remoteCommits:
+        type: integer
+        format: int32
+        description: remote_commits returns number of remote commits not pulled yet.
   v1HealthResponse:
     type: object
     properties:
@@ -6545,6 +6662,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object

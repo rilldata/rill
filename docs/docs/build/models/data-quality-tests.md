@@ -12,6 +12,12 @@ Tests are defined in your model's YAML file using the `tests:` property. Each te
 
 ## When to Use Data Quality Tests
 
+:::tip Using live connectors? Use alerts instead
+
+Data quality tests run when models refresh, which means they only work with models that Rill manages. If you're using [live connectors](/build/connectors/olap) (ClickHouse, Druid, Pinot, StarRocks, etc.) where data lives in external systems, use [alerts](/build/alerts) to monitor data quality on a schedule instead.
+
+:::
+
 Data quality tests are useful for:
 
 - **Data Quality Checks** - Verify that your data meets business rules and constraints
