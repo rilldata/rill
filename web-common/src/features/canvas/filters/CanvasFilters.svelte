@@ -66,7 +66,6 @@
         timeRangeOptionsStore,
         availableTimeZonesStore,
         allowCustomRangeStore,
-        timeDimensionStore,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -77,7 +76,6 @@
 
   $: timeStart = interval?.start.toISO();
   $: timeEnd = interval?.end.toISO();
-  $: timeDimension = $timeDimensionStore;
 
   $: minMax = $minMaxTimeStamps;
 
@@ -234,7 +232,6 @@
           {filterData}
           {timeStart}
           {timeEnd}
-          {timeDimension}
           openOnMount={!!temporaryFilterKeys.get(id)}
           timeControlsReady={!!interval}
           expressionMap={$filterMapStore}
