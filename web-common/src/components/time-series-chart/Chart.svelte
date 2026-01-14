@@ -239,7 +239,8 @@
       {#if hoveredPoints.length > 0}
         {@const percentage = xScale(hoveredPoints[0].index) / 100}
         {@const interval = getHoveredInterval(hoveredPoints[0].originalDate)}
-        {@const comparisonPoint = hasComparison && hoveredPoints[1] ? hoveredPoints[1] : null}
+        {@const comparisonPoint =
+          hasComparison && hoveredPoints[1] ? hoveredPoints[1] : null}
         {#if interval.isValid}
           <span
             class="relative flex line-clamp-1 gap-x-1"
