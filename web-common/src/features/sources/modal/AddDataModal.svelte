@@ -14,7 +14,7 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { ConnectorIconMapping } from "../../connectors/connector-icon-mapping";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
@@ -216,7 +216,7 @@
             <div class="flex items-center gap-[6px]">
               {#if selectedConnector?.name}
                 <svelte:component
-                  this={ConnectorIconMapping[selectedConnector.name]}
+                  this={connectorIconMapping[selectedConnector.name]}
                   size="18px"
                 />
               {/if}

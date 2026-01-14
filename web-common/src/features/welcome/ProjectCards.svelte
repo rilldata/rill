@@ -18,8 +18,8 @@
   import { EMPTY_PROJECT_TITLE } from "./constants";
   import { EXAMPLES } from "./constants";
   import {
-    ConnectorIconMapping,
-    ConnectorLabelMapping,
+    connectorIconMapping,
+    connectorLabelMapping,
   } from "@rilldata/web-common/features/connectors/connector-icon-mapping.ts";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
@@ -70,9 +70,9 @@
   <Subheading>Or jump right into an example project.</Subheading>
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     {#each EXAMPLES as example (example.name)}
-      {@const icon = ConnectorIconMapping[example.connector]}
+      {@const icon = connectorIconMapping[example.connector]}
       {@const label =
-        ConnectorLabelMapping[example.connector] ?? example.connector}
+        connectorLabelMapping[example.connector] ?? example.connector}
       <Card
         redirect
         imageUrl={example.image}

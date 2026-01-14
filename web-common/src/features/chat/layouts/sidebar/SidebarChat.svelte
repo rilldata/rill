@@ -55,40 +55,38 @@
   });
 </script>
 
-{#if conversationManager}
-  <div
-    class="chat-sidebar"
-    style="--sidebar-width: {$sidebarWidth}px;"
-    on:click|stopPropagation
-    role="presentation"
-  >
-    <Resizer
-      min={SIDEBAR_DEFAULTS.MIN_SIDEBAR_WIDTH}
-      max={SIDEBAR_DEFAULTS.MAX_SIDEBAR_WIDTH}
-      basis={SIDEBAR_DEFAULTS.SIDEBAR_WIDTH}
-      dimension={$sidebarWidth}
-      direction="EW"
-      side="left"
-      onUpdate={sidebarActions.updateSidebarWidth}
-    />
-    <div class="chat-sidebar-content">
-      <div class="chatbot-header-container">
-        <SidebarHeader
-          {conversationManager}
-          {onNewConversation}
-          onClose={sidebarActions.closeChat}
-        />
-      </div>
-      <Messages {conversationManager} layout="sidebar" {config} />
-      <ChatInput
+<div
+  class="chat-sidebar"
+  style="--sidebar-width: {$sidebarWidth}px;"
+  on:click|stopPropagation
+  role="presentation"
+>
+  <Resizer
+    min={SIDEBAR_DEFAULTS.MIN_SIDEBAR_WIDTH}
+    max={SIDEBAR_DEFAULTS.MAX_SIDEBAR_WIDTH}
+    basis={SIDEBAR_DEFAULTS.SIDEBAR_WIDTH}
+    dimension={$sidebarWidth}
+    direction="EW"
+    side="left"
+    onUpdate={sidebarActions.updateSidebarWidth}
+  />
+  <div class="chat-sidebar-content">
+    <div class="chatbot-header-container">
+      <SidebarHeader
         {conversationManager}
-        bind:this={chatInputComponent}
-        onSend={onMessageSend}
-        {config}
+        {onNewConversation}
+        onClose={sidebarActions.closeChat}
       />
     </div>
+    <Messages {conversationManager} layout="sidebar" {config} />
+    <ChatInput
+      {conversationManager}
+      bind:this={chatInputComponent}
+      onSend={onMessageSend}
+      {config}
+    />
   </div>
-{/if}
+</div>
 
 <style lang="postcss">
   .chat-sidebar {
