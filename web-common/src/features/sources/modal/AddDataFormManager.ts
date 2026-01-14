@@ -41,7 +41,7 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
-import { findRadioEnumKey } from "../../templates/schema-utils";
+import { findRadioEnumKey, isStepMatch } from "../../templates/schema-utils";
 
 const dsnSchema = yupLib.object({
   dsn: yupLib.string().required("DSN is required"),
@@ -114,6 +114,18 @@ export class AddDataFormManager {
   }
 
   private getSelectedAuthMethod?: () => string | undefined;
+  // Keep only fields that belong to a given schema step. Prevents source-step
+  // values (e.g., URI/model) from leaking into connector state when we persist.
+  private filterValuesForStep(
+    values: Record<string, unknown>,
+    step: "connector" | "source",
+  ): Record<string, unknown> {
+    const schema = getConnectorSchema(this.connector.name ?? "");
+    if (!schema?.properties) return values;
+    return Object.fromEntries(
+      Object.entries(values).filter(([key]) => isStepMatch(schema, key, step)),
+    );
+  }
 
   constructor(args: {
     connector: V1ConnectorDriver;
@@ -532,7 +544,8 @@ export class AddDataFormManager {
         stepState.step === "connector" &&
         selectedAuthMethod === "public"
       ) {
-        setConnectorConfig(values);
+        const connectorValues = this.filterValuesForStep(values, "connector");
+        setConnectorConfig(connectorValues);
         setStep("source");
         return;
       }
@@ -579,12 +592,17 @@ export class AddDataFormManager {
         } else if (isMultiStepConnector && stepState.step === "connector") {
           // For public auth, skip Test & Connect and go straight to the next step.
           if (selectedAuthMethod === "public") {
-            setConnectorConfig(values);
+            const connectorValues = this.filterValuesForStep(
+              values,
+              "connector",
+            );
+            setConnectorConfig(connectorValues);
             setStep("source");
             return;
           }
           await submitAddConnectorForm(queryClient, connector, values, false);
-          setConnectorConfig(values);
+          const connectorValues = this.filterValuesForStep(values, "connector");
+          setConnectorConfig(connectorValues);
           setStep("source");
           return;
         } else if (this.formType === "source") {
