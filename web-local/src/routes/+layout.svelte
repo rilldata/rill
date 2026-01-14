@@ -1,7 +1,6 @@
 <script lang="ts">
   import { dev } from "$app/environment";
   import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
@@ -44,18 +43,12 @@
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
-  let isPreviewMode = false;
+
+  // Use isPreviewMode from load function (already redirected in +layout.ts if needed)
+  $: isPreviewMode = data.isPreviewMode;
 
   onMount(async () => {
     const config = await localServiceGetMetadata();
-
-    // Always enable preview mode for development
-    isPreviewMode = true;
-
-    // Redirect root to /preview when in preview mode
-    if (isPreviewMode && $page.url.pathname === "/") {
-      goto("/preview");
-    }
 
     const shouldSendAnalytics =
       config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;

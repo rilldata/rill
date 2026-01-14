@@ -10,12 +10,22 @@ import {
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
 import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
 import { Settings } from "luxon";
 
 Settings.defaultLocale = "en";
 
 export async function load({ url, depends, untrack }) {
-  depends("init");
+  depends("app:init");
+
+  // Fetch metadata to check preview mode - do this early to enable redirect before render
+  const metadata = await localServiceGetMetadata();
+  const isPreviewMode = metadata.previewMode;
+
+  // Redirect root to /preview when in preview mode (before any rendering)
+  if (isPreviewMode && url.pathname === "/") {
+    throw redirect(303, "/preview");
+  }
 
   const instanceId = get(runtime).instanceId;
 
@@ -31,8 +41,6 @@ export async function load({ url, depends, untrack }) {
   );
 
   let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
-
-  const isPreviewMode = url.pathname.startsWith("/preview");
 
   const redirectPath = untrack(() => {
     if (!url.searchParams.get("redirect")) return false;
@@ -54,5 +62,5 @@ export async function load({ url, depends, untrack }) {
     throw redirect(303, redirectPath);
   }
 
-  return { initialized };
+  return { initialized, isPreviewMode };
 }
