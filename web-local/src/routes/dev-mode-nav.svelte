@@ -13,7 +13,7 @@
         : "preview";
 
   const tabs = [
-    { id: "preview", label: "Preview", path: "/preview" },
+    { id: "preview", label: "Dashboards", path: "/preview" },
     // { id: "edit", label: "Edit", path: "/edit" },
     { id: "status", label: "Status", path: "/status" },
     // { id: "settings", label: "Settings", path: "/settings" },
