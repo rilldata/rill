@@ -217,8 +217,37 @@
     setMeasureFilter(dimension, filter);
   }
 
-  function onTimeDimensionSelect(column: string) {
+  async function onTimeDimensionSelect(column: string) {
+    // Capture time range name before any state changes
+    const timeRangeName = selectedTimeRange?.name;
+
     metricsExplorerStore.setTimeDimension($exploreName, column);
+
+    // Re-resolve the time range with the new time dimension
+    if (timeRangeName) {
+      await queryClient.cancelQueries({
+        predicate: (query) =>
+          isMetricsViewQuery(query.queryHash, metricsViewName),
+      });
+
+      const { interval, grain } = await deriveInterval(
+        timeRangeName,
+        metricsViewName,
+        activeTimeZone,
+        column,
+      );
+
+      if (interval.isValid) {
+        const validInterval = interval as Interval<true>;
+        const baseTimeRange: TimeRange = {
+          name: timeRangeName,
+          start: validInterval.start.toJSDate(),
+          end: validInterval.end.toJSDate(),
+        };
+
+        selectRange(baseTimeRange, grain);
+      }
+    }
   }
 
   function onPan(direction: "left" | "right") {
@@ -266,9 +295,9 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-
       metricsViewName,
       activeTimeZone,
+      selectedTimeDimension,
     );
 
     if (interval.isValid) {
@@ -482,6 +511,7 @@
               {readOnly}
               {timeStart}
               {timeEnd}
+              timeDimension={selectedTimeDimension}
               {timeControlsReady}
               removeDimensionFilter={async (name) =>
                 removeDimensionFilter(name)}

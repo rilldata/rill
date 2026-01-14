@@ -75,6 +75,8 @@
 
   $: allTimeRange = $allTimeRangeStore;
   $: exploreSpec = $validSpecQuery.data?.explore ?? {};
+  $: metricsViewSpec = $validSpecQuery.data?.metricsView ?? {};
+  $: timeDimension = metricsViewSpec.timeDimension;
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -205,6 +207,7 @@
       name,
       metricsViewName,
       $selectedTimezone,
+      timeDimension,
     );
 
     if (interval?.isValid) {
@@ -332,6 +335,7 @@
             {readOnly}
             {timeStart}
             {timeEnd}
+            {timeDimension}
             timeControlsReady
             removeDimensionFilter={async (name) => removeDimensionFilter(name)}
             toggleDimensionFilterMode={async (name) => {

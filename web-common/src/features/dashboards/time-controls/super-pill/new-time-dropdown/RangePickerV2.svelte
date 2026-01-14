@@ -392,7 +392,9 @@
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
-                    <Globe size="14px" />
+                    <div class="flex-none">
+                      <Globe size="14px" />
+                    </div>
                     <div class="mr-auto">Time zone</div>
                     <div class="sr-only group-hover:not-sr-only">
                       <SyntaxElement range={zoneAbbreviation} />
@@ -449,7 +451,9 @@
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
-                    <Clock size="14px" />
+                    <div class="flex-none">
+                      <Clock size="14px" />
+                    </div>
                     <div class="mr-auto">Time axis</div>
                     <div class="sr-only group-hover:not-sr-only">
                       <SyntaxElement
@@ -472,6 +476,7 @@
                     class="item"
                     on:click={() => {
                       onTimeDimensionSelect(value);
+                      closeMenu();
                       timeAxisPickerOpen = false;
                     }}
                   >

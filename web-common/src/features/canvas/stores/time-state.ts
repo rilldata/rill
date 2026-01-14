@@ -157,7 +157,8 @@ export class TimeState {
         }
 
         const promises = metricsViewsWithTimeSeries.map((mvName) => {
-          return deriveInterval(range, mvName, timeZone);
+          const timeDimension = allMetricsViews?.[mvName]?.spec?.timeDimension;
+          return deriveInterval(range, mvName, timeZone, timeDimension);
         });
 
         Promise.all(promises)

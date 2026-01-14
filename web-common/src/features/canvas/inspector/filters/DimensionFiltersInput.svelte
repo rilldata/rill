@@ -134,6 +134,7 @@
             {filterData}
             timeStart={new Date(0).toISOString()}
             timeEnd={new Date().toISOString()}
+            timeDimension={undefined}
             openOnMount={$temporaryFilterKeys.has(id)}
             timeControlsReady
             expressionMap={new Map([[metricsView, where]])}

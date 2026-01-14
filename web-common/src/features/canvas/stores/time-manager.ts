@@ -19,6 +19,7 @@ export class TimeManager {
   hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
   minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
   hasTimeSeriesStore: Readable<boolean>;
+  timeDimensionStore = maybeWritable<string>();
 
   defaultTimeRangeStore = maybeWritable<string>();
   defaultComparisonRangeStore = maybeWritable<string>();
@@ -118,17 +119,24 @@ export class TimeManager {
 
     const timeGrainMap = new Map<string, V1TimeGrain>();
     const hasTimeSeriesMap = new Map<string, boolean>();
+    let primaryTimeDimension: string | undefined = undefined;
 
     Object.entries(metricsViews).forEach(([mvName, mv]) => {
       const metricsViewSpec = mv?.state?.validSpec;
       const timeGrain = metricsViewSpec?.smallestTimeGrain;
       timeGrainMap.set(mvName, timeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED);
-      const hasTimeDimension = Boolean(metricsViewSpec?.timeDimension);
+      const timeDimension = metricsViewSpec?.timeDimension;
+      const hasTimeDimension = Boolean(timeDimension);
       hasTimeSeriesMap.set(mvName, hasTimeDimension);
+      // Use the first metrics view's timeDimension as the primary one
+      if (hasTimeDimension && !primaryTimeDimension) {
+        primaryTimeDimension = timeDimension;
+      }
     });
 
     this.minTimeGrainMap.set(timeGrainMap);
     this.hasTimeSeriesMap.set(hasTimeSeriesMap);
+    this.timeDimensionStore.set(primaryTimeDimension);
   }
 
   checkAndSetAllowCustomRange = (response: CanvasResponse) => {
