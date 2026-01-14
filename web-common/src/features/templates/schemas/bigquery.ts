@@ -22,5 +22,5 @@ export const bigquerySchema: MultiStepFormSchema = {
         "If empty, Rill will use the project ID from your credentials when available.",
     },
   },
-  required: ["google_application_credentials"],
+  required: ["google_application_credentials", "project_id"],
 };
