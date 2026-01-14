@@ -4,7 +4,7 @@ const { execSync } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
 
-const projectArg = process.argv[2];
+const projectArg = process.argv[2].toLowerCase();
 
 const DEFAULT_PROJECT = "dev-project";
 const testLocation = path.resolve("./web-common/tests/projects");
@@ -13,7 +13,7 @@ const projectPaths = {
   adbids: path.join(testLocation, "AdBids"),
   openrtb: path.join(testLocation, "openrtb"),
   adimpressions: path.join(testLocation, "AdImpressions"),
-  blank: path.join(testLocation, "blank"),
+  blank: path.join(testLocation, "Blank"),
 };
 
 let projectDir;
