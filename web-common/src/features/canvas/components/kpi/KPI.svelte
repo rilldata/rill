@@ -18,6 +18,7 @@
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
+  import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
 
   type Query<T> = QueryObserverResult<T, HTTPError>;
   type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
@@ -38,10 +39,7 @@
   export let hasTimeSeries: boolean | undefined;
   export let comparisonLabel: string | undefined;
 
-  let hoveredPoints: {
-    date: Date;
-    value: number | null | undefined;
-  }[] = [];
+  let hoveredPoints: ChartDataPoint[] = [];
 
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
