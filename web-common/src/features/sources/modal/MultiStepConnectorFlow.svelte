@@ -8,6 +8,7 @@
   import {
     findRadioEnumKey,
     getRadioEnumOptions,
+    isStepMatch,
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
@@ -65,7 +66,11 @@
   }
 
   // Restore defaults (and persisted auth) when returning to connector step.
+  // Also drop any source-step fields so previous model inputs can't resurface.
   $: if (stepState.step === "connector") {
+    const schema = connector.name
+      ? getConnectorSchema(connector.name) || null
+      : null;
     paramsForm.update(
       ($current) => {
         const base = getInitialFormValuesFromProperties(
@@ -78,7 +83,17 @@
             base[authKey] = persisted;
           }
         }
-        return { ...base, ...$current };
+        // Drop any source-step fields so a previous source submission (e.g., GCS
+        // URI and model name) doesn't leak into a fresh connector step.
+        const filteredCurrent =
+          schema?.properties && schema.properties
+            ? Object.fromEntries(
+                Object.entries($current).filter(([key]) =>
+                  isStepMatch(schema, key, "connector"),
+                ),
+              )
+            : $current;
+        return { ...base, ...filteredCurrent };
       },
       { taint: false },
     );
