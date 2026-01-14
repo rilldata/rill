@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 
-const { execSync } = require("node:child_process");
-const path = require("node:path");
-const fs = require("node:fs");
+import path from "node:path";
+import fs from "node:fs";
+import { spawn } from "node:child_process";
 
-const projectArg = process.argv[2].toLowerCase();
+const projectArg = process.argv[2]?.toLowerCase();
 
 const DEFAULT_PROJECT = "dev-project";
 const testLocation = path.resolve("./web-common/tests/projects");
 
+/** @type {Record<string, string>} */
 const projectPaths = {
   adbids: path.join(testLocation, "AdBids"),
   openrtb: path.join(testLocation, "openrtb"),
@@ -16,15 +17,14 @@ const projectPaths = {
   blank: path.join(testLocation, "Blank"),
 };
 
+/** @type {string} */
 let projectDir;
 
 if (!projectArg) {
   projectDir = DEFAULT_PROJECT;
 } else if (projectPaths[projectArg]) {
-  // Named project
   projectDir = projectPaths[projectArg];
 } else {
-  // Treat argument as explicit path
   const resolvedPath = path.resolve(projectArg);
 
   if (!fs.existsSync(resolvedPath)) {
@@ -36,10 +36,19 @@ if (!projectArg) {
   projectDir = resolvedPath;
 }
 
-console.log(`Starting runtime`);
+console.log("Starting runtime");
 console.log(`Using project dir: ${projectDir}`);
 
-execSync(
-  `go run cli/main.go start "${projectDir}" --no-ui --allowed-origins "*"`,
+const child = spawn(
+  "go",
+  ["run", "cli/main.go", "start", projectDir, "--no-ui", "--allowed-origins", "*"],
   { stdio: "inherit" }
 );
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+  } else {
+    process.exit(code ?? 1);
+  }
+});
