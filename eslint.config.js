@@ -107,6 +107,5 @@ export default [
   },
   globalIgnores([
     "*/src/features/dashboards/url-state/time-ranges/rill-time.cjs",
-    // "scripts/**/*.{js,cjs,mjs}",
   ]),
 ];
