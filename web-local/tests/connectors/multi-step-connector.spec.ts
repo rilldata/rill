@@ -222,4 +222,68 @@ test.describe("Multi-step connector wrapper", () => {
     const saveAnywayButton = page.getByRole("button", { name: "Save Anyway" });
     await expect(saveAnywayButton).toBeHidden();
   });
+
+  test("GCS connector - model form resets after first submission (HMAC)", async ({
+    page,
+  }) => {
+    const hmacKey = process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY;
+    const hmacSecret = process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET;
+    if (!hmacKey || !hmacSecret) {
+      test.skip(
+        true,
+        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET is not set",
+      );
+    }
+    test.slow();
+
+    const openGcsFlowWithHmac = async () => {
+      await page.getByRole("button", { name: "Add Asset" }).click();
+      await page.getByRole("menuitem", { name: "Add Data" }).click();
+      await page.locator("#gcs").click();
+      await page.waitForSelector('form[id*="gcs"]');
+      await page.getByRole("radio", { name: "HMAC keys" }).click();
+      await page.getByRole("textbox", { name: "Access Key ID" }).fill(hmacKey!);
+      await page
+        .getByRole("textbox", { name: "Secret Access Key" })
+        .fill(hmacSecret!);
+      const connectorCta = page.getByRole("button", {
+        name: "Test and Connect",
+      });
+      await connectorCta.click();
+      await expect(page.getByText("Model preview")).toBeVisible();
+    };
+
+    // First submission attempt
+    await openGcsFlowWithHmac();
+    const firstPath =
+      "gs://rilldata-public/github-analytics/Clickhouse/2025/06/commits_2025_06.parquet";
+    const firstModelName = "gcs_model_one";
+    await page.getByRole("textbox", { name: "GCS URI" }).fill(firstPath);
+    await page
+      .getByRole("textbox", { name: "Model name" })
+      .fill(firstModelName);
+
+    const submitCta = page.getByRole("button", {
+      name: "Import Data",
+    });
+    await submitCta.click();
+
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .waitFor({ state: "detached", timeout: 10000 })
+      .catch(async () => {
+        // If the modal is still open (e.g., reconciliation failed), close it and continue.
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached", timeout: 5000 });
+      });
+
+    // Re-open and ensure model form is reset
+    await openGcsFlowWithHmac();
+    await expect(
+      page.getByRole("textbox", { name: "GCS URI" }),
+    ).not.toHaveValue(firstPath);
+    await expect(
+      page.getByRole("textbox", { name: "Model name" }),
+    ).not.toHaveValue(firstModelName);
+  });
 });
