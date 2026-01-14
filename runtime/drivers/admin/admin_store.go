@@ -122,3 +122,30 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 		UsesArchive: res.UsesArchive,
 	}, nil
 }
+
+func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, error) {
+	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: h.config.ProjectID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := h.admin.ListDeployments(ctx, &adminv1.ListDeploymentsRequest{
+		Org:     projectResp.Project.OrgName,
+		Project: projectResp.Project.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*drivers.Deployment, 0, len(resp.Deployments))
+	for _, d := range resp.Deployments {
+		res = append(res, &drivers.Deployment{
+			Branch:   d.Branch,
+			Editable: d.Editable,
+		})
+	}
+
+	return res, nil
+}
