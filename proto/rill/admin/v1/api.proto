@@ -1767,7 +1767,7 @@ message GetDeploymentConfigResponse {
   google.protobuf.Timestamp updated_on = 4;
   // Whether the deployment is git based or archive based.
   bool uses_archive = 5;
-  // Provisioned config for th deployment
+  // Provisioned config for the deployment
   google.protobuf.Struct config = 6;
 }
 
