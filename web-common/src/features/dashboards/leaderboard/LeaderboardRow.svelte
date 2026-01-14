@@ -19,6 +19,7 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
+  export let dataType: string;
   export let borderTop = false;
   export let borderBottom = false;
   export let isBeingCompared: boolean;
@@ -203,7 +204,8 @@
   </td>
   <LeaderboardCell
     value={dimensionValue}
-    type="dimension"
+    {dataType}
+    cellType="dimension"
     className={dimensionCellClass}
     background={dimensionGradients}
   >
@@ -239,7 +241,8 @@
   {#each Object.keys(values) as measureName}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
-      type="measure"
+      {dataType}
+      cellType="measure"
       background={leaderboardMeasureNames.length === 1
         ? measureGradients
         : measureGradientMap?.[measureName]}
@@ -261,7 +264,8 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
-        type="comparison"
+        {dataType}
+        cellType="comparison"
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
@@ -276,7 +280,8 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
-        type="comparison"
+        {dataType}
+        cellType="comparison"
       >
         <FormattedDataType
           color="text-gray-500"
@@ -296,7 +301,8 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaRels[measureName]?.toString() || ""}
-        type="comparison"
+        {dataType}
+        cellType="comparison"
       >
         <PercentageChange
           value={deltaRels[measureName]
@@ -320,10 +326,6 @@
   tr {
     @apply cursor-pointer;
     max-height: 22px;
-  }
-
-  tr:hover {
-    @apply bg-gray-100;
   }
 
   .external-link-wrapper a {

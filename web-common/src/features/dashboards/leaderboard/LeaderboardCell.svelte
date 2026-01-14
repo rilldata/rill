@@ -11,9 +11,11 @@
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config.ts";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click.ts";
   import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store.ts";
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
 
   export let value: string;
-  export let type: "dimension" | "measure" | "comparison";
+  export let dataType: string;
+  export let cellType: "dimension" | "measure" | "comparison";
   export let className: string = "";
   export let background: string = "";
 
@@ -81,22 +83,34 @@
           cellInspectorStore.updateValue(value.toString());
         }
       }}
+      on:mouseleave={() => (tooltipActive = false)}
       style:background
-      class="{type}-cell {className}"
+      class="{cellType}-cell {className}"
     >
       <slot />
     </td>
   </Tooltip.Trigger>
 
   {#if clipboardSupported && !disabled}
-    <Tooltip.Content class="max-w-[280px] bg-popover-foreground">
-      <div>
-        <StackingWord key="shift">Copy</StackingWord>
-        {value} to clipboard
+    <Tooltip.Content
+      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-gray-700 dark:bg-gray-900 text-surface"
+      sideOffset={16}
+    >
+      <FormattedDataType
+        customStyle="font-semibold"
+        isNull={value === null || value === undefined}
+        type={dataType}
+        {value}
+      />
+      <div class="flex flex-row gap-x-6 items-baseline text-gray-100">
+        <div>
+          <StackingWord key="shift">Copy</StackingWord>
+          this value to clipboard
+        </div>
+        <Shortcut>
+          <span style="font-family: var(--system);">⇧</span> + Click
+        </Shortcut>
       </div>
-      <Shortcut>
-        <span style="font-family: var(--system);">⇧</span> + Click
-      </Shortcut>
     </Tooltip.Content>
   {/if}
 </Tooltip.Root>
@@ -108,17 +122,17 @@
     height: 22px;
   }
 
-  /*td.comparison-cell {*/
-  /*  @apply bg-surface px-1 truncate;*/
-  /*}*/
+  td.comparison-cell {
+    @apply bg-surface px-1 truncate;
+  }
 
-  /*td.dimension-cell {*/
-  /*  @apply sticky left-0 z-30 bg-surface;*/
-  /*}*/
+  td.dimension-cell {
+    @apply sticky left-0 z-30 bg-surface;
+  }
 
-  :global(tr:hover .dimension-cell),
-  :global(tr:hover .measure-cell),
-  :global(tr:hover .comparison-cell) {
+  :global(tr:hover td.dimension-cell),
+  :global(tr:hover td.measure-cell),
+  :global(tr:hover td.comparison-cell) {
     @apply bg-gray-100;
   }
 </style>
