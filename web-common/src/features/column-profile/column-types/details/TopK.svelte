@@ -20,7 +20,6 @@
   import type { Location } from "@rilldata/web-common/lib/place-element";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
-  import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
 
@@ -29,8 +28,8 @@
   export let totalRows: number;
   export let k = 15;
   export let type: string;
-
-  const dispatch = createEventDispatcher();
+  export let onFocusTopK: ((value: TopKEntry) => void) | undefined = undefined;
+  export let onBlurTopK: ((value: TopKEntry) => void) | undefined = undefined;
 
   $: smallestPercentage =
     topK && topK.length
@@ -66,11 +65,11 @@
   };
 
   function handleFocus(value: TopKEntry) {
-    return () => dispatch("focus-top-k", value);
+    return () => onFocusTopK?.(value);
   }
 
   function handleBlur(value: TopKEntry) {
-    return () => dispatch("blur-top-k", value);
+    return () => onBlurTopK?.(value);
   }
 
   /** handle LISTs and STRUCTs */
@@ -86,8 +85,8 @@
       <TopKListItem
         value={item.count / totalRows}
         color={colorClass}
-        on:focus={handleFocus(item)}
-        on:blur={handleBlur(item)}
+        onFocus={handleFocus(item)}
+        onBlur={handleBlur(item)}
       >
         <svelte:fragment slot="title">
           <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
