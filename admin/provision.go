@@ -26,7 +26,6 @@ func (s *Service) Provision(ctx context.Context, opts *ProvisionOptions) (*datab
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
-
 	// Find the provisioner to use
 	var provisionerName string
 	var p provisioner.Provisioner

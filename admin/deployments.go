@@ -395,7 +395,7 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	}
 
 	// Find the runtime provisioned for this deployment
-	pr, ok, err := s.findProvisionedRuntimeResource(ctx, d.ID)
+	pr, ok, err := s.FindProvisionedRuntimeResource(ctx, d.ID)
 	if err != nil {
 		return err
 	}
@@ -557,6 +557,17 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 	}
 }
 
+func (s *Service) FindProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
+	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	return pr, true, nil
+}
+
 type DeploymentAnnotations struct {
 	orgID              string
 	orgName            string
@@ -636,17 +647,6 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 	}
 
 	return pr, nil
-}
-
-func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
-	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, false, nil
-		}
-		return nil, false, err
-	}
-	return pr, true, nil
 }
 
 func (s *Service) resolveRillVersion() string {

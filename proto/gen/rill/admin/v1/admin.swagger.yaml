@@ -5090,6 +5090,9 @@ definitions:
       usesArchive:
         type: boolean
         description: Whether the deployment is git based or archive based.
+      config:
+        type: object
+        title: Provisioned config for th deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:

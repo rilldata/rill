@@ -41,4 +41,5 @@ type DeploymentConfig struct {
 	FrontendURL string
 	UpdatedOn   time.Time
 	UsesArchive bool
+	Config      map[string]any
 }

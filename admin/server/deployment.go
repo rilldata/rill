@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -856,6 +857,15 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 
+	// Find the runtime provisioned for this deployment
+	pr, ok, err := s.admin.FindProvisionedRuntimeResource(ctx, depl.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+	}
+
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
@@ -881,6 +891,13 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	resp.Variables = vars
+
+	// Build a combined config struct from all OK provisioner resources.
+	configStruct, err := structpb.NewStruct(pr.Config)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid provisioner config: %s", err.Error())
+	}
+	resp.Config = configStruct
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()

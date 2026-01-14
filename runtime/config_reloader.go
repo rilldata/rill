@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"strconv"
 	"time"
 
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // configReloader handles reloading instance configurations from admin service
@@ -82,7 +85,31 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		inst.Variables = cfg.Variables
 		restartController = true
 	}
-	inst.Annotations = cfg.Annotations
+
+	annotationsChanged := !maps.Equal(inst.Annotations, cfg.Annotations)
+	if annotationsChanged {
+		inst.Annotations = cfg.Annotations
+		for _, connector := range inst.Connectors {
+			if connector.Type == "duckdb" {
+				// update the connector config cpu memory_limit_gb and storage_limit_bytes for duckdb connector
+				rcfg, err := provisioner.NewRuntimeConfig(cfg.Config)
+				if err != nil {
+					return err
+				}
+				curConnectorConfig := connector.Config.AsMap()
+				curConnectorConfig["cpu"] = strconv.Itoa(rcfg.CPU)
+				curConnectorConfig["memory_limit_gb"] = strconv.Itoa(rcfg.MemoryGB)
+				curConnectorConfig["storage_limit_bytes"] = strconv.FormatInt(rcfg.StorageBytes, 10)
+				duckdbConfig, err := structpb.NewStruct(curConnectorConfig)
+				if err != nil {
+					return err
+				}
+				connector.Config = duckdbConfig
+			}
+
+		}
+	}
+
 	inst.FrontendURL = cfg.FrontendURL
 
 	// Force the repo to refresh its handshake if the deployment has changed
