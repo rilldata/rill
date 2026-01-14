@@ -863,7 +863,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+		return nil, status.Errorf(codes.Internal, "can't get deployment %q because its runtime has not been initialized yet", depl.ID)
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -892,7 +892,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.Variables = vars
 
-	// Build a combined config struct from all OK provisioner resources.
 	configStruct, err := structpb.NewStruct(pr.Config)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "invalid provisioner config: %s", err.Error())
