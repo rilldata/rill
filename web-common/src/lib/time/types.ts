@@ -3,6 +3,7 @@ import type { DateTimeUnit } from "luxon";
 
 // Used for luxon's time units
 export enum TimeUnit {
+  PT1S = "second",
   PT1M = "minute",
   PT1H = "hour",
   P1D = "day",
@@ -18,6 +19,7 @@ export enum TimeUnit {
  * time truncation functions.
  */
 export enum Period {
+  SECOND = "PT1S",
   MINUTE = "PT1M",
   HOUR = "PT1H",
   DAY = "P1D",

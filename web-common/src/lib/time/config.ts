@@ -561,6 +561,20 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
  */
 
 export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
+  TIME_GRAIN_SECOND: {
+    grain: V1TimeGrain.TIME_GRAIN_SECOND,
+    label: "second",
+    duration: Period.SECOND, // you'd need to add this Period too
+    d3format: "%H:%M:%S",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    },
+  },
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",

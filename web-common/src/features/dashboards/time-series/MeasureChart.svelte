@@ -424,7 +424,7 @@
       on:zoom={() => zoomScrub()}
       start={scrubStart}
       stop={scrubEnd}
-      timeGrainLabel={TIME_GRAIN[timeGrain].label}
+      timeGrainLabel={TIME_GRAIN[timeGrain]?.label}
     />
 
     {#if annotations && $annotations}
