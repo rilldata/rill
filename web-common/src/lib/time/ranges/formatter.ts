@@ -115,7 +115,6 @@ function getCorrectGrainOrder(grain: V1TimeGrain) {
   return V1TimeGrainToOrder[grain];
 }
 
-const secondGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_SECOND];
 const quarterGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER];
 const weekGrainOrder = V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK];
 
@@ -153,11 +152,16 @@ export function formatDateTimeByGrain(
 
   // Show minutes for minute grain and finer
   if (grainOrder <= minuteGrainOrder) {
-    format.minute = "2-digit";
+    format.minute = "numeric";
   }
 
-  // Show seconds for second grain
-  if (grainOrder <= secondGrainOrder) {
+  // Show seconds only for second grain and millisecond grain
+  // (can't use order comparison since second, minute, millisecond all have order 0)
+  // may address in a follow up - bgh
+  if (
+    grain === V1TimeGrain.TIME_GRAIN_SECOND ||
+    grain === V1TimeGrain.TIME_GRAIN_MILLISECOND
+  ) {
     format.second = "2-digit";
   }
 

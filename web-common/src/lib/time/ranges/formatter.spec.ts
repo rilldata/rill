@@ -394,8 +394,7 @@ describe("formatDateTimeByGrain", () => {
       testDate,
       V1TimeGrain.TIME_GRAIN_QUARTER,
     );
-    expect(result).toMatch(/Sep.*2025/);
-    expect(result).not.toMatch(/15/);
+    expect(result).toBe("Sep 2025");
   });
 
   it("formats month grain with month and year", () => {
@@ -403,32 +402,25 @@ describe("formatDateTimeByGrain", () => {
       testDate,
       V1TimeGrain.TIME_GRAIN_MONTH,
     );
-    expect(result).toMatch(/Sep.*2025/);
-    expect(result).not.toMatch(/15/);
+    expect(result).toBe("Sep 2025");
   });
 
   it("formats week grain with day, month, and year", () => {
     const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_WEEK);
-    expect(result).toMatch(/Sep/);
-    expect(result).toMatch(/15/);
-    expect(result).toMatch(/2025/);
-    expect(result).not.toMatch(/PM|AM/i);
+    expect(result).toBe("Sep 15, 2025");
   });
 
   it("formats day grain with day, month, and year", () => {
     const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_DAY);
-    expect(result).toMatch(/Sep/);
-    expect(result).toMatch(/15/);
-    expect(result).toMatch(/2025/);
-    expect(result).not.toMatch(/PM|AM/i);
+    expect(result).toBe("Sep 15, 2025");
   });
 
+  // Tests with AM/PM use toMatch with \s? because toLocaleString() may insert
+  // a narrow no-break space (U+202F) or regular space before AM/PM depending
+  // on the environment (Node version, ICU data, locale settings).
   it("formats hour grain with time", () => {
     const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_HOUR);
-    expect(result).toMatch(/Sep/);
-    expect(result).toMatch(/15/);
-    expect(result).toMatch(/2025/);
-    expect(result).toMatch(/PM/i);
+    expect(result).toMatch(/Sep 15, 2025, 2\s?PM/);
   });
 
   it("formats minute grain with minutes", () => {
@@ -436,11 +428,7 @@ describe("formatDateTimeByGrain", () => {
       testDate,
       V1TimeGrain.TIME_GRAIN_MINUTE,
     );
-    expect(result).toMatch(/Sep/);
-    expect(result).toMatch(/15/);
-    expect(result).toMatch(/2025/);
-    expect(result).toMatch(/30/);
-    expect(result).toMatch(/PM/i);
+    expect(result).toMatch(/Sep 15, 2025, 2:30\s?PM/);
   });
 
   it("formats second grain with seconds", () => {
@@ -448,12 +436,7 @@ describe("formatDateTimeByGrain", () => {
       testDate,
       V1TimeGrain.TIME_GRAIN_SECOND,
     );
-    expect(result).toMatch(/Sep/);
-    expect(result).toMatch(/15/);
-    expect(result).toMatch(/2025/);
-    expect(result).toMatch(/30/);
-    expect(result).toMatch(/45/);
-    expect(result).toMatch(/PM/i);
+    expect(result).toMatch(/Sep 15, 2025, 2:30:45\s?PM/);
   });
 
   it("handles TIME_GRAIN_UNSPECIFIED with minimal precision (year only)", () => {
@@ -471,9 +454,7 @@ describe("formatDateTimeByGrain", () => {
       testDate,
       V1TimeGrain.TIME_GRAIN_MILLISECOND,
     );
-    expect(result).toMatch(/Sep/);
-    expect(result).toMatch(/15/);
-    expect(result).toMatch(/45/);
+    expect(result).toMatch(/Sep 15, 2025, 2:30:45\s?PM/);
   });
 
   it("respects timezone", () => {
@@ -482,7 +463,6 @@ describe("formatDateTimeByGrain", () => {
     );
     const result = formatDateTimeByGrain(nyDate, V1TimeGrain.TIME_GRAIN_MINUTE);
     // 14:30 UTC = 10:30 AM in New York (during daylight saving time)
-    expect(result).toMatch(/10/);
-    expect(result).toMatch(/AM/i);
+    expect(result).toMatch(/Sep 15, 2025, 10:30\s?AM/);
   });
 });
