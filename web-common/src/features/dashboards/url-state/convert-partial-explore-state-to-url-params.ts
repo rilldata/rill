@@ -192,13 +192,6 @@ function toTimeRangesUrl(
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
-  if (partialExploreState.selectedTimeDimension) {
-    searchParams.set(
-      ExploreStateURLParams.TimeDimension,
-      partialExploreState.selectedTimeDimension,
-    );
-  }
-
   maybeSetParam(
     searchParams,
     partialExploreState,
@@ -339,15 +332,20 @@ function toVisibleDimensionsUrlParam(
   const nonTimeDimensions =
     exploreSpec.dimensions?.filter((d) => !timeDimensionNames.has(d)) ?? [];
 
+  // Also filter time dimensions from visible dimensions for comparison
+  const visibleNonTimeDimensions = partialExploreState.visibleDimensions.filter(
+    (d) => !timeDimensionNames.has(d),
+  );
+
   if (
     // if the dimensions are exactly equal to non-time dimensions from explore then show "*"
     // else the dimensions are re-ordered, so retain them in url param
-    arrayOrderedEquals(partialExploreState.visibleDimensions, nonTimeDimensions)
+    arrayOrderedEquals(visibleNonTimeDimensions, nonTimeDimensions)
   ) {
     return "*";
   }
 
-  return partialExploreState.visibleDimensions.join(",");
+  return visibleNonTimeDimensions.join(",");
 }
 
 function toTimeDimensionUrlParams(partialExploreState: Partial<ExploreState>) {
