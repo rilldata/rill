@@ -15,13 +15,18 @@ function expectMessageContaining(
       messages.length > 0
         ? messages.map((m, i) => `  [${i}]: ${m}`).join("\n")
         : "  (no messages captured)";
-    expect.soft(found, `No message containing expected substring.
+    expect
+      .soft(
+        found,
+        `No message containing expected substring.
 
 Expected substring:
   ${expectedSubstring}
 
 Received messages:
-${formattedMessages}`).toBeTruthy();
+${formattedMessages}`,
+      )
+      .toBeTruthy();
   }
 }
 
@@ -40,13 +45,18 @@ function expectMessageMatching(
       messages.length > 0
         ? messages.map((m, i) => `  [${i}]: ${m}`).join("\n")
         : "  (no messages captured)";
-    expect.soft(found, `No message matching expected condition.
+    expect
+      .soft(
+        found,
+        `No message matching expected condition.
 
 Expected:
   ${description}
 
 Received messages:
-${formattedMessages}`).toBeTruthy();
+${formattedMessages}`,
+      )
+      .toBeTruthy();
   }
 }
 
@@ -450,7 +460,7 @@ test.describe("Embeds", () => {
           (msg.includes(`"themeMode":"light"`) ||
             msg.includes(`"themeMode":"dark"`) ||
             msg.includes(`"themeMode":"system"`)),
-        'message with id:3001 and themeMode light/dark/system',
+        "message with id:3001 and themeMode light/dark/system",
       );
     });
 
