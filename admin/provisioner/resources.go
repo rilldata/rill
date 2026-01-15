@@ -78,7 +78,7 @@ func (r *RuntimeConfig) AsMap() map[string]any {
 	return res
 }
 
-func (r *RuntimeConfig) AsDuckdbConfig() *DuckdbConfig {
+func (r *RuntimeConfig) DuckdbConfig() *DuckdbConfig {
 	return &DuckdbConfig{
 		CPU:          strconv.Itoa(r.CPU),
 		MemoryGB:     strconv.Itoa(r.MemoryGB),
@@ -92,22 +92,13 @@ type DuckdbConfig struct {
 	StorageBytes string `mapstructure:"storage_limit_bytes"`
 }
 
-func NewDuckdbConfig(cfg map[string]any) (*DuckdbConfig, error) {
-	res := &DuckdbConfig{}
-	err := mapstructure.WeakDecode(cfg, res)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse duckdb config: %w", err)
-	}
-	return res, nil
-}
-
-func (r *DuckdbConfig) AsMap() map[string]any {
+func (r *DuckdbConfig) AsMap() (map[string]any, error) {
 	res := make(map[string]any)
 	err := mapstructure.WeakDecode(r, &res)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return res
+	return res, nil
 }
 
 // ClickhouseConfig describes the expected config for a provisioned Clickhouse resource.

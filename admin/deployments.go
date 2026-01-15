@@ -271,7 +271,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
-	duckdbConfig, err := structpb.NewStruct(cfg.AsDuckdbConfig().AsMap())
+	duckdbConfig, err := cfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return err
+	}
+	duckdbConfigPb, err := structpb.NewStruct(duckdbConfig)
 	if err != nil {
 		return err
 	}
@@ -286,7 +290,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		{
 			Name:   "duckdb",
 			Type:   "duckdb",
-			Config: duckdbConfig,
+			Config: duckdbConfigPb,
 		},
 	}
 

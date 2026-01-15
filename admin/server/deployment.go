@@ -898,11 +898,15 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
 	}
-	configStruct, err := structpb.NewStruct(rCfg.AsDuckdbConfig().AsMap())
+	configStruct, err := rCfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
+	}
+	configStructPb, err := structpb.NewStruct(configStruct)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
 	}
-	resp.DuckdbConnectorConfig = configStruct
+	resp.DuckdbConnectorConfig = configStructPb
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()
