@@ -1,4 +1,7 @@
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
+import {
+  formatDateTimeByGrain,
+  prettyFormatTimeRange,
+} from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Interval } from "luxon";
 import { describe, expect, it } from "vitest";
@@ -368,5 +371,118 @@ describe("prettyFormatTimeRange", () => {
         });
       },
     );
+  });
+});
+
+describe("formatDateTimeByGrain", () => {
+  const testDate = DateTime.fromISO("2025-09-15T14:30:45.000Z").setZone("UTC");
+
+  it("returns 'Invalid date' for invalid DateTime", () => {
+    const invalid = DateTime.invalid("test");
+    expect(formatDateTimeByGrain(invalid, V1TimeGrain.TIME_GRAIN_DAY)).toBe(
+      "Invalid date",
+    );
+  });
+
+  it("formats year grain with only year", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_YEAR);
+    expect(result).toBe("2025");
+  });
+
+  it("formats quarter grain with month and year", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_QUARTER,
+    );
+    expect(result).toMatch(/Sep.*2025/);
+    expect(result).not.toMatch(/15/);
+  });
+
+  it("formats month grain with month and year", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_MONTH,
+    );
+    expect(result).toMatch(/Sep.*2025/);
+    expect(result).not.toMatch(/15/);
+  });
+
+  it("formats week grain with day, month, and year", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_WEEK);
+    expect(result).toMatch(/Sep/);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/2025/);
+    expect(result).not.toMatch(/PM|AM/i);
+  });
+
+  it("formats day grain with day, month, and year", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_DAY);
+    expect(result).toMatch(/Sep/);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/2025/);
+    expect(result).not.toMatch(/PM|AM/i);
+  });
+
+  it("formats hour grain with time", () => {
+    const result = formatDateTimeByGrain(testDate, V1TimeGrain.TIME_GRAIN_HOUR);
+    expect(result).toMatch(/Sep/);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/2025/);
+    expect(result).toMatch(/PM/i);
+  });
+
+  it("formats minute grain with minutes", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+    expect(result).toMatch(/Sep/);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/2025/);
+    expect(result).toMatch(/30/);
+    expect(result).toMatch(/PM/i);
+  });
+
+  it("formats second grain with seconds", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_SECOND,
+    );
+    expect(result).toMatch(/Sep/);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/2025/);
+    expect(result).toMatch(/30/);
+    expect(result).toMatch(/45/);
+    expect(result).toMatch(/PM/i);
+  });
+
+  it("handles TIME_GRAIN_UNSPECIFIED with minimal precision (year only)", () => {
+    // When grain is unspecified, show minimal precision to avoid displaying
+    // excessive detail that may not be meaningful
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    );
+    expect(result).toBe("2025");
+  });
+
+  it("handles TIME_GRAIN_MILLISECOND with full precision", () => {
+    const result = formatDateTimeByGrain(
+      testDate,
+      V1TimeGrain.TIME_GRAIN_MILLISECOND,
+    );
+    expect(result).toMatch(/Sep/);
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/45/);
+  });
+
+  it("respects timezone", () => {
+    const nyDate = DateTime.fromISO("2025-09-15T14:30:45.000Z").setZone(
+      "America/New_York",
+    );
+    const result = formatDateTimeByGrain(nyDate, V1TimeGrain.TIME_GRAIN_MINUTE);
+    // 14:30 UTC = 10:30 AM in New York (during daylight saving time)
+    expect(result).toMatch(/10/);
+    expect(result).toMatch(/AM/i);
   });
 });

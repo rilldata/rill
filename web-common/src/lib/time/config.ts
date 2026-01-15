@@ -557,6 +557,13 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
  * A time grain is a unit of time that is used to group data points,
  * e.g. "hour" or "day". The time grain is used to aggregate records
  * for the purposes of time series visualization and analysis.
+ *
+ * TODO: This record duplicates functionality available in Luxon (DateTimeUnit,
+ * Duration, toLocaleString). The application has multiple overlapping types
+ * (TIME_GRAIN, V1TimeGrain, AvailableTimeGrain, Period, TimeUnit) that should
+ * be consolidated. Consider replacing this with Luxon-based utilities and
+ * removing the redundant type definitions. See V1TimeGrainToDateTimeUnit in
+ * new-grains.ts for the mapping approach.
  */
 
 export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
@@ -665,6 +672,10 @@ export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
       year: "numeric",
     },
   },
+  // TIME_GRAIN_UNSPECIFIED falls back to MINUTE-level settings as a safe default.
+  // This can occur when viewing infinite time ranges without a valid smallest_time_grain.
+  // The grain value should not be used in queries (filtered out by isGrainAllowed),
+  // but this entry prevents lookup failures in UI formatting code.
   TIME_GRAIN_UNSPECIFIED: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",

@@ -104,19 +104,6 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
 
-export const V1TimeGrainToD3Format: Record<V1TimeGrain, string> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "%M:%S",
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "%L ms",
-  [V1TimeGrain.TIME_GRAIN_SECOND]: "%H:%M:%S",
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: "%M:%S",
-  [V1TimeGrain.TIME_GRAIN_HOUR]: "%H:%M",
-  [V1TimeGrain.TIME_GRAIN_DAY]: "%b %d",
-  [V1TimeGrain.TIME_GRAIN_WEEK]: "%b %d",
-  [V1TimeGrain.TIME_GRAIN_MONTH]: "%b %Y",
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: "Q%q %Y",
-  [V1TimeGrain.TIME_GRAIN_YEAR]: "%Y",
-};
-
 export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
 
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
