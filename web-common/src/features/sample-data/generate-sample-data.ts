@@ -147,6 +147,7 @@ async function generateSampleDataWithDevChat(
     onWriteFile: (path) => {
       created = true;
       overlay.set(null);
+      sourceImportedPath.set(path);
       void goto(`/files${path}`);
     },
   });
