@@ -20,7 +20,8 @@
     "test": "npm run test -w web-common & PLAYWRIGHT_TEST=true make cli && npm run test -w web-local",
     "local-test": "cd web-local && npx playwright test --headed --project=e2e-chrome -g",
     "gen:colors": "node web-common/src/features/themes/gen-colors.ts",
-    "quality": "bash ./scripts/web-test-code-quality.sh"
+    "quality": "bash ./scripts/web-test-code-quality.sh",
+    "quality:ci": "FAIL_FAST=true bash ./scripts/web-test-code-quality.sh"
   },
   "devDependencies": {
     "@types/eslint": "^8.56.9",

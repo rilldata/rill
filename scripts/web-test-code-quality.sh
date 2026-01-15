@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
+
+# In CI, fail fast on first error. Locally, run exhaustively by default.
+# Override with FAIL_FAST=true or FAIL_FAST=false.
+if [[ -z "${FAIL_FAST:-}" ]]; then
+  FAIL_FAST="${CI:-false}"
+fi
+
+if [[ "$FAIL_FAST" == "true" ]]; then
+  set -e
+else
+  exit_code=0
+fi
 
 # This script mirrors the original GitHub Action, but can also be run locally with parity.
 # In CI, ADMIN/LOCAL/COMMON are passed from dorny/paths-filter.
@@ -66,8 +78,8 @@ if [[ "$COMMON" == "true" ]]; then
   cd web-common
   npx svelte-kit sync
   cd ..
-  npx eslint web-common --quiet
-  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/features/dashboards/time-series/MetricsTimeSeriesCharts.svelte,src/features/dashboards/time-series/MeasureChart.svelte,src/features/dashboards/time-controls/TimeControls.svelte,src/components/data-graphic/elements/GraphicContext.svelte,src/components/data-graphic/guides/Axis.svelte,src/components/data-graphic/guides/DynamicallyPlacedLabel.svelte,src/components/data-graphic/guides/Grid.svelte,src/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte,src/components/data-graphic/marks/Area.svelte,src/components/data-graphic/marks/ChunkedLine.svelte,src/components/data-graphic/marks/HistogramPrimitive.svelte,src/components/data-graphic/marks/Line.svelte,src/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte,src/features/column-profile/column-types/details/SummaryNumberPlot.svelte,src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte"
+  npx eslint web-common --quiet || exit_code=$?
+  npx svelte-check --workspace web-common --no-tsconfig --ignore "src/features/dashboards/time-series/MetricsTimeSeriesCharts.svelte,src/features/dashboards/time-series/MeasureChart.svelte,src/features/dashboards/time-controls/TimeControls.svelte,src/components/data-graphic/elements/GraphicContext.svelte,src/components/data-graphic/guides/Axis.svelte,src/components/data-graphic/guides/DynamicallyPlacedLabel.svelte,src/components/data-graphic/guides/Grid.svelte,src/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte,src/components/data-graphic/marks/Area.svelte,src/components/data-graphic/marks/ChunkedLine.svelte,src/components/data-graphic/marks/HistogramPrimitive.svelte,src/components/data-graphic/marks/Line.svelte,src/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte,src/features/column-profile/column-types/details/SummaryNumberPlot.svelte,src/stories/Tooltip.stories.svelte,src/lib/number-formatting/__stories__/NumberFormatting.stories.svelte" || exit_code=$?
 fi
 
 if [[ "$LOCAL" == "true" ]]; then
@@ -76,8 +88,8 @@ if [[ "$LOCAL" == "true" ]]; then
   cd web-local
   npx svelte-kit sync
   cd ..
-  npx eslint web-local --quiet
-  npm run check -w web-local
+  npx eslint web-local --quiet || exit_code=$?
+  npm run check -w web-local || exit_code=$?
 fi
 
 if [[ "$ADMIN" == "true" ]]; then
@@ -86,10 +98,13 @@ if [[ "$ADMIN" == "true" ]]; then
   cd web-admin
   npx svelte-kit sync
   cd ..
-  npx eslint web-admin --quiet
-  npx svelte-check --workspace web-admin --no-tsconfig
+  npx eslint web-admin --quiet || exit_code=$?
+  npx svelte-check --workspace web-admin --no-tsconfig || exit_code=$?
 fi
 
 echo ""
 echo "== type check non-svelte files (with temporary whitelist) =="
-bash ./scripts/tsc-with-whitelist.sh
+bash ./scripts/tsc-with-whitelist.sh || exit_code=$?
+
+# Exit with failure if any check failed (only relevant when not in fail-fast mode)
+exit "${exit_code:-0}"
