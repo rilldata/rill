@@ -530,7 +530,9 @@ export type V1GetDeploymentConfigResponseAnnotations = {
   [key: string]: string;
 };
 
-export type V1GetDeploymentConfigResponseConfig = { [key: string]: unknown };
+export type V1GetDeploymentConfigResponseDuckdbConnectorConfig = {
+  [key: string]: unknown;
+};
 
 export interface V1GetDeploymentConfigResponse {
   variables?: V1GetDeploymentConfigResponseVariables;
@@ -541,7 +543,7 @@ export interface V1GetDeploymentConfigResponse {
   updatedOn?: string;
   /** Whether the deployment is git based or archive based. */
   usesArchive?: boolean;
-  config?: V1GetDeploymentConfigResponseConfig;
+  duckdbConnectorConfig?: V1GetDeploymentConfigResponseDuckdbConnectorConfig;
 }
 
 export interface V1GetDeploymentCredentialsResponse {

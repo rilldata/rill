@@ -2,6 +2,7 @@ package provisioner
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -71,6 +72,38 @@ func NewRuntimeConfig(cfg map[string]any) (*RuntimeConfig, error) {
 func (r *RuntimeConfig) AsMap() map[string]any {
 	res := make(map[string]any)
 	err := mapstructure.Decode(r, &res)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func (r *RuntimeConfig) AsDuckdbConfig() *DuckdbConfig {
+	return &DuckdbConfig{
+		CPU:          strconv.Itoa(r.CPU),
+		MemoryGB:     strconv.Itoa(r.MemoryGB),
+		StorageBytes: strconv.FormatInt(r.StorageBytes, 10),
+	}
+}
+
+type DuckdbConfig struct {
+	CPU          string `mapstructure:"cpu"`
+	MemoryGB     string `mapstructure:"memory_limit_gb"`
+	StorageBytes string `mapstructure:"storage_limit_bytes"`
+}
+
+func NewDuckdbConfig(cfg map[string]any) (*DuckdbConfig, error) {
+	res := &DuckdbConfig{}
+	err := mapstructure.WeakDecode(cfg, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse duckdb config: %w", err)
+	}
+	return res, nil
+}
+
+func (r *DuckdbConfig) AsMap() map[string]any {
+	res := make(map[string]any)
+	err := mapstructure.WeakDecode(r, &res)
 	if err != nil {
 		panic(err)
 	}

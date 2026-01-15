@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"maps"
-	"strconv"
 	"time"
 
-	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -91,19 +89,11 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		if connector.Type != "duckdb" {
 			continue
 		}
-		// update the connector config cpu memory_limit_gb and storage_limit_bytes for duckdb connector
-		rcfg, err := provisioner.NewRuntimeConfig(cfg.Config)
-		if err != nil {
-			return err
-		}
-		updatedConnectorConfig := connector.Config.AsMap()
-		updatedConnectorConfig["cpu"] = strconv.Itoa(rcfg.CPU)
-		updatedConnectorConfig["memory_limit_gb"] = strconv.Itoa(rcfg.MemoryGB)
-		updatedConnectorConfig["storage_limit_bytes"] = strconv.FormatInt(rcfg.StorageBytes, 10)
-
-		connectorConfigChanged := !maps.Equal(updatedConnectorConfig, connector.Config.AsMap())
+		currentDuckdbConfig := connector.Config.AsMap()
+		updatedDuckdbConfig := cfg.DuckdbConnectorConfig
+		connectorConfigChanged := !maps.Equal(currentDuckdbConfig, updatedDuckdbConfig)
 		if connectorConfigChanged {
-			duckdbConfig, err := structpb.NewStruct(updatedConnectorConfig)
+			duckdbConfig, err := structpb.NewStruct(updatedDuckdbConfig)
 			if err != nil {
 				return err
 			}

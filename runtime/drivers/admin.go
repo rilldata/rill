@@ -36,10 +36,10 @@ type AlertMetadata struct {
 
 // DeploymentConfig holds configuration returned by the admin service for a deployment.
 type DeploymentConfig struct {
-	Variables   map[string]string
-	Annotations map[string]string
-	FrontendURL string
-	UpdatedOn   time.Time
-	UsesArchive bool
-	Config      map[string]any
+	Variables             map[string]string
+	Annotations           map[string]string
+	FrontendURL           string
+	UpdatedOn             time.Time
+	UsesArchive           bool
+	DuckdbConnectorConfig map[string]any
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -272,11 +271,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
-	duckdbConfig, err := structpb.NewStruct(map[string]any{
-		"cpu":                 strconv.Itoa(cfg.CPU),
-		"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
-		"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
-	})
+	duckdbConfig, err := structpb.NewStruct(cfg.AsDuckdbConfig().AsMap())
 	if err != nil {
 		return err
 	}

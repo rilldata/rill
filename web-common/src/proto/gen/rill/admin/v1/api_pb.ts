@@ -4723,11 +4723,11 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
   usesArchive = false;
 
   /**
-   * Provisioned config for th deployment
+   * Duckdb connector config for the deployment
    *
-   * @generated from field: google.protobuf.Struct config = 6;
+   * @generated from field: google.protobuf.Struct duckdb_connector_config = 6;
    */
-  config?: Struct;
+  duckdbConnectorConfig?: Struct;
 
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
@@ -4742,7 +4742,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "updated_on", kind: "message", T: Timestamp },
     { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "config", kind: "message", T: Struct },
+    { no: 6, name: "duckdb_connector_config", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {

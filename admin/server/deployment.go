@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -863,7 +864,7 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "can't get deployment %q because its runtime has not been initialized yet", depl.ID)
+		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -892,11 +893,16 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	}
 	resp.Variables = vars
 
-	configStruct, err := structpb.NewStruct(pr.Config)
+	// parsing duckdb connector config
+	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "invalid provisioner config: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
 	}
-	resp.Config = configStruct
+	configStruct, err := structpb.NewStruct(rCfg.AsDuckdbConfig().AsMap())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
+	}
+	resp.DuckdbConnectorConfig = configStruct
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()
