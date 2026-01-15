@@ -59,6 +59,7 @@ components:
                 - OPERATION_NIN
                 - OPERATION_LIKE
                 - OPERATION_NLIKE
+                - OPERATION_CAST
             type: string
         v1AddOrganizationMemberUserResponse:
             properties:
@@ -658,6 +659,29 @@ components:
                 user:
                     $ref: '#/components/schemas/v1User'
             type: object
+        v1GetDeploymentConfigResponse:
+            properties:
+                annotations:
+                    additionalProperties:
+                        type: string
+                    title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                frontendUrl:
+                    description: Frontend URL for the deployment.
+                    type: string
+                updatedOn:
+                    description: Timestamp when the deployment was last updated.
+                    format: date-time
+                    type: string
+                usesArchive:
+                    description: Whether the deployment is git based or archive based.
+                    type: boolean
+                variables:
+                    additionalProperties:
+                        type: string
+                    title: Variables for the deployment (connector credentials, etc.)
+                    type: object
+            type: object
         v1GetDeploymentCredentialsResponse:
             properties:
                 accessToken:
@@ -766,10 +790,10 @@ components:
             type: object
         v1GetProjectResponse:
             properties:
+                deployment:
+                    $ref: '#/components/schemas/v1Deployment'
                 jwt:
                     type: string
-                prodDeployment:
-                    $ref: '#/components/schemas/v1Deployment'
                 project:
                     $ref: '#/components/schemas/v1Project'
                 projectPermissions:
@@ -801,17 +825,15 @@ components:
                 archiveId:
                     description: A stable ID for the archive returned from archive_download_url.
                     type: string
+                editable:
+                    description: Whether editing is allowed. Set to true for dev deployments.
+                    type: boolean
                 expiresOn:
                     description: How long the returned config is valid for. Clients should call GetRepoMeta again after this time.
                     format: date-time
                     type: string
                 gitBranch:
                     description: The branch to use for the deployment.
-                    type: string
-                gitEditBranch:
-                    description: |-
-                        A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-                        This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
                     type: string
                 gitSubpath:
                     description: Optional subpath within the Git repository to use as the project root.
@@ -824,6 +846,12 @@ components:
                 lastUpdatedOn:
                     description: When the returned config was last modified. This covers all fields in the response except the ephemeral credentials embedded in git_url and archive_download_url.
                     format: date-time
+                    type: string
+                managedGitRepo:
+                    description: Whether the git repo is managed by Rill.
+                    type: boolean
+                primaryBranch:
+                    description: Primary branch of the project.
                     type: string
             type: object
         v1GetReportMetaResponse:
@@ -1172,10 +1200,12 @@ components:
                     items:
                         type: string
                     type: array
-                filter:
-                    $ref: '#/components/schemas/v1Expression'
                 id:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    type: object
                 projectId:
                     type: string
                 resourceName:
@@ -2272,7 +2302,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.77.8
+    version: v0.78.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -2363,6 +2393,31 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: DeleteDeployment deletes a deployment.
+    /v1/deployments/{deploymentId}/config:
+        get:
+            operationId: AdminService_GetDeploymentConfig
+            parameters:
+                - in: path
+                  name: deploymentId
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetDeploymentConfigResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
+                This is called by the runtime to pull its Variables and Annotations from the admin service.
     /v1/deployments/{deploymentId}/credentials:
         post:
             operationId: AdminService_GetDeployment
@@ -3614,6 +3669,11 @@ paths:
                 - in: path
                   name: project
                   required: true
+                  schema:
+                    type: string
+                - description: Optional branch to get deployment for. If not set, then project's primary_branch is used.
+                  in: query
+                  name: branch
                   schema:
                     type: string
                 - in: query
@@ -5009,8 +5069,13 @@ paths:
                                     items:
                                         type: string
                                     type: array
-                                filter:
-                                    $ref: '#/components/schemas/v1Expression'
+                                metricsViewFilters:
+                                    additionalProperties:
+                                        $ref: '#/components/schemas/v1Expression'
+                                    description: |-
+                                        Optional metrics view to filter mapping to apply as row filters in queries.
+                                        This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
+                                    type: object
                                 resourceName:
                                     description: Name of the resource to grant access to.
                                     type: string

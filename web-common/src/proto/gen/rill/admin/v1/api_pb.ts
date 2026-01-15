@@ -1672,6 +1672,13 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
   project = "";
 
   /**
+   * Optional branch to get deployment for. If not set, then project's primary_branch is used.
+   *
+   * @generated from field: string branch = 6;
+   */
+  branch = "";
+
+  /**
    * @generated from field: uint32 access_token_ttl_seconds = 3;
    */
   accessTokenTtlSeconds = 0;
@@ -1696,6 +1703,7 @@ export class GetProjectRequest extends Message<GetProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "access_token_ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "issue_superuser_token", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1728,9 +1736,9 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   project?: Project;
 
   /**
-   * @generated from field: rill.admin.v1.Deployment prod_deployment = 2;
+   * @generated from field: rill.admin.v1.Deployment deployment = 2;
    */
-  prodDeployment?: Deployment;
+  deployment?: Deployment;
 
   /**
    * @generated from field: string jwt = 3;
@@ -1751,7 +1759,7 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   static readonly typeName = "rill.admin.v1.GetProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project", kind: "message", T: Project },
-    { no: 2, name: "prod_deployment", kind: "message", T: Deployment },
+    { no: 2, name: "deployment", kind: "message", T: Deployment },
     { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_permissions", kind: "message", T: ProjectPermissions },
   ]);
@@ -4635,6 +4643,114 @@ export class ProvisionResponse extends Message<ProvisionResponse> {
 
   static equals(a: ProvisionResponse | PlainMessage<ProvisionResponse> | undefined, b: ProvisionResponse | PlainMessage<ProvisionResponse> | undefined): boolean {
     return proto3.util.equals(ProvisionResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetDeploymentConfigRequest
+ */
+export class GetDeploymentConfigRequest extends Message<GetDeploymentConfigRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<GetDeploymentConfigRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetDeploymentConfigRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigRequest {
+    return new GetDeploymentConfigRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDeploymentConfigRequest {
+    return new GetDeploymentConfigRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDeploymentConfigRequest {
+    return new GetDeploymentConfigRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDeploymentConfigRequest | PlainMessage<GetDeploymentConfigRequest> | undefined, b: GetDeploymentConfigRequest | PlainMessage<GetDeploymentConfigRequest> | undefined): boolean {
+    return proto3.util.equals(GetDeploymentConfigRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetDeploymentConfigResponse
+ */
+export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResponse> {
+  /**
+   * Variables for the deployment (connector credentials, etc.)
+   *
+   * @generated from field: map<string, string> variables = 1;
+   */
+  variables: { [key: string]: string } = {};
+
+  /**
+   * Annotations for the deployment (org/project metadata, etc.)
+   *
+   * @generated from field: map<string, string> annotations = 2;
+   */
+  annotations: { [key: string]: string } = {};
+
+  /**
+   * Frontend URL for the deployment.
+   *
+   * @generated from field: string frontend_url = 3;
+   */
+  frontendUrl = "";
+
+  /**
+   * Timestamp when the deployment was last updated.
+   *
+   * @generated from field: google.protobuf.Timestamp updated_on = 4;
+   */
+  updatedOn?: Timestamp;
+
+  /**
+   * Whether the deployment is git based or archive based.
+   *
+   * @generated from field: bool uses_archive = 5;
+   */
+  usesArchive = false;
+
+  constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetDeploymentConfigResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {
+    return new GetDeploymentConfigResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetDeploymentConfigResponse {
+    return new GetDeploymentConfigResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetDeploymentConfigResponse {
+    return new GetDeploymentConfigResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetDeploymentConfigResponse | PlainMessage<GetDeploymentConfigResponse> | undefined, b: GetDeploymentConfigResponse | PlainMessage<GetDeploymentConfigResponse> | undefined): boolean {
+    return proto3.util.equals(GetDeploymentConfigResponse, a, b);
   }
 }
 
@@ -10367,12 +10483,12 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   resourceName = "";
 
   /**
-   * Optional filter to apply as a row filter in queries.
-   * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+   * Optional metrics view to filter mapping to apply as row filters in queries.
+   * This will be translated to a rill.runtime.v1.SecurityRuleRowFilter with the metrics view in the condition_resources, which currently applies to metric views queries.
    *
-   * @generated from field: rill.runtime.v1.Expression filter = 5;
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 12;
    */
-  filter?: Expression;
+  metricsViewFilters: { [key: string]: Expression } = {};
 
   /**
    * Optional list of fields to limit access to. If empty, no field access rule will be added.
@@ -10416,7 +10532,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 3, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 8, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "filter", kind: "message", T: Expression },
+    { no: 12, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -11953,12 +12069,25 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitBranch = "";
 
   /**
-   * A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-   * This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+   * Whether editing is allowed. Set to true for dev deployments.
    *
-   * @generated from field: string git_edit_branch = 8;
+   * @generated from field: bool editable = 11;
    */
-  gitEditBranch = "";
+  editable = false;
+
+  /**
+   * Primary branch of the project.
+   *
+   * @generated from field: string primary_branch = 12;
+   */
+  primaryBranch = "";
+
+  /**
+   * Whether the git repo is managed by Rill.
+   *
+   * @generated from field: bool managed_git_repo = 10;
+   */
+  managedGitRepo = false;
 
   /**
    * Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).
@@ -11994,7 +12123,9 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "git_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "git_edit_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "editable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "primary_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "managed_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "archive_created_on", kind: "message", T: Timestamp },
@@ -16873,9 +17004,9 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   resourceName = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression filter = 10;
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 18;
    */
-  filter?: Expression;
+  metricsViewFilters: { [key: string]: Expression } = {};
 
   /**
    * @generated from field: repeated string fields = 11;
@@ -16913,7 +17044,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 17, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 15, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "filter", kind: "message", T: Expression },
+    { no: 18, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },

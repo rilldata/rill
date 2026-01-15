@@ -95,7 +95,9 @@ export function generateVLMultiMetricChartSpec(
 
   spec.transform = transforms;
 
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  spec.encoding = {
+    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+  };
 
   const xField = sanitizeValueForVega(config.x?.field);
 
@@ -221,23 +223,11 @@ export function generateVLMultiMetricChartSpec(
     multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
 
-  let xBand: number | undefined = undefined;
-
-  if (
-    config.x?.type === "temporal" &&
-    (markType === "stacked_bar" ||
-      markType === "stacked_bar_normalized" ||
-      markType === "grouped_bar")
-  ) {
-    xBand = 0.5;
-  }
-
   const hoverRuleLayer = buildHoverRuleLayer({
     xField,
     defaultTooltip: [],
     multiValueTooltipChannel,
     primaryColor: data.theme.primary,
-    xBand: xBand,
     isDarkMode: data.isDarkMode,
     pivot:
       xField && measures.length && multiValueTooltipChannel?.length

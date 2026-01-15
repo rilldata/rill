@@ -1561,12 +1561,18 @@ export enum MetricsViewSpec_DimensionType {
    * @generated from enum value: DIMENSION_TYPE_TIME = 2;
    */
   TIME = 2,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_GEOSPATIAL = 3;
+   */
+  GEOSPATIAL = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
 proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
   { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
   { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
   { no: 2, name: "DIMENSION_TYPE_TIME" },
+  { no: 3, name: "DIMENSION_TYPE_GEOSPATIAL" },
 ]);
 
 /**

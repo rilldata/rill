@@ -241,6 +241,7 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.TODAY]: {
     label: "Today",
 
+    defaultGrain: V1TimeGrain.TIME_GRAIN_HOUR,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     minimumTimeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -266,7 +267,7 @@ export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   },
   [TimeRangePreset.WEEK_TO_DATE]: {
     label: "Week to Date",
-
+    defaultGrain: V1TimeGrain.TIME_GRAIN_DAY,
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     minimumTimeGrain: V1TimeGrain.TIME_GRAIN_DAY,

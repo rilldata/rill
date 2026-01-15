@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
@@ -8,7 +8,6 @@
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
-
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let conversationManager: ConversationManager;
@@ -19,7 +18,7 @@
 
   let value = "";
 
-  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -71,11 +70,16 @@
     editor.commands.startMention();
   }
 
+  function startChat(prompt: string) {
+    editor.commands.setContent(prompt);
+    // Wait for `value` and `canSend` to update before sending the message.`
+    tick().then(sendMessage).catch(console.error);
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
       extensions: getEditorPlugins({
-        enableMention,
         placeholder,
         onSubmit: () => void sendMessage(),
       }),
@@ -95,10 +99,7 @@
       },
     });
 
-    const unsubStartChatEvent = eventBus.on("start-chat", (prompt) => {
-      editor.commands.setContent(prompt);
-      editor.commands.focus();
-    });
+    const unsubStartChatEvent = eventBus.on("start-chat", startChat);
 
     chatMounted.set(true);
 
@@ -117,11 +118,9 @@
 >
   <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
-    {#if enableMention}
-      <button class="text-base ml-1" type="button" on:click={startMention}>
-        @
-      </button>
-    {/if}
+    <button class="text-base ml-1" type="button" on:click={startMention}>
+      @
+    </button>
     <div class="grow"></div>
     <div>
       {#if canCancel}
