@@ -503,7 +503,10 @@ const TestCases: {
   },
   {
     title: "Time dimension selection - set and then reset to primary",
-    mutations: [AD_BIDS_SET_TIME_DIMENSION_OFFSET, AD_BIDS_SET_TIME_DIMENSION_PRIMARY],
+    mutations: [
+      AD_BIDS_SET_TIME_DIMENSION_OFFSET,
+      AD_BIDS_SET_TIME_DIMENSION_PRIMARY,
+    ],
     expectedSearch: "",
     legacyNotSupported: true,
   },
