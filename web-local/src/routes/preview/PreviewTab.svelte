@@ -199,14 +199,13 @@
         <div class="space-y-0 w-full border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
           {#each filteredDashboards as dashboard, i (dashboard.name)}
             <Tooltip distance={4} alignment="start" suppress={!dashboard.hasError}>
-              <div
+              <button
+                type="button"
                 class:border-t={i > 0}
                 class:border-gray-200={i > 0}
                 class:dark:border-gray-800={i > 0}
                 on:click={() => navigateToDashboard(dashboard)}
-                on:keydown={(e) => e.key === 'Enter' && navigateToDashboard(dashboard)}
-                role={dashboard.hasError ? undefined : "button"}
-                tabindex={dashboard.hasError ? -1 : 0}
+                disabled={dashboard.hasError}
                 class="flex flex-col gap-y-1 group px-4 py-2.5 w-full transition-colors text-left"
                 class:hover:bg-gray-50={!dashboard.hasError}
                 class:dark:hover:bg-gray-900={!dashboard.hasError}
@@ -247,7 +246,7 @@
                   </Tooltip>
                 {/if}
               </div>
-              </div>
+              </button>
               <TooltipContent slot="tooltip-content">
                 {dashboard.errorMessage || "Dashboard has errors"}
               </TooltipContent>

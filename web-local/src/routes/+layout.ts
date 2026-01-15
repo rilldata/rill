@@ -18,14 +18,9 @@ Settings.defaultLocale = "en";
 export async function load({ url, depends, untrack }) {
   depends("app:init");
 
-  // Fetch metadata to check preview mode - do this early to enable redirect before render
+  // Fetch metadata to check preview mode
   const metadata = await localServiceGetMetadata();
   const previewMode = metadata.previewMode ?? false;
-
-  // Redirect root to /preview when in preview mode (before any rendering)
-  if (previewMode && url.pathname === "/") {
-    throw redirect(303, "/home");
-  }
 
   const instanceId = get(runtime).instanceId;
 
@@ -58,8 +53,14 @@ export async function load({ url, depends, untrack }) {
 
   if (!initialized) {
     initialized = await handleUninitializedProject(instanceId);
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
+  } else {
+    // Only redirect after project is initialized
+    if (previewMode && url.pathname === "/") {
+      throw redirect(303, "/home");
+    }
+    if (redirectPath) {
+      throw redirect(303, redirectPath);
+    }
   }
 
   return { initialized, previewMode };

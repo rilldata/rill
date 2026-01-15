@@ -27,7 +27,6 @@
   export let mode: string;
   export let logoHref: string = "/";
   export let breadcrumbResourceHref: ((resourceName: string, resourceKind: string) => string) | undefined = undefined;
-  export let showModelsInBreadcrumb: boolean = true;
 
   $: ({ instanceId } = $runtime);
 
