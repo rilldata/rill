@@ -450,6 +450,7 @@
                   <button
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
+                    aria-label="Select time axis"
                   >
                     <div class="flex-none">
                       <Clock size="14px" />
@@ -474,6 +475,7 @@
                 {#each timeDimensions as { value, label } (value)}
                   <button
                     class="item"
+                    aria-label="Select {label} time dimension"
                     on:click={() => {
                       onTimeDimensionSelect(value);
                       closeMenu();
