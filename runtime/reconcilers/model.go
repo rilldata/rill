@@ -1360,7 +1360,7 @@ func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.
 	var defaultAttempts uint32 = 3
 	var defaultDelay uint32 = 5
 	defaultExponentialBackoff := true
-	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*", ".*bad connection.*"}
 
 	retryAttempts := mdl.Spec.RetryAttempts
 	if retryAttempts == nil {
