@@ -21,13 +21,15 @@
     dashboardsErrored: false,
   });
 
-  $: if (redirectPath) {
+  let redirected = false;
+  $: if (redirectPath && !redirected) {
     if (dashboardsErrored) {
       eventBus.emit("notification", {
         type: "error",
         message: "Failed to deploy dashboards",
       });
     }
+    redirected = true;
     void goto(redirectPath);
   }
 </script>

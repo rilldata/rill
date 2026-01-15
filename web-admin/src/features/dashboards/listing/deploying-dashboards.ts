@@ -41,10 +41,6 @@ export function useDeployingDashboards(
           deployingDashboard,
         );
         if (dashboardsErrored) {
-          const dashboardsErrored = getDashboardsErrored(
-            dashboards,
-            deployingDashboard,
-          );
           return {
             // Redirect to status page is dashboards errored
             redirectPath: dashboardsErrored
@@ -105,7 +101,7 @@ function getDashboardsErrored(
     );
     return dashboard ? hasErrored(dashboard) : false;
   } else {
-    return dashboards.every(hasErrored);
+    return dashboards.length > 0 && dashboards.some(hasErrored);
   }
 }
 

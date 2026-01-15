@@ -66,7 +66,6 @@
   $: redirectPageUrl = copyWithAdditionalArguments($page.url, {
     deploy: "true",
   });
-  $: console.log("Deploy route:", $deployPageUrl);
 
   async function onDeploy(resumingDeploy = false) {
     await waitUntil(() => !get(deploymentState).loading);
