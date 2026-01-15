@@ -221,15 +221,15 @@
     // Capture time range name before any state changes
     const timeRangeName = selectedTimeRange?.name;
 
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
     metricsExplorerStore.setTimeDimension($exploreName, column);
 
     // Re-resolve the time range with the new time dimension
     if (timeRangeName) {
-      await queryClient.cancelQueries({
-        predicate: (query) =>
-          isMetricsViewQuery(query.queryHash, metricsViewName),
-      });
-
       const { interval, grain } = await deriveInterval(
         timeRangeName,
         metricsViewName,
