@@ -305,8 +305,8 @@ func prepareScanDest(schema *runtimev1.StructType) []any {
 		case runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
 			dest = &sql.NullString{}
 		case runtimev1.Type_CODE_TIMESTAMP:
-			// MySQL driver returns DATETIME as []byte unless parseTime=true in DSN
-			dest = &sql.NullString{}
+			// MySQL driver returns DATETIME as time.Time when parseTime=true in DSN
+			dest = &sql.NullTime{}
 		case runtimev1.Type_CODE_JSON:
 			dest = &sql.NullString{}
 		default:

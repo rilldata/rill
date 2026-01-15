@@ -195,3 +195,18 @@ INSERT INTO decimal_precision_test VALUES
 (1, 12345.6789, 123456789012.345678, 12345678901234567890123456.7890123456),
 (2, -99999.9999, -999999999999.999999, -99999999999999999999999999.9999999999),
 (3, 0.0001, 0.000001, 0.0000000001);
+
+-- Table 9: Ad Bids table for metricsview tests
+-- This table mirrors the structure used in other OLAP driver tests (ClickHouse, DuckDB)
+CREATE TABLE IF NOT EXISTS ad_bids (
+    id INT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    publisher VARCHAR(255),
+    domain VARCHAR(255),
+    bid_price DOUBLE
+)
+DUPLICATE KEY(id)
+DISTRIBUTED BY HASH(id) BUCKETS 1
+PROPERTIES ("replication_num" = "1");
+
+-- Ad bids data is loaded from AdBids.csv.gz via LOAD DATA LOCAL INFILE in teststarrocks.go

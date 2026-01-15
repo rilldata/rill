@@ -7,13 +7,21 @@ sidebar_position: 5
 
 [StarRocks](https://www.starrocks.io/) is an open-source, high-performance analytical database designed for real-time, multi-dimensional analytics on large-scale data. It supports both primary key and aggregate data models, making it suitable for a variety of analytical workloads including real-time dashboards, ad-hoc queries, and complex analytical tasks.
 
-Rill supports connecting to an existing StarRocks cluster via a "live connector" and using it as an OLAP engine built against [external tables](/build/connectors/olap#external-olap-tables) to power Rill dashboards.
+:::note Supported Versions
+
+Rill supports connecting to StarRocks 4.0 or newer versions.
+
+:::
+
+:::info
+
+Rill supports connecting to an existing StarRocks cluster via a read-only OLAP connector and using it to power Rill dashboards with [external tables](/build/connectors/olap#external-olap-tables).
 
 :::
 
 ## Connect to StarRocks
 
-When using StarRocks for local development, you can connect via connection parameters or by using the DSN.
+When using StarRocks for local development, you can connect via connection parameters or by using a DSN.
 
 After selecting "Add Data", select StarRocks and fill in your connection parameters. This will automatically create the `starrocks.yaml` file in your `connectors` directory and populate the `.env` file with `connector.starrocks.password`.
 
@@ -34,7 +42,7 @@ ssl: false
 
 ### Connection String (DSN)
 
-Rill can also connect to StarRocks using a DSN connection string. StarRocks uses MySQL protocol, so the connection string follows the MySQL DSN format:
+Rill can also connect to StarRocks using a DSN connection string. StarRocks uses MySQL protocol, so the connection string must follow the MySQL DSN format:
 
 ```yaml
 type: connector
@@ -43,28 +51,46 @@ driver: starrocks
 dsn: "{{ .env.connector.starrocks.dsn }}"
 ```
 
-The DSN format is:
+#### Using default_catalog
+
+For `default_catalog`, you can specify database directly in the DSN path (MySQL-style):
 ```
-starrocks://user:password@host:port/database
+user:password@tcp(host:9030)/my_database?parseTime=true
 ```
 
-Or using MySQL-style format:
+#### Using external catalogs with DSN
+
+For external catalogs (Iceberg, Hive, etc.), set `catalog` and `database` as separate properties (do not include database in DSN):
+```yaml
+type: connector
+driver: starrocks
+
+dsn: "user:password@tcp(host:9030)/?parseTime=true"
+catalog: iceberg_catalog
+database: my_database
 ```
-user:password@tcp(host:port)/database?parseTime=true
-```
+
+If `catalog` is not specified, it defaults to `default_catalog`.
+
+:::warning DSN Format
+
+Only MySQL-style DSN format is supported. The `starrocks://` URL scheme is **not** supported. When using DSN, do not set `host`, `port`, `username`, `password` separately — these must be included in the DSN string.
+
+:::
 
 ## Configuration Properties
 
 | Property | Description | Default |
 |----------|-------------|---------|
-| `host` | StarRocks FE (Frontend) server hostname | Required |
+| `host` | StarRocks FE (Frontend) server hostname | Required (if no DSN) |
 | `port` | MySQL protocol port of StarRocks FE | `9030` |
-| `username` | Username for authentication | Required |
+| `username` | Username for authentication | `root` |
 | `password` | Password for authentication | - |
 | `catalog` | StarRocks catalog name (for external catalogs like Iceberg, Hive) | `default_catalog` |
 | `database` | StarRocks database name | - |
 | `ssl` | Enable SSL/TLS encryption | `false` |
-| `dsn` | Full connection string (alternative to individual parameters) | - |
+| `dsn` | MySQL-format connection string (alternative to individual parameters) | - |
+| `log_queries` | Enable logging of all SQL queries (useful for debugging) | `false` |
 
 ## External Catalogs
 
@@ -95,6 +121,26 @@ StarRocks uses a three-level hierarchy: Catalog > Database > Table. In Rill's AP
 | `databaseSchema` | Database | `my_database` |
 | `table` | Table | `my_table` |
 
+## Creating Metrics Views
+
+When creating metrics views against StarRocks tables, use the `table` property with `database_schema` to reference your data:
+
+```yaml
+type: metrics_view
+display_name: My Dashboard
+table: my_table
+database_schema: my_database
+timeseries: timestamp
+
+dimensions:
+  - name: category
+    column: category
+
+measures:
+  - name: total_count
+    expression: COUNT(*)
+```
+
 ## Troubleshooting
 
 ### Connection Issues
@@ -106,10 +152,14 @@ If you encounter connection issues:
 3. Ensure network connectivity to the StarRocks FE node
 4. For SSL connections, verify SSL is enabled on the StarRocks server
 
+### Timezone Handling
+
+All timestamp values are returned in UTC. The driver parses DATETIME values from StarRocks as UTC time.
 
 ## Known Limitations
 
-- **Model execution**: Model creation and execution is not yet supported. This feature is under development.
+- **Read-only connector**: StarRocks is a read-only OLAP connector. Model creation and execution is not supported.
+- **Direct table reference**: Use the `table` property in metrics views instead of `model` to reference StarRocks tables directly.
 
 :::info Need help connecting to StarRocks?
 

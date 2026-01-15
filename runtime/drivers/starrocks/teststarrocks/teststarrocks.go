@@ -1,9 +1,13 @@
 package teststarrocks
 
 import (
+	"compress/gzip"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,7 +17,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	tcwait "github.com/testcontainers/testcontainers-go/wait"
 
 	_ "github.com/go-sql-driver/mysql" // MySQL driver for database/sql
 )
@@ -34,18 +38,27 @@ type TestingT interface {
 	Cleanup(f func())
 }
 
+// StarRocksInfo contains connection info for a StarRocks container
+type StarRocksInfo struct {
+	DSN        string // MySQL protocol DSN (port 9030)
+	FEHTTPAddr string // FE HTTP address for Stream Load (port 8030)
+	BEHTTPAddr string // BE HTTP address for Stream Load redirect (port 8040)
+}
+
 // Start starts a StarRocks all-in-one container for testing.
-// It returns the DSN for connecting to the container via MySQL protocol (port 9030).
+// It returns connection info for the container.
 // The container is automatically terminated when the test ends.
-func Start(t TestingT) string {
+func Start(t TestingT) StarRocksInfo {
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{
 		Image:        StarRocksImage,
 		ExposedPorts: []string{"9030/tcp", "8030/tcp", "8040/tcp"},
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort("9030/tcp"),
-			wait.ForLog("Enjoy the journey to StarRocks"),
+		WaitingFor: tcwait.ForAll(
+			tcwait.ForListeningPort("9030/tcp"),
+			tcwait.ForListeningPort("8030/tcp"),
+			tcwait.ForListeningPort("8040/tcp"),
+			tcwait.ForLog("Enjoy the journey to StarRocks"),
 		).WithDeadline(5 * time.Minute),
 	}
 
@@ -63,25 +76,37 @@ func Start(t TestingT) string {
 	host, err := container.Host(ctx)
 	require.NoError(t, err)
 
-	port, err := container.MappedPort(ctx, nat.Port("9030/tcp"))
+	mysqlPort, err := container.MappedPort(ctx, nat.Port("9030/tcp"))
 	require.NoError(t, err)
 
-	dsn := fmt.Sprintf("root:@tcp(%s:%s)/", host, port.Port())
-	return dsn
+	feHTTPPort, err := container.MappedPort(ctx, nat.Port("8030/tcp"))
+	require.NoError(t, err)
+
+	beHTTPPort, err := container.MappedPort(ctx, nat.Port("8040/tcp"))
+	require.NoError(t, err)
+
+	return StarRocksInfo{
+		DSN:        fmt.Sprintf("root:@tcp(%s:%s)/?parseTime=true&loc=UTC", host, mysqlPort.Port()),
+		FEHTTPAddr: fmt.Sprintf("%s:%s", host, feHTTPPort.Port()),
+		BEHTTPAddr: fmt.Sprintf("%s:%s", host, beHTTPPort.Port()),
+	}
 }
 
 // StartWithData starts a StarRocks container and initializes it with test tables.
 // Returns DSN for connecting to the container.
 func StartWithData(t TestingT) string {
-	dsn := Start(t)
+	info := Start(t)
 
 	// Wait for StarRocks to be fully ready
-	waitForStarRocks(t, dsn)
+	waitForStarRocks(t, info.DSN)
 
 	// Initialize test database and tables from init.sql
-	initTestData(t, dsn)
+	initTestData(t, info.DSN)
 
-	return dsn
+	// Load ad_bids data from CSV via Stream Load
+	loadAdBidsData(t, info.FEHTTPAddr, info.BEHTTPAddr)
+
+	return info.DSN
 }
 
 // waitForStarRocks waits for StarRocks to be ready to accept queries
@@ -184,4 +209,73 @@ func parseSQLStatements(content string) []string {
 	}
 
 	return statements
+}
+
+// streamLoadResponse represents the JSON response from StarRocks Stream Load
+type streamLoadResponse struct {
+	Status string `json:"Status"`
+	Msg    string `json:"Message"`
+}
+
+// loadAdBidsData loads ad_bids data from CSV file using StarRocks Stream Load API
+func loadAdBidsData(t TestingT, feHTTPAddr, beHTTPAddr string) {
+	// Find the AdBids.csv.gz file
+	_, currentFile, _, _ := runtime.Caller(0)
+	// Go up from teststarrocks -> starrocks -> drivers -> runtime -> testruntime/testdata/ad_bids/data
+	csvGzPath := filepath.Join(filepath.Dir(currentFile), "..", "..", "..", "testruntime", "testdata", "ad_bids", "data", "AdBids.csv.gz")
+
+	// Open and decompress the gzip file
+	gzFile, err := os.Open(csvGzPath)
+	require.NoError(t, err, "failed to open AdBids.csv.gz")
+	defer gzFile.Close()
+
+	gzReader, err := gzip.NewReader(gzFile)
+	require.NoError(t, err, "failed to create gzip reader")
+	defer gzReader.Close()
+
+	// Read decompressed CSV data into memory
+	csvData, err := io.ReadAll(gzReader)
+	require.NoError(t, err, "failed to read CSV data")
+
+	// Create HTTP request for Stream Load
+	url := fmt.Sprintf("http://%s/api/test_db/ad_bids/_stream_load", feHTTPAddr)
+	req, err := http.NewRequest(http.MethodPut, url, strings.NewReader(string(csvData)))
+	require.NoError(t, err, "failed to create Stream Load request")
+
+	// Set required headers for Stream Load
+	req.Header.Set("Expect", "100-continue")
+	req.Header.Set("column_separator", ",")
+	req.Header.Set("skip_header", "1") // Skip CSV header row
+	// Use NULLIF to convert empty strings to NULL for publisher and domain columns (matches DuckDB behavior)
+	req.Header.Set("columns", "id, timestamp, tmp_publisher, tmp_domain, bid_price, publisher=NULLIF(tmp_publisher, ''), domain=NULLIF(tmp_domain, '')")
+	req.SetBasicAuth("root", "")
+
+	// Create HTTP client with custom redirect policy
+	// StarRocks FE redirects to BE for Stream Load, but the redirect URL contains
+	// the internal container address. We need to rewrite it to the mapped host port.
+	client := &http.Client{
+		Timeout: 2 * time.Minute,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// Rewrite the redirect URL to use the correct BE address
+			req.URL.Host = beHTTPAddr
+			// Preserve auth header on redirect (like curl --location-trusted)
+			if len(via) > 0 {
+				req.SetBasicAuth("root", "")
+			}
+			return nil
+		},
+	}
+	resp, err := client.Do(req)
+	require.NoError(t, err, "failed to execute Stream Load request")
+	defer resp.Body.Close()
+
+	// Parse response
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "failed to read Stream Load response")
+
+	var result streamLoadResponse
+	err = json.Unmarshal(body, &result)
+	require.NoError(t, err, "failed to parse Stream Load response: %s", string(body))
+
+	require.Equal(t, "Success", result.Status, "Stream Load failed: %s", result.Msg)
 }
