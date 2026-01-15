@@ -1,3 +1,6 @@
+// INTENTIONAL TYPE ERROR FOR CI TESTING - REMOVE AFTER TEST
+const testNumber: number = "this is not a number";
+
 export type ProfileColumnSummary =
   | CategoricalSummary
   | NumericSummary

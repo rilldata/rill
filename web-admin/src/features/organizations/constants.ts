@@ -1,5 +1,8 @@
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
 
+// INTENTIONAL TYPE ERROR FOR CI TESTING - REMOVE AFTER TEST
+const testNumber: number = "this is not a number";
+
 export const ORG_ROLES_OPTIONS = [
   {
     value: OrgUserRoles.Admin,
