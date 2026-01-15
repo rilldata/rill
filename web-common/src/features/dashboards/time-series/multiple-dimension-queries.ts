@@ -140,8 +140,11 @@ export function getDimensionValuesForComparison(
                 ),
                 undefined,
               ),
-              timeStart: timeControls.timeStart,
-              timeEnd: timeControls.timeEnd,
+              timeRange: {
+                start: timeControls.timeStart,
+                end: timeControls.timeEnd,
+                timeDimension: dashboardStore.selectedTimeDimension,
+              },
               sort: [
                 {
                   desc:
