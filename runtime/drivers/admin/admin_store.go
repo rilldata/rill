@@ -115,11 +115,12 @@ func (h *Handle) GetDeploymentConfig(ctx context.Context) (*drivers.DeploymentCo
 	}
 
 	return &drivers.DeploymentConfig{
-		Variables:   res.Variables,
-		Annotations: res.Annotations,
-		FrontendURL: res.FrontendUrl,
-		UpdatedOn:   res.UpdatedOn.AsTime(),
-		UsesArchive: res.UsesArchive,
+		Variables:             res.Variables,
+		Annotations:           res.Annotations,
+		FrontendURL:           res.FrontendUrl,
+		UpdatedOn:             res.UpdatedOn.AsTime(),
+		UsesArchive:           res.UsesArchive,
+		DuckdbConnectorConfig: res.DuckdbConnectorConfig.AsMap(),
 	}, nil
 }
 
