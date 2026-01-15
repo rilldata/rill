@@ -229,24 +229,24 @@
     metricsExplorerStore.setTimeDimension($exploreName, column);
 
     // Re-resolve the time range with the new time dimension
-    if (timeRangeName) {
-      const { interval, grain } = await deriveInterval(
-        timeRangeName,
-        metricsViewName,
-        activeTimeZone,
-        column,
-      );
+    if (!timeRangeName) return;
 
-      if (interval.isValid) {
-        const validInterval = interval as Interval<true>;
-        const baseTimeRange: TimeRange = {
-          name: timeRangeName,
-          start: validInterval.start.toJSDate(),
-          end: validInterval.end.toJSDate(),
-        };
+    const { interval, grain } = await deriveInterval(
+      timeRangeName,
+      metricsViewName,
+      activeTimeZone,
+      column,
+    );
 
-        selectRange(baseTimeRange, grain);
-      }
+    if (interval.isValid) {
+      const validInterval = interval as Interval<true>;
+      const baseTimeRange: TimeRange = {
+        name: timeRangeName,
+        start: validInterval.start.toJSDate(),
+        end: validInterval.end.toJSDate(),
+      };
+
+      selectRange(baseTimeRange, grain);
     }
   }
 
