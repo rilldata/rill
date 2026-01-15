@@ -76,6 +76,7 @@ export function createUrlForExploreYAMLDefaultState(
 
       const urlParams = convertPartialExploreStateToUrlParams(
         exploreSpec,
+        metricsViewSpec,
         exploreStateFromYAMLConfig,
         timeControlState,
       );

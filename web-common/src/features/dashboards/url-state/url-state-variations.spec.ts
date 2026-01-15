@@ -533,6 +533,7 @@ describe("Human readable URL state variations", () => {
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
           explore,
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           getTimeControlState(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
@@ -657,6 +658,7 @@ describe("Human readable URL state variations", () => {
     const url = new URL("http://localhost");
     url.search = getCleanedUrlParamsForGoto(
       AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
       getTimeControlState(
         AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,

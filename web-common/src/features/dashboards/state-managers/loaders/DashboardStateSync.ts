@@ -95,6 +95,7 @@ export class DashboardStateSync {
   public getUrlForExploreState(exploreState: ExploreState) {
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const pageState = get(page);
     const { data: rillDefaultExploreURLParams } = get(
       this.rillDefaultExploreURLParams,
@@ -107,6 +108,7 @@ export class DashboardStateSync {
     const redirectUrl = new URL(pageState.url);
     const exploreStateParams = getCleanedUrlParamsForGoto(
       exploreSpec,
+      metricsViewSpec,
       exploreState,
       timeControlsState,
       rillDefaultExploreURLParams,
@@ -167,6 +169,7 @@ export class DashboardStateSync {
       this.extraPrefix,
       initExploreState,
       exploreSpec,
+      metricsViewSpec,
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
@@ -264,6 +267,7 @@ export class DashboardStateSync {
       this.extraPrefix,
       updatedExploreState,
       exploreSpec,
+      metricsViewSpec,
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
@@ -303,6 +307,7 @@ export class DashboardStateSync {
 
     const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
     const exploreSpec = validSpecData?.explore ?? {};
+    const metricsViewSpec = validSpecData?.metricsView ?? {};
     const timeControlsState = get(this.timeControlStore);
 
     const pageState = get(page);
@@ -316,6 +321,7 @@ export class DashboardStateSync {
       this.extraPrefix,
       exploreState,
       exploreSpec,
+      metricsViewSpec,
       timeControlsState,
     );
     if (!this.dataLoader.disableMostRecentDashboardState) {
