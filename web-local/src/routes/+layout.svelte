@@ -83,7 +83,8 @@
   $: isDevMode = route.id?.includes("preview") ||
     route.id?.includes("edit") ||
     route.id?.includes("status") ||
-    route.id?.includes("settings");
+    route.id?.includes("settings") ||
+    route.id?.includes("home");
 
   $: mode = previewMode ? "Preview" : "Developer";
 
