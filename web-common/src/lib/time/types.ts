@@ -1,9 +1,12 @@
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 
+// Note: The majority of types below are redundant with Luxon and should be removed - bgh
+
 // Used for luxon's time units
 export enum TimeUnit {
   "PT0.001S" = "millisecond",
+  PT1S = "second",
   PT1M = "minute",
   PT1H = "hour",
   P1D = "day",
