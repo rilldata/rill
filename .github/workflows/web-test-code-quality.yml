@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/web-test.yml"
+      - ".github/workflows/web-test-code-quality.yml"
+      - "scripts/web-test-code-quality.sh"
       - "web-admin/**"
       - "web-common/**"
       - "web-local/**"
