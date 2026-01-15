@@ -34,7 +34,7 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Web code quality checks
-        run: bash ./scripts/web-test-code-quality
+        run: bash ./scripts/web-test-code-quality.sh
         env:
           ADMIN: ${{ steps.filter.outputs.admin }}
           LOCAL: ${{ steps.filter.outputs.local }}
