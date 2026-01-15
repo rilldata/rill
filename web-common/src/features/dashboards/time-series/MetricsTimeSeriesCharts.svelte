@@ -63,6 +63,8 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
+  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { DateTime } from "luxon";
 
   const { rillTime } = featureFlags;
 
@@ -563,7 +565,7 @@
                 });
               }}
             />
-          {:else if formattedData && activeTimeGrain}
+          {:else if formattedData && effectiveGrain}
             <MeasureChart
               bind:mouseoverValue
               {measure}
@@ -578,7 +580,7 @@
               zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
-              timeGrain={activeTimeGrain}
+              timeGrain={effectiveGrain}
               yAccessor={measure.name}
               xMin={startValue}
               xMax={endValue}
@@ -589,12 +591,12 @@
               mouseoverTimeFormat={(value) => {
                 /** format the date according to the time grain */
 
-                return activeTimeGrain
-                  ? new Date(value).toLocaleDateString(
-                      undefined,
-                      TIME_GRAIN[activeTimeGrain].formatDate,
-                    )
-                  : value.toString();
+                return formatDateTimeByGrain(
+                  DateTime.fromJSDate(value, {
+                    zone: $exploreState?.selectedTimezone,
+                  }),
+                  effectiveGrain,
+                );
               }}
             />
           {:else}

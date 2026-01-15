@@ -7,7 +7,6 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { Duration, DurationUnit } from "luxon";
 import {
-  type AvailableTimeGrain,
   Period,
   RangePresetType,
   ReferencePoint,
@@ -560,11 +559,26 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
  * for the purposes of time series visualization and analysis.
  */
 
-export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
+export const TIME_GRAIN: Record<V1TimeGrain, TimeGrain> = {
+  TIME_GRAIN_MILLISECOND: {
+    grain: V1TimeGrain.TIME_GRAIN_MILLISECOND,
+    label: "millisecond",
+    duration: Period.MILLISECOND,
+    d3format: "%H:%M:%S.%L",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      fractionalSecondDigits: 3,
+    },
+  },
   TIME_GRAIN_SECOND: {
     grain: V1TimeGrain.TIME_GRAIN_SECOND,
     label: "second",
-    duration: Period.SECOND, // you'd need to add this Period too
+    duration: Period.SECOND,
     d3format: "%H:%M:%S",
     formatDate: {
       year: "numeric",
@@ -649,6 +663,19 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     d3format: "%Y",
     formatDate: {
       year: "numeric",
+    },
+  },
+  TIME_GRAIN_UNSPECIFIED: {
+    grain: V1TimeGrain.TIME_GRAIN_MINUTE,
+    label: "minute",
+    duration: Period.MINUTE,
+    d3format: "%M:%S",
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
     },
   },
 };
