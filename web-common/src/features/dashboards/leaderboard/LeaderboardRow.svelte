@@ -241,7 +241,7 @@
   {#each Object.keys(values) as measureName}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
-      {dataType}
+      dataType="INTEGER"
       cellType="measure"
       background={leaderboardMeasureNames.length === 1
         ? measureGradients
@@ -264,7 +264,7 @@
     {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={pctOfTotals[measureName]?.toString() || ""}
-        {dataType}
+        dataType="INTEGER"
         cellType="comparison"
       >
         <PercentageChange
@@ -280,7 +280,7 @@
     {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
       <LeaderboardCell
         value={deltaAbsMap[measureName]?.toString() || ""}
-        {dataType}
+        dataType="INTEGER"
         cellType="comparison"
       >
         <FormattedDataType

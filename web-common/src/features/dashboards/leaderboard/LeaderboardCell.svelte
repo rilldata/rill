@@ -28,6 +28,8 @@
   let tooltipActive = false;
   $: if (tooltipActive) {
     showTemporarily();
+  } else {
+    clearHideTimer();
   }
 
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -61,7 +63,11 @@
   onDestroy(clearHideTimer);
 </script>
 
-<Tooltip.Root bind:open={tooltipActive} openDelay={1000}>
+<Tooltip.Root
+  bind:open={tooltipActive}
+  openDelay={1000}
+  closeOnPointerDown={false}
+>
   <Tooltip.Trigger asChild let:builder {disabled}>
     <td
       role="button"
@@ -72,13 +78,13 @@
         shift: () => shiftClickHandler(value),
       })}
       on:pointerover={() => {
-        if (value) {
+        if (value?.toString) {
           // Always update the value in the store, but don't change visibility
           cellInspectorStore.updateValue(value.toString());
         }
       }}
       on:focus={() => {
-        if (value) {
+        if (value?.toString) {
           // Always update the value in the store, but don't change visibility
           cellInspectorStore.updateValue(value.toString());
         }
