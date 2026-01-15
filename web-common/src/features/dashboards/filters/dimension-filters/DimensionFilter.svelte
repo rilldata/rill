@@ -39,7 +39,7 @@
   export let readOnly: boolean = false;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
-  export let timeDimension: string | undefined;
+  export let timeDimension: string | undefined = undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
