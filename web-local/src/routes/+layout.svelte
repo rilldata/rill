@@ -101,7 +101,7 @@
         <RepresentingUserBanner />
         <ApplicationHeader
           {mode}
-          logoHref={previewMode ? "/preview" : "/"}
+          logoHref={previewMode ? "/home" : "/"}
           breadcrumbResourceHref={(name, kind) => `/${kind}/${name}`}
         />
         {#if previewMode && !$page.url.pathname.startsWith('/files') && !$page.url.pathname.startsWith('/explore') && !$page.url.pathname.startsWith('/canvas') && !onDeployPage}

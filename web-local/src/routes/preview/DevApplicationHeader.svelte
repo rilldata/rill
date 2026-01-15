@@ -11,7 +11,7 @@
   $: ({ instanceId } = $runtime);
   $: projectTitleQuery = useProjectTitle(instanceId);
   $: projectTitle = $projectTitleQuery?.data ?? "Untitled Project";
-  $: homeHref = $previewModeStore ? "/preview" : "/";
+  $: homeHref = $previewModeStore ? "/home" : "/";
 </script>
 
 <header>

@@ -123,8 +123,8 @@ export async function generateSampleData(
           overlay.set(null);
           // Determine redirect based on current route
           const currentPath = window.location.pathname;
-          const redirectTo = currentPath.startsWith("/preview")
-            ? "/preview"
+          const redirectTo = currentPath.startsWith("/home")
+            ? "/home"
             : `/files${path}`;
           void goto(redirectTo);
           break;

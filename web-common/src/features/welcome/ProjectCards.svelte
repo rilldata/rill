@@ -20,7 +20,7 @@
   import { EXAMPLES } from "./constants";
 
   // Determine redirect href based on current route
-  $: redirectHref = $page.url.pathname.startsWith("/preview") ? "/preview" : "/";
+  $: redirectHref = $page.url.pathname.startsWith("/home") ? "/home" : "/";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();

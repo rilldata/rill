@@ -24,7 +24,7 @@ export async function load({ url, depends, untrack }) {
 
   // Redirect root to /preview when in preview mode (before any rendering)
   if (previewMode && url.pathname === "/") {
-    throw redirect(303, "/preview");
+    throw redirect(303, "/home");
   }
 
   const instanceId = get(runtime).instanceId;
@@ -47,7 +47,7 @@ export async function load({ url, depends, untrack }) {
 
     // In preview mode, redirect to /preview instead of /files
     if (previewMode) {
-      return url.pathname !== "/preview" && "/preview";
+      return url.pathname !== "/home" && "/home";
     }
 
     return (
