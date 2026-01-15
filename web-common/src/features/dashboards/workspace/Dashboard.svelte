@@ -107,6 +107,7 @@
     ? {
         start: comparisonTimeStart,
         end: comparisonTimeEnd,
+        timeDimension: selectedTimeDimension,
       }
     : undefined;
 
