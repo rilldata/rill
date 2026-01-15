@@ -75,10 +75,11 @@
   // Reactive query - automatically refetches when resources change
   $: resourcesQuery = createRuntimeServiceListResources($runtime.instanceId, {});
 
-  // Transform resources into dashboards
+  // Transform resources into dashboards (exclude MetricsView resources)
   $: dashboards = ($resourcesQuery.data?.resources ?? [])
     .filter((resource) => {
       const kind = resource.meta?.name?.kind;
+      // Only show Explore and Canvas, not MetricsView
       return kind === "rill.runtime.v1.Explore" || kind === "rill.runtime.v1.Canvas";
     })
     .map((resource) => {

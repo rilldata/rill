@@ -74,9 +74,8 @@
   $: dashboards = ($resourcesQuery.data?.resources ?? [])
     .filter((resource) => {
       const kind = resource.meta?.name?.kind;
-      return (
-        kind === "rill.runtime.v1.Explore" || kind === "rill.runtime.v1.Canvas"
-      );
+      // Only show Explore and Canvas, not MetricsView
+      return kind === "rill.runtime.v1.Explore" || kind === "rill.runtime.v1.Canvas";
     })
     .map((resource) => {
       const kind = resource.meta?.name?.kind;
