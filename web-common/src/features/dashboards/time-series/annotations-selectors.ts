@@ -94,7 +94,9 @@ function convertV1AnnotationsResponseItemToAnnotation(
     zone: dashboardTimezone,
   });
   let endTime = annotation.timeEnd
-    ? DateTime.fromISO(annotation.time as string, { zone: dashboardTimezone })
+    ? DateTime.fromISO(annotation.timeEnd, {
+        zone: dashboardTimezone,
+      })
     : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
