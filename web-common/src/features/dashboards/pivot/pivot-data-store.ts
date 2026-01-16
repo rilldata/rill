@@ -445,6 +445,9 @@ export function createPivotDataStore(
             let rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
 
+            let axesRowTotals =
+              rowDimensionAxes?.totals?.[anchorDimension] || [];
+
             // Detect if there's more data for the outermost dimension
             // and trim to the actual limit
             let hasMoreRows = false;
@@ -463,13 +466,11 @@ export function createPivotDataStore(
               if (rowDimensionValues.length > actualLimit) {
                 hasMoreRows = true;
                 rowDimensionValues = rowDimensionValues.slice(0, actualLimit);
+                axesRowTotals = axesRowTotals.slice(0, actualLimit);
               }
             }
 
             const totalColumns = getTotalColumnCount(totalsRowData);
-
-            const axesRowTotals =
-              rowDimensionAxes?.totals?.[anchorDimension] || [];
 
             const rowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
               ctx,
