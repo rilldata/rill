@@ -21,12 +21,14 @@
   aria-label="Readonly Filter Chips"
 >
   {#if timeRangeString}
-    <TimeRangeReadOnly
-      timeRange={{ expression: timeRangeString }}
-      comparisonTimeRange={comparisonRange
-        ? { expression: comparisonRange }
-        : undefined}
-    />
+    <div class="flex gap-x-2">
+      <TimeRangeReadOnly
+        timeRange={{ expression: timeRangeString }}
+        comparisonTimeRange={comparisonRange
+          ? { expression: comparisonRange }
+          : undefined}
+      />
+    </div>
   {/if}
 
   {#each dimensionFilters as [id, filterData] (id)}
