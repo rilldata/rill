@@ -594,17 +594,25 @@ export function getComparisonTimeRange(
       DateTime.fromJSDate(timeRange.start, { zone: timezone }),
       DateTime.fromJSDate(timeRange.end, { zone: timezone }),
     );
-    const range = getComparisonInterval(
-      interval as Interval<true>,
-      comparisonOption,
-      timezone || "UTC",
-    );
 
-    return {
-      start: range?.start.toJSDate(),
-      end: range?.end.toJSDate(),
-      name: comparisonOption,
-    };
+    if (interval.isValid) {
+      const range = getComparisonInterval(
+        interval,
+        comparisonOption,
+        timezone || "UTC",
+      );
+      return {
+        start: range?.start.toJSDate(),
+        end: range?.end.toJSDate(),
+        name: comparisonOption,
+      };
+    } else {
+      return {
+        start: undefined,
+        end: undefined,
+        name: comparisonOption,
+      };
+    }
   }
 }
 
