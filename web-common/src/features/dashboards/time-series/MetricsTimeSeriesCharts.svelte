@@ -3,7 +3,11 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -21,26 +25,36 @@
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
+  import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    getAllowedGrains,
+    isGrainAllowed,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
+  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
   import {
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { Tooltip } from "bits-ui";
+  import { DateTime } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import Spinner from "../../entity-management/Spinner.svelte";
+  import { featureFlags } from "../../feature-flags";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import ChartInteractions from "./ChartInteractions.svelte";
   import MeasureChart from "./MeasureChart.svelte";
@@ -51,20 +65,6 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import {
-    getAllowedGrains,
-    isGrainAllowed,
-    V1TimeGrainToDateTimeUnit,
-  } from "@rilldata/web-common/lib/time/new-grains";
-  import { featureFlags } from "../../feature-flags";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { Tooltip } from "bits-ui";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
-  import { DateTime } from "luxon";
 
   const { rillTime } = featureFlags;
 
@@ -519,9 +519,7 @@
               xMax={endValue}
               isTimeComparison={showComparison}
               isScrubbing={Boolean(isScrubbing)}
-              on:chart-hover={(e) => {
-                const { dimension, ts } = e.detail;
-
+              onChartHover={(dimension, ts) => {
                 updateChartInteractionStore(
                   ts,
                   dimension,
@@ -529,8 +527,7 @@
                   formattedData,
                 );
               }}
-              on:chart-brush={(e) => {
-                const { interval } = e.detail;
+              onChartBrush={(interval) => {
                 const { start, end } = adjustTimeInterval(
                   interval,
                   $exploreState?.selectedTimezone,
@@ -542,8 +539,7 @@
                   isScrubbing: true,
                 });
               }}
-              on:chart-brush-end={(e) => {
-                const { interval } = e.detail;
+              onChartBrushEnd={(interval) => {
                 const { start, end } = adjustTimeInterval(
                   interval,
                   $exploreState?.selectedTimezone,
@@ -555,14 +551,11 @@
                   isScrubbing: false,
                 });
               }}
-              on:chart-brush-clear={(e) => {
-                const { start, end } = e.detail;
-
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
-                  start,
-                  end,
-                  isScrubbing: false,
-                });
+              onChartBrushClear={() => {
+                metricsExplorerStore.setSelectedScrubRange(
+                  exploreName,
+                  undefined,
+                );
               }}
             />
           {:else if formattedData && effectiveGrain}
