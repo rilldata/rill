@@ -135,6 +135,8 @@
       filteredDsnProperties as any,
       isConnectorForm ? "connector" : "source",
     );
+  const usesLegacyTabs = !hasSchema && hasDsnFormOption;
+  $: useDsnForm = usesLegacyTabs && (onlyDsn || connectionTab === "dsn");
 
   $: if (connector.name === "clickhouse") {
     const nextType = ($paramsForm?.connector_type ??
@@ -223,7 +225,7 @@
       return false;
     }
 
-    if (onlyDsn || connectionTab === "dsn") {
+    if (useDsnForm) {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
         const key = String(property.key);
@@ -255,11 +257,13 @@
   })();
 
   $: formId = isMultiStepConnector
-    ? multiStepFormId || formManager.getActiveFormId({ connectionTab, onlyDsn })
-    : formManager.getActiveFormId({ connectionTab, onlyDsn });
+    ? multiStepFormId || paramsFormId
+    : useDsnForm
+      ? dsnFormId
+      : paramsFormId;
 
   $: submitting = (() => {
-    if (onlyDsn || connectionTab === "dsn") {
+    if (useDsnForm) {
       return $dsnSubmitting;
     } else {
       return $paramsSubmitting;
@@ -307,7 +311,7 @@
           paramsError = null;
         }
       }
-    } else if (onlyDsn || connectionTab === "dsn") {
+    } else if (useDsnForm) {
       if ($dsnTainted) dsnError = null;
     } else {
       if ($paramsTainted) paramsError = null;
@@ -316,7 +320,7 @@
 
   // Clear errors when switching tabs
   $: (() => {
-    if (hasDsnFormOption) {
+    if (usesLegacyTabs) {
       if (connectionTab === "dsn") {
         paramsError = null;
         paramsErrorDetails = undefined;
@@ -338,7 +342,7 @@
     const values =
       connector.name === "clickhouse"
         ? $paramsForm
-        : onlyDsn || connectionTab === "dsn"
+        : useDsnForm
           ? $dsnForm
           : $paramsForm;
     if (connector.name === "clickhouse") {
@@ -361,7 +365,7 @@
           paramsError = result.message;
           paramsErrorDetails = result.details;
         }
-      } else if (onlyDsn || connectionTab === "dsn") {
+      } else if (useDsnForm) {
         dsnError = result.message;
         dsnErrorDetails = result.details;
       } else {
@@ -448,7 +452,7 @@
             {handleFileUpload}
           />
         </AddDataFormSection>
-      {:else if hasDsnFormOption}
+      {:else if usesLegacyTabs}
         <Tabs
           bind:value={connectionTab}
           options={CONNECTION_TAB_OPTIONS}
@@ -487,7 +491,7 @@
             </AddDataFormSection>
           </TabsContent>
         </Tabs>
-      {:else if isConnectorForm && onlyDsn}
+      {:else if isConnectorForm && usesLegacyTabs && onlyDsn}
         <!-- Connector with only DSN - show DSN form directly -->
         <AddDataFormSection
           id={dsnFormId}
@@ -603,12 +607,10 @@
       {#if dsnError || paramsError || clickhouseError}
         <SubmissionError
           message={clickhouseError ??
-            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+            (useDsnForm ? dsnError : paramsError) ??
             ""}
           details={clickhouseErrorDetails ??
-            (onlyDsn || connectionTab === "dsn"
-              ? dsnErrorDetails
-              : paramsErrorDetails) ??
+            (useDsnForm ? dsnErrorDetails : paramsErrorDetails) ??
             ""}
         />
       {/if}

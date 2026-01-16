@@ -1,14 +1,17 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   ConnectorDriverPropertyType,
-  type ConnectorDriverProperty,
   type V1ConnectorDriver,
   type V1Source,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
 import { getConnectorSchema } from "./modal/connector-schemas";
-import { getSchemaFieldMetaList } from "../templates/schema-utils";
+import {
+  getSchemaFieldMetaList,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+} from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
 const SOURCE_MODEL_FILE_TOP = `# Model YAML
@@ -22,23 +25,17 @@ export function compileSourceYAML(
   formValues: Record<string, unknown>,
   opts?: { secretKeys?: string[]; stringKeys?: string[] },
 ) {
+  const schema = getConnectorSchema(connector.name ?? "");
+
   // Get the secret property keys
   const secretPropertyKeys =
     opts?.secretKeys ??
-    (connector.sourceProperties
-      ?.filter((property) => property.secret)
-      .map((property) => property.key) ||
-      []);
+    (schema ? getSchemaSecretKeys(schema, { step: "source" }) : []);
 
   // Get the string property keys
   const stringPropertyKeys =
     opts?.stringKeys ??
-    (connector.sourceProperties
-      ?.filter(
-        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
-      )
-      .map((property) => property.key) ||
-      []);
+    (schema ? getSchemaStringKeys(schema, { step: "source" }) : []);
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
@@ -245,15 +242,6 @@ export function prepareSourceFormData(
         delete processedValues[key];
       }
     }
-  } else if (connector.configProperties) {
-    const connectorPropertyKeys = new Set(
-      connector.configProperties.map((p) => p.key).filter(Boolean),
-    );
-    for (const key of Object.keys(processedValues)) {
-      if (connectorPropertyKeys.has(key)) {
-        delete processedValues[key];
-      }
-    }
   }
 
   // Handle placeholder values for required source properties
@@ -263,14 +251,6 @@ export function prepareSourceFormData(
       if (field.required && !(field.key in processedValues)) {
         if (field.placeholder) {
           processedValues[field.key] = field.placeholder;
-        }
-      }
-    }
-  } else if (connector.sourceProperties) {
-    for (const prop of connector.sourceProperties) {
-      if (prop.key && prop.required && !(prop.key in processedValues)) {
-        if (prop.placeholder) {
-          processedValues[prop.key] = prop.placeholder;
         }
       }
     }
@@ -308,35 +288,4 @@ export function formatConnectorType(source: V1Source) {
     default:
       return source?.state?.connector ?? "";
   }
-}
-
-/**
- * Extracts initial form values from connector property specs, using the Default field if present.
- * @param properties Array of property specs (e.g., connector.configProperties)
- * @returns Object mapping property keys to their default values
- */
-export function getInitialFormValuesFromProperties(
-  properties: Array<ConnectorDriverProperty>,
-) {
-  const initialValues: Record<string, any> = {};
-  for (const prop of properties) {
-    // Only set if default is not undefined/null/empty string
-    if (
-      prop.key &&
-      prop.default !== undefined &&
-      prop.default !== null &&
-      prop.default !== ""
-    ) {
-      let value: any = prop.default;
-      if (prop.type === ConnectorDriverPropertyType.TYPE_NUMBER) {
-        // NOTE: store number type prop as String, not Number, so that we can use the same form for both number and string properties
-        // See `yupSchemas.ts` for more details
-        value = String(value);
-      } else if (prop.type === ConnectorDriverPropertyType.TYPE_BOOLEAN) {
-        value = value === "true" || value === true;
-      }
-      initialValues[prop.key] = value;
-    }
-  }
-  return initialValues;
 }

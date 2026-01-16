@@ -1,7 +1,6 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
-  ConnectorDriverPropertyType,
   type V1ConnectorDriver,
   type ConnectorDriverProperty,
   getRuntimeServiceGetFileQueryKey,
@@ -59,12 +58,8 @@ type: connector
 
 driver: ${getDriverNameForConnector(connector.name as string)}`;
 
-  // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
-  let properties =
-    options?.orderedProperties ??
-    connector.configProperties ??
-    connector.sourceProperties ??
-    [];
+  // Use the provided orderedProperties if available.
+  let properties = options?.orderedProperties ?? [];
 
   // Optionally filter properties
   if (options?.fieldFilter) {
@@ -72,22 +67,10 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
   }
 
   // Get the secret property keys
-  const secretPropertyKeys =
-    options?.secretKeys ??
-    (connector.configProperties
-      ?.filter((property) => property.secret)
-      .map((property) => property.key) ||
-      []);
+  const secretPropertyKeys = options?.secretKeys ?? [];
 
   // Get the string property keys
-  const stringPropertyKeys =
-    options?.stringKeys ??
-    (connector.configProperties
-      ?.filter(
-        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
-      )
-      .map((property) => property.key) ||
-      []);
+  const stringPropertyKeys = options?.stringKeys ?? [];
 
   // Compile key value pairs in the order of properties
   const compiledKeyValues = properties
@@ -161,15 +144,7 @@ export async function updateDotEnvWithSecrets(
   }
 
   // Get the secret keys
-  const properties =
-    formType === "source"
-      ? connector.sourceProperties
-      : connector.configProperties;
-  const secretKeys =
-    opts?.secretKeys ??
-    properties
-      ?.filter((property) => property.secret)
-      .map((property) => property.key);
+  const secretKeys = opts?.secretKeys ?? [];
 
   // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {
