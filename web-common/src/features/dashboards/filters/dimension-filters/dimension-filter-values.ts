@@ -5,12 +5,16 @@ import {
   createLikeExpression,
   createAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewAggregation,
   V1BuiltinMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { mergeDimensionAndMeasureFilters } from "../measure-filters/measure-filter-utils";
+import { getFiltersForOtherDimensions } from "../../selectors";
 
 type DimensionSearchArgs = {
   mode: DimensionFilterMode;
@@ -19,7 +23,8 @@ type DimensionSearchArgs = {
   timeStart?: string;
   timeEnd?: string;
   enabled?: boolean;
-  additionalFilter?: V1Expression;
+
+  metricsViewWheres?: Map<string, V1Expression>;
 };
 /**
  * Returns the search results from the search input in a dimension filter.
@@ -41,19 +46,30 @@ export function useDimensionSearch(
     timeStart,
     timeEnd,
     enabled,
-    additionalFilter,
+
+    metricsViewWheres,
   }: DimensionSearchArgs,
 ) {
-  const where = getFilterForSearchArgs(dimensionName, {
-    mode,
-    searchText,
-    values,
-    additionalFilter,
-  });
-
   // Main query: Get top 250 results (above the fold)
-  const mainQueries = metricsViewNames.map((mvName) =>
-    createQueryServiceMetricsViewAggregation(
+  const mainQueries = metricsViewNames.map((mvName) => {
+    const where = getFilterForSearchArgs(dimensionName, {
+      mode,
+      searchText,
+      values,
+      // TODO - revist whether passing an empty array is the correct approach - bgh
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(
+            metricsViewWheres?.get(mvName) ?? createAndExpression([]),
+            dimensionName,
+          ),
+          [],
+        ),
+        undefined,
+      ),
+    });
+
+    return createQueryServiceMetricsViewAggregation(
       instanceId,
       mvName,
       {
@@ -68,8 +84,8 @@ export function useDimensionSearch(
         query: { enabled },
       },
       queryClient,
-    ),
-  );
+    );
+  });
 
   return getCompoundQuery(mainQueries, (responses) => {
     // Get main results (above the fold)
@@ -120,18 +136,27 @@ export function useAllSearchResultsCount(
     timeStart,
     timeEnd,
     enabled,
-    additionalFilter,
+    metricsViewWheres,
   }: DimensionSearchArgs,
 ) {
-  const where = getFilterForSearchArgs(dimensionName, {
-    mode,
-    searchText,
-    values,
-    additionalFilter,
-  });
+  const queries = metricsViewNames.map((mvName) => {
+    const where = getFilterForSearchArgs(dimensionName, {
+      mode,
+      searchText,
+      values,
+      additionalFilter: sanitiseExpression(
+        mergeDimensionAndMeasureFilters(
+          getFiltersForOtherDimensions(
+            metricsViewWheres?.get(mvName) ?? createAndExpression([]),
+            dimensionName,
+          ),
+          [],
+        ),
+        undefined,
+      ),
+    });
 
-  const queries = metricsViewNames.map((mvName) =>
-    createQueryServiceMetricsViewAggregation(
+    return createQueryServiceMetricsViewAggregation(
       instanceId,
       mvName,
       {
@@ -151,8 +176,8 @@ export function useAllSearchResultsCount(
         query: { enabled },
       },
       queryClient,
-    ),
-  );
+    );
+  });
 
   return getCompoundQuery(queries, (responses) => {
     if (!enabled) return undefined;
@@ -177,7 +202,17 @@ export function useAllSearchResultsCount(
  */
 function getFilterForSearchArgs(
   dimensionName: string,
-  { mode, searchText, values, additionalFilter }: DimensionSearchArgs,
+  {
+    mode,
+    searchText,
+    values,
+    additionalFilter,
+  }: {
+    mode: DimensionFilterMode;
+    searchText: string;
+    values: string[];
+    additionalFilter?: V1Expression;
+  },
 ) {
   let filter;
   if (mode === DimensionFilterMode.InList) {

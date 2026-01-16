@@ -13,21 +13,21 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { onMount } from "svelte";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import {
     createIframeRPCHandler,
     emitNotification,
   } from "@rilldata/web-common/lib/rpc";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import type { PageData } from "./$types";
+  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
 
   export let data: PageData;
   const {
     instanceId,
-    runtimeHost,
-    accessToken,
     missingRequireParams,
     navigationEnabled,
+    runtimeHost,
+    accessToken,
   } = data;
 
   const { dashboardChat } = featureFlags;
@@ -112,8 +112,8 @@
   />
 {:else}
   <RuntimeProvider
-    host={runtimeHost}
     {instanceId}
+    host={runtimeHost}
     jwt={accessToken}
     authContext="embed"
   >

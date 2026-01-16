@@ -3,7 +3,7 @@ import { removeEmbedParams } from "@rilldata/web-admin/features/embeds/init-embe
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { redirect } from "@sveltejs/kit";
 
-export const load = ({ url }) => {
+export const load = async ({ url }) => {
   const embedStore = EmbedStore.getInstance();
   if (!embedStore) {
     EmbedStore.init(url);

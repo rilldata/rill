@@ -15,7 +15,6 @@ import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/ur
 import {
   FromURLParamTDDChartMap,
   FromURLParamTimeDimensionMap,
-  FromURLParamTimeGrainMap,
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
@@ -23,6 +22,7 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -124,7 +124,7 @@ function fromTimeRangesParams(
   if (preset.timeGrain) {
     partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
-      FromURLParamTimeGrainMap[preset.timeGrain];
+      DateTimeUnitToV1TimeGrain[preset.timeGrain];
   }
 
   if (preset.timezone) {
@@ -292,6 +292,11 @@ function fromExploreUrlParams(
   if (preset.exploreLeaderboardMeasures !== undefined) {
     partialExploreState.leaderboardMeasureNames =
       preset.exploreLeaderboardMeasures;
+  }
+
+  if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
+    partialExploreState.leaderboardShowContextForAllMeasures =
+      preset.exploreLeaderboardShowContextForAllMeasures;
   }
 
   if (preset.exploreExpandedDimension !== undefined) {
@@ -482,6 +487,11 @@ function fromPivotUrlParams(
     }
   }
 
+  let rowLimit: number | undefined = undefined;
+  if (preset.pivotRowLimit !== undefined) {
+    rowLimit = preset.pivotRowLimit;
+  }
+
   return {
     partialExploreState: {
       pivot: {
@@ -495,6 +505,7 @@ function fromPivotUrlParams(
         enableComparison: true,
         activeCell: null,
         tableMode,
+        rowLimit,
       },
     },
     errors,

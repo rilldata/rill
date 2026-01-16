@@ -113,7 +113,7 @@ test.describe("Deploy journey", () => {
       // Explore is opened after deploying.
       await expect(
         deployPage.getByLabel("Breadcrumb navigation, level 2"),
-      ).toHaveText("Adbids dashboard");
+      ).toHaveText("Adbids dashboard", { timeout: 60_000 });
 
       // Org title is correct
       await expect(
@@ -228,17 +228,9 @@ async function assertAndSkipInvite(page: Page) {
 
 async function ensureProjectRedeployed(page: Page) {
   // Project homepage is opened on a re-deploy. This can take a while, so it has increased timeout.
-  // Temporary fix to wait for the project to be ready.
-  // TODO: add a refetch to the project API
-  await expect
-    .poll(
-      async () => {
-        await page.reload();
-        return page.getByLabel("Project title").textContent();
-      },
-      { intervals: Array(4).fill(30_000), timeout: 120_000 },
-    )
-    .toContain("Welcome to");
+  await expect(page.getByText("Welcome to")).toBeVisible({
+    timeout: 120_000,
+  });
 }
 
 async function ensureDashboardTitle(page: Page, title: string) {

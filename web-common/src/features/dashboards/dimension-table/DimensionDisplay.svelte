@@ -111,7 +111,9 @@
     instanceId,
     metricsViewName,
     {
-      measures: filteredMeasures,
+      measures: filteredMeasures.filter(
+        (m) => !m.comparisonValue && !m.comparisonDelta && !m.comparisonRatio,
+      ),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilters(
           getFiltersForOtherDimensions(whereFilter, dimensionName),
@@ -120,7 +122,6 @@
         undefined,
       ),
       timeRange,
-      comparisonTimeRange,
     },
     {
       query: {
@@ -186,14 +187,9 @@
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
-  function onSelectItem(event) {
-    const label = tableRows[event.detail.index][dimensionName] as string;
-    toggleDimensionValueSelection(
-      dimensionName,
-      label,
-      false,
-      event.detail.meta,
-    );
+  function onSelectItem(data: { index: number; meta: boolean }) {
+    const label = tableRows[data.index][dimensionName] as string;
+    toggleDimensionValueSelection(dimensionName, label, false, data.meta);
   }
 
   function toggleAllSearchItems() {
@@ -252,7 +248,7 @@
     {#if tableRows && columns.length && dimensionName}
       <div class="grow" style="overflow-y: hidden;">
         <DimensionTable
-          on:select-item={(event) => onSelectItem(event)}
+          {onSelectItem}
           isFetching={$sortedQuery?.isFetching}
           {dimensionName}
           {columns}

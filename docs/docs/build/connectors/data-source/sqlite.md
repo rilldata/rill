@@ -32,7 +32,7 @@ If you plan to deploy the project to Rill Cloud, it is recommended that you move
 
 :::
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
 Once a project with a SQLite source has been deployed using `rill deploy`, Rill Cloud will need to be able to access and retrieve the underlying database file. In most cases, this means that the corresponding SQLite database file should be included within a directory in your Git repository, which will allow you to specify a relative path in your source definition (from the project root).
 

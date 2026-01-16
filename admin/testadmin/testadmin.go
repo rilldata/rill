@@ -53,6 +53,7 @@ type Fixture struct {
 	Admin      *admin.Service
 	Server     *server.Server
 	ServerOpts *server.Options
+	Audience   *runtimeauth.Audience
 }
 
 // New creates an ephemeral admin service and server for testing.
@@ -156,10 +157,16 @@ func New(t *testing.T) *Fixture {
 	group.Go(func() error { return srv.ServeHTTP(ctx) })
 	require.NoError(t, srv.AwaitServing(ctx))
 
+	// Create Audience
+	audienceURL := "http://example.org"
+	aud, err := runtimeauth.OpenAudience(context.Background(), zap.NewNop(), externalURL, audienceURL)
+	require.NoError(t, err)
+
 	return &Fixture{
 		Admin:      adm,
 		Server:     srv,
 		ServerOpts: srvOpts,
+		Audience:   aud,
 	}
 }
 

@@ -17,12 +17,22 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import { transformToBlocks, type Block } from "./messages/block-transform";
+import { MessageContentType, MessageType, ToolName } from "./types";
 import {
   getOptimisticMessageId,
   invalidateConversationsList,
   NEW_CONVERSATION_ID,
 } from "./utils";
-import { MessageContentType, MessageType, ToolName } from "./types";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+
+type ConversationEvents = {
+  "conversation-created": string;
+  "stream-start": void;
+  message: V1Message;
+  "stream-complete": string;
+  error: string;
+};
 
 /**
  * Individual conversation state management.
@@ -36,6 +46,14 @@ export class Conversation {
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
 
+  private readonly events = new EventEmitter<ConversationEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+  public readonly once = this.events.once.bind(
+    this.events,
+  ) as typeof this.events.once;
+
   // Private state
   private sseClient: SSEFetchClient | null = null;
   private hasReceivedFirstMessage = false;
@@ -43,18 +61,8 @@ export class Conversation {
   constructor(
     private readonly instanceId: string,
     public conversationId: string,
-    private readonly options: {
-      agent?: string;
-      onStreamStart?: () => void;
-      onConversationCreated?: (conversationId: string) => void;
-    } = {
-      agent: ToolName.ANALYST_AGENT, // Hardcoded default for now
-    },
-  ) {
-    if (this.options) {
-      this.options.agent ??= ToolName.ANALYST_AGENT;
-    }
-  }
+    private readonly agent: string = ToolName.ANALYST_AGENT, // Hardcoded default for now
+  ) {}
 
   // ===== PUBLIC API =====
 
@@ -92,6 +100,22 @@ export class Conversation {
   }
 
   /**
+   * Get message blocks for rendering this conversation.
+   * Transforms raw messages into a structured list of blocks (text, thinking blocks, charts).
+   */
+  public getBlocks(): Readable<Block[]> {
+    return derived(
+      [this.getConversationQuery(), this.isStreaming],
+      ([$query, $isStreaming]) => {
+        const messages = $query.data?.messages ?? [];
+        const isLoading = !!$query.isLoading;
+
+        return transformToBlocks(messages, $isStreaming, isLoading);
+      },
+    );
+  }
+
+  /**
    * Send a message and handle streaming response
    *
    * @param context - Chat context to be sent with the message
@@ -99,12 +123,7 @@ export class Conversation {
    */
   public async sendMessage(
     context: RuntimeServiceCompleteBody,
-    options?: {
-      onStreamStart?: () => void;
-      onMessage?: (message: V1Message) => void;
-      onStreamComplete?: (conversationId: string) => void;
-      onError?: (error: string) => void;
-    },
+    options?: { onStreamStart?: () => void },
   ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
@@ -124,19 +143,16 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      options?.onStreamStart?.();
+      options?.onStreamStart?.(); // Callback for direct callers
+      this.events.emit("stream-start"); // Event for external listeners
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(
-        prompt,
-        context,
-        options?.onMessage,
-      );
+      const streamPromise = this.startStreaming(prompt, context);
 
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
-      options?.onStreamComplete?.(this.conversationId);
+      this.events.emit("stream-complete", this.conversationId);
 
       // Temporary fix to make sure the title of the conversation is updated.
       void invalidateConversationsList(this.instanceId);
@@ -154,7 +170,7 @@ export class Conversation {
         userMessage,
         this.hasReceivedFirstMessage,
       );
-      options?.onError?.(this.formatTransportError(error));
+      this.events.emit("error", this.formatTransportError(error));
     } finally {
       this.isStreaming.set(false);
     }
@@ -183,6 +199,8 @@ export class Conversation {
       this.sseClient.cleanup();
       this.sseClient = null;
     }
+
+    this.events.clearListeners();
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
@@ -196,7 +214,6 @@ export class Conversation {
   private async startStreaming(
     prompt: string,
     context: RuntimeServiceCompleteBody | undefined,
-    onMessage: ((message: V1Message) => void) | undefined,
   ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
@@ -221,7 +238,7 @@ export class Conversation {
             message.data,
           );
           this.processStreamingResponse(response);
-          if (response.message) onMessage?.(response.message);
+          if (response.message) this.events.emit("message", response.message);
         } catch (error) {
           console.error("Failed to parse streaming response:", error);
           this.streamError.set("Failed to process server response");
@@ -259,12 +276,12 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
-      agent: this.options?.agent,
+      agent: this.agent,
       ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)
-    this.options?.onStreamStart?.();
+    this.events.emit("stream-start");
 
     // Start streaming - this will establish the connection and then stream until completion
     await this.sseClient.start(baseUrl, {
@@ -343,7 +360,7 @@ export class Conversation {
     this.conversationId = realConversationId;
 
     // Notify that conversation was created
-    this.options?.onConversationCreated?.(realConversationId);
+    this.events.emit("conversation-created", realConversationId);
   }
 
   // ----- Cache Management -----

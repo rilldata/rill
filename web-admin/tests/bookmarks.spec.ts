@@ -92,7 +92,7 @@ test.describe("Bookmarks", () => {
         // NOTE: comparison time range is not added for filter-only as per requirement
         assertUrlParams(
           adminPage,
-          `view=tdd&tr=6h+as+of+latest%2Fh%2B1h&f=app_site_name IN ('FuboTV','My+Little+Universe')&measure=requests&chart_type=line`,
+          `view=tdd&tr=6h+as+of+latest%2Fh%2B1h&grain=hour&f=app_site_name IN ('FuboTV','My+Little+Universe')&measure=requests&chart_type=line`,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -203,7 +203,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&grain=hour&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -373,7 +373,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$448.22\s*\+\$417.48 \+1k%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$448.22\s*-\$75.80\s*-15%\s*vs previous period/,
         );
 
         // Create a personal bookmark
@@ -412,7 +412,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$1,632\s*\+\$770.59 \+89%\s*vs previous day/,
+          /Advertising Spend Overall\s+\$1,632\s+-\$95.73\s+-6%\s+vs previous period/,
         );
 
         // Open the bookmarks dropdown
@@ -438,13 +438,13 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f.bids_metrics=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$448.22\s*\+\$417.48 \+1k%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$448.22\s*-\$75.80 -15%\s*vs previous period/,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -497,7 +497,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
 
         // "Go to home" resets to default when there is no home bookmark
@@ -507,12 +507,12 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Last 24 hours")).toBeVisible();
         await expect(adminPage.getByText("No filters selected")).toBeVisible();
         // make sure the url has the correct params
-        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PD`);
+        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PP`);
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$3,900\s*\+\$1,858 \+91%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$3,900\s*\+\$1,858 \+91%\s*vs previous period/,
         );
 
         // Go back to previous state
@@ -520,7 +520,7 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
 
         // Open the bookmarks dropdown
@@ -554,12 +554,12 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=adomain IN ('hyundaiusa.com','instacart.com')`,
+          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f.bids_metrics=adomain IN ('hyundaiusa.com','instacart.com')`,
         );
       });
 
@@ -599,12 +599,12 @@ test.describe("Bookmarks", () => {
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
         ).toContainText(
-          /Advertising Spend Overall\s*\$5,802\s*\+\$1,250 \+28%\s*vs previous day/,
+          /Advertising Spend Overall\s*\$5,802\s*\+\$5,802 *vs previous period/,
         );
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=adomain IN ('hyundaiusa.com','instacart.com')`,
+          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f.bids_metrics=adomain+IN+%28%27hyundaiusa.com%27%2C%27instacart.com%27%29`,
         );
       });
 

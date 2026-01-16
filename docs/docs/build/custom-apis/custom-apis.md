@@ -1,5 +1,5 @@
 ---
-title: Create Custom APIs
+title: Create Custom APIs with SQL
 description: Create custom APIs to retrieve aggregated data from Rill
 sidebar_label: Custom APIs
 ---
@@ -7,7 +7,21 @@ sidebar_label: Custom APIs
 
 Rill allows you to create custom APIs to pull data out in a flexible manner. You can write custom SQL queries and expose them as API endpoints.
 
-To create a custom API, create a new YAML file under the `apis` directory in your Rill project. Currently, we support two types of custom APIs: SQL and Metrics SQL.
+To create a custom API, create a new YAML file under the `apis` directory in your Rill project. Currently, we support two types of custom APIs: Metrics SQL and SQL.
+
+## Metrics SQL API
+
+You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/build/metrics-view). 
+It should have the following structure:
+    
+```yaml
+type: api
+metrics_sql: SELECT publisher, domain, total_records FROM ad_bids_metrics
+```
+
+For complete documentation on Metrics SQL API, including querying fundamentals, examples, supported SQL features, templating, and OpenAPI specs, see the [Metrics SQL API documentation](/build/metrics-view/metrics-sql).
+
+
 
 ## SQL API
 
@@ -105,76 +119,6 @@ To minimize costs:
 - You need the fastest possible query response times
 
 
-## Metrics SQL API
-
-You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/build/metrics-view). 
-It should have the following structure:
-    
-```yaml
-type: api
-metrics_sql: SELECT publisher, domain, total_records FROM ad_bids_metrics
-```
-
-
-### Querying Fundamentals
-
-Metrics SQL transforms queries that reference `dimensions` and `measures` within a `metrics view` into their corresponding database columns or expressions. This transformation is based on the mappings defined in a metrics view YAML configuration, enabling reuse of dimension or measure definitions. Additionally, any security policies defined in the metrics view are also inherited.
-
-### Example: Crafting a Metrics SQL Query
-
-Consider a metrics view configured as follows:
-```yaml
-#metrics/ad_bids_metrics.yaml
-type: metrics_view
-title: Ad Bids
-model: ad_bids
-timeseries: timestamp
-dimensions:
-  - name: publisher
-    expression: toUpper(publisher)
-  - name: domain
-    column: domain
-measures:
-  - name: total_records
-    display_name: Total records
-    expression: COUNT(*)
-```
-
-To query this view, a user might write a Metrics SQL query like:
-```sql
-SELECT publisher, domain, total_records FROM ad_bids_metrics
-```
-
-This Metrics SQL is internally translated to a standard SQL query as follows:
-```sql
-SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_records FROM ad_bids_metrics GROUP BY publisher, domain
-```
-
-### Security and Compliance
-
-Queries executed via Metrics SQL are subject to the security policies and access controls defined in the metrics view YAML configuration, ensuring data security and compliance.
-
-### Limitations
-
-Metrics SQL is specifically designed for querying metrics views and may not support all features found in standard SQL. Its primary focus is on providing an efficient and easy way to extract data within the constraints of metrics view configurations.
-
-
-### Supported SQL Features
-
-- **SELECT** statements with plain `dimension` and `measure` references.
-- A single **FROM** clause referencing a `metrics view`.
-- **WHERE** clause that can reference selected `dimensions` only.
-- Operators in **WHERE** and **HAVING** clauses include `=`, `!=`, `>`, `>=`, `<`, `<=`, IN, LIKE, AND, OR, and parentheses for structuring the expression.
-- **HAVING** clause for filtering on aggregated results, referencing selected dimension and measure names. Supports the same expression capabilities as the WHERE clause.
-- **ORDER BY** clause for sorting the results.
-- **LIMIT** and **OFFSET** clauses for controlling the result set size and pagination.
-
-:::warning
- The Metrics SQL feature is currently evolving. We are dedicated to enhancing the syntax by introducing additional SQL features, while striving to maintain support for existing syntax. However, please be advised that backward compatibility cannot be guaranteed at all times. Additionally, users should be aware that there may be untested edge cases in the current implementation. We appreciate your understanding as we work to refine and improve this feature.
-:::
-
-
-
 ## SQL Templating
 
 You can use templating to make your SQL query dynamic. We support:
@@ -220,10 +164,6 @@ sql: |
 
 HTTP GET `.../runtime/api/my-api` would return `total_records` for all `publisher`s.  
 HTTP GET `.../runtime/api/my-api?publisher=Google` would return `total_records` for `Google`.
-
-
-
-
 
 ## Add an OpenAPI spec
 

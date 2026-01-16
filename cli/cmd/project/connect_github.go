@@ -52,7 +52,7 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
-	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
@@ -137,8 +137,8 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		return fmt.Errorf("failed Github flow: %w", err)
 	}
 
-	if opts.ProdBranch == "" {
-		opts.ProdBranch = ghRes.DefaultBranch
+	if opts.PrimaryBranch == "" {
+		opts.PrimaryBranch = ghRes.DefaultBranch
 	}
 
 	// If no project name was provided, default to Git repo name
@@ -158,7 +158,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
-	// Create the project (automatically deploys prod branch)
+	// Create the project (automatically deploys primary branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		Org:           ch.Org,
 		Project:       opts.Name,
@@ -167,7 +167,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ProdVersion:   opts.ProdVersion,
 		ProdSlots:     int64(opts.Slots),
 		Subpath:       opts.SubPath,
-		ProdBranch:    opts.ProdBranch,
+		PrimaryBranch: opts.PrimaryBranch,
 		Public:        opts.Public,
 		DirectoryName: filepath.Base(localProjectPath),
 		GitRemote:     opts.remoteURL,
@@ -485,7 +485,7 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		return nil, err
 	}
 
-	// Create the project (automatically deploys prod branch)
+	// Create the project (automatically deploys primary branch)
 	res, err := c.CreateProject(ctx, req)
 	if err != nil {
 		if !errMsgContains(err, "a project with that name already exists in the org") {
