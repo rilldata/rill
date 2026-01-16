@@ -42,16 +42,26 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
-import { findRadioEnumKey, isStepMatch } from "../../templates/schema-utils";
+import {
+  filterSchemaValuesForSubmit,
+  findRadioEnumKey,
+  getRequiredFieldsForValues,
+  getSchemaFieldMetaList,
+  getSchemaInitialValues,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+  isVisibleForValues,
+  type SchemaFieldMeta,
+} from "../../templates/schema-utils";
 
 const dsnSchema = yupLib.object({
   dsn: yupLib.string().required("DSN is required"),
 });
 
 export type ClickhouseUiState = {
-  properties: ConnectorDriverProperty[];
-  filteredProperties: ConnectorDriverProperty[];
-  dsnProperties: ConnectorDriverProperty[];
+  properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
+  filteredProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
+  dsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
   isSubmitDisabled: boolean;
   formId: string;
   submitting: boolean;
@@ -96,10 +106,10 @@ export class AddDataFormManager {
   dsnFormId: string;
   hasDsnFormOption: boolean;
   hasOnlyDsn: boolean;
-  properties: ConnectorDriverProperty[];
-  filteredParamsProperties: ConnectorDriverProperty[];
-  dsnProperties: ConnectorDriverProperty[];
-  filteredDsnProperties: ConnectorDriverProperty[];
+  properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
+  filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
+  dsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
+  filteredDsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
 
   // superforms instances
   params: ReturnType<typeof superForm>;
@@ -122,9 +132,7 @@ export class AddDataFormManager {
   ): Record<string, unknown> {
     const schema = getConnectorSchema(this.connector.name ?? "");
     if (!schema?.properties) return values;
-    return Object.fromEntries(
-      Object.entries(values).filter(([key]) => isStepMatch(schema, key, step)),
-    );
+    return filterSchemaValuesForSubmit(schema, values, { step });
   }
 
   constructor(args: {
@@ -156,39 +164,56 @@ export class AddDataFormManager {
 
     const isSourceForm = formType === "source";
     const isConnectorForm = formType === "connector";
+    const schema = getConnectorSchema(connector.name ?? "");
+    const schemaStep = isSourceForm ? "source" : "connector";
+    const schemaFields = schema
+      ? getSchemaFieldMetaList(schema, { step: schemaStep })
+      : null;
 
     // Base properties
     this.properties =
+      schemaFields ??
       (isSourceForm
         ? connector.sourceProperties
-        : connector.configProperties?.filter((p) => p.key !== "dsn")) ?? [];
+        : connector.configProperties?.filter((p) => p.key !== "dsn")) ??
+      [];
 
     // Filter properties based on connector type
     this.filteredParamsProperties = (() => {
+      if (schemaFields) {
+        return this.properties;
+      }
       if (connector.name === "duckdb") {
-        return this.properties.filter(
+        return (this.properties as ConnectorDriverProperty[]).filter(
           (p) => p.key !== "attach" && p.key !== "mode",
         );
       }
-      return this.properties.filter((p) => !p.noPrompt);
+      return (this.properties as ConnectorDriverProperty[]).filter(
+        (p) => !p.noPrompt,
+      );
     })();
 
     // DSN properties
-    this.dsnProperties =
-      connector.configProperties?.filter((p) => p.key === "dsn") ?? [];
+    this.dsnProperties = schemaFields
+      ? []
+      : (connector.configProperties?.filter((p) => p.key === "dsn") ?? []);
     this.filteredDsnProperties = this.dsnProperties;
 
     // DSN flags
-    this.hasDsnFormOption = !!(
-      isConnectorForm &&
-      connector.configProperties?.some((p) => p.key === "dsn") &&
-      connector.configProperties?.some((p) => p.key !== "dsn")
-    );
-    this.hasOnlyDsn = !!(
-      isConnectorForm &&
-      connector.configProperties?.some((p) => p.key === "dsn") &&
-      !connector.configProperties?.some((p) => p.key !== "dsn")
-    );
+    this.hasDsnFormOption = schemaFields
+      ? false
+      : !!(
+          isConnectorForm &&
+          connector.configProperties?.some((p) => p.key === "dsn") &&
+          connector.configProperties?.some((p) => p.key !== "dsn")
+        );
+    this.hasOnlyDsn = schemaFields
+      ? false
+      : !!(
+          isConnectorForm &&
+          connector.configProperties?.some((p) => p.key === "dsn") &&
+          !connector.configProperties?.some((p) => p.key !== "dsn")
+        );
 
     // Superforms: params
     const paramsAdapter = getValidationSchemaForConnector(
@@ -197,9 +222,11 @@ export class AddDataFormManager {
     );
     type ParamsOut = Record<string, unknown>;
     type ParamsIn = Record<string, unknown>;
-    const initialFormValues = getInitialFormValuesFromProperties(
-      this.properties,
-    );
+    const initialFormValues = schemaFields
+      ? getSchemaInitialValues(schema, { step: schemaStep })
+      : getInitialFormValuesFromProperties(
+          this.properties as ConnectorDriverProperty[],
+        );
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
@@ -226,9 +253,11 @@ export class AddDataFormManager {
 
     // ClickHouse-specific defaults
     this.clickhouseInitialValues =
-      connector.name === "clickhouse"
-        ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
-        : {};
+      connector.name === "clickhouse" && schema
+        ? getSchemaInitialValues(schema, { step: "connector" })
+        : connector.name === "clickhouse"
+          ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
+          : {};
   }
 
   get isSourceForm(): boolean {
@@ -361,9 +390,11 @@ export class AddDataFormManager {
       dsnFormValues,
       paramsErrors,
       dsnErrors,
+      paramsForm,
       paramsSubmitting,
       dsnSubmitting,
     } = args;
+    const schema = getConnectorSchema(this.connector.name ?? "");
 
     // Keep connector_type in sync on the params form
     if (paramsFormValues?.connector_type !== connectorType) {
@@ -380,59 +411,23 @@ export class AddDataFormManager {
       connectorType === "rill-managed" ? ("parameters" as const) : undefined;
     const activeConnectionTab = enforcedConnectionTab ?? connectionTab;
 
-    const properties =
-      connectorType === "rill-managed"
-        ? (this.connector.sourceProperties ?? [])
-        : (this.connector.configProperties ?? []);
-
-    const filteredProperties = properties.filter(
-      (property) =>
-        !property.noPrompt &&
-        property.key !== "managed" &&
-        (activeConnectionTab !== "dsn" ? property.key !== "dsn" : true),
-    );
-
-    const dsnProperties =
-      this.connector.configProperties?.filter(
-        (property) => property.key === "dsn",
-      ) ?? [];
-
-    const isSubmitDisabled = (() => {
-      if (connectorType === "rill-managed") {
-        for (const property of filteredProperties) {
-          if (property.required) {
-            const key = String(property.key);
-            const value = paramsFormValues?.[key];
-            if (isEmpty(value) || (paramsErrors?.[key] as any)?.length)
-              return true;
-          }
-        }
+    const requiredFields = schema
+      ? getRequiredFieldsForValues(schema, paramsFormValues ?? {}, "connector")
+      : new Set<string>();
+    const isSubmitDisabled = Array.from(requiredFields).some((key) => {
+      if (schema && !isVisibleForValues(schema, key, paramsFormValues ?? {})) {
         return false;
       }
-      if (activeConnectionTab === "dsn") {
-        for (const property of dsnProperties) {
-          if (property.required) {
-            const key = String(property.key);
-            const value = dsnFormValues?.[key];
-            if (isEmpty(value) || (dsnErrors?.[key] as any)?.length)
-              return true;
-          }
-        }
-        return false;
-      }
-
-      for (const property of filteredProperties) {
-        if (property.required && property.key !== "managed") {
-          const key = String(property.key);
-          const value = paramsFormValues?.[key];
-          if (isEmpty(value) || (paramsErrors?.[key] as any)?.length)
-            return true;
-        }
-      }
-      if (connectorType === "clickhouse-cloud" && !paramsFormValues?.ssl)
-        return true;
-      return false;
-    })();
+      const errorsForField =
+        activeConnectionTab === "dsn"
+          ? (dsnErrors?.[key] as any)
+          : (paramsErrors?.[key] as any);
+      const value =
+        activeConnectionTab === "dsn"
+          ? dsnFormValues?.[key]
+          : paramsFormValues?.[key];
+      return isEmpty(value) || Boolean(errorsForField?.length);
+    });
 
     const submitting =
       activeConnectionTab === "dsn" ? dsnSubmitting : paramsSubmitting;
@@ -440,9 +435,10 @@ export class AddDataFormManager {
       activeConnectionTab === "dsn" ? this.dsnFormId : this.paramsFormId;
 
     return {
-      properties,
-      filteredProperties,
-      dsnProperties,
+      properties: this.properties as Array<ConnectorDriverProperty>,
+      filteredProperties: this
+        .filteredParamsProperties as Array<ConnectorDriverProperty>,
+      dsnProperties: this.dsnProperties as Array<ConnectorDriverProperty>,
       isSubmitDisabled,
       formId,
       submitting,
@@ -521,11 +517,16 @@ export class AddDataFormManager {
     }) => {
       const values = event.form.data;
       const connectionTab = getConnectionTab();
+      const schema = getConnectorSchema(this.connector.name ?? "");
+      const filteredValues = schema
+        ? filterSchemaValuesForSubmit(schema, values, {
+            step: this.formType === "source" ? "source" : "connector",
+          })
+        : values;
       const submitValues =
         this.connector.name === "clickhouse"
-          ? this.filterClickhouseValues(values, connectionTab)
-          : values;
-      const schema = getConnectorSchema(this.connector.name ?? "");
+          ? this.filterClickhouseValues(filteredValues, connectionTab)
+          : filteredValues;
       const authKey = schema ? findRadioEnumKey(schema) : null;
       const selectedAuthMethod =
         (authKey && values && values[authKey] != null
@@ -717,8 +718,8 @@ export class AddDataFormManager {
   computeYamlPreview(ctx: {
     connectionTab: "parameters" | "dsn";
     onlyDsn: boolean;
-    filteredParamsProperties: ConnectorDriverProperty[];
-    filteredDsnProperties: ConnectorDriverProperty[];
+    filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
+    filteredDsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
@@ -744,22 +745,40 @@ export class AddDataFormManager {
       clickhouseDsnValues,
     } = ctx;
 
+    const schema = getConnectorSchema(connector.name ?? "");
+    const schemaConnectorFields = schema
+      ? getSchemaFieldMetaList(schema, { step: "connector" })
+      : null;
+    const schemaConnectorSecretKeys = schema
+      ? getSchemaSecretKeys(schema, { step: "connector" })
+      : undefined;
+    const schemaConnectorStringKeys = schema
+      ? getSchemaStringKeys(schema, { step: "connector" })
+      : undefined;
+
     const connectorPropertiesForPreview =
-      isMultiStepConnector && stepState?.step === "connector"
+      schemaConnectorFields ??
+      (isMultiStepConnector && stepState?.step === "connector"
         ? (connector.configProperties ?? [])
-        : filteredParamsProperties;
+        : filteredParamsProperties);
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
+      const filteredValues = schema
+        ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
+        : values;
       const orderedProperties =
         onlyDsn || connectionTab === "dsn"
           ? filteredDsnProperties
           : connectorPropertiesForPreview;
-      return compileConnectorYAML(connector, values, {
+      return compileConnectorYAML(connector, filteredValues, {
         fieldFilter: (property) => {
           if (onlyDsn || connectionTab === "dsn") return true;
-          return !property.noPrompt;
+          if ("internal" in property && property.internal) return false;
+          return !("noPrompt" in property && property.noPrompt);
         },
         orderedProperties,
+        secretKeys: schemaConnectorSecretKeys,
+        stringKeys: schemaConnectorStringKeys,
       });
     };
 
@@ -767,9 +786,15 @@ export class AddDataFormManager {
       values: Record<string, unknown>,
       chType: ClickHouseConnectorType | undefined,
     ) => {
+      const filteredValues = schema
+        ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
+        : values;
       // Convert to managed boolean and apply CH Cloud requirements for preview
       const managed = chType === "rill-managed";
-      const previewValues = { ...values, managed } as Record<string, unknown>;
+      const previewValues = {
+        ...filteredValues,
+        managed,
+      } as Record<string, unknown>;
       const finalValues = applyClickHouseCloudRequirements(
         connector.name,
         chType as ClickHouseConnectorType,
@@ -778,12 +803,15 @@ export class AddDataFormManager {
       return compileConnectorYAML(connector, finalValues, {
         fieldFilter: (property) => {
           if (onlyDsn || connectionTab === "dsn") return true;
-          return !property.noPrompt;
+          if ("internal" in property && property.internal) return false;
+          return !("noPrompt" in property && property.noPrompt);
         },
         orderedProperties:
           connectionTab === "dsn"
             ? filteredDsnProperties
             : filteredParamsProperties,
+        secretKeys: schemaConnectorSecretKeys,
+        stringKeys: schemaConnectorStringKeys,
       });
     };
 
@@ -792,7 +820,12 @@ export class AddDataFormManager {
       let filteredValues = values;
       if (isMultiStepConnector && stepState?.step === "source") {
         const connectorPropertyKeys = new Set(
-          connector.configProperties?.map((p) => p.key).filter(Boolean) || [],
+          schema
+            ? getSchemaFieldMetaList(schema, { step: "connector" })
+                .filter((field) => !field.internal)
+                .map((field) => field.key)
+            : connector.configProperties?.map((p) => p.key).filter(Boolean) ||
+              [],
         );
         filteredValues = Object.fromEntries(
           Object.entries(values).filter(
@@ -809,8 +842,18 @@ export class AddDataFormManager {
         },
       );
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+      const rewrittenSchema = getConnectorSchema(rewrittenConnector.name ?? "");
+      const rewrittenSecretKeys = rewrittenSchema
+        ? getSchemaSecretKeys(rewrittenSchema, { step: "source" })
+        : undefined;
+      const rewrittenStringKeys = rewrittenSchema
+        ? getSchemaStringKeys(rewrittenSchema, { step: "source" })
+        : undefined;
       if (isRewrittenToDuckDb) {
-        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+        return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
+          secretKeys: rewrittenSecretKeys,
+          stringKeys: rewrittenStringKeys,
+        });
       }
       return getConnectorYamlPreview(rewrittenFormValues);
     };
@@ -855,7 +898,11 @@ export class AddDataFormManager {
     const { queryClient, values, clickhouseConnectorType, connectionTab } =
       args;
     const tab = connectionTab ?? "parameters";
-    const filteredValues = this.filterClickhouseValues(values, tab);
+    const schema = getConnectorSchema(this.connector.name ?? "");
+    const prunedValues = schema
+      ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
+      : values;
+    const filteredValues = this.filterClickhouseValues(prunedValues, tab);
     const processedValues = applyClickHouseCloudRequirements(
       this.connector.name,
       (clickhouseConnectorType as ClickHouseConnectorType) ||
@@ -883,16 +930,12 @@ export class AddDataFormManager {
     if (this.connector.name !== "clickhouse") return values;
     if (connectionTab !== "dsn") {
       if (!("dsn" in values)) return values;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { dsn: _unused, ...rest } = values;
       return rest;
     }
 
-    const allowed = new Set([
-      "dsn",
-      "managed",
-      "connector_type",
-      "connection_mode",
-    ]);
+    const allowed = new Set(["dsn", "managed"]);
     return Object.fromEntries(
       Object.entries(values).filter(([key]) => allowed.has(key)),
     );

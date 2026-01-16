@@ -6,8 +6,10 @@ import {
   findRadioEnumKey,
   getRadioEnumOptions,
   getRequiredFieldsByEnumValue,
+  getSchemaFieldMetaList,
   isStepMatch,
 } from "../../templates/schema-utils";
+import { getConnectorSchema } from "./connector-schemas";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.
@@ -74,6 +76,15 @@ export function hasOnlyDsn(
   isConnectorForm: boolean,
 ): boolean {
   if (!isConnectorForm) return false;
+  const schema = getConnectorSchema(connector?.name ?? "");
+  if (schema) {
+    const fields = getSchemaFieldMetaList(schema, { step: "connector" }).filter(
+      (field) => !field.internal,
+    );
+    const hasDsn = fields.some((field) => field.key === "dsn");
+    const hasOthers = fields.some((field) => field.key !== "dsn");
+    return hasDsn && !hasOthers;
+  }
   const props = connector?.configProperties ?? [];
   const hasDsn = props.some((p) => p.key === "dsn");
   const hasOthers = props.some((p) => p.key !== "dsn");

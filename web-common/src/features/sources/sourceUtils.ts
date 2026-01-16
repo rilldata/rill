@@ -7,6 +7,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
+import { getConnectorSchema } from "./modal/connector-schemas";
+import { getSchemaFieldMetaList } from "../templates/schema-utils";
 
 // Helper text that we put at the top of every Model YAML file
 const SOURCE_MODEL_FILE_TOP = `# Model YAML
@@ -18,20 +20,25 @@ materialize: true`;
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  opts?: { secretKeys?: string[]; stringKeys?: string[] },
 ) {
   // Get the secret property keys
   const secretPropertyKeys =
-    connector.sourceProperties
+    opts?.secretKeys ??
+    (connector.sourceProperties
       ?.filter((property) => property.secret)
-      .map((property) => property.key) || [];
+      .map((property) => property.key) ||
+      []);
 
   // Get the string property keys
   const stringPropertyKeys =
-    connector.sourceProperties
+    opts?.stringKeys ??
+    (connector.sourceProperties
       ?.filter(
         (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
       )
-      .map((property) => property.key) || [];
+      .map((property) => property.key) ||
+      []);
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
@@ -226,7 +233,19 @@ export function prepareSourceFormData(
 
   // Strip connector configuration keys from the source form values to prevent
   // leaking connector-level fields (e.g., credentials) into the model file.
-  if (connector.configProperties) {
+  const schema = getConnectorSchema(connector.name ?? "");
+  if (schema) {
+    const connectorPropertyKeys = new Set(
+      getSchemaFieldMetaList(schema, { step: "connector" })
+        .filter((field) => !field.internal)
+        .map((field) => field.key),
+    );
+    for (const key of Object.keys(processedValues)) {
+      if (connectorPropertyKeys.has(key)) {
+        delete processedValues[key];
+      }
+    }
+  } else if (connector.configProperties) {
     const connectorPropertyKeys = new Set(
       connector.configProperties.map((p) => p.key).filter(Boolean),
     );
@@ -238,7 +257,16 @@ export function prepareSourceFormData(
   }
 
   // Handle placeholder values for required source properties
-  if (connector.sourceProperties) {
+  if (schema) {
+    const sourceFields = getSchemaFieldMetaList(schema, { step: "source" });
+    for (const field of sourceFields) {
+      if (field.required && !(field.key in processedValues)) {
+        if (field.placeholder) {
+          processedValues[field.key] = field.placeholder;
+        }
+      }
+    }
+  } else if (connector.sourceProperties) {
     for (const prop of connector.sourceProperties) {
       if (prop.key && prop.required && !(prop.key in processedValues)) {
         if (prop.placeholder) {

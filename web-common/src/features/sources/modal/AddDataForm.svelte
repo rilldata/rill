@@ -28,6 +28,10 @@
   import { get } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
   import { propertiesToSchema } from "./properties-to-schema";
+  import {
+    getRequiredFieldsForValues,
+    isVisibleForValues,
+  } from "../../templates/schema-utils";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -119,14 +123,18 @@
 
   const connectorSchema = getConnectorSchema(connector.name ?? "");
   const hasSchema = Boolean(connectorSchema);
-  const paramsSchema = propertiesToSchema(
-    filteredParamsProperties,
-    isConnectorForm ? "connector" : "source",
-  );
-  const dsnSchema = propertiesToSchema(
-    filteredDsnProperties,
-    isConnectorForm ? "connector" : "source",
-  );
+  const paramsSchema =
+    connectorSchema ??
+    propertiesToSchema(
+      filteredParamsProperties as any,
+      isConnectorForm ? "connector" : "source",
+    );
+  const dsnSchema =
+    connectorSchema ??
+    propertiesToSchema(
+      filteredDsnProperties as any,
+      isConnectorForm ? "connector" : "source",
+    );
 
   $: if (connector.name === "clickhouse") {
     const nextType = ($paramsForm?.connector_type ??
@@ -198,6 +206,21 @@
   $: isSubmitDisabled = (() => {
     if (isMultiStepConnector) {
       return multiStepSubmitDisabled;
+    }
+
+    if (connectorSchema) {
+      const requiredFields = getRequiredFieldsForValues(
+        connectorSchema,
+        $paramsForm,
+        isConnectorForm ? "connector" : "source",
+      );
+      for (const field of requiredFields) {
+        if (!isVisibleForValues(connectorSchema, field, $paramsForm)) continue;
+        const value = $paramsForm[field];
+        const errorsForField = $paramsErrors[field] as any;
+        if (isEmpty(value) || errorsForField?.length) return true;
+      }
+      return false;
     }
 
     if (onlyDsn || connectionTab === "dsn") {
@@ -464,7 +487,7 @@
             </AddDataFormSection>
           </TabsContent>
         </Tabs>
-      {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
+      {:else if isConnectorForm && onlyDsn}
         <!-- Connector with only DSN - show DSN form directly -->
         <AddDataFormSection
           id={dsnFormId}

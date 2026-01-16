@@ -37,9 +37,18 @@ export function compileConnectorYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
   options?: {
-    fieldFilter?: (property: ConnectorDriverProperty) => boolean;
-    orderedProperties?: ConnectorDriverProperty[];
+    fieldFilter?: (
+      property:
+        | ConnectorDriverProperty
+        | { key?: string; type?: string; secret?: boolean; internal?: boolean },
+    ) => boolean;
+    orderedProperties?: Array<
+      | ConnectorDriverProperty
+      | { key?: string; type?: string; secret?: boolean }
+    >;
     connectorInstanceName?: string;
+    secretKeys?: string[];
+    stringKeys?: string[];
   },
 ) {
   // Add instructions to the top of the file
@@ -64,17 +73,21 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
   // Get the secret property keys
   const secretPropertyKeys =
-    connector.configProperties
+    options?.secretKeys ??
+    (connector.configProperties
       ?.filter((property) => property.secret)
-      .map((property) => property.key) || [];
+      .map((property) => property.key) ||
+      []);
 
   // Get the string property keys
   const stringPropertyKeys =
-    connector.configProperties
+    options?.stringKeys ??
+    (connector.configProperties
       ?.filter(
         (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
       )
-      .map((property) => property.key) || [];
+      .map((property) => property.key) ||
+      []);
 
   // Compile key value pairs in the order of properties
   const compiledKeyValues = properties
@@ -126,6 +139,7 @@ export async function updateDotEnvWithSecrets(
   formValues: Record<string, unknown>,
   formType: "source" | "connector",
   connectorInstanceName?: string,
+  opts?: { secretKeys?: string[] },
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -151,9 +165,11 @@ export async function updateDotEnvWithSecrets(
     formType === "source"
       ? connector.sourceProperties
       : connector.configProperties;
-  const secretKeys = properties
-    ?.filter((property) => property.secret)
-    .map((property) => property.key);
+  const secretKeys =
+    opts?.secretKeys ??
+    properties
+      ?.filter((property) => property.secret)
+      .map((property) => property.key);
 
   // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {

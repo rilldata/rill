@@ -35,6 +35,12 @@ import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import { OLAP_ENGINES } from "./constants";
+import { getConnectorSchema } from "./connector-schemas";
+import {
+  getSchemaFieldMetaList,
+  getSchemaSecretKeys,
+  getSchemaStringKeys,
+} from "../../templates/schema-utils";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -161,6 +167,16 @@ async function saveConnectorAnyway(
   instanceId?: string,
 ): Promise<void> {
   const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : null;
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : undefined;
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : undefined;
 
   // Create connector file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
@@ -178,6 +194,7 @@ async function saveConnectorAnyway(
     formValues,
     "connector",
     newConnectorName,
+    { secretKeys: schemaSecretKeys },
   );
 
   await runtimeServicePutFile(resolvedInstanceId, {
@@ -192,6 +209,12 @@ async function saveConnectorAnyway(
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
+      orderedProperties: schemaFields ?? undefined,
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+      fieldFilter: schemaFields
+        ? (property) => !("internal" in property && property.internal)
+        : undefined,
     }),
     create: true,
     createOnly: false,
@@ -217,6 +240,16 @@ export async function submitAddConnectorForm(
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
+  const schema = getConnectorSchema(connector.name ?? "");
+  const schemaFields = schema
+    ? getSchemaFieldMetaList(schema, { step: "connector" })
+    : null;
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "connector" })
+    : undefined;
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "connector" })
+    : undefined;
 
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
@@ -285,6 +318,7 @@ export async function submitAddConnectorForm(
         formValues,
         "connector",
         newConnectorName,
+        { secretKeys: schemaSecretKeys },
       );
 
       if (saveAnyway) {
@@ -319,6 +353,12 @@ export async function submitAddConnectorForm(
           path: newConnectorFilePath,
           blob: compileConnectorYAML(connector, formValues, {
             connectorInstanceName: newConnectorName,
+            orderedProperties: schemaFields ?? undefined,
+            secretKeys: schemaSecretKeys,
+            stringKeys: schemaStringKeys,
+            fieldFilter: schemaFields
+              ? (property) => !("internal" in property && property.internal)
+              : undefined,
           }),
           create: true,
           createOnly: false,
@@ -411,7 +451,6 @@ export async function submitAddSourceForm(
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
-
   const newSourceName = formValues.name as string;
 
   const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
@@ -419,6 +458,13 @@ export async function submitAddSourceForm(
     formValues,
     { connectorInstanceName },
   );
+  const schema = getConnectorSchema(rewrittenConnector.name ?? "");
+  const schemaSecretKeys = schema
+    ? getSchemaSecretKeys(schema, { step: "source" })
+    : undefined;
+  const schemaStringKeys = schema
+    ? getSchemaStringKeys(schema, { step: "source" })
+    : undefined;
 
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
@@ -427,7 +473,10 @@ export async function submitAddSourceForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
+      secretKeys: schemaSecretKeys,
+      stringKeys: schemaStringKeys,
+    }),
     create: true,
     createOnly: false,
   });
@@ -440,6 +489,8 @@ export async function submitAddSourceForm(
     rewrittenConnector,
     rewrittenFormValues,
     "source",
+    undefined,
+    { secretKeys: schemaSecretKeys },
   );
 
   // Make sure the file has reconciled before testing the connection

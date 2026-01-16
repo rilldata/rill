@@ -11,6 +11,7 @@ export const druidSchema: MultiStepFormSchema = {
       default: "parameters",
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-internal": true,
       "x-tab-group": {
         parameters: ["host", "port", "username", "password", "ssl"],
         dsn: ["dsn"],
