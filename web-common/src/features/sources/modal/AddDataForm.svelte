@@ -20,7 +20,6 @@
     type ClickHouseConnectorType,
   } from "./constants";
   import { connectorStepStore } from "./connectorStepStore";
-  import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import {
     AddDataFormManager,
@@ -29,6 +28,7 @@
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get, type Writable } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
+  import { propertiesToSchema } from "./properties-to-schema";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -123,6 +123,23 @@
 
   const connectorSchema = getConnectorSchema(connector.name ?? "");
   const hasSchema = Boolean(connectorSchema);
+
+  // Convert backend properties to JSON Schema at the boundary
+  // This makes JSON Schema the single source of truth for all form rendering
+  $: paramsSchema =
+    connectorSchema ??
+    (filteredParamsProperties
+      ? propertiesToSchema(
+          filteredParamsProperties,
+          isConnectorForm ? "connector" : "source",
+        )
+      : null);
+  $: dsnSchema = filteredDsnProperties
+    ? propertiesToSchema(
+        filteredDsnProperties,
+        isConnectorForm ? "connector" : "source",
+      )
+    : null;
 
   // ClickHouse-specific: sync connector_type from form to clickhouseConnectorType
   $: if (connector.name === "clickhouse" && $paramsForm.connector_type) {
@@ -442,12 +459,13 @@
                 enhance={dsnEnhance}
                 onSubmit={dsnSubmit}
               >
-                <FormRenderer
-                  properties={filteredDsnProperties}
+                <JSONSchemaFormRenderer
+                  schema={dsnSchema}
+                  step={isConnectorForm ? "connector" : "source"}
                   form={dsnForm}
                   errors={$dsnErrors}
                   {onStringInputChange}
-                  uploadFile={handleFileUpload}
+                  {handleFileUpload}
                 />
               </AddDataFormSection>
             </TabsContent>
@@ -465,12 +483,13 @@
               enhance={paramsEnhance}
               onSubmit={paramsSubmit}
             >
-              <FormRenderer
-                properties={filteredParamsProperties}
+              <JSONSchemaFormRenderer
+                schema={paramsSchema}
+                step={isConnectorForm ? "connector" : "source"}
                 form={paramsForm}
                 errors={$paramsErrors}
                 {onStringInputChange}
-                uploadFile={handleFileUpload}
+                {handleFileUpload}
               />
             </AddDataFormSection>
           </TabsContent>
@@ -480,12 +499,13 @@
               enhance={dsnEnhance}
               onSubmit={dsnSubmit}
             >
-              <FormRenderer
-                properties={filteredDsnProperties}
+              <JSONSchemaFormRenderer
+                schema={dsnSchema}
+                step={isConnectorForm ? "connector" : "source"}
                 form={dsnForm}
                 errors={$dsnErrors}
                 {onStringInputChange}
-                uploadFile={handleFileUpload}
+                {handleFileUpload}
               />
             </AddDataFormSection>
           </TabsContent>
@@ -497,12 +517,13 @@
           enhance={dsnEnhance}
           onSubmit={dsnSubmit}
         >
-          <FormRenderer
-            properties={filteredDsnProperties}
+          <JSONSchemaFormRenderer
+            schema={dsnSchema}
+            step={isConnectorForm ? "connector" : "source"}
             form={dsnForm}
             errors={$dsnErrors}
             {onStringInputChange}
-            uploadFile={handleFileUpload}
+            {handleFileUpload}
           />
         </AddDataFormSection>
       {:else if isMultiStepConnector}
@@ -545,12 +566,13 @@
           enhance={paramsEnhance}
           onSubmit={paramsSubmit}
         >
-          <FormRenderer
-            properties={filteredParamsProperties}
+          <JSONSchemaFormRenderer
+            schema={paramsSchema}
+            step={isConnectorForm ? "connector" : "source"}
             form={paramsForm}
             errors={$paramsErrors}
             {onStringInputChange}
-            uploadFile={handleFileUpload}
+            {handleFileUpload}
           />
         </AddDataFormSection>
       {/if}
