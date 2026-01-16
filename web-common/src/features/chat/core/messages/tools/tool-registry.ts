@@ -21,11 +21,11 @@ import {
 
 /**
  * How a tool call renders in the UI:
- * - "inline": Shown as a collapsible tool call in thinking blocks
+ * - "grouped": TODO: update. Shown as a collapsible tool call in thinking blocks
  * - "block": Renders as a standalone block with its own header (chart, diff, etc.)
  * - "hidden": Not shown (internal orchestration agents)
  */
-export type ToolRenderMode = "inline" | "block" | "hidden";
+export type ToolRenderMode = "grouped" | "block" | "hidden";
 
 // =============================================================================
 // TOOL CONFIGURATION
@@ -47,6 +47,8 @@ export interface ToolConfig {
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
   ) => ToolBlockType | null;
+
+  groups?: string[];
 }
 
 /**
@@ -54,7 +56,8 @@ export interface ToolConfig {
  * Most tools render inline within thinking blocks.
  */
 const DEFAULT_TOOL_CONFIG: ToolConfig = {
-  renderMode: "inline",
+  renderMode: "grouped",
+  groups: ["thinking"],
 };
 
 /**
@@ -79,8 +82,8 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createChartBlock,
   },
   [ToolName.WRITE_FILE]: {
-    renderMode: "block",
-    createBlock: createFileDiffBlock,
+    renderMode: "grouped",
+    groups: ["thinking", "develop"],
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
