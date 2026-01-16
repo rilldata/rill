@@ -14,11 +14,11 @@ import type {
 } from "@tanstack/svelte-table";
 import type { Readable } from "svelte/motion";
 
-export const COMPARISON_VALUE = "__comparison_value";
-export const COMPARISON_DELTA = "__comparison_delta";
-export const COMPARISON_PERCENT = "__comparison_percent";
+export const COMPARISON_VALUE = "__previous";
+export const COMPARISON_DELTA = "__delta_abs";
+export const COMPARISON_PERCENT = "__delta_rel";
 export const ComparisonModifierSuffixRegex =
-  /__comparison_(?:value|delta|percent)/;
+  /__(?:previous|delta_abs|delta_rel)/;
 
 export interface PivotDataState {
   isFetching: boolean;
