@@ -15,6 +15,11 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "ClickHouse Cloud",
         "Rill-managed ClickHouse",
       ],
+      "x-grouped-fields": {
+        "self-hosted": ["connection_mode"],
+        "clickhouse-cloud": ["connection_mode"],
+        "rill-managed": ["managed"],
+      },
       "x-step": "connector",
     },
     connection_mode: {
@@ -158,7 +163,12 @@ export const clickhouseSchema: MultiStepFormSchema = {
       },
     },
     {
-      if: { properties: { connector_type: { const: "self-hosted" } } },
+      if: {
+        properties: {
+          connector_type: { const: "self-hosted" },
+          connection_mode: { const: "parameters" },
+        },
+      },
       then: {
         required: ["host", "username"],
         properties: {
@@ -168,13 +178,46 @@ export const clickhouseSchema: MultiStepFormSchema = {
       },
     },
     {
-      if: { properties: { connector_type: { const: "clickhouse-cloud" } } },
+      if: {
+        properties: {
+          connector_type: { const: "self-hosted" },
+          connection_mode: { const: "dsn" },
+        },
+      },
+      then: {
+        required: ["dsn"],
+        properties: {
+          managed: { const: false },
+        },
+      },
+    },
+    {
+      if: {
+        properties: {
+          connector_type: { const: "clickhouse-cloud" },
+          connection_mode: { const: "parameters" },
+        },
+      },
       then: {
         required: ["host", "username", "ssl"],
         properties: {
           managed: { const: false },
           port: { default: "8443" },
           ssl: { const: true },
+        },
+      },
+    },
+    {
+      if: {
+        properties: {
+          connector_type: { const: "clickhouse-cloud" },
+          connection_mode: { const: "dsn" },
+        },
+      },
+      then: {
+        required: ["dsn"],
+        properties: {
+          managed: { const: false },
         },
       },
     },
