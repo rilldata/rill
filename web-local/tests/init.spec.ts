@@ -23,7 +23,9 @@ test.describe("Example project initialization", () => {
     test("should initialize new project", async ({ page }) => {
       await page.getByRole("link", { name: "Empty Project" }).click();
 
-      await expect(page.getByText("Getting started")).toBeVisible();
+      await expect(
+        page.getByText("Import data", { exact: true }),
+      ).toBeVisible();
 
       await page.getByRole("link", { name: "rill.yaml" }).click();
 
