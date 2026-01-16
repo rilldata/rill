@@ -148,8 +148,7 @@
     clickhouseConnectorType &&
     clickhouseConnectorType !== prevClickhouseConnectorType
   ) {
-    const defaults =
-      formManager.getClickhouseDefaults(clickhouseConnectorType);
+    const defaults = formManager.getClickhouseDefaults(clickhouseConnectorType);
     if (defaults) {
       paramsForm.update(() => defaults, { taint: false } as any);
     }
@@ -563,9 +562,7 @@
             ? effectiveClickhouseSubmitting
             : submitting}
           loadingCopy={primaryLoadingCopy}
-          form={connector.name === "clickhouse"
-            ? paramsFormId
-            : formId}
+          form={connector.name === "clickhouse" ? paramsFormId : formId}
           submitForm
           type="primary"
         >

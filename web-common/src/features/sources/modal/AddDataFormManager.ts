@@ -623,7 +623,12 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, submitValues);
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, submitValues, false);
+          await submitAddConnectorForm(
+            queryClient,
+            connector,
+            submitValues,
+            false,
+          );
           onClose();
         }
       } catch (e) {
@@ -847,7 +852,8 @@ export class AddDataFormManager {
     clickhouseConnectorType?: ClickHouseConnectorType;
     connectionTab?: "parameters" | "dsn";
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values, clickhouseConnectorType, connectionTab } = args;
+    const { queryClient, values, clickhouseConnectorType, connectionTab } =
+      args;
     const tab = connectionTab ?? "parameters";
     const filteredValues = this.filterClickhouseValues(values, tab);
     const processedValues = applyClickHouseCloudRequirements(
