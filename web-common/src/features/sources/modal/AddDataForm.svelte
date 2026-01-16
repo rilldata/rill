@@ -124,50 +124,7 @@
   const connectorSchema = getConnectorSchema(connector.name ?? "");
   const hasSchema = Boolean(connectorSchema);
 
-<<<<<<< HEAD
-  // Convert backend properties to JSON Schema at the boundary
-  // This makes JSON Schema the single source of truth for all form rendering
-  $: paramsSchema =
-    connectorSchema ??
-    (filteredParamsProperties
-      ? propertiesToSchema(
-          filteredParamsProperties,
-          isConnectorForm ? "connector" : "source",
-        )
-      : null);
-  $: dsnSchema = filteredDsnProperties
-    ? propertiesToSchema(
-        filteredDsnProperties,
-        isConnectorForm ? "connector" : "source",
-      )
-    : null;
-
-  // ClickHouse-specific: sync connector_type from form to clickhouseConnectorType
-  $: if (connector.name === "clickhouse" && $paramsForm.connector_type) {
-    const formConnectorType =
-      $paramsForm.connector_type as ClickHouseConnectorType;
-    if (formConnectorType !== clickhouseConnectorType) {
-      clickhouseConnectorType = formConnectorType;
-    }
-  }
-
-  // ClickHouse-specific: sync clickhouseConnectorType to form
-  $: if (connector.name === "clickhouse") {
-    if ($paramsForm.connector_type !== clickhouseConnectorType) {
-      paramsForm.update(
-        ($form) => ({
-          ...$form,
-          connector_type: clickhouseConnectorType,
-        }),
-        { taint: false } as any,
-      );
-    }
-  }
-
-  // ClickHouse-specific derived state handled by the manager (for backward compatibility during transition)
-=======
   // ClickHouse-specific derived state handled by the manager
->>>>>>> parent of 93bfc9062 (remove clickhouse form)
   $: if (connector.name === "clickhouse") {
     clickhouseUiState = formManager.computeClickhouseState({
       connectorType: clickhouseConnectorType,
