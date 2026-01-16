@@ -55,8 +55,9 @@ export interface PivotState {
   enableComparison: boolean;
   tableMode: PivotTableMode;
   activeCell: PivotCell | null;
-  rowLimit?: number; // Global limit
-  nestedRowLimits?: Record<string, number>; // Per-row limits keyed by expand index (e.g., "0.1.2")
+  rowLimit?: number;
+  outermostRowLimit?: number; // Local limit for outermost dimension only
+  nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
 }
 
 export type PivotTableMode = "flat" | "nest";
