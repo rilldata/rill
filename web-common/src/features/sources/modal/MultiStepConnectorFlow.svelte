@@ -8,6 +8,7 @@
   import {
     findRadioEnumKey,
     getRadioEnumOptions,
+    getSchemaInitialValues,
     isStepMatch,
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
@@ -56,8 +57,12 @@
 
   // Initialize source step values from stored connector config.
   $: if (stepState.step === "source" && stepState.connectorConfig) {
-    const sourceProperties = connector.sourceProperties ?? [];
-    const initialValues = getInitialFormValuesFromProperties(sourceProperties);
+    const schema = connector.name
+      ? getConnectorSchema(connector.name) || null
+      : null;
+    const initialValues = schema
+      ? getSchemaInitialValues(schema, { step: "source" })
+      : getInitialFormValuesFromProperties(connector.sourceProperties ?? []);
     const combinedValues = {
       ...stepState.connectorConfig,
       ...initialValues,
@@ -73,9 +78,11 @@
       : null;
     paramsForm.update(
       ($current) => {
-        const base = getInitialFormValuesFromProperties(
-          connector.configProperties ?? [],
-        );
+        const base = schema
+          ? getSchemaInitialValues(schema, { step: "connector" })
+          : getInitialFormValuesFromProperties(
+              connector.configProperties ?? [],
+            );
         if (activeSchema) {
           const authKey = findRadioEnumKey(activeSchema);
           const persisted = stepState.selectedAuthMethod;
