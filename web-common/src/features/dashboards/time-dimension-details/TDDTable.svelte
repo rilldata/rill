@@ -416,7 +416,7 @@
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
     onMouseHover={handleMouseHover}
-    onPos={handlePos}
+    onPositionChange={handlePos}
   />
 </div>
 

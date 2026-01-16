@@ -3,10 +3,10 @@
   import "regular-table";
   import type { RegularTableElement } from "regular-table";
   import { onMount } from "svelte";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import "./regular-table-style.css";
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
 
   const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
   const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
@@ -32,7 +32,7 @@
   export let rowHeight = 24;
   export let getColumnWidth: (x: number) => number | void = () => undefined;
   export let getRowHeaderWidth: (x: number) => number | void = () => undefined;
-  export let onPos: (pos: PivotPos) => void = () => {};
+  export let onPositionChange: (pos: PivotPos) => void = () => {};
 
   let table: RegularTableElement;
   let initialized = false;
@@ -322,7 +322,7 @@
       lastRowHeaderSizer = getRowHeaderWidth;
     }
 
-    onPos(pos);
+    onPositionChange(pos);
   }
 
   onMount(() => {
