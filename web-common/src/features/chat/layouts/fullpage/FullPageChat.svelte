@@ -1,5 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -8,6 +9,7 @@
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
+  import { ShareChatPopover } from "../../share";
   import ConversationSidebar from "./ConversationSidebar.svelte";
   import {
     conversationSidebarCollapsed,
@@ -16,10 +18,17 @@
   import { projectChat } from "@rilldata/web-common/features/project/chat-context.ts";
 
   $: ({ instanceId } = $runtime);
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
   $: conversationManager = getConversationManager(instanceId, {
     conversationState: "url",
   });
+
+  $: currentConversationStore = conversationManager.getCurrentConversation();
+  $: getConversationQuery = $currentConversationStore?.getConversationQuery();
+  $: currentConversation = $getConversationQuery?.data?.conversation ?? null;
+  $: hasExistingConversation = !!currentConversation?.id;
 
   let chatInputComponent: ChatInput;
 
@@ -64,6 +73,17 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
+    {#if hasExistingConversation && currentConversation?.id && organization && project}
+      <div class="chat-header">
+        <ShareChatPopover
+          conversationId={currentConversation.id}
+          conversationTitle={currentConversation.title ?? ""}
+          {instanceId}
+          {organization}
+          {project}
+        />
+      </div>
+    {/if}
     <div class="chat-content">
       <div class="chat-messages-wrapper">
         <Messages
@@ -97,11 +117,28 @@
 
   /* Main Chat Area */
   .chat-main {
+    position: relative;
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: var(--surface);
+  }
+
+  .chat-header {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.5rem 1rem;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .chat-header :global(*) {
+    pointer-events: auto;
   }
 
   .chat-content {

@@ -1,18 +1,26 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { type V1Conversation } from "../../../../runtime-client";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import { ShareChatPopover } from "../../share";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
 
   export let conversationManager: ConversationManager;
   export let onNewConversation: () => void;
   export let onClose: () => void;
 
+  $: ({ instanceId } = $runtime);
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
+  $: hasExistingConversation = !!currentConversationDto?.id;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
   $: conversations = $listConversationsQuery.data?.conversations ?? [];
@@ -37,6 +45,16 @@
     >
       <PlusIcon className="text-gray-500" />
     </IconButton>
+
+    {#if hasExistingConversation && organization && project}
+      <ShareChatPopover
+        conversationId={currentConversationDto.id}
+        conversationTitle={currentConversationDto.title ?? ""}
+        {instanceId}
+        {organization}
+        {project}
+      />
+    {/if}
 
     <ConversationHistoryMenu
       {conversations}
