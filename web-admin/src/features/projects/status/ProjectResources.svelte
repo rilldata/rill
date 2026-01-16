@@ -10,19 +10,17 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import { useResources, useModelTableSizes } from "./selectors";
+  import { useResources } from "./selectors";
   import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let tableSizes: any;
 
   $: ({ instanceId } = $runtime);
 
   $: resources = useResources(instanceId);
-  $: tableSizes = useModelTableSizes(instanceId, $resources.data?.resources);
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
@@ -81,10 +79,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable
-      data={$resources?.data?.resources}
-      tableSizes={$tableSizes?.data ?? new Map()}
-    />
+    <ProjectResourcesTable data={$resources?.data?.resources} />
   {/if}
 </section>
 

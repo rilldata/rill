@@ -2,17 +2,22 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ProjectTablesTable from "./ProjectTablesTable.svelte";
-  import ProjectTablesRowCounts from "./ProjectTablesRowCounts.svelte";
   import { useTablesList, useTableMetadata } from "./selectors";
 
   let tablesList: any;
   let tableMetadata: any;
-  let rowCounts: Map<string, number | "loading" | "error"> = new Map();
 
   $: ({ instanceId } = $runtime);
 
   $: tablesList = useTablesList(instanceId, "");
-  $: tableMetadata = useTableMetadata(instanceId, "", $tablesList.data?.tables);
+
+  // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
+  $: filteredTables =
+    $tablesList.data?.tables?.filter(
+      (t: { name?: string }) => t.name && !t.name.startsWith("__rill_tmp_"),
+    ) ?? [];
+
+  $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
@@ -21,25 +26,23 @@
   </div>
 
   {#if $tablesList.isLoading}
-    <DelayedSpinner isLoading={$tablesList.isLoading} size="16px" />
+    <div class="flex items-center gap-x-2 text-gray-500">
+      <DelayedSpinner isLoading={true} size="16px" />
+      <span class="text-sm">Loading tables...</span>
+    </div>
   {:else if $tablesList.isError}
     <div class="text-red-500">
       Error loading tables: {$tablesList.error?.message}
     </div>
-  {:else if $tablesList.data}
-    <ProjectTablesRowCounts
-      {instanceId}
-      tables={$tablesList?.data?.tables ?? []}
-      bind:rowCounts
-    />
+  {:else if filteredTables.length > 0}
     <ProjectTablesTable
-      tables={$tablesList?.data?.tables ?? []}
-      columnCounts={$tableMetadata?.data?.columnCounts ?? new Map()}
-      {rowCounts}
+      tables={filteredTables}
       isView={$tableMetadata?.data?.isView ?? new Map()}
     />
     {#if $tableMetadata?.isLoading}
       <div class="mt-2 text-xs text-gray-500">Loading table metadata...</div>
     {/if}
+  {:else}
+    <div class="text-gray-500 text-sm">No tables found</div>
   {/if}
 </section>
