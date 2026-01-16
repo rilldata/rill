@@ -17,7 +17,6 @@ import { get } from "svelte/store";
 import {
   convertISOStringToJSDateWithSameTimeAsSelectedTimeZone,
   removeZoneOffset,
-  setJSDateTimeValueToTimeValueInSelectedTimeZone,
 } from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
@@ -44,9 +43,9 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
       Object.entries(d.records).forEach(([key, value]) => {
         acc[`comparison.${key}`] = value;
       });
-    } else if (`comparison.${key}` === "comparison.ts") {
+    } else if (key === "ts") {
       acc[`comparison.${key}`] =
-        setJSDateTimeValueToTimeValueInSelectedTimeZone(d[key], zone);
+        convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(d[key], zone);
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
