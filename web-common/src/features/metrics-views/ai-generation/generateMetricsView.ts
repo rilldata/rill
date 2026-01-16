@@ -466,6 +466,74 @@ export async function createModelAndMetricsAndExplore(
 }
 
 /**
+ * Helper function to create metrics view from table with AI.
+ * Returns the metrics view resource after creation.
+ */
+async function createMetricsViewFromTable(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  tableName: string,
+  abortController: AbortController,
+): Promise<V1Resource> {
+  const isAiEnabled = get(featureFlags.ai);
+
+  const newMetricsViewName = getName(
+    `${tableName}_metrics`,
+    fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
+  );
+  const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
+
+  // Request an AI-generated metrics view
+  void runtimeServiceGenerateMetricsViewFileWithSignal(
+    instanceId,
+    {
+      connector: connector,
+      database: database,
+      databaseSchema: databaseSchema,
+      table: tableName,
+      path: newMetricsViewFilePath,
+      useAi: isAiEnabled,
+    },
+    abortController.signal,
+  );
+
+  // Poll until file creation is complete or canceled
+  const fileCreated = await pollForFileCreation(
+    instanceId,
+    newMetricsViewFilePath,
+    abortController.signal,
+  );
+
+  // If the user canceled the AI request, submit another request with `useAi=false`
+  if (!fileCreated) {
+    await runtimeServiceGenerateMetricsViewFile(instanceId, {
+      connector: connector,
+      database: database,
+      databaseSchema: databaseSchema,
+      table: tableName,
+      path: newMetricsViewFilePath,
+      useAi: false,
+    });
+  }
+
+  // Wait for Metrics View resource to be ready
+  const metricsViewResource = fileArtifacts
+    .getFileArtifact(newMetricsViewFilePath)
+    .getResource(queryClient, instanceId);
+
+  await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+  const resource = get(metricsViewResource).data;
+  if (!resource) {
+    throw new Error("Failed to create a Metrics View resource");
+  }
+
+  return resource;
+}
+
+/**
  * Creates an Explore dashboard file without navigation.
  * Returns the file path of the created explore.
  */
@@ -552,6 +620,98 @@ export async function createCanvasDashboardWithoutNavigation(
 }
 
 /**
+ * Wrapper function that creates metrics view and canvas dashboard from a table.
+ * Navigates to canvas dashboard when complete.
+ *
+ * This function is to be called from "Generate Canvas dashboard" CTA when you want
+ * to create Canvas dashboard only (without Explore).
+ */
+export function useCreateMetricsViewWithCanvasUIAction(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  tableName: string,
+  behaviourEventMedium: BehaviourEventMedium,
+  metricsEventSpace: MetricsEventSpace,
+) {
+  const isAiEnabled = get(featureFlags.ai);
+
+  return async () => {
+    const abortController = new AbortController();
+
+    overlay.set({
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} building your Canvas dashboard`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("AI generation cancelled by user");
+          },
+        },
+      },
+    });
+
+    try {
+      // Step 1: Create metrics view
+      const resource = await createMetricsViewFromTable(
+        instanceId,
+        connector,
+        database,
+        databaseSchema,
+        tableName,
+        abortController,
+      );
+
+      const metricsViewName = resource.meta?.name?.name;
+      if (!metricsViewName) {
+        throw new Error("Failed to get metrics view name");
+      }
+
+      // Step 2: Create Canvas dashboard
+      overlay.set({
+        title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
+        detail: {
+          component: OptionToCancelAIGeneration,
+          props: {
+            onCancel: () => {
+              abortController.abort("Canvas creation cancelled by user");
+            },
+          },
+        },
+      });
+
+      const canvasFilePath = await createCanvasDashboardWithoutNavigation(
+        instanceId,
+        metricsViewName,
+      );
+
+      // Step 3: Navigate to Canvas dashboard
+      if (canvasFilePath) {
+        await goto(`/files${canvasFilePath}`);
+        void behaviourEvent?.fireNavigationEvent(
+          metricsViewName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          MetricsEventScreenName.Source,
+          MetricsEventScreenName.Canvas,
+        );
+      } else {
+        throw new Error("Failed to create Canvas dashboard");
+      }
+    } catch (err) {
+      eventBus.emit("notification", {
+        message: "Failed to create Canvas dashboard for " + tableName,
+        detail: err.response?.data?.message ?? err.message,
+      });
+    }
+
+    // Done, remove the overlay
+    overlay.set(null);
+  };
+}
+
+/**
  * Wrapper function that creates metrics view, explore dashboard, and canvas dashboard from a table.
  * Navigates to canvas dashboard if successful, otherwise falls back to explore dashboard.
  *
@@ -584,63 +744,27 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       },
     });
 
-    // Get a unique name
-    const newMetricsViewName = getName(
-      `${tableName}_metrics`,
-      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
-    );
-    const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
-
     let exploreFilePath: string | null = null;
     let canvasFilePath: string | null = null;
+    let metricsViewName: string | undefined;
 
     try {
-      // Step 1: Request an AI-generated metrics view
-      void runtimeServiceGenerateMetricsViewFileWithSignal(
+      // Step 1: Create metrics view
+      const resource = await createMetricsViewFromTable(
         instanceId,
-        {
-          connector: connector,
-          database: database,
-          databaseSchema: databaseSchema,
-          table: tableName,
-          path: newMetricsViewFilePath,
-          useAi: isAiEnabled,
-        },
-        abortController.signal,
+        connector,
+        database,
+        databaseSchema,
+        tableName,
+        abortController,
       );
 
-      // Poll until file creation is complete or canceled
-      const fileCreated = await pollForFileCreation(
-        instanceId,
-        newMetricsViewFilePath,
-        abortController.signal,
-      );
-
-      // If the user canceled the AI request, submit another request with `useAi=false`
-      if (!fileCreated) {
-        await runtimeServiceGenerateMetricsViewFile(instanceId, {
-          connector: connector,
-          database: database,
-          databaseSchema: databaseSchema,
-          table: tableName,
-          path: newMetricsViewFilePath,
-          useAi: false,
-        });
+      metricsViewName = resource.meta?.name?.name;
+      if (!metricsViewName) {
+        throw new Error("Failed to get metrics view name");
       }
 
-      // Step 2: Get the Metrics View resource
-      const metricsViewResource = fileArtifacts
-        .getFileArtifact(newMetricsViewFilePath)
-        .getResource(queryClient, instanceId);
-
-      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
-
-      const resource = get(metricsViewResource).data;
-      if (!resource) {
-        throw new Error("Failed to create a Metrics View resource");
-      }
-
-      // Step 3: Create Explore dashboard (without navigation)
+      // Step 2: Create Explore dashboard (without navigation)
       overlay.set({
         title: `Creating Explore dashboard...`,
         detail: {
@@ -659,7 +783,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
         resource,
       );
 
-      // Step 4: Try to create Canvas dashboard
+      // Step 3: Try to create Canvas dashboard
       overlay.set({
         title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
         detail: {
@@ -674,14 +798,14 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
 
       canvasFilePath = await createCanvasDashboardWithoutNavigation(
         instanceId,
-        newMetricsViewName,
+        metricsViewName,
       );
 
-      // Step 5: Navigate to Canvas if successful, otherwise Explore
+      // Step 4: Navigate to Canvas if successful, otherwise Explore
       if (canvasFilePath) {
         await goto(`/files${canvasFilePath}`);
         void behaviourEvent?.fireNavigationEvent(
-          newMetricsViewName,
+          metricsViewName,
           behaviourEventMedium,
           metricsEventSpace,
           MetricsEventScreenName.Source,
@@ -690,7 +814,7 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       } else if (exploreFilePath) {
         await goto(`/files${exploreFilePath}`);
         void behaviourEvent?.fireNavigationEvent(
-          newMetricsViewName,
+          metricsViewName,
           behaviourEventMedium,
           metricsEventSpace,
           MetricsEventScreenName.Source,
@@ -707,10 +831,10 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
       });
 
       // If we have an explore path but canvas failed, navigate to explore
-      if (exploreFilePath) {
+      if (exploreFilePath && metricsViewName) {
         await goto(`/files${exploreFilePath}`);
         void behaviourEvent?.fireNavigationEvent(
-          newMetricsViewName,
+          metricsViewName,
           behaviourEventMedium,
           metricsEventSpace,
           MetricsEventScreenName.Source,
@@ -726,7 +850,6 @@ export function useCreateMetricsViewWithCanvasAndExploreUIAction(
 
 /**
  * Creates a Canvas dashboard from a metrics view using AI.
- * This function is called from the "Create Canvas Dashboard" button on the metrics view page.
  */
 export async function createCanvasDashboardFromMetricsView(
   instanceId: string,

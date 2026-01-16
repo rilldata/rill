@@ -1,12 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -14,10 +17,11 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { GitBranch, WandIcon } from "lucide-svelte";
+  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
-  import { GitBranch } from "lucide-svelte";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
+
+  const { ai, generateCanvas } = featureFlags;
 
   export let filePath: string;
 
@@ -37,6 +41,8 @@
   )?.[0]?.name;
 
   $: hasMenuItems = Boolean(referenceModelName || resource);
+
+  $: metricsViewName = resource?.meta?.name?.name;
 
   const editModel = async () => {
     if (!referenceModelName) return;
@@ -65,13 +71,37 @@
     }
     openResourceGraphQuickView(resource);
   }
+
+  async function handleCreateCanvasDashboard() {
+    if (!metricsViewName) return;
+    await createCanvasDashboardFromMetricsView(instanceId, metricsViewName);
+  }
 </script>
 
 {#if hasMenuItems}
   {#if referenceModelName}
     <NavigationMenuItem on:click={editModel}>
       <Model slot="icon" />
-      Edit model
+      Edit underlying model
+    </NavigationMenuItem>
+  {/if}
+  <NavigationMenuItem on:click={viewGraph}>
+    <GitBranch slot="icon" size="14px" />
+    View DAG graph
+  </NavigationMenuItem>
+  {#if resource && $generateCanvas}
+    <NavigationMenuItem
+      disabled={!metricsViewName}
+      on:click={handleCreateCanvasDashboard}
+    >
+      <CanvasIcon slot="icon" />
+      <div class="flex gap-x-2 items-center">
+        Generate Canvas Dashboard
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
     </NavigationMenuItem>
   {/if}
   {#if resource}
@@ -80,13 +110,18 @@
         createAndPreviewExplore(queryClient, instanceId, resource)}
     >
       <ExploreIcon slot="icon" />
-      Generate dashboard
+      <div class="flex gap-x-2 items-center">
+        Generate Explore Dashboard
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </div>
     </NavigationMenuItem>
   {/if}
-  <NavigationMenuSeparator />
+{:else}
+  <NavigationMenuItem on:click={viewGraph}>
+    <GitBranch slot="icon" size="14px" />
+    View DAG graph
+  </NavigationMenuItem>
 {/if}
-
-<NavigationMenuItem on:click={viewGraph}>
-  <GitBranch slot="icon" size="14px" />
-  View dependency graph
-</NavigationMenuItem>

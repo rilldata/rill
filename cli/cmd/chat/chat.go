@@ -22,7 +22,7 @@ import (
 )
 
 func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
-	var project, path string
+	var project, path, branch string
 	var local bool
 
 	chatCmd := &cobra.Command{
@@ -47,7 +47,7 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Connect to the runtime
-			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
+			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, branch, local)
 			if err != nil {
 				return err
 			}
@@ -150,6 +150,7 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 	chatCmd.Flags().SortFlags = false
 	chatCmd.Flags().StringVar(&project, "project", "", "Project name")
 	chatCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	chatCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 	chatCmd.Flags().BoolVar(&local, "local", false, "Target locally running Rill")
 
 	return chatCmd

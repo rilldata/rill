@@ -71,6 +71,9 @@
   });
 
   function goToConnectorForm(connector: V1ConnectorDriver) {
+    // Reset multi-step state (auth selection, connector config) when switching connectors.
+    resetConnectorStep();
+
     const state = {
       step: 2,
       selectedConnector: connector,
@@ -121,7 +124,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
-    selectedConnector?.name === "gcs" ||
+    selectedConnector?.implementsObjectStore ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&

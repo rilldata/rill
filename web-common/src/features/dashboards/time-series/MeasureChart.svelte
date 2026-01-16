@@ -55,7 +55,7 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import ExplainButton from "@rilldata/web-common/features/dashboards/time-series/measure-selection/ExplainButton.svelte";
 
   export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
@@ -86,10 +86,10 @@
   export let scrubEnd;
 
   const { validSpecStore, metricsViewName } = getStateManagers();
-  const { dashboardChat } = featureFlags;
+  const measureSelectionEnabledStore = measureSelection.getEnabledStore();
+  $: measureSelectionEnabled = $measureSelectionEnabledStore;
 
-  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+  export let mouseoverTimeFormat: (d: Date) => string = (v) => v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: axisFormat = createMeasureValueFormatter<null | undefined>(
@@ -216,13 +216,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    const shouldUpdateSelectedRange =
-      $dashboardChat &&
-      !isScrubbing &&
-      measureSelection.hasSelection() &&
-      // Type safety
-      measure.name &&
-      TIME_GRAIN[timeGrain];
+    const shouldUpdateSelectedRange = measureSelectionEnabled && !isScrubbing;
     if (shouldUpdateSelectedRange) {
       measureSelection.setRange(measure.name!, start, end);
     }
@@ -279,13 +273,13 @@
     if (mouseOutsideOfScrubRange) {
       resetScrub();
       measureSelection.clear();
-    } else if (measure.name && $dashboardChat) {
+    } else if (measure.name && measureSelectionEnabled) {
       measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
   }
 
   function maybeSelectMeasureHoverTime() {
-    if (!$dashboardChat) return;
+    if (!measureSelectionEnabled) return;
     const hasValidMeasureSelectionTarget =
       hoveredTime && measure.name && TIME_GRAIN[timeGrain];
     if (!hasValidMeasureSelectionTarget) return;
@@ -436,11 +430,10 @@
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
 
-    {#if $dashboardChat}
+    {#if measureSelectionEnabled}
       <MeasureSelection
         {data}
         measureName={measure.name ?? ""}
-        metricsViewName={$metricsViewName}
         {xAccessor}
         {yAccessor}
         {internalXMin}
@@ -454,4 +447,11 @@
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->
   <AnnotationGroupPopover {annotationsStore} />
+
+  {#if measureSelectionEnabled}
+    <ExplainButton
+      measureName={measure.name ?? ""}
+      metricsViewName={$metricsViewName}
+    />
+  {/if}
 </div>

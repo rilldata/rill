@@ -1,9 +1,15 @@
 <script lang="ts">
-  import CanvasEmbed from "@rilldata/web-admin/features/embeds/CanvasEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
+  import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ instanceId, canvasName, navigationEnabled } = data);
+
+  $: ({ canvasName, instanceId, navigationEnabled } = data);
 </script>
 
-<CanvasEmbed {instanceId} {canvasName} {navigationEnabled} />
+{#key instanceId}
+  <CanvasProvider {canvasName} {instanceId} showBanner>
+    <CanvasDashboardEmbed {canvasName} {navigationEnabled} />
+  </CanvasProvider>
+{/key}

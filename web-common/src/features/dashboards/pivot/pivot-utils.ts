@@ -19,6 +19,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { Row } from "@tanstack/svelte-table";
+import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
@@ -52,7 +54,12 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     pivot,
   } = config;
 
-  const { sorting, tableMode: tableModeKey } = pivot;
+  const {
+    sorting,
+    tableMode: tableModeKey,
+    rowLimit,
+    outermostRowLimit,
+  } = pivot;
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
@@ -61,7 +68,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
 }
 
 /**
@@ -638,6 +645,7 @@ export function getErrorFromResponse(
   return {
     statusCode: queryResult?.error?.response?.status || null,
     message: queryResult?.error?.response?.data?.message,
+    traceId: queryResult?.error?.traceId,
   };
 }
 
@@ -675,4 +683,12 @@ export function splitPivotChips(data: PivotChipData[]): {
     dimension: data?.filter((c) => c.type !== PivotChipType.Measure) || [],
     measure: data?.filter((c) => c.type === PivotChipType.Measure) || [],
   };
+}
+
+/**
+ * Check if a row is a "show more" button row by inspecting the first cell value
+ */
+export function isShowMoreRow(row: Row<PivotDataRow>): boolean {
+  const firstCell = row?.getVisibleCells()?.[0];
+  return firstCell?.getValue() === SHOW_MORE_BUTTON;
 }

@@ -34,7 +34,7 @@ export async function wakeAllProjects(organization: string) {
       if (projectsResp.projects.length === 0) break;
 
       projectsResp.projects.forEach((project) => {
-        if (project.prodDeploymentId) return;
+        if (project.primaryDeploymentId) return;
         promises.push(redeployProject(organization, project, projectDeployer));
       });
       pageToken = projectsResp.nextPageToken;

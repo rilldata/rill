@@ -18,10 +18,10 @@ export function useDashboardsLastUpdated(
     ],
     ([dashboardsResp, projResp]) => {
       if (!dashboardsResp.data?.length) {
-        if (!projResp.data?.prodDeployment?.updatedOn) return undefined;
+        if (!projResp.data?.deployment?.updatedOn) return undefined;
 
         // return project's last updated if there are no dashboards
-        return new Date(projResp.data.prodDeployment.updatedOn);
+        return new Date(projResp.data.deployment.updatedOn);
       }
 
       const max = Math.max(
@@ -42,6 +42,7 @@ export function useDashboards(
       select: (data) => {
         return data.resources.filter((res) => res.canvas || res.explore);
       },
+      enabled: !!instanceId,
       refetchInterval: createSmartRefetchInterval,
     },
   });

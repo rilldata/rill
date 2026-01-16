@@ -1069,6 +1069,10 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		return nil, nil
 	}
 
+	if spine.Where != nil && spine.TimeRange != nil {
+		return nil, errors.New("spine cannot have both 'where' and 'time_range'")
+	}
+
 	if spine.Where != nil {
 		// Using buildWhereForUnderlyingTable to include security filters.
 		// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
@@ -1128,7 +1132,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			}
 		}
 
-		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz)
+		sel, args, err := a.Dialect.SelectTimeRangeBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToProto(), timeAlias, tz, int(a.MetricsView.FirstDayOfWeek), int(a.MetricsView.FirstMonthOfYear))
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate time spine: %w", err)
 		}

@@ -10,7 +10,10 @@ import {
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ExploreTimeRange,
+  V1TimeRangeSummary,
+} from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
@@ -333,6 +336,7 @@ export async function deriveInterval(
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
+  fullTimeRange?: V1TimeRangeSummary;
   error?: string;
 }> {
   if (name === CUSTOM_TIME_RANGE_ALIAS) {
@@ -369,6 +373,7 @@ export async function deriveInterval(
         DateTime.fromISO(timeRange.start).setZone(activeTimeZone),
         DateTime.fromISO(timeRange.end).setZone(activeTimeZone),
       ),
+      fullTimeRange: response.fullTimeRange,
       grain: parsed.asOfLabel?.snap
         ? GrainAliasToV1TimeGrain[parsed.asOfLabel?.snap]
         : parsed.rangeGrain,
@@ -657,7 +662,7 @@ export function convertLegacyTime(timeString: string) {
 }
 
 export function constructAsOfString(
-  asOf: RillTimeLabel | undefined,
+  asOf: RillTimeLabel | string | undefined,
   grain: V1TimeGrain | undefined | null,
   pad: boolean,
 ): string {
@@ -704,7 +709,7 @@ export function constructNewString({
   currentString: string;
   truncationGrain: V1TimeGrain | undefined | null;
   snapToEnd: boolean;
-  ref: RillTimeLabel | undefined;
+  ref: RillTimeLabel | string | undefined;
 }): string {
   const legacy = isUsingLegacyTime(currentString);
 
