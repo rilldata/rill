@@ -73,7 +73,9 @@ export function getSchemaFieldMetaList(
 ): SchemaFieldMeta[] {
   const properties = schema.properties ?? {};
   const required = new Set<string>(
-    (schema.required ?? []).filter((key) => isStepMatch(schema, key, opts?.step)),
+    (schema.required ?? []).filter((key) =>
+      isStepMatch(schema, key, opts?.step),
+    ),
   );
 
   return Object.entries(properties)
@@ -285,9 +287,7 @@ export function getRequiredFieldsByEnumValue(
 }
 
 function matchesCondition(
-  condition:
-    | Record<string, { const?: string | number | boolean }>
-    | undefined,
+  condition: Record<string, { const?: string | number | boolean }> | undefined,
   values: Record<string, unknown>,
 ) {
   if (!condition || !Object.keys(condition).length) return false;

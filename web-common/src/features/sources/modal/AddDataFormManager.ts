@@ -160,7 +160,6 @@ export class AddDataFormManager {
     this.dsnFormId = `add-data-${connector.name}-dsn-form`;
 
     const isSourceForm = formType === "source";
-    const isConnectorForm = formType === "connector";
     const schema = getConnectorSchema(connector.name ?? "");
     const schemaStep = isSourceForm ? "source" : "connector";
     const schemaFields = schema

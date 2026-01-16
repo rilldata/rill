@@ -491,22 +491,6 @@
             </AddDataFormSection>
           </TabsContent>
         </Tabs>
-      {:else if isConnectorForm && usesLegacyTabs && onlyDsn}
-        <!-- Connector with only DSN - show DSN form directly -->
-        <AddDataFormSection
-          id={dsnFormId}
-          enhance={dsnEnhance}
-          onSubmit={dsnSubmit}
-        >
-          <JSONSchemaFormRenderer
-            schema={dsnSchema}
-            step={isConnectorForm ? "connector" : "source"}
-            form={dsnForm}
-            errors={$dsnErrors}
-            {onStringInputChange}
-            {handleFileUpload}
-          />
-        </AddDataFormSection>
       {:else if isMultiStepConnector}
         <MultiStepConnectorFlow
           {connector}
