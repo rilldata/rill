@@ -52,11 +52,7 @@ export function getComparisonOptionsForCanvas(
   }[] = [];
 
   timeComparisonOptions.forEach((co, i) => {
-    const comparisonTimeRange = getComparisonInterval(
-      interval as Interval<true>,
-      co,
-      timezone,
-    );
+    const comparisonTimeRange = getComparisonInterval(interval, co, timezone);
 
     if (!comparisonTimeRange) return;
     options.push({
