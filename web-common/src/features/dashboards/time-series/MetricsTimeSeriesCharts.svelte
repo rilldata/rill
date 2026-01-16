@@ -589,12 +589,14 @@
                 ? bigNum
                 : null}
               mouseoverTimeFormat={(value) => {
-                /** format the date according to the time grain */
-
+                // This date comes back in the user's local timezone, but has the correct time value
+                // For rendering purposes, we can just switch the zone to the selected timezone while keeping the local time
+                // This is technically unnecessary since the time value is "correct", but it's safer in case any formatting logic depends on the zone
                 return formatDateTimeByGrain(
-                  DateTime.fromJSDate(value, {
-                    zone: $exploreState?.selectedTimezone,
-                  }),
+                  DateTime.fromJSDate(value).setZone(
+                    $exploreState?.selectedTimezone || "UTC",
+                    { keepLocalTime: true },
+                  ),
                   effectiveGrain,
                 );
               }}
