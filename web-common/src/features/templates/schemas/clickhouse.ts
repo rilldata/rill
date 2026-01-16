@@ -25,6 +25,11 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder":
         "clickhouse://localhost:9000?username=default&password=password",
       "x-step": "connector",
+      // DSN is handled separately in the DSN tab, so hide it from parameters form
+      // Using a condition that will never match to hide it
+      "x-visible-if": {
+        connector_type: "__never_show__",
+      },
     },
     managed: {
       type: "boolean",
@@ -33,6 +38,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "Use a managed ClickHouse instance (handled automatically by Rill)",
       default: false,
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: "rill-managed",
+      },
     },
     host: {
       type: "string",
@@ -43,6 +51,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-hint":
         "Your ClickHouse hostname (e.g., your-instance.clickhouse.cloud or your-server.com)",
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
     port: {
       type: "string",
@@ -53,6 +64,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "9000",
       "x-placeholder": "9000",
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
     username: {
       type: "string",
@@ -61,6 +75,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
     password: {
       type: "string",
@@ -69,6 +86,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       "x-placeholder": "Database password",
       "x-secret": true,
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
     database: {
       type: "string",
@@ -77,6 +97,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "default",
       "x-placeholder": "default",
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
     cluster: {
       type: "string",
@@ -85,6 +108,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "Cluster name. If set, models are created as distributed tables.",
       "x-placeholder": "Cluster name",
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
     ssl: {
       type: "boolean",
@@ -92,6 +118,9 @@ export const clickhouseSchema: MultiStepFormSchema = {
       description: "Use SSL to connect to the ClickHouse server",
       default: true,
       "x-step": "connector",
+      "x-visible-if": {
+        connector_type: ["self-hosted", "clickhouse-cloud"],
+      },
     },
   },
   required: ["connector_type"],

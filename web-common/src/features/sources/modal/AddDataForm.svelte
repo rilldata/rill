@@ -2,6 +2,7 @@
   import { Button } from "@rilldata/web-common/components/button";
 
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
@@ -25,7 +26,6 @@
     AddDataFormManager,
     type ClickhouseUiState,
   } from "./AddDataFormManager";
-  import ClickhouseFormRenderer from "./ClickhouseFormRenderer.svelte";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get, type Writable } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
@@ -124,7 +124,29 @@
   const connectorSchema = getConnectorSchema(connector.name ?? "");
   const hasSchema = Boolean(connectorSchema);
 
-  // ClickHouse-specific derived state handled by the manager
+  // ClickHouse-specific: sync connector_type from form to clickhouseConnectorType
+  $: if (connector.name === "clickhouse" && $paramsForm.connector_type) {
+    const formConnectorType =
+      $paramsForm.connector_type as ClickHouseConnectorType;
+    if (formConnectorType !== clickhouseConnectorType) {
+      clickhouseConnectorType = formConnectorType;
+    }
+  }
+
+  // ClickHouse-specific: sync clickhouseConnectorType to form
+  $: if (connector.name === "clickhouse") {
+    if ($paramsForm.connector_type !== clickhouseConnectorType) {
+      paramsForm.update(
+        ($form) => ({
+          ...$form,
+          connector_type: clickhouseConnectorType,
+        }),
+        { taint: false } as any,
+      );
+    }
+  }
+
+  // ClickHouse-specific derived state handled by the manager (for backward compatibility during transition)
   $: if (connector.name === "clickhouse") {
     clickhouseUiState = formManager.computeClickhouseState({
       connectorType: clickhouseConnectorType,
@@ -372,23 +394,65 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if connector.name === "clickhouse"}
-        <ClickhouseFormRenderer
-          bind:connectionTab
-          bind:clickhouseConnectorType
-          {clickhouseUiState}
-          {paramsFormId}
-          {paramsEnhance}
-          {paramsSubmit}
-          {paramsErrors}
-          {paramsFormStore}
-          {dsnFormId}
-          {dsnEnhance}
-          {dsnSubmit}
-          {dsnErrors}
-          {dsnFormStore}
-          {onStringInputChange}
-        />
+      {#if connector.name === "clickhouse" && hasSchema}
+        <!-- ClickHouse with schema-based rendering -->
+        {#if $paramsForm.connector_type === "rill-managed"}
+          <!-- Rill-managed: no tabs, just show informational message and schema form -->
+          <div class="mb-4">
+            <InformationalField
+              description="This option uses ClickHouse as an OLAP engine with Rill-managed infrastructure. No additional configuration is required - Rill will handle the setup and management of your ClickHouse instance."
+            />
+          </div>
+          <AddDataFormSection
+            id={paramsFormId}
+            enhance={paramsEnhance}
+            onSubmit={paramsSubmit}
+          >
+            <JSONSchemaFormRenderer
+              schema={connectorSchema}
+              step={isConnectorForm ? "connector" : "source"}
+              form={paramsForm}
+              errors={$paramsErrors}
+              {onStringInputChange}
+              {handleFileUpload}
+            />
+          </AddDataFormSection>
+        {:else}
+          <!-- Self-hosted or ClickHouse Cloud: show tabs -->
+          <Tabs bind:value={connectionTab} options={CONNECTION_TAB_OPTIONS}>
+            <TabsContent value="parameters">
+              <AddDataFormSection
+                id={paramsFormId}
+                enhance={paramsEnhance}
+                onSubmit={paramsSubmit}
+              >
+                <JSONSchemaFormRenderer
+                  schema={connectorSchema}
+                  step={isConnectorForm ? "connector" : "source"}
+                  form={paramsForm}
+                  errors={$paramsErrors}
+                  {onStringInputChange}
+                  {handleFileUpload}
+                />
+              </AddDataFormSection>
+            </TabsContent>
+            <TabsContent value="dsn">
+              <AddDataFormSection
+                id={dsnFormId}
+                enhance={dsnEnhance}
+                onSubmit={dsnSubmit}
+              >
+                <FormRenderer
+                  properties={filteredDsnProperties}
+                  form={dsnForm}
+                  errors={$dsnErrors}
+                  {onStringInputChange}
+                  uploadFile={handleFileUpload}
+                />
+              </AddDataFormSection>
+            </TabsContent>
+          </Tabs>
+        {/if}
       {:else if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}

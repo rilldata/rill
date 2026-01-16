@@ -3,6 +3,7 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import { normalizeErrors } from "./error-utils";
   import type { JSONSchemaField } from "./schemas/types";
 
@@ -18,9 +19,24 @@
     | Array<{ value: string; label: string; description?: string }>
     | undefined;
   export let name: string | undefined;
+  export let disabled: boolean | undefined = undefined;
+
+  // Support for dropdown options via x-options in schema
+  $: inputOptions = prop["x-options"] as
+    | Array<{ value: string; label: string }>
+    | undefined;
+  $: isDisabled =
+    disabled !== undefined ? disabled : prop["x-disabled"] === true;
+  $: isInformational = prop["x-informational"] === true;
 </script>
 
-{#if prop["x-display"] === "file" || prop.format === "file"}
+{#if isInformational}
+  <InformationalField
+    description={prop.description ?? prop["x-hint"]}
+    hint={prop["x-hint"]}
+    href={String(prop["x-docs-url"] || "")}
+  />
+{:else if prop["x-display"] === "file" || prop.format === "file"}
   <CredentialsInput
     {id}
     label={prop.title ?? id}
@@ -37,6 +53,7 @@
     label={prop.title ?? id}
     hint={prop.description ?? prop["x-hint"]}
     {optional}
+    disabled={isDisabled}
   />
 {:else if options?.length}
   <Radio bind:value {options} {name} />
@@ -52,5 +69,7 @@
     bind:value
     onInput={(_, e) => onStringInputChange(e)}
     alwaysShowError
+    options={inputOptions}
+    disabled={isDisabled}
   />
 {/if}
