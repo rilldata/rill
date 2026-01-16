@@ -85,6 +85,7 @@ export interface PivotTimeConfig {
 export interface PivotQueryError {
   statusCode: number | null;
   message?: string;
+  traceId?: string;
 }
 
 /**

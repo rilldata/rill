@@ -57,7 +57,7 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if res.ProdDeployment != nil {
+				if res.Deployment != nil {
 					return fmt.Errorf("the project %q in the organization %q is not hibernated", project, ch.Org)
 				}
 			}

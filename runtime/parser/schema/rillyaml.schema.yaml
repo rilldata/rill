@@ -191,9 +191,3 @@ allOf:
       prod:
         type: object
         description: Overrides any properties in production environment.
-      
-
-
-
-      
-      

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/inline-context-plugins.ts";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.ts";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
@@ -18,7 +18,7 @@
 
   let value = "";
 
-  $: ({ placeholder, additionalContextStoreGetter, enableMention } = config);
+  $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -80,7 +80,6 @@
     editor = new Editor({
       element,
       extensions: getEditorPlugins({
-        enableMention,
         placeholder,
         onSubmit: () => void sendMessage(),
       }),
@@ -119,11 +118,9 @@
 >
   <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
-    {#if enableMention}
-      <button class="text-base ml-1" type="button" on:click={startMention}>
-        @
-      </button>
-    {/if}
+    <button class="text-base ml-1" type="button" on:click={startMention}>
+      @
+    </button>
     <div class="grow"></div>
     <div>
       {#if canCancel}

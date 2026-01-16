@@ -645,6 +645,7 @@ export function getErrorFromResponse(
   return {
     statusCode: queryResult?.error?.response?.status || null,
     message: queryResult?.error?.response?.data?.message,
+    traceId: queryResult?.error?.traceId,
   };
 }
 

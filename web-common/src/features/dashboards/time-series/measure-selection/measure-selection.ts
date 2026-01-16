@@ -1,14 +1,17 @@
 import {
   InlineContextType,
   type InlineContext,
+  convertContextToInlinePrompt,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { get, writable } from "svelte/store";
-import { convertContextToInlinePrompt } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 import type {
   GraphicScale,
   SimpleDataGraphicConfiguration,
 } from "@rilldata/web-common/components/data-graphic/state/types";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+import { derived } from "svelte/store";
 
 export class MeasureSelection {
   public readonly measure = writable<string | null>(null);
@@ -80,6 +83,7 @@ export class MeasureSelection {
 
     const measureMention = convertContextToInlinePrompt({
       type: InlineContextType.Measure,
+      value: measure,
       metricsView,
       measure,
     });
@@ -103,6 +107,15 @@ export class MeasureSelection {
       `What dimensions have noticeably changed, as compared to other time windows?`;
 
     sidebarActions.startChat(prompt);
+  }
+
+  public getEnabledStore() {
+    return derived(
+      [featureFlags.dashboardChat, getExploreNameStore()],
+      ([dashboardChat, exploreName]) => {
+        return Boolean(dashboardChat && exploreName);
+      },
+    );
   }
 }
 
