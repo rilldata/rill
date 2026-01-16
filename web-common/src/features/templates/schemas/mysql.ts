@@ -12,7 +12,14 @@ export const mysqlSchema: MultiStepFormSchema = {
       "x-display": "tabs",
       "x-enum-labels": ["Enter parameters", "Enter connection string"],
       "x-tab-group": {
-        parameters: ["host", "port", "database", "user", "password", "ssl-mode"],
+        parameters: [
+          "host",
+          "port",
+          "database",
+          "user",
+          "password",
+          "ssl-mode",
+        ],
         dsn: ["dsn"],
       },
     },

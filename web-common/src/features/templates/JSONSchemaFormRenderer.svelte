@@ -23,16 +23,14 @@
   $: tabGroupedFields = schema
     ? buildTabGroupedFields(schema, stepFilter)
     : new Map<string, Record<string, string[]>>();
-  $: groupedChildKeys = new Set(
-    [
-      ...Array.from(groupedFields.values()).flatMap((group) =>
-        Object.values(group).flat(),
-      ),
-      ...Array.from(tabGroupedFields.values()).flatMap((group) =>
-        Object.values(group).flat(),
-      ),
-    ],
-  );
+  $: groupedChildKeys = new Set([
+    ...Array.from(groupedFields.values()).flatMap((group) =>
+      Object.values(group).flat(),
+    ),
+    ...Array.from(tabGroupedFields.values()).flatMap((group) =>
+      Object.values(group).flat(),
+    ),
+  ]);
   $: visibleEntries = schema
     ? computeVisibleEntries(schema, stepFilter, $form)
     : [];
@@ -368,7 +366,7 @@
         {#if prop.title}
           <div class="text-sm font-medium mb-3">{prop.title}</div>
         {/if}
-        <Tabs bind:value={$form[key]} options={options} disableMarginTop>
+        <Tabs bind:value={$form[key]} {options} disableMarginTop>
           {#each options as option}
             <TabsContent value={option.value}>
               {#if tabGroupedFields.get(key)}
