@@ -26,10 +26,11 @@ type WriteFileArgs struct {
 }
 
 type WriteFileResult struct {
-	Diff       string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
-	IsNewFile  bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
-	Resources  []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
-	ParseError string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	Diff                 string           `json:"diff,omitempty" jsonschema:"Diff of the file contents."`
+	IsNewFile            bool             `json:"is_new_file,omitempty" jsonschema:"Indicates if the tool created a new file."`
+	Resources            []map[string]any `json:"resources,omitempty" jsonschema:"The Rill resources declared in the file, if any."`
+	ParseError           string           `json:"parse_error,omitempty" jsonschema:"Parse error encountered when parsing the file, if any."`
+	CheckpointCommitHash string           `json:"checkpoint_commit_hash,omitempty" jsonschema:"The commit hash of the checkpoint just before writing any file in the current message chain."`
 }
 
 func (t *WriteFile) Spec() *mcp.Tool {
@@ -50,6 +51,11 @@ func (t *WriteFile) CheckAccess(ctx context.Context) (bool, error) {
 
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {
 	s := GetSession(ctx)
+
+	checkpointCommitHash, err := t.maybeCreateCheckpoint(ctx, s)
+	if err != nil {
+		return nil, err
+	}
 
 	if !strings.HasPrefix(args.Path, "/") {
 		args.Path = "/" + args.Path
@@ -97,10 +103,11 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 
 	// Done
 	return &WriteFileResult{
-		Diff:       diff,
-		IsNewFile:  isNewFile,
-		Resources:  resources,
-		ParseError: parseErr,
+		Diff:                 diff,
+		IsNewFile:            isNewFile,
+		Resources:            resources,
+		ParseError:           parseErr,
+		CheckpointCommitHash: checkpointCommitHash,
 	}, nil
 }
 
@@ -155,4 +162,48 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 		})
 	}
 	return resources, "", nil
+}
+
+// maybeCreateCheckpoint creates a checkpoint if this is the 1st write file message in the current message chain.
+func (t *WriteFile) maybeCreateCheckpoint(ctx context.Context, s *Session) (string, error) {
+	// Find a write file message in the current message chain.
+	var msg *Message
+	for i := len(s.messages) - 1; i >= 0; i-- {
+		if s.messages[i].Tool == WriteFileName && s.messages[i].Type == MessageTypeResult {
+			msg = s.messages[i]
+		}
+
+		if s.messages[i].Role == RoleUser {
+			break
+		}
+	}
+
+	// If there is already a write file message then we dont need to create a checkpoint.
+	if msg != nil {
+		return "", nil
+	}
+
+	repo, release, err := t.Runtime.Repo(ctx, s.InstanceID())
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
+	// Get the status of the repo
+	gitStatus, err := repo.Status(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// If there are local changes, commit them. Otherwise, just return the current commit hash.
+	var hash string
+	if gitStatus.LocalChanges {
+		hash, err = repo.Commit(ctx, "Checkpoint") // TODO: message
+	} else {
+		hash, err = repo.CommitHash(ctx)
+	}
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
 }

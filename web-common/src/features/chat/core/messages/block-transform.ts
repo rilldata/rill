@@ -82,7 +82,6 @@ export function transformToBlocks(
 
     const block = createDevelopBlock(
       developMessages,
-      resultsByToolName.get(ToolName.DEVELOPER_AGENT),
       `develop-${blocks.length}`,
       resultsById,
     );
@@ -95,7 +94,7 @@ export function transformToBlocks(
 
     switch (routing.route) {
       case "text":
-        // Text blocks close any open thinking block
+        // Text blocks close any open blocks
         flushThinking(true);
         flushDevelop();
         blocks.push(createTextBlock(msg));
@@ -137,7 +136,6 @@ export function transformToBlocks(
   // Flush any remaining thinking messages
   const isRemainingComplete = !isStreaming && !isConversationLoading;
   flushThinking(isRemainingComplete);
-  flushDevelop();
 
   // Add working indicator if AI is still processing
   if (shouldShowWorking(blocks, isStreaming, isConversationLoading)) {

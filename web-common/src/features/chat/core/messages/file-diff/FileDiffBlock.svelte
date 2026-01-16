@@ -3,15 +3,16 @@
   Shows the diff visualization with expandable request/response details.
 -->
 <script lang="ts">
+  import { builderActions, getAttrs } from "bits-ui";
+  import * as Collapsible from "../../../../../components/collapsible";
   import { html } from "diff2html";
   import "diff2html/bundles/css/diff2html.min.css";
   import DOMPurify from "dompurify";
-  import type { V1Tool } from "../../../../../runtime-client";
-  import ToolCall from "../tools/ToolCall.svelte";
   import type { FileDiffBlock } from "./file-diff-block";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
 
   export let block: FileDiffBlock;
-  export let tools: V1Tool[] | undefined = undefined;
 
   // Generate and sanitize diff HTML
   $: diffHtml = block.diff
@@ -23,18 +24,23 @@
         }),
       )
     : "";
+
+  let isExpanded = false;
 </script>
 
-<div class="file-diff-block">
-  <ToolCall
-    message={block.message}
-    resultMessage={block.resultMessage}
-    {tools}
-    variant="block"
-  />
-
-  <div class="diff-container">
+<Collapsible.Root bind:open={isExpanded} class="w-full">
+  <Collapsible.Trigger asChild let:builder>
     <div class="diff-header">
+      <button
+        {...getAttrs([builder])}
+        use:builderActions={{ builders: [builder] }}
+      >
+        {#if isExpanded}
+          <CaretDownIcon size="14" color="currentColor" />
+        {:else}
+          <CaretUpIcon size="14" color="currentColor" />
+        {/if}
+      </button>
       <a href="/files{block.filePath}" class="file-path-link">
         {block.filePath}
       </a>
@@ -42,6 +48,9 @@
         <span class="new-badge">new</span>
       {/if}
     </div>
+  </Collapsible.Trigger>
+
+  <Collapsible.Content class="ml-8">
     {#if diffHtml}
       <div class="diff-view">
         {@html diffHtml}
@@ -49,21 +58,12 @@
     {:else}
       <div class="no-changes-message">No changes detected</div>
     {/if}
-  </div>
-</div>
+  </Collapsible.Content>
+</Collapsible.Root>
 
 <style lang="postcss">
-  .file-diff-block {
-    @apply w-full max-w-full self-start;
-  }
-
-  /* Diff container */
-  .diff-container {
-    @apply border border-gray-200 rounded-md overflow-hidden;
-  }
-
   .diff-header {
-    @apply flex items-center gap-2 px-3 py-1.5;
+    @apply flex flex-row items-center gap-2 ml-8 px-3 py-1.5 overflow-auto;
     @apply text-xs border-b border-gray-200 bg-gray-100;
   }
 

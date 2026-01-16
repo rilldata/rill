@@ -26,8 +26,7 @@ type DeveloperAgentArgs struct {
 }
 
 type DeveloperAgentResult struct {
-	Response   string `json:"response"`
-	CommitHash string `json:"commit_hash,omitempty" jsonschema:"The commit hash of the file before the write operation."`
+	Response string `json:"response"`
 }
 
 func (t *DeveloperAgent) Spec() *mcp.Tool {
@@ -76,27 +75,6 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		}
 	}
 
-	repo, release, err := t.Runtime.Repo(ctx, s.InstanceID())
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	gitStatus, err := repo.Status(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var hash string
-	if gitStatus.LocalChanges {
-		hash, err = repo.Commit(ctx, "Checkpoint") // TODO: message
-	} else {
-		hash, err = repo.CommitHash(ctx)
-	}
-	if err != nil {
-		return nil, err
-	}
-
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByType(MessageTypeCall), FilterByTool(DeveloperAgentName)))...)
@@ -127,8 +105,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	}
 
 	return &DeveloperAgentResult{
-		Response:   response,
-		CommitHash: hash,
+		Response: response,
 	}, nil
 }
 

@@ -2,16 +2,16 @@
   import { builderActions, getAttrs } from "bits-ui";
   import * as Collapsible from "../../../../../components/collapsible";
   import type { DevelopBlock } from "@rilldata/web-common/features/chat/core/messages/develop/develop-block.ts";
-  import Brain from "@rilldata/web-common/components/icons/Brain.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { IconButton } from "@rilldata/web-common/components/button";
   import { UndoIcon, PenIcon } from "lucide-svelte";
   import { createRuntimeServiceRestoreGitCommit } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import FileDiffBlock from "@rilldata/web-common/features/chat/core/messages/file-diff/FileDiffBlock.svelte";
 
   export let block: DevelopBlock;
 
-  let isExpanded = false;
+  let isExpanded = true; // Make this expanded by default
 
   $: console.log(block);
   $: ({ instanceId } = $runtime);
@@ -57,9 +57,7 @@
   <Collapsible.Content class="w-full max-w-full">
     <div class="develop-content">
       {#each block.diffs as diff}
-        <div>
-          {diff.filePath}
-        </div>
+        <FileDiffBlock block={diff} />
       {/each}
     </div>
   </Collapsible.Content>
@@ -85,7 +83,7 @@
   }
 
   .develop-content {
-    @apply py-1 text-xs leading-relaxed break-words;
+    @apply flex flex-col gap-y-2 py-1 text-xs leading-relaxed break-words;
   }
 
   .develop-content :global(*) {
