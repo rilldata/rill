@@ -210,6 +210,47 @@
   function isRequired(key: string) {
     return requiredFields.has(key);
   }
+
+  // Compute dynamic options based on form values (e.g., port options for clickhouse-cloud)
+  function computeFieldOptions(
+    key: string,
+    prop: JSONSchemaField,
+  ): Array<{ value: string; label: string }> | undefined {
+    const staticOptions = prop["x-options"] as
+      | Array<{ value: string; label: string }>
+      | undefined;
+
+    // ClickHouse-specific: port options based on connector_type
+    if (key === "port" && schema?.properties) {
+      const connectorType = $form["connector_type"];
+      if (connectorType === "clickhouse-cloud") {
+        return [
+          { value: "8443", label: "8443 (HTTPS)" },
+          { value: "9440", label: "9440 (Native Secure)" },
+        ];
+      }
+    }
+
+    return staticOptions;
+  }
+
+  // Compute disabled state based on form values
+  function computeFieldDisabled(
+    key: string,
+    prop: JSONSchemaField,
+  ): boolean {
+    const staticDisabled = prop["x-disabled"] === true;
+
+    // ClickHouse-specific: SSL disabled for clickhouse-cloud
+    if (key === "ssl" && schema?.properties) {
+      const connectorType = $form["connector_type"];
+      if (connectorType === "clickhouse-cloud") {
+        return true; // SSL is required and disabled for clickhouse-cloud
+      }
+    }
+
+    return staticDisabled;
+  }
 </script>
 
 {#if schema}
@@ -239,8 +280,9 @@
                     {handleFileUpload}
                     options={isRadioEnum(childProp)
                       ? radioOptions(childProp)
-                      : undefined}
+                      : computeFieldOptions(childKey, childProp)}
                     name={`${childKey}-radio`}
+                    disabled={computeFieldDisabled(childKey, childProp)}
                   />
                 </div>
               {/each}
@@ -252,15 +294,16 @@
       <div class="py-1.5 first:pt-0 last:pb-0">
         <SchemaField
           id={key}
-          {prop}
+          prop={prop}
           optional={!isRequired(key)}
           errors={errors?.[key]}
           bind:value={$form[key]}
           bind:checked={$form[key]}
           {onStringInputChange}
           {handleFileUpload}
-          options={isRadioEnum(prop) ? radioOptions(prop) : undefined}
+          options={isRadioEnum(prop) ? radioOptions(prop) : computeFieldOptions(key, prop)}
           name={`${key}-radio`}
+          disabled={computeFieldDisabled(key, prop)}
         />
       </div>
     {/if}
