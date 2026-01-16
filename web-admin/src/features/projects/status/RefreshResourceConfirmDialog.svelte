@@ -12,7 +12,8 @@
   export let open = false;
   export let name: string;
   export let onRefresh: () => void;
-  export let refreshType: "full" | "incremental" | "errored-partitions" = "full";
+  export let refreshType: "full" | "incremental" | "errored-partitions" =
+    "full";
 
   function getDialogTitle(type: typeof refreshType): string {
     switch (type) {
@@ -45,10 +46,9 @@
       <AlertDialogDescription>
         <div class="mt-1">
           {#if refreshType === "full"}
-            A full refresh will re-ingest ALL data from scratch.
-            This operation can take a significant amount of time and will update
-            all dependent resources. Only proceed if you're certain this is
-            necessary.
+            A full refresh will re-ingest ALL data from scratch. This operation
+            can take a significant amount of time and will update all dependent
+            resources. Only proceed if you're certain this is necessary.
           {:else if refreshType === "errored-partitions"}
             This will re-run all partitions that failed during their last
             execution. Successfully completed partitions will not be affected.

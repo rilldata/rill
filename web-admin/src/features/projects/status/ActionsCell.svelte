@@ -56,7 +56,11 @@
           <DropdownMenu.Item
             class="font-normal flex items-center"
             on:click={() => {
-              onClickRefreshDialog(resourceName, resourceKind, "errored-partitions");
+              onClickRefreshDialog(
+                resourceName,
+                resourceKind,
+                "errored-partitions",
+              );
             }}
           >
             <div class="flex items-center">
