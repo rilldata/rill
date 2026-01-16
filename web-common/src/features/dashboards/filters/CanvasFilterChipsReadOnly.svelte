@@ -17,19 +17,19 @@
 <div
   class:flex-col={col}
   class:flex-wrap={!col}
-  class="flex gap-y-2 gap-x-2 w-full items-center"
+  class="flex gap-y-2 gap-x-2 w-full flex-none"
   aria-label="Readonly Filter Chips"
 >
-  {#if timeRangeString}
-    <div class="flex gap-x-2">
+  <div class="flex gap-x-2">
+    {#if timeRangeString}
       <TimeRangeReadOnly
         timeRange={{ expression: timeRangeString }}
         comparisonTimeRange={comparisonRange
           ? { expression: comparisonRange }
           : undefined}
       />
-    </div>
-  {/if}
+    {/if}
+  </div>
 
   {#each dimensionFilters as [id, filterData] (id)}
     {@const metricsViewNames = Array.from(filterData.dimensions.keys())}
