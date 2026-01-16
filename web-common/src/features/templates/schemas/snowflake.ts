@@ -4,6 +4,28 @@ export const snowflakeSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   properties: {
+    connection_mode: {
+      type: "string",
+      title: "Connection method",
+      enum: ["parameters", "dsn"],
+      default: "parameters",
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-tab-group": {
+        parameters: [
+          "account",
+          "user",
+          "password",
+          "privateKey",
+          "authenticator",
+          "database",
+          "schema",
+          "warehouse",
+          "role",
+        ],
+        dsn: ["dsn"],
+      },
+    },
     dsn: {
       type: "string",
       title: "Snowflake connection string",

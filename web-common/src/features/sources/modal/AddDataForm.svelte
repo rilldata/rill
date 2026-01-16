@@ -24,9 +24,8 @@
     AddDataFormManager,
     type ClickhouseUiState,
   } from "./AddDataFormManager";
-  import ClickhouseFormRenderer from "./ClickhouseFormRenderer.svelte";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import { get, type Writable } from "svelte/store";
+  import { get } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
   import { propertiesToSchema } from "./properties-to-schema";
 
@@ -116,13 +115,32 @@
   let clickhouseUiState: ClickhouseUiState | null = null;
   let clickhouseSaving = false;
   let effectiveClickhouseSubmitting = false;
-  const paramsFormStore = paramsForm as unknown as Writable<
-    Record<string, any>
-  >;
-  const dsnFormStore = dsnForm as unknown as Writable<Record<string, any>>;
 
   const connectorSchema = getConnectorSchema(connector.name ?? "");
   const hasSchema = Boolean(connectorSchema);
+  const paramsSchema = propertiesToSchema(
+    filteredParamsProperties,
+    isConnectorForm ? "connector" : "source",
+  );
+  const dsnSchema = propertiesToSchema(
+    filteredDsnProperties,
+    isConnectorForm ? "connector" : "source",
+  );
+
+  $: if (connector.name === "clickhouse") {
+    const nextType = ($paramsForm?.connector_type ??
+      clickhouseConnectorType) as ClickHouseConnectorType;
+    if (nextType && nextType !== clickhouseConnectorType) {
+      clickhouseConnectorType = nextType;
+    }
+    const nextTab = $paramsForm?.connection_mode as ConnectorType | undefined;
+    if (
+      (nextTab === "parameters" || nextTab === "dsn") &&
+      nextTab !== connectionTab
+    ) {
+      connectionTab = nextTab;
+    }
+  }
 
   // ClickHouse-specific derived state handled by the manager
   $: if (connector.name === "clickhouse") {
@@ -130,13 +148,13 @@
       connectorType: clickhouseConnectorType,
       connectionTab,
       paramsFormValues: $paramsForm,
-      dsnFormValues: $dsnForm,
+      dsnFormValues: $paramsForm,
       paramsErrors: $paramsErrors,
-      dsnErrors: $dsnErrors,
+      dsnErrors: $paramsErrors,
       paramsForm,
-      dsnForm,
+      dsnForm: paramsForm,
       paramsSubmitting: $paramsSubmitting,
-      dsnSubmitting: $dsnSubmitting,
+      dsnSubmitting: $paramsSubmitting,
     });
 
     if (
@@ -245,7 +263,15 @@
 
   // Reset errors when form is modified
   $: (() => {
-    if (onlyDsn || connectionTab === "dsn") {
+    if (connector.name === "clickhouse") {
+      if ($paramsTainted) {
+        if (connectionTab === "dsn") {
+          dsnError = null;
+        } else {
+          paramsError = null;
+        }
+      }
+    } else if (onlyDsn || connectionTab === "dsn") {
       if ($dsnTainted) dsnError = null;
     } else {
       if ($paramsTainted) paramsError = null;
@@ -275,9 +301,7 @@
     saveAnyway = true;
     const values =
       connector.name === "clickhouse"
-        ? connectionTab === "dsn"
-          ? $dsnForm
-          : $paramsForm
+        ? $paramsForm
         : onlyDsn || connectionTab === "dsn"
           ? $dsnForm
           : $paramsForm;
@@ -288,6 +312,7 @@
       queryClient,
       values,
       clickhouseConnectorType,
+      connectionTab,
     });
     if (result.ok) {
       onClose();
@@ -326,7 +351,7 @@
     dsnFormValues: $dsnForm,
     clickhouseConnectorType,
     clickhouseParamsValues: $paramsForm,
-    clickhouseDsnValues: $dsnForm,
+    clickhouseDsnValues: $paramsForm,
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
@@ -373,22 +398,20 @@
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
       {#if connector.name === "clickhouse"}
-        <ClickhouseFormRenderer
-          bind:connectionTab
-          bind:clickhouseConnectorType
-          {clickhouseUiState}
-          {paramsFormId}
-          {paramsEnhance}
-          {paramsSubmit}
-          {paramsErrors}
-          {paramsFormStore}
-          {dsnFormId}
-          {dsnEnhance}
-          {dsnSubmit}
-          {dsnErrors}
-          {dsnFormStore}
-          {onStringInputChange}
-        />
+        <AddDataFormSection
+          id={paramsFormId}
+          enhance={paramsEnhance}
+          onSubmit={paramsSubmit}
+        >
+          <JSONSchemaFormRenderer
+            schema={connectorSchema}
+            step={isConnectorForm ? "connector" : "source"}
+            form={paramsForm}
+            errors={$paramsErrors}
+            {onStringInputChange}
+            {handleFileUpload}
+          />
+        </AddDataFormSection>
       {:else if hasDsnFormOption}
         <Tabs
           bind:value={connectionTab}
@@ -527,7 +550,7 @@
             : submitting}
           loadingCopy={primaryLoadingCopy}
           form={connector.name === "clickhouse"
-            ? (clickhouseUiState?.formId ?? formId)
+            ? paramsFormId
             : formId}
           submitForm
           type="primary"

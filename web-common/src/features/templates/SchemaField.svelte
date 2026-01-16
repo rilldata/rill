@@ -1,5 +1,6 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
@@ -20,7 +21,13 @@
   export let name: string | undefined;
 </script>
 
-{#if prop["x-display"] === "file" || prop.format === "file"}
+{#if prop["x-informational"]}
+  <InformationalField
+    description={prop.description}
+    hint={prop["x-hint"]}
+    href={prop["x-docs-url"]}
+  />
+{:else if prop["x-display"] === "file" || prop.format === "file"}
   <CredentialsInput
     {id}
     label={prop.title ?? id}
