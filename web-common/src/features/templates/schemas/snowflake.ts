@@ -97,11 +97,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake role",
       "x-placeholder": "your_role",
     },
-    parallel_fetch_limit: {
-      type: "number",
-      title: "Parallel fetch limit",
-      description: "Limit concurrent fetches (leave empty for default)",
-    },
     log_queries: {
       type: "boolean",
       title: "Log queries",

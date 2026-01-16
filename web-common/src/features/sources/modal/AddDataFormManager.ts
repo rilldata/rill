@@ -9,10 +9,7 @@ import {
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
-import {
-  getInitialFormValuesFromProperties,
-  inferSourceName,
-} from "../sourceUtils";
+import { inferSourceName } from "../sourceUtils";
 import {
   submitAddConnectorForm,
   submitAddSourceForm,
@@ -168,52 +165,21 @@ export class AddDataFormManager {
     const schemaStep = isSourceForm ? "source" : "connector";
     const schemaFields = schema
       ? getSchemaFieldMetaList(schema, { step: schemaStep })
-      : null;
+      : [];
 
     // Base properties
-    this.properties =
-      schemaFields ??
-      (isSourceForm
-        ? connector.sourceProperties
-        : connector.configProperties?.filter((p) => p.key !== "dsn")) ??
-      [];
+    this.properties = schemaFields;
 
     // Filter properties based on connector type
-    this.filteredParamsProperties = (() => {
-      if (schemaFields) {
-        return this.properties;
-      }
-      if (connector.name === "duckdb") {
-        return (this.properties as ConnectorDriverProperty[]).filter(
-          (p) => p.key !== "attach" && p.key !== "mode",
-        );
-      }
-      return (this.properties as ConnectorDriverProperty[]).filter(
-        (p) => !p.noPrompt,
-      );
-    })();
+    this.filteredParamsProperties = this.properties;
 
     // DSN properties
-    this.dsnProperties = schemaFields
-      ? []
-      : (connector.configProperties?.filter((p) => p.key === "dsn") ?? []);
+    this.dsnProperties = schemaFields.filter((field) => field.key === "dsn");
     this.filteredDsnProperties = this.dsnProperties;
 
     // DSN flags
-    this.hasDsnFormOption = schemaFields
-      ? false
-      : !!(
-          isConnectorForm &&
-          connector.configProperties?.some((p) => p.key === "dsn") &&
-          connector.configProperties?.some((p) => p.key !== "dsn")
-        );
-    this.hasOnlyDsn = schemaFields
-      ? false
-      : !!(
-          isConnectorForm &&
-          connector.configProperties?.some((p) => p.key === "dsn") &&
-          !connector.configProperties?.some((p) => p.key !== "dsn")
-        );
+    this.hasDsnFormOption = false;
+    this.hasOnlyDsn = false;
 
     // Superforms: params
     const paramsAdapter = getValidationSchemaForConnector(
@@ -222,11 +188,9 @@ export class AddDataFormManager {
     );
     type ParamsOut = Record<string, unknown>;
     type ParamsIn = Record<string, unknown>;
-    const initialFormValues = schemaFields
+    const initialFormValues = schema
       ? getSchemaInitialValues(schema, { step: schemaStep })
-      : getInitialFormValuesFromProperties(
-          this.properties as ConnectorDriverProperty[],
-        );
+      : {};
     const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
@@ -255,9 +219,7 @@ export class AddDataFormManager {
     this.clickhouseInitialValues =
       connector.name === "clickhouse" && schema
         ? getSchemaInitialValues(schema, { step: "connector" })
-        : connector.name === "clickhouse"
-          ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
-          : {};
+        : {};
   }
 
   get isSourceForm(): boolean {
@@ -435,10 +397,9 @@ export class AddDataFormManager {
       activeConnectionTab === "dsn" ? this.dsnFormId : this.paramsFormId;
 
     return {
-      properties: this.properties as Array<ConnectorDriverProperty>,
-      filteredProperties: this
-        .filteredParamsProperties as Array<ConnectorDriverProperty>,
-      dsnProperties: this.dsnProperties as Array<ConnectorDriverProperty>,
+      properties: this.properties,
+      filteredProperties: this.filteredParamsProperties,
+      dsnProperties: this.dsnProperties,
       isSubmitDisabled,
       formId,
       submitting,
@@ -756,11 +717,7 @@ export class AddDataFormManager {
       ? getSchemaStringKeys(schema, { step: "connector" })
       : undefined;
 
-    const connectorPropertiesForPreview =
-      schemaConnectorFields ??
-      (isMultiStepConnector && stepState?.step === "connector"
-        ? (connector.configProperties ?? [])
-        : filteredParamsProperties);
+    const connectorPropertiesForPreview = schemaConnectorFields ?? [];
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
       const filteredValues = schema
@@ -824,8 +781,7 @@ export class AddDataFormManager {
             ? getSchemaFieldMetaList(schema, { step: "connector" })
                 .filter((field) => !field.internal)
                 .map((field) => field.key)
-            : connector.configProperties?.map((p) => p.key).filter(Boolean) ||
-              [],
+            : [],
         );
         filteredValues = Object.fromEntries(
           Object.entries(values).filter(

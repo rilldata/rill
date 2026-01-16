@@ -14,25 +14,18 @@ export const postgresSchema: MultiStepFormSchema = {
       "x-internal": true,
       "x-tab-group": {
         parameters: ["host", "port", "user", "password", "dbname", "sslmode"],
-        dsn: ["dsn", "database_url"],
+        dsn: ["dsn"],
       },
     },
     dsn: {
       type: "string",
       title: "Postgres connection string",
       description:
-        "Full DSN, e.g. postgresql://user:password@host:5432/dbname?sslmode=require",
+        "e.g. postgresql://user:password@host:5432/dbname?sslmode=require",
       "x-placeholder": "postgresql://postgres:postgres@localhost:5432/postgres",
       "x-secret": true,
       "x-hint":
         "Use a DSN or provide host/user/password/dbname below (but not both).",
-    },
-    database_url: {
-      type: "string",
-      title: "Database URL",
-      description: "Alternative DSN field (same as dsn)",
-      "x-placeholder": "postgresql://postgres:postgres@localhost:5432/postgres",
-      "x-secret": true,
     },
     host: {
       type: "string",

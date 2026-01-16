@@ -3,7 +3,6 @@
 
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
-  import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { connectorStepStore, setAuthMethod } from "./connectorStepStore";
   import {
     findRadioEnumKey,
@@ -62,7 +61,7 @@
       : null;
     const initialValues = schema
       ? getSchemaInitialValues(schema, { step: "source" })
-      : getInitialFormValuesFromProperties(connector.sourceProperties ?? []);
+      : {};
     const combinedValues = {
       ...stepState.connectorConfig,
       ...initialValues,
@@ -80,9 +79,7 @@
       ($current) => {
         const base = schema
           ? getSchemaInitialValues(schema, { step: "connector" })
-          : getInitialFormValuesFromProperties(
-              connector.configProperties ?? [],
-            );
+          : {};
         if (activeSchema) {
           const authKey = findRadioEnumKey(activeSchema);
           const persisted = stepState.selectedAuthMethod;

@@ -85,10 +85,7 @@ export function hasOnlyDsn(
     const hasOthers = fields.some((field) => field.key !== "dsn");
     return hasDsn && !hasOthers;
   }
-  const props = connector?.configProperties ?? [];
-  const hasDsn = props.some((p) => p.key === "dsn");
-  const hasOthers = props.some((p) => p.key !== "dsn");
-  return hasDsn && !hasOthers;
+  return false;
 }
 
 /**
