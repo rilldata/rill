@@ -4,6 +4,18 @@ export const postgresSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   properties: {
+    connection_mode: {
+      type: "string",
+      title: "Connection method",
+      enum: ["parameters", "dsn"],
+      default: "parameters",
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-tab-group": {
+        parameters: ["host", "port", "user", "password", "dbname", "sslmode"],
+        dsn: ["dsn", "database_url"],
+      },
+    },
     dsn: {
       type: "string",
       title: "Postgres connection string",

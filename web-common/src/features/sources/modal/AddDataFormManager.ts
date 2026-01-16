@@ -530,6 +530,11 @@ export class AddDataFormManager {
       cancel?: () => void;
     }) => {
       const values = event.form.data;
+      const connectionTab = getConnectionTab();
+      const submitValues =
+        this.connector.name === "clickhouse"
+          ? this.filterClickhouseValues(values, connectionTab)
+          : values;
       const schema = getConnectorSchema(this.connector.name ?? "");
       const authKey = schema ? findRadioEnumKey(schema) : null;
       const selectedAuthMethod =
@@ -594,7 +599,7 @@ export class AddDataFormManager {
           await submitAddSourceForm(
             queryClient,
             connector,
-            values,
+            submitValues,
             connectorInstanceName,
           );
           onClose();
@@ -613,24 +618,26 @@ export class AddDataFormManager {
           const connectorInstanceName = await submitAddConnectorForm(
             queryClient,
             connector,
-            values,
+            submitValues,
             false,
           );
-          const connectorValues = this.filterValuesForStep(values, "connector");
+          const connectorValues = this.filterValuesForStep(
+            submitValues,
+            "connector",
+          );
           setConnectorConfig(connectorValues);
           setConnectorInstanceName(connectorInstanceName);
           setStep("source");
           return;
         } else if (this.formType === "source") {
-          await submitAddSourceForm(queryClient, connector, values);
+          await submitAddSourceForm(queryClient, connector, submitValues);
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          await submitAddConnectorForm(queryClient, connector, submitValues, false);
           onClose();
         }
       } catch (e) {
         const { message, details } = this.normalizeError(e);
-        const connectionTab = getConnectionTab();
         if (isConnectorForm && (this.hasOnlyDsn || connectionTab === "dsn")) {
           setDsnError(message, details);
         } else {
@@ -848,13 +855,16 @@ export class AddDataFormManager {
     queryClient: any;
     values: Record<string, unknown>;
     clickhouseConnectorType?: ClickHouseConnectorType;
+    connectionTab?: "parameters" | "dsn";
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values, clickhouseConnectorType } = args;
+    const { queryClient, values, clickhouseConnectorType, connectionTab } = args;
+    const tab = connectionTab ?? "parameters";
+    const filteredValues = this.filterClickhouseValues(values, tab);
     const processedValues = applyClickHouseCloudRequirements(
       this.connector.name,
       (clickhouseConnectorType as ClickHouseConnectorType) ||
         ("self-hosted" as ClickHouseConnectorType),
-      values,
+      filteredValues,
     );
     try {
       await submitAddConnectorForm(
@@ -868,5 +878,27 @@ export class AddDataFormManager {
       const { message, details } = this.normalizeError(e);
       return { ok: false, message, details } as const;
     }
+  }
+
+  private filterClickhouseValues(
+    values: Record<string, unknown>,
+    connectionTab: "parameters" | "dsn",
+  ): Record<string, unknown> {
+    if (this.connector.name !== "clickhouse") return values;
+    if (connectionTab !== "dsn") {
+      if (!("dsn" in values)) return values;
+      const { dsn: _unused, ...rest } = values;
+      return rest;
+    }
+
+    const allowed = new Set([
+      "dsn",
+      "managed",
+      "connector_type",
+      "connection_mode",
+    ]);
+    return Object.fromEntries(
+      Object.entries(values).filter(([key]) => allowed.has(key)),
+    );
   }
 }

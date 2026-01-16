@@ -19,7 +19,7 @@ export type JSONSchemaField = {
   };
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
-  "x-display"?: "radio" | "select" | "textarea" | "file";
+  "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
   "x-step"?: "connector" | "source";
   "x-secret"?: boolean;
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
@@ -35,6 +35,10 @@ export type JSONSchemaField = {
    * child field keys that should render beneath that option.
    */
   "x-grouped-fields"?: Record<string, string[]>;
+  /**
+   * Group fields under tab options for enum-driven tab layouts.
+   */
+  "x-tab-group"?: Record<string, string[]>;
   // Allow custom keywords such as errorMessage or future x-extensions.
   [key: string]: unknown;
 };

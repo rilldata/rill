@@ -1,5 +1,7 @@
 <script lang="ts">
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
+  import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
   import { isStepMatch, isVisibleForValues } from "./schema-utils";
@@ -12,15 +14,24 @@
   export let handleFileUpload: (file: File) => Promise<string>;
 
   const radioDisplay = "radio";
+  const tabsDisplay = "tabs";
 
   $: stepFilter = step;
   $: groupedFields = schema
     ? buildGroupedFields(schema, stepFilter)
     : new Map<string, Record<string, string[]>>();
+  $: tabGroupedFields = schema
+    ? buildTabGroupedFields(schema, stepFilter)
+    : new Map<string, Record<string, string[]>>();
   $: groupedChildKeys = new Set(
-    Array.from(groupedFields.values()).flatMap((group) =>
-      Object.values(group).flat(),
-    ),
+    [
+      ...Array.from(groupedFields.values()).flatMap((group) =>
+        Object.values(group).flat(),
+      ),
+      ...Array.from(tabGroupedFields.values()).flatMap((group) =>
+        Object.values(group).flat(),
+      ),
+    ],
   );
   $: visibleEntries = schema
     ? computeVisibleEntries(schema, stepFilter, $form)
@@ -47,6 +58,8 @@
           if (isUnset && prop.default !== undefined) {
             $form[key] = prop.default;
           } else if (isUnset && isRadioEnum(prop) && prop.enum?.length) {
+            $form[key] = String(prop.enum[0]);
+          } else if (isUnset && isTabsEnum(prop) && prop.enum?.length) {
             $form[key] = String(prop.enum[0]);
           }
         }
@@ -87,6 +100,10 @@
 
   function isRadioEnum(prop: JSONSchemaField) {
     return Boolean(prop.enum && prop["x-display"] === radioDisplay);
+  }
+
+  function isTabsEnum(prop: JSONSchemaField) {
+    return Boolean(prop.enum && prop["x-display"] === tabsDisplay);
   }
 
   function computeVisibleEntries(
@@ -177,6 +194,35 @@
     return map;
   }
 
+  function buildTabGroupedFields(
+    currentSchema: MultiStepFormSchema,
+    currentStep: string | undefined,
+  ): Map<string, Record<string, string[]>> {
+    const properties = currentSchema.properties ?? {};
+    const map = new Map<string, Record<string, string[]>>();
+
+    for (const [key, prop] of Object.entries(properties)) {
+      const grouped = prop["x-tab-group"];
+      if (!grouped) continue;
+      if (!isStepMatch(currentSchema, key, currentStep)) continue;
+
+      const filteredOptions: Record<string, string[]> = {};
+      const groupedEntries = Object.entries(grouped) as Array<
+        [string, string[]]
+      >;
+      for (const [optionValue, childKeys] of groupedEntries) {
+        filteredOptions[optionValue] = childKeys.filter((childKey) => {
+          const childProp = properties[childKey];
+          if (!childProp) return false;
+          return isStepMatch(currentSchema, childKey, currentStep);
+        });
+      }
+      map.set(key, filteredOptions);
+    }
+
+    return map;
+  }
+
   function getGroupedFieldsForOption(
     controllerKey: string,
     optionValue: string | number | boolean,
@@ -197,12 +243,41 @@
       );
   }
 
+  function getTabFieldsForOption(
+    controllerKey: string,
+    optionValue: string | number | boolean,
+  ) {
+    if (!schema) return [];
+    const properties = schema.properties ?? {};
+    const childKeys =
+      tabGroupedFields.get(controllerKey)?.[String(optionValue)] ?? [];
+    const values = { ...$form, [controllerKey]: optionValue };
+
+    return childKeys
+      .map<
+        [string, JSONSchemaField | undefined]
+      >((childKey) => [childKey, properties[childKey]])
+      .filter(
+        (entry): entry is [string, JSONSchemaField] =>
+          Boolean(entry[1]) && isVisibleForValues(schema, entry[0], values),
+      );
+  }
+
   function radioOptions(prop: JSONSchemaField) {
     return (
       prop.enum?.map((value, idx) => ({
         value: String(value),
         label: prop["x-enum-labels"]?.[idx] ?? String(value),
         description: prop["x-enum-descriptions"]?.[idx],
+      })) ?? []
+    );
+  }
+
+  function tabOptions(prop: JSONSchemaField) {
+    return (
+      prop.enum?.map((value, idx) => ({
+        value: String(value),
+        label: prop["x-enum-labels"]?.[idx] ?? String(value),
       })) ?? []
     );
   }
@@ -247,6 +322,39 @@
             {/if}
           </svelte:fragment>
         </Radio>
+      </div>
+    {:else if isTabsEnum(prop)}
+      {@const options = tabOptions(prop)}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        {#if prop.title}
+          <div class="text-sm font-medium mb-3">{prop.title}</div>
+        {/if}
+        <Tabs bind:value={$form[key]} options={options} disableMarginTop>
+          {#each options as option}
+            <TabsContent value={option.value}>
+              {#if tabGroupedFields.get(key)}
+                {#each getTabFieldsForOption(key, option.value) as [childKey, childProp]}
+                  <div class="py-1.5 first:pt-0 last:pb-0">
+                    <SchemaField
+                      id={childKey}
+                      prop={childProp}
+                      optional={!isRequired(childKey)}
+                      errors={errors?.[childKey]}
+                      bind:value={$form[childKey]}
+                      bind:checked={$form[childKey]}
+                      {onStringInputChange}
+                      {handleFileUpload}
+                      options={isRadioEnum(childProp)
+                        ? radioOptions(childProp)
+                        : undefined}
+                      name={`${childKey}-radio`}
+                    />
+                  </div>
+                {/each}
+              {/if}
+            </TabsContent>
+          {/each}
+        </Tabs>
       </div>
     {:else}
       <div class="py-1.5 first:pt-0 last:pb-0">

@@ -4,6 +4,18 @@ export const druidSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   properties: {
+    connection_mode: {
+      type: "string",
+      title: "Connection method",
+      enum: ["parameters", "dsn"],
+      default: "parameters",
+      "x-display": "tabs",
+      "x-enum-labels": ["Enter parameters", "Enter connection string"],
+      "x-tab-group": {
+        parameters: ["host", "port", "username", "password", "ssl"],
+        dsn: ["dsn"],
+      },
+    },
     dsn: {
       type: "string",
       title: "Connection string",
