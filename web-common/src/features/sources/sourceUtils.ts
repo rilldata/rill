@@ -1,8 +1,7 @@
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
-import {
-  ConnectorDriverPropertyType,
-  type V1ConnectorDriver,
-  type V1Source,
+import type {
+  V1ConnectorDriver,
+  V1Source,
 } from "@rilldata/web-common/runtime-client";
 import { makeDotEnvConnectorKey } from "../connectors/code-utils";
 import { sanitizeEntityName } from "../entity-management/name-utils";
@@ -164,8 +163,9 @@ export function maybeRewriteToDuckDb(
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of the connector, so that we don't overwrite the original
   const connectorCopy = { ...connector };
-  const secretConnectorName =
-    options?.connectorInstanceName || connector.name || "";
+  const connectorInstanceName =
+    options?.connectorInstanceName?.trim() || undefined;
+  const secretConnectorName = connectorInstanceName || connector.name || "";
 
   switch (connector.name) {
     case "s3":
@@ -173,8 +173,15 @@ export function maybeRewriteToDuckDb(
     case "https":
     case "azure":
       // Ensure DuckDB creates a temporary secret for the original connector
-      if (!formValues.create_secrets_from_connectors && secretConnectorName) {
-        formValues.create_secrets_from_connectors = secretConnectorName;
+      if (secretConnectorName) {
+        if (connectorInstanceName) {
+          if (!formValues.create_secrets_from_connectors) {
+            formValues.create_secrets_from_connectors = secretConnectorName;
+          }
+        } else {
+          // When skipping connector creation, force the default driver name.
+          formValues.create_secrets_from_connectors = secretConnectorName;
+        }
       }
     // falls through to rewrite as DuckDB
     case "local_file":
@@ -182,13 +189,6 @@ export function maybeRewriteToDuckDb(
 
       formValues.sql = buildDuckDbQuery(formValues.path as string);
       delete formValues.path;
-
-      connectorCopy.sourceProperties = [
-        {
-          key: "sql",
-          type: ConnectorDriverPropertyType.TYPE_STRING,
-        },
-      ];
 
       break;
     case "sqlite":
@@ -199,13 +199,6 @@ export function maybeRewriteToDuckDb(
       }');`;
       delete formValues.db;
       delete formValues.table;
-
-      connectorCopy.sourceProperties = [
-        {
-          key: "sql",
-          type: ConnectorDriverPropertyType.TYPE_STRING,
-        },
-      ];
 
       break;
   }
