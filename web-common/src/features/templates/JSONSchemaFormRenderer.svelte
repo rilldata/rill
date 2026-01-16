@@ -303,20 +303,59 @@
             {#if groupedFields.get(key)}
               {#each getGroupedFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  <SchemaField
-                    id={childKey}
-                    prop={childProp}
-                    optional={!isRequired(childKey)}
-                    errors={errors?.[childKey]}
-                    bind:value={$form[childKey]}
-                    bind:checked={$form[childKey]}
-                    {onStringInputChange}
-                    {handleFileUpload}
-                    options={isRadioEnum(childProp)
-                      ? radioOptions(childProp)
-                      : undefined}
-                    name={`${childKey}-radio`}
-                  />
+                  {#if isTabsEnum(childProp)}
+                    {@const childOptions = tabOptions(childProp)}
+                    {#if childProp.title}
+                      <div class="text-sm font-medium mb-3">
+                        {childProp.title}
+                      </div>
+                    {/if}
+                    <Tabs
+                      bind:value={$form[childKey]}
+                      options={childOptions}
+                      disableMarginTop
+                    >
+                      {#each childOptions as childOption}
+                        <TabsContent value={childOption.value}>
+                          {#if tabGroupedFields.get(childKey)}
+                            {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp]}
+                              <div class="py-1.5 first:pt-0 last:pb-0">
+                                <SchemaField
+                                  id={tabKey}
+                                  prop={tabProp}
+                                  optional={!isRequired(tabKey)}
+                                  errors={errors?.[tabKey]}
+                                  bind:value={$form[tabKey]}
+                                  bind:checked={$form[tabKey]}
+                                  {onStringInputChange}
+                                  {handleFileUpload}
+                                  options={isRadioEnum(tabProp)
+                                    ? radioOptions(tabProp)
+                                    : undefined}
+                                  name={`${tabKey}-radio`}
+                                />
+                              </div>
+                            {/each}
+                          {/if}
+                        </TabsContent>
+                      {/each}
+                    </Tabs>
+                  {:else}
+                    <SchemaField
+                      id={childKey}
+                      prop={childProp}
+                      optional={!isRequired(childKey)}
+                      errors={errors?.[childKey]}
+                      bind:value={$form[childKey]}
+                      bind:checked={$form[childKey]}
+                      {onStringInputChange}
+                      {handleFileUpload}
+                      options={isRadioEnum(childProp)
+                        ? radioOptions(childProp)
+                        : undefined}
+                      name={`${childKey}-radio`}
+                    />
+                  {/if}
                 </div>
               {/each}
             {/if}

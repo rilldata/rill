@@ -107,7 +107,6 @@ export class AddDataFormManager {
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
   private clickhouseInitialValues: Record<string, unknown>;
-  private clickhousePrevConnectorType?: ClickHouseConnectorType;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -230,10 +229,6 @@ export class AddDataFormManager {
       connector.name === "clickhouse"
         ? getInitialFormValuesFromProperties(connector.configProperties ?? [])
         : {};
-    this.clickhousePrevConnectorType =
-      connector.name === "clickhouse"
-        ? ("self-hosted" as ClickHouseConnectorType)
-        : undefined;
   }
 
   get isSourceForm(): boolean {
@@ -366,60 +361,20 @@ export class AddDataFormManager {
       dsnFormValues,
       paramsErrors,
       dsnErrors,
-      paramsForm,
       paramsSubmitting,
       dsnSubmitting,
     } = args;
 
     // Keep connector_type in sync on the params form
-    paramsForm.update(
-      ($form: any) => ({
-        ...$form,
-        connector_type: connectorType,
-      }),
-      { taint: false } as any,
-    );
-
-    // Apply defaults when the ClickHouse connector type changes
-    if (
-      connectorType === "rill-managed" &&
-      Object.keys(paramsFormValues ?? {}).length > 1
-    ) {
+    if (paramsFormValues?.connector_type !== connectorType) {
       paramsForm.update(
-        () => ({ managed: true, connector_type: "rill-managed" }),
-        { taint: false } as any,
-      );
-    } else if (
-      this.clickhousePrevConnectorType === "rill-managed" &&
-      connectorType === "self-hosted"
-    ) {
-      paramsForm.update(
-        () => ({ ...this.clickhouseInitialValues, managed: false }),
-        { taint: false } as any,
-      );
-    } else if (
-      this.clickhousePrevConnectorType !== "clickhouse-cloud" &&
-      connectorType === "clickhouse-cloud"
-    ) {
-      paramsForm.update(
-        () => ({
-          ...this.clickhouseInitialValues,
-          managed: false,
-          port: "8443",
-          ssl: true,
+        ($form: any) => ({
+          ...$form,
+          connector_type: connectorType,
         }),
         { taint: false } as any,
       );
-    } else if (
-      this.clickhousePrevConnectorType === "clickhouse-cloud" &&
-      connectorType === "self-hosted"
-    ) {
-      paramsForm.update(
-        () => ({ ...this.clickhouseInitialValues, managed: false }),
-        { taint: false } as any,
-      );
     }
-    this.clickhousePrevConnectorType = connectorType;
 
     const enforcedConnectionTab =
       connectorType === "rill-managed" ? ("parameters" as const) : undefined;
@@ -493,6 +448,41 @@ export class AddDataFormManager {
       submitting,
       enforcedConnectionTab,
       shouldClearErrors: connectorType === "rill-managed",
+    };
+  }
+
+  getClickhouseDefaults(
+    connectorType: ClickHouseConnectorType,
+  ): Record<string, unknown> | null {
+    if (this.connector.name !== "clickhouse") return null;
+    const baseDefaults = { ...this.clickhouseInitialValues };
+    delete (baseDefaults as Record<string, unknown>).connector_type;
+
+    if (connectorType === "clickhouse-cloud") {
+      return {
+        ...baseDefaults,
+        managed: false,
+        port: "8443",
+        ssl: true,
+        connector_type: "clickhouse-cloud",
+        connection_mode: "parameters",
+      };
+    }
+
+    if (connectorType === "rill-managed") {
+      return {
+        ...baseDefaults,
+        managed: true,
+        connector_type: "rill-managed",
+        connection_mode: "parameters",
+      };
+    }
+
+    return {
+      ...baseDefaults,
+      managed: false,
+      connector_type: "self-hosted",
+      connection_mode: "parameters",
     };
   }
 

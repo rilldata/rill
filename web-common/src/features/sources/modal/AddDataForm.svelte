@@ -112,6 +112,7 @@
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
+  let prevClickhouseConnectorType: ClickHouseConnectorType | null = null;
   let clickhouseUiState: ClickhouseUiState | null = null;
   let clickhouseSaving = false;
   let effectiveClickhouseSubmitting = false;
@@ -140,6 +141,19 @@
     ) {
       connectionTab = nextTab;
     }
+  }
+
+  $: if (
+    connector.name === "clickhouse" &&
+    clickhouseConnectorType &&
+    clickhouseConnectorType !== prevClickhouseConnectorType
+  ) {
+    const defaults =
+      formManager.getClickhouseDefaults(clickhouseConnectorType);
+    if (defaults) {
+      paramsForm.update(() => defaults, { taint: false } as any);
+    }
+    prevClickhouseConnectorType = clickhouseConnectorType;
   }
 
   // ClickHouse-specific derived state handled by the manager
