@@ -23,7 +23,7 @@
   let isConfirmDialogOpen = false;
   let dialogResourceName = "";
   let dialogResourceKind = "";
-  let dialogRefreshType: "full" | "incremental" = "full";
+  let dialogRefreshType: "full" | "incremental" | "errored-partitions" = "full";
 
   let openDropdownResourceKey = "";
 
@@ -33,7 +33,7 @@
   const openRefreshDialog = (
     resourceName: string,
     resourceKind: string,
-    refreshType: "full" | "incremental",
+    refreshType: "full" | "incremental" | "errored-partitions",
   ) => {
     dialogResourceName = resourceName;
     dialogResourceKind = resourceKind;
@@ -62,6 +62,7 @@
             {
               model: dialogResourceName,
               full: dialogRefreshType === "full",
+              allErroredPartitions: dialogRefreshType === "errored-partitions",
             },
           ],
         },
@@ -165,12 +166,23 @@
           status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
         if (!isRowReconciling) {
           const resourceKey = `${row.original.meta.name.kind}:${row.original.meta.name.name}`;
+          // Check if model is incremental and has errored partitions
+          const isModel = row.original.meta.name.kind === ResourceKind.Model;
+          const modelSpec = row.original.model?.spec;
+          const modelState = row.original.model?.state;
+          const isIncremental = isModel && !!modelSpec?.incremental;
+          const hasErroredPartitions =
+            isModel &&
+            !!modelState?.partitionsModelId &&
+            !!modelState?.partitionsHaveErrors;
           return flexRender(ActionsCell, {
             resourceKind: row.original.meta.name.kind,
             resourceName: row.original.meta.name.name,
             canRefresh:
               row.original.meta.name.kind === ResourceKind.Model ||
               row.original.meta.name.kind === ResourceKind.Source,
+            isIncremental,
+            hasErroredPartitions,
             onClickRefreshDialog: openRefreshDialog,
             isDropdownOpen: isDropdownOpen(resourceKey),
             onDropdownOpenChange: (isOpen: boolean) =>

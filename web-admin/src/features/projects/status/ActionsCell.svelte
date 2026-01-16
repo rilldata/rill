@@ -8,10 +8,12 @@
   export let resourceKind: string;
   export let resourceName: string;
   export let canRefresh: boolean;
+  export let isIncremental: boolean = false;
+  export let hasErroredPartitions: boolean = false;
   export let onClickRefreshDialog: (
     resourceName: string,
     resourceKind: string,
-    refreshType: "full" | "incremental",
+    refreshType: "full" | "incremental" | "errored-partitions",
   ) => void;
   export let isDropdownOpen: boolean;
   export let onDropdownOpenChange: (isOpen: boolean) => void;
@@ -37,17 +39,32 @@
             <span class="ml-2">Full Refresh</span>
           </div>
         </DropdownMenu.Item>
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={() => {
-            onClickRefreshDialog(resourceName, resourceKind, "incremental");
-          }}
-        >
-          <div class="flex items-center">
-            <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Incremental Refresh</span>
-          </div>
-        </DropdownMenu.Item>
+        {#if isIncremental}
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              onClickRefreshDialog(resourceName, resourceKind, "incremental");
+            }}
+          >
+            <div class="flex items-center">
+              <RefreshCcwIcon size="12px" />
+              <span class="ml-2">Incremental Refresh</span>
+            </div>
+          </DropdownMenu.Item>
+        {/if}
+        {#if hasErroredPartitions}
+          <DropdownMenu.Item
+            class="font-normal flex items-center"
+            on:click={() => {
+              onClickRefreshDialog(resourceName, resourceKind, "errored-partitions");
+            }}
+          >
+            <div class="flex items-center">
+              <RefreshCcwIcon size="12px" />
+              <span class="ml-2">Refresh Errored Partitions</span>
+            </div>
+          </DropdownMenu.Item>
+        {/if}
       {:else}
         <DropdownMenu.Item
           class="font-normal flex items-center"
