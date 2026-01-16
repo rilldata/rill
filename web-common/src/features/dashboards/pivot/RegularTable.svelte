@@ -2,7 +2,7 @@
   import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import "regular-table";
   import type { RegularTableElement } from "regular-table";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import "./regular-table-style.css";
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
@@ -32,8 +32,7 @@
   export let rowHeight = 24;
   export let getColumnWidth: (x: number) => number | void = () => undefined;
   export let getRowHeaderWidth: (x: number) => number | void = () => undefined;
-
-  const dispatch = createEventDispatcher();
+  export let onPos: (pos: PivotPos) => void = () => {};
 
   let table: RegularTableElement;
   let initialized = false;
@@ -323,7 +322,7 @@
       lastRowHeaderSizer = getRowHeaderWidth;
     }
 
-    dispatch("pos", pos);
+    onPos(pos);
   }
 
   onMount(() => {

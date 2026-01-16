@@ -23,7 +23,6 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";
 
@@ -39,6 +38,13 @@
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
+  export let onTogglePin: () => void = () => {};
+  export let onToggleFilter: (label: string | null) => void = () => {};
+  export let onToggleSort: (type: "dimension" | "value") => void = () => {};
+  export let onHighlight: (
+    x: number | undefined,
+    y: number | undefined,
+  ) => void;
 
   /** Formatter for the time axis in the table*/
   export let timeFormatter: (date: Date) => string;
@@ -55,8 +61,6 @@
     measure,
     hasNoFormatting ? "big-number" : "table",
   );
-
-  const dispatch = createEventDispatcher();
 
   let pivot;
 
@@ -289,11 +293,11 @@
     n = parseInt(n);
     if (comparing != "dimension" || n == 0) return;
     const label = tableData?.rowHeaderData[n][0].value;
-    dispatch("toggle-filter", label);
+    if (label !== undefined) onToggleFilter(label);
   };
 
   const togglePin = () => {
-    dispatch("toggle-pin");
+    onTogglePin();
   };
 
   const handleEvent = (evt, table, attribute, callback) => {
@@ -316,7 +320,7 @@
       return;
     }
     handleEvent(evt, table, "__row", toggleVisible);
-    handleEvent(evt, table, "sort", (type) => dispatch("toggle-sort", type));
+    handleEvent(evt, table, "sort", (type) => onToggleSort(type));
     handleEvent(evt, table, "pin", togglePin);
   };
 
@@ -342,7 +346,7 @@
     if (newRowIdxHover !== rowIdxHover && newColIdxHover !== colIdxHover) {
       rowIdxHover = newRowIdxHover;
       colIdxHover = newColIdxHover;
-      dispatch("highlight", { x: colIdxHover, y: rowIdxHover });
+      onHighlight(colIdxHover, rowIdxHover);
       pivot?.draw();
     }
   };
@@ -350,7 +354,7 @@
   function resetHighlight() {
     rowIdxHover = undefined;
     colIdxHover = undefined;
-    dispatch("highlight", { x: colIdxHover, y: rowIdxHover });
+    onHighlight(colIdxHover, rowIdxHover);
     pivot?.draw();
   }
 
@@ -358,8 +362,7 @@
   let currentPosition: TablePosition;
   let hasScrolled = false;
   let isInitialized;
-  function handlePos(e) {
-    const pos = e.detail;
+  function handlePos(pos: PivotPos) {
     currentPosition = pos;
     isInitialized = pivot?.isInitialized();
     if (!$lastKnownPosition || hasScrolled) lastKnownPosition.set(pos);
@@ -413,7 +416,7 @@
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
     onMouseHover={handleMouseHover}
-    on:pos={handlePos}
+    onPos={handlePos}
   />
 </div>
 
