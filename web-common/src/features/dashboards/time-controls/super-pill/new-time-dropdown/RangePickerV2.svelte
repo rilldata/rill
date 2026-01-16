@@ -24,9 +24,7 @@
   } from "../../../url-state/time-ranges/RillTime";
   import {
     getGrainOrder,
-    getLowerOrderGrain,
-    getSmallestGrainFromISODuration,
-    GrainAliasToV1TimeGrain,
+    getTruncationGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
@@ -47,13 +45,13 @@
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
-  export let minDate: DateTime;
-  export let maxDate: DateTime;
+  export let minDate: DateTime<true> | undefined;
+  export let maxDate: DateTime<true> | undefined;
   export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
@@ -71,7 +69,6 @@
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCalendarPicker = false;
-  let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
   let searchValue: string | undefined = timeString;
 
@@ -96,19 +93,13 @@
     ? RillTimeLabel.Latest
     : parsedTime?.asOfLabel?.label;
 
-  $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
-      ? V1TimeGrain.TIME_GRAIN_DAY
-      : getSmallestGrainFromISODuration(timeString ?? "PT1M")
-    : parsedTime?.asOfLabel?.snap
-      ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
-      : undefined;
+  $: truncationGrain = getTruncationGrain(parsedTime);
 
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
+  $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
 
   $: smallestTimeGrainOrder = getGrainOrder(
     smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
@@ -130,9 +121,7 @@
         !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
 
       if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-        truncationGrain = isPeriodToDate
-          ? getLowerOrderGrain(parsed.rangeGrain)
-          : parsed.rangeGrain;
+        truncationGrain = parsed.rangeGrain;
       }
 
       if (shouldAppendAsOfString) {
@@ -174,7 +163,7 @@
   }
 
   function onSelectAsOfOption(
-    ref: RillTimeLabel | undefined,
+    ref: RillTimeLabel | string | undefined,
     inclusive: boolean,
   ) {
     if (!timeString) return;
@@ -193,11 +182,12 @@
     asOf: string | undefined,
     zone: string,
   ): DateTime | undefined {
+    if (!maxDate) return DateTime.now().setZone(zone);
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
       return watermark.setZone(zone);
-    } else if (asOf === "now") {
+    } else if (asOf === "now" || !asOf) {
       return DateTime.now().setZone(zone);
     }
   }
@@ -264,7 +254,9 @@
       </Tooltip.Trigger>
 
       <Tooltip.Content side="bottom" sideOffset={8} class="z-50">
-        <PrimaryRangeTooltip {timeString} {interval} />
+        {#if interval}
+          <PrimaryRangeTooltip {timeString} {interval} />
+        {/if}
       </Tooltip.Content>
     </Tooltip.Root>
   </Popover.Trigger>
@@ -282,6 +274,7 @@
       bind:searchValue
       onSelectRange={(range) => {
         open = false;
+
         handleRangeSelect(range);
       }}
     />
@@ -413,7 +406,7 @@
                   {availableTimeZones}
                   activeTimeZone={zone}
                   referencePoint={dateTimeAnchor ??
-                    interval.end ??
+                    interval?.end ??
                     DateTime.now()}
                   onSelectTimeZone={(z) => {
                     onSelectTimeZone(z);

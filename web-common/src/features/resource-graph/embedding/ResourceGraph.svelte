@@ -457,7 +457,7 @@
               open={isExpanded}
               mode={overlayMode}
               {showControls}
-              on:close={() => handleExpandChange(null)}
+              onClose={() => handleExpandChange(null)}
             />
           {:else if isExpanded}
             <!-- Inline expansion within grid -->
@@ -482,7 +482,7 @@
               {fitViewPadding}
               {fitViewMinZoom}
               {fitViewMaxZoom}
-              on:expand={() => handleExpandChange(null)}
+              onExpand={() => handleExpandChange(null)}
             />
           {:else}
             <!-- Collapsed card view -->
@@ -508,7 +508,7 @@
                 {fitViewPadding}
                 {fitViewMinZoom}
                 {fitViewMaxZoom}
-                on:expand={() => handleExpandChange(group.id)}
+                onExpand={() => handleExpandChange(group.id)}
               />
             </slot>
           {/if}

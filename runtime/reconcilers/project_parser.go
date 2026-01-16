@@ -114,7 +114,9 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
 	defer release()
-	err = repo.Pull(ctx, false, false)
+	// Pull the latest changes
+	// on rill developer do not pull latest changes, all pulls should be user triggered
+	err = repo.Pull(ctx, &drivers.PullOptions{UserTriggered: !r.C.Runtime.AllowHostAccess()})
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to pull repo: %w", err)}
 	}
@@ -159,7 +161,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 
 	// Do the actual reconciliation of parsed resources and catalog resources
-	err = r.reconcileParser(ctx, inst, self, parser, nil, nil)
+	err = r.reconcileParser(ctx, inst, instCfg, self, parser, nil, nil)
 
 	// If err is not for parse errors, always return. Otherwise, only return it if we're not watching for changes.
 	if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
@@ -231,7 +233,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		// NOTE: Parse errors are not returned here (they're stored in p.Errors). Errors returned from Reparse are mainly file system errors.
 		diff, err := parser.Reparse(ctx, changedPaths)
 		if err == nil {
-			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
+			err = r.reconcileParser(ctx, inst, instCfg, self, parser, diff, changedPaths)
 		}
 		if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
 			if reparseErr == nil { // In case a callback is somehow invoked after cancel() is called in a previous callback
@@ -264,7 +266,7 @@ func (r *ProjectParserReconciler) ResolveTransitiveAccess(ctx context.Context, c
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
-func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *parserpkg.Parser, diff *parserpkg.Diff, changedPaths []string) error {
+func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, instCfg drivers.InstanceConfig, self *runtimev1.Resource, parser *parserpkg.Parser, diff *parserpkg.Diff, changedPaths []string) error {
 	// Update parse errors
 	pp := self.GetProjectParser()
 	pp.State.ParseErrors = parser.Errors
@@ -305,6 +307,18 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
 		return err
+	}
+
+	if instCfg.ParserSkipUpdatesIfParseErrors && len(parser.Errors) > 0 {
+		// best efforts cancellation of all resource reconciliations, ignoring all errors
+		resources, _ := r.C.List(ctx, "", "", false)
+		for _, res := range resources {
+			if res.Meta.Hidden {
+				continue
+			}
+			_ = r.C.Cancel(ctx, res.Meta.Name)
+		}
+		return parseErrsErr
 	}
 
 	// If RillYAML is missing, don't reconcile anything

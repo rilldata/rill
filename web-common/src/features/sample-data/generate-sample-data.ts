@@ -62,9 +62,11 @@ export async function generateSampleData(
         },
       },
     });
-    const conversation = new Conversation(instanceId, NEW_CONVERSATION_ID, {
-      agent: ToolName.DEVELOPER_AGENT,
-    });
+    const conversation = new Conversation(
+      instanceId,
+      NEW_CONVERSATION_ID,
+      ToolName.DEVELOPER_AGENT,
+    );
     const agentPrompt = `Generate a NEW model with fresh data for the following user prompt: ${userPrompt}`;
     conversation.draftMessage.set(agentPrompt);
 
@@ -124,15 +126,17 @@ export async function generateSampleData(
         }
       }
     };
+    const handleMessageUnsub = conversation.on("message", handleMessage);
 
     let cancelled = false;
 
     conversation.cancelStream();
 
-    await conversation.sendMessage({}, { onMessage: handleMessage });
+    await conversation.sendMessage({});
 
     await waitUntil(() => !get(conversation.isStreaming));
 
+    handleMessageUnsub();
     overlay.set(null);
     if (cancelled) return;
     if (!created) {

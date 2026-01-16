@@ -15,7 +15,7 @@
   import { useModel } from "../selectors";
 
   export let modelName: string;
-  export let hasError = false;
+  export let hasResultTable = false;
   export let collapse = false;
 
   const { ai } = featureFlags;
@@ -42,7 +42,7 @@
 
 <Tooltip distance={8} location="bottom">
   <Button
-    disabled={!modelIsIdle || hasError}
+    disabled={!modelIsIdle || !hasResultTable}
     onClick={createMetricsViewFromModel}
     type={$allowPrimary ? "primary" : "secondary"}
   >
@@ -57,7 +57,7 @@
     </ResponsiveButtonText>
   </Button>
   <TooltipContent slot="tooltip-content">
-    {#if hasError}
+    {#if !hasResultTable}
       Fix the errors in your model
     {:else if !modelIsIdle}
       Model is not ready

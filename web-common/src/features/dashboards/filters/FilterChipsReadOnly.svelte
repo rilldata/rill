@@ -42,6 +42,7 @@ The main feature-set component for dashboard filters
     dimensionIdMap,
     filters,
     dimensionsWithInlistFilter,
+    metricsViewNames[0],
   );
 
   $: measureIdMap = getMapFromArray(
@@ -77,23 +78,27 @@ The main feature-set component for dashboard filters
     />
   {/if}
   {#if dimensionFilters.length > 0}
-    {#each dimensionFilters as { name, label, mode, selectedValues, inputText, isInclude } (name)}
-      {@const dimension = dimensions.find((d) => d.name === name)}
-      <div animate:flip={{ duration: 200 }}>
-        {#if dimension?.column || dimension?.expression}
-          <DimensionFilterReadOnlyChip
-            {name}
-            {metricsViewNames}
-            {mode}
-            label={label || name}
-            values={selectedValues}
-            {inputText}
-            {isInclude}
-            timeStart={queryTimeStart}
-            timeEnd={queryTimeEnd}
-          />
-        {/if}
-      </div>
+    {#each dimensionFilters as filterData (filterData.name)}
+      {@const dimension = filterData.dimensions.get(metricsViewNames[0])}
+      <!-- <div animate:flip={{ duration: 200 }}> -->
+      {#if dimension}
+        <DimensionFilterReadOnlyChip
+          pinned={filterData.pinned}
+          name={filterData.name}
+          {metricsViewNames}
+          label={dimension.displayName ||
+            dimension.name ||
+            dimension.column ||
+            "Unnamed Dimension"}
+          mode={filterData.mode}
+          values={filterData.selectedValues ?? []}
+          inputText={filterData.inputText}
+          isInclude={filterData.isInclude === true}
+          timeStart={queryTimeStart}
+          timeEnd={queryTimeEnd}
+        />
+      {/if}
+      <!-- </div> -->
     {/each}
   {/if}
   {#if measureFilters.length > 0}

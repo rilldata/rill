@@ -1,8 +1,8 @@
 ---
-title: "AI Chat in Rill Cloud"
+title: "Contextual AI Chat"
 description: Chat with your data using natural language in Rill Cloud
 sidebar_label: "AI Chat"
-sidebar_position: 00
+sidebar_position: 01
 ---
 
 ## Overview
@@ -112,7 +112,7 @@ You can add `ai_instructions` in two places:
 1. **`rill.yaml`** - Project-wide instructions that apply to all queries across your entire project
 2. **`<metrics_view>.yaml`** - Metrics view-specific instructions for individual dashboards
 
-For detailed examples and best practices on writing effective AI instructions, see the [Rill MCP documentation](/explore/mcp#adding-ai-instructions-to-your-model).
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/build/ai-configuration).
 
 ## Use in Your Favorite AI Client
 

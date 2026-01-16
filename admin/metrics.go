@@ -27,10 +27,10 @@ func (s *Service) OpenMetricsProject(ctx context.Context) (*metrics.Client, bool
 	if err != nil {
 		return nil, false, err
 	}
-	if proj.ProdDeploymentID == nil {
+	if proj.PrimaryDeploymentID == nil {
 		return nil, false, fmt.Errorf("project does not have a production deployment")
 	}
-	depl, err := s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	depl, err := s.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, false, err
 	}

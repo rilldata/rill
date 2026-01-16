@@ -6,6 +6,7 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import {
   compressUrlParams,
   shouldCompressParams,
@@ -18,15 +19,14 @@ import {
   ToURLParamSortTypeMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
-  ToURLParamTimeGrainMapMap,
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   ExploreStateKeyToURLParamMap,
   ExploreStateURLParams,
 } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params";
 import { arrayOrderedEquals } from "@rilldata/web-common/lib/arrayUtils";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 import {
   TimeComparisonOption,
   type TimeRange,
@@ -174,7 +174,7 @@ function toTimeRangesUrl(
     "interval" in timeControlsState.selectedTimeRange
   ) {
     const mappedTimeGrain =
-      ToURLParamTimeGrainMapMap[
+      V1TimeGrainToDateTimeUnit[
         timeControlsState.selectedTimeRange?.interval ?? ""
       ] ?? "";
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
@@ -270,6 +270,13 @@ function toExploreUrlParams(
     partialExploreState,
     "leaderboardMeasureNames",
     (names) => names?.join(","),
+  );
+
+  maybeSetParam(
+    searchParams,
+    partialExploreState,
+    "leaderboardShowContextForAllMeasures",
+    (value) => (value ? "true" : "false"),
   );
 
   return searchParams;
@@ -371,6 +378,14 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
 
   const tableModeParam = partialExploreState.pivot?.tableMode ?? "nest";
   searchParams.set(ExploreStateURLParams.PivotTableMode, tableModeParam);
+
+  // Only encode rowLimit if it's defined
+  if (partialExploreState.pivot?.rowLimit !== undefined) {
+    searchParams.set(
+      ExploreStateURLParams.PivotRowLimit,
+      partialExploreState.pivot.rowLimit.toString(),
+    );
+  }
 
   // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;

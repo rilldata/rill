@@ -18,6 +18,13 @@
     PivotChipType,
     type PivotTableMode,
   } from "./types";
+  import {
+    handleTimeChipClick,
+    handleTimeChipDrop,
+    isNewTimeChip,
+    updateTimeChipGrain,
+  } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
+  import { timePillSelectors } from "./time-pill-store";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -37,14 +44,6 @@
   export let zone: Zone;
   export let tableMode: PivotTableMode = "nest";
   export let onUpdate: (items: PivotChipData[]) => void = () => {};
-
-  import {
-    handleTimeChipClick,
-    handleTimeChipDrop,
-    isNewTimeChip,
-    updateTimeChipGrain,
-  } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
-  import { timePillSelectors } from "./time-pill-store";
 
   const isDropLocation = zone === "columns" || zone === "rows";
   const DRAG_START_THRESHOLD_PX = 4;
@@ -319,7 +318,7 @@
           ? "measure"
           : "dimension"}
         data-index={index}
-        class="drag-item"
+        class="drag-item w-full max-w-fit truncate"
         class:hidden={dragChip?.id === item.id && zoneStartedDrag}
         class:rounded-full={item.type !== PivotChipType.Measure}
       >
@@ -432,7 +431,7 @@
   .dnd-zone {
     @apply w-full max-w-full rounded-sm;
     @apply flex flex-col;
-    @apply gap-y-2 py-2  text-gray-500;
+    @apply gap-y-2 py-0  text-gray-500;
   }
 
   .horizontal {
@@ -462,11 +461,11 @@
   }
 
   .icons {
-    @apply flex gap-x-2 opacity-0 transition-opacity duration-200;
+    @apply gap-x-2 hidden transition-opacity duration-200;
   }
 
   .item-wrapper:hover .icons {
-    @apply opacity-100;
+    @apply flex;
   }
 
   .icon-wrapper {

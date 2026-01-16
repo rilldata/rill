@@ -19,9 +19,11 @@ export function convertURLSearchParamsToExploreState(
     exploreSpec,
     defaultExplorePreset,
   );
+
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =
     convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
+
   return { partialExploreState, errors };
 }

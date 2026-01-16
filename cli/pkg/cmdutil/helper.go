@@ -42,6 +42,7 @@ type Helper struct {
 	*printer.Printer
 	Version            version.Version
 	DotRill            dotrill.DotRill
+	HomeDir            string
 	Interactive        bool
 	Org                string
 	AdminURLDefault    string
@@ -63,6 +64,7 @@ func NewHelper(ver version.Version, homeDir string) (*Helper, error) {
 	ch := &Helper{
 		Printer:     printer.NewPrinter(printer.FormatHuman),
 		DotRill:     dotrill.New(homeDir),
+		HomeDir:     homeDir,
 		Version:     ver,
 		Interactive: true,
 	}
@@ -447,7 +449,7 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 // OpenRuntimeClient opens a client for the production deployment for the given project.
 // If local is true, it connects to the locally running runtime instead of the deployed project's runtime.
 // It returns the runtime client and instance ID for the project.
-func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, local bool) (*runtimeclient.Client, string, error) {
+func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project, branch string, local bool) (*runtimeclient.Client, string, error) {
 	var host, instanceID, jwt string
 	if local {
 		// This is the default port that Rill localhost uses for gRPC.
@@ -463,12 +465,13 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
 			Org:     org,
 			Project: project,
+			Branch:  branch,
 		})
 		if err != nil {
 			return nil, "", err
 		}
 
-		depl := proj.ProdDeployment
+		depl := proj.Deployment
 		if depl == nil {
 			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
 		}
@@ -611,8 +614,8 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 		}
 		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
-		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
-		// This is not euivalent to a force push but is safer for users.
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't lose history.
+		// This is not equivalent to a force push but is safer for users.
 		if config.Subpath != "" {
 			// force pushing in a monorepo can overwrite other subpaths
 			// we can check for changes in other subpaths but it is tricky and error prone

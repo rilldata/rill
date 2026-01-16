@@ -380,9 +380,9 @@ export function calculateTimeRangePartial(
   return {
     selectedTimeRange,
     timeStart: timeStart.toISOString(),
-    adjustedStart,
+    adjustedStart: adjustedStart || undefined,
     timeEnd: timeEnd.toISOString(),
-    adjustedEnd,
+    adjustedEnd: adjustedEnd || undefined,
   };
 }
 
@@ -415,8 +415,8 @@ export function calculateComparisonTimeRangePartial(
       selectedTimezone,
       timeRangeState.selectedTimeRange?.interval,
     );
-    comparisonAdjustedStart = adjustedComparisonTime.start;
-    comparisonAdjustedEnd = adjustedComparisonTime.end;
+    comparisonAdjustedStart = adjustedComparisonTime.start || undefined;
+    comparisonAdjustedEnd = adjustedComparisonTime.end || undefined;
   }
 
   let comparisonTimeStart = selectedComparisonTimeRange?.start;

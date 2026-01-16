@@ -1484,6 +1484,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   cacheKeyTtlSeconds = protoInt64.zero;
 
+  /**
+   * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+   * Keys and values are stored as templates and will be resolved at query time.
+   *
+   * @generated from field: map<string, string> query_attributes = 33;
+   */
+  queryAttributes: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1515,6 +1523,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1552,12 +1561,18 @@ export enum MetricsViewSpec_DimensionType {
    * @generated from enum value: DIMENSION_TYPE_TIME = 2;
    */
   TIME = 2,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_GEOSPATIAL = 3;
+   */
+  GEOSPATIAL = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
 proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
   { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
   { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
   { no: 2, name: "DIMENSION_TYPE_TIME" },
+  { no: 3, name: "DIMENSION_TYPE_GEOSPATIAL" },
 ]);
 
 /**
@@ -1621,6 +1636,11 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    * @generated from field: string description = 4;
    */
   description = "";
+
+  /**
+   * @generated from field: repeated string tags = 16;
+   */
+  tags: string[] = [];
 
   /**
    * @generated from field: string column = 2;
@@ -1690,6 +1710,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 14, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DimensionType) },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -1853,6 +1874,11 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
   description = "";
 
   /**
+   * @generated from field: repeated string tags = 16;
+   */
+  tags: string[] = [];
+
+  /**
    * @generated from field: string expression = 2;
    */
   expression = "";
@@ -1925,6 +1951,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_MeasureType) },
     { no: 9, name: "window", kind: "message", T: MetricsViewSpec_MeasureWindow },
@@ -2992,6 +3019,11 @@ export class ExplorePreset extends Message<ExplorePreset> {
    */
   pivotTableMode?: string;
 
+  /**
+   * @generated from field: optional int32 pivot_row_limit = 33;
+   */
+  pivotRowLimit?: number;
+
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3029,6 +3061,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 28, name: "pivot_table_mode", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {
@@ -4776,6 +4809,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Array of dimension or measure names
+   *
+   * @generated from field: repeated string pinned_filters = 16;
+   */
+  pinnedFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4799,6 +4839,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -5012,6 +5053,15 @@ export class CanvasPreset extends Message<CanvasPreset> {
    */
   comparisonDimension?: string;
 
+  /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Valid Metrics SQL expression
+   *
+   * @generated from field: map<string, rill.runtime.v1.DefaultMetricsSQLFilter> filter_expr = 19;
+   */
+  filterExpr: { [key: string]: DefaultMetricsSQLFilter } = {};
+
   constructor(data?: PartialMessage<CanvasPreset>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5023,6 +5073,7 @@ export class CanvasPreset extends Message<CanvasPreset> {
     { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 19, name: "filter_expr", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: DefaultMetricsSQLFilter} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
@@ -5039,6 +5090,43 @@ export class CanvasPreset extends Message<CanvasPreset> {
 
   static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
     return proto3.util.equals(CanvasPreset, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DefaultMetricsSQLFilter
+ */
+export class DefaultMetricsSQLFilter extends Message<DefaultMetricsSQLFilter> {
+  /**
+   * @generated from field: rill.runtime.v1.Expression expression = 1;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<DefaultMetricsSQLFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DefaultMetricsSQLFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DefaultMetricsSQLFilter {
+    return new DefaultMetricsSQLFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined, b: DefaultMetricsSQLFilter | PlainMessage<DefaultMetricsSQLFilter> | undefined): boolean {
+    return proto3.util.equals(DefaultMetricsSQLFilter, a, b);
   }
 }
 
