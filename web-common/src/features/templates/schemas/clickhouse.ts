@@ -7,7 +7,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
     connector_type: {
       type: "string",
       title: "Connection type",
-      enum: ["self-hosted", "clickhouse-cloud", "rill-managed"],
+      enum: ["rill-managed", "self-hosted", "clickhouse-cloud"],
       default: "self-hosted",
       "x-display": "radio",
       "x-enum-labels": [
