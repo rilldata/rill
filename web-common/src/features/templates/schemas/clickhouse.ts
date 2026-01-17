@@ -25,7 +25,6 @@ export const clickhouseSchema: MultiStepFormSchema = {
     },
     connection_mode: {
       type: "string",
-      title: "Connection method",
       enum: ["parameters", "dsn"],
       default: "parameters",
       "x-display": "tabs",
