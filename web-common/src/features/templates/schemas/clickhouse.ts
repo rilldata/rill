@@ -11,15 +11,15 @@ export const clickhouseSchema: MultiStepFormSchema = {
       default: "self-hosted",
       "x-display": "radio",
       "x-enum-labels": [
+        "Rill-managed ClickHouse",
         "Self-hosted ClickHouse",
         "ClickHouse Cloud",
-        "Rill-managed ClickHouse",
       ],
       "x-internal": true,
       "x-grouped-fields": {
+        "rill-managed": ["managed"],
         "self-hosted": ["connection_mode"],
         "clickhouse-cloud": ["connection_mode"],
-        "rill-managed": ["managed"],
       },
       "x-step": "connector",
     },
