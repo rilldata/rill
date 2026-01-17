@@ -7,9 +7,10 @@ import type { AddDataFormType } from "./types";
 export function getValidationSchemaForConnector(
   name: string,
   formType: AddDataFormType,
+  stepOverride?: "connector" | "source" | "explorer",
 ): ValidationAdapter<Record<string, unknown>> {
   const jsonSchema = getConnectorSchema(name);
-  const step = formType === "source" ? "source" : "connector";
+  const step = stepOverride ?? (formType === "source" ? "source" : "connector");
 
   if (jsonSchema) return createSchemasafeValidator(jsonSchema, step);
   throw new Error(`No validation schema found for connector: ${name}`);

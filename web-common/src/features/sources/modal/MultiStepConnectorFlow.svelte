@@ -55,14 +55,29 @@
   $: selectedAuthMethod = $selectedAuthMethodStore;
 
   // Initialize source step values from stored connector config.
-  $: if (stepState.step === "source" && stepState.connectorConfig) {
+  $: if (
+    (stepState.step === "source" || stepState.step === "explorer") &&
+    stepState.connectorConfig
+  ) {
     const schema = connector.name
       ? getConnectorSchema(connector.name) || null
       : null;
+    const explorerDefaults =
+      stepState.step === "explorer" && schema?.properties
+        ? Object.fromEntries(
+            Object.entries(schema.properties)
+              .filter(
+                ([, prop]) =>
+                  prop.type === "string" && prop["x-step"] === "explorer",
+              )
+              .map(([key]) => [key, ""]),
+          )
+        : {};
     const initialValues = schema
-      ? getSchemaInitialValues(schema, { step: "source" })
+      ? getSchemaInitialValues(schema, { step: stepState.step })
       : {};
     const combinedValues = {
+      ...explorerDefaults,
       ...stepState.connectorConfig,
       ...initialValues,
     };
@@ -168,13 +183,14 @@
     selectedAuthMethod: activeAuthMethod ?? selectedAuthMethod,
   });
   $: primaryLoadingCopy =
-    stepState.step === "source"
+    stepState.step === "source" || stepState.step === "explorer"
       ? "Importing data..."
       : activeAuthMethod === "public"
         ? "Continuing..."
         : "Testing connection...";
   $: formId = paramsFormId;
-  $: shouldShowSkipLink = stepState.step === "connector";
+  $: shouldShowSkipLink =
+    stepState.step === "connector" && formManager.isMultiStepConnector;
 </script>
 
 <AddDataFormSection

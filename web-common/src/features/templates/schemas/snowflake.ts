@@ -103,6 +103,29 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Enable SQL query logging (debugging)",
       default: false,
     },
+    sql: {
+      type: "string",
+      title: "SQL",
+      description: "SQL query to run against your warehouse",
+      "x-display": "textarea",
+      "x-placeholder": "Input SQL or select from the table explorer",
+      "x-step": "explorer",
+    },
+    name: {
+      type: "string",
+      title: "Model name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z0-9_]+$",
+      "x-placeholder": "my_model",
+      "x-step": "explorer",
+    },
   },
-  required: [],
+  required: ["sql", "name"],
+  allOf: [
+    {
+      if: { properties: { connection_mode: { const: "dsn" } } },
+      then: { required: ["dsn"] },
+      else: { required: ["account", "user", "database", "warehouse"] },
+    },
+  ],
 };

@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-export type ConnectorStep = "connector" | "source";
+export type ConnectorStep = "connector" | "source" | "explorer";
 
 export type ConnectorStepState = {
   step: ConnectorStep;

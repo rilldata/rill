@@ -57,6 +57,7 @@
     hint={prop.description ?? prop["x-hint"]}
     errors={normalizeErrors(errors)}
     bind:value
+    multiline={prop["x-display"] === "textarea"}
     onInput={(_, e) => onStringInputChange(e)}
     alwaysShowError
   />

@@ -65,6 +65,8 @@
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;
+  const isExplorerConnector = formManager.isExplorerConnector;
+  const isStepFlowConnector = isMultiStepConnector || isExplorerConnector;
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
   const onlyDsn = hasOnlyDsn(connector, isConnectorForm);
@@ -200,13 +202,16 @@
       ? clickhouseSaving || clickhouseUiState?.submitting || false
       : submitting;
 
-  // Hide Save Anyway once we advance to the model step in multi-step flows.
-  $: if (isMultiStepConnector && stepState.step === "source") {
+  // Hide Save Anyway once we advance to the model step in step flow connectors.
+  $: if (
+    isStepFlowConnector &&
+    (stepState.step === "source" || stepState.step === "explorer")
+  ) {
     showSaveAnyway = false;
   }
 
   $: isSubmitDisabled = (() => {
-    if (isMultiStepConnector) {
+    if (isStepFlowConnector) {
       return multiStepSubmitDisabled;
     }
 
@@ -256,7 +261,7 @@
     }
   })();
 
-  $: formId = isMultiStepConnector
+  $: formId = isStepFlowConnector
     ? multiStepFormId || paramsFormId
     : useDsnForm
       ? dsnFormId
@@ -270,7 +275,7 @@
     }
   })();
 
-  $: primaryButtonLabel = isMultiStepConnector
+  $: primaryButtonLabel = isStepFlowConnector
     ? multiStepButtonLabel
     : formManager.getPrimaryButtonLabel({
         isConnectorForm,
@@ -283,7 +288,7 @@
 
   $: primaryLoadingCopy = (() => {
     if (connector.name === "clickhouse") return "Connecting...";
-    if (isMultiStepConnector) return multiStepLoadingCopy;
+    if (isStepFlowConnector) return multiStepLoadingCopy;
     return activeAuthMethod === "public"
       ? "Continuing..."
       : "Testing connection...";
@@ -385,7 +390,7 @@
     filteredParamsProperties,
     filteredDsnProperties,
     stepState,
-    isMultiStepConnector,
+    isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     paramsFormValues: $paramsForm,
     dsnFormValues: $dsnForm,
@@ -491,7 +496,7 @@
             </AddDataFormSection>
           </TabsContent>
         </Tabs>
-      {:else if isMultiStepConnector}
+      {:else if isStepFlowConnector}
         <MultiStepConnectorFlow
           {connector}
           {formManager}
@@ -599,16 +604,18 @@
         />
       {/if}
 
-      <YamlPreview
-        title={isMultiStepConnector
-          ? stepState.step === "connector"
-            ? "Connector preview"
-            : "Model preview"
-          : isSourceForm
-            ? "Model preview"
-            : "Connector preview"}
-        yaml={yamlPreview}
-      />
+      {#if !(isStepFlowConnector && stepState.step === "explorer")}
+        <YamlPreview
+          title={isStepFlowConnector
+            ? stepState.step === "connector"
+              ? "Connector preview"
+              : "Model preview"
+            : isSourceForm
+              ? "Model preview"
+              : "Connector preview"}
+          yaml={yamlPreview}
+        />
+      {/if}
 
       {#if shouldShowSkipLink}
         <div class="text-sm leading-normal font-medium text-muted-foreground">

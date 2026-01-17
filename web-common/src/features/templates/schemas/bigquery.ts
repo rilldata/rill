@@ -21,6 +21,22 @@ export const bigquerySchema: MultiStepFormSchema = {
       "x-hint":
         "If empty, Rill will use the project ID from your credentials when available.",
     },
+    sql: {
+      type: "string",
+      title: "SQL",
+      description: "SQL query to run against your warehouse",
+      "x-display": "textarea",
+      "x-placeholder": "Input SQL or select from the table explorer",
+      "x-step": "explorer",
+    },
+    name: {
+      type: "string",
+      title: "Model name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z0-9_]+$",
+      "x-placeholder": "my_model",
+      "x-step": "explorer",
+    },
   },
-  required: ["google_application_credentials", "project_id"],
+  required: ["google_application_credentials", "project_id", "sql", "name"],
 };
