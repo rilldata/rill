@@ -41,8 +41,7 @@ export function compileSourceYAML(
       .split("\n")
       .map((line) => `${indent}${line}`)
       .join("\n")}`;
-  const trimSqlForDev = (sql: string) =>
-    sql.trim().replace(/;+\s*$/, "");
+  const trimSqlForDev = (sql: string) => sql.trim().replace(/;+\s*$/, "");
 
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
