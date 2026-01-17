@@ -96,11 +96,12 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
+        const placeholder = `{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
           options?.connectorInstanceName,
-        )} }}"`;
+        )} }}`;
+        return `${key}: "${placeholder}"`;
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
