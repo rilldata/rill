@@ -26,7 +26,7 @@ export const bigquerySchema: MultiStepFormSchema = {
       title: "SQL",
       description: "SQL query to run against your warehouse",
       "x-display": "textarea",
-      "x-placeholder": "Input SQL or select from the table explorer",
+      "x-placeholder": "Input SQL",
       "x-step": "explorer",
     },
     name: {
