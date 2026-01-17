@@ -33,6 +33,7 @@ export const gcsSchema: MultiStepFormSchema = {
       format: "file",
       "x-display": "file",
       "x-accept": ".json",
+      "x-secret": true,
       "x-step": "connector",
       "x-visible-if": { auth_method: "credentials" },
     },
