@@ -234,7 +234,11 @@ export class AddDataFormManager {
   }
 
   get isExplorerConnector(): boolean {
-    return Boolean(this.connector.implementsWarehouse);
+    return Boolean(
+      this.connector.implementsOlap ||
+        this.connector.implementsSqlStore ||
+        this.connector.implementsWarehouse,
+    );
   }
 
   /**
