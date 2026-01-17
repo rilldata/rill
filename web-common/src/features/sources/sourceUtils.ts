@@ -36,6 +36,14 @@ export function compileSourceYAML(
     opts?.stringKeys ??
     (schema ? getSchemaStringKeys(schema, { step: "source" }) : []);
 
+  const formatSqlBlock = (sql: string, indent: string) =>
+    `sql: |\n${sql
+      .split("\n")
+      .map((line) => `${indent}${line}`)
+      .join("\n")}`;
+  const trimSqlForDev = (sql: string) =>
+    sql.trim().replace(/;+\s*$/, "");
+
   // Compile key value pairs
   const compiledKeyValues = Object.keys(formValues)
     .filter((key) => {
@@ -61,10 +69,7 @@ export function compileSourceYAML(
 
       if (key === "sql") {
         // For SQL, we want to use a multi-line string
-        return `${key}: |\n  ${value
-          .split("\n")
-          .map((line) => `${line}`)
-          .join("\n")}`;
+        return formatSqlBlock(value, "  ");
       }
 
       const isStringProperty = stringPropertyKeys.includes(key);
@@ -76,9 +81,21 @@ export function compileSourceYAML(
     })
     .join("\n");
 
+  const devSection =
+    connector.implementsWarehouse &&
+    connector.name !== "redshift" &&
+    typeof formValues.sql === "string" &&
+    formValues.sql.trim()
+      ? `\n\ndev:\n  ${formatSqlBlock(
+          `${trimSqlForDev(formValues.sql)} limit 10000`,
+          "    ",
+        )}`
+      : "";
+
   return (
     `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
-    compiledKeyValues
+    compiledKeyValues +
+    devSection
   );
 }
 

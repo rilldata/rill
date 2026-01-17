@@ -604,18 +604,16 @@
         />
       {/if}
 
-      {#if !(isStepFlowConnector && stepState.step === "explorer")}
-        <YamlPreview
-          title={isStepFlowConnector
-            ? stepState.step === "connector"
-              ? "Connector preview"
-              : "Model preview"
-            : isSourceForm
-              ? "Model preview"
-              : "Connector preview"}
-          yaml={yamlPreview}
-        />
-      {/if}
+      <YamlPreview
+        title={isStepFlowConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
+      />
 
       {#if shouldShowSkipLink}
         <div class="text-sm leading-normal font-medium text-muted-foreground">

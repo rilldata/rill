@@ -827,15 +827,17 @@ export class AddDataFormManager {
           connectorInstanceName: stepState?.connectorInstanceName || undefined,
         },
       );
+      const isExplorerStep = stepState?.step === "explorer";
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
       const rewrittenSchema = getConnectorSchema(rewrittenConnector.name ?? "");
+      const sourceStep = isExplorerStep ? "explorer" : "source";
       const rewrittenSecretKeys = rewrittenSchema
-        ? getSchemaSecretKeys(rewrittenSchema, { step: "source" })
+        ? getSchemaSecretKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
       const rewrittenStringKeys = rewrittenSchema
-        ? getSchemaStringKeys(rewrittenSchema, { step: "source" })
+        ? getSchemaStringKeys(rewrittenSchema, { step: sourceStep })
         : undefined;
-      if (isRewrittenToDuckDb) {
+      if (isRewrittenToDuckDb || isExplorerStep) {
         return compileSourceYAML(rewrittenConnector, rewrittenFormValues, {
           secretKeys: rewrittenSecretKeys,
           stringKeys: rewrittenStringKeys,
