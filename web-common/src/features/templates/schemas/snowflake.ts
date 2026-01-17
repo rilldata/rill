@@ -97,12 +97,6 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description: "Snowflake role",
       "x-placeholder": "your_role",
     },
-    log_queries: {
-      type: "boolean",
-      title: "Log queries",
-      description: "Enable SQL query logging (debugging)",
-      default: false,
-    },
     sql: {
       type: "string",
       title: "SQL",
