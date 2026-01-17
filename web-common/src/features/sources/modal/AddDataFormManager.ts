@@ -319,7 +319,8 @@ export class AddDataFormManager {
       selectedAuthMethod,
     } = args;
     const isClickhouse = this.connector.name === "clickhouse";
-    const isStepFlowConnector = this.isMultiStepConnector || this.isExplorerConnector;
+    const isStepFlowConnector =
+      this.isMultiStepConnector || this.isExplorerConnector;
 
     if (isClickhouse) {
       if (clickhouseConnectorType === "rill-managed") {
