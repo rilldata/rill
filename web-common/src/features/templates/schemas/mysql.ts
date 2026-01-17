@@ -103,4 +103,11 @@ export const mysqlSchema: MultiStepFormSchema = {
       required: ["host", "database", "user"],
     },
   ],
+  allOf: [
+    {
+      if: { properties: { connection_mode: { const: "dsn" } } },
+      then: { required: ["dsn"] },
+      else: { required: ["host", "database", "user"] },
+    },
+  ],
 };

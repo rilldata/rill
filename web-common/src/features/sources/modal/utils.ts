@@ -102,15 +102,15 @@ export function isMultiStepConnectorDisabled(
 
   // For source step, gate on required fields from the JSON schema.
   const currentStep = step || (paramsFormValue?.__step as string | undefined);
-  if (currentStep === "source") {
+  if (currentStep === "source" || currentStep === "explorer") {
     const required = getRequiredFieldsForStep(
       schema,
       paramsFormValue,
-      "source",
+      currentStep,
     );
     if (!required.length) return false;
     return !required.every((fieldId) => {
-      if (!isStepMatch(schema, fieldId, "source")) return true;
+      if (!isStepMatch(schema, fieldId, currentStep)) return true;
       const value = paramsFormValue[fieldId];
       const errorsForField = paramsFormErrors[fieldId] as any;
       const hasErrors = Boolean(errorsForField?.length);
@@ -121,6 +121,21 @@ export function isMultiStepConnectorDisabled(
   const authInfo = getRadioEnumOptions(schema);
   const options = authInfo?.options ?? [];
   const authKey = authInfo?.key || findRadioEnumKey(schema);
+  if (!authInfo || !options.length || !authKey) {
+    const required = getRequiredFieldsForStep(
+      schema,
+      paramsFormValue,
+      "connector",
+    );
+    if (!required.length) return false;
+    return !required.every((fieldId) => {
+      if (!isStepMatch(schema, fieldId, "connector")) return true;
+      const value = paramsFormValue[fieldId];
+      const errorsForField = paramsFormErrors[fieldId] as any;
+      const hasErrors = Boolean(errorsForField?.length);
+      return !isEmpty(value) && !hasErrors;
+    });
+  }
   const methodFromForm =
     authKey && paramsFormValue?.[authKey] != null
       ? String(paramsFormValue[authKey])

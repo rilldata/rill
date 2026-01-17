@@ -21,7 +21,7 @@ export function isStepMatch(
   if (!prop) return false;
   if (!step) return true;
   const propStep = prop["x-step"];
-  if (!propStep) return true;
+  if (!propStep) return step !== "explorer";
   return propStep === step;
 }
 

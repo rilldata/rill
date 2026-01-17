@@ -112,4 +112,11 @@ export const postgresSchema: MultiStepFormSchema = {
       required: ["host", "user", "dbname"],
     },
   ],
+  allOf: [
+    {
+      if: { properties: { connection_mode: { const: "dsn" } } },
+      then: { required: ["dsn"] },
+      else: { required: ["host", "user", "dbname"] },
+    },
+  ],
 };
