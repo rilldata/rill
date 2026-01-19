@@ -48,11 +48,11 @@ import (
 
 // Fixture is a test fixture for an admin service and server.
 // It wraps an admin service with a server running on a random port backed by a testcontainer Postgres database.
-// If startRt is set to true then it also includes a runtime service and server for integration testing.
+// If startRt is set to true then it also includes a runtime service and server.
 // The service, servers and other resources will be cleaned up when the test that created the Fixture stops.
 //
 // The service has several limitations compared to a production server:
-// - Github operation are no-ops
+// - Github operation are no-ops in short testing mode
 // - Billing operations are no-ops
 // - No configured metrics project
 // - Does not run background jobs
