@@ -89,7 +89,7 @@ export function getSelectOrganizationRoute() {
   return `/deploy/organization/select`;
 }
 
-export function getDeployLandingPage(frontendUrl: string, isInvite: boolean) {
+export function getDeployingPageUrl(frontendUrl: string, isInvite: boolean) {
   const url = new URL(frontendUrl);
   const deployingDashboard = getDeployingDashboard();
   if (deployingDashboard) {
@@ -98,7 +98,7 @@ export function getDeployLandingPage(frontendUrl: string, isInvite: boolean) {
   if (isInvite) {
     url.pathname += "/-/invite";
   } else {
-    url.pathname += "/-/deploy-landing-page";
+    url.pathname += "/-/deploying";
   }
   const projectInviteUrlWithSessionId = addPosthogSessionIdToUrl(
     url.toString(),

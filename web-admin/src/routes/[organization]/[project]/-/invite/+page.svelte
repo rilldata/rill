@@ -68,7 +68,7 @@
 
   function getDeployLandingPage() {
     const u = new URL($page.url);
-    u.pathname = `/${organization}/${project}/-/deploy-landing-page`;
+    u.pathname = `/${organization}/${project}/-/deploying`;
     return u.toString();
   }
 </script>

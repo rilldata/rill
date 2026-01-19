@@ -42,10 +42,8 @@ export function useDeployingDashboards(
         );
         if (dashboardsErrored) {
           return {
-            // Redirect to status page is dashboards errored
-            redirectPath: dashboardsErrored
-              ? `/${orgName}/${projName}/-/status`
-              : null,
+            // Redirect to status page if dashboards errored
+            redirectPath: `/${orgName}/${projName}/-/status`,
             dashboardsErrored,
           };
         }

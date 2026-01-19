@@ -9,7 +9,7 @@
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
   import Rocket from "svelte-radix/Rocket.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
+  import { getActiveResourceStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 
   export let open = false;
   export let matchingProjects: Project[];
@@ -23,7 +23,7 @@
 
   $: enableUpdate = !!selectedProject;
 
-  const currentResource = fileArtifacts.createCurrentResourceStore();
+  const currentResource = getActiveResourceStore();
   $: deployUrl = selectedProject
     ? getUpdateProjectRoute(
         $page,

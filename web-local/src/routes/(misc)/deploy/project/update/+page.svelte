@@ -17,7 +17,7 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import type { PageData } from "./$types";
-  import { getDeployLandingPage } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
+  import { getDeployingPageUrl } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
 
   export let data: PageData;
 
@@ -52,7 +52,7 @@
       createManagedRepo,
     });
     const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
-    const projectDeployLandingPage = getDeployLandingPage(projectUrl, false);
+    const projectDeployLandingPage = getDeployingPageUrl(projectUrl, false);
     window.open(projectDeployLandingPage, "_self");
   }
 

@@ -8,9 +8,8 @@ import {
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, get, writable, type Readable } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
-import { page } from "$app/stores";
 
 class UnsavedFilesStore {
   private unsavedFiles = writable(new Set<string>());
@@ -171,14 +170,6 @@ export class FileArtifacts {
       return errors[0]?.message ?? null;
     }
     return null;
-  }
-
-  public createCurrentResourceStore(): Readable<V1ResourceName | undefined> {
-    return derived(page, (pageState, set) => {
-      const filePath = pageState.url.pathname.replace("/files", "");
-      const fileArtifact = this.getFileArtifact(filePath);
-      return fileArtifact.resourceName.subscribe(set);
-    });
   }
 }
 
