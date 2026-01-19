@@ -14,6 +14,8 @@ import {
   createFileDiffBlock,
   type FileDiffBlock,
 } from "../file-diff/file-diff-block";
+import { goto } from "$app/navigation";
+import { maybePrependSlash } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
 // =============================================================================
 // RENDER MODES
@@ -47,6 +49,9 @@ export interface ToolConfig {
     callMessage: V1Message,
     resultMessage: V1Message | undefined,
   ) => ToolBlockType | null;
+
+  /** Used to process any UI action or side effects from tool calls. */
+  onResult?: (callMessage: V1Message) => void;
 }
 
 /**
@@ -83,6 +88,11 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createFileDiffBlock,
   },
 
+  [ToolName.NAVIGATE]: {
+    renderMode: "hidden",
+    onResult: handleNavigateToolCall,
+  },
+
   // All other tools default to "inline" (shown in thinking blocks)
 };
 
@@ -104,4 +114,18 @@ export function getToolConfig(toolName: string | undefined): ToolConfig {
  */
 export function isHiddenTool(toolName: string | undefined): boolean {
   return getToolConfig(toolName).renderMode === "hidden";
+}
+
+function handleNavigateToolCall(callMessage: V1Message) {
+  if (!callMessage.contentData) return;
+  try {
+    const content = JSON.parse(callMessage.contentData);
+    if (!content.kind || !content.name) return;
+    switch (content.kind) {
+      case "file":
+        void goto(`/files${maybePrependSlash(content.name)}`);
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }

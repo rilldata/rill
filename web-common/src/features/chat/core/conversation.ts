@@ -25,6 +25,7 @@ import {
   NEW_CONVERSATION_ID,
 } from "./utils";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { getToolConfig } from "@rilldata/web-common/features/chat/core/messages/tools/tool-registry.ts";
 
 type ConversationEvents = {
   "conversation-created": string;
@@ -318,6 +319,13 @@ export class Conversation {
       }
 
       this.addMessageToCache(response.message);
+      if (
+        response.message.tool === ToolName.NAVIGATE &&
+        response.message.type === MessageType.CALL
+      ) {
+        const config = getToolConfig(response.message.tool);
+        config?.onResult?.(response.message);
+      }
     }
   }
 

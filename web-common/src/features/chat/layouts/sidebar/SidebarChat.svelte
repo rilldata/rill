@@ -5,7 +5,6 @@
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
     cleanupConversationManager,
-    ConversationManager,
     getConversationManager,
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
@@ -20,7 +19,6 @@
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
 
   export let config: ChatConfig;
-  export let conversationManager: ConversationManager | null = null;
 
   $: ({ instanceId } = $runtime);
 

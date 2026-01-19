@@ -12,7 +12,6 @@ import { get, writable } from "svelte/store";
 import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants.ts";
 import { overlay } from "@rilldata/web-common/layout/overlay-store.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { goto } from "$app/navigation";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store.ts";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
@@ -22,6 +21,7 @@ import {
 } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import OptionCancelToAIAction from "@rilldata/web-common/features/sample-data/OptionCancelToAIAction.svelte";
 import type { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
+import { maybePrependSlash } from "@rilldata/web-common/features/entity-management/file-path-utils.ts";
 
 export const generatingSampleData = writable(false);
 const PROJECT_INIT_TIMEOUT_MS = 10_000;
@@ -104,28 +104,6 @@ export async function generateSampleData(
   }
 }
 
-export function maybeNavigateToGeneratedFile(
-  conversationManager: ConversationManager,
-) {
-  let listener: FileWriteListener | null = null;
-
-  const conversationStore = conversationManager.getCurrentConversation();
-
-  const storeUnsub = conversationStore.subscribe((conversation) => {
-    listener?.cleanup();
-    listener = new FileWriteListener(conversation, {
-      onWriteFile: (path) => {
-        void goto(`/files${path}`);
-      },
-    });
-  });
-
-  return () => {
-    storeUnsub();
-    listener?.cleanup();
-  };
-}
-
 async function generateSampleDataWithDevChat(
   agentPrompt: string,
   conversationManager: ConversationManager,
@@ -148,7 +126,6 @@ async function generateSampleDataWithDevChat(
       created = true;
       overlay.set(null);
       sourceImportedPath.set(path);
-      void goto(`/files${path}`);
     },
   });
 
@@ -293,8 +270,4 @@ class FileWriteListener {
     }
     return null;
   }
-}
-
-function maybePrependSlash(path: string) {
-  return path.startsWith("/") ? path : "/" + path;
 }

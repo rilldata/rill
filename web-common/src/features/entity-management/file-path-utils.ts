@@ -50,3 +50,7 @@ export function splitFolderFileNameAndExtension(
 export function getTopLevelFolder(filePath: string): string {
   return "/" + (filePath.split(FILE_PATH_SPLIT_REGEX)[1] ?? "");
 }
+
+export function maybePrependSlash(path: string) {
+  return path.startsWith("/") ? path : "/" + path;
+}
