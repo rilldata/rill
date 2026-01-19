@@ -46,9 +46,9 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
-// Fixture is a test fixture for an admin service and server with an embedded runtime server.
+// Fixture is a test fixture for an admin service and server.
 // It wraps an admin service with a server running on a random port backed by a testcontainer Postgres database.
-// It also includes a fully functional runtime server for integration testing.
+// If startRt is set to true then it also includes a runtime service and server for integration testing.
 // The service, servers and other resources will be cleaned up when the test that created the Fixture stops.
 //
 // The service has several limitations compared to a production server:
@@ -183,44 +183,17 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 		}
 	}
 
-	// Create runtime server
-	runtimeServerOpts := &runtimeserver.Options{
-		HTTPPort:        runtimePort,
-		GRPCPort:        runtimePort,
-		AllowedOrigins:  []string{"*"},
-		SessionKeyPairs: [][]byte{randomBytes(16), randomBytes(16)},
-		AuthEnable:      true,
-		AuthIssuerURL:   externalURL,        // Admin server as issuer
-		AuthAudienceURL: runtimeExternalURL, // Runtime's own URL
-	}
-
-	rt := testruntime.New(t, false)
-	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
-	require.NoError(t, err)
-	t.Cleanup(func() { rtSrv.Close() })
-
-	group.Go(func() error {
-		return rtSrv.ServeHTTP(ctx, nil, false)
-	})
-
-	// Wait for runtime server to be ready
-	require.Eventually(t, func() bool {
-		resp, err := http.Get(fmt.Sprintf("%s/v1/ping", runtimeExternalURL))
-		if err == nil && resp.StatusCode == 200 {
-			resp.Body.Close()
-			return true
-		}
-		return false
-	}, 15*time.Second, 100*time.Millisecond, "runtime server failed to start")
+	// Create and start runtime server
+	rtFixture := newRuntimeServer(ctx, t, group, runtimePort, externalURL, runtimeExternalURL, logger)
 
 	return &Fixture{
 		Admin:             adm,
 		Server:            srv,
 		ServerOpts:        srvOpts,
 		Audience:          aud,
-		Runtime:           rt,
-		RuntimeServer:     rtSrv,
-		RuntimeServerOpts: runtimeServerOpts,
+		Runtime:           rtFixture.Runtime,
+		RuntimeServer:     rtFixture.RuntimeServer,
+		RuntimeServerOpts: rtFixture.RuntimeServerOpts,
 	}
 }
 
@@ -324,6 +297,55 @@ func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (
 
 func (m *mockGithub) ManagedOrgInstallationID() (int64, error) {
 	return 0, fmt.Errorf("not implemented")
+}
+
+// runtimeServerFixture contains the runtime server components created for testing.
+type runtimeServerFixture struct {
+	Runtime           *runtime.Runtime
+	RuntimeServer     *runtimeserver.Server
+	RuntimeServerOpts *runtimeserver.Options
+}
+
+func newRuntimeServer(ctx context.Context, t *testing.T, group *errgroup.Group, runtimePort int, externalURL, runtimeExternalURL string, logger *zap.Logger) *runtimeServerFixture {
+	// Create runtime server options
+	runtimeServerOpts := &runtimeserver.Options{
+		HTTPPort:        runtimePort,
+		GRPCPort:        runtimePort,
+		AllowedOrigins:  []string{"*"},
+		SessionKeyPairs: [][]byte{randomBytes(16), randomBytes(16)},
+		AuthEnable:      true,
+		AuthIssuerURL:   externalURL,        // Admin server as issuer
+		AuthAudienceURL: runtimeExternalURL, // Runtime's own URL
+	}
+
+	// Create runtime
+	rt := testruntime.New(t, false)
+
+	// Create runtime server
+	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { rtSrv.Close() })
+
+	// Start runtime server in the background
+	group.Go(func() error {
+		return rtSrv.ServeHTTP(ctx, nil, false)
+	})
+
+	// Wait for runtime server to be ready
+	require.Eventually(t, func() bool {
+		resp, err := http.Get(fmt.Sprintf("%s/v1/ping", runtimeExternalURL))
+		if err == nil && resp.StatusCode == http.StatusOK {
+			resp.Body.Close()
+			return true
+		}
+		return false
+	}, 15*time.Second, 100*time.Millisecond, "runtime server failed to start")
+
+	return &runtimeServerFixture{
+		Runtime:           rt,
+		RuntimeServer:     rtSrv,
+		RuntimeServerOpts: runtimeServerOpts,
+	}
 }
 
 // findTwoPorts finds two different available ports.
