@@ -159,7 +159,6 @@ All timestamp values are returned in UTC. The driver parses DATETIME values from
 ## Known Limitations
 
 - **Read-only connector**: StarRocks is a read-only OLAP connector. Model creation and execution is not supported.
-- **Direct table reference**: Use the `table` property in metrics views instead of `model` to reference StarRocks tables directly.
 
 :::info Need help connecting to StarRocks?
 
