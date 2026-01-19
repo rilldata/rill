@@ -33,10 +33,18 @@
     if (option?.section) newPath.push(option.section);
 
     newPath.push(id);
-    const path = `/${newPath.join("/")}`;
-
+    let path = `/${newPath.join("/")}`;
     // add the sub route if it has no variables
-    return path + getNonVariableSubRoute(path, route);
+    path += getNonVariableSubRoute(path, route);
+    // add the search if it exists
+    if (option?.search) path = maybeAddSearch(path, option.search);
+
+    return path;
+  }
+
+  function maybeAddSearch(path: string, search: string) {
+    if (path.includes("?")) return `${path}&${search}`;
+    return `${path}?${search}`;
   }
 </script>
 

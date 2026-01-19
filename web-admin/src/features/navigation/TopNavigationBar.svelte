@@ -150,6 +150,7 @@
           ? resource?.explore?.spec?.displayName
           : resource?.canvas?.spec?.displayName) || name,
       section: isMetricsExplorer ? "explore" : "canvas",
+      search: $page.url.search,
     });
   }, new Map<string, PathOption>());
 
