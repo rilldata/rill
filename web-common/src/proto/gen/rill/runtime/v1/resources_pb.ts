@@ -3454,6 +3454,22 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   intervalsCheckUnclosed = false;
 
+  /**
+   * AI report configuration
+   *
+   * "query" (default) or "ai_session"
+   *
+   * @generated from field: string format = 17;
+   */
+  format = "";
+
+  /**
+   * Configuration for AI-powered reports (only used when format = "ai_session")
+   *
+   * @generated from field: rill.runtime.v1.AIReportConfig ai_config = 18;
+   */
+  aiConfig?: AIReportConfig;
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3477,6 +3493,8 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 13, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 15, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "ai_config", kind: "message", T: AIReportConfig },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
@@ -3609,6 +3627,155 @@ export class ReportExecution extends Message<ReportExecution> {
 
   static equals(a: ReportExecution | PlainMessage<ReportExecution> | undefined, b: ReportExecution | PlainMessage<ReportExecution> | undefined): boolean {
     return proto3.util.equals(ReportExecution, a, b);
+  }
+}
+
+/**
+ * AIReportConfig configures AI-powered reports that generate insights using an AI agent.
+ *
+ * @generated from message rill.runtime.v1.AIReportConfig
+ */
+export class AIReportConfig extends Message<AIReportConfig> {
+  /**
+   * Agent to use (e.g., "analyst_agent")
+   *
+   * @generated from field: string agent = 1;
+   */
+  agent = "";
+
+  /**
+   * User prompt for the AI agent
+   *
+   * @generated from field: string prompt = 2;
+   */
+  prompt = "";
+
+  /**
+   * Time range for analysis (resolved at execution time)
+   *
+   * @generated from field: rill.runtime.v1.AITimeRange time_range = 3;
+   */
+  timeRange?: AITimeRange;
+
+  /**
+   * Optional comparison time range for period-over-period analysis
+   *
+   * @generated from field: rill.runtime.v1.AITimeRange comparison_time_range = 4;
+   */
+  comparisonTimeRange?: AITimeRange;
+
+  /**
+   * Optional dashboard context to constrain the analysis
+   *
+   * Explore dashboard name
+   *
+   * @generated from field: string explore = 5;
+   */
+  explore = "";
+
+  /**
+   * Dimensions to analyze
+   *
+   * @generated from field: repeated string dimensions = 6;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * Measures to analyze
+   *
+   * @generated from field: repeated string measures = 7;
+   */
+  measures: string[] = [];
+
+  /**
+   * Filter expression
+   *
+   * @generated from field: google.protobuf.Struct where = 8;
+   */
+  where?: Struct;
+
+  constructor(data?: PartialMessage<AIReportConfig>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIReportConfig";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_range", kind: "message", T: AITimeRange },
+    { no: 4, name: "comparison_time_range", kind: "message", T: AITimeRange },
+    { no: 5, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "where", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIReportConfig {
+    return new AIReportConfig().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIReportConfig {
+    return new AIReportConfig().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIReportConfig {
+    return new AIReportConfig().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIReportConfig | PlainMessage<AIReportConfig> | undefined, b: AIReportConfig | PlainMessage<AIReportConfig> | undefined): boolean {
+    return proto3.util.equals(AIReportConfig, a, b);
+  }
+}
+
+/**
+ * AITimeRange defines a time range using ISO 8601 duration strings.
+ * The time range is resolved at report execution time.
+ *
+ * @generated from message rill.runtime.v1.AITimeRange
+ */
+export class AITimeRange extends Message<AITimeRange> {
+  /**
+   * ISO 8601 duration (e.g., "P7D" for 7 days, "P1M" for 1 month)
+   *
+   * @generated from field: string iso_duration = 1;
+   */
+  isoDuration = "";
+
+  /**
+   * IANA timezone (e.g., "America/New_York")
+   *
+   * @generated from field: string time_zone = 2;
+   */
+  timeZone = "";
+
+  constructor(data?: PartialMessage<AITimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AITimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AITimeRange {
+    return new AITimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AITimeRange {
+    return new AITimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AITimeRange {
+    return new AITimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AITimeRange | PlainMessage<AITimeRange> | undefined, b: AITimeRange | PlainMessage<AITimeRange> | undefined): boolean {
+    return proto3.util.equals(AITimeRange, a, b);
   }
 }
 

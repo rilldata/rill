@@ -10,6 +10,7 @@ import (
 type Notifier interface {
 	SendAlertStatus(s *AlertStatus) error
 	SendScheduledReport(s *ScheduledReport) error
+	SendAIInsightReport(s *AIInsightReport) error
 }
 
 type AlertStatus struct {
@@ -33,5 +34,14 @@ type ScheduledReport struct {
 	DownloadFormat  string
 	OpenLink        string
 	DownloadLink    string
+	UnsubscribeLink string
+}
+
+// AIInsightReport contains information for sending AI-powered insight report notifications.
+type AIInsightReport struct {
+	DisplayName     string
+	ReportTime      time.Time
+	Summary         string
+	OpenLink        string
 	UnsubscribeLink string
 }

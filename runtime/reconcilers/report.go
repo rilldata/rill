@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -177,7 +178,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	conditionRes = append(conditionRes, res.Meta.Name)
 	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
 
-	if spec.QueryName != "" {
+	if spec.QueryName != "" && spec.Format == "query" {
 		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
 		if !ok {
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
@@ -257,6 +258,12 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 				}
 			}
 		}
+	}
+
+	// for ai_session allowing access to the referred explore without restricting it further for now
+	// TODO change ai resolver's infer security rules to return fields and where claude for field and row filter rules
+	if spec.Format == "ai_session" && spec.AiConfig.Explore != "" {
+		conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: spec.AiConfig.Explore})
 	}
 
 	if len(conditionKinds) > 0 || len(conditionRes) > 0 {
@@ -499,6 +506,16 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t), observability.ZapCtx(ctx))
 
+	// Check if this is an AI-powered report
+	var sessionID, summary string
+	var err error
+	if rep.Spec.Format == "ai_session" {
+		sessionID, summary, err = r.triggerAIReport(ctx, self, rep, t)
+		if err != nil {
+			return false, fmt.Errorf("failed to trigger AI report: %w", err)
+		}
+	}
+
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
@@ -540,30 +557,58 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		switch notifier.Connector {
 		case "email":
 			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				opts := &email.ScheduledReport{
-					ToEmail:        recipient,
-					ToName:         "",
-					DisplayName:    rep.Spec.DisplayName,
-					ReportTime:     t,
-					DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+			if rep.Spec.Format == "ai_session" {
+				for _, recipient := range recipients {
+					urls, ok := meta.RecipientURLs[recipient]
+					if !ok {
+						return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
+					}
+
+					// TODO fix this - hacking an AI session open URL from the report URL for now until we know where to show scheduled ai reports in UI
+					openURL := buildAISessionURL(urls.OpenURL, sessionID)
+
+					opts := &email.AIInsightReport{
+						ToEmail:         recipient,
+						ToName:          "",
+						DisplayName:     rep.Spec.DisplayName,
+						ReportTime:      t,
+						Summary:         truncateSummary(summary, 500),
+						OpenLink:        openURL,
+						EditLink:        urls.EditURL,
+						UnsubscribeLink: urls.UnsubscribeURL,
+					}
+					err = r.C.Runtime.Email.SendAIInsightReport(opts)
+					sent = true
+					if err != nil {
+						return true, fmt.Errorf("failed to send AI insight report to %q: %w", recipient, err)
+					}
 				}
-				urls, ok := meta.RecipientURLs[recipient]
-				if !ok {
-					return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
-				}
-				opts.OpenLink = urls.OpenURL
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return false, err
-				}
-				opts.DownloadLink = u.String()
-				opts.EditLink = urls.EditURL
-				opts.UnsubscribeLink = urls.UnsubscribeURL
-				err = r.C.Runtime.Email.SendScheduledReport(opts)
-				sent = true
-				if err != nil {
-					return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+			} else {
+				for _, recipient := range recipients {
+					opts := &email.ScheduledReport{
+						ToEmail:        recipient,
+						ToName:         "",
+						DisplayName:    rep.Spec.DisplayName,
+						ReportTime:     t,
+						DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+					}
+					urls, ok := meta.RecipientURLs[recipient]
+					if !ok {
+						return false, fmt.Errorf("failed to get recipient URLs for %q", recipient)
+					}
+					opts.OpenLink = urls.OpenURL
+					u, err := createExportURL(urls.ExportURL, t)
+					if err != nil {
+						return false, err
+					}
+					opts.DownloadLink = u.String()
+					opts.EditLink = urls.EditURL
+					opts.UnsubscribeLink = urls.UnsubscribeURL
+					err = r.C.Runtime.Email.SendScheduledReport(opts)
+					sent = true
+					if err != nil {
+						return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+					}
 				}
 			}
 		default:
@@ -581,18 +626,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				if !ok {
 					return fmt.Errorf("failed to get recipient URLs for anon user")
 				}
-				u, err := createExportURL(urls.ExportURL, t)
-				if err != nil {
-					return err
-				}
-				msg := &drivers.ScheduledReport{
-					DisplayName:     rep.Spec.DisplayName,
-					ReportTime:      t,
-					DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
-					OpenLink:        urls.OpenURL,
-					DownloadLink:    u.String(),
-					UnsubscribeLink: urls.UnsubscribeURL,
-				}
 				start := time.Now()
 				defer func() {
 					totalLatency := time.Since(start).Milliseconds()
@@ -601,11 +634,38 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 						r.C.Activity.RecordMetric(ctx, "notifier_total_latency_ms", float64(totalLatency),
 							attribute.Bool("failed", outErr != nil),
 							attribute.String("connector", notifier.Connector),
-							attribute.String("notification_type", "scheduled_report"),
+							attribute.String("notification_type", "ai_insight_report"),
 						)
 					}
 				}()
-				err = n.SendScheduledReport(msg)
+				if rep.Spec.Format == "ai_session" {
+					// TODO fix this - hacking an AI session open URL from the report URL for now until we know where to show scheduled ai reports in UI
+					openURL := buildAISessionURL(urls.OpenURL, sessionID)
+
+					msg := &drivers.AIInsightReport{
+						DisplayName:     rep.Spec.DisplayName,
+						ReportTime:      t,
+						Summary:         truncateSummary(summary, 500),
+						OpenLink:        openURL,
+						UnsubscribeLink: urls.UnsubscribeURL,
+					}
+					err = n.SendAIInsightReport(msg)
+				} else {
+					var u *url.URL
+					u, err = createExportURL(urls.ExportURL, t)
+					if err != nil {
+						return err
+					}
+					msg := &drivers.ScheduledReport{
+						DisplayName:     rep.Spec.DisplayName,
+						ReportTime:      t,
+						DownloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+						OpenLink:        urls.OpenURL,
+						DownloadLink:    u.String(),
+						UnsubscribeLink: urls.UnsubscribeURL,
+					}
+					err = n.SendScheduledReport(msg)
+				}
 				sent = true
 				if err != nil {
 					return fmt.Errorf("failed to send %s notification: %w", notifier.Connector, err)
@@ -619,6 +679,119 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+// triggerAIReport executes an AI-powered report and returns session id with summary.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (string, string, error) {
+	if rep.Spec.AiConfig == nil {
+		return "", "", fmt.Errorf("AI report is missing ai_config")
+	}
+
+	// Get owner ID for claims
+	var ownerID string
+	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
+		ownerID = id
+	}
+
+	// Create claims for executing the AI resolver
+	// We use SkipChecks since this is a system-level operation running as the report owner
+	claims := &runtime.SecurityClaims{
+		UserID:      ownerID,
+		SkipChecks:  false,
+		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	}
+
+	// Build resolver properties from AI config
+	aiConfig := rep.Spec.AiConfig
+	agent := aiConfig.Agent
+	if agent == "" {
+		agent = ai.AnalystAgentName
+	}
+	prompt := aiConfig.Prompt
+	if prompt == "" {
+		prompt = "Generate the scheduled insight report."
+	}
+	props := map[string]any{
+		"agent":  agent,
+		"prompt": prompt,
+	}
+	if aiConfig.TimeRange != nil {
+		props["time_range_iso_duration"] = aiConfig.TimeRange.IsoDuration
+		props["time_range_time_zone"] = aiConfig.TimeRange.TimeZone
+	}
+	if aiConfig.ComparisonTimeRange != nil {
+		props["comparison_time_range_iso_duration"] = aiConfig.ComparisonTimeRange.IsoDuration
+	}
+	if aiConfig.Explore != "" {
+		props["explore"] = aiConfig.Explore
+	}
+	if len(aiConfig.Dimensions) > 0 {
+		props["dimensions"] = aiConfig.Dimensions
+	}
+	if len(aiConfig.Measures) > 0 {
+		props["measures"] = aiConfig.Measures
+	}
+	if aiConfig.Where != nil {
+		props["where"] = aiConfig.Where.AsMap()
+	}
+
+	// Execute AI resolver
+	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           "ai",
+		ResolverProperties: props,
+		Args: map[string]any{
+			"execution_time": t,
+		},
+		Claims: claims,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("failed to execute AI resolver: %w", err)
+	}
+	defer result.Close()
+
+	// Get the result row
+	row, err := result.Next()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get AI resolver result: %w", err)
+	}
+
+	sessionID, ok := row["ai_session_id"].(string)
+	if !ok || sessionID == "" {
+		return "", "", fmt.Errorf("AI resolver did not return a valid session ID")
+	}
+	summary, _ := row["summary"].(string)
+
+	r.C.Logger.Info("AI session created", zap.String("report", self.Meta.Name.Name), zap.String("session_id", sessionID), observability.ZapCtx(ctx))
+
+	return sessionID, summary, nil
+}
+
+func buildAISessionURL(baseOpenURL, sessionID string) string {
+	// Replace the open URL path to point to the AI session
+	// Typical URL format: /{org}/{project}/-/reports/{report} -> /{org}/{project}/-/ai/{session_id}
+	u, err := url.Parse(baseOpenURL)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse base open URL %q: %w", baseOpenURL, err))
+	}
+
+	// Find the /-/ marker in the path and replace everything after it
+	parts := strings.Split(u.Path, "/-/")
+	if len(parts) >= 2 {
+		u.Path = parts[0] + "/-/ai/" + sessionID
+	} else {
+		panic(fmt.Errorf("unexpected base open URL format %q", baseOpenURL))
+	}
+
+	return u.String()
+}
+
+// truncateSummary truncates the summary to a maximum length, adding ellipsis if truncated.
+func truncateSummary(summary string, maxLen int) string {
+	if len(summary) <= maxLen {
+		return summary
+	}
+	return summary[:maxLen-3] + "..."
 }
 
 func createExportURL(inURL string, executionTime time.Time) (*url.URL, error) {

@@ -82,6 +82,52 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
+// AIInsightReport contains information for sending AI-powered insight report emails.
+type AIInsightReport struct {
+	ToEmail         string
+	ToName          string
+	DisplayName     string
+	ReportTime      time.Time
+	Summary         string
+	OpenLink        string
+	EditLink        string
+	UnsubscribeLink string
+}
+
+type aiInsightReportData struct {
+	DisplayName      string
+	ReportTimeString string
+	Summary          string
+	OpenLink         template.URL
+	EditLink         template.URL
+	UnsubscribeLink  template.URL
+}
+
+func (c *Client) SendAIInsightReport(opts *AIInsightReport) error {
+	// Build template data
+	data := &aiInsightReportData{
+		DisplayName:      opts.DisplayName,
+		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
+		Summary:          opts.Summary,
+		OpenLink:         template.URL(opts.OpenLink),
+		EditLink:         template.URL(opts.EditLink),
+		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
+	}
+
+	// Build subject
+	subject := fmt.Sprintf("AI Insight: %s (%s)", opts.DisplayName, data.ReportTimeString)
+
+	// Resolve template
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("ai_insight_report.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
 func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 	switch opts.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:

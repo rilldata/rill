@@ -3731,6 +3731,51 @@ definitions:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
     title: Type represents a data type in a schema
+  v1AIReportConfig:
+    type: object
+    properties:
+      agent:
+        type: string
+        title: Agent to use (e.g., "analyst_agent")
+      prompt:
+        type: string
+        title: User prompt for the AI agent
+      timeRange:
+        $ref: '#/definitions/v1AITimeRange'
+        title: Time range for analysis (resolved at execution time)
+      comparisonTimeRange:
+        $ref: '#/definitions/v1AITimeRange'
+        title: Optional comparison time range for period-over-period analysis
+      explore:
+        type: string
+        description: Explore dashboard name
+        title: Optional dashboard context to constrain the analysis
+      dimensions:
+        type: array
+        items:
+          type: string
+        title: Dimensions to analyze
+      measures:
+        type: array
+        items:
+          type: string
+        title: Measures to analyze
+      where:
+        type: object
+        title: Filter expression
+    description: AIReportConfig configures AI-powered reports that generate insights using an AI agent.
+  v1AITimeRange:
+    type: object
+    properties:
+      isoDuration:
+        type: string
+        title: ISO 8601 duration (e.g., "P7D" for 7 days, "P1M" for 1 month)
+      timeZone:
+        type: string
+        title: IANA timezone (e.g., "America/New_York")
+    description: |-
+      AITimeRange defines a time range using ISO 8601 duration strings.
+      The time range is resolved at report execution time.
   v1API:
     type: object
     properties:
@@ -6966,6 +7011,13 @@ definitions:
         format: int32
       intervalsCheckUnclosed:
         type: boolean
+      format:
+        type: string
+        description: '"query" (default) or "ai_session"'
+        title: AI report configuration
+      aiConfig:
+        $ref: '#/definitions/v1AIReportConfig'
+        title: Configuration for AI-powered reports (only used when format = "ai_session")
   v1ReportState:
     type: object
     properties:

@@ -28,6 +28,7 @@ type ReportYAML struct {
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
 	Timeout string `yaml:"timeout"`
+	Format  string `yaml:"format"` // "query" (default) or "ai_session"
 	Query   struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
@@ -38,6 +39,10 @@ type ReportYAML struct {
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
+	// Data block for AI-powered reports
+	Data struct {
+		AI *AIReportDataYAML `yaml:"ai"`
+	} `yaml:"data"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
 	} `yaml:"email"`
@@ -52,6 +57,25 @@ type ReportYAML struct {
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
+}
+
+// AIReportDataYAML is the raw structure for AI-powered report configuration
+type AIReportDataYAML struct {
+	Agent     string `yaml:"agent"`
+	Prompt    string `yaml:"prompt"`
+	TimeRange struct {
+		ISODuration string `yaml:"iso_duration"`
+		TimeZone    string `yaml:"time_zone"`
+	} `yaml:"time_range"`
+	ComparisonTimeRange struct {
+		ISODuration string `yaml:"iso_duration"`
+	} `yaml:"comparison_time_range"`
+	Context struct {
+		Explore    string         `yaml:"explore"`
+		Dimensions []string       `yaml:"dimensions"`
+		Measures   []string       `yaml:"measures"`
+		Where      map[string]any `yaml:"where"`
+	} `yaml:"context"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
@@ -112,36 +136,58 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
-	// Query name
-	if tmp.Query.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
+	// Parse format - "query" (default) or "ai_session"
+	format := strings.ToLower(tmp.Format)
+	if format == "" {
+		format = "query"
+	}
+	if format != "query" && format != "ai_session" {
+		return fmt.Errorf(`invalid value %q for property "format" (must be "query" or "ai_session")`, tmp.Format)
 	}
 
-	// Query args
-	if tmp.Query.ArgsJSON != "" {
-		// Validate JSON
-		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
-			return errors.New(`failed to parse "query.args_json" as JSON`)
-		}
-	} else {
-		// Fall back to query.args if query.args_json is not set
-		data, err := json.Marshal(tmp.Query.Args)
+	// Parse AI config if format is "ai_session"
+	var aiConfig *runtimev1.AIReportConfig
+	if format == "ai_session" {
+		aiConfig, err = p.parseAIReportConfig(tmp.Data.AI)
 		if err != nil {
-			return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			return err
 		}
-		tmp.Query.ArgsJSON = string(data)
-	}
-	if tmp.Query.ArgsJSON == "" {
-		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 	}
 
-	// Parse export format
-	exportFormat, err := parseExportFormat(tmp.Export.Format)
-	if err != nil {
-		return err
-	}
-	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
-		return fmt.Errorf(`missing required property "export.format"`)
+	// Parse query-based report config
+	var exportFormat runtimev1.ExportFormat
+	if format == "query" {
+		// Query name
+		if tmp.Query.Name == "" {
+			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
+		}
+
+		// Query args
+		if tmp.Query.ArgsJSON != "" {
+			// Validate JSON
+			if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
+				return errors.New(`failed to parse "query.args_json" as JSON`)
+			}
+		} else {
+			// Fall back to query.args if query.args_json is not set
+			data, err := json.Marshal(tmp.Query.Args)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			}
+			tmp.Query.ArgsJSON = string(data)
+		}
+		if tmp.Query.ArgsJSON == "" {
+			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		}
+
+		// Parse export format
+		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		if err != nil {
+			return err
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
+			return fmt.Errorf(`missing required property "export.format"`)
+		}
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
@@ -199,6 +245,8 @@ func (p *Parser) parseReport(node *Node) error {
 	if timeout != 0 {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
+	r.ReportSpec.Format = format
+	r.ReportSpec.AiConfig = aiConfig
 	r.ReportSpec.QueryName = tmp.Query.Name
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
@@ -268,4 +316,66 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 		}
 		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, fmt.Errorf("invalid export format %q", s)
 	}
+}
+
+// parseAIReportConfig parses the AI configuration for AI-powered reports
+func (p *Parser) parseAIReportConfig(ai *AIReportDataYAML) (*runtimev1.AIReportConfig, error) {
+	if ai == nil {
+		return nil, errors.New(`"data.ai" is required when format is "ai_session"`)
+	}
+
+	// Validate agent
+	if ai.Agent == "" {
+		ai.Agent = "analyst_agent" // Default to analyst_agent
+	}
+
+	// Prompt is optional - if not provided, the agent will use its default behavior
+
+	// Validate time range
+	if ai.TimeRange.ISODuration == "" {
+		return nil, errors.New(`"data.ai.time_range.iso_duration" is required`)
+	}
+	err := duration.ValidateISO8601(ai.TimeRange.ISODuration, false, false)
+	if err != nil {
+		return nil, fmt.Errorf(`invalid value %q for "data.ai.time_range.iso_duration": %w`, ai.TimeRange.ISODuration, err)
+	}
+
+	// Validate comparison time range if provided
+	if ai.ComparisonTimeRange.ISODuration != "" {
+		err := duration.ValidateISO8601(ai.ComparisonTimeRange.ISODuration, false, false)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid value %q for "data.ai.comparison_time_range.iso_duration": %w`, ai.ComparisonTimeRange.ISODuration, err)
+		}
+	}
+
+	// Build the proto config
+	config := &runtimev1.AIReportConfig{
+		Agent:  ai.Agent,
+		Prompt: ai.Prompt,
+		TimeRange: &runtimev1.AITimeRange{
+			IsoDuration: ai.TimeRange.ISODuration,
+			TimeZone:    ai.TimeRange.TimeZone,
+		},
+		Explore:    ai.Context.Explore,
+		Dimensions: ai.Context.Dimensions,
+		Measures:   ai.Context.Measures,
+	}
+
+	// Add comparison time range if provided
+	if ai.ComparisonTimeRange.ISODuration != "" {
+		config.ComparisonTimeRange = &runtimev1.AITimeRange{
+			IsoDuration: ai.ComparisonTimeRange.ISODuration,
+		}
+	}
+
+	// Add where filter if provided
+	if len(ai.Context.Where) > 0 {
+		where, err := structpb.NewStruct(ai.Context.Where)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid value for "data.ai.context.where": %w`, err)
+		}
+		config.Where = where
+	}
+
+	return config, nil
 }

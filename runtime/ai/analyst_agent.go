@@ -24,13 +24,17 @@ type AnalystAgent struct {
 var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
-	Prompt     string                  `json:"prompt"`
-	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
-	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
-	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	Prompt              string                  `json:"prompt"`
+	Explore             string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Dimensions          []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Measures            []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+	Where               *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart           time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd             time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	ComparisonTimeStart time.Time               `json:"comparison_time_start" yaml:"comparison_time_start" jsonschema:"Optional comparison period start time."`
+	ComparisonTimeEnd   time.Time               `json:"comparison_time_end" yaml:"comparison_time_end" jsonschema:"Optional comparison period end time."`
+	// scheduled insight report mode args
+	IsScheduledInsight bool `json:"is_scheduled_insight" yaml:"is_scheduled_insight" jsonschema:"Flag indicating this is an automated scheduled insight report."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -193,6 +197,14 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
 	}
 
+	// Add scheduled insight mode context
+	data["is_scheduled_insight"] = args.IsScheduledInsight
+	data["has_comparison"] = !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero()
+	if !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero() {
+		data["comparison_start"] = args.ComparisonTimeStart.Format(time.RFC3339)
+		data["comparison_end"] = args.ComparisonTimeEnd.Format(time.RFC3339)
+	}
+
 	if args.Where != nil {
 		data["where"], err = metricsview.ExpressionToSQL(args.Where)
 		if err != nil {
@@ -205,6 +217,10 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 	return executeTemplate(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights.
 You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+{{ if .is_scheduled_insight }}
+You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
+if the user has provided a specific prompt other than a generic prompt like "Generate the scheduled insight report", use it to focus your analysis.
+{{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
 </role>
@@ -219,11 +235,12 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 **Phase 1: discovery (setup)**
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
-The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
+{{ if not .is_scheduled_insight }} The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc. {{ end }}
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard:
+Here is an overview of the settings applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if .has_comparison }}Use comparison time range: start={{.comparison_start}}, end={{.comparison_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
 {{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
@@ -248,27 +265,61 @@ If you run into such issues, explicitly mention to the user that this may be due
 **Phase 2: analysis (loop)**
 In an iterative OODA loop, you should repeatedly use the "query_metrics_view" tool to query for insights.
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.
-Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
+Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to {{ if .is_scheduled_insight }} 50 {{ else }} 20 {{ end }} queries.
 
+{{ if and .is_scheduled_insight (not .is_scheduled_insight_user_prompt) }}
+{{ if .has_comparison }}
+<comparison_analysis>
+You are doing comparative analysis between two time periods in scheduled insight report mode, your analysis should:
+1. Compare current period to the comparison period for all key measures
+2. Identify which measures changed significantly (>10%)
+3. For each significant change, identify the dimensional drivers
+4. Highlight any ranking changes in top dimensions
+5. Generate 3-5 key insights with supporting charts
+
+Focus areas:
+- **Overall changes**: Which measures changed the most between periods?
+- **Drivers of change**: Which dimensions contributed most to increases/decreases?
+- **Ranking shifts**: Did any top dimensions change rank significantly?
+- **Anomalies**: Any unusual patterns unique to one period?
+</comparison_analysis>
+{{ else }}
+<single_period_analysis>
+You are doing single period analysis in scheduled insight report mode, your analysis should:
+1. Show totals for the most impactful measures in the period
+2. Identify interesting trends within the time range (use time series)
+3. Find anomalies - unusual spikes, drops, or outliers
+4. Highlight top performers and notable dimension values
+5. Generate 3-5 key insights with supporting charts
+
+Focus areas:
+- **Totals**: What are the key numbers for this period?
+- **Trends**: How did metrics change over the period? Any acceleration/deceleration?
+- **Anomalies**: Are there any unusual data points that stand out?
+- **Distribution**: Which dimensions dominate? Any concentration issues?
+</single_period_analysis>
+{{ end }}
+{{ else }}
 In each iteration, you should:
 - **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?
 - **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?
 - **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore
 - **Act**: Execute the query and evaluate results in <thinking> tags
-{{ if .feature_flags.chat_charts }}
+{{ end}}
 
+{{ if .feature_flags.chat_charts }}
 **Phase 3: visualization**
 Create a chart: After running "query_metrics_view" create a chart using "create_chart" unless:
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
 
 Choose the appropriate chart type based on your data:
-- Time series data: line_chart or area_chart (better for cummalative trends)
+- Time series data: line_chart or area_chart (better for cumulative trends)
 - Category comparisons: bar_chart or stacked_bar
 - Part-to-whole relationships: donut_chart
 - Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
 - Two measures from the same metrics view: Use combo_chart
-- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Multiple measures from the same metrics view (more than 2): Use stacked bar chart with multiple measure fields
 - Distribution across two dimensions: heatmap
 {{ end }}
 </process>
@@ -314,6 +365,7 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
+{{ if .is_scheduled_insight }} In scheduled insight report mode, start with a one line summary enclosed in a summary tag, do not include citation links in the summary. (required) {{ end }}
 **Format your analysis as follows**:
 {{ backticks }}markdown
 Based on the data analysis, here are the key insights:
@@ -321,13 +373,13 @@ Based on the data analysis, here are the key insights:
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-2. ## [Headline with specific impact/number]  
+2. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Optional: Offer specific follow-up analysis options]
+{{ if not .is_scheduled_insight }} [Optional: Offer specific follow-up analysis options] {{ end }}
 {{ backticks }}
 
 **Citation Requirements**:
