@@ -7,7 +7,6 @@ import {
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import type {
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
@@ -15,7 +14,11 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 import { get } from "svelte/store";
-import { removeZoneOffset } from "../../../lib/time/timezone";
+import {
+  convertISOStringToJSDateWithSameTimeAsSelectedTimeZone,
+  removeZoneOffset,
+  setJSDateTimeValueToTimeValueInSelectedTimeZone,
+} from "../../../lib/time/timezone";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
@@ -35,23 +38,15 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(
-  d,
-  offsetDuration: string,
-  zone: string,
-  grainDuration: string,
-) {
+export function toComparisonKeys(d, offsetDuration: string, zone: string) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
         acc[`comparison.${key}`] = value;
       });
     } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = adjustOffsetForZone(
-        d[key],
-        zone,
-        grainDuration,
-      );
+      acc[`comparison.${key}`] =
+        setJSDateTimeValueToTimeValueInSelectedTimeZone(d[key], zone);
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
@@ -119,7 +114,11 @@ export function prepareTimeSeries(
     if (!originalPt?.ts) {
       return emptyPt;
     }
-    const ts = adjustOffsetForZone(originalPt.ts, zone, timeGrainDuration);
+
+    const ts = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+      originalPt.ts,
+      zone,
+    );
 
     if (!ts || typeof ts === "string") {
       return emptyPt;
@@ -131,12 +130,7 @@ export function prepareTimeSeries(
       ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(
-        comparisonPt || {},
-        offsetDuration,
-        zone,
-        timeGrainDuration,
-      ),
+      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
     };
   });
 }

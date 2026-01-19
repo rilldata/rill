@@ -1,10 +1,10 @@
 import {
   InlineContextType,
   type InlineContext,
+  convertContextToInlinePrompt,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { get, writable } from "svelte/store";
-import { convertContextToInlinePrompt } from "@rilldata/web-common/features/chat/core/context/inline-context-convertors.ts";
 import type {
   GraphicScale,
   SimpleDataGraphicConfiguration,
@@ -83,6 +83,7 @@ export class MeasureSelection {
 
     const measureMention = convertContextToInlinePrompt({
       type: InlineContextType.Measure,
+      value: measure,
       metricsView,
       measure,
     });

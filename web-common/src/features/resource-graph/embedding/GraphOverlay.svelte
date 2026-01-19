@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { ResourceGraphGrouping } from "../graph-canvas/graph-builder";
   import GraphCanvas from "../graph-canvas/GraphCanvas.svelte";
-  import { createEventDispatcher } from "svelte";
   import { FIT_VIEW_CONFIG } from "../shared/config";
 
   export let group: ResourceGraphGrouping | null = null;
@@ -9,16 +8,15 @@
   export let mode: "inline" | "fullscreen" | "modal" = "inline";
   export let showControls = true;
   export let showCloseButton = true;
+  export let onClose: () => void;
 
   // Fit view configuration for better centering
   export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
 
-  const dispatch = createEventDispatcher<{ close: void }>();
-
   function handleClose() {
-    dispatch("close");
+    onClose();
   }
 
   function handleKeydown(e: KeyboardEvent) {

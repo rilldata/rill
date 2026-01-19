@@ -271,11 +271,12 @@ const (
 	OperatorNilike      Operator = "nilike"
 	OperatorOr          Operator = "or"
 	OperatorAnd         Operator = "and"
+	OperatorCast        Operator = "cast"
 )
 
 func (o Operator) Valid() bool {
 	switch o {
-	case OperatorEq, OperatorNeq, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd:
+	case OperatorEq, OperatorNeq, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd, OperatorCast:
 		return true
 	}
 	return false

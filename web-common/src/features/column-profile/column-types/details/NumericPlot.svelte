@@ -18,6 +18,7 @@ Otherwise, the page will jump around as the data is fetched.
     HistogramPrimitive,
     Rug,
   } from "@rilldata/web-common/components/data-graphic/marks";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
   import TopKIcon from "@rilldata/web-common/components/icons/TopK.svelte";
   import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
@@ -35,8 +36,6 @@ Otherwise, the page will jump around as the data is fetched.
   import { fade, fly } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
-  import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
-  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
 
   export let data: NumericHistogramBinsBin[];
   export let rug: NumericOutliersOutlier[];
@@ -55,7 +54,7 @@ Otherwise, the page will jump around as the data is fetched.
   // the data has been fetched.
   let rowHeight = 24;
 
-  let focusPoint: NumericPlotPoint | undefined = undefined;
+  let focusPoint: TopKEntry | undefined = undefined;
   // reset focus point once the mode changes.
   $: if (summaryMode !== "summary") focusPoint = undefined;
 </script>
@@ -233,7 +232,7 @@ Otherwise, the page will jump around as the data is fetched.
             {/if}
 
             <!-- support topK mouseover effect on graphs -->
-            {#if focusPoint && topK && summaryMode === "topk"}
+            {#if focusPoint?.count !== undefined && focusPoint?.value && topK && summaryMode === "topk"}
               <g transition:fade={{ duration: 200 }}>
                 <WithTween
                   value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
@@ -284,8 +283,8 @@ Otherwise, the page will jump around as the data is fetched.
         {:else if topK && summaryMode === "topk"}
           <div class="pt-1 px-1">
             <TopK
-              on:focus-top-k={(event) => {
-                focusPoint = event.detail;
+              onFocusTopK={(value) => {
+                focusPoint = value;
               }}
               k={topKLimit}
               {topK}

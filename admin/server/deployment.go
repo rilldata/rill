@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -856,6 +858,15 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 
+	// Find the runtime provisioned for this deployment
+	pr, ok, err := s.admin.FindProvisionedRuntimeResource(ctx, depl.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+	}
+
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
@@ -881,6 +892,21 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 		return nil, err
 	}
 	resp.Variables = vars
+
+	// parsing duckdb connector config
+	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
+	}
+	configStruct, err := rCfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
+	}
+	configStructPb, err := structpb.NewStruct(configStruct)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
+	}
+	resp.DuckdbConnectorConfig = configStructPb
 
 	annotations := s.admin.NewDeploymentAnnotations(org, proj)
 	resp.Annotations = annotations.ToMap()

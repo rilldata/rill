@@ -25,6 +25,28 @@ const getAdjustedFetchTimeTestCases = [
       end: "2020-02-10T00:00:00.000Z",
     },
   },
+  {
+    test: "should return same dates for invalid grain",
+    start: new Date("2020-01-12T00:00:00.000Z"),
+    end: new Date("2025-02-08T12:00:33.000Z"),
+    zone: "UTC",
+    interval: "invalid_grain" as V1TimeGrain,
+    expected: {
+      start: "2020-01-12T00:00:00.000Z",
+      end: "2025-02-08T12:00:33.000Z",
+    },
+  },
+  {
+    test: "should return same dates for undefined grain",
+    start: new Date("2020-01-12T00:00:00.000Z"),
+    end: new Date("2025-02-08T12:00:33.000Z"),
+    zone: "UTC",
+    interval: undefined,
+    expected: {
+      start: "2020-01-12T00:00:00.000Z",
+      end: "2025-02-08T12:00:33.000Z",
+    },
+  },
 ];
 
 describe("getAdjustedFetchTime", () => {

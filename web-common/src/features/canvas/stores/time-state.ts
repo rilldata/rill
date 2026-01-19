@@ -1,5 +1,4 @@
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
-import { ToURLParamTimeGrainMapMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -9,7 +8,6 @@ import {
   ALL_TIME_RANGE_ALIAS,
   deriveInterval,
 } from "../../dashboards/time-controls/new-time-controls";
-
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 import {
@@ -22,6 +20,7 @@ import {
   getRangePrecision,
   isGrainAllowed,
   minTimeGrainToDefaultTimeRange,
+  V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
 import type { TimeManager } from "./time-manager";
@@ -305,7 +304,7 @@ export class TimeState {
       checkIfSet = false,
       replaceState = false,
     ) => {
-      const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
+      const mappedTimeGrain = V1TimeGrainToDateTimeUnit[timeGrain];
       const props = new Map<string, string>();
       if (mappedTimeGrain) {
         props.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);

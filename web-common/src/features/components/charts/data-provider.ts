@@ -108,7 +108,6 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         data = adjustDataForTimeZone(
           data,
           timeDimensions,
-          $timeAndFilterStore.timeGrain,
           $timeAndFilterStore.timeRange.timeZone || "UTC",
         );
       }

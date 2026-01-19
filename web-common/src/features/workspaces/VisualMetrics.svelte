@@ -828,7 +828,7 @@
     onCancel={() => (confirmation = null)}
     onConfirm={async () => {
       if (confirmation?.action === "delete") {
-        await deleteItems(
+        deleteItems(
           confirmation?.index !== undefined && confirmation.type
             ? {
                 [confirmation.type]: new Set([confirmation.index]),
@@ -837,7 +837,7 @@
         );
         resetEditing();
       } else if (confirmation?.action === "switch") {
-        await updateProperties(
+        updateProperties(
           {
             model: confirmation.model,
             database: confirmation.database,
@@ -859,7 +859,11 @@
             confirmation.type,
             confirmation.field,
           );
+        } else {
+          resetEditing();
         }
+      } else {
+        resetEditing();
       }
 
       confirmation = null;

@@ -77,8 +77,8 @@
   export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
   export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
   export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
-  import { createEventDispatcher } from "svelte";
-  const dispatch = createEventDispatcher<{ expand: void }>();
+  export let onExpand: () => void = () => {};
+
   // Tie Svelte Flow theme to the app theme
   import { themeControl } from "../../themes/theme-control";
   // Derive Svelte Flow color mode from global theme
@@ -311,7 +311,7 @@
           class="expand-btn"
           aria-label="Expand graph"
           title="Expand"
-          on:click={() => dispatch("expand")}
+          on:click={() => onExpand()}
         >
           ⤢
         </button>

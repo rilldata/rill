@@ -37,6 +37,16 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("project name is required")
 			}
 
+			// fetch the project
+			projResp, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
+				Org:     ch.Org,
+				Project: project,
+			})
+			if err != nil {
+				return err
+			}
+
+			// fetch the deployments
 			req := &adminv1.ListDeploymentsRequest{
 				Org:     ch.Org,
 				Project: project,
@@ -49,6 +59,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			for _, d := range resp.Deployments {
+				if d.Id == projResp.Project.PrimaryDeploymentId {
+					d.Branch += " (primary)"
+					break
+				}
+			}
 			ch.PrintDeployments(resp.Deployments)
 			return nil
 		},

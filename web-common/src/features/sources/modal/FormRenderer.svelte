@@ -7,7 +7,7 @@
     ConnectorDriverPropertyType,
     type ConnectorDriverProperty,
   } from "@rilldata/web-common/runtime-client";
-  import { normalizeErrors } from "./utils";
+  import { normalizeErrors } from "../../templates/error-utils";
 
   export let properties: Array<ConnectorDriverProperty> = [];
   export let form: any; // expect a store from parent

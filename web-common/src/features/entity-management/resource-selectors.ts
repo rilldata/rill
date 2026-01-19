@@ -230,6 +230,25 @@ export function useClientFilteredResources(
   });
 }
 
+/**
+ * Query options version of {@link useClientFilteredResources}.
+ */
+export function getClientFilteredResourcesQueryOptions(
+  kind: ResourceKind,
+  filter: (res: V1Resource) => boolean = () => true,
+) {
+  return derived(runtime, ({ instanceId }) =>
+    getRuntimeServiceListResourcesQueryOptions(instanceId, undefined, {
+      query: {
+        select: (data) =>
+          data.resources?.filter(
+            (res) => res.meta?.name?.kind === kind && filter(res),
+          ) ?? [],
+      },
+    }),
+  );
+}
+
 export function resourceIsLoading(resource?: V1Resource) {
   return (
     !!resource &&

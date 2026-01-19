@@ -3,83 +3,20 @@ import type {
   PageContentResized,
   NotificationMessage,
 } from "./events";
-
-class EventBus {
-  private listeners: EventMap = new Map();
-
-  on<Event extends T>(event: Event, callback: Listener<Event>) {
-    const key = generateUUID();
-    const eventMap = this.listeners.get(event);
-
-    if (!eventMap) {
-      this.listeners.set(
-        event,
-        new Map<string, Listener<T>>([[key, callback]]),
-      );
-    } else {
-      eventMap.set(key, callback);
-    }
-
-    const unsubscribe = () => this.listeners.get(event)?.delete(key);
-
-    return unsubscribe;
-  }
-
-  once<Event extends T>(event: Event, callback: Listener<Event>) {
-    const unsubscribe = this.on(event, (payload) => {
-      callback(payload);
-      unsubscribe();
-    });
-
-    return unsubscribe;
-  }
-
-  emit<Event extends T>(event: Event, payload: Events[Event]) {
-    const listeners = this.listeners.get(event);
-
-    listeners?.forEach((cb) => {
-      cb(payload);
-    });
-  }
-}
-
-function generateUUID(): string {
-  // Generate random numbers for the UUID
-  const randomNumbers: number[] = new Array(16)
-    .fill(0)
-    .map(() => Math.floor(Math.random() * 256));
-
-  // Set the version and variant bits
-  randomNumbers[6] = (randomNumbers[6] & 0x0f) | 0x40; // Version 4
-  randomNumbers[8] = (randomNumbers[8] & 0x3f) | 0x80; // Variant 10
-
-  // Convert to hexadecimal and format as a UUID
-  const hexDigits: string = randomNumbers
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `${hexDigits.slice(0, 8)}-${hexDigits.slice(8, 12)}-${hexDigits.slice(12, 16)}-${hexDigits.slice(16, 20)}-${hexDigits.slice(20, 32)}`;
-}
-
-export const eventBus = new EventBus();
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 export interface Events {
   notification: NotificationMessage;
   "clear-all-notifications": void;
   "add-banner": BannerEvent;
   "remove-banner": string;
-  "shift-click": null;
-  "command-click": null;
-  click: null;
-  "shift-command-click": null;
+  "shift-click": void;
+  "command-click": void;
+  click: void;
+  "shift-command-click": void;
   "page-content-resized": PageContentResized;
   "start-chat": string;
-  "rill-yaml-updated": null;
+  "rill-yaml-updated": void;
 }
 
-type T = keyof Events;
-
-type Listener<EventType extends T> = (e: Events[EventType]) => void;
-
-type EventMap = Map<T, Listeners>;
-
-type Listeners = Map<string, Listener<T>>;
+export const eventBus = new EventEmitter<Events>();

@@ -13,9 +13,9 @@
   "scripts": {
     "prepare": "husky || true",
     "build": "npm run build -w web-local",
-    "dev": "sh -c 'npm run dev-runtime & npm run dev-web -- --port 3001 & wait'",
+    "dev": "sh -c 'npm run dev-runtime -- \"$@\" & npm run dev-web -- --port 3001 & wait' --",
     "dev-web": "npm run dev -w web-local -- ",
-    "dev-runtime": "go run cli/main.go start dev-project --no-ui --allowed-origins '*'",
+    "dev-runtime": "node scripts/dev.js",
     "clean": "rm -rf dev-project",
     "test": "npm run test -w web-common & PLAYWRIGHT_TEST=true make cli && npm run test -w web-local",
     "local-test": "cd web-local && npx playwright test --headed --project=e2e-chrome -g",

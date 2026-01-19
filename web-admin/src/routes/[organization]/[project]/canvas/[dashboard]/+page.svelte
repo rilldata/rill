@@ -13,6 +13,8 @@
   $: ({ instanceId } = $runtime);
 </script>
 
-<CanvasProvider {canvasName} {instanceId} {projectId} showBanner>
-  <CanvasDashboardEmbed {canvasName} />
-</CanvasProvider>
+{#key instanceId}
+  <CanvasProvider {canvasName} {instanceId} {projectId} showBanner>
+    <CanvasDashboardEmbed {canvasName} />
+  </CanvasProvider>
+{/key}

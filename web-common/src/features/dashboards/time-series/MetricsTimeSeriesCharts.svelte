@@ -29,14 +29,12 @@
     type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -56,10 +54,17 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import {
     getAllowedGrains,
+    isGrainAllowed,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { Tooltip } from "bits-ui";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
+  import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+  import { DateTime } from "luxon";
 
   const { rillTime } = featureFlags;
 
@@ -167,16 +172,17 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if (timeControlsReady && activeTimeGrain) {
+    const scrubRange = $exploreState?.selectedScrubRange;
+    const timeZone = $exploreState?.selectedTimezone;
+
     // adjust scrub values for Javascript's timezone changes
-    scrubStart = adjustOffsetForZone(
-      $exploreState?.selectedScrubRange?.start,
-      $exploreState?.selectedTimezone,
-      timeGrainToDuration(activeTimeGrain),
+    scrubStart = setJSDateTimeValueToTimeValueInSelectedTimeZone(
+      scrubRange?.start,
+      timeZone,
     );
-    scrubEnd = adjustOffsetForZone(
-      $exploreState?.selectedScrubRange?.end,
-      $exploreState?.selectedTimezone,
-      timeGrainToDuration(activeTimeGrain),
+    scrubEnd = setJSDateTimeValueToTimeValueInSelectedTimeZone(
+      scrubRange?.end,
+      timeZone,
     );
 
     const slicedData = isAllTime
@@ -269,6 +275,8 @@
 
   $: timeGrainOptions = getAllowedGrains(minTimeGrain);
 
+  $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
+
   $: annotationsForMeasures = renderedMeasures.map((measure) =>
     getAnnotationsForMeasure({
       instanceId,
@@ -279,6 +287,8 @@
   );
 
   let grainDropdownOpen = false;
+
+  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
@@ -361,7 +371,7 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime && activeTimeGrain}
+      {#if $rillTime && effectiveGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild let:builder>
             <button
@@ -370,7 +380,7 @@
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
               by <b>
-                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                {V1TimeGrainToDateTimeUnit[effectiveGrain]}
               </b>
               <span
                 class:-rotate-90={grainDropdownOpen}
@@ -378,6 +388,20 @@
               >
                 <CaretDownIcon />
               </span>
+              {#if !grainAllowed && minTimeGrain && activeTimeGrain}
+                <Tooltip.Root portal="body">
+                  <Tooltip.Trigger>
+                    <AlertCircleOutline className="size-3.5 " />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
+                    <TooltipContent>
+                      <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
+                      aggregation not supported on this dashboard. Displaying by
+                      <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
+                    </TooltipContent>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
             </button>
           </DropdownMenu.Trigger>
 
@@ -541,7 +565,7 @@
                 });
               }}
             />
-          {:else if formattedData && activeTimeGrain}
+          {:else if formattedData && effectiveGrain}
             <MeasureChart
               bind:mouseoverValue
               {measure}
@@ -556,7 +580,7 @@
               zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
-              timeGrain={activeTimeGrain}
+              timeGrain={effectiveGrain}
               yAccessor={measure.name}
               xMin={startValue}
               xMax={endValue}
@@ -567,12 +591,12 @@
               mouseoverTimeFormat={(value) => {
                 /** format the date according to the time grain */
 
-                return activeTimeGrain
-                  ? new Date(value).toLocaleDateString(
-                      undefined,
-                      TIME_GRAIN[activeTimeGrain].formatDate,
-                    )
-                  : value.toString();
+                return formatDateTimeByGrain(
+                  DateTime.fromJSDate(value, {
+                    zone: $exploreState?.selectedTimezone,
+                  }),
+                  effectiveGrain,
+                );
               }}
             />
           {:else}

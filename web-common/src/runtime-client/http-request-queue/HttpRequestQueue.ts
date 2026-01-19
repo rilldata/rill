@@ -51,7 +51,7 @@ export class HttpRequestQueue {
 
   public add(requestOptions: FetchWrapperOptions) {
     // prepend after parsing to make parsing faster
-    requestOptions.url = `${requestOptions?.baseUrl}${requestOptions.url}`;
+    requestOptions.url = `${requestOptions?.baseUrl ?? ""}${requestOptions.url}`;
 
     const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
 

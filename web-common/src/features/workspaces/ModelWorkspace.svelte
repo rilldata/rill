@@ -54,6 +54,9 @@
   const database = ""; // models use the default database
   const databaseSchema = ""; // models use the default databaseSchema
   $: tableName = (model as V1Model)?.state?.resultTable as string;
+  // A model can have errors (e.g., failed partitions) but still produce a result table.
+  // We enable export/metrics-view actions based on whether output exists, not error state.
+  $: hasResultTable = !!tableName;
 
   $: refreshedOn = model?.state?.refreshedOn;
   $: isResourceReconciling = resourceIsLoading($resourceQuery.data);
@@ -118,7 +121,7 @@
           {resource}
           {connector}
           {collapse}
-          modelHasError={$hasErrors}
+          {hasResultTable}
           modelName={assetName}
           hasUnsavedChanges={$hasUnsavedChanges}
         />

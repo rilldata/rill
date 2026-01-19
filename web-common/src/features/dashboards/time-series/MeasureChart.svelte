@@ -89,8 +89,7 @@
   const measureSelectionEnabledStore = measureSelection.getEnabledStore();
   $: measureSelectionEnabled = $measureSelectionEnabledStore;
 
-  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+  export let mouseoverTimeFormat: (d: Date) => string = (v) => v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: axisFormat = createMeasureValueFormatter<null | undefined>(

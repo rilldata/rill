@@ -207,6 +207,10 @@
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
+  // Get the total count for autogroup:members from the usergroups query (excludes guests)
+  $: autogroupMembersTotalCount =
+    orgMemberUsergroups.find((g) => g.groupName === "autogroup:members")
+      ?.usersCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
   $: projectInvitesList =
@@ -415,8 +419,8 @@
               <li>{user.userName}</li>
             </div>
           {/each}
-          {#if userGroupMemberUsers.length > 6}
-            <li>and {userGroupMemberUsers.length - 6} more</li>
+          {#if autogroupMembersTotalCount > 6}
+            <li>and {autogroupMembersTotalCount - 6} more</li>
           {/if}
         </ul>
       </TooltipContent>

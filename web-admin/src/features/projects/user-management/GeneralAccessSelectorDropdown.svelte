@@ -3,7 +3,7 @@
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceRemoveProjectMemberUsergroup,
     createAdminServiceAddProjectMemberUsergroup,
-    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -19,7 +19,6 @@
   export let organization: string;
   export let project: string;
 
-  let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
 
@@ -36,28 +35,26 @@
       undefined,
       {
         query: {
-          enabled: open,
+          enabled: accessDropdownOpen,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
       },
     );
 
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    "autogroup:members",
-    undefined,
-    {
-      query: {
-        enabled: open,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
+  // Use ListOrganizationMemberUsergroups with includeCounts to get the usersCount
+  // for autogroup:members, which specifically excludes guest users
+  // Query is always enabled so the count displays immediately (not just when dropdown opens)
+  $: listOrgMemberUsergroups =
+    createAdminServiceListOrganizationMemberUsergroups(organization, {
+      includeCounts: true,
+    });
 
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
-  $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
+  // Get the user count from the autogroup:members group (excludes guests)
+  $: autogroupMembersGroup = $listOrgMemberUsergroups?.data?.members?.find(
+    (group) => group.groupName === "autogroup:members",
+  );
+  $: userGroupMemberUsersCount = autogroupMembersGroup?.usersCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
 

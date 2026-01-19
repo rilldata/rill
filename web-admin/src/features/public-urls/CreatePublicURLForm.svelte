@@ -107,6 +107,10 @@
                 $dashboardStore.dimensionThresholdFilters,
               )
             : undefined;
+          // TODO : add a check upstream to make sure if filter exists, metricsViewName is defined
+          const metricsViewFilters = filter
+            ? { [$metricsViewName]: filter }
+            : undefined;
 
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             org: organization,
@@ -114,7 +118,7 @@
             data: {
               resourceType: ResourceKind.Explore as string,
               resourceName: dashboard,
-              filter,
+              metricsViewFilters,
               fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()

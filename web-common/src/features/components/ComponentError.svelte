@@ -1,5 +1,7 @@
 <script lang="ts">
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let error: string | undefined;
 </script>
@@ -11,6 +13,15 @@
   <div class="error-message">
     {error ?? "Component Error"}
   </div>
+  {#if error}
+    <button
+      class="p-2 rounded hover:bg-red-100 active:bg-red-200 transition-colors"
+      on:click={() => copyToClipboard(error, "Copied error to clipboard")}
+      title="Copy error to clipboard"
+    >
+      <CopyIcon size="14px" />
+    </button>
+  {/if}
 </div>
 
 <style lang="postcss">

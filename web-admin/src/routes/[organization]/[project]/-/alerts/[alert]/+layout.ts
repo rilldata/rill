@@ -9,7 +9,7 @@ export async function load({ params, parent }) {
 
   const alertData = await queryClient
     .fetchQuery(
-      getRuntimeServiceGetResourceQueryOptions(runtime.instanceId, {
+      getRuntimeServiceGetResourceQueryOptions(runtime, {
         "name.kind": ResourceKind.Alert,
         "name.name": params.alert,
       }),

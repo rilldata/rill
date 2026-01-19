@@ -121,20 +121,18 @@
             {lineBasedRuntimeErrors}
           />
         {:else if selectedView === "viz"}
-          {#if ready}
-            <CanvasLoadingState
-              {ready}
-              {isReconciling}
-              {isLoading}
-              {errorMessage}
-            >
-              <CanvasBuilder
-                {canvasName}
-                openSidebar={workspace.inspector.open}
-                {fileArtifact}
-              />
-            </CanvasLoadingState>
-          {/if}
+          <CanvasLoadingState
+            {ready}
+            {isReconciling}
+            {isLoading}
+            {errorMessage}
+          >
+            <CanvasBuilder
+              {canvasName}
+              openSidebar={workspace.inspector.open}
+              {fileArtifact}
+            />
+          </CanvasLoadingState>
         {/if}
       </WorkspaceEditorContainer>
       <svelte:fragment slot="inspector">

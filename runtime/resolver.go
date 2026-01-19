@@ -296,7 +296,7 @@ func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		ret, err := jsonval.ToValue(row, &runtimev1.Type{StructType: r.rows.Schema})
+		ret, err := jsonval.ToValue(row, &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, StructType: r.rows.Schema})
 		if err != nil {
 			return nil, err
 		}

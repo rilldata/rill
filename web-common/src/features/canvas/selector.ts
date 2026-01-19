@@ -125,7 +125,7 @@ export function useCanvas(
           };
         },
 
-        enabled: !!canvasName,
+        enabled: !!canvasName && !!instanceId,
         ...queryOptions,
       },
     },

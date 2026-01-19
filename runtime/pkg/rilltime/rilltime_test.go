@@ -406,11 +406,11 @@ func Test_TimeNewYorkTimezone(t *testing.T) {
 
 func TestEval_BackwardsCompatibility(t *testing.T) {
 	testCases := []testCase{
-		{"rill-TD", "2025-05-13T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainHour, 1, 1},
-		{"rill-WTD", "2025-05-12T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainHour, 1, 1},
-		{"rill-MTD", "2025-05-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
-		{"rill-QTD", "2025-04-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainDay, 1, 1},
-		{"rill-YTD", "2025-01-01T00:00:00Z", "2025-05-13T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
+		{"rill-TD", "2025-05-13T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"rill-WTD", "2025-05-12T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"rill-MTD", "2025-05-01T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"rill-QTD", "2025-04-01T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"rill-YTD", "2025-01-01T00:00:00Z", "2025-05-14T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 
 		{"rill-PDC", "2025-05-12T00:00:00Z", "2025-05-13T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"rill-PWC", "2025-05-05T00:00:00Z", "2025-05-12T00:00:00Z", timeutil.TimeGrainDay, 1, 1},

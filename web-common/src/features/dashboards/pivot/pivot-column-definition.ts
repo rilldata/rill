@@ -9,11 +9,7 @@ import {
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
-import {
-  addZoneOffset,
-  removeLocalTimezoneOffset,
-} from "@rilldata/web-common/lib/time/timezone";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
@@ -103,12 +99,10 @@ function createColumnDefinitionForDimensions(
           isTimeDimension(dimensionNames?.[level], timeConfig?.timeDimension)
         ) {
           const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
-          const duration = timeGrainToDuration(timeGrain);
 
-          const dt = addZoneOffset(
-            removeLocalTimezoneOffset(new Date(value), duration),
-            timeConfig?.timeZone,
-            duration,
+          const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+            value,
+            timeConfig?.timeZone || "UTC",
           );
           const timeFormatter = timeFormat(
             timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
@@ -173,11 +167,10 @@ function formatDimensionValue(
       return value;
 
     const timeGrain = getTimeGrainFromDimension(dimension);
-    const duration = timeGrainToDuration(timeGrain);
-    const dt = addZoneOffset(
-      removeLocalTimezoneOffset(new Date(value), duration),
-      timeConfig?.timeZone,
-      duration,
+
+    const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+      value,
+      timeConfig?.timeZone || "UTC",
     );
     const timeFormatter = timeFormat(
       timeGrain ? TIME_GRAIN[timeGrain]?.d3format : "%H:%M",
