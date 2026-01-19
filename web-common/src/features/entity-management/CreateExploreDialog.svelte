@@ -15,12 +15,6 @@
     value: resource.meta?.name?.name ?? "",
     label: resource.meta?.name?.name ?? "",
   }));
-
-  function createResource() {
-    if (selectedMetricsView) {
-      void createResourceAndNavigate(ResourceKind.Explore, selectedMetricsView);
-    }
-  }
 </script>
 
 <AlertDialog.Root bind:open>
@@ -58,7 +52,11 @@
           large
           builders={[builder]}
           type="primary"
-          onClick={createResource}
+          onClick={() =>
+            void createResourceAndNavigate(
+              ResourceKind.Explore,
+              selectedMetricsView,
+            )}
         >
           Continue
         </Button>

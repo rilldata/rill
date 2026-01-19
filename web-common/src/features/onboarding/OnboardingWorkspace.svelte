@@ -50,8 +50,8 @@
 
       await waitUntil(() => fileArtifacts.hasFileArtifact(example.firstFile));
       await goto(`/files${example.firstFile}`);
-    } catch {
-      // no-op
+    } catch (err) {
+      console.error("Failed to create example project", err);
     }
   }
 </script>

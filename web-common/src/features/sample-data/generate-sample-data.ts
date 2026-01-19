@@ -157,11 +157,8 @@ async function generateSampleDataWithDevChat(
   // Wait for the stream to start async through the sidebar action.
   await waitUntil(() => get(conversation.isStreaming));
 
-  // Then wait for the stream to either end or error out.
-  await waitUntil(
-    () => !get(conversation.isStreaming) && !get(conversation.streamError),
-    -1,
-  );
+  // Then wait for the stream to end.
+  await waitUntil(() => !get(conversation.isStreaming), -1);
 
   listener.cleanup();
 
@@ -211,11 +208,8 @@ async function generateSampleDataWithOverlay(
   conversation.draftMessage.set(agentPrompt);
   await conversation.sendMessage({});
 
-  // Wait for the stream to either end or error out.
-  await waitUntil(
-    () => !get(conversation.isStreaming) && !get(conversation.streamError),
-    -1,
-  );
+  // Wait for the stream to end.
+  await waitUntil(() => !get(conversation.isStreaming), -1);
 
   listener.cleanup();
 
