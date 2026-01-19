@@ -195,7 +195,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	}
 
 	rt := testruntime.New(t, false)
-	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient())
+	rtSrv, err := runtimeserver.NewServer(ctx, runtimeServerOpts, rt, logger, ratelimit.NewNoop(), activity.NewNoopClient(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() { rtSrv.Close() })
 

@@ -60,7 +60,6 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 	admin, release, err := r.rt.Admin(ctx, instanceID)
 	if err != nil {
 		if errors.Is(err, ErrAdminNotConfigured) {
-			r.rt.Logger.Error("admin connector is not configured")
 			return nil
 		}
 		return err
@@ -74,7 +73,6 @@ func (r *configReloader) reloadConfig(ctx context.Context, instanceID string) er
 		return err
 	}
 
-	r.rt.Logger.Info("got configs")
 	// Clone for editing
 	tmp := *inst
 	inst = &tmp

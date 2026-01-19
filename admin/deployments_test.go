@@ -1,7 +1,6 @@
 package admin_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,48 +12,28 @@ import (
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	riverqueue "github.com/riverqueue/river"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRuntimeDeployments(t *testing.T) {
-	start := time.Now()
-	fmt.Printf("\n[TIMING] Test started at %v\n", start)
+	testmode.Expensive(t)
 
-	fmt.Printf("[TIMING] Creating admin with runtime...\n")
-	stepStart := time.Now()
 	adm := testadmin.NewWithOptionalRuntime(t, true)
-	fmt.Printf("[TIMING] Admin creation took: %v\n", time.Since(stepStart))
-
-	fmt.Printf("[TIMING] Creating new user...\n")
-	stepStart = time.Now()
 	_, c := adm.NewUser(t)
 	u1 := testcli.New(t, adm, c.Token)
-	fmt.Printf("[TIMING] User creation took: %v\n", time.Since(stepStart))
 
-	fmt.Printf("[TIMING] Creating org...\n")
-	stepStart = time.Now()
 	result := u1.Run(t, "org", "create", "reload-configs-test")
 	require.Equal(t, 0, result.ExitCode)
-	fmt.Printf("[TIMING] Org creation took: %v\n", time.Since(stepStart))
 
 	// deploy the project
-	fmt.Printf("[TIMING] Initializing Rill project...\n")
-	stepStart = time.Now()
 	tempDir := initRillProject(t)
-	fmt.Printf("[TIMING] Project initialization took: %v\n", time.Since(stepStart))
-
-	fmt.Printf("[TIMING] Deploying project...\n")
-	stepStart = time.Now()
 	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=reload-configs-test", "--project=rill-mgd-deploy", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
-	fmt.Printf("[TIMING] Project deployment took: %v\n", time.Since(stepStart))
 
 	// manually trigger deployment
-	fmt.Printf("[TIMING] Triggering deployment #1...\n")
-	stepStart = time.Now()
 	depl := triggerDeployment(t, adm, "reload-configs-test", "rill-mgd-deploy")
-	fmt.Printf("[TIMING] Deployment trigger #1 took: %v\n", time.Since(stepStart))
 
 	// check model output
 	checkModelOutput := func() (int, error) {
@@ -81,52 +60,32 @@ func TestRuntimeDeployments(t *testing.T) {
 		}
 		return res, nil
 	}
-	fmt.Printf("[TIMING] Checking model output (eventually)...\n")
-	stepStart = time.Now()
 	require.Eventually(t, func() bool {
 		modelOutputFn, _ := checkModelOutput()
 		return modelOutputFn == 1
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output")
-	fmt.Printf("[TIMING] Model output check took: %v\n", time.Since(stepStart))
 
 	// set env via `rill env set limit 10`
-	fmt.Printf("[TIMING] Setting env limit=10...\n")
-	stepStart = time.Now()
 	result = u1.Run(t, "env", "set", "limit", "10", "--org=reload-configs-test", "--project=rill-mgd-deploy")
 	require.Equal(t, 0, result.ExitCode, result.Output)
-	fmt.Printf("[TIMING] Env set took: %v\n", time.Since(stepStart))
 
 	// manually trigger deployment
-	fmt.Printf("[TIMING] Triggering deployment #2...\n")
-	stepStart = time.Now()
 	depl = triggerDeployment(t, adm, "reload-configs-test", "rill-mgd-deploy")
-	fmt.Printf("[TIMING] Deployment trigger #2 took: %v\n", time.Since(stepStart))
 
 	// query the model and verify env variable is applied
-	fmt.Printf("[TIMING] Checking model output after env set (eventually)...\n")
-	stepStart = time.Now()
 	require.Eventually(t, func() bool {
 		modelOutputFn, _ := checkModelOutput()
 		return modelOutputFn == 10
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output after env set")
-	fmt.Printf("[TIMING] Model output check after env set took: %v\n", time.Since(stepStart))
 
 	// stop the deployment - rill project deployments stop main
-	fmt.Printf("[TIMING] Stopping deployment...\n")
-	stepStart = time.Now()
-	result = u1.Run(t, "project", "deployments", "stop", "main", "--org=reload-configs-test", "--project=rill-mgd-deploy")
+	result = u1.Run(t, "project", "deployment", "stop", "main", "--org=reload-configs-test", "--project=rill-mgd-deploy")
 	require.Equal(t, 0, result.ExitCode, result.Output)
-	fmt.Printf("[TIMING] Stopping deployment took: %v\n", time.Since(stepStart))
 
 	// manually trigger deployment
-	fmt.Printf("[TIMING] Triggering deployment #3...\n")
-	stepStart = time.Now()
 	depl = triggerDeployment(t, adm, "reload-configs-test", "rill-mgd-deploy")
-	fmt.Printf("[TIMING] Deployment trigger #3 took: %v\n", time.Since(stepStart))
 
 	// verify deployment is stopped
-	fmt.Printf("[TIMING] Verifying deployment is stopped...\n")
-	stepStart = time.Now()
 	deploymentsResp, err := c.ListDeployments(t.Context(), &adminv1.ListDeploymentsRequest{
 		Org:     "reload-configs-test",
 		Project: "rill-mgd-deploy",
@@ -134,40 +93,25 @@ func TestRuntimeDeployments(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, deploymentsResp.Deployments, 1)
 	require.Equal(t, adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED, deploymentsResp.Deployments[0].Status)
-	fmt.Printf("[TIMING] Deployment verification took: %v\n", time.Since(stepStart))
 
 	// modify the env to set limit to 20
-	fmt.Printf("[TIMING] Setting env limit=20...\n")
-	stepStart = time.Now()
 	result = u1.Run(t, "env", "set", "limit", "20", "--org=reload-configs-test", "--project=rill-mgd-deploy")
 	require.Equal(t, 0, result.ExitCode, result.Output)
-	fmt.Printf("[TIMING] Env set to 20 took: %v\n", time.Since(stepStart))
 
 	// restart the deployment - use the api direclty since the CLI commands wait for deployment to be running which is not possible without river workers
-	fmt.Printf("[TIMING] Restarting deployment...\n")
-	stepStart = time.Now()
 	_, err = c.StartDeployment(t.Context(), &adminv1.StartDeploymentRequest{
 		DeploymentId: deploymentsResp.Deployments[0].Id,
 	})
 	require.NoError(t, err)
-	fmt.Printf("[TIMING] Deployment restart took: %v\n", time.Since(stepStart))
 
 	// manually trigger deployment
-	fmt.Printf("[TIMING] Triggering deployment #4...\n")
-	stepStart = time.Now()
 	depl = triggerDeployment(t, adm, "reload-configs-test", "rill-mgd-deploy")
-	fmt.Printf("[TIMING] Deployment trigger #4 took: %v\n", time.Since(stepStart))
 
 	// query the model and verify env variable is applied
-	fmt.Printf("[TIMING] Checking model output after restart (eventually)...\n")
-	stepStart = time.Now()
 	require.Eventually(t, func() bool {
 		modelOutputFn, _ := checkModelOutput()
 		return modelOutputFn == 20
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output after env set post restart")
-	fmt.Printf("[TIMING] Model output check after restart took: %v\n", time.Since(stepStart))
-
-	fmt.Printf("[TIMING] Test completed in: %v\n\n", time.Since(start))
 }
 
 func triggerDeployment(t *testing.T, adm *testadmin.Fixture, org, project string) *database.Deployment {
