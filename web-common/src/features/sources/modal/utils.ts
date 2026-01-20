@@ -5,7 +5,6 @@ import type { MultiStepFormSchema } from "./types";
 import {
   findRadioEnumKey,
   getRadioEnumOptions,
-  getRequiredFieldsByEnumValue,
   getSchemaFieldMetaList,
   isStepMatch,
 } from "../../templates/schema-utils";
@@ -141,69 +140,31 @@ export function isMultiStepConnectorDisabled(
 ): boolean {
   if (!schema) return true;
 
-  // For source step, gate on required fields from the JSON schema.
-  const currentStep = step || (paramsFormValue?.__step as string | undefined);
-  if (currentStep === "source" || currentStep === "explorer") {
-    const required = getRequiredFieldsForStep(
-      schema,
-      paramsFormValue,
-      currentStep,
-    );
-    return !hasAllRequiredFieldsValid(
-      schema,
-      required,
-      paramsFormValue,
-      paramsFormErrors,
-      currentStep,
-    );
-  }
+  const currentStep = step || (paramsFormValue?.__step as string | undefined) || "connector";
 
+  // Check for "public" auth method which should always enable the button
   const authInfo = getRadioEnumOptions(schema);
-  const options = authInfo?.options ?? [];
   const authKey = authInfo?.key || findRadioEnumKey(schema);
-  if (!authInfo || !options.length || !authKey) {
-    const required = getRequiredFieldsForStep(
-      schema,
-      paramsFormValue,
-      "connector",
-    );
-    return !hasAllRequiredFieldsValid(
-      schema,
-      required,
-      paramsFormValue,
-      paramsFormErrors,
-      "connector",
-    );
-  }
-  const methodFromForm =
-    authKey && paramsFormValue?.[authKey] != null
+  if (authKey) {
+    const methodFromForm = paramsFormValue?.[authKey] != null
       ? String(paramsFormValue[authKey])
       : undefined;
-  const hasValidFormSelection = options.some(
-    (opt) => opt.value === methodFromForm,
+    if (methodFromForm === "public") return false;
+  }
+
+  // Use getRequiredFieldsForStep which correctly evaluates all conditionals
+  // based on actual form values (handles nested conditions like connector_type + connection_mode)
+  const required = getRequiredFieldsForStep(
+    schema,
+    paramsFormValue,
+    currentStep,
   );
-  const method =
-    (hasValidFormSelection && methodFromForm) ||
-    authInfo?.defaultValue ||
-    options[0]?.value;
-
-  if (!method) return true;
-
-  // Selecting "public" should always enable the button for multi-step auth flows.
-  if (method === "public") return false;
-
-  const requiredByMethod = getRequiredFieldsByEnumValue(schema, {
-    step: "connector",
-  });
-  const requiredFields = requiredByMethod[method] ?? [];
-  if (!requiredFields.length) return true;
-
   return !hasAllRequiredFieldsValid(
     schema,
-    requiredFields,
+    required,
     paramsFormValue,
     paramsFormErrors,
-    "connector",
+    currentStep,
   );
 }
 
