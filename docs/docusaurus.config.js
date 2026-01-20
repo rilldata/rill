@@ -128,7 +128,7 @@ const config = {
         items: [
           {
             to: "/",
-            label: "Developer",
+            label: "Developers",
             position: "left",
             className: "navbar-docs-link",
             activeBaseRegex: "^(?!/(reference|api|contact|notes|guide)).*", // Keep Docs active for all doc pages
@@ -136,7 +136,7 @@ const config = {
           },
           {
             to: "/guide",
-            label: "Guide",
+            label: "Guides",
             position: "left",
             className: "navbar-user-guide-link",
             activeBaseRegex: "^/guide.*", // Keep Docs active for all doc pages
