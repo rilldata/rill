@@ -307,6 +307,8 @@ export interface V1AlertState {
 export interface V1AnalystAgentContext {
   /** Optional explore dashboard. */
   explore?: string;
+  /** Optional canvas dashboard. */
+  canvas?: string;
   /** Optional dimensions. */
   dimensions?: string[];
   /** Optional measures. */

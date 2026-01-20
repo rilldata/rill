@@ -24,13 +24,17 @@ type AnalystAgent struct {
 var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
-	Prompt     string                  `json:"prompt"`
-	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
-	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
-	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
+	Prompt     string   `json:"prompt"`
+	Explore    string   `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Dimensions []string `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Measures   []string `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+
+	Canvas          string `json:"canvas" yaml:"canvas" jsonschema:"Optional canvas name. If provided, the exploration will be limited to this canvas."`
+	CanvasComponent string `json:"canvas_component" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
+
+	Where     *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd   time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -98,30 +102,41 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
 	var metricsViewName string
-	if first && args.Explore != "" {
-		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
-		if err != nil {
-			return nil, err
-		}
-		metricsViewName = metricsView.Meta.Name.Name
+	if first {
+		if args.Explore != "" {
+			_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
+			if err != nil {
+				return nil, err
+			}
+			metricsViewName = metricsView.Meta.Name.Name
 
-		_, err = s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
-			MetricsView: metricsViewName,
-		})
-		if err != nil {
-			return nil, err
-		}
+			_, err = s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
+				MetricsView: metricsViewName,
+			})
+			if err != nil {
+				return nil, err
+			}
 
-		_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
-			MetricsView: metricsViewName,
-		})
-		if err != nil {
-			return nil, err
+			_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
+				MetricsView: metricsViewName,
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else if args.Canvas != "" {
+			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
+				Canvas: args.Canvas,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			// TODO: prefill metrics view if component is provided
 		}
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if first && args.Explore == "" {
+	if first && metricsViewName == "" {
 		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
@@ -179,13 +194,15 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 		return "", fmt.Errorf("failed to get feature flags: %w", err)
 	}
 	data := map[string]any{
-		"ai_instructions": session.ProjectInstructions(),
-		"metrics_view":    metricsViewName,
-		"explore":         args.Explore,
-		"dimensions":      strings.Join(args.Dimensions, ", "),
-		"measures":        strings.Join(args.Measures, ", "),
-		"feature_flags":   ff,
-		"now":             time.Now(),
+		"ai_instructions":  session.ProjectInstructions(),
+		"metrics_view":     metricsViewName,
+		"explore":          args.Explore,
+		"canvas":           args.Canvas,
+		"canvas_component": args.CanvasComponent,
+		"dimensions":       strings.Join(args.Dimensions, ", "),
+		"measures":         strings.Join(args.Measures, ", "),
+		"feature_flags":    ff,
+		"now":              time.Now(),
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -231,6 +248,18 @@ Here is an overview of the settings the user has currently applied to the dashbo
 You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
+{{ else if .canvas }}
+Your goal is to analyze the contents of the canvas "{{ .canvas }}". Different components are powered by different metrics views.
+The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
+The canvas definition has been provided in your tool calls.
+
+Here is an overview of the settings the user has currently applied to the dashboard (Components can have local settings applied):
+{{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if .where }}Use where filters: "{{ .where }}"{{ end }}
+
+{{ if .canvas_component }}
+The user is looking at "{{ .canvas_component }}".
+{{ end }}
 {{ else }}
 Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets

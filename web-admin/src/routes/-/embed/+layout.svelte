@@ -11,7 +11,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
+  import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
   import { onMount } from "svelte";
   import {
     createIframeRPCHandler,
@@ -135,7 +135,7 @@
         <slot />
       </div>
       {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
-        <ExploreChat />
+        <DashboardChat />
       {/if}
     </div>
   </RuntimeProvider>

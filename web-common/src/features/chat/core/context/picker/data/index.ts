@@ -4,6 +4,7 @@ import { getMetricsViewPickerOptions } from "@rilldata/web-common/features/chat/
 import { getModelsPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/models.ts";
 import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
 import type { PickerItem } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
+import { getCanvasesPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/canvases.ts";
 
 /**
  * Creates a store that contains a list of options for each valid metrics view and sources/models.
@@ -21,16 +22,17 @@ export function getPickerOptions(
   return derived(
     [
       getMetricsViewPickerOptions(),
+      getCanvasesPickerOptions(uiState),
       isRillDev ? getModelsPickerOptions(uiState) : readable(null),
       uiState.expandedParentsStore,
     ],
-    ([metricsViewOptions, filesOption]) => {
+    ([metricsViewOptions, canvasOptions, filesOption]) => {
       const recentlyUsed: PickerItem[] = [];
       const recentlyUsedIds = new Set<string>();
       const currentlyActive: PickerItem[] = [];
       const currentlyUsedIds = new Set<string>();
 
-      const allOptions = [metricsViewOptions, filesOption]
+      const allOptions = [metricsViewOptions, canvasOptions, filesOption]
         .filter(Boolean)
         .flat() as PickerItem[];
 
