@@ -12,7 +12,8 @@
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables =
     $tablesList.data?.tables?.filter(
-      (t): t is V1OlapTableInfo => !!t.name && !t.name.startsWith("__rill_tmp_"),
+      (t): t is V1OlapTableInfo =>
+        !!t.name && !t.name.startsWith("__rill_tmp_"),
     ) ?? [];
 
   $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
