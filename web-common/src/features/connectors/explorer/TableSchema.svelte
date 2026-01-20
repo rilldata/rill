@@ -40,17 +40,13 @@
 <ul class="table-schema-list">
   {#if isError}
     <div
-      class="{database
-        ? 'pl-[78px]'
-        : 'pl-[60px]'} py-1.5 text-muted-foreground"
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
     >
       Error loading schema: {error?.response?.data?.message || error?.message}
     </div>
   {:else if isLoading}
     <div
-      class="{database
-        ? 'pl-[78px]'
-        : 'pl-[60px]'} py-1.5 text-muted-foreground"
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
     >
       Loading schema...
     </div>
@@ -63,16 +59,14 @@
             {column.name}
           </TooltipContent>
         </Tooltip>
-        <span class="uppercase text-foreground">
+        <span class="uppercase text-fg-primary">
           {prettyPrintType(column.type ?? "")}
         </span>
       </li>
     {/each}
   {:else}
     <div
-      class="{database
-        ? 'pl-[78px]'
-        : 'pl-[60px]'} py-1.5 text-muted-foreground"
+      class="{database ? 'pl-[78px]' : 'pl-[60px]'} py-1.5 text-fg-secondary"
     >
       No columns found
     </div>

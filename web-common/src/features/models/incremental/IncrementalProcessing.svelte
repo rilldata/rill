@@ -40,6 +40,6 @@
   }
 
   .help-text {
-    @apply text-xs text-muted-foreground;
+    @apply text-xs text-fg-secondary;
   }
 </style>

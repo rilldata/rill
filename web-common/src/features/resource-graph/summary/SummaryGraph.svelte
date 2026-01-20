@@ -235,7 +235,7 @@
     @apply mb-4 w-full;
   }
   .title {
-    @apply text-sm font-semibold text-foreground mb-2;
+    @apply text-sm font-semibold text-fg-primary mb-2;
   }
   .canvas {
     @apply relative w-full overflow-hidden rounded-lg border;

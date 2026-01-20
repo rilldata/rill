@@ -309,7 +309,7 @@
         <div class="flex flex-col gap-y-1">
           <label
             for="user-group-users"
-            class="line-clamp-1 text-sm font-medium text-foreground"
+            class="line-clamp-1 text-sm font-medium text-fg-primary"
           >
             Users
           </label>
@@ -351,7 +351,7 @@
     <div class="flex flex-col gap-2 w-full">
       {#if selectedUsers.length > 0}
         <div class="flex flex-row items-center gap-x-1">
-          <div class="text-xs font-semibold uppercase text-muted-foreground">
+          <div class="text-xs font-semibold uppercase text-fg-secondary">
             {selectedUsers.length} User{selectedUsers.length === 1 ? "" : "s"}
           </div>
         </div>

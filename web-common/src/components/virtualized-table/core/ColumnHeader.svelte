@@ -96,11 +96,7 @@
           : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
       >
         {#if showDataIcon}
-          <DataTypeIcon
-            suppressTooltip
-            color={"text-muted-foreground"}
-            {type}
-          />
+          <DataTypeIcon suppressTooltip color={"text-fg-secondary"} {type} />
         {/if}
         <span
           class="text-ellipsis
@@ -156,7 +152,7 @@
     </Tooltip>
 
     {#if sorted}
-      <div class="mt-0.5 text-muted-foreground">
+      <div class="mt-0.5 text-fg-secondary">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
             <ArrowDown size="12px" />
@@ -173,8 +169,8 @@
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
           transition:fly={{ duration: 200, y: 4 }}
-          class:text-foreground={pinned}
-          class:text-muted-foreground={!pinned}
+          class:text-fg-primary={pinned}
+          class:text-fg-secondary={!pinned}
           class="   duration-100 justify-self-end"
           on:click={() => {
             dispatch("pin");

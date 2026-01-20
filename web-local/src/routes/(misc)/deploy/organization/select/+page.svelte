@@ -30,7 +30,7 @@
 </script>
 
 <div class="text-xl">Select an organization</div>
-<div class="text-base text-muted-foreground">
+<div class="text-base text-fg-secondary">
   Choose an organization to deploy this project to. <a
     href="https://docs.rilldata.com/reference/cli/org"
     target="_blank">See docs</a

@@ -22,7 +22,7 @@
 >
   <Select.Trigger class="outline-none border-none w-fit px-0 gap-x-0.5">
     <Button type="text" label="Filter partitions">
-      <span class="text-surface-foreground hover:text-inherit">
+      <span class="text-fg-primary hover:text-inherit">
         Showing <b>{selectedFilter}</b>
       </span>
     </Button>

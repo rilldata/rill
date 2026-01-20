@@ -13,7 +13,7 @@
 </script>
 
 <span
-  class="text-muted-foreground"
+  class="text-fg-secondary"
   class:resizing
   class:opacity-0={!show}
   class:shift={!navOpen}

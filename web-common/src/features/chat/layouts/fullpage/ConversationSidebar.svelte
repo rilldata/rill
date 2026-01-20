@@ -124,7 +124,7 @@
 <style lang="postcss">
   .conversation-sidebar {
     @apply flex flex-col shrink-0 min-h-0 overflow-hidden;
-    @apply bg-surface border-r border-border;
+    @apply bg-surface-container border-r border-border;
     @apply transition-[width] duration-200 ease-in-out;
     width: 280px;
   }
@@ -180,11 +180,11 @@
   }
 
   .conversation-title {
-    @apply text-xs text-surface-foreground truncate;
+    @apply text-xs text-fg-primary truncate;
   }
 
   .no-conversations {
-    @apply py-6 px-4 text-center text-muted-foreground text-xs;
+    @apply py-6 px-4 text-center text-fg-secondary text-xs;
   }
 
   /* Responsive behavior */

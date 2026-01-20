@@ -1,3 +1,3 @@
-<div class="text-surface-foreground text-sm font-medium">
+<div class="text-fg-primary text-sm font-medium">
   <slot />
 </div>

@@ -2,8 +2,6 @@
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
-  import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import cronstrue from "cronstrue";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { formatRunDate } from "../tableUtils";
@@ -20,7 +18,6 @@
   export let lastRunErrorMessage: string | undefined;
 
   const humanReadableFrequency = cronstrue.toString(frequency);
-  const reportColor = resourceColorMapping[ResourceKind.Report];
 </script>
 
 <a
@@ -28,9 +25,9 @@
   class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full"
 >
   <div class="flex gap-x-2 items-center min-h-[20px]">
-    <ReportIcon size={"14px"} color={reportColor} />
+    <ReportIcon size={"14px"} />
     <span
-      class="text-surface-foreground text-sm font-semibold group-hover:text-primary-600 truncate"
+      class="text-fg-primary text-sm font-semibold group-hover:text-primary-600 truncate"
     >
       {title}
     </span>
@@ -43,7 +40,7 @@
     {/if}
   </div>
   <div
-    class="flex gap-x-1 text-muted-foreground text-xs font-normal min-h-[16px] overflow-hidden"
+    class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
   >
     {#if !lastRun}
       <span class="shrink-0">Hasn't run yet</span>

@@ -8,13 +8,13 @@
   {#if value !== null && value !== undefined}
     <span
       class="pointer-events-none {value > 0
-        ? 'text-muted-foreground'
+        ? 'text-fg-secondary'
         : 'text-red-500'}"
     >
       {formattedValue}
     </span>
   {:else}
-    <span class="text-muted-foreground pointer-events-none">-</span>
+    <span class="text-fg-secondary pointer-events-none">-</span>
   {/if}
 {:else}
   <span class="loading-cell" />

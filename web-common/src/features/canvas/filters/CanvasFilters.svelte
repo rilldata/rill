@@ -208,10 +208,7 @@
   {/if}
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
-      <Filter
-        size="16px"
-        className="text-muted-foreground flex-none mt-[5px]"
-      />
+      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
     {/if}
     <div
       class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 pointer-events-auto"

@@ -24,7 +24,7 @@
       >
         <CopyIcon
           size="18px"
-          className="text-muted-foreground hidden group-hover:block"
+          className="text-fg-secondary hidden group-hover:block"
         />
 
         <CancelCircle size="18px" className="text-red-500 group-hover:hidden" />

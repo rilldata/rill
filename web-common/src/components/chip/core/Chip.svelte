@@ -181,7 +181,7 @@
   }
 
   .exclude {
-    @apply bg-gray-50 text-muted-foreground;
+    @apply bg-gray-50 text-fg-secondary;
   }
 
   .exclude:hover,
@@ -197,7 +197,7 @@
 
   .time {
     @apply rounded-2xl;
-    @apply bg-surface border-gray-200 text-foreground;
+    @apply bg-surface-container border-gray-200 text-fg-primary;
   }
 
   .time:hover,
@@ -225,7 +225,7 @@
 
   .gray,
   .gray.theme {
-    @apply bg-gray-100 border-gray-300 text-muted-foreground;
+    @apply bg-gray-100 border-gray-300 text-fg-secondary;
   }
 
   .gray:hover,

@@ -47,9 +47,9 @@
       {:else}
         {#each userGroups as userGroup (userGroup.id)}
           <Dropdown.Item on:click={() => onEditUserGroup(userGroup.name)}>
-            <span class="text-surface-foreground">{userGroup.name}</span>
+            <span class="text-fg-primary">{userGroup.name}</span>
             {#if userGroup.count > 0}
-              <span class="text-muted-foreground">
+              <span class="text-fg-secondary">
                 {userGroup.count} member{userGroup.count > 1 ? "s" : ""}
               </span>
             {/if}
@@ -59,5 +59,5 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-muted-foreground">No groups</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No groups</div>
 {/if}

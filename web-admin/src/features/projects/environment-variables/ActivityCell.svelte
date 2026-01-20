@@ -14,7 +14,7 @@
 <div class="flex justify-start items-center">
   <Tooltip distance={8} location="top">
     <div
-      class="flex flex-row gap-x-1 text-muted-foreground cursor-pointer w-fit truncate line-clamp-1"
+      class="flex flex-row gap-x-1 text-fg-secondary cursor-pointer w-fit truncate line-clamp-1"
     >
       <TimeAgo datetime={updatedOn} />
     </div>

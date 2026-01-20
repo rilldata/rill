@@ -11,8 +11,8 @@
   <div
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
-    <div class="text-muted-foreground font-semibold">Error loading {kind}s</div>
-    <div class="text-muted-foreground font-normal">
+    <div class="text-fg-secondary font-semibold">Error loading {kind}s</div>
+    <div class="text-fg-secondary font-normal">
       If this error persists, please contact support.
     </div>
   </div>

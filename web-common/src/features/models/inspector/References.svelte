@@ -75,7 +75,7 @@
                   href="/files/{removeLeadingSlash(filePath)}"
                   class="ui-copy-muted grid justify-between gap-x-2 pl-4 pr-4 hover:bg-yellow-200 hover:cursor-pointer"
                   style:grid-template-columns="auto max-content"
-                  class:text-muted-foreground={modelHasError}
+                  class:text-fg-secondary={modelHasError}
                 >
                   <div class="truncate flex items-center gap-x-2">
                     <div class="truncate">
@@ -84,7 +84,7 @@
                   </div>
 
                   {#if cardinality}
-                    <div class="text-muted-foreground">
+                    <div class="text-fg-secondary">
                       {`${formatCompactInteger(cardinality)} rows`}
                     </div>
                   {/if}

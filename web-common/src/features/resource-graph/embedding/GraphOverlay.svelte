@@ -141,12 +141,12 @@
   }
 
   .close-btn {
-    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-background text-2xl font-light text-muted-foreground;
+    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-background text-2xl font-light text-fg-secondary;
     line-height: 1;
   }
 
   .close-btn:hover {
-    @apply bg-muted text-foreground;
+    @apply bg-muted text-fg-primary;
   }
 
   /* Ensure inline mode content fills available space */

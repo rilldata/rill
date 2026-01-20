@@ -26,7 +26,7 @@
   on:click
 >
   {#if $$slots["icon"]}
-    <span class="text-muted-foreground"><slot name="icon" /></span>
+    <span class="text-fg-secondary"><slot name="icon" /></span>
   {/if}
   <span class="font-bold" style:transform="translateY(1px)">
     <slot />

@@ -95,7 +95,7 @@
   }
   .info .banner-message,
   .info :global(svg) {
-    @apply text-surface-foreground;
+    @apply text-fg-primary;
   }
 
   .warning.app-banner {

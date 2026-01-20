@@ -54,7 +54,7 @@
     })}
   >
     <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">
-      <div class="self-center flex items-center text-muted-foreground-muted">
+      <div class="self-center flex items-center text-fg-secondary-muted">
         <slot name="icon" />
       </div>
       <div

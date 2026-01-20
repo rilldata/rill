@@ -180,8 +180,8 @@
   }
 </script>
 
-<div class="tdd-header bg-surface">
-  <div class="flex gap-x-6 items-center font-normal text-muted-foreground">
+<div class="tdd-header bg-surface-container">
+  <div class="flex gap-x-6 items-center font-normal text-fg-secondary">
     <div class="flex items-center gap-x-4">
       <div class="flex items-center gap-x-1">
         <Row size="16px" /> Rows

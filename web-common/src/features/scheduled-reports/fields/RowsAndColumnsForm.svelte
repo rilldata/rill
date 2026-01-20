@@ -47,9 +47,7 @@
     label="Rows"
     onUpdate={(newRows) => (rows = newRows)}
   >
-    <div slot="empty-fields" class="text-muted-foreground">
-      No rows selected
-    </div>
+    <div slot="empty-fields" class="text-fg-secondary">No rows selected</div>
   </FieldList>
 
   <FieldList
@@ -62,7 +60,7 @@
   >
     <div
       slot="empty-fields"
-      class={hasColumnErrors ? "text-red-600" : "text-muted-foreground"}
+      class={hasColumnErrors ? "text-red-600" : "text-fg-secondary"}
     >
       Must select one column
     </div>

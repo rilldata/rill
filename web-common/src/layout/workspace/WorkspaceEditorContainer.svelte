@@ -9,7 +9,7 @@
 </script>
 
 <div
-  class="flex flex-col size-full gap-y-1 bg-surface rounded-[2px] border overflow-hidden"
+  class="flex flex-col size-full gap-y-1 bg-surface-container rounded-[2px] border overflow-hidden"
 >
   <div
     class="size-full relative overflow-hidden flex flex-col items-center justify-center"

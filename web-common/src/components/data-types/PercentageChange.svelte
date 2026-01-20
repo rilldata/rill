@@ -6,7 +6,7 @@
   export let isNull = false;
   export let inTable = false;
   export let showPosSign = false;
-  export let color = "!text-muted-foreground";
+  export let color = "!text-fg-secondary";
   export let customStyle = "";
   export let value:
     | string
@@ -77,7 +77,7 @@
 >
   <slot name="value">
     {#if isNoData}
-      <span class="text-muted-foreground">-</span>
+      <span class="text-fg-secondary">-</span>
     {:else if value !== null && assembled}
       <span class:text-red-500={diffIsNegative}>
         {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"

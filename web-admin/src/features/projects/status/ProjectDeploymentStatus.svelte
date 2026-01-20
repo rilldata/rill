@@ -53,7 +53,7 @@
 
   .deployment-label {
     @apply text-[10px] leading-none font-semibold uppercase;
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .deployment-status-tag-wrapper {

@@ -48,8 +48,8 @@
           : ''}"
       >
         <div class="flex flex-col">
-          <div class="text-xs font-medium text-surface-foreground">{label}</div>
-          <div class="text-muted-foreground text-[11px]">{description}</div>
+          <div class="text-xs font-medium text-fg-primary">{label}</div>
+          <div class="text-fg-secondary text-[11px]">{description}</div>
         </div>
       </DropdownMenuItem>
     {/each}

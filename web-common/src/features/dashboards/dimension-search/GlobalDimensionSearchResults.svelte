@@ -74,7 +74,7 @@
         {#if $results.progress < 100}
           <div class="flex flex-row items-center gap-x-2 px-2">
             <Progress value={$results.progress} max={100} class="h-1" />
-            <div class="text-muted-foreground text-[11px]">
+            <div class="text-fg-secondary text-[11px]">
               {$results.progress}%
             </div>
           </div>

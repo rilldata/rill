@@ -18,7 +18,7 @@
 
 <style lang="postcss">
   :global(.chat-markdown) {
-    @apply text-surface-foreground;
+    @apply text-fg-primary;
     line-height: 1.6;
   }
 
@@ -104,7 +104,7 @@
   }
 
   :global(.chat-markdown blockquote) {
-    @apply border-l-2 border-gray-300 italic text-muted-foreground text-sm;
+    @apply border-l-2 border-gray-300 italic text-fg-secondary text-sm;
     padding-left: 0.75rem;
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;

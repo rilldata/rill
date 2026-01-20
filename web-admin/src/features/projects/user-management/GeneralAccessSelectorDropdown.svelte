@@ -157,7 +157,7 @@
         <div class="flex flex-col text-left">
           <div class="flex">
             <div
-              class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-foreground hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
+              class="inline-flex flex-row items-center gap-x-1 text-sm font-medium text-fg-primary hover:bg-gray-100 rounded-sm px-1 py-0.5 -mx-1 -my-0.5"
             >
               {#if accessType === "everyone"}
                 Everyone at {organization}
@@ -165,9 +165,9 @@
                 Invite only
               {/if}
               {#if accessDropdownOpen}
-                <CaretUpIcon size="12px" color="text-surface-foreground" />
+                <CaretUpIcon size="12px" color="text-fg-primary" />
               {:else}
-                <CaretDownIcon size="12px" color="text-surface-foreground" />
+                <CaretDownIcon size="12px" color="text-fg-primary" />
               {/if}
             </div>
           </div>
@@ -175,7 +175,7 @@
           {#if accessType === "everyone"}
             <div class="flex flex-row items-center gap-x-1">
               {#if userGroupMemberUsersCount && userGroupMemberUsersCount > 0}
-                <span class="text-xs text-muted-foreground">
+                <span class="text-xs text-fg-secondary">
                   {userGroupMemberUsersCount} user{userGroupMemberUsersCount > 1
                     ? "s"
                     : ""}
@@ -184,7 +184,7 @@
             </div>
           {:else}
             <div class="flex flex-row items-center gap-x-1">
-              <span class="text-xs text-muted-foreground">
+              <span class="text-xs text-fg-secondary">
                 Only admins and invited users can access
               </span>
             </div>
@@ -203,13 +203,11 @@
     >
       <div class="flex items-start gap-2">
         <Lock size="20px" color="#374151" />
-        <span class="text-xs font-medium text-surface-foreground"
-          >Invite only</span
-        >
+        <span class="text-xs font-medium text-fg-primary">Invite only</span>
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]" />
-        <span class="text-[11px] text-muted-foreground"
+        <span class="text-[11px] text-fg-secondary"
           >Only admins and invited users can access</span
         >
       </div>
@@ -229,14 +227,13 @@
             >{organization[0].toUpperCase()}</span
           >
         </div>
-        <span class="text-xs font-medium text-surface-foreground"
+        <span class="text-xs font-medium text-fg-primary"
           >Everyone at {organization}</span
         >
       </div>
       <div class="flex flex-row items-center gap-2">
         <div class="w-[20px]" />
-        <span class="text-[11px] text-muted-foreground"
-          >Org members can access</span
+        <span class="text-[11px] text-fg-secondary">Org members can access</span
         >
       </div>
     </DropdownMenu.Item>

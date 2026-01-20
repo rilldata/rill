@@ -362,7 +362,7 @@
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
       <Tooltip.Root openDelay={0}>
-        <Tooltip.Trigger class="cursor-default text-muted-foreground">
+        <Tooltip.Trigger class="cursor-default text-fg-secondary">
           <Calendar size="16px" />
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={10}>
@@ -414,7 +414,7 @@
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}
         <Tooltip.Root openDelay={0}>
           <Tooltip.Trigger>
-            <span class="text-muted-foreground italic">
+            <span class="text-fg-secondary italic">
               as of <Timestamp
                 id="filter-bar-as-of"
                 italic
@@ -439,10 +439,7 @@
 
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
     {#if !readOnly}
-      <Filter
-        size="16px"
-        className="text-muted-foreground flex-none mt-[5px]"
-      />
+      <Filter size="16px" className="text-fg-secondary flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}

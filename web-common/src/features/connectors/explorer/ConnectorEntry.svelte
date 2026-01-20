@@ -37,14 +37,14 @@
   {#if connector.name}
     <li class="connector-entry">
       <button
-        class="connector-entry-header text-foreground"
+        class="connector-entry-header text-fg-primary"
         aria-label={connector.name}
         on:click={() => {
           store.toggleItem(connectorName);
         }}
       >
         <CaretDownIcon
-          className="transform transition-transform text-muted-foreground {expanded
+          className="transform transition-transform text-fg-secondary {expanded
             ? 'rotate-0'
             : '-rotate-90'}"
           size="14px"
@@ -84,7 +84,7 @@
   }
 
   button:hover {
-    @apply bg-accent;
+    @apply bg-popover-accent;
   }
 
   h4 {

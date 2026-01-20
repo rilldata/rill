@@ -402,7 +402,7 @@
   }
 
   .has-selection tbody {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
     --bar-color: #f0f0f0;
   }
 </style>

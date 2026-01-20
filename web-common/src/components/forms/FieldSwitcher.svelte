@@ -20,11 +20,11 @@
 
 <style lang="postcss">
   button {
-    @apply capitalize bg-input text-foreground;
+    @apply capitalize bg-input text-fg-secondary;
   }
 
   button:hover:not(.selected) {
-    @apply bg-gray-50;
+    @apply bg-surface-container-hover;
   }
 
   .option-wrapper {
@@ -43,6 +43,6 @@
   }
 
   .option-wrapper > .selected {
-    @apply border-primary-500 z-50 text-primary-700;
+    @apply border-primary-500 z-50 text-accent-primary-action;
   }
 </style>

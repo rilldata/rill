@@ -5,15 +5,15 @@
 
 @layer utilities {
   .ui-copy {
-    @apply text-foreground;
+    @apply text-fg-primary;
   }
 
   .ui-copy-muted {
-    @apply text-foreground dark:text-foreground;
+    @apply text-fg-primary dark:text-fg-primary;
   }
 
   .ui-copy-strong {
-    @apply text-foreground font-semibold;
+    @apply text-fg-primary font-semibold;
   }
 
   .ui-copy-number {
@@ -50,7 +50,7 @@
   }
 
   .ui-copy-inactive {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .ui-copy-disabled {
@@ -59,13 +59,13 @@
 
   /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
   .ui-copy-disabled-faint {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .ui-copy-code {
     font-family: var(--monospace);
     font-size: 11px;
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .ui-measure-bar-included {
@@ -94,34 +94,75 @@
     color-scheme: light;
     color: var(--color-gray-900);
 
-    --ui-editor-error-foreground: hsl(0, 75%, 45%);
-    --surface: hsl(0deg 0% 100%);
-
-    /* SEMANTIC VARIABLES */
-    --background: var(--color-gray-50);
-    --foreground: var(--color-gray-900);
-    --card: var(--surface);
-    --card-foreground: var(--color-gray-900);
-    --popover: var(--surface);
-    --popover-foreground: var(--color-gray-900);
-    --popover-footer: var(--color-gray-100);
-    --primary: var(--color-primary-950);
-    --primary-foreground: var(--color-primary-50);
-    --secondary: var(--color-secondary-100);
-    --secondary-foreground: var(--color-secondary-950);
-    --muted: var(--color-gray-100);
-    --muted-foreground: var(--color-gray-500);
-    --accent: var(--color-gray-100);
-    --accent-foreground: var(--color-gray-900);
-    --destructive: var(--color-red-600);
-    --destructive-foreground: var(--color-gray-50);
-    --border: var(--color-gray-300);
-    --input: var(--color-gray-50);
-    --ring: var(--color-gray-950);
-    --surface-foreground: var(--color-gray-700);
-    --sidebar: var(--surface);
-    --sidebar-foreground: var(--surface-foreground);
+    --white: oklch(100% 0 0);
     --radius: 0.5rem;
+
+    --ui-editor-error-foreground: hsl(0, 75%, 45%);
+
+    --surface-background: var(--white);
+    --surface-container: var(--color-neutral-50);
+    --surface-container-hover: var(--color-primary-50);
+    --surface-container-active: var(--color-primary-200);
+    --surface-elevated: var(--white);
+    --surface-overlay: var(--white);
+    --surface-muted: var(--color-neutral-100);
+
+    --fg-primary: var(--color-neutral-950);
+    --fg-secondary: var(--color-gray-700);
+    --fg-tertiary: var(--color-gray-500);
+    --fg-inverse: var(--color-neutral-50);
+    --fg-muted: var(--color-neutral-500);
+    --fg-disabled: var(--color-neutral-400);
+    --fg-accent: var(--color-primary-900);
+
+    --accent-primary: var(--color-primary-500);
+    --accent-primary-action: var(--color-primary-500);
+    --accent-secondary: var(--color-primary-500);
+    --accent-secondary-action: var(--color-econdary-500);
+
+    --icon-default: var(--color-neutral-700);
+    --icon-muted: var(--color-gray-500);
+    --icon-disabled: var(--color-gray-400);
+    --icon-accent: var(--color-primary-500);
+
+    --canvas: var(--color-cyan-600);
+    --explore: var(--color-indigo-700);
+    --metrics: var(--color-violet-600);
+    --model: var(--color-cyan-600);
+    --api: var(--color-orange-400);
+    --data: var(--color-fuchsia-500);
+    --theme: var(--color-pink-500);
+    --component: #65a30d;
+    --alert: #f59e0b;
+    --report: #0284c7;
+    --connector: #6b7280;
+
+    --alert: var(--color-red-light-800);
+    --report: var(--color-red-light-800);
+
+    --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
+    --border: var(--color-neutral-200);
+
+    --ring-focus: var(--color-theme-primary-300);
+    --ring-offset: var(--white);
+
+    --dimension: var(--color-primary-100);
+    --dimension-foreground: var(--color-primary-800);
+    --dimension-border: var(--color-primary-800);
+
+    --measure: var(--color-secondary-100);
+    --measure-foreground: var(--color-secondary-800);
+    --measure-border: var(--color-secondary-800);
+
+    --tooltip: var(--color-neutral-900);
+
+    --destructive: var(--color-red-600);
+    --destructive-foreground: var(--color-red-50);
+
+    --popover: var(--white);
+    --popover-accent: var(--color-gray-200);
+    --popover-foreground: var(--color-neutral-950);
+    --popover-footer: var(--color-neutral-950);
 
     --color-theme-50: var(
       --color-theme-light-50,
@@ -270,37 +311,72 @@
 
   :root.dark {
     color-scheme: dark;
-    color: var(--color-gray-950);
+    color: var(--color-neutral-light-50);
 
-    /* SEMANTIC VARIABLES */
-    --background: var(--color-gray-50);
-    --sidebar: var(--color-gray-100);
-    --surface: var(--color-gray-200);
+    --surface-background: var(--color-rill-gray-dark-50);
+    --surface-container: var(--color-rill-gray-dark-200);
+    --surface-container-hover: var(--color-rill-gray-dark-800);
+    --surface-container-active: var(--color-rill-gray-dark-500);
+    --surface-elevated: var(--color-rill-gray-dark-300);
+    --surface-overlay: var(--color-rill-gray-dark-400);
+    --surface-muted: var(--color-neutral-light-800);
 
-    --foreground: var(--color-gray-950);
-    --surface-foreground: #d1d5db;
-    --sidebar-foreground: #fafafa;
+    --fg-primary: var(--color-neutral-light-50);
+    --fg-secondary: var(--color-gray-light-300);
+    --fg-tertiary: var(--color-gray-light-400);
+    --fg-inverse: var(--color-neutral-light-50);
+    --fg-muted: var(--color-neutral-light-400);
+    --fg-disabled: var(--color-neutral-light-600);
+    --fg-accent: var(--color-primary-light-100);
 
-    --card: var(--sidebar);
-    /* --card-foreground: var(--color-gray-900); */
-    --popover: var(--color-gray-400);
-    --popover-foreground: var(--color-gray-950);
-    --popover-footer: var(--color-gray-500);
-    /* --primary: var(--color-primary-950); */
-    /* --primary-foreground: var(--color-primary-50); */
-    /* --secondary: var(--color-secondary-100); */
-    --secondary-foreground: var(--color-gray-950);
-    --muted: var(--color-gray-100);
-    --muted-foreground: #a3a3a3;
-    --accent: var(--color-gray-600);
-    --accent-foreground: var(--color-gray-950);
-    /* --destructive: var(--color-red-600); */
-    /* --destructive-foreground: var(--color-gray-50); */
-    --border: var(--color-gray-600);
-    --input: var(--color-gray-500);
+    --accent-primary: var(--color-primary-light-600);
+    --accent-primary-action: var(--color-primary-light-400);
+    --accent-secondary: var(--color-primary-light-700);
+    --accent-secondary-action: var(--color-secondary-light-400);
 
-    /* --ring: var(--color-gray-950); */
+    --icon-default: var(--color-neutral-light-50);
+    --icon-muted: var(--color-gray-light-500);
+    --icon-disabled: var(--color-gray-light-600);
+    --icon-accent: var(--color-primary-light-400);
 
+    --canvas: var(--color-cyan-light-500);
+    --explore: var(--color-indigo-light-500);
+    --metrics: var(--color-violet-light-500);
+    --model: var(--color-cyan-light-500);
+    --api: var(--color-orange-light-300);
+    --data: var(--color-fuchsia-light-400);
+    --theme: var(--color-pink-light-400);
+    --component: var(--component);
+    --alert: var(--alert);
+    --report: var(--report);
+    --connector: var(--color-gray-500);
+
+    /* These don't match Figma directly, but are visually close */
+    --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
+    --border: color-mix(in oklab, var(--white) calc(0.08 * 100%), transparent);
+
+    --ring-focus: var(--color-theme-primary-light-500);
+    --ring-offset: var(--white);
+
+    --dimension: var(--color-theme-primary-light-950);
+    --dimension-foreground: var(--color-theme-primary-light-100);
+    --dimension-border: var(--color-theme-primary-light-800);
+
+    --measure: var(--color-theme-secondary-light-950);
+    --measure-foreground: var(--color-theme-secondary-light-100);
+    --measure-border: var(--color-theme-secondary-light-800);
+
+    --tooltip: var(--color-rill-gray-dark-500);
+
+    --destructive: var(--color-red-light-400);
+    --destructive-foreground: var(--color-red-light-50);
+
+    --popover: var(--color-rill-gray-dark-500);
+    --popover-accent: var(--color-rill-gray-dark-700);
+    --popover-foreground: var(--color-neutral-light-50);
+    --popover-footer: var(--color-rill-gray-dark-400);
+
+    /* Theme declaration */
     --color-theme-50: var(--color-theme-dark-50, var(--color-primary-dark-50));
     --color-theme-100: var(
       --color-theme-dark-100,
@@ -439,7 +515,7 @@
     --color-qualitative-24: hsl(110deg 55% 60%);
 
     --editor-selection: #304e75;
-    --line-highlight: var(--color-gray-400);
+    --line-highlight: var(--color-rill-gray-dark-400);
   }
 
   h1,

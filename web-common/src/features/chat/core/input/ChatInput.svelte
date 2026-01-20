@@ -177,7 +177,7 @@
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
-    @apply text-muted-foreground pointer-events-none absolute;
+    @apply text-fg-secondary pointer-events-none absolute;
   }
 
   .stop-icon {

@@ -22,19 +22,19 @@
       icon: Github,
       label: "Report an issue",
       href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
-      className: "fill-muted-foreground",
+      className: "fill-fg-secondary",
       shrinkIcon: true,
     },
   ];
 </script>
 
 <div
-  class="flex flex-col pt-3 pb-3 gap-y-1 bg-background dark:bg-surface border-t sticky bottom-0"
+  class="flex flex-col pt-3 pb-3 gap-y-1 bg-background dark:bg-surface-container border-t sticky bottom-0"
 >
   {#each lineItems as lineItem, i (i)}
     <a href={lineItem.href} target="_blank" rel="noreferrer noopener"
       ><div
-        class="flex flex-row items-center px-4 py-1 gap-x-2 text-muted-foreground font-normal hover:bg-accent"
+        class="flex flex-row items-center px-4 py-1 gap-x-2 text-fg-secondary font-normal hover:bg-popover-accent"
       >
         <!-- workaround to resize the github and discord icons to match -->
         <div
@@ -53,7 +53,7 @@
     >
   {/each}
   <div
-    class="px-4 py-1 text-muted-foreground flex items-center flex-row w-full gap-x-2 truncate line-clamp-1"
+    class="px-4 py-1 text-fg-secondary flex items-center flex-row w-full gap-x-2 truncate line-clamp-1"
     style:font-size="10px"
   >
     <span>
@@ -62,7 +62,7 @@
           href="https://docs.rilldata.com"
           target="_blank"
           rel="noreferrer noopener"
-          class="text-muted-foreground"
+          class="text-fg-secondary"
         >
           <InfoCircle size="16px" />
         </a>

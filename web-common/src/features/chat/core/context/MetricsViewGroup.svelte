@@ -187,7 +187,7 @@
 
   .context-item-label {
     @apply text-sm grow;
-    @apply overflow-hidden whitespace-nowrap text-ellipsis text-surface-foreground;
+    @apply overflow-hidden whitespace-nowrap text-ellipsis text-fg-primary;
   }
 
   .context-item {
@@ -201,7 +201,7 @@
   }
 
   .context-item.highlight {
-    @apply bg-accent text-accent-foreground;
+    @apply bg-popover-accent text-fg-accent;
   }
 
   .context-item-checkbox {
@@ -209,7 +209,7 @@
   }
 
   .context-item-keyboard-shortcut {
-    @apply min-w-9 text-accent-foreground/60;
+    @apply min-w-9 text-fg-accent/60;
   }
 
   .square {

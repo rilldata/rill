@@ -15,7 +15,7 @@
   }
 </script>
 
-<div class="flex flex-row text-foreground my-1 {className}">
+<div class="flex flex-row text-fg-primary my-1 {className}">
   <div class="p-0.5 border rounded-bl-sm rounded-tl-sm bg-input command-text">
     {command}
   </div>

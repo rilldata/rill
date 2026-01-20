@@ -60,12 +60,12 @@
           {#if !onProjectPage}
             <div class="flex gap-x-2">
               <a
-                class="text-muted-foreground hover:text-muted-foreground"
+                class="text-fg-secondary hover:text-fg-secondary"
                 href="/-/embed"
               >
                 Home
               </a>
-              <span class="text-muted-foreground">/</span>
+              <span class="text-fg-secondary">/</span>
             </div>
           {/if}
 

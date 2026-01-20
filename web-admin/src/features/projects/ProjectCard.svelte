@@ -23,7 +23,7 @@
   <Card href="/{organization}/{project}">
     <!-- Project name -->
     <h2
-      class="text-foreground font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
+      class="text-fg-primary font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
         project,
       )
         ? 'break-all'
@@ -39,7 +39,7 @@
       </ProjectAccessControls>
     </Tag>
     <!-- Public vs Private indicator -->
-    <div class="absolute bottom-2.5 right-2.5 text-muted-foreground">
+    <div class="absolute bottom-2.5 right-2.5 text-fg-secondary">
       <Tooltip distance={10}>
         {#if $proj.data.project.public}
           <Globe size="16px" />

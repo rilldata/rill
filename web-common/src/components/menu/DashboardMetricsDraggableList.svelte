@@ -24,7 +24,7 @@
   let active = false;
 
   const toggleButtonBaseClass =
-    "flex h-[26px] w-[42px] items-center justify-center rounded-sm transition-colors hover:bg-gray-200 hover:text-surface-foreground active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
+    "flex h-[26px] w-[42px] items-center justify-center rounded-sm text-icon-muted transition-colors hover:bg-gray-200 hover:text-fg-primary active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
 
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
@@ -102,7 +102,7 @@
     </Button>
   </Popover.Trigger>
   <Popover.Content
-    class="p-0 z-popover text-foreground"
+    class="p-0 z-popover text-fg-primary"
     align="start"
     strategy="absolute"
     fitViewport={true}
@@ -132,9 +132,7 @@
             slot="header"
             class="flex-none flex w-full py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b z-10"
           >
-            <h3
-              class="uppercase font-semibold text-[11px] text-muted-foreground"
-            >
+            <h3 class="uppercase font-semibold text-[11px] text-fg-secondary">
               Shown {type === "measure" ? "Measures" : "Dimensions"}
             </h3>
             {#if selectedItems.length > 1}
@@ -167,15 +165,15 @@
                 <Tooltip.Trigger class="w-full flex gap-x-1 items-center">
                   <DragHandle
                     size="16px"
-                    className="fill-muted-foreground pointer-events-none"
+                    className="fill-icon pointer-events-none"
                   />
                   <span
-                    class="truncate flex-1 text-left pointer-events-none text-foreground"
+                    class="truncate flex-1 text-left pointer-events-none text-fg-primary"
                   >
                     {displayName}
                   </span>
                   <button
-                    class={`${toggleButtonBaseClass} ml-auto text-muted-foreground`}
+                    class="{toggleButtonBaseClass} ml-auto"
                     on:click|stopPropagation={() => removeSelectedItem(item.id)}
                     on:mousedown|stopPropagation={() => {
                       // NO-OP
@@ -192,7 +190,7 @@
                 </Tooltip.Trigger>
                 <Tooltip.Content side="right" sideOffset={18} class="z-popover">
                   <div
-                    class="bg-popover text-foreground rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                    class="bg-popover text-fg-primary rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                   >
                     {#if selectedItems.length === 1}
                       Must show at least one {type === "measure"
@@ -207,13 +205,13 @@
             {:else}
               <DragHandle
                 size="16px"
-                className="fill-muted-foreground pointer-events-none"
+                className="fill-icon pointer-events-none"
               />
               <span class="truncate flex-1 text-left pointer-events-none">
                 {displayName}
               </span>
               <button
-                class={`${toggleButtonBaseClass} ml-auto `}
+                class="{toggleButtonBaseClass} ml-auto"
                 on:click|stopPropagation={() => removeSelectedItem(item.id)}
                 on:mousedown|stopPropagation={() => {
                   // NO-OP
@@ -247,7 +245,7 @@
               class="flex-none flex py-1.5 pb-1 justify-between px-2 sticky top-0 from-popover from-80% to-transparent bg-gradient-to-b"
             >
               <h3
-                class="uppercase text-[11px] font-semibold text-muted-foreground from-popover from-80% to-transparent bg-gradient-to-b"
+                class="uppercase text-[11px] font-semibold text-fg-secondary from-popover from-80% to-transparent bg-gradient-to-b"
               >
                 Hidden {type === "measure" ? "Measures" : "Dimensions"}
               </h3>
@@ -259,7 +257,7 @@
               </button>
             </div>
 
-            <div slot="empty" class="px-2 py-2 text-xs text-muted-foreground">
+            <div slot="empty" class="px-2 py-2 text-xs text-fg-secondary">
               {searchText
                 ? `No matching hidden ${type === "measure" ? "measures" : "dimensions"}`
                 : `No hidden ${type === "measure" ? "measures" : "dimensions"}`}
@@ -280,13 +278,11 @@
                   <Tooltip.Trigger
                     class="w-full flex gap-x-1 justify-between items-center"
                   >
-                    <span
-                      class="truncate flex-1 text-left pointer-events-none text-foreground"
-                    >
+                    <span class="truncate flex-1 text-left pointer-events-none">
                       {displayName}
                     </span>
                     <button
-                      class="{toggleButtonBaseClass} text-muted-foreground"
+                      class={toggleButtonBaseClass}
                       on:click|stopPropagation={() =>
                         handleHiddenItemClick({ item, index })}
                       aria-label={`Show ${displayName}`}
@@ -302,7 +298,7 @@
                     class="z-popover"
                   >
                     <div
-                      class="bg-popover text-foreground rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
+                      class="bg-popover text-fg-primary rounded p-2 pt-1 pb-1 shadow-md pointer-events-none z-50"
                     >
                       {itemData.description}
                     </div>

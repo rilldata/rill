@@ -222,11 +222,11 @@
   }
 
   .choose-file-text {
-    @apply font-medium text-foreground text-sm;
+    @apply font-medium text-fg-primary text-sm;
   }
 
   .file-status-text {
-    @apply text-muted-foreground text-sm;
+    @apply text-fg-secondary text-sm;
   }
 
   .trash-icon-button {

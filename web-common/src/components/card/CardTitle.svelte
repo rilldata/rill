@@ -3,7 +3,7 @@
 </script>
 
 <h3
-  class="text-muted-foreground font-medium text-sm {position === 'bottom'
+  class="text-fg-secondary font-medium text-sm {position === 'bottom'
     ? 'absolute top-[180px]'
     : ''}"
 >

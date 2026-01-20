@@ -34,7 +34,7 @@
   <div class="main-section">
     <div class="message-container" class:font-medium={detail}>
       {#if type === "success"}
-        <Check size="18px" className="text-foreground" />
+        <Check size="18px" className="text-fg-primary" />
       {:else if type === "loading"}
         <LoadingSpinner size="18px" />
       {:else if type == "error"}

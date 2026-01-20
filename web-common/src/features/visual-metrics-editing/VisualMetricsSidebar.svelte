@@ -275,7 +275,7 @@
 />
 
 <div
-  class="h-full w-[320px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
+  class="h-full w-[320px] bg-surface-elevated flex-none flex flex-col border select-none rounded-[2px]"
 >
   <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
@@ -291,7 +291,7 @@
           <Label class="font-medium text-sm" for="auto-save">{label}</Label>
           {#if hint}
             <Tooltip location="left">
-              <div class="text-muted-foreground">
+              <div class="text-fg-secondary">
                 <InfoCircle size="13px" />
               </div>
               <TooltipContent slot="tooltip-content">
@@ -341,7 +341,7 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <p class="text-muted-foreground">
+    <p class="text-fg-secondary">
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
         edit in YAML

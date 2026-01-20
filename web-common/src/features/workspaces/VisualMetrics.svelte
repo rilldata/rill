@@ -550,11 +550,9 @@
                "
               >
                 {#if !hasValidOLAPTableSelected}
-                  <span class="text-muted-foreground truncate"
-                    >Select table</span
-                  >
+                  <span class="text-fg-secondary truncate">Select table</span>
                 {:else}
-                  <span class="text-surface-foreground truncate">
+                  <span class="text-fg-primary truncate">
                     {modelOrSourceOrTableName}
                   </span>
                 {/if}
@@ -663,13 +661,13 @@
             searchValue = value;
           }}
         >
-          <Search slot="icon" size="16px" className="fill-muted-foreground" />
+          <Search slot="icon" size="16px" className="fill-fg-secondary" />
         </Input>
       </div>
 
       {#if totalSelected}
         <div
-          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-surface-foreground border border-gray-100 absolute right-0"
+          class="bg-surface-container rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-fg-primary border border-gray-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -881,7 +879,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-surface border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface-elevated border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

@@ -33,8 +33,8 @@
     class:cursor-auto={disabled}
     class:rounded
     class="{marginClasses} grid place-items-center {disabled
-      ? 'text-muted-foreground'
-      : 'text-foreground'}
+      ? 'text-fg-secondary'
+      : 'text-fg-primary'}
 {disableHover || disabled
       ? ''
       : bgGray

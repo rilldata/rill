@@ -60,7 +60,7 @@
         {#if $firstLoad}
           <Spinner status={EntityStatus.Running} size="32px" />
         {:else}
-          <p class="text-lg text-muted-foreground">No components added</p>
+          <p class="text-lg text-fg-secondary">No components added</p>
         {/if}
       </div>
     {/each}

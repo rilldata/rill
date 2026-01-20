@@ -35,13 +35,13 @@
         border={false}
         background={false}
       />
-      <button class="text-muted-foreground" on:click={reset}>
+      <button class="text-fg-secondary" on:click={reset}>
         <Cancel size="16px" />
       </button>
     </div>
   {:else}
     <Button
-      class="flex items-center gap-x-2 p-1.5 text-foreground"
+      class="flex items-center gap-x-2 p-1.5 text-fg-primary"
       onClick={() => (searchBarOpen = !searchBarOpen)}
       type="secondary"
       compact

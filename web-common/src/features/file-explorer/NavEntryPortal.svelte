@@ -17,11 +17,11 @@
 >
   <div class="flex flex-row gap-x-1">
     {#if dragData.isDir}
-      <Folder className="text-muted-foreground" size="14px" />
+      <Folder className="text-fg-secondary" size="14px" />
     {:else}
       <svelte:component
         this={dragData.kind ? resourceIconMapping[dragData.kind] : File}
-        className="text-muted-foreground"
+        className="text-fg-secondary"
         size="14px"
       />
     {/if}

@@ -292,7 +292,7 @@
   use:enhance
 >
   <DialogTitle
-    class="px-6 py-4 text-foreground text-lg font-semibold leading-7 flex flex-row items-center justify-between"
+    class="px-6 py-4 text-fg-primary text-lg font-semibold leading-7 flex flex-row items-center justify-between"
   >
     <div>{dialogTitle}</div>
     <Button type="link" noStroke compact onClick={handleCancel}>

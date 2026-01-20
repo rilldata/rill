@@ -72,7 +72,7 @@
     enableResize={true}
     position="top-left"
     borderRight={true}
-    bgClass="bg-surface"
+    bgClass="bg-surface-container"
     onClick={sortByDimensionValue}
     on:keydown={sortByDimensionValue}
     on:resize={handleResize}
@@ -82,7 +82,7 @@
         >{column?.label || column?.name}</span
       >
       {#if $sortedByDimensionValue}
-        <div class="text-muted-foreground">
+        <div class="text-fg-secondary">
           {#if $sortedAscending}
             <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
               <ArrowDown size="12px" />
@@ -103,7 +103,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass="bg-surface"
+      bgClass="bg-surface-container"
     >
       <Cell
         positionStatic

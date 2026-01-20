@@ -375,7 +375,7 @@
             <button
               {...builder}
               use:builder.action
-              class="flex gap-x-1 items-center text-surface-foreground hover:text-primary-700 dark:text-muted-foreground dark:hover:text-muted-foreground"
+              class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
             >
               by <b>
                 {V1TimeGrainToDateTimeUnit[effectiveGrain]}

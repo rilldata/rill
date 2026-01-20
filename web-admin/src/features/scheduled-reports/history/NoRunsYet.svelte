@@ -13,11 +13,11 @@
   <div
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
-    <div class="text-muted-foreground font-semibold">
+    <div class="text-fg-secondary font-semibold">
       This report has not run yet
     </div>
     <!-- <div>
-      <span style="text-muted-foreground font-normal"
+      <span style="text-fg-secondary font-normal"
         >Learn how to deploy a dashboard in our
       </span><a href="https://docs.rilldata.com/" target="_blank">docs</a>
     </div> -->

@@ -1,10 +1,7 @@
 <script lang="ts">
   import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
@@ -58,10 +55,7 @@
     kind && resourceIconMapping[kind]
       ? resourceIconMapping[kind]
       : DEFAULT_ICON;
-  $: color =
-    kind && resourceColorMapping[kind]
-      ? resourceColorMapping[kind]
-      : DEFAULT_COLOR;
+  $: color = kind ? undefined : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: hasError = !!data?.resource?.meta?.reconcileError;
   $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -211,7 +205,7 @@
 
 <style lang="postcss">
   .node {
-    @apply relative flex items-center gap-x-3 rounded-lg border border-accent bg-surface px-3 py-2 cursor-pointer shadow-sm;
+    @apply relative flex items-center gap-x-3 rounded-lg border border-accent bg-surface-container px-3 py-2 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition:
       box-shadow 120ms ease,
@@ -298,11 +292,11 @@
   }
 
   .meta {
-    @apply text-xs text-muted-foreground capitalize;
+    @apply text-xs text-fg-secondary capitalize;
   }
 
   .status {
-    @apply text-xs text-muted-foreground italic;
+    @apply text-xs text-fg-secondary italic;
   }
 
   .status.error {

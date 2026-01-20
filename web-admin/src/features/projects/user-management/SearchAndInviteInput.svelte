@@ -514,7 +514,7 @@
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    @apply bg-input text-foreground border;
+    @apply bg-input text-fg-primary border;
     border-radius: 6px;
     min-height: 32px;
     gap: 8px;
@@ -601,7 +601,7 @@
   }
 
   .section-header {
-    @apply text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 py-2;
+    @apply text-xs font-semibold text-fg-secondary uppercase tracking-wide px-3 py-2;
     border-top: 1px solid #f3f4f6;
   }
 

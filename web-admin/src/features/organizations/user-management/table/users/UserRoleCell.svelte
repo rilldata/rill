@@ -165,8 +165,8 @@
             : ''}"
           on:click={() => handleSetRole(OrgUserRoles.Admin)}
         >
-          <span class="text-xs font-medium text-surface-foreground">Admin</span>
-          <span class="text-[11px] text-muted-foreground"
+          <span class="text-xs font-medium text-fg-primary">Admin</span>
+          <span class="text-[11px] text-fg-secondary"
             >{ORG_ROLES_DESCRIPTION_MAP.admin}</span
           >
         </DropdownMenu.Item>
@@ -178,8 +178,8 @@
           : ''}"
         on:click={() => handleSetRole(OrgUserRoles.Editor)}
       >
-        <span class="text-xs font-medium text-surface-foreground">Editor</span>
-        <span class="text-[11px] text-muted-foreground"
+        <span class="text-xs font-medium text-fg-primary">Editor</span>
+        <span class="text-[11px] text-fg-secondary"
           >{ORG_ROLES_DESCRIPTION_MAP.editor}</span
         >
       </DropdownMenu.Item>
@@ -190,8 +190,8 @@
           : ''}"
         on:click={() => handleSetRole(OrgUserRoles.Viewer)}
       >
-        <span class="text-xs font-medium text-surface-foreground">Viewer</span>
-        <span class="text-[11px] text-muted-foreground"
+        <span class="text-xs font-medium text-fg-primary">Viewer</span>
+        <span class="text-[11px] text-fg-secondary"
           >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>

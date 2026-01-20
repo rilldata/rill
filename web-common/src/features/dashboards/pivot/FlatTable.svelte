@@ -250,7 +250,7 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-surface table-fixed;
+    @apply bg-surface-container table-fixed;
   }
 
   /* Pin header */
@@ -283,14 +283,14 @@
   }
 
   .header-cell {
-    @apply px-2 bg-surface size-full;
+    @apply px-2 bg-surface-container size-full;
     @apply flex items-center gap-x-1 w-full truncate;
-    @apply text-foreground font-medium;
+    @apply text-fg-primary font-medium;
     height: var(--header-height);
   }
 
   .cell {
-    @apply size-full p-1 px-2 text-foreground;
+    @apply size-full p-1 px-2 text-fg-primary;
   }
 
   tr > td {
@@ -299,7 +299,7 @@
 
   /* The totals row */
   .with-measure tbody > tr:nth-of-type(2) {
-    @apply bg-surface sticky z-20;
+    @apply bg-surface-container sticky z-20;
     top: var(--total-header-height);
   }
 

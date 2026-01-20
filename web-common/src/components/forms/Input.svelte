@@ -148,7 +148,7 @@
       {#if textInputPrefix}
         <div
           class:text-sm={size !== "xl"}
-          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-muted-foreground border-r border-gray-300 text-base px-2 mr-2"
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-fg-secondary border-r border-gray-300 text-base px-2 mr-2"
         >
           {textInputPrefix}
         </div>
@@ -164,7 +164,7 @@
         <div
           {id}
           contenteditable
-          class="multiline-input bg-input"
+          class="multiline-input"
           class:pointer-events-none={disabled}
           {placeholder}
           role="textbox"
@@ -215,9 +215,9 @@
           }}
         >
           {#if showPassword}
-            <EyeOffIcon size="14px" class="text-muted-foreground" />
+            <EyeOffIcon size="14px" class="text-fg-secondary" />
           {:else}
-            <EyeIcon size="14px" class="text-muted-foreground" />
+            <EyeIcon size="14px" class="text-fg-secondary" />
           {/if}
         </IconButton>
       {/if}
@@ -303,17 +303,21 @@
     @apply bg-gray-50 border-gray-200 cursor-not-allowed;
   }
 
+  input {
+    @apply bg-transparent;
+  }
+
   input,
   .multiline-input {
     @apply p-0;
     @apply size-full;
-    @apply outline-none border-0 bg-input placeholder-muted-foreground;
+    @apply outline-none border-0 placeholder-fg-secondary;
     @apply cursor-text;
     vertical-align: middle;
   }
 
   input:disabled {
-    @apply bg-gray-50 text-muted-foreground cursor-not-allowed;
+    @apply bg-gray-50 text-fg-secondary cursor-not-allowed;
   }
 
   input {
@@ -356,6 +360,6 @@
   }
 
   .description {
-    @apply text-xs text-muted-foreground;
+    @apply text-xs text-fg-secondary;
   }
 </style>

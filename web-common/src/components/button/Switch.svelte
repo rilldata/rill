@@ -4,7 +4,7 @@
 </script>
 
 <button
-  class="rounded flex gap-x-2 cursor-pointer select-none text-foreground"
+  class="rounded flex gap-x-2 cursor-pointer select-none text-fg-primary"
   on:click
 >
   <slot name="left" />

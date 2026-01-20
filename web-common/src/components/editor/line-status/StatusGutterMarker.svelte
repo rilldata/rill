@@ -12,7 +12,7 @@
 
 <Tooltip distance={8} suppress={message === undefined}>
   <div
-    class="grid justify-between text-muted-foreground"
+    class="grid justify-between text-fg-secondary"
     class:bg-red-50={level === "error" && !active}
     class:bg-red-100={level === "error" && active}
     class:text-red-600={level === "error" && !active}

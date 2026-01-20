@@ -39,6 +39,6 @@
 
   .plan-footer {
     @apply flex flex-row items-center;
-    @apply bg-gray-50 text-muted-foreground border-t border-gray-200;
+    @apply bg-gray-50 text-fg-secondary border-t border-gray-200;
   }
 </style>

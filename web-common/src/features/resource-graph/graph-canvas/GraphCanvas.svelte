@@ -362,12 +362,12 @@
   }
 
   .graph-title {
-    @apply text-sm font-semibold text-foreground;
+    @apply text-sm font-semibold text-fg-primary;
   }
 
   .graph-container {
     @apply relative w-full overflow-hidden rounded-lg border;
-    border-color: var(--border, #e5e7eb);
+    /* border-color: var(--border, #e5e7eb); */
     background-color: var(--surface, #ffffff);
   }
 
@@ -375,15 +375,15 @@
     @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm;
     border-color: var(--border, #e5e7eb);
     background-color: var(--surface, #ffffff);
-    color: var(--muted-foreground, #6b7280);
+    color: var(--fg-muted, #6b7280);
   }
 
   .expand-btn {
-    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface text-sm text-muted-foreground;
+    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface-container text-sm text-fg-secondary;
     line-height: 1.25rem;
   }
 
   .expand-btn:hover {
-    @apply bg-muted text-foreground;
+    @apply bg-muted text-fg-primary;
   }
 </style>

@@ -2,23 +2,23 @@
   import type { ComponentType } from "svelte";
 
   export let icon: ComponentType;
-  export let iconColor: string;
+
   export let message: string;
   export let action: string = "";
 </script>
 
 <div class="flex flex-col items-center gap-y-4">
-  <svelte:component this={icon} size="32px" color={iconColor} />
+  <svelte:component this={icon} size="32px" />
   <div class="flex flex-col gap-y-2 items-center text-sm">
-    <div class="text-surface-foreground font-semibold">
+    <div class="text-fg-primary font-semibold">
       {message}
     </div>
     {#if $$slots.action}
-      <div class="text-muted-foreground">
+      <div class="text-fg-secondary">
         <slot name="action" />
       </div>
     {:else if action}
-      <div class="text-muted-foreground">
+      <div class="text-fg-secondary">
         {action}
       </div>
     {/if}

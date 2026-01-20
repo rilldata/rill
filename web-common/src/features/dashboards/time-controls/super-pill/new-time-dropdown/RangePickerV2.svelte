@@ -241,7 +241,7 @@
             <RangeDisplay {interval} {timeGrain} />
 
             <div
-              class="font-bold bg-accent rounded-[2px] p-1 py-0 text-muted-foreground text-[11px]"
+              class="font-bold bg-surface-muted rounded-[2px] p-1 py-0 text-fg-secondary text-[11px]"
             >
               {zoneAbbreviation}
             </div>
@@ -332,7 +332,7 @@
               <button
                 type="button"
                 role="menuitem"
-                class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-accent rounded-sm w-full select-none flex items-center"
+                class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-popover-accent rounded-sm w-full select-none flex items-center"
                 on:click={() => {
                   handleRangeSelect("inf");
                 }}
@@ -355,13 +355,13 @@
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
               }}
-              class="truncate text-foreground w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
+              class="truncate text-fg-primary w-full text-left gap-x-1 pr-1 hover:bg-popover-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
               <div class="mr-auto">Custom</div>
 
               <CaretDownIcon
-                className="-rotate-90 text-muted-foreground"
+                className="-rotate-90 text-fg-secondary"
                 size="14px"
               />
             </button>
@@ -381,20 +381,20 @@
                     showCalendarPicker = false;
                   }}
                   role="presentation"
-                  class="group h-7 verflow-hidden hover:bg-accent flex-none rounded-sm w-full select-none flex items-center"
+                  class="group h-7 verflow-hidden hover:bg-popover-accent flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
                     type="button"
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
-                    <Globe size="14px" className="text-foreground" />
-                    <div class="mr-auto text-foreground">Time zone</div>
+                    <Globe size="14px" className="text-fg-primary" />
+                    <div class="mr-auto text-fg-primary">Time zone</div>
                     <div class="sr-only group-hover:not-sr-only">
                       <SyntaxElement range={zoneAbbreviation} />
                     </div>
                     <CaretDownIcon
-                      className="-rotate-90 text-muted-foreground"
+                      className="-rotate-90 text-fg-secondary"
                       size="14px"
                     />
                   </button>

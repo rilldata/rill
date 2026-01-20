@@ -10,7 +10,7 @@
 
 <header class="flex w-full border-b">
   <div class="border-r">
-    <h2 class="italic text-muted-foreground">Unsaved changes</h2>
+    <h2 class="italic text-fg-secondary">Unsaved changes</h2>
 
     <Button
       type="subtle"

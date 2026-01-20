@@ -80,7 +80,7 @@
     <p>Building data intuition at every step of analysis</p>
   </div>
   <ol
-    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface rounded-lg border"
+    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-surface-container rounded-lg border"
   >
     {#if olapConnector}
       {#each steps as step, i (step.heading)}

@@ -31,7 +31,7 @@
   bind:el
   disabled={locked || disabled}
   class={cn(
-    "flex h-8 w-full items-center relative justify-between rounded-[2px] border bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-input disabled:text-muted-foreground [&>span]:line-clamp-1",
+    "flex h-8 w-full items-center relative justify-between rounded-[2px] border bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-fg-secondary focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-input disabled:text-fg-secondary [&>span]:line-clamp-1",
     className,
   )}
   {...$$restProps}
@@ -43,11 +43,11 @@
         on:click={() => {
           locked = false;
         }}
-        class="group grid bg-surface place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
+        class="group grid bg-surface-container place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
       >
-        <Lock size="14px" class="text-muted-foreground group-hover:hidden" />
+        <Lock size="14px" class="text-fg-secondary group-hover:hidden" />
         <UnlockIcon
-          class="text-muted-foreground hidden group-hover:block"
+          class="text-fg-secondary hidden group-hover:block"
           size="14px"
         />
       </button>
@@ -58,7 +58,7 @@
     </Tooltip>
   {/if}
   <div class="caret transition-transform">
-    <CaretDownIcon size="12px" className="fill-muted-foreground" />
+    <CaretDownIcon size="12px" className="fill-fg-secondary" />
   </div>
 </SelectPrimitive.Trigger>
 

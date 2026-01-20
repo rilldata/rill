@@ -97,7 +97,7 @@
     <div
       role="grid"
       tabindex="0"
-      class="relative bg-surface"
+      class="relative bg-surface-container"
       style:will-change="transform, contents"
       style:width="{virtualWidth}px"
       style:height="{virtualHeight}px"

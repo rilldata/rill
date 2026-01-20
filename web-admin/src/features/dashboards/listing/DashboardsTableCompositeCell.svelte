@@ -34,7 +34,7 @@
   <div class="flex gap-x-2 items-center min-h-[20px]">
     <ResourceTypeBadge kind={resourceKind} />
     <span
-      class="text-surface-foreground text-sm font-semibold group-hover:text-primary-600 truncate"
+      class="text-fg-primary text-sm font-semibold group-hover:text-primary-600 truncate"
     >
       {title !== "" ? title : name}
     </span>
@@ -43,7 +43,7 @@
     {/if}
   </div>
   <div
-    class="flex gap-x-1 text-muted-foreground text-xs font-normal min-h-[16px] overflow-hidden"
+    class="flex gap-x-1 text-fg-secondary text-xs font-normal min-h-[16px] overflow-hidden"
   >
     <span class="shrink-0">{name}</span>
     {#if lastRefreshedDate}

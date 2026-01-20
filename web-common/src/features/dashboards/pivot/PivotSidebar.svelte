@@ -71,7 +71,7 @@
   bind:clientHeight={sidebarHeight}
   transition:slide={{ axis: "x" }}
 >
-  <div class="input-wrapper sticky top-0 bg-surface z-10">
+  <div class="input-wrapper sticky top-0 bg-surface-container z-10">
     <Search theme bind:value={searchText} />
   </div>
 

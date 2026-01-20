@@ -246,7 +246,7 @@
             >
           </div>
         {:else if projects.length === 0}
-          <div class="text-xs text-muted-foreground">No projects</div>
+          <div class="text-xs text-fg-secondary">No projects</div>
         {:else}
           <Dropdown.Root
             bind:open={projectDropdownOpen}

@@ -30,7 +30,7 @@
   import TooltipTitle from "../tooltip/TooltipTitle.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
 
-  export let color = "text-muted-foreground";
+  export let color = "text-fg-secondary";
   export let type: string;
   export let suppressTooltip = false;
 

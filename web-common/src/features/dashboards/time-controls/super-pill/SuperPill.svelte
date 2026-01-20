@@ -154,7 +154,7 @@
   }
 
   :global(.wrapper > button) {
-    @apply border text-foreground;
+    @apply border text-fg-primary;
     @apply px-2 flex items-center justify-center bg-sidebar;
   }
 

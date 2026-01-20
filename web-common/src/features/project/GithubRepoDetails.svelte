@@ -17,7 +17,7 @@
     <Github className="w-4 h-4" />
     <a
       href={getGitUrlFromRemote(gitRemote)}
-      class="text-foreground font-semibold font-mono truncate"
+      class="text-fg-primary font-semibold font-mono truncate"
       target="_blank"
       rel="noreferrer noopener"
     >
@@ -27,14 +27,14 @@
   {#if subpath}
     <div>
       <span>subpath:</span>
-      <span class="text-foreground font-mono">
+      <span class="text-fg-primary font-mono">
         /{subpath}
       </span>
     </div>
   {/if}
   <div>
     <span>branch:</span>
-    <span class="text-foreground font-mono">
+    <span class="text-fg-primary font-mono">
       {branch}
     </span>
   </div>

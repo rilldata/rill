@@ -1,11 +1,7 @@
 <script lang="ts">
   import { Handle, Position } from "@xyflow/svelte";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-
   import { goto } from "$app/navigation";
 
   export let id: string;
@@ -53,7 +49,7 @@
     positionAbsoluteY,
   );
 
-  $: color = resourceColorMapping[data?.kind] || "#6B7280";
+  $: color = data?.kind ? undefined : "#6B7280";
   $: Icon = resourceIconMapping[data?.kind] || null;
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;

@@ -26,10 +26,7 @@
   import File from "../../components/icons/File.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
@@ -97,15 +94,15 @@
 
 <li
   aria-label="{filePath} Nav Entry"
-  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-gray-300"
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-surface-container-hover"
   class:bg-gray-100={isCurrentFile}
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
     isDotFile
-      ? 'text-muted-foreground hover:text-muted-foreground dark:text-foreground dark:hover:text-foreground'
-      : 'text-foreground hover:text-foreground'}"
+      ? 'text-red-400 hover:text-fg-secondary dark:text-fg-primary dark:hover:text-fg-primary'
+      : 'text-fg-primary hover:text-fg-primary'}"
     href="/files{filePath}"
     {id}
     class:italic={$hasUnsavedChanges || $saving}
@@ -126,7 +123,6 @@
               ? Settings
               : File}
           size="14px"
-          color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
         />
       {/if}
     </div>

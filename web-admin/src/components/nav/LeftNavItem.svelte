@@ -5,7 +5,7 @@
 </script>
 
 <a class:selected href={link}>
-  <span class="text-foreground">{label}</span>
+  <span class="text-fg-primary">{label}</span>
 </a>
 
 <style lang="postcss">

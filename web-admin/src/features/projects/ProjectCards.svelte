@@ -10,12 +10,12 @@
 </script>
 
 <div class="flex flex-col gap-y-4">
-  <span class="text-muted-foreground text-base font-normal leading-normal">
+  <span class="text-fg-secondary text-base font-normal leading-normal">
     Check out your projects below.
   </span>
 
   {#if $projs.data && $projs.data.projects?.length === 0}
-    <p class="text-muted-foreground text-xs">
+    <p class="text-fg-secondary text-xs">
       This organization has no projects yet.
     </p>
   {:else if $projs.data && $projs.data.projects?.length > 0}

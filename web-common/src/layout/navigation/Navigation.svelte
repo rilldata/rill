@@ -72,7 +72,7 @@
 />
 
 <nav
-  class="sidebar bg-surface dark:bg-background"
+  class="sidebar bg-surface-container"
   class:hide={!$navigationOpen}
   class:resizing
   style:width="{width}px"
@@ -141,10 +141,10 @@
             >
               <CaretDownIcon
                 size="14px"
-                className="text-muted-foreground transition-transform {!showConnectors &&
+                className="text-fg-secondary transition-transform {!showConnectors &&
                   '-rotate-90'}"
               />
-              <h3 class="text-foreground">Data Explorer</h3>
+              <h3 class="text-fg-primary">Data Explorer</h3>
             </button>
 
             <div
@@ -217,7 +217,7 @@
   button {
     @apply flex gap-x-1 items-center w-full;
     @apply pl-2 pr-3.5 py-1.5 cursor-pointer;
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   button:hover {

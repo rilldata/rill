@@ -136,7 +136,7 @@
         }}
       >
         <div
-          class="flex items-center gap-x-0.5 px-1 text-surface-foreground dark:text-muted-foreground hover:text-inherit"
+          class="flex items-center gap-x-0.5 px-1 text-fg-muted hover:text-inherit"
         >
           Showing <strong> {showingMeasuresText}</strong>
           <span

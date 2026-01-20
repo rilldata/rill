@@ -70,7 +70,7 @@
         }}
       >
         <CaretDownIcon
-          className="flex-none transform transition-transform text-muted-foreground {!showSchema &&
+          className="flex-none transform transition-transform text-fg-secondary {!showSchema &&
             '-rotate-90'}"
           size="14px"
         />
@@ -87,7 +87,7 @@
         store.toggleItem(connector, database, databaseSchema, table);
       }}
     >
-      <TableIcon size="14px" className="shrink-0 text-muted-foreground" />
+      <TableIcon size="14px" className="shrink-0 text-fg-secondary" />
       <span class="truncate">
         {table}
       </span>
@@ -154,7 +154,7 @@
 
   .clickable-text {
     @apply flex grow items-center gap-x-1;
-    @apply text-foreground truncate;
+    @apply text-fg-primary truncate;
   }
 
   .selected:hover {

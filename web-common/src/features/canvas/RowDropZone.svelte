@@ -75,7 +75,7 @@
       role="presentation"
       class:shift-down={notResizable}
       class:not-sr-only={menuOpen}
-      class="sr-only peer-hover:not-sr-only !overflow-hidden peer-active:sr-only hover:not-sr-only flex shadow-sm pointer-events-auto !absolute left-1/2 w-fit z-50 bg-surface -translate-x-1/2 border rounded-sm"
+      class="sr-only peer-hover:not-sr-only !overflow-hidden peer-active:sr-only hover:not-sr-only flex shadow-sm pointer-events-auto !absolute left-1/2 w-fit z-50 bg-surface-container -translate-x-1/2 border rounded-sm"
     >
       <AddComponentDropdown
         rowIndex={dropIndex}

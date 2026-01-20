@@ -10,10 +10,7 @@
   import { createEventDispatcher } from "svelte";
   import { allowPrimary } from "../../dashboards/workspace/DeployProjectCTA.svelte";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../../entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "../../entity-management/resource-icon-mapping";
   import { useModels } from "../../models/selectors";
 
   const dispatch = createEventDispatcher();
@@ -114,7 +111,6 @@
           <DropdownMenu.Item href={`/files/${removeLeadingSlash(filePath)}`}>
             <svelte:component
               this={resourceIconMapping[resourceKind]}
-              color={resourceColorMapping[resourceKind]}
               size="14px"
             />
             {resource?.meta?.name?.name ?? "Loading..."}

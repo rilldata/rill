@@ -37,7 +37,7 @@
 {#if $proj.data}
   <div class="flex flex-col gap-y-1 max-w-[400px]">
     <span
-      class="uppercase text-muted-foreground font-semibold text-[10px] leading-none"
+      class="uppercase text-fg-secondary font-semibold text-[10px] leading-none"
     >
       GitHub
     </span>
@@ -47,7 +47,7 @@
           <Github className="w-4 h-4" />
           <a
             href={getGitUrlFromRemote($proj.data?.project?.gitRemote)}
-            class="text-foreground text-[12px] font-semibold font-mono leading-5 truncate"
+            class="text-fg-primary text-[12px] font-semibold font-mono leading-5 truncate"
             target="_blank"
             rel="noreferrer noopener"
           >
@@ -57,19 +57,19 @@
         {#if subpath}
           <div class="flex items-center">
             <span class="font-mono">subpath</span>
-            <span class="text-foreground">
+            <span class="text-fg-primary">
               : /{subpath}
             </span>
           </div>
         {/if}
         <div class="flex items-center">
           <span class="font-mono">branch</span>
-          <span class="text-foreground">
+          <span class="text-fg-primary">
             : {primaryBranch}
           </span>
         </div>
         {#if lastUpdated}
-          <span class="text-muted-foreground text-[11px] leading-4">
+          <span class="text-fg-secondary text-[11px] leading-4">
             Synced {lastUpdated.toLocaleString(undefined, {
               month: "short",
               day: "numeric",

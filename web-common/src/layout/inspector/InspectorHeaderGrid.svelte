@@ -1,5 +1,5 @@
 <div class="size-full px-4">
-  <table class="size-full text-foreground">
+  <table class="size-full text-fg-primary">
     <tbody>
       <tr>
         <td>

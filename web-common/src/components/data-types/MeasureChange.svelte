@@ -39,6 +39,6 @@
       {value}
     </span>
   {:else}
-    <span class="text-muted-foreground">{value}</span>
+    <span class="text-fg-secondary">{value}</span>
   {/if}
 </Base>

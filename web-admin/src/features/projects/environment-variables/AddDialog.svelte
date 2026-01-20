@@ -325,7 +325,7 @@
           class="hidden"
         />
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-foreground">Environment</div>
+          <div class="text-sm font-medium text-fg-primary">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
@@ -349,7 +349,7 @@
           {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
-          <div class="text-sm font-medium text-foreground">Variables</div>
+          <div class="text-sm font-medium text-fg-primary">Variables</div>
           <!-- 64 (gap 16px * 4) + 160 (item height 32 * 5) = 224 -->
           <div
             class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
@@ -390,7 +390,7 @@
                     }
                   }}
                 >
-                  <Trash2Icon size="16px" class="text-muted-foreground" />
+                  <Trash2Icon size="16px" class="text-fg-secondary" />
                 </IconButton>
               </div>
             {/each}

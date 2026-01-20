@@ -94,14 +94,14 @@
   style:--grid-template-columns={columnLayout}
 >
   {#each headers as headerGroup (headerGroup.id)}
-    <div class="row sticky top-0 z-30 bg-surface">
+    <div class="row sticky top-0 z-30 bg-surface-container">
       {#each headerGroup.headers as header (header.id)}
         <svelte:element
           this={header.column.getCanSort() ? "button" : "div"}
           role="columnheader"
           tabindex="0"
           class="pl-{header.column.columnDef.meta?.marginLeft ||
-            '4'} py-2 font-semibold text-muted-foreground text-left flex flex-row items-center gap-x-1 truncate text-sm"
+            '4'} py-2 font-semibold text-fg-secondary text-left flex flex-row items-center gap-x-1 truncate text-sm"
           on:click={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
@@ -145,9 +145,7 @@
       {#if emptyIcon}
         <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
       {/if}
-      <span class="text-muted-foreground font-semibold text-sm"
-        >{emptyText}</span
-      >
+      <span class="text-fg-secondary font-semibold text-sm">{emptyText}</span>
     </div>
   {/each}
 </div>

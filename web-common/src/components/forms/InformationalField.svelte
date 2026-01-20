@@ -10,13 +10,13 @@
 </script>
 
 <div class="flex flex-row items-center gap-x-1">
-  <div class="text-muted-foreground">
+  <div class="text-fg-secondary">
     {description}
   </div>
   {#if hint}
     <Tooltip location="bottom" alignment="middle" distance={8}>
       <a
-        class="text-muted-foreground hover:cursor-pointer"
+        class="text-fg-secondary hover:cursor-pointer"
         style="transform:translateY(-.5px)"
         {href}
         target="_blank"

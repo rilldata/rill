@@ -39,10 +39,14 @@ function generateCSSBlock(): string {
   for (const [colorName, colorMap] of Object.entries(definedLightModeColors)) {
     const colorList = Object.values(colorMap);
     const predefinedDarkModeColors = definedDarkModeColors[colorName];
-    console.log({ predefinedDarkModeColors });
-    const darkVariants = predefinedDarkModeColors
-      ? Object.values(predefinedDarkModeColors)
-      : createDarkVariation([...colorList]);
+
+    const overwrite = predefinedDarkModeColors?.overwrite ?? true;
+
+    const mappedDarkVariants = createDarkVariation([...colorList]);
+
+    const predefinedDarkVariants = predefinedDarkModeColors
+      ? Object.values(predefinedDarkModeColors.colors)
+      : undefined;
 
     // Light and dark variables for each color and shade
     const lightVars = colorList
@@ -52,14 +56,24 @@ function generateCSSBlock(): string {
       )
       .join("\n");
 
-    const darkVars = darkVariants
-      .map(
+    const predefinedVars = predefinedDarkVariants
+      ?.map(
         (color, i) =>
-          `  --color-${colorName}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
+          `  --color-${overwrite ? colorName : `rill-${colorName}`}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
       )
       .join("\n");
 
-    variables += `  /* ${colorName.toUpperCase()} */\n${lightVars}\n\n${darkVars}\n\n`;
+    const mappedVars =
+      predefinedDarkModeColors && overwrite
+        ? undefined
+        : mappedDarkVariants
+            ?.map(
+              (color, i) =>
+                `  --color-${colorName}-dark-${TailwindColorSpacing[i]}: ${getCssString(color)};`,
+            )
+            .join("\n");
+
+    variables += `  /* ${colorName.toUpperCase()} */\n${lightVars}\n\n${predefinedVars ?? ""}\n\n${mappedVars ?? ""}\n`;
 
     // Assigning light and dark variables to the main color variables
     lightAssignments += `  /* ${colorName.toUpperCase()} */\n`;

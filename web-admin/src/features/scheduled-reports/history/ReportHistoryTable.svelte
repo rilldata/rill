@@ -36,17 +36,15 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <div class="flex flex-col gap-y-1">
-    <h1 class="text-muted-foreground text-lg font-bold">Recent history</h1>
-    <p class="text-muted-foreground text-sm">
-      Showing up to 10 most recent runs
-    </p>
+    <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
+    <p class="text-fg-secondary text-sm">Showing up to 10 most recent runs</p>
   </div>
   {#if $reportQuery.error}
     <div class="text-red-500">
       {$reportQuery.error.message}
     </div>
   {:else if $reportQuery.isLoading}
-    <div class="text-muted-foreground">Loading...</div>
+    <div class="text-fg-secondary">Loading...</div>
   {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
     <NoRunsYet />
   {:else}

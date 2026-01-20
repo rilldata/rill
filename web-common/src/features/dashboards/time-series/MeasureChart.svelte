@@ -358,7 +358,7 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-muted-foreground stroke-surface"
+                class="fill-fg-secondary stroke-surface"
                 style:paint-order="stroke"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
@@ -370,7 +370,7 @@
                 <text
                   style:paint-order="stroke"
                   stroke-width="3px"
-                  class="fill-muted-foreground stroke-surface"
+                  class="fill-fg-secondary stroke-surface"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >

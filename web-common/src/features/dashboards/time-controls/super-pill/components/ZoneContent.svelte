@@ -109,7 +109,7 @@
       <h3>Recent</h3>
       {#if recentIANAs.length}
         <button
-          class="text-[11px] text-muted-foreground hover:bg-gray-100 p-1 rounded-sm h-fit"
+          class="text-[11px] text-fg-secondary hover:bg-gray-100 p-1 rounded-sm h-fit"
           on:click={() => {
             recents.set([]);
           }}
@@ -170,9 +170,7 @@
       </button>
     {:else}
       <div>
-        <p class="pt-0 pb-2 text-muted-foreground text-center">
-          No options found
-        </p>
+        <p class="pt-0 pb-2 text-fg-secondary text-center">No options found</p>
       </div>
     {/each}
   </div>
@@ -180,11 +178,11 @@
 
 <style lang="postcss">
   .item {
-    @apply w-full relative text-foreground justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
+    @apply w-full relative text-fg-primary justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
   }
 
   .item:hover {
-    @apply bg-accent text-accent-foreground;
+    @apply bg-popover-accent text-fg-accent;
   }
 
   .separator {
@@ -192,6 +190,6 @@
   }
 
   h3 {
-    @apply px-2 py-1.5 text-xs text-muted-foreground font-semibold;
+    @apply px-2 py-1.5 text-xs text-fg-secondary font-semibold;
   }
 </style>

@@ -7,10 +7,8 @@
 <div class="flex flex-col items-center pt-5 pb-10 gap-y-1">
   <Filter size="32px" className="text-gray-300" />
   <div class="flex flex-col items-center">
-    <h3 class="text-sm font-semibold text-muted-foreground">
-      No filters selected
-    </h3>
-    <span class="text-sm text-muted-foreground">
+    <h3 class="text-sm font-semibold text-fg-secondary">No filters selected</h3>
+    <span class="text-sm text-fg-secondary">
       {#if isEditForm}
         No filters were applied to the dashboard that this alert was created
         from.

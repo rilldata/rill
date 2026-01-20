@@ -160,7 +160,7 @@
               class:text-red-500={primaryTotal && primaryTotal < 0}
             >
               <PercentageChange
-                color="text-muted-foreground"
+                color="text-fg-secondary"
                 showPosSign
                 tabularNumber={false}
                 value={formatMeasurePercentageDifference(comparisonPercChange)}
@@ -171,14 +171,14 @@
       </div>
 
       {#if comparisonLabel}
-        <p class="text-sm text-muted-foreground break-words">
+        <p class="text-sm text-fg-secondary break-words">
           vs {comparisonLabel?.toLowerCase()}
         </p>
       {/if}
     {/if}
 
     {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
-      <span class="text-muted-foreground">
+      <span class="text-fg-secondary">
         <RangeDisplay {interval} {timeGrain} />
       </span>
     {/if}
@@ -234,11 +234,11 @@
 
   .measure-name {
     @apply w-full truncate flex-none;
-    @apply text-center font-medium text-sm text-foreground;
+    @apply text-center font-medium text-sm text-fg-primary;
   }
 
   :global(.dark) .measure-name {
-    @apply text-foreground;
+    @apply text-fg-primary;
   }
 
   .spark-right .measure-name {
@@ -246,11 +246,11 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-foreground;
+    @apply text-3xl font-medium text-fg-primary;
   }
 
   :global(.dark) .big-number {
-    @apply text-foreground;
+    @apply text-fg-primary;
   }
 
   .hovered-value {
@@ -272,7 +272,7 @@
 
   .comparison-value {
     @apply w-fit max-w-full overflow-hidden;
-    @apply font-medium text-ellipsis text-muted-foreground;
+    @apply font-medium text-ellipsis text-fg-secondary;
   }
 
   @container component-container (inline-size < 300px) {

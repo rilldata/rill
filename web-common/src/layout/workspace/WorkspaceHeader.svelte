@@ -7,10 +7,7 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
@@ -64,9 +61,6 @@
                 ? Settings
                 : File}
             size="19px"
-            color={resourceKind
-              ? resourceColorMapping[resourceKind]
-              : "#9CA3AF"}
           />
         </span>
       {/if}

@@ -82,7 +82,7 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "bg-surface",
+      "bg-surface-container",
       "bg-gray-100",
       "bg-gray-200",
       "bg-primary-50",
@@ -227,7 +227,7 @@
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${value.value === null ? "italic text-muted-foreground" : ""} ${fontWeight}">${total}</div></div>`;
+        <div class="truncate text-xs ${value.value === null ? "italic text-fg-secondary" : ""} ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs pointer-events-none font-semibold text-right flex items-center justify-end gap-2" >
         ${total}
@@ -238,7 +238,7 @@
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
-    data.element.classList.add("bg-surface", "z-10");
+    data.element.classList.add("bg-surface-container", "z-10");
     if (data.x === 0) {
       const pinIcon = getPinIcon();
       return `

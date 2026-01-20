@@ -6,7 +6,7 @@
 {#if isShowMoreRow}
   <!-- Render blank for show more rows -->
 {:else if assembled}
-  <span class="text-muted-foreground">-</span>
+  <span class="text-fg-secondary">-</span>
 {:else}
   <span class="loading-cell" />
 {/if}

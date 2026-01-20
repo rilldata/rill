@@ -55,7 +55,7 @@
     y: currentPointIsNull ? lastAvailableCurrentY : y,
     yOverride: currentPointIsNull,
     yOverrideLabel: "no current data",
-    yOverrideStyleClass: "fill-muted-foreground italic",
+    yOverrideStyleClass: "fill-fg-secondary italic",
     key: "main",
     label:
       showComparison &&
@@ -68,11 +68,11 @@
         : "",
     pointColor: "var(--color-theme-700)",
     valueStyleClass: "font-semibold",
-    valueColorClass: "fill-muted-foreground",
+    valueColorClass: "fill-fg-secondary",
     labelColorClass:
       !comparisonIsPositive && showComparison
         ? "fill-red-500"
-        : "fill-muted-foreground",
+        : "fill-fg-secondary",
   };
 
   $: comparisonPoint =
@@ -82,13 +82,13 @@
           y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
           yOverride: comparisonPointIsNull,
           yOverrideLabel: "no comparison data",
-          yOverrideStyleClass: "fill-muted-foreground italic",
+          yOverrideStyleClass: "fill-fg-secondary italic",
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",
           pointColor: "var(--color-theme-300)",
-          valueColorClass: "fill-muted-foreground",
-          labelColorClass: "fill-muted-foreground",
+          valueColorClass: "fill-fg-secondary",
+          labelColorClass: "fill-fg-secondary",
         }
       : undefined;
 

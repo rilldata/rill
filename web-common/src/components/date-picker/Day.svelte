@@ -92,7 +92,7 @@
 >
   <div
     class="day {overlapClass}"
-    class:text-muted-foreground={outOfMonth}
+    class:text-fg-secondary={outOfMonth}
     class:potential={!!potentialInterval}
     class:anchor={areSameDay(anchorDay, date)}
   >
@@ -123,7 +123,7 @@
   .start.potential,
   .end.potential,
   .full-interval.potential {
-    @apply bg-gray-200 text-foreground;
+    @apply bg-gray-200 text-fg-primary;
   }
 
   .in-range,

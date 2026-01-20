@@ -135,7 +135,7 @@
 {#if isOpen}
   <div
     bind:this={container}
-    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 bg-surface"
+    class="cell-inspector fixed top-12 right-4 z-50 transition-opacity shadow-lg rounded-lg border border-gray-200 bg-surface-container"
     class:invisible={!isOpen && !hovered}
     class:opacity-0={!isOpen && !hovered}
     class:opacity-100={isOpen || hovered}
@@ -152,10 +152,9 @@
     >
       <!-- Header with lock icon -->
       <div
-        class="flex justify-between items-center p-2 border-b border-gray-200 bg-surface rounded-t-lg"
+        class="flex justify-between items-center p-2 border-b border-gray-200 bg-surface-container rounded-t-lg"
       >
-        <span class="text-xs text-muted-foreground font-medium"
-          >Cell Inspector</span
+        <span class="text-xs text-fg-secondary font-medium">Cell Inspector</span
         >
         <button
           class="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -163,9 +162,9 @@
           title={isLocked ? "Unlock value (L)" : "Lock value (L)"}
         >
           {#if isLocked}
-            <Lock size="16" class="text-muted-foreground" />
+            <Lock size="16" class="text-fg-secondary" />
           {:else}
-            <Unlock size="16" class="text-muted-foreground" />
+            <Unlock size="16" class="text-fg-secondary" />
           {/if}
         </button>
       </div>
@@ -177,17 +176,17 @@
         class:items-center={!isJson}
       >
         {#if value === null}
-          <span class="text-sm text-muted-foreground italic">No value</span>
+          <span class="text-sm text-fg-secondary italic">No value</span>
         {:else}
           <span
-            class="whitespace-pre-wrap break-words text-sm text-foreground w-full"
+            class="whitespace-pre-wrap break-words text-sm text-fg-primary w-full"
             class:font-mono={isJson}>{formatValue(value)}</span
           >
         {/if}
       </div>
       <!-- Fixed footer -->
       <div
-        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-muted-foreground bg-surface rounded-b-lg"
+        class="flex justify-between p-2 border-t border-gray-200 gap-1 text-[11px] text-fg-secondary bg-surface-container rounded-b-lg"
       >
         <div class="flex gap-2">
           <span>

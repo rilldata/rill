@@ -22,7 +22,7 @@
   {disabled}
   {label}
   class={cn(
-    "relative flex flex-col w-full cursor-pointer select-none items-center text-foreground rounded-sm py-1.5 px-2 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50",
+    "relative flex flex-col w-full cursor-pointer select-none items-center text-fg-primary rounded-sm py-1.5 px-2 text-sm outline-none data-[highlighted]:bg-popover-accent data-[highlighted]:text-fg-accent data-[disabled]:opacity-50",
     className,
   )}
   {...$$restProps}
@@ -42,7 +42,7 @@
     </span>
   </div>
   {#if description}
-    <div class="text-muted-foreground">
+    <div class="text-fg-secondary">
       {description}
     </div>
   {/if}

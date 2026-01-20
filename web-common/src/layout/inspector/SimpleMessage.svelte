@@ -14,6 +14,6 @@
 <style lang="postcss">
   .custom-instructions-wrapper {
     @apply px-4 py-24 w-full;
-    @apply italic text-muted-foreground text-center;
+    @apply italic text-fg-secondary text-center;
   }
 </style>

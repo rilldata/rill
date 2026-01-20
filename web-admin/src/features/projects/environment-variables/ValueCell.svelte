@@ -48,7 +48,7 @@
       <button on:click={onCopy} class="truncate">
         <span
           class:italic={isEmpty}
-          class="text-sm text-foreground font-medium truncate"
+          class="text-sm text-fg-primary font-medium truncate"
           class:cursor-pointer={showValue}
           title={value}
         >

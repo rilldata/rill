@@ -93,9 +93,9 @@
       <span class="text-xs font-medium">Color mapping</span>
       <div class="flex items-center gap-x-2">
         {#if isExpanded}
-          <ChevronDown size="14px" class="text-muted-foreground" />
+          <ChevronDown size="14px" class="text-fg-secondary" />
         {:else}
-          <ChevronRight size="14px" class="text-muted-foreground" />
+          <ChevronRight size="14px" class="text-fg-secondary" />
         {/if}
       </div>
     </button>
@@ -116,7 +116,7 @@
           />
         {/each}
         {#if allColorMappings.length === 0}
-          <div class="px-2 py-2 text-xs text-muted-foreground">
+          <div class="px-2 py-2 text-xs text-fg-secondary">
             No color values found
           </div>
         {/if}

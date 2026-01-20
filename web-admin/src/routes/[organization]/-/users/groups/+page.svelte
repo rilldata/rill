@@ -103,7 +103,7 @@
       </div>
       {#if filteredGroups.length > 0}
         <div class="px-2 py-3">
-          <span class="font-medium text-sm text-muted-foreground">
+          <span class="font-medium text-sm text-fg-secondary">
             {filteredGroups.length} total group{filteredGroups.length === 1
               ? ""
               : "s"}

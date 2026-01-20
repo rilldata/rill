@@ -327,7 +327,7 @@
       >
         <PercentageChange
           value={pctOfTotals[measureName]}
-          color="text-muted-foreground"
+          color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
@@ -358,7 +358,7 @@
         }}
       >
         <FormattedDataType
-          color="text-muted-foreground"
+          color="text-fg-secondary"
           type="INTEGER"
           value={deltaAbsMap[measureName]
             ? formatters[measureName]?.(deltaAbsMap[measureName])
@@ -396,7 +396,7 @@
           value={deltaRels[measureName]
             ? formatMeasurePercentageDifference(deltaRels[measureName])
             : null}
-          color="text-muted-foreground"
+          color="text-fg-secondary"
         />
         {#if showZigZags[measureName]}
           <LongBarZigZag />
@@ -419,11 +419,11 @@
   }
 
   tr:hover {
-    @apply bg-accent;
+    @apply bg-popover-accent;
   }
 
   td[data-comparison-cell] {
-    @apply bg-surface px-1 truncate;
+    @apply bg-surface-container px-1 truncate;
   }
 
   td[data-dimension-cell] {
@@ -432,7 +432,7 @@
 
   tr:hover td[data-dimension-cell],
   tr:hover td[data-comparison-cell] {
-    @apply bg-accent;
+    @apply bg-popover-accent;
   }
 
   .external-link-wrapper a {

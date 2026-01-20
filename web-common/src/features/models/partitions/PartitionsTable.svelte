@@ -255,7 +255,7 @@
         {:else if allRows.length === 0}
           <tr>
             <td class="text-center h-16" colspan={columns.length}>
-              <span class="text-muted-foreground">None</span>
+              <span class="text-fg-secondary">None</span>
             </td>
           </tr>
         {:else}
@@ -304,7 +304,7 @@
   }
   thead tr th {
     @apply border-t;
-    @apply text-left font-semibold text-muted-foreground;
+    @apply text-left font-semibold text-fg-secondary;
     @apply sticky top-0 z-10 bg-surface;
   }
   thead tr th:first-child {

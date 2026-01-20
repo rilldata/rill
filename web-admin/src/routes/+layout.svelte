@@ -128,7 +128,7 @@
 
 <QueryClientProvider client={queryClient}>
   <main
-    class="flex flex-col bg-surface"
+    class="flex flex-col bg-surface-container"
     class:min-h-screen={!$dynamicHeight}
     class:h-screen={!$dynamicHeight}
     use:pageContentSizeHandler

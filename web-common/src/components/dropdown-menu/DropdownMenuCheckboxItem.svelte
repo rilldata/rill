@@ -34,7 +34,7 @@
     {checked}
     role="menuitem"
     class={cn(
-      "relative flex cursor-pointer text-foreground select-none items-center rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-accent hover:rounded-sm focus:bg-accent focus:rounded-sm",
+      "relative flex cursor-pointer text-fg-primary select-none items-center rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none data-[highlighted]:bg-popover-accent data-[highlighted]:text-fg-accent data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-popover-accent hover:rounded-sm focus:bg-popover-accent focus:rounded-sm",
       className,
       checkRight && "flex-row-reverse justify-between",
     )}
@@ -51,7 +51,7 @@
       {#if checked}
         <svelte:component
           this={showXForSelected ? X : Check}
-          class="{checkSize} text-foreground"
+          class="{checkSize} text-fg-primary"
         />
       {/if}
     </span>

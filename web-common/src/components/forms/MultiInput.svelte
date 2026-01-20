@@ -103,14 +103,11 @@
 <div class="flex flex-col w-full">
   {#if label}
     <div class="flex items-center gap-x-1">
-      <label for={id} class="text-foreground text-sm font-medium">{label}</label
+      <label for={id} class="text-fg-primary text-sm font-medium">{label}</label
       >
       {#if hint}
         <Tooltip location="right" alignment="middle" distance={8}>
-          <div
-            class="text-muted-foreground"
-            style="transform:translateY(-.5px)"
-          >
+          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
             <InfoCircle size="13px" />
           </div>
           <TooltipContent maxWidth="400px" slot="tooltip-content">
@@ -119,13 +116,13 @@
         </Tooltip>
       {/if}
       {#if description}
-        <div class="text-sm text-muted-foreground">{description}</div>
+        <div class="text-sm text-fg-secondary">{description}</div>
       {/if}
     </div>
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-surface rounded-sm px-1 py-[3px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-surface-container rounded-sm px-1 py-[3px] w-full {contentClassName}"
       class:border={!hasSomeErrors}
       class:border-gray-300={!hasSomeErrors}
       class:outline={focused || hasSomeErrors}
@@ -136,7 +133,7 @@
         {#each values.slice(0, lastIdx) as _, i}
           {@const hasError = errors?.[i]?.length}
           <div
-            class="flex items-center text-muted-foreground text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
+            class="flex items-center text-fg-secondary text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
             class:border-gray-300={!hasError}
             class:border-red-300={hasError}
             class:bg-red-50={hasError}
@@ -152,7 +149,7 @@
                 size="12px"
                 class="{hasError
                   ? 'text-red-600'
-                  : 'text-muted-foreground'} cursor-pointer"
+                  : 'text-fg-secondary'} cursor-pointer"
               />
             </IconButton>
           </div>

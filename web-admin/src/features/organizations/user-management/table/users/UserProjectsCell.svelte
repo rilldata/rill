@@ -66,5 +66,5 @@
     </Dropdown.Content>
   </Dropdown.Root>
 {:else}
-  <div class="w-18 rounded-sm px-2 py-1 text-muted-foreground">No projects</div>
+  <div class="w-18 rounded-sm px-2 py-1 text-fg-secondary">No projects</div>
 {/if}

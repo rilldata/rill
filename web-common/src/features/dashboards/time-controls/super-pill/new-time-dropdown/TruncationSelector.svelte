@@ -210,7 +210,7 @@
 
   <DropdownMenu.Content align="start" class="w-52 flex flex-col p-0">
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-muted-foreground font-semibold">
+      <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">
         Reference
       </h3>
       {#each options as { id, label, description, timestamp } (id)}
@@ -248,7 +248,7 @@
                 >
                   <TooltipContent class="w-60">
                     <div class="flex items-center justify-between">
-                      <span class="font-bold truncate text-foreground">
+                      <span class="font-bold truncate text-fg-primary">
                         {timestamp.toLocaleString(
                           DateTime.DATETIME_MED_WITH_SECONDS,
                         )}
@@ -275,9 +275,7 @@
     <DropdownMenu.Separator class="my-0" />
 
     <DropdownMenu.Group class="p-1">
-      <h3 class="mt-1 px-2 uppercase text-muted-foreground font-semibold">
-        Grain
-      </h3>
+      <h3 class="mt-1 px-2 uppercase text-fg-secondary font-semibold">Grain</h3>
 
       {#each grainOptions as option, i (i)}
         <DropdownMenu.CheckboxItem
@@ -290,7 +288,7 @@
           {V1TimeGrainToDateTimeUnit[option]}
         </DropdownMenu.CheckboxItem>
       {:else}
-        <div class="px-2 py-1 text-muted-foreground flex justify-center italic">
+        <div class="px-2 py-1 text-fg-secondary flex justify-center italic">
           No valid grains available.
         </div>
       {/each}

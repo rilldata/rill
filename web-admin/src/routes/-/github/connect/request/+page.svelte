@@ -17,7 +17,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <Github className="w-10 h-10 text-foreground" />
+    <Github className="w-10 h-10 text-fg-primary" />
     <CtaHeader>Connect to GitHub</CtaHeader>
     <CtaMessage>
       You requested access to <GithubRepoInline gitRemote={remote} />. You can

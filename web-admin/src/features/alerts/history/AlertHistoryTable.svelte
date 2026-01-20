@@ -37,17 +37,15 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <div class="flex flex-col gap-y-1">
-    <h1 class="text-muted-foreground text-lg font-bold">Recent history</h1>
-    <p class="text-muted-foreground text-sm">
-      Showing up to 25 most recent checks
-    </p>
+    <h1 class="text-fg-secondary text-lg font-bold">Recent history</h1>
+    <p class="text-fg-secondary text-sm">Showing up to 25 most recent checks</p>
   </div>
   {#if $alertQuery.error}
     <div class="text-red-500">
       {$alertQuery.error.message}
     </div>
   {:else if $alertQuery.isLoading}
-    <div class="text-muted-foreground">Loading...</div>
+    <div class="text-fg-secondary">Loading...</div>
   {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
     <NoAlertRunsYet />
   {:else}

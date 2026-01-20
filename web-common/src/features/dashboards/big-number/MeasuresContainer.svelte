@@ -172,7 +172,7 @@
     class="grid grid-cols-{numColumns}"
     style:column-gap="{COLUMN_GAP}px"
   >
-    <div class="bg-surface sticky top-0">
+    <div class="bg-surface-container sticky top-0">
       <DashboardVisibilityDropdown
         category="Measures"
         tooltipText="Choose measures to display"

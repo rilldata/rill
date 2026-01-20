@@ -91,7 +91,9 @@
   })();
 </script>
 
-<div class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface">
+<div
+  class="size-full px-2 overflow-y-auto select-text cursor-text bg-surface-container"
+>
   <div class="canvas-markdown {positionClasses} h-full flex flex-col min-h-min">
     {#if needsTemplating && $resolveQuery?.isError}
       <div class="markdown-error">
@@ -107,7 +109,7 @@
 
 <style lang="postcss">
   :global(.canvas-markdown) {
-    @apply text-foreground;
+    @apply text-fg-primary;
   }
   :global(.canvas-markdown h1) {
     font-size: 24px;
@@ -165,7 +167,7 @@
     @apply text-sm my-1;
   }
   :global(.canvas-markdown blockquote) {
-    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-muted-foreground;
+    @apply border-l-4 border-gray-300 pl-4 py-1 my-3 italic text-fg-secondary;
   }
   :global(.canvas-markdown code) {
     @apply bg-gray-100 px-1 py-0.5 rounded text-sm font-mono;

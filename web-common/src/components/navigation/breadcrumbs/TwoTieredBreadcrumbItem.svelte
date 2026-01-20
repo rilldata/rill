@@ -30,7 +30,7 @@
     {#if selected}
       <a
         href={isCurrentPage ? "#top" : undefined}
-        class="text-muted-foreground hover:text-muted-foreground flex flex-row items-center gap-x-2"
+        class="text-fg-secondary hover:text-fg-secondary flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
         <span>{selected?.label}</span>
@@ -59,7 +59,7 @@
                       href={subItem.href}
                       preloadData={false}
                     >
-                      <span class="text-xs text-foreground flex-grow">
+                      <span class="text-xs text-fg-primary flex-grow">
                         {subItem.label}
                       </span>
                     </DropdownMenu.Item>
@@ -73,7 +73,7 @@
                 href={subItems.href}
                 preloadData={false}
               >
-                <span class="text-xs text-foreground flex-grow">
+                <span class="text-xs text-fg-primary flex-grow">
                   {subItems.label}
                 </span>
               </DropdownMenu.Item>
@@ -87,12 +87,12 @@
 
 <style lang="postcss">
   .current {
-    @apply text-foreground font-medium;
+    @apply text-fg-primary font-medium;
   }
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform text-muted-foreground;
+    @apply transition-transform text-fg-secondary;
     @apply px-0.5 py-1 rounded;
   }
 

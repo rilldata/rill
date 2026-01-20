@@ -194,7 +194,7 @@
       on:mousedown={handleMouseDown}
     >
       {#if filteredItems.length === 0}
-        <div class="px-2 py-2 text-xs text-muted-foreground">
+        <div class="px-2 py-2 text-xs text-fg-secondary">
           <slot name="empty" {searchValue}>
             {searchValue ? "No matching items" : "No items"}
           </slot>
@@ -249,7 +249,7 @@
               class:mb-7={isLastItem}
               style:pointer-events={isDragItem ? "none" : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center text-foreground hover:bg-accent rounded-sm"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center text-fg-primary hover:bg-popover-accent rounded-sm"
               class:cursor-grab={draggable}
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}

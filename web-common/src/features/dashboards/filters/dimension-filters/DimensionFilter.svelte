@@ -493,7 +493,7 @@
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
           {#if curMode !== DimensionFilterMode.Select}
             <DropdownMenu.Label
-              class="pb-0 uppercase text-[10px] text-muted-foreground"
+              class="pb-0 uppercase text-[10px] text-fg-secondary"
               aria-label={`${name} result count`}
             >
               {searchResultCountText}

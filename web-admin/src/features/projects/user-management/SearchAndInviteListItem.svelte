@@ -62,11 +62,11 @@
         >
       </div>
       <div class="flex flex-col text-left">
-        <span class="text-sm font-medium text-foreground"
+        <span class="text-sm font-medium text-fg-primary"
           >{result.identifier}</span
         >
         {#if result.groupCount !== undefined}
-          <span class="text-xs text-muted-foreground">
+          <span class="text-xs text-fg-secondary">
             {result.groupCount} user{result.groupCount > 1 ? "s" : ""}
           </span>
         {/if}
@@ -82,7 +82,7 @@
       <div class="flex flex-col text-left">
         {#if result.type === "user" && result.orgRoleName === OrgUserRoles.Guest}
           <span
-            class="text-sm font-medium text-foreground flex flex-row items-center gap-x-1"
+            class="text-sm font-medium text-fg-primary flex flex-row items-center gap-x-1"
           >
             {result.identifier}
             <Chip type="amber" label="Guest" compact readOnly>
@@ -90,18 +90,18 @@
             </Chip>
           </span>
         {:else}
-          <span class="text-sm font-medium text-foreground">
+          <span class="text-sm font-medium text-fg-primary">
             {result.identifier}
           </span>
         {/if}
-        <span class="text-xs text-muted-foreground"
+        <span class="text-xs text-fg-secondary"
           >{result.invitedBy ? "Pending invitation" : result.name}</span
         >
       </div>
     {/if}
   </div>
   {#if isSelected}
-    <Check size="16px" className="text-muted-foreground" />
+    <Check size="16px" className="text-fg-secondary" />
   {/if}
 </button>
 

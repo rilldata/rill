@@ -69,7 +69,7 @@
     on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
-      className="transform transition-transform text-muted-foreground {expanded
+      className="transform transition-transform text-fg-secondary {expanded
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -78,9 +78,9 @@
       When there are only two organizational levels,the API returns "databaseSchema -> table". 
       However, in these cases, we should use a Database icon (not a Folder icon) to represent the organizational structure. -->
     {#if !database}
-      <Database size="14px" class="shrink-0 text-muted-foreground" />
+      <Database size="14px" class="shrink-0 text-fg-secondary" />
     {:else}
-      <Folder size="14px" class="shrink-0 text-muted-foreground" />
+      <Folder size="14px" class="shrink-0 text-fg-secondary" />
     {/if}
     <span class="truncate">
       {databaseSchema}
@@ -176,7 +176,7 @@
 
   .message {
     @apply pr-3.5 py-2; /* left-padding is set dynamically above */
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .load-more {

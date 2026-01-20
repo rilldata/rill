@@ -15,7 +15,7 @@
   >
     {#if $$slots.icon}
       <div
-        class="grid place-content-center opacity-80 text-muted-foreground"
+        class="grid place-content-center opacity-80 text-fg-secondary"
         style:height="18px"
       >
         <slot name="icon" />

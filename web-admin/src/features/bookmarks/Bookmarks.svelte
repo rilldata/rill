@@ -195,9 +195,7 @@
     {#if filteredBookmarks}
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel
-          class="text-muted-foreground text-[10px] h-6 uppercase"
-        >
+        <DropdownMenuLabel class="text-fg-secondary text-[10px] h-6 uppercase">
           Your bookmarks
         </DropdownMenuLabel>
         {#if filteredBookmarks.personal?.length}
@@ -219,7 +217,7 @@
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
-        <DropdownMenuLabel class="text-muted-foreground">
+        <DropdownMenuLabel class="text-fg-secondary">
           <div class="text-[10px] h-4 uppercase">Managed bookmarks</div>
           <div class="text-[11px] font-normal">Created by project admin</div>
         </DropdownMenuLabel>

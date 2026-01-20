@@ -35,14 +35,14 @@
   transition-transform duration-100`;
 
   $: textStyle = disabled
-    ? "text-muted-foreground"
-    : "text-surface-foreground hover:text-foreground ";
+    ? "text-fg-secondary"
+    : "text-fg-primary hover:text-fg-primary ";
 
   $: bgStyle = disabled
-    ? "bg-surface"
+    ? "bg-surface-container"
     : isSelected
       ? "bg-gray-100 hover:bg-gray-200 "
-      : "bg-surface hover:bg-gray-50 ";
+      : "bg-surface-container hover:bg-gray-50 ";
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element

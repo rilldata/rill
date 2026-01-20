@@ -22,16 +22,16 @@
   on:click={handleClick}
 >
   <div class="min-w-0">
-    <div class="text-xs text-foreground truncate">
+    <div class="text-xs text-fg-primary truncate">
       {conversation.title || "New Conversation"}
     </div>
   </div>
   <div class="flex items-center gap-2 flex-shrink-0">
     {#if relativeTime && !isCurrentChat}
-      <span class="text-xs text-muted-foreground">{relativeTime}</span>
+      <span class="text-xs text-fg-secondary">{relativeTime}</span>
     {/if}
     {#if isCurrentChat}
-      <span class="text-xs text-muted-foreground">Current chat</span>
+      <span class="text-xs text-fg-secondary">Current chat</span>
     {/if}
   </div>
 </DropdownMenu.Item>

@@ -27,7 +27,7 @@
   $: clientSideUsers = $projectUsers.data?.users ?? [];
 </script>
 
-<div class="px-0.5 pt-1 pb-2 text-[10px] text-muted-foreground text-left">
+<div class="px-0.5 pt-1 pb-2 text-[10px] text-fg-secondary text-left">
   Test your <a
     target="_blank"
     href="https://docs.rilldata.com/build/metrics-view/security#rill-cloud"

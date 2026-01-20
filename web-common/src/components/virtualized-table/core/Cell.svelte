@@ -82,9 +82,9 @@
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 ";
     } else if (colSelected) {
-      activityStatus = "bg-surface";
+      activityStatus = "bg-surface-container";
     } else {
-      activityStatus = "bg-surface";
+      activityStatus = "bg-surface-container";
     }
   }
 
@@ -172,7 +172,7 @@
           isNull={value === null || value === undefined}
           {type}
           value={formattedValue || value}
-          color="text-muted-foreground"
+          color="text-fg-secondary"
         />
       </button>
     </BarAndLabel>

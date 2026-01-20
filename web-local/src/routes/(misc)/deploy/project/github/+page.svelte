@@ -22,7 +22,7 @@
   <Github className="w-10 h-10" />
   <div>Connect to GitHub</div>
 </div>
-<div class="text-base text-muted-foreground">
+<div class="text-base text-fg-secondary">
   We’ve detected a self-managed GitHub repo associated with this project:
 </div>
 {#if isPending}
@@ -34,7 +34,7 @@
     subpath={statusData?.subpath ?? ""}
   />
 {/if}
-<div class="text-base text-muted-foreground">
+<div class="text-base text-fg-secondary">
   In order to link Rill Cloud to this repo to sync project updates, you’ll need
   to authenticate and install Rill
 </div>

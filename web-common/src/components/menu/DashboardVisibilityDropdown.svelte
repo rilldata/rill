@@ -40,7 +40,7 @@
     >
       <Button builders={[builder]} type="text" label={tooltipText}>
         <div
-          class="flex items-center gap-x-0.5 px-1 text-surface-foreground hover:text-inherit"
+          class="flex items-center gap-x-0.5 px-1 text-fg-primary hover:text-inherit"
         >
           <strong>{`${numShownString} ${category}`}</strong>
           <span

@@ -16,7 +16,7 @@
 >
   <div class="grow">
     <h3 class="text-base font-medium mb-2">{title}</h3>
-    <div class="text-muted-foreground mb-2 text-sm">
+    <div class="text-fg-secondary mb-2 text-sm">
       {#if $$slots.description}
         <slot name="description" />
       {:else if description}

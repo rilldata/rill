@@ -78,7 +78,7 @@
         class="disabled:cursor-not-allowed"
         on:mousedown={handleDragStart}
       >
-        <DragHandle size="16px" className="fill-muted-foreground" />
+        <DragHandle size="16px" className="fill-fg-secondary" />
       </button>
 
       <Checkbox onChange={onCheckedChange} checked={selected} />
@@ -88,13 +88,13 @@
   <td class="source-code truncate" on:click={onCellClick} aria-label="Name">
     {#if !name && item instanceof YAMLDimension && item.resourceName}
       <span
-        class="text-muted-foreground"
+        class="text-fg-secondary"
         title="This name was inherited automatically"
       >
         {item.resourceName}
       </span>
     {:else}
-      <span>{name || "-"}</span>
+      <span class="text-fg-secondary">{name || "-"}</span>
     {/if}
   </td>
   <td on:click={onCellClick} aria-label="Display name">
@@ -166,7 +166,7 @@
   .editing-controls {
     height: 39px;
     width: 192px;
-    @apply bg-accent;
+    @apply bg-surface-container-hover;
     @apply gap-x-2.5 px-4 py-2 flex items-center justify-center absolute top-0  z-50;
   }
 
@@ -183,7 +183,7 @@
   }
 
   tr:hover:not(.editing) {
-    @apply bg-accent;
+    @apply bg-surface-container-hover;
   }
 
   tr:hover.selected {

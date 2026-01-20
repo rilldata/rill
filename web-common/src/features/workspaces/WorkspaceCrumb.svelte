@@ -1,10 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { type V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { ResourceKindMap } from "../file-explorer/new-files";
   import CrumbTrigger from "./CrumbTrigger.svelte";
@@ -14,6 +11,7 @@
   } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
   import { GitBranch } from "lucide-svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const downstreamMapping = new Map([
     [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
@@ -104,10 +102,7 @@
   <svelte:self resources={upstreamResources} {allResources} upstream />
 
   {#if !componentsOnly}
-    <CaretDownIcon
-      size="12px"
-      className="text-muted-foreground -rotate-90 flex-none"
-    />
+    <CaretDownIcon size="12px" className="text-fg-muted -rotate-90 flex-none" />
   {/if}
 {/if}
 
@@ -119,7 +114,7 @@
           <svelte:element
             this={dropdown ? "button" : "a"}
             class:open
-            class="text-muted-foreground px-[5px] py-1 w-full max-w-fit line-clamp-1"
+            class="text-fg-muted px-[5px] py-1 w-full max-w-fit line-clamp-1"
             class:selected={current}
             href={dropdown
               ? undefined
@@ -149,7 +144,6 @@
                 {#if kind}
                   <svelte:component
                     this={resourceIconMapping[kind]}
-                    color={resourceColorMapping[kind]}
                     size="14px"
                   />
                 {/if}
@@ -161,24 +155,21 @@
       </DropdownMenu.Root>
     </div>
     {#if current && graphSupported && openGraph}
-      <button
-        type="button"
-        class="graph-trigger"
-        on:click={openGraph}
-        aria-label="Open resource graph"
+      <Button
+        type="plain"
+        square
+        onClick={openGraph}
+        label="Open resource graph"
       >
         <GitBranch size="13px" aria-hidden="true" />
         <span class="sr-only">Open resource graph</span>
-      </button>
+      </Button>
     {/if}
   </div>
 {/if}
 
 {#if downstreamResources.length}
-  <CaretDownIcon
-    size="12px"
-    className="text-muted-foreground -rotate-90 flex-none"
-  />
+  <CaretDownIcon size="12px" className="text-fg-muted -rotate-90 flex-none" />
 
   <svelte:self resources={downstreamResources} {allResources} downstream />
 {/if}
@@ -194,22 +185,20 @@
 
   a:hover,
   button:hover {
-    @apply text-surface-foreground;
+    @apply text-fg-primary;
   }
 
   .selected {
-    @apply text-foreground;
+    @apply text-fg-primary;
   }
 
   .open {
-    @apply bg-gray-200 rounded-[2px] text-surface-foreground;
+    @apply bg-gray-200 rounded-[2px] text-fg-primary;
   }
 
   .graph-trigger {
     @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
-    border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
-    color: var(--muted-foreground, #6b7280);
+
     min-width: 30px;
     height: 26px;
   }

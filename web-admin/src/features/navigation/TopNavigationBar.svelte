@@ -191,7 +191,7 @@
 </script>
 
 <div
-  class="flex items-center w-full pr-4 pl-2 py-1 bg-surface dark:bg-background"
+  class="flex items-center w-full pr-4 pl-2 py-1 bg-surface-background"
   class:border-b={!onProjectPage && !onOrgPage}
 >
   <!-- Left side -->

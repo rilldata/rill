@@ -50,7 +50,7 @@
         {getInitials(alt)}
       </Avatar.Fallback>
     {:else}
-      <Avatar.Fallback class={cn(fontSize, "text-muted-foreground")}>
+      <Avatar.Fallback class={cn(fontSize, "text-fg-secondary")}>
         <svg
           class="mt-[6px]"
           width="24"

@@ -99,17 +99,17 @@
             {#if isFiltered}
               <!-- Filtered empty state: no results match search -->
               <div class="flex flex-col gap-y-2 items-center text-sm">
-                <div class="text-muted-foreground font-semibold">
+                <div class="text-fg-secondary font-semibold">
                   No {kind}s match your search
                 </div>
-                <div class="text-muted-foreground">
+                <div class="text-fg-secondary">
                   Try adjusting your search terms
                 </div>
               </div>
             {:else}
               <!-- Custom empty state via slot, or fallback -->
               <slot name="empty">
-                <div class="text-muted-foreground text-sm font-semibold">
+                <div class="text-fg-secondary text-sm font-semibold">
                   You don't have any {kind}s yet
                 </div>
               </slot>

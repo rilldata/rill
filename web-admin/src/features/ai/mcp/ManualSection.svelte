@@ -43,8 +43,8 @@
   {/if}
 
   <div class="flex flex-col gap-y-3 min-w-0">
-    <h4 class="text-sm font-medium text-foreground">Configuration</h4>
-    <p class="text-sm text-muted-foreground">
+    <h4 class="text-sm font-medium text-fg-primary">Configuration</h4>
+    <p class="text-sm text-fg-secondary">
       Add this to your MCP client's configuration file.
       <a
         href="https://docs.rilldata.com/explore/mcp#manual-configuration-alternative-method"

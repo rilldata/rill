@@ -89,13 +89,13 @@
   }
 </script>
 
-<header class:border-b={!onDeployPage} class="bg-surface dark:bg-background">
+<header class:border-b={!onDeployPage} class="bg-surface-background">
   {#if !onDeployPage}
     <a href="/">
       <Rill />
     </a>
 
-    <span class="rounded-full px-2 border text-foreground bg-gray-50">
+    <span class="rounded-full px-2 border text-fg-primary bg-gray-50">
       {mode}
     </span>
 

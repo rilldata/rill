@@ -70,7 +70,7 @@
       isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
       on:click={() => unpackProject()}
     >
-      <AddCircleOutline size="2em" className="text-muted-foreground" />
+      <AddCircleOutline size="2em" className="text-fg-secondary" />
       <CardTitle position="middle">Start with an empty project</CardTitle>
     </Card>
 

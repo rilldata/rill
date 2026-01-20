@@ -35,7 +35,7 @@
       bgGray
       on:click={handleNewConversation}
     >
-      <PlusIcon className="text-muted-foreground" />
+      <PlusIcon className="text-fg-secondary" />
     </IconButton>
 
     <ConversationHistoryMenu
@@ -45,7 +45,7 @@
     />
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
-      <Close className="text-muted-foreground" />
+      <Close className="text-fg-secondary" />
     </IconButton>
   </div>
 </div>
@@ -62,7 +62,7 @@
     min-height: 1.5rem;
   }
   .chatbot-title {
-    @apply text-muted-foreground text-sm font-semibold;
+    @apply text-fg-secondary text-sm font-semibold;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

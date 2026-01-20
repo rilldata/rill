@@ -94,7 +94,7 @@
       class:nudge-right={firstElement}
       class:nudge-left={lastElement}
       class:not-sr-only={menuOpen}
-      class="sr-only peer-hover:not-sr-only peer-active:sr-only hover:not-sr-only !overflow-hidden flex flex-col pointer-events-auto shadow-sm !absolute -translate-x-1/2 left-1/2 top-1/2 w-fit z-20 bg-surface -translate-y-1/2 border rounded-sm"
+      class="sr-only peer-hover:not-sr-only peer-active:sr-only hover:not-sr-only !overflow-hidden flex flex-col pointer-events-auto shadow-sm !absolute -translate-x-1/2 left-1/2 top-1/2 w-fit z-20 bg-surface-container -translate-y-1/2 border rounded-sm"
     >
       <AddComponentDropdown
         {rowIndex}
@@ -114,7 +114,7 @@
       {#if !isSpreadEvenly}
         <Tooltip distance={8} location="bottom">
           <button
-            class="h-7 px-1 grid place-content-center border-t hover:bg-gray-50 active:bg-gray-100 text-muted-foreground"
+            class="h-7 px-1 grid place-content-center border-t hover:bg-gray-50 active:bg-gray-100 text-fg-secondary"
             on:click={(e) => {
               e.stopPropagation();
               e.preventDefault();

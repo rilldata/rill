@@ -25,6 +25,6 @@
       })}
     </span>
   {:else}
-    <span class="text-muted-foreground">Invalid time range</span>
+    <span class="text-fg-secondary">Invalid time range</span>
   {/if}
 </TooltipContent>

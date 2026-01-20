@@ -37,7 +37,7 @@
   button {
     @apply h-full aspect-square;
     @apply flex justify-center items-center;
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
     @apply transition-transform duration-100;
     width: 0px;
   }

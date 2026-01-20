@@ -21,7 +21,7 @@
 
 <div class="flex flex-col items-center w-full h-full">
   <span class="text-3xl font-normal m-2">Sorry, unexpected query error!</span>
-  <div class="text-base text-muted-foreground mt-4">
+  <div class="text-base text-fg-secondary mt-4">
     One or more APIs failed with the following error{uniqueErrors.length !== 1
       ? "s"
       : ""}:
@@ -30,7 +30,7 @@
   {#each uniqueErrors as error}
     <div class="flex text-base gap-x-2">
       <span class="text-red-600 font-semibold">{error.statusCode} :</span>
-      <span class="text-foreground">{error.message}</span>
+      <span class="text-fg-primary">{error.message}</span>
     </div>
   {/each}
 </div>

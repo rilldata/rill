@@ -135,7 +135,7 @@
         {/if}
       </div>
       <div
-        class="flex gap-x-1 items-center h-full bg-surface rounded-full"
+        class="flex gap-x-1 items-center h-full bg-surface-container rounded-full"
         class:hidden={disableAutoSave || forceDisableAutoSave}
       >
         <Switch
@@ -199,6 +199,6 @@
   }
 
   section {
-    @apply size-full flex-col bg-surface flex overflow-hidden relative;
+    @apply size-full flex-col bg-surface-container flex overflow-hidden relative;
   }
 </style>

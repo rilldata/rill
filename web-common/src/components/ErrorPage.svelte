@@ -67,7 +67,7 @@
   }
 
   .detail-toggle {
-    @apply text-sm text-muted-foreground font-medium;
+    @apply text-sm text-fg-secondary font-medium;
     @apply flex items-center;
     @apply duration-300 ease-in-out;
   }

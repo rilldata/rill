@@ -46,7 +46,7 @@
   .chat-message-content {
     @apply px-4 py-2 rounded-2xl;
     @apply text-sm leading-relaxed break-words;
-    @apply bg-muted text-foreground rounded-br-lg;
+    @apply bg-muted text-fg-primary rounded-br-lg;
   }
 
   :global(.chat-message-content .tiptap) {

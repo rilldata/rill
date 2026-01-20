@@ -34,7 +34,7 @@
     @apply border-b-2 border-transparent;
     @apply flex items-center relative cursor-pointer;
     @apply p-1 gap-x-2;
-    @apply font-medium text-xs text-muted-foreground;
+    @apply font-medium text-xs text-fg-secondary;
   }
 
   .disabled {

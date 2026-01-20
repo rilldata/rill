@@ -210,16 +210,16 @@
   .dashed.loading {
     @apply bg-gray-50;
     @apply border-gray-300;
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .secondary:disabled,
   .dashed:disabled {
-    @apply text-muted-foreground bg-gray-50 border-gray-300;
+    @apply text-fg-secondary bg-gray-50 border-gray-300;
   }
 
   .ghost:disabled {
-    @apply bg-transparent text-muted-foreground;
+    @apply bg-transparent text-fg-secondary;
   }
 
   .secondary:active:hover,
@@ -243,7 +243,7 @@
   /* PLAIN STYLES */
 
   .plain {
-    @apply bg-transparent text-muted-foreground;
+    @apply bg-transparent text-fg-secondary;
     @apply border;
   }
 
@@ -257,7 +257,7 @@
   }
 
   .plain.disabled {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   /* SUBTLE STYLES */
@@ -276,11 +276,11 @@
   }
 
   .subtle.loading {
-    @apply bg-gray-50 text-muted-foreground;
+    @apply bg-gray-50 text-fg-secondary;
   }
 
   .subtle:disabled {
-    @apply text-muted-foreground/30 bg-gray-50;
+    @apply text-fg-secondary/30 bg-gray-50;
   }
 
   /* LINK STYLES */
@@ -299,11 +299,11 @@
   }
 
   .link.loading {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .link:disabled {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .link.theme {
@@ -322,7 +322,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-muted-foreground p-0;
+    @apply text-fg-muted p-0;
   }
 
   .text:hover {
@@ -335,11 +335,11 @@
   }
 
   .text.loading {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .text:disabled {
-    @apply text-muted-foreground/30;
+    @apply text-fg-secondary/30;
   }
 
   .text.theme:hover {
@@ -354,7 +354,7 @@
   /* TOOLBAR STYLES */
 
   .toolbar {
-    @apply font-normal text-foreground;
+    @apply font-normal text-fg-muted;
     @apply h-6 px-1.5 rounded-sm;
     @apply gap-x-1.5;
   }
@@ -369,7 +369,7 @@
   }
 
   .toolbar:disabled {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 
   .text.theme:hover {
@@ -412,13 +412,13 @@
   }
 
   .danger.secondary:disabled {
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
     @apply bg-gray-50;
     @apply border-gray-300;
   }
 
   .danger.text {
-    @apply text-muted-foreground p-0;
+    @apply text-fg-secondary p-0;
   }
 
   .danger.text:hover {
@@ -489,11 +489,11 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-gray-300;
-    @apply bg-surface px-0;
+    @apply bg-surface-container px-0;
   }
 
   .gray:not(:hover) {
-    @apply text-muted-foreground border-gray-300;
+    @apply text-fg-secondary border-gray-300;
   }
 
   .gray:not(.ghost):not(:hover) {

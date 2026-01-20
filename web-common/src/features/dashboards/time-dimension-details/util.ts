@@ -56,7 +56,7 @@ export function getClassForCell(
       doubleHighlighted: "bg-primary-200",
     },
     default: {
-      base: "bg-surface",
+      base: "bg-surface-container",
       highlighted: "bg-gray-100",
       doubleHighlighted: "bg-gray-200",
     },

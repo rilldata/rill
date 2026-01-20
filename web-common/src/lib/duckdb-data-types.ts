@@ -160,7 +160,7 @@ export const TIMESTAMP_TOKENS: ColorTokens = {
 };
 
 export const NESTED_TOKENS: ColorTokens = {
-  textClass: "text-foreground",
+  textClass: "text-fg-primary",
   bgClass: "bg-gray-200",
   vizFillClass: "fill-gray-800",
   vizStrokeClass: "stroke-gray-800",

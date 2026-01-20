@@ -233,7 +233,7 @@
             <WithModelResultTooltip modelHasError={hasErrors}>
               <div
                 class:font-normal={hasErrors}
-                class:text-muted-foreground={hasErrors}
+                class:text-fg-secondary={hasErrors}
               >
                 {#if columnDelta > 0}
                   {formatInteger(columnDelta)}

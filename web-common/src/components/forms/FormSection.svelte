@@ -11,10 +11,10 @@
   export let enabled = true;
 </script>
 
-<div class="flex flex-col bg-surface {padding} gap-y-3 rounded">
+<div class="flex flex-col bg-surface-container {padding} gap-y-3 rounded">
   <div class="flex flex-col">
     <span
-      class="flex flex-row items-center gap-1 text-base text-medium text-foreground"
+      class="flex flex-row items-center gap-1 text-base text-medium text-fg-primary"
     >
       <div>{title}</div>
       {#if $$slots["tooltip-content"]}
@@ -33,7 +33,7 @@
     {#if $$slots["description"]}
       <slot name="description" />
     {:else if description}
-      <span class="text-sm text-muted-foreground">{description}</span>
+      <span class="text-sm text-fg-secondary">{description}</span>
     {/if}
   </div>
   {#if enabled}

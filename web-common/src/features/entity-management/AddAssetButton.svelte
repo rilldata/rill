@@ -29,10 +29,7 @@
     useFileNamesInDirectory,
   } from "./file-selectors";
   import { getName } from "./name-utils";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "./resource-icon-mapping";
+  import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
   import GenerateSampleData from "@rilldata/web-common/features/sample-data/GenerateSampleData.svelte";
   import { Wand } from "lucide-svelte";
@@ -195,13 +192,12 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Model]}
-        color={resourceColorMapping[ResourceKind.Model]}
         size="16px"
       />
       <div class="flex flex-col items-start">
         Model
         {#if !isModelingSupported}
-          <span class="text-muted-foreground text-xs">
+          <span class="text-fg-secondary text-xs">
             Requires a supported OLAP driver
           </span>
         {/if}
@@ -214,7 +210,6 @@
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.MetricsView]}
-        color={resourceColorMapping[ResourceKind.MetricsView]}
         size="16px"
       />
       Metrics view
@@ -239,13 +234,12 @@
       <div class="flex gap-x-2 items-center">
         <svelte:component
           this={resourceIconMapping[ResourceKind.Explore]}
-          color={resourceColorMapping[ResourceKind.Explore]}
           size="16px"
         />
         <div class="flex flex-col items-start">
           Explore dashboard
           {#if metricsViews.length === 0}
-            <span class="text-muted-foreground text-xs">
+            <span class="text-fg-secondary text-xs">
               Requires a metrics view
             </span>
           {/if}
@@ -264,13 +258,12 @@
       <div class="flex gap-x-2 items-center">
         <svelte:component
           this={resourceIconMapping[ResourceKind.Canvas]}
-          color={resourceColorMapping[ResourceKind.Canvas]}
           size="16px"
         />
         <div class="flex flex-col items-start">
           Canvas dashboard
           {#if metricsViews.length === 0}
-            <span class="text-muted-foreground text-xs">
+            <span class="text-fg-secondary text-xs">
               Requires a metrics view
             </span>
           {/if}
@@ -300,7 +293,6 @@
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.API]}
-            color={resourceColorMapping[ResourceKind.API]}
             size="16px"
           />
           API
@@ -313,7 +305,6 @@
         >
           <svelte:component
             this={resourceIconMapping[ResourceKind.Theme]}
-            color={resourceColorMapping[ResourceKind.Theme]}
             size="16px"
           />
           Theme
@@ -322,7 +313,7 @@
         <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Report)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
-              className="text-foreground"
+              className="text-fg-primary"
               size="16px"
             />
             Report
@@ -330,7 +321,7 @@
           <DropdownMenu.Item class="flex gap-x-2" on:click={() => handleAddResource(ResourceKind.Alert)}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Alert]}
-              className="text-foreground"
+              className="text-fg-primary"
               size="16px"
             />
             Alert

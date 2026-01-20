@@ -138,7 +138,7 @@
         on:click={() => handleRoleSelect(OrgUserRoles.Admin)}
       >
         <span class="font-medium">Admin</span>
-        <span class="text-xs text-muted-foreground"
+        <span class="text-xs text-fg-secondary"
           >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
         >
       </DropdownMenu.Item>
@@ -152,7 +152,7 @@
       on:click={() => handleRoleSelect(OrgUserRoles.Editor)}
     >
       <span class="font-medium">Editor</span>
-      <span class="text-xs text-muted-foreground"
+      <span class="text-xs text-fg-secondary"
         >{PROJECT_ROLES_DESCRIPTION_MAP.editor}</span
       >
     </DropdownMenu.Item>
@@ -165,7 +165,7 @@
       on:click={() => handleRoleSelect(OrgUserRoles.Viewer)}
     >
       <span class="font-medium">Viewer</span>
-      <span class="text-xs text-muted-foreground"
+      <span class="text-xs text-fg-secondary"
         >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
       >
     </DropdownMenu.Item>

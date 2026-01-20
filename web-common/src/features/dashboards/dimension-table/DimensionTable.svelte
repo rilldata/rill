@@ -209,7 +209,7 @@ TableCells – the cell contents.
       <div
         role="grid"
         tabindex="0"
-        class="relative bg-surface"
+        class="relative bg-surface-container"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"
@@ -273,11 +273,11 @@ TableCells – the cell contents.
             cellLabel="Filter dimension value"
           />
         {:else if isFetching || $selectedValues.isFetching}
-          <div class="flex text-muted-foreground justify-center mt-[30vh]">
+          <div class="flex text-fg-secondary justify-center mt-[30vh]">
             Loading...
           </div>
         {:else}
-          <div class="flex text-muted-foreground justify-center mt-[30vh]">
+          <div class="flex text-fg-secondary justify-center mt-[30vh]">
             No results to show
           </div>
         {/if}

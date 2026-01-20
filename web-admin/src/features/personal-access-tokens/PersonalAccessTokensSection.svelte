@@ -33,10 +33,10 @@
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <h4 class="text-sm font-medium text-foreground">
+  <h4 class="text-sm font-medium text-fg-primary">
     Create a personal access token
   </h4>
-  <p class="text-sm text-muted-foreground">
+  <p class="text-sm text-fg-secondary">
     Because this project is <span class="font-medium">private</span>, you need a
     <span class="font-medium">personal access token</span> to use in your MCP configuration.
     This token authenticates your requests.

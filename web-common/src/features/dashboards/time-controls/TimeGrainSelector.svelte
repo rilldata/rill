@@ -94,7 +94,7 @@
 
 <style lang="postcss">
   .tdd {
-    @apply border h-7 rounded-full px-2 pl-2.5 bg-background text-foreground;
+    @apply border h-7 rounded-full px-2 pl-2.5 bg-background text-fg-primary;
   }
 
   .tdd:hover {

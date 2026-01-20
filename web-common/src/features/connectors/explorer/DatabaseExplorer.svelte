@@ -44,6 +44,6 @@
 
   .message {
     @apply pr-3.5 py-2; /* left-padding is set inline above */
-    @apply text-muted-foreground;
+    @apply text-fg-secondary;
   }
 </style>

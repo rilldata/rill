@@ -106,7 +106,7 @@
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
-      <div class="uppercase text-xs text-muted-foreground font-semibold">
+      <div class="uppercase text-xs text-fg-secondary font-semibold">
         <!-- Author -->
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
@@ -129,10 +129,7 @@
         </span>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1
-          class="text-surface-foreground text-lg font-bold"
-          aria-label="Report name"
-        >
+        <h1 class="text-fg-primary text-lg font-bold" aria-label="Report name">
           {reportSpec.displayName}
         </h1>
         <div class="grow" />

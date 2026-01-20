@@ -1,9 +1,6 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import {
-    resourceColorMapping,
-    resourceIconMapping,
-  } from "../entity-management/resource-icon-mapping";
+  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { Code2Icon } from "lucide-svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -32,12 +29,7 @@
           }
         }}
       >
-        <Icon
-          size="15px"
-          color={view === selectedView && resourceKind
-            ? resourceColorMapping[resourceKind]
-            : "#9CA3AF"}
-        />
+        <Icon size="15px" />
       </button>
       <TooltipContent slot="tooltip-content">
         {view === "code" ? "Code view" : "No-code view"}
@@ -57,10 +49,14 @@
   }
 
   .toggle {
-    @apply bg-accent;
+    @apply bg-surface-container-active;
+  }
+
+  .toggle:hover {
+    @apply bg-surface-container-hover;
   }
 
   .radio {
-    @apply h-fit bg-surface border p-0.5 rounded-[6px] flex;
+    @apply h-fit bg-surface-container border p-0.5 rounded-[6px] flex;
   }
 </style>

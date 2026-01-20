@@ -365,13 +365,13 @@
     </div>
     {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
       <div class="flex items-center justify-center py-2">
-        <span class="text-xs text-muted-foreground">Loading more…</span>
+        <span class="text-xs text-fg-secondary">Loading more…</span>
       </div>
     {/if}
     <div class="h-px" bind:this={loadMoreTrigger} />
   </div>
   <div class="mt-2 general-access-container bg-popover pt-2">
-    <div class="text-xs text-muted-foreground font-semibold uppercase">
+    <div class="text-xs text-fg-secondary font-semibold uppercase">
       General Access
     </div>
     <Tooltip

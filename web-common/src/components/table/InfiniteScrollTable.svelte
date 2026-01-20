@@ -185,7 +185,7 @@
                     style={`margin-left: ${marginLeft};`}
                     class:cursor-pointer={header.column.getCanSort()}
                     class:select-none={header.column.getCanSort()}
-                    class="font-semibold text-muted-foreground flex flex-row items-center gap-x-1 text-sm"
+                    class="font-semibold text-fg-secondary flex flex-row items-center gap-x-1 text-sm"
                   >
                     <svelte:component
                       this={flexRender(
@@ -198,11 +198,11 @@
                         href={headerIcons[header.column.id].href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="hover:text-surface-foreground"
+                        class="hover:text-fg-primary"
                       >
                         <svelte:component
                           this={headerIcons[header.column.id].icon}
-                          class="text-muted-foreground"
+                          class="text-fg-secondary"
                           size="11px"
                           strokeWidth={2}
                         />
@@ -229,7 +229,7 @@
           <tr>
             <td
               colspan={columns.length}
-              class="px-4 py-4 text-center text-muted-foreground"
+              class="px-4 py-4 text-center text-fg-secondary"
             >
               {emptyStateMessage}
             </td>

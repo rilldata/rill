@@ -273,8 +273,8 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       />
       <div class="flex flex-col gap-y-2">
         <Label class="flex flex-col gap-y-1 text-sm">
-          <div class="text-foreground font-medium">Filters</div>
-          <div class="text-muted-foreground">
+          <div class="text-fg-primary font-medium">Filters</div>
+          <div class="text-fg-secondary">
             Inherited from underlying dashboard view.
           </div>
         </Label>
@@ -326,11 +326,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           >
             <span>Save filters only</span>
             <Tooltip distance={8}>
-              <InfoIcon
-                class="text-muted-foreground"
-                size="14px"
-                strokeWidth={2}
-              />
+              <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
               <TooltipContent
                 class="whitespace-pre-line"
                 maxWidth="600px"
@@ -353,11 +349,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           <div class="text-left text-sm flex gap-x-1 items-center">
             <span>Absolute time range</span>
             <Tooltip distance={8}>
-              <InfoIcon
-                class="text-muted-foreground"
-                size="14px"
-                strokeWidth={2}
-              />
+              <InfoIcon class="text-fg-secondary" size="14px" strokeWidth={2} />
               <TooltipContent
                 class="whitespace-pre-line"
                 maxWidth="600px"
@@ -369,7 +361,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             </Tooltip>
           </div>
           {#if filterState}
-            <div class="text-muted-foreground text-sm">
+            <div class="text-fg-secondary text-sm">
               {filterState.selectedTimeRange}
             </div>
           {/if}

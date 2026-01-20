@@ -13,7 +13,7 @@
   <div
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
-    <div class="text-muted-foreground font-semibold">
+    <div class="text-fg-secondary font-semibold">
       This alert has not run yet
     </div>
   </div>

@@ -31,7 +31,7 @@
     </span>
   </RadixH1>
   <div class="flex flex-col gap-y-2">
-    <Subheading twColor="text-muted-foreground">
+    <Subheading twColor="text-fg-secondary">
       Build fast operational dashboards that your team will actually use.
     </Subheading>
   </div>

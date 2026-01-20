@@ -102,7 +102,7 @@
       small
     />
   </div>
-  <div class="text-muted-foreground">
+  <div class="text-fg-secondary">
     {#if localFiltersEnabled}
       Overriding inherited filters from canvas.
     {:else}

@@ -142,7 +142,7 @@
             handleSetRole(getUserEmail(user), ProjectUserRoles.Admin)}
         >
           <span class="font-medium">Admin</span>
-          <span class="text-xs text-muted-foreground"
+          <span class="text-xs text-fg-secondary"
             >{PROJECT_ROLES_DESCRIPTION_MAP.admin}</span
           >
         </DropdownMenu.Item>
@@ -157,7 +157,7 @@
           handleSetRole(getUserEmail(user), ProjectUserRoles.Editor)}
       >
         <span class="font-medium">Editor</span>
-        <span class="text-xs text-muted-foreground"
+        <span class="text-xs text-fg-secondary"
           >{PROJECT_ROLES_DESCRIPTION_MAP.editor}</span
         >
       </DropdownMenu.Item>
@@ -171,7 +171,7 @@
           handleSetRole(getUserEmail(user), ProjectUserRoles.Viewer)}
       >
         <span class="font-medium">Viewer</span>
-        <span class="text-xs text-muted-foreground"
+        <span class="text-xs text-fg-secondary"
           >{PROJECT_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>

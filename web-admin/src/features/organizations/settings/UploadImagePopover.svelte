@@ -95,7 +95,7 @@
         >
           <EditIcon
             size="16px"
-            className="text-muted-foreground group-hover:text-gray-50"
+            className="text-fg-secondary group-hover:text-gray-50"
           />
         </div>
       {/if}

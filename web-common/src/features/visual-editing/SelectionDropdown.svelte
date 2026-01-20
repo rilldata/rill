@@ -57,7 +57,7 @@
 
       <CaretDownIcon
         size="12px"
-        className="text-muted-foreground ml-auto flex-none"
+        className="text-fg-secondary ml-auto flex-none"
       />
     </button>
   </DropdownMenu.Trigger>
@@ -101,9 +101,7 @@
         </DropdownMenu.CheckboxItem>
       {:else}
         {#if searchValue}
-          <div class="text-muted-foreground text-center p-2 w-full">
-            no results
-          </div>
+          <div class="text-fg-secondary text-center p-2 w-full">no results</div>
         {/if}
       {/each}
     </div>
@@ -147,7 +145,7 @@
 <style lang="postcss">
   .dropdown-trigger {
     @apply flex items-center;
-    @apply px-3 gap-x-2 h-8 max-w-full text-foreground;
+    @apply px-3 gap-x-2 h-8 max-w-full text-fg-primary;
     @apply text-sm;
     @apply border rounded-[2px];
     @apply break-all overflow-hidden;
