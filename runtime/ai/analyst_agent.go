@@ -199,7 +199,7 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 
 	// Add scheduled insight mode context
 	data["is_scheduled_insight"] = args.IsScheduledInsight
-	data["has_comparison"] = !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero()
+	data["is_scheduled_insight_user_prompt"] = args.IsScheduledInsight && !(strings.EqualFold(strings.TrimSpace(args.Prompt), "Generate the scheduled insight report."))
 	if !args.ComparisonTimeStart.IsZero() && !args.ComparisonTimeEnd.IsZero() {
 		data["comparison_start"] = args.ComparisonTimeStart.Format(time.RFC3339)
 		data["comparison_end"] = args.ComparisonTimeEnd.Format(time.RFC3339)
@@ -219,7 +219,7 @@ You are a data analysis agent specialized in uncovering actionable business insi
 You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
 {{ if .is_scheduled_insight }}
 You are operating in an automated scheduled insight report mode where you will come up with insights on your own without additional user input.
-if the user has provided a specific prompt other than a generic prompt like "Generate the scheduled insight report", use it to focus your analysis.
+{{ if .is_scheduled_insight_user_prompt }} The user has provided a custom prompt for this scheduled insight report. Tailor your analysis to address this prompt specifically. {{ end }}
 {{ end }}
 
 Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
@@ -240,7 +240,7 @@ The metrics view's definition and time range of available data has been provided
 
 Here is an overview of the settings applied to the dashboard:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
-{{ if .has_comparison }}Use comparison time range: start={{.comparison_start}}, end={{.comparison_end}}{{ end }}
+{{ if (and .comparison_start .comparison_end) }}Use comparison time range: start={{.comparison_start}}, end={{.comparison_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
 {{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
@@ -268,7 +268,7 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to {{ if .is_scheduled_insight }} 50 {{ else }} 20 {{ end }} queries.
 
 {{ if and .is_scheduled_insight (not .is_scheduled_insight_user_prompt) }}
-{{ if .has_comparison }}
+{{ if (and .comparison_start .comparison_end) }}
 <comparison_analysis>
 You are doing comparative analysis between two time periods in scheduled insight report mode, your analysis should:
 1. Compare current period to the comparison period for all key measures
