@@ -423,6 +423,21 @@ func (r *repo) Watch(ctx context.Context, cb drivers.WatchCallback) error {
 	})
 }
 
+// ListBranches implements drivers.RepoStore.
+func (r *repo) ListBranches(ctx context.Context) ([]string, string, error) {
+	return nil, "", drivers.ErrNotImplemented
+}
+
+// SwitchBranch implements drivers.RepoStore.
+func (r *repo) SwitchBranch(ctx context.Context, branchName string, createIfNotExists, ignoreLocalChanges bool) error {
+	return drivers.ErrNotImplemented
+}
+
+// ListCommits implements drivers.RepoStore.
+func (r *repo) ListCommits(ctx context.Context, fromCommit string, limit int) ([]drivers.Commit, string, error) {
+	return nil, "", drivers.ErrNotImplemented
+}
+
 // Status implements drivers.RepoStore.
 func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	if r.git == nil {
@@ -457,6 +472,23 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	}, nil
 }
 
+func (r *repo) Commit(ctx context.Context, message string) (string, error) {
+	if r.git == nil {
+		return "", fmt.Errorf("commits are not supported for this repo type")
+	}
+
+	err := r.rlockEnsureReady(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer r.mu.RUnlock()
+
+	if !r.git.editable() {
+		return "", fmt.Errorf("repo is not editable")
+	}
+	return r.git.commitToDefaultBranch(ctx, message)
+}
+
 // Pull implements drivers.RepoStore.
 func (r *repo) Pull(ctx context.Context, opts *drivers.PullOptions) error {
 	return r.pull(ctx, opts)
@@ -486,6 +518,16 @@ func (r *repo) CommitAndPush(ctx context.Context, message string, force bool) er
 	// TODO: This should merge to the current branch
 	// A separate merge RPC should merge to primary branch
 	return r.git.commitAndPushToPrimaryBranch(ctx, message, force)
+}
+
+// RestoreCommit implements drivers.RepoStore.
+func (r *repo) RestoreCommit(ctx context.Context, commitSHA string) (string, error) {
+	return "", drivers.ErrNotImplemented
+}
+
+// MergeToBranch implements drivers.RepoStore.
+func (r *repo) MergeToBranch(ctx context.Context, branch string, force bool) error {
+	return drivers.ErrNotImplemented
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -540,7 +582,7 @@ func (r *repo) close() error {
 	}
 
 	if r.git != nil && r.git.editable() {
-		err := r.git.commitToDefaultBranch(ctx)
+		_, err := r.git.commitToDefaultBranch(ctx, "Checkpoint commit")
 		if err != nil {
 			return fmt.Errorf("close failed: could not commit to edit branch: %w", err)
 		}

@@ -47,15 +47,15 @@ The `metrics_sql_rows` template function allows you to execute a Metrics SQL que
 Use `metrics_sql_rows` to get query results and then iterate over them using Go template syntax. You can access columns using dot notation (`.column_name`) or by assigning a variable name in the range:
 
 <ImageCodeToggle
-  image="/img/build/dashboard/canvas/components/text.png"
+  image="/img/build/dashboard/canvas/components/markdown.png"
   imageAlt="Metrics SQL rows component showing multiple data rows"
   code={`- markdown:
       content: |-
-        {{ $rows := metrics_sql_rows "SELECT publisher, domain, total_records FROM ad_bids_metrics ORDER BY total_records DESC LIMIT 3" }}
+        {{ $rows := metrics_sql_rows "SELECT total_bids, adomain FROM bids_metrics ORDER BY total_bids DESC LIMIT 3" }}
         {{ range $index, $row := $rows }}
         <div style="font-weight: 600;">{{ $row.publisher }}</div>
-        <div>Domain: {{ $row.domain }}</div>
-        <div>Total: {{ $row.total_records }}</div>
+        <div>Domain: {{ $row.adomain }}</div>
+        <div>Total: {{ $row.total_bids }}</div>
         {{ end }}
       width: 6`}
   codeLanguage="yaml"
