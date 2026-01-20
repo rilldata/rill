@@ -5,11 +5,16 @@
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
   import { isStepMatch, isVisibleForValues } from "./schema-utils";
+  import type { Writable } from "svelte/store";
+
+  type FormData = Record<string, unknown>;
+  type FormErrors = string[] | undefined;
+  type ValidationErrors = Record<string, FormErrors>;
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;
-  export let form: any;
-  export let errors: Record<string, any>;
+  export let form: Writable<FormData>;
+  export let errors: ValidationErrors;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
 

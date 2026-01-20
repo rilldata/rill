@@ -15,7 +15,7 @@ import { getConnectorSchema } from "./connector-schemas";
  * Returns true for undefined, null, empty string, or whitespace-only string.
  * Useful for validating optional text inputs.
  */
-export function isEmpty(val: any) {
+export function isEmpty(val: unknown): boolean {
   return (
     val === undefined ||
     val === null ||
@@ -31,22 +31,41 @@ export function isEmpty(val: any) {
  * - If input resembles a Zod `_errors` array, returns that.
  * - Otherwise returns undefined.
  */
+type ErrorWithResponse = {
+  response?: {
+    data?: {
+      message?: string;
+      code?: string;
+    };
+  };
+  message?: string;
+  details?: string;
+};
+
 /**
  * Converts unknown error inputs into a unified connector error shape.
  * - Prefers native Error.message when present
  * - Maps server error responses to human-readable messages via `humanReadableErrorMessage`
  * - Returns `details` with original message when it differs from the human-readable message
  */
+function isErrorWithResponse(err: unknown): err is ErrorWithResponse {
+  return typeof err === "object" && err !== null && "response" in err;
+}
+
+function isErrorWithMessage(err: unknown): err is { message: string } {
+  return typeof err === "object" && err !== null && "message" in err;
+}
+
 export function normalizeConnectorError(
   connectorName: string,
-  err: any,
+  err: unknown,
 ): { message: string; details?: string } {
   let message: string;
   let details: string | undefined;
 
   if (err instanceof Error) {
     message = err.message;
-  } else if (err?.response?.data) {
+  } else if (isErrorWithResponse(err) && err.response?.data) {
     const originalMessage = err.response.data.message;
     const humanReadable = humanReadableErrorMessage(
       connectorName,
@@ -55,10 +74,13 @@ export function normalizeConnectorError(
     );
     message = humanReadable;
     details = humanReadable !== originalMessage ? originalMessage : undefined;
-  } else if (err?.message) {
+  } else if (isErrorWithMessage(err)) {
     message = err.message;
+    const errorWithDetails = err as ErrorWithResponse;
     details =
-      err.details && err.details !== err.message ? err.details : undefined;
+      errorWithDetails.details && errorWithDetails.details !== err.message
+        ? errorWithDetails.details
+        : undefined;
   } else {
     message = "Unknown error";
   }
@@ -87,18 +109,21 @@ export function hasOnlyDsn(
   return false;
 }
 
+type FormErrors = string[] | undefined;
+type ValidationErrors = Record<string, FormErrors>;
+
 function hasAllRequiredFieldsValid(
   schema: MultiStepFormSchema,
   requiredFields: string[],
   formValues: Record<string, unknown>,
-  formErrors: Record<string, unknown>,
+  formErrors: ValidationErrors,
   step: "connector" | "source" | string,
 ): boolean {
   if (!requiredFields.length) return true;
   return requiredFields.every((fieldId) => {
     if (!isStepMatch(schema, fieldId, step)) return true;
     const value = formValues[fieldId];
-    const errorsForField = formErrors[fieldId] as any;
+    const errorsForField = formErrors[fieldId];
     const hasErrors = Boolean(errorsForField?.length);
     return !isEmpty(value) && !hasErrors;
   });
@@ -111,9 +136,9 @@ function hasAllRequiredFieldsValid(
 export function isMultiStepConnectorDisabled(
   schema: MultiStepFormSchema | null,
   paramsFormValue: Record<string, unknown>,
-  paramsFormErrors: Record<string, unknown>,
+  paramsFormErrors: ValidationErrors,
   step?: "connector" | "source" | string,
-) {
+): boolean {
   if (!schema) return true;
 
   // For source step, gate on required fields from the JSON schema.
