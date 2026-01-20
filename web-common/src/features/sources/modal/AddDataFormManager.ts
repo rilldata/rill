@@ -57,8 +57,8 @@ const dsnSchema = yupLib.object({
 });
 
 type FormData = Record<string, unknown>;
-type FormErrors = string[] | undefined;
-type ValidationErrors = Record<string, FormErrors>;
+// Use unknown to be compatible with superforms' complex ValidationErrors type
+type ValidationErrors = Record<string, unknown>;
 
 export type ClickhouseUiState = {
   properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
@@ -416,7 +416,7 @@ export class AddDataFormManager {
         activeConnectionTab === "dsn"
           ? dsnFormValues?.[key]
           : paramsFormValues?.[key];
-      return isEmpty(value) || Boolean(errorsForField?.length);
+      return isEmpty(value) || Boolean((errorsForField as any)?.length);
     });
 
     const submitting =
