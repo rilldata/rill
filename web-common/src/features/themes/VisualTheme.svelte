@@ -64,15 +64,6 @@
 
   const paletteInfo = [
     {
-      name: "Diverging",
-      count: 11,
-      description: "For data with a midpoint (1-11)",
-      variables: Array.from(
-        { length: 11 },
-        (_, i) => `color-diverging-${i + 1}`,
-      ),
-    },
-    {
       name: "Qualitative",
       count: 24,
       description: "For categorical data (1-24)",
@@ -88,6 +79,15 @@
       variables: Array.from(
         { length: 9 },
         (_, i) => `color-sequential-${i + 1}`,
+      ),
+    },
+    {
+      name: "Diverging",
+      count: 11,
+      description: "For data with a midpoint (1-11)",
+      variables: Array.from(
+        { length: 11 },
+        (_, i) => `color-diverging-${i + 1}`,
       ),
     },
   ];
