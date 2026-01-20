@@ -159,7 +159,7 @@
   }
 
   :global(.dark > .wrapper > button) {
-    @apply bg-background;
+    @apply bg-surface-background;
   }
 
   :global(.wrapper > button:focus) {

@@ -63,7 +63,7 @@
     @apply cursor-pointer;
   }
   .context-item.focused {
-    @apply bg-accent text-accent-foreground;
+    @apply bg-surface-container text-fg-primary;
   }
 
   .context-item-checkbox {

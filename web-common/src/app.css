@@ -536,7 +536,7 @@ button {
 }
 
 body {
-  @apply bg-background;
+  @apply bg-surface-background;
   font-family: "Inter";
   font-size: 12px;
 

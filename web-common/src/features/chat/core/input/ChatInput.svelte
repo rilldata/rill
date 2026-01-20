@@ -152,7 +152,7 @@
   }
 
   .inline {
-    @apply bg-background;
+    @apply bg-surface-background;
   }
 
   .chat-input-form:focus-within {
