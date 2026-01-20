@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,6 +22,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Deprecated: See details in api.proto.
@@ -828,6 +831,89 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		AccessToken: jwt,
 		TtlSeconds:  uint32(ttlDuration.Seconds()),
 	}, nil
+}
+
+func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploymentConfigRequest) (*adminv1.GetDeploymentConfigResponse, error) {
+	// If the deployment ID is not provided, attempt to infer it from the access token.
+	claims := auth.GetClaims(ctx)
+	if req.DeploymentId == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			req.DeploymentId = claims.OwnerID()
+		} else {
+			return nil, status.Error(codes.InvalidArgument, "missing deployment_id")
+		}
+	}
+
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the runtime provisioned for this deployment
+	pr, ok, err := s.admin.FindProvisionedRuntimeResource(ctx, depl.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "can't update deployment %q because its runtime has not been initialized yet", depl.ID)
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if depl.Environment == "prod" {
+		if !permissions.ReadProdStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read prod deployment")
+		}
+	} else {
+		if !permissions.ReadDevStatus {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read dev deployment")
+		}
+	}
+
+	resp := &adminv1.GetDeploymentConfigResponse{
+		UpdatedOn:   timestamppb.New(depl.UpdatedOn),
+		UsesArchive: proj.ArchiveAssetID != nil,
+	}
+	vars, err := s.admin.ResolveVariables(ctx, depl.ProjectID, depl.Environment)
+	if err != nil {
+		return nil, err
+	}
+	resp.Variables = vars
+
+	// parsing duckdb connector config
+	rCfg, err := provisioner.NewRuntimeConfig(pr.Config)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "invalid runtime config: %v", err)
+	}
+	configStruct, err := rCfg.DuckdbConfig().AsMap()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to decode DuckDB connector config: %v", err)
+	}
+	configStructPb, err := structpb.NewStruct(configStruct)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to encode DuckDB connector config: %v", err)
+	}
+	resp.DuckdbConnectorConfig = configStructPb
+
+	annotations := s.admin.NewDeploymentAnnotations(org, proj)
+	resp.Annotations = annotations.ToMap()
+
+	resp.FrontendUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	return resp, nil
 }
 
 // getResourceRestrictionsForUser returns resource restrictions for a given user and project.

@@ -174,6 +174,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
+		MetricsNullFillingImplementation:     "pushdown",
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 	}

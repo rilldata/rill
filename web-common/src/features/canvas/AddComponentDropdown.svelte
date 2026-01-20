@@ -29,7 +29,7 @@
   export const menuItems: MenuItem[] = [
     { id: "bar_chart", label: "Chart", icon: ChartIcon }, // Default value, will be replaced with random type when clicked
     { id: "table", label: "Table", icon: TableIcon },
-    { id: "markdown", label: "Text", icon: TextIcon },
+    { id: "markdown", label: "Text/Markdown", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "leaderboard", label: "Leaderboard", icon: LeaderboardIcon },
     { id: "image", label: "Image", icon: ChartIcon },

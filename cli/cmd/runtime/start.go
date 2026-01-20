@@ -247,7 +247,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 						Config: metastoreConfig,
 					},
 				},
-				Version: ch.Version,
+				Version:              ch.Version,
+				EnableConfigReloader: true,
 			}
 			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {
@@ -277,7 +278,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient, nil)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

@@ -21,7 +21,6 @@ export const dashboardChatConfig = {
   placeholder:
     "Type a question, or press @ to insert a metric, dimension, or measure.",
   minChatHeight: "min-h-[4rem]",
-  enableMention: true,
 } satisfies ChatConfig;
 
 /**

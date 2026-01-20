@@ -504,9 +504,16 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		// StarRocks returns DECIMAL for division, which gets mapped to string.
+		// Cast to DOUBLE for consistent numeric handling across all dialects.
+		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total)
+		if a.Dialect == drivers.DialectStarRocks {
+			expr = fmt.Sprintf("CAST(%s AS DOUBLE)", expr)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
 			DisplayName:        fmt.Sprintf("%s (Σ%%)", m.DisplayName),
@@ -1067,6 +1074,10 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*SelectNode, error) {
 	if spine == nil {
 		return nil, nil
+	}
+
+	if spine.Where != nil && spine.TimeRange != nil {
+		return nil, errors.New("spine cannot have both 'where' and 'time_range'")
 	}
 
 	if spine.Where != nil {

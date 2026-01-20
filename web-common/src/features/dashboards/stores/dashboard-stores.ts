@@ -114,6 +114,7 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
+
   exploreState.whereFilter =
     filterExpressions(exploreState.whereFilter, (e) => {
       if (!e.cond?.exprs?.length) return true;
@@ -261,6 +262,7 @@ const metricsViewReducers = {
         }
       }
 
+      exploreState.pivot.expanded = {};
       exploreState.pivot.rows = dimensions;
     });
   },
@@ -269,7 +271,6 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
-      exploreState.pivot.expanded = {};
 
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
@@ -286,6 +287,7 @@ const metricsViewReducers = {
           }
         }
       }
+      exploreState.pivot.expanded = {};
       exploreState.pivot.columns = value;
     });
   },
@@ -294,6 +296,8 @@ const metricsViewReducers = {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
+      exploreState.pivot.expanded = {};
+
       if (value.type === PivotChipType.Measure) {
         exploreState.pivot.columns.push(value);
       } else {
@@ -552,6 +556,7 @@ const metricsViewReducers = {
         rowLimit: limit,
         expanded: {},
         nestedRowLimits: {},
+        outermostRowLimit: undefined,
         rowPage: 1,
         activeCell: null,
       };
@@ -570,6 +575,16 @@ const metricsViewReducers = {
           ...exploreState.pivot.nestedRowLimits,
           [expandIndex]: limit,
         },
+        activeCell: null,
+      };
+    });
+  },
+
+  setPivotOutermostRowLimit(name: string, limit: number) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        outermostRowLimit: limit,
         activeCell: null,
       };
     });

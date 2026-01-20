@@ -6,10 +6,7 @@ import {
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import {
-  ToURLParamTDDChartMap,
-  ToURLParamTimeGrainMapMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ToURLParamTDDChartMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -24,6 +21,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
@@ -112,7 +110,7 @@ function getDefaultPresetTimeGrain(
   );
 
   return (
-    ToURLParamTimeGrainMapMap[
+    V1TimeGrainToDateTimeUnit[
       getDefaultTimeGrain(timeRange.start, timeRange.end)
     ] ?? ""
   );

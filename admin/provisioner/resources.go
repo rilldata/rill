@@ -2,6 +2,7 @@ package provisioner
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -75,6 +76,29 @@ func (r *RuntimeConfig) AsMap() map[string]any {
 		panic(err)
 	}
 	return res
+}
+
+func (r *RuntimeConfig) DuckdbConfig() *DuckdbConfig {
+	return &DuckdbConfig{
+		CPU:          strconv.Itoa(r.CPU),
+		MemoryGB:     strconv.Itoa(r.MemoryGB),
+		StorageBytes: strconv.FormatInt(r.StorageBytes, 10),
+	}
+}
+
+type DuckdbConfig struct {
+	CPU          string `mapstructure:"cpu"`
+	MemoryGB     string `mapstructure:"memory_limit_gb"`
+	StorageBytes string `mapstructure:"storage_limit_bytes"`
+}
+
+func (r *DuckdbConfig) AsMap() (map[string]any, error) {
+	res := make(map[string]any)
+	err := mapstructure.WeakDecode(r, &res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 // ClickhouseConfig describes the expected config for a provisioned Clickhouse resource.

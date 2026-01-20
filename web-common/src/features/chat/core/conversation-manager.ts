@@ -46,26 +46,17 @@ export class ConversationManager {
   private static readonly MAX_CONCURRENT_STREAMS = 3;
 
   private newConversation: Conversation;
+  private newConversationUnsub: (() => void) | null = null;
   private conversations = new Map<string, Conversation>();
   private conversationSelector: ConversationSelector;
-  private agent?: string;
+  private readonly agent?: string;
 
   constructor(
     public readonly instanceId: string,
     options: ConversationManagerOptions,
   ) {
     this.agent = options.agent;
-    this.newConversation = new Conversation(
-      this.instanceId,
-      NEW_CONVERSATION_ID,
-      {
-        agent: this.agent,
-        onStreamStart: () => this.enforceMaxConcurrentStreams(),
-        onConversationCreated: (conversationId: string) => {
-          this.handleConversationCreated(conversationId);
-        },
-      },
-    );
+    this.createNewConversation();
 
     switch (options.conversationState) {
       case "url":
@@ -121,10 +112,10 @@ export class ConversationManager {
         const conversation = new Conversation(
           this.instanceId,
           $conversationId,
-          {
-            agent: this.agent,
-            onStreamStart: () => this.enforceMaxConcurrentStreams(),
-          },
+          this.agent,
+        );
+        conversation.on("stream-start", () =>
+          this.enforceMaxConcurrentStreams(),
         );
         this.conversations.set($conversationId, conversation);
         return conversation;
@@ -161,6 +152,26 @@ export class ConversationManager {
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
+
+  private createNewConversation() {
+    this.newConversationUnsub?.();
+    this.newConversation = new Conversation(
+      this.instanceId,
+      NEW_CONVERSATION_ID,
+      this.agent,
+    );
+    const streamStartUnsub = this.newConversation.on("stream-start", () =>
+      this.enforceMaxConcurrentStreams(),
+    );
+    const conversationStartedUnsub = this.newConversation.on(
+      "conversation-created",
+      (conversationId) => this.handleConversationCreated(conversationId),
+    );
+    this.newConversationUnsub = () => {
+      streamStartUnsub();
+      conversationStartedUnsub();
+    };
+  }
 
   // ----- Stream Management -----
 
@@ -221,17 +232,7 @@ export class ConversationManager {
     this.conversations.set(conversationId, this.newConversation);
 
     // Create a fresh "new" conversation instance
-    this.newConversation = new Conversation(
-      this.instanceId,
-      NEW_CONVERSATION_ID,
-      {
-        agent: this.agent,
-        onStreamStart: () => this.enforceMaxConcurrentStreams(),
-        onConversationCreated: (conversationId: string) => {
-          this.handleConversationCreated(conversationId);
-        },
-      },
-    );
+    this.createNewConversation();
   }
 }
 
