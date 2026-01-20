@@ -9,14 +9,14 @@
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileLocalFileSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
 
-  const dispatch = createEventDispatcher();
+  export let onClose: () => void = () => {};
+  export let onBack: () => void = () => {};
 
   $: ({ instanceId } = $runtime);
 
@@ -59,7 +59,7 @@
       }
 
       overlay.set(null);
-      dispatch("close");
+      onClose();
     }
   }
 </script>
@@ -71,5 +71,5 @@
 </div>
 <div class="flex p-6">
   <div class="grow" />
-  <Button onClick={() => dispatch("back")} type="secondary">Back</Button>
+  <Button onClick={onBack} type="secondary">Back</Button>
 </div>

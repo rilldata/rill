@@ -66,3 +66,14 @@ tests:
       - domain: yahoo.com
         publisher: Yahoo
         total impressions: 3
+  - name: zulu_date
+    resolver: metrics_sql
+    properties:
+      sql: select publisher, domain, "total impressions" from metrics_with_policy where timestamp >= CAST('2022-01-04T00:00:00Z' AS DateTime)
+    user_attributes:
+      domain: yahoo.com
+      email: user@yahoo.com
+    result:
+      - domain: yahoo.com
+        publisher: Yahoo
+        total impressions: 2

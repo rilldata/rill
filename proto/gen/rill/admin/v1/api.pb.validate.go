@@ -12040,6 +12040,35 @@ func (m *GetDeploymentConfigResponse) validate(all bool) error {
 
 	// no validation rules for UsesArchive
 
+	if all {
+		switch v := interface{}(m.GetDuckdbConnectorConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetDeploymentConfigResponseValidationError{
+					field:  "DuckdbConnectorConfig",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetDeploymentConfigResponseValidationError{
+					field:  "DuckdbConnectorConfig",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDuckdbConnectorConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetDeploymentConfigResponseValidationError{
+				field:  "DuckdbConnectorConfig",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return GetDeploymentConfigResponseMultiError(errors)
 	}
@@ -33735,7 +33764,11 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	// no validation rules for GitBranch
 
-	// no validation rules for GitEditBranch
+	// no validation rules for Editable
+
+	// no validation rules for PrimaryBranch
+
+	// no validation rules for ManagedGitRepo
 
 	// no validation rules for ArchiveDownloadUrl
 

@@ -56,6 +56,8 @@
   export let setPivotActiveCell:
     | ((rowId: string, columnId: string) => void)
     | undefined = undefined;
+  export let setPivotOutermostRowLimit: ((limit: number) => void) | undefined =
+    undefined;
   export let setPivotRowLimitForExpanded:
     | ((expandIndex: string, limit: number) => void)
     | undefined = undefined;
@@ -209,13 +211,27 @@
     // Handle "Show More" button clicks
     if (value === SHOW_MORE_BUTTON && rowHeader) {
       const rowData = row.original;
-
-      const expandIndex = rowId.split(".").slice(0, -1).join(".");
       const currentLimit = rowData.__currentLimit as number;
       const nextLimit = getNextRowLimit(currentLimit);
 
-      if (expandIndex && nextLimit && setPivotRowLimitForExpanded) {
-        setPivotRowLimitForExpanded(expandIndex, nextLimit);
+      if (!nextLimit) return;
+
+      // Check if this is the outermost dimension or a nested dimension
+      // Outermost dimension has rowId like "0", "1", etc. (no dots)
+      // Nested dimensions have rowId like "0.1", "0.1.2", etc.
+      const isOutermostDimension = !rowId.includes(".");
+
+      if (isOutermostDimension) {
+        // Handle outermost dimension "Show more" click
+        if (setPivotOutermostRowLimit) {
+          setPivotOutermostRowLimit(nextLimit);
+        }
+      } else {
+        // Handle nested dimension "Show more" click
+        const expandIndex = rowId.split(".").slice(0, -1).join(".");
+        if (expandIndex && setPivotRowLimitForExpanded) {
+          setPivotRowLimitForExpanded(expandIndex, nextLimit);
+        }
       }
       return;
     }

@@ -1852,7 +1852,7 @@ definitions:
                     type: string
                 type:
                     type: string
-                    description: 'Dimension type: "geo" for geospatial dimensions. Default is undefined and the type will be inferred instead'
+                    description: 'Dimension type: "geo" for geospatial dimensions, "time" for time dimensions or "categorical" for categorial dimensions. Default is undefined and the type will be inferred instead'
                 column:
                   type: string
                   description: a categorical column
@@ -3263,7 +3263,7 @@ definitions:
             minItems: 1
           channels:
             type: array
-            description: An array of Slack channel IDs to notify.
+            description: An array of Slack channel names to notify.
             items:
               type: string
             minItems: 1

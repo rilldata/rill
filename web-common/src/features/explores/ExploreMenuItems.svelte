@@ -30,5 +30,5 @@
 
 <NavigationMenuItem on:click={viewGraph}>
   <GitBranch slot="icon" size="14px" />
-  View dependency graph
+  View DAG graph
 </NavigationMenuItem>

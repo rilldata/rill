@@ -1,11 +1,6 @@
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
-import {
-  V1TimeGrain,
-  type V1MetricsViewAggregationResponseDataItem,
-} from "@rilldata/web-common/runtime-client";
+import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
@@ -20,6 +15,7 @@ import type {
   FieldConfig,
 } from "./types";
 import { getChroma } from "../../themes/theme-utils";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -125,7 +121,6 @@ export function getFieldsByType(spec: ChartSpec): FieldsByType {
 export function adjustDataForTimeZone(
   data: V1MetricsViewAggregationResponseDataItem[] | undefined,
   timeFields: string[],
-  timeGrain: V1TimeGrain,
   selectedTimezone: string,
 ) {
   if (!data) return data;
@@ -134,11 +129,11 @@ export function adjustDataForTimeZone(
     // Create a shallow copy of the datum to avoid mutating the original
     const adjustedDatum = { ...datum };
     timeFields.forEach((timeField) => {
-      adjustedDatum[timeField] = adjustOffsetForZone(
-        datum[timeField] as string,
-        selectedTimezone,
-        timeGrainToDuration(timeGrain),
-      );
+      adjustedDatum[timeField] =
+        convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+          datum[timeField] as string,
+          selectedTimezone,
+        );
     });
     return adjustedDatum;
   });

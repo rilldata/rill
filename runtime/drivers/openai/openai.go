@@ -164,8 +164,8 @@ func (o *openai) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorO
 }
 
 // AsModelManager implements drivers.Handle.
-func (o *openai) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (o *openai) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsNotifier implements drivers.Handle.
