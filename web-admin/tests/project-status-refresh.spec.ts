@@ -221,7 +221,8 @@ test.describe("Project Status - Incremental Model Refresh (incremental-test)", (
     const modelRow = adminPage.locator(".row").filter({
       hasText: "success_partition",
     });
-    await modelRow.getByRole("button").click();
+    // Use .first() because the row may have multiple buttons (actions menu + expand/collapse)
+    await modelRow.getByRole("button").first().click();
 
     // "Refresh Errored Partitions" should NOT be visible for models without errors
     await expect(
