@@ -1,5 +1,8 @@
 # Model YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/models
+#
+# NOTE: This glob only matches well-formed CSV files (dt*.csv pattern)
+# to ensure this model completes without partition errors
 
 type: model
 materialize: true
@@ -7,8 +10,9 @@ materialize: true
 connector: duckdb
 
 create_secrets_from_connectors: gcs
-incremental: true 
+incremental: true
 
+# Matches only valid dt*.csv files, avoiding malformed ones
 partitions:
   glob: gs://rilldata-public/e2e/incremental/dt*.csv
 
