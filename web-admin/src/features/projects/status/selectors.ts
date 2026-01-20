@@ -104,7 +104,7 @@ export function useTableMetadata(
     );
   }
 
-  return readable(
+  return readable<TableMetadataResult>(
     {
       data: {
         isView: new Map<string, boolean>(),
