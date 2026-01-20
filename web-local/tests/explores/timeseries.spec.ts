@@ -78,9 +78,9 @@ async function verifyChartTooltipData(
 
     const expectedValue = point.records[measureName];
     if (expectedValue !== null && expectedValue !== undefined) {
-      const formatter = createMeasureValueFormatter(
-        { formatPreset: "humanize" },
-      );
+      const formatter = createMeasureValueFormatter({
+        formatPreset: "humanize",
+      });
       expect(valueText!.trim()).toBe(formatter(expectedValue));
     }
 
@@ -123,7 +123,12 @@ for (const timezone of TIMEZONES) {
         const apiData = await timeseriesPromise;
         expect(apiData.data.length).toBe(testCase.expectedDataPoints);
 
-        await verifyChartTooltipData(page, apiData, testCase.grain, "total_records");
+        await verifyChartTooltipData(
+          page,
+          apiData,
+          testCase.grain,
+          "total_records",
+        );
       }
     });
   });
