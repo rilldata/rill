@@ -158,8 +158,8 @@ func (h *handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorO
 }
 
 // AsModelManager implements drivers.Handle.
-func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {

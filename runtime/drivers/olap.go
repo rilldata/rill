@@ -467,6 +467,18 @@ func (d Dialect) GetTimeDimensionParameter() string {
 	return "?"
 }
 
+func (d Dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
+	switch typ {
+	case runtimev1.Type_CODE_TIMESTAMP:
+		if d == DialectClickHouse {
+			return "DateTime64", nil
+		}
+		return "TIMESTAMP", nil
+	default:
+		return "", fmt.Errorf("unsupported cast type %q for dialect %q", typ.String(), d.String())
+	}
+}
+
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
@@ -481,7 +493,7 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 	if desc {
 		res += " DESC"
 	}
-	if d == DialectDuckDB {
+	if d == DialectDuckDB || d == DialectStarRocks {
 		res += " NULLS LAST"
 	}
 	return res
@@ -607,9 +619,12 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 		}
 		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
 	case DialectStarRocks:
-		// StarRocks supports date_trunc similar to DuckDB but does not support timezone parameter
-		// NOTE: Timezone and time shift parameters are validated in runtime/metricsview/executor/executor_validate.go
-		return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
+		// StarRocks supports date_trunc and CONVERT_TZ for timezone handling
+		if tz == "" {
+			return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
+		}
+		// Convert to target timezone, truncate, then convert back to UTC
+		return fmt.Sprintf("CONVERT_TZ(date_trunc('%s', CONVERT_TZ(%s, 'UTC', '%s')), '%s', 'UTC')", specifier, expr, tz, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}

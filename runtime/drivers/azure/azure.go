@@ -39,12 +39,14 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 		{
-			Key:    "azure_storage_connection_string",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "azure_storage_connection_string",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Azure Connection String",
+			Description: "Azure connection string for storage account",
+			Placeholder: "Paste your Azure connection string here",
+			Secret:      true,
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -266,8 +268,8 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 }
 
 // AsModelManager implements drivers.Handle.
-func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {

@@ -1,5 +1,4 @@
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
-import { ToURLParamTimeGrainMapMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -9,7 +8,6 @@ import {
   ALL_TIME_RANGE_ALIAS,
   deriveInterval,
 } from "../../dashboards/time-controls/new-time-controls";
-
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 import {
@@ -22,9 +20,11 @@ import {
   getRangePrecision,
   isGrainAllowed,
   minTimeGrainToDefaultTimeRange,
+  V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
 import type { TimeManager } from "./time-manager";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type MinMax = {
   min: DateTime<true>;
@@ -305,7 +305,7 @@ export class TimeState {
       checkIfSet = false,
       replaceState = false,
     ) => {
-      const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
+      const mappedTimeGrain = V1TimeGrainToDateTimeUnit[timeGrain];
       const props = new Map<string, string>();
       if (mappedTimeGrain) {
         props.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
@@ -427,39 +427,3 @@ const timeGrainToComparisonOptionMap: Record<
   [V1TimeGrain.TIME_GRAIN_YEAR]: TimeComparisonOption.YEAR,
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
 };
-
-function getComparisonInterval(
-  interval: Interval<true> | undefined,
-  comparisonRange: string | undefined,
-  activeTimeZone: string,
-): Interval<true> | undefined {
-  if (!interval || !comparisonRange) return undefined;
-
-  let comparisonInterval: Interval | undefined = undefined;
-
-  const COMPARISON_DURATIONS = {
-    "rill-PP": interval.toDuration(),
-    "rill-PD": { days: 1 },
-    "rill-PW": { weeks: 1 },
-    "rill-PM": { months: 1 },
-    "rill-PQ": { quarter: 1 },
-    "rill-PY": { years: 1 },
-  };
-
-  const duration =
-    COMPARISON_DURATIONS[comparisonRange as keyof typeof COMPARISON_DURATIONS];
-
-  if (duration) {
-    comparisonInterval = Interval.fromDateTimes(
-      interval.start.minus(duration),
-      interval.end.minus(duration),
-    );
-  } else {
-    const normalizedRange = comparisonRange.replace(",", "/");
-    comparisonInterval = Interval.fromISO(normalizedRange).mapEndpoints((dt) =>
-      dt.setZone(activeTimeZone),
-    );
-  }
-
-  return comparisonInterval.isValid ? comparisonInterval : undefined;
-}
