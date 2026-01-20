@@ -112,6 +112,7 @@
   let dimensionDataCopy: DimensionDataItem[] = [];
 
   $: exploreState = useExploreState(exploreName);
+  $: selectedTimezone = $exploreState?.selectedTimezone;
 
   $: activePage = $exploreState?.activePage;
   $: showTimeDimensionDetail = Boolean(
@@ -283,6 +284,7 @@
       exploreName,
       measureName: measure.name!,
       selectedTimeRange,
+      dashboardTimezone: selectedTimezone,
     }),
   );
 
