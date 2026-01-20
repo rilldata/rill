@@ -43,6 +43,7 @@
   }
 
   function maybeAddSearch(path: string, search: string) {
+    search = search.replace(/^\?/, "");
     if (path.includes("?")) return `${path}&${search}`;
     return `${path}?${search}`;
   }
