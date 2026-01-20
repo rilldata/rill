@@ -115,20 +115,6 @@ export function getChartContainer(page: Page) {
 }
 
 /**
- * Gets the displayed timestamp label from the chart tooltip
- */
-export async function getDisplayedTimestampLabel(
-  page: Page,
-): Promise<string | null> {
-  const timestampLabel = page
-    .locator("svg text.fill-gray-700.stroke-surface")
-    .first();
-  const isVisible = await timestampLabel.isVisible().catch(() => false);
-  if (!isVisible) return null;
-  return timestampLabel.textContent();
-}
-
-/**
  * Asserts that the timeseries chart is rendered with data
  */
 export async function assertTimeseriesChartRendered(page: Page) {
