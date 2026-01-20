@@ -3327,6 +3327,33 @@ message ReportOptions {
    */
   string web_open_mode = 18;
   reserved 19;
+  // AI-powered report configuration (used when format is "ai_session")
+  string format = 21; // "query" (default) or "ai_session"
+  AIReportData ai_data = 22;
+}
+
+// AIReportData contains configuration for AI-powered reports
+message AIReportData {
+  string agent = 1; // Agent to use (defaults to "analyst_agent")
+  string prompt = 2; // Optional user prompt for the agent
+  AIReportTimeRange time_range = 3; // optional time range
+  AIReportTimeRange comparison_time_range = 4; // Optional comparison time range
+  AIReportContext context = 5; // Optional dashboard context
+}
+
+// AIReportTimeRange specifies a time range using ISO 8601 duration
+message AIReportTimeRange {
+  string iso_duration = 1; // ISO 8601 duration (e.g., "P7D", "P1M")
+  string iso_offset = 2; // Optional offset for comparison ranges
+  string time_zone = 3; // IANA timezone (e.g., "America/New_York")
+}
+
+// AIReportContext provides optional dashboard context for AI analysis
+message AIReportContext {
+  string explore = 1; // Dashboard/explore name
+  repeated string dimensions = 2; // Dimensions to focus on
+  repeated string measures = 3; // Measures to focus on
+  google.protobuf.Struct where = 4; // Filter expression
 }
 
 message AlertOptions {

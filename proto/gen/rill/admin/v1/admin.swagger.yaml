@@ -4463,6 +4463,58 @@ definitions:
       - OPERATION_NLIKE
       - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
+  v1AIReportContext:
+    type: object
+    properties:
+      explore:
+        type: string
+        title: Dashboard/explore name
+      dimensions:
+        type: array
+        items:
+          type: string
+        title: Dimensions to focus on
+      measures:
+        type: array
+        items:
+          type: string
+        title: Measures to focus on
+      where:
+        type: object
+        title: Filter expression
+    title: AIReportContext provides optional dashboard context for AI analysis
+  v1AIReportData:
+    type: object
+    properties:
+      agent:
+        type: string
+        title: Agent to use (defaults to "analyst_agent")
+      prompt:
+        type: string
+        title: User prompt for the agent
+      timeRange:
+        $ref: '#/definitions/v1AIReportTimeRange'
+        title: Required time range
+      comparisonTimeRange:
+        $ref: '#/definitions/v1AIReportTimeRange'
+        title: Optional comparison time range
+      context:
+        $ref: '#/definitions/v1AIReportContext'
+        title: Optional dashboard context
+    title: AIReportData contains configuration for AI-powered reports
+  v1AIReportTimeRange:
+    type: object
+    properties:
+      isoDuration:
+        type: string
+        title: ISO 8601 duration (e.g., "P7D", "P1M")
+      isoOffset:
+        type: string
+        title: Optional offset for comparison ranges
+      timeZone:
+        type: string
+        title: IANA timezone (e.g., "America/New_York")
+    title: AIReportTimeRange specifies a time range using ISO 8601 duration
   v1AddOrganizationMemberUserResponse:
     type: object
     properties:
@@ -6216,6 +6268,12 @@ definitions:
           - send "recipient" for reports that should be opened with recipient's permissions - requires login
           - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
           - send "none" for reports that should not be opened or older reports which do not have any web_open_path
+      format:
+        type: string
+        description: '"query" (default) or "ai_session"'
+        title: AI-powered report configuration (used when format is "ai_session")
+      aiData:
+        $ref: '#/definitions/v1AIReportData'
   v1RequestProjectAccessResponse:
     type: object
   v1ResourceName:

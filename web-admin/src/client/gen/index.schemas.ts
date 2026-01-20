@@ -61,6 +61,29 @@ export const Runtimev1Operation = {
   OPERATION_CAST: "OPERATION_CAST",
 } as const;
 
+export type V1AIReportContextWhere = { [key: string]: unknown };
+
+export interface V1AIReportContext {
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1AIReportContextWhere;
+}
+
+export interface V1AIReportData {
+  agent?: string;
+  prompt?: string;
+  timeRange?: V1AIReportTimeRange;
+  comparisonTimeRange?: V1AIReportTimeRange;
+  context?: V1AIReportContext;
+}
+
+export interface V1AIReportTimeRange {
+  isoDuration?: string;
+  isoOffset?: string;
+  timeZone?: string;
+}
+
 export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
 }
@@ -1229,6 +1252,9 @@ export interface V1ReportOptions {
   explore?: string;
   canvas?: string;
   webOpenMode?: string;
+  /** "query" (default) or "ai_session" */
+  format?: string;
+  aiData?: V1AIReportData;
 }
 
 export interface V1RequestProjectAccessResponse {

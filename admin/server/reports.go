@@ -515,11 +515,16 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	res.Format = opts.Format
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
+	// Handle AI data if present
+	if opts.AiData != nil {
+		res.Data.AI = convertAIReportData(opts.AiData)
+	}
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -574,11 +579,16 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	res.Format = opts.Format
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	res.Export.Format = exportFormat
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
+	// Handle AI data if present
+	if opts.AiData != nil {
+		res.Data.AI = convertAIReportData(opts.AiData)
+	}
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -592,6 +602,34 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
 	return yaml.Marshal(res)
+}
+
+// convertAIReportData converts proto AIReportData to YAML struct
+func convertAIReportData(data *adminv1.AIReportData) *aiReportDataYAML {
+	if data == nil {
+		return nil
+	}
+	res := &aiReportDataYAML{
+		Agent:  data.Agent,
+		Prompt: data.Prompt,
+	}
+	if data.TimeRange != nil {
+		res.TimeRange.ISODuration = data.TimeRange.IsoDuration
+		res.TimeRange.TimeZone = data.TimeRange.TimeZone
+	}
+	if data.ComparisonTimeRange != nil {
+		res.ComparisonTimeRange.ISODuration = data.ComparisonTimeRange.IsoDuration
+		res.ComparisonTimeRange.ISOOffset = data.ComparisonTimeRange.IsoOffset
+	}
+	if data.Context != nil {
+		res.Context.Explore = data.Context.Explore
+		res.Context.Dimensions = data.Context.Dimensions
+		res.Context.Measures = data.Context.Measures
+		if data.Context.Where != nil {
+			res.Context.Where = data.Context.Where.AsMap()
+		}
+	}
+	return res
 }
 
 // generateReportName generates a random report name with the display name as a seed.
@@ -798,7 +836,8 @@ type reportYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Query struct {
+	Format string `yaml:"format,omitempty"` // "query" (default) or "ai_session"
+	Query  struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
@@ -808,6 +847,9 @@ type reportYAML struct {
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint   `yaml:"limit"`
 	} `yaml:"export"`
+	Data struct {
+		AI *aiReportDataYAML `yaml:"ai,omitempty"`
+	} `yaml:"data,omitempty"`
 	Notify struct {
 		Email struct {
 			Recipients []string `yaml:"recipients"`
@@ -819,6 +861,26 @@ type reportYAML struct {
 		} `yaml:"slack"`
 	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
+}
+
+// aiReportDataYAML is the structure for AI-powered report configuration
+type aiReportDataYAML struct {
+	Agent     string `yaml:"agent,omitempty"`
+	Prompt    string `yaml:"prompt"`
+	TimeRange struct {
+		ISODuration string `yaml:"iso_duration"`
+		TimeZone    string `yaml:"time_zone,omitempty"`
+	} `yaml:"time_range"`
+	ComparisonTimeRange struct {
+		ISODuration string `yaml:"iso_duration,omitempty"`
+		ISOOffset   string `yaml:"iso_offset,omitempty"`
+	} `yaml:"comparison_time_range,omitempty"`
+	Context struct {
+		Explore    string         `yaml:"explore,omitempty"`
+		Dimensions []string       `yaml:"dimensions,omitempty"`
+		Measures   []string       `yaml:"measures,omitempty"`
+		Where      map[string]any `yaml:"where,omitempty"`
+	} `yaml:"context,omitempty"`
 }
 
 type reportAnnotations struct {
