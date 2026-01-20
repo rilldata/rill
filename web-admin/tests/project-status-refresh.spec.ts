@@ -20,7 +20,8 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    await modelRow.getByRole("button").click();
+    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
+    await modelRow.locator("[data-melt-dropdown-menu-trigger]").click();
 
     // Verify "Full Refresh" is visible
     await expect(
@@ -33,7 +34,8 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const sourceRow = adminPage.locator(".row").filter({
       hasText: "auction_data_raw",
     });
-    await sourceRow.getByRole("button").click();
+    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
+    await sourceRow.locator("[data-melt-dropdown-menu-trigger]").click();
 
     // Verify "Full Refresh" is visible
     await expect(
@@ -53,7 +55,8 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    await modelRow.getByRole("button").click();
+    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
+    await modelRow.locator("[data-melt-dropdown-menu-trigger]").click();
 
     // Verify "Full Refresh" is visible
     await expect(
@@ -73,7 +76,8 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    await modelRow.getByRole("button").click();
+    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
+    await modelRow.locator("[data-melt-dropdown-menu-trigger]").click();
 
     // "Refresh Errored Partitions" should not be visible for models without errored partitions
     await expect(
@@ -86,7 +90,8 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
     const modelRow = adminPage.locator(".row").filter({
       hasText: "auction_data_model",
     });
-    await modelRow.getByRole("button").click();
+    // Target the dropdown menu trigger specifically (rows may have multiple buttons)
+    await modelRow.locator("[data-melt-dropdown-menu-trigger]").click();
 
     // Click "Full Refresh"
     await adminPage.getByRole("menuitem", { name: "Full Refresh" }).click();
