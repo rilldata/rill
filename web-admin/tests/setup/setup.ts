@@ -325,4 +325,51 @@ setup.describe("global setup", () => {
       adminPage.getByRole("link", { name: "Adbids dashboard" }),
     ).toBeVisible();
   });
+
+  setup(
+    "should deploy the incremental-test project",
+    async ({ adminPage }) => {
+      // Deploy the incremental-test project (for testing incremental model refresh)
+      const { match } = await spawnAndMatch(
+        "rill",
+        [
+          "deploy",
+          "--path",
+          "../web-common/tests/projects/incremental-test",
+          "--project",
+          "incremental-test",
+          "--archive",
+          "--interactive=false",
+        ],
+        /https?:\/\/[^\s]+/,
+      );
+
+      // Navigate to the project URL and expect to see the successful deployment
+      const url = match[0];
+      await adminPage.goto(url);
+      await expect(
+        adminPage.getByRole("link", { name: RILL_ORG_NAME }),
+      ).toBeVisible(); // Organization breadcrumb
+      await expect(
+        adminPage.getByRole("link", { name: "incremental-test", exact: true }),
+      ).toBeVisible(); // Project breadcrumb
+
+      // Expect to land on the project home page
+      await adminPage.waitForURL(`/${RILL_ORG_NAME}/incremental-test`);
+
+      // Wait for the project to be ready by checking the status page
+      await adminPage.goto(`/${RILL_ORG_NAME}/incremental-test/-/status`);
+      await expect(adminPage.getByText("Resources")).toBeVisible({
+        timeout: 60_000,
+      });
+
+      // Verify the incremental models are listed
+      await expect(adminPage.getByText("success_partition")).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(adminPage.getByText("failed_partition")).toBeVisible({
+        timeout: 30_000,
+      });
+    },
+  );
 });
