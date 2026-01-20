@@ -45,7 +45,11 @@
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: (event: {
-    form: SuperValidated<Record<string, unknown>, string, Record<string, unknown>>;
+    form: SuperValidated<
+      Record<string, unknown>,
+      string,
+      Record<string, unknown>
+    >;
     result?: Extract<ActionResult, { type: "success" | "failure" }>;
     cancel?: () => void;
   }) => Promise<void> = async (_event) => {};
