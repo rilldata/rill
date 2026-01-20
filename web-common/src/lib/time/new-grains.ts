@@ -103,6 +103,7 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_QUARTER]: "quarter",
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
+
 export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
 
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {

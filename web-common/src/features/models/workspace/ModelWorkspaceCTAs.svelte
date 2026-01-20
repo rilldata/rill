@@ -20,7 +20,7 @@
 
   export let resource: V1Resource | undefined;
   export let modelName: string;
-  export let modelHasError = false;
+  export let hasResultTable = false;
   export let collapse = false;
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -49,7 +49,7 @@
 
 <ExportMenu
   label="Export model data"
-  disabled={modelHasError || !isModelIdle}
+  disabled={!hasResultTable || !isModelIdle}
   workspace
   getQuery={() => {
     return {
@@ -63,7 +63,7 @@
 />
 
 {#if availableMetricsViews?.length === 0}
-  <CreateDashboardButton {collapse} hasError={modelHasError} {modelName} />
+  <CreateDashboardButton {collapse} {hasResultTable} {modelName} />
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger asChild let:builder>
@@ -89,8 +89,10 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           on:click={async () => {
+            if (!hasResultTable) return;
             await createMetricsViewFromTable();
           }}
+          disabled={!hasResultTable}
         >
           <Add />
           Create metrics view

@@ -13,10 +13,9 @@
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
-  import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -32,9 +31,12 @@
   export let enableSorting = true;
   export let isSelected = false;
   export let sorted: SortDirection | undefined = undefined;
+  export let onResizeColumn: (size: number, name: string) => void = () => {};
+  export let onResetColumnWidth: (name: string) => void = () => {};
+  export let onClickColumn: (name: string) => void;
+  export let onPin: () => void;
 
   const config: VirtualizedTableConfig = getContext("config");
-  const dispatch = createEventDispatcher();
 
   let showMore = false;
 
@@ -46,32 +48,27 @@
 
   $: columnFontWeight = isSelected ? "" : config.columnHeaderFontWeightClass;
 
-  const handleResize = (event: ResizeEvent) => {
-    dispatch("resize-column", {
-      size: event.detail.size,
-      name,
-    });
+  const handleResize = (size: number) => {
+    onResizeColumn(size, name);
   };
 </script>
 
 <StickyHeader
   {enableResize}
   bgClass={config.headerBgColorClass}
-  on:reset-column-width={() => {
-    dispatch("reset-column-width", { name });
+  onResetColumnWidth={() => {
+    onResetColumnWidth(name);
   }}
-  on:resize={handleResize}
+  onResize={handleResize}
   {position}
   {header}
-  on:focus={() => {
+  onFocus={() => {
     showMore = true;
   }}
-  on:blur={() => {
+  onBlur={() => {
     showMore = false;
   }}
-  onClick={() => {
-    dispatch("click-column");
-  }}
+  onClick={() => onClickColumn(name)}
   onShiftClick={() => {
     copyToClipboard(name, `Copied column name "${name}" to clipboard`);
   }}
@@ -172,9 +169,7 @@
           class:text-fg-primary={pinned}
           class:text-fg-secondary={!pinned}
           class="   duration-100 justify-self-end"
-          on:click={() => {
-            dispatch("pin");
-          }}
+          on:click={onPin}
         >
           <Pin size="16px" />
         </button>

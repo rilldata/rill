@@ -122,7 +122,7 @@
         </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onRename(dir.path, true)}>
           <EditIcon slot="icon" />
-          Rename...
+          Rename
         </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onDelete(dir.path, true)}>
           <Cancel slot="icon" />

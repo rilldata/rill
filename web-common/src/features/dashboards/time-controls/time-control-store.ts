@@ -18,7 +18,6 @@ import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getComparionRangeForScrub,
-  getComparisonRange,
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
@@ -60,6 +59,8 @@ import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { parseRillTime } from "../url-state/time-ranges/parser";
 import type { RillTime } from "../url-state/time-ranges/RillTime";
+import { DateTime, Interval } from "luxon";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -380,9 +381,9 @@ export function calculateTimeRangePartial(
   return {
     selectedTimeRange,
     timeStart: timeStart.toISOString(),
-    adjustedStart,
+    adjustedStart: adjustedStart || undefined,
     timeEnd: timeEnd.toISOString(),
-    adjustedEnd,
+    adjustedEnd: adjustedEnd || undefined,
   };
 }
 
@@ -404,6 +405,7 @@ export function calculateComparisonTimeRangePartial(
     allTimeRange,
     timeRangeState.selectedTimeRange,
     currentComparisonTimeRange,
+    selectedTimezone,
   );
 
   let comparisonAdjustedStart: string | undefined = undefined;
@@ -415,8 +417,8 @@ export function calculateComparisonTimeRangePartial(
       selectedTimezone,
       timeRangeState.selectedTimeRange?.interval,
     );
-    comparisonAdjustedStart = adjustedComparisonTime.start;
-    comparisonAdjustedEnd = adjustedComparisonTime.end;
+    comparisonAdjustedStart = adjustedComparisonTime.start || undefined;
+    comparisonAdjustedEnd = adjustedComparisonTime.end || undefined;
   }
 
   let comparisonTimeStart = selectedComparisonTimeRange?.start;
@@ -552,6 +554,7 @@ export function getComparisonTimeRange(
   allTimeRange: TimeRange | undefined,
   timeRange: DashboardTimeControls | undefined,
   comparisonTimeRange: DashboardTimeControls | undefined,
+  timezone: string | undefined,
 ) {
   if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
@@ -561,6 +564,7 @@ export function getComparisonTimeRange(
       timeRange,
       undefined,
       allTimeRange,
+      timezone,
     );
     const range = getTimeComparisonParametersForComponent(
       comparisonOption,
@@ -568,6 +572,7 @@ export function getComparisonTimeRange(
       allTimeRange.end,
       timeRange.start,
       timeRange.end,
+      timezone || "UTC",
     );
 
     return {
@@ -585,16 +590,29 @@ export function getComparisonTimeRange(
   } else {
     // variable time range of some kind.
     const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;
-    const range = getComparisonRange(
-      timeRange.start,
-      timeRange.end,
-      comparisonOption,
+    const interval = Interval.fromDateTimes(
+      DateTime.fromJSDate(timeRange.start, { zone: timezone }),
+      DateTime.fromJSDate(timeRange.end, { zone: timezone }),
     );
 
-    return {
-      ...range,
-      name: comparisonOption,
-    };
+    if (interval.isValid) {
+      const range = getComparisonInterval(
+        interval,
+        comparisonOption,
+        timezone || "UTC",
+      );
+      return {
+        start: range?.start.toJSDate(),
+        end: range?.end.toJSDate(),
+        name: comparisonOption,
+      };
+    } else {
+      return {
+        start: undefined,
+        end: undefined,
+        name: comparisonOption,
+      };
+    }
   }
 }
 

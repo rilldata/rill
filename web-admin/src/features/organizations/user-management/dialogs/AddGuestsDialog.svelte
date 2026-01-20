@@ -26,6 +26,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -41,15 +42,17 @@
   let failedInvites: string[] = [];
   let selectedProjects: string[] = [];
   let projectDropdownOpen = false;
-  let selectedRole: "admin" | "editor" | "viewer" = "viewer";
+  let selectedRole: OrgUserRoles = OrgUserRoles.Viewer;
   let roleDropdownOpen = false;
   let hasAutoSelectedProject = false;
 
   function resetDialogState() {
     failedInvites = [];
     selectedProjects = [];
-    selectedRole = "viewer";
+    selectedRole = OrgUserRoles.Viewer;
     hasAutoSelectedProject = false;
+    projectDropdownOpen = false;
+    roleDropdownOpen = false;
   }
 
   // Projects list
@@ -94,6 +97,7 @@
     } else {
       selectedProjects = [...selectedProjects, projectName];
     }
+    projectDropdownOpen = true;
   }
 
   async function handleCreate(email: string) {
@@ -253,9 +257,9 @@
             closeOnItemClick={false}
           >
             <Dropdown.Trigger
-              class="min-w-[260px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {projectDropdownOpen
+              class="min-w-[260px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {projectDropdownOpen
                 ? 'bg-gray-200'
-                : 'hover:bg-gray-100'} px-2 py-1"
+                : 'hover:bg-gray-100'}"
             >
               <span>
                 {selectedProjectsLabel}
@@ -286,9 +290,9 @@
         <div class="text-xs font-medium mb-1">Access level</div>
         <Dropdown.Root bind:open={roleDropdownOpen}>
           <Dropdown.Trigger
-            class="min-w-[180px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {roleDropdownOpen
+            class="min-w-[180px] min-h-[32px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 bg-white text-sm px-3 {roleDropdownOpen
               ? 'bg-gray-200'
-              : 'hover:bg-gray-100'} px-2 py-1"
+              : 'hover:bg-gray-100'}"
           >
             <span>{selectedRoleLabel}</span>
             {#if roleDropdownOpen}
@@ -298,15 +302,16 @@
             {/if}
           </Dropdown.Trigger>
           <Dropdown.Content align="start" class="w-[180px]">
-            <Dropdown.Item on:click={() => (selectedRole = "admin")}
-              >Admin</Dropdown.Item
-            >
-            <Dropdown.Item on:click={() => (selectedRole = "editor")}
-              >Editor</Dropdown.Item
-            >
-            <Dropdown.Item on:click={() => (selectedRole = "viewer")}
-              >Viewer</Dropdown.Item
-            >
+            {#each ORG_ROLES_OPTIONS as option}
+              <Dropdown.CheckboxItem
+                checked={selectedRole === option.value}
+                onCheckedChange={(checked) => {
+                  if (checked) selectedRole = option.value;
+                }}
+              >
+                {option.label}
+              </Dropdown.CheckboxItem>
+            {/each}
           </Dropdown.Content>
         </Dropdown.Root>
       </div>

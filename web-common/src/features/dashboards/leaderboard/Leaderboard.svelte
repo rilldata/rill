@@ -378,6 +378,7 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
+            dataType={dimension.dataType?.code ?? ""}
             {itemData}
             {isValidPercentOfTotal}
             {leaderboardShowContextForAllMeasures}
@@ -396,6 +397,7 @@
         <LeaderboardRow
           {itemData}
           {dimensionName}
+          dataType={dimension.dataType?.code ?? ""}
           {isBeingCompared}
           {filterExcludeMode}
           {atLeastOneActive}
