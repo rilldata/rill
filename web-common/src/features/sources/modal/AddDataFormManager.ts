@@ -1,5 +1,5 @@
 import { superForm, defaults } from "sveltekit-superforms";
-import type { SuperValidated } from "sveltekit-superforms";
+import type { SuperValidated, Infer, SuperForm } from "sveltekit-superforms";
 import * as yupLib from "yup";
 import {
   yup as yupAdapter,
@@ -39,6 +39,7 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
+import type { QueryClient } from "@tanstack/query-core";
 import {
   filterSchemaValuesForSubmit,
   findRadioEnumKey,
@@ -55,6 +56,10 @@ const dsnSchema = yupLib.object({
   dsn: yupLib.string().required("DSN is required"),
 });
 
+type FormData = Record<string, unknown>;
+type FormErrors = string[] | undefined;
+type ValidationErrors = Record<string, FormErrors>;
+
 export type ClickhouseUiState = {
   properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
   filteredProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
@@ -66,20 +71,29 @@ export type ClickhouseUiState = {
   shouldClearErrors?: boolean;
 };
 
+type SuperFormUpdateOptions = {
+  taint?: boolean;
+};
+
 type SuperFormStore = {
   update: (
-    updater: (value: Record<string, unknown>) => Record<string, unknown>,
-    options?: any,
+    updater: (value: FormData) => FormData,
+    options?: SuperFormUpdateOptions,
   ) => void;
+};
+
+type SuperFormErrorsStore = {
+  set: (errors: ValidationErrors) => void;
+  update: (updater: (errors: ValidationErrors) => ValidationErrors) => void;
 };
 
 type ClickhouseStateArgs = {
   connectorType: ClickHouseConnectorType;
   connectionTab: "parameters" | "dsn";
-  paramsFormValues: Record<string, unknown>;
-  dsnFormValues: Record<string, unknown>;
-  paramsErrors: Record<string, unknown>;
-  dsnErrors: Record<string, unknown>;
+  paramsFormValues: FormData;
+  dsnFormValues: FormData;
+  paramsErrors: ValidationErrors;
+  dsnErrors: ValidationErrors;
   paramsForm: SuperFormStore;
   dsnForm: SuperFormStore;
   paramsSubmitting: boolean;
@@ -88,7 +102,7 @@ type ClickhouseStateArgs = {
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
-  form: SuperValidated<Record<string, unknown>, any, Record<string, unknown>>;
+  form: SuperValidated<FormData, string, FormData>;
 };
 
 const BUTTON_LABELS = {
@@ -185,16 +199,16 @@ export class AddDataFormManager {
       connector.name as string,
       formType,
     );
-    type ParamsOut = Record<string, unknown>;
-    type ParamsIn = Record<string, unknown>;
+    type ParamsOut = FormData;
+    type ParamsIn = FormData;
     const initialFormValues = schema
       ? getSchemaInitialValues(schema, { step: schemaStep })
       : {};
-    const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
+    const paramsDefaults = defaults<ParamsOut, string, ParamsIn>(
       initialFormValues as Partial<ParamsOut>,
       paramsAdapter,
     );
-    this.params = superForm<ParamsOut, any, ParamsIn>(paramsDefaults, {
+    this.params = superForm<ParamsOut, string, ParamsIn>(paramsDefaults, {
       SPA: true,
       validators: paramsAdapter,
       onUpdate: onParamsUpdate,
@@ -206,7 +220,7 @@ export class AddDataFormManager {
     const dsnAdapter = yupAdapter(dsnSchema);
     type DsnOut = YupInfer<typeof dsnSchema, "yup">;
     type DsnIn = YupInferIn<typeof dsnSchema, "yup">;
-    this.dsn = superForm<DsnOut, any, DsnIn>(defaults(dsnAdapter), {
+    this.dsn = superForm<DsnOut, string, DsnIn>(defaults(dsnAdapter), {
       SPA: true,
       validators: dsnAdapter,
       onUpdate: onDsnUpdate,
@@ -374,11 +388,11 @@ export class AddDataFormManager {
     // Keep connector_type in sync on the params form
     if (paramsFormValues?.connector_type !== connectorType) {
       paramsForm.update(
-        ($form: any) => ({
+        ($form) => ({
           ...$form,
           connector_type: connectorType,
         }),
-        { taint: false } as any,
+        { taint: false },
       );
     }
 
@@ -394,9 +408,7 @@ export class AddDataFormManager {
         return false;
       }
       const errorsForField =
-        activeConnectionTab === "dsn"
-          ? (dsnErrors?.[key] as any)
-          : (paramsErrors?.[key] as any);
+        activeConnectionTab === "dsn" ? dsnErrors?.[key] : paramsErrors?.[key];
       const value =
         activeConnectionTab === "dsn"
           ? dsnFormValues?.[key]
@@ -458,7 +470,7 @@ export class AddDataFormManager {
 
   makeOnUpdate(args: {
     onClose: () => void;
-    queryClient: any;
+    queryClient: QueryClient;
     getConnectionTab: () => "parameters" | "dsn";
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
@@ -483,11 +495,7 @@ export class AddDataFormManager {
     const isConnectorForm = this.formType === "connector";
 
     return async (event: {
-      form: SuperValidated<
-        Record<string, unknown>,
-        any,
-        Record<string, unknown>
-      >;
+      form: SuperValidated<FormData, string, FormData>;
       result?: Extract<ActionResult, { type: "success" | "failure" }>;
       cancel?: () => void;
     }) => {
@@ -548,11 +556,13 @@ export class AddDataFormManager {
             if (!fieldErrors[key]) fieldErrors[key] = [];
             fieldErrors[key].push(issue.message);
           }
-          (this.params.errors as any).set(fieldErrors);
+          const errorsStore = this.params.errors as SuperFormErrorsStore;
+          errorsStore.set(fieldErrors);
           event.cancel?.();
           return;
         }
-        (this.params.errors as any).set({});
+        const errorsStore = this.params.errors as SuperFormErrorsStore;
+        errorsStore.set({});
       } else if (!event.form.valid) {
         return;
       }
@@ -651,9 +661,9 @@ export class AddDataFormManager {
     const key = name || target.id;
 
     // Clear stale field-level errors as soon as the user edits the input.
-    const clearFieldError = (store: any) => {
+    const clearFieldError = (store: SuperFormErrorsStore) => {
       if (!store?.update || !key) return;
-      store.update(($errors: Record<string, unknown>) => {
+      store.update(($errors) => {
         if (!$errors || !Object.prototype.hasOwnProperty.call($errors, key)) {
           return $errors;
         }
@@ -662,8 +672,8 @@ export class AddDataFormManager {
         return next;
       });
     };
-    clearFieldError(this.params.errors);
-    clearFieldError(this.dsn.errors);
+    clearFieldError(this.params.errors as SuperFormErrorsStore);
+    clearFieldError(this.dsn.errors as SuperFormErrorsStore);
     if (name === "path") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
@@ -671,14 +681,16 @@ export class AddDataFormManager {
           : false;
       if (nameTainted) return;
       const inferred = inferSourceName(this.connector, value);
-      if (inferred)
-        (this.params.form as any).update(
-          ($form: any) => {
+      if (inferred) {
+        const formStore = this.params.form as SuperFormStore;
+        formStore.update(
+          ($form) => {
             $form.name = inferred;
             return $form;
           },
-          { taint: false } as any,
+          { taint: false },
         );
+      }
     }
   };
 
@@ -688,12 +700,13 @@ export class AddDataFormManager {
       const parsed = JSON.parse(content);
       const sanitized = JSON.stringify(parsed);
       if (this.connector.name === "bigquery" && parsed.project_id) {
-        (this.params.form as any).update(
-          ($form: any) => {
+        const formStore = this.params.form as SuperFormStore;
+        formStore.update(
+          ($form) => {
             $form.project_id = parsed.project_id;
             return $form;
           },
-          { taint: false } as any,
+          { taint: false },
         );
       }
       return sanitized;
@@ -884,8 +897,8 @@ export class AddDataFormManager {
    * Save connector anyway (non-ClickHouse), returning a result object for the caller to handle.
    */
   async saveConnectorAnyway(args: {
-    queryClient: any;
-    values: Record<string, unknown>;
+    queryClient: QueryClient;
+    values: FormData;
     clickhouseConnectorType?: ClickHouseConnectorType;
     connectionTab?: "parameters" | "dsn";
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
