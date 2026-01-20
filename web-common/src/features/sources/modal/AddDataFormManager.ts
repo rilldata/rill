@@ -234,12 +234,12 @@ export class AddDataFormManager {
   }
 
   get isExplorerConnector(): boolean {
-    return Boolean(
-      (this.connector.implementsOlap ||
+    const isWarehouseLike = Boolean(
+      this.connector.implementsOlap ||
         this.connector.implementsSqlStore ||
-        this.connector.implementsWarehouse) &&
-        this.connector.name !== "clickhouse",
+        this.connector.implementsWarehouse,
     );
+    return isWarehouseLike && this.connector.name !== "clickhouse";
   }
 
   /**
