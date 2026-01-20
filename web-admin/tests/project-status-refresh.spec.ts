@@ -99,7 +99,7 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
 
     // Verify the warning message about full refresh
     await expect(
-      adminPage.getByText("will re-ingest ALL data from scratch"),
+      adminPage.getByText(/Warning.*will re-ingest ALL data from scratch/),
     ).toBeVisible();
 
     // Close dialog by clicking cancel
