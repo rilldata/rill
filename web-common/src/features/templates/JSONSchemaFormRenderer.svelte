@@ -314,10 +314,10 @@
                       options={childOptions}
                       disableMarginTop
                     >
-                      {#each childOptions as childOption}
+                      {#each childOptions as childOption (childOption.value)}
                         <TabsContent value={childOption.value}>
                           {#if tabGroupedFields.get(childKey)}
-                            {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp]}
+                            {#each getTabFieldsForOption(childKey, childOption.value) as [tabKey, tabProp] (tabKey)}
                               <div class="py-1.5 first:pt-0 last:pb-0">
                                 <SchemaField
                                   id={tabKey}
@@ -368,10 +368,10 @@
           <div class="text-sm font-medium mb-3">{prop.title}</div>
         {/if}
         <Tabs bind:value={$form[key]} {options} disableMarginTop>
-          {#each options as option}
+          {#each options as option (option.value)}
             <TabsContent value={option.value}>
               {#if tabGroupedFields.get(key)}
-                {#each getTabFieldsForOption(key, option.value) as [childKey, childProp]}
+                {#each getTabFieldsForOption(key, option.value) as [childKey, childProp] (childKey)}
                   <div class="py-1.5 first:pt-0 last:pb-0">
                     <SchemaField
                       id={childKey}
