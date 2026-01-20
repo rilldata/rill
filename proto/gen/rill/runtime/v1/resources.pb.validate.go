@@ -7250,6 +7250,8 @@ func (m *AITimeRange) validate(all bool) error {
 
 	// no validation rules for IsoDuration
 
+	// no validation rules for IsoOffset
+
 	// no validation rules for TimeZone
 
 	if len(errors) > 0 {

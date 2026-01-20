@@ -3770,6 +3770,9 @@ definitions:
       isoDuration:
         type: string
         title: ISO 8601 duration (e.g., "P7D" for 7 days, "P1M" for 1 month)
+      isoOffset:
+        type: string
+        title: Optional ISO 8601 offset for comparison ranges (e.g., "P7D" to offset by 7 days)
       timeZone:
         type: string
         title: IANA timezone (e.g., "America/New_York")

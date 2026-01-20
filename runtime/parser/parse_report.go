@@ -18,10 +18,10 @@ import (
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
 type ReportYAML struct {
 	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName string           `yaml:"display_name"`
-	Title       string           `yaml:"title"` // Deprecated: use display_name
-	Refresh     *ScheduleYAML    `yaml:"refresh"`
-	Watermark   string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	DisplayName string        `yaml:"display_name"`
+	Title       string        `yaml:"title"` // Deprecated: use display_name
+	Refresh     *ScheduleYAML `yaml:"refresh"`
+	Watermark   string        `yaml:"watermark"` // options: "trigger_time", "inherit"
 	Intervals   struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
@@ -69,6 +69,7 @@ type AIReportDataYAML struct {
 	} `yaml:"time_range"`
 	ComparisonTimeRange struct {
 		ISODuration string `yaml:"iso_duration"`
+		ISOOffset   string `yaml:"iso_offset"`
 	} `yaml:"comparison_time_range"`
 	Context struct {
 		Explore    string         `yaml:"explore"`
@@ -324,13 +325,6 @@ func (p *Parser) parseAIReportConfig(ai *AIReportDataYAML) (*runtimev1.AIReportC
 		return nil, errors.New(`"data.ai" is required when format is "ai_session"`)
 	}
 
-	// Validate agent
-	if ai.Agent == "" {
-		ai.Agent = "analyst_agent" // Default to analyst_agent
-	}
-
-	// Prompt is optional - if not provided, the agent will use its default behavior
-
 	// Validate time range
 	if ai.TimeRange.ISODuration == "" {
 		return nil, errors.New(`"data.ai.time_range.iso_duration" is required`)
@@ -345,6 +339,12 @@ func (p *Parser) parseAIReportConfig(ai *AIReportDataYAML) (*runtimev1.AIReportC
 		err := duration.ValidateISO8601(ai.ComparisonTimeRange.ISODuration, false, false)
 		if err != nil {
 			return nil, fmt.Errorf(`invalid value %q for "data.ai.comparison_time_range.iso_duration": %w`, ai.ComparisonTimeRange.ISODuration, err)
+		}
+	}
+	if ai.ComparisonTimeRange.ISOOffset != "" {
+		err := duration.ValidateISO8601(ai.ComparisonTimeRange.ISOOffset, false, false)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid value %q for "data.ai.comparison_time_range.iso_offset": %w`, ai.ComparisonTimeRange.ISOOffset, err)
 		}
 	}
 
@@ -365,6 +365,7 @@ func (p *Parser) parseAIReportConfig(ai *AIReportDataYAML) (*runtimev1.AIReportC
 	if ai.ComparisonTimeRange.ISODuration != "" {
 		config.ComparisonTimeRange = &runtimev1.AITimeRange{
 			IsoDuration: ai.ComparisonTimeRange.ISODuration,
+			IsoOffset:   ai.ComparisonTimeRange.ISOOffset,
 		}
 	}
 

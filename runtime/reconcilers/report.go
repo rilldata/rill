@@ -537,6 +537,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		webOpenMode = "creator"
 	}
 
+	if rep.Spec.Format == "ai_session" {
+		webOpenMode = "recipient" // no magic token support for ai session reports for now
+	}
+
 	anonRecipients := false
 	var emailRecipients []string
 	for _, notifier := range rep.Spec.Notifiers {
@@ -721,6 +725,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	}
 	if aiConfig.ComparisonTimeRange != nil {
 		props["comparison_time_range_iso_duration"] = aiConfig.ComparisonTimeRange.IsoDuration
+		props["comparison_time_range_iso_offset"] = aiConfig.ComparisonTimeRange.IsoOffset
 	}
 	if aiConfig.Explore != "" {
 		props["explore"] = aiConfig.Explore

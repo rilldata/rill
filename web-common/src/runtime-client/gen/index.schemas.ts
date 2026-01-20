@@ -242,6 +242,7 @@ The time range is resolved at report execution time.
  */
 export interface V1AITimeRange {
   isoDuration?: string;
+  isoOffset?: string;
   timeZone?: string;
 }
 

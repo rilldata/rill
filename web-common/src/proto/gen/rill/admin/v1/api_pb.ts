@@ -17219,21 +17219,13 @@ export class ReportOptions extends Message<ReportOptions> {
 
   /**
    * web_open_mode is used to determine how to create or disable open link for the report
-   * - send "recipient" for older reports (old behaviour)
-   * - send "creator" for reports that should be opened with creators permissions
+   * - send "recipient" for reports that should be opened with recipient's permissions - requires login
+   * - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
    * - send "none" for reports that should not be opened or older reports which do not have any web_open_path
-   * - send "filtered" for reports that should be opened with creators permissions but with locked filters
    *
    * @generated from field: string web_open_mode = 18;
    */
   webOpenMode = "";
-
-  /**
-   * use with OPEN_MODE_FILTERED
-   *
-   * @generated from field: rill.runtime.v1.Expression filter = 19;
-   */
-  filter?: Expression;
 
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
@@ -17261,7 +17253,6 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "filter", kind: "message", T: Expression },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {

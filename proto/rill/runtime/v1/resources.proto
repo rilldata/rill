@@ -647,7 +647,8 @@ message AIReportConfig {
 // The time range is resolved at report execution time.
 message AITimeRange {
   string iso_duration = 1; // ISO 8601 duration (e.g., "P7D" for 7 days, "P1M" for 1 month)
-  string time_zone = 2; // IANA timezone (e.g., "America/New_York")
+  string iso_offset = 2; // Optional ISO 8601 offset for comparison ranges (e.g., "P7D" to offset by 7 days)
+  string time_zone = 3; // IANA timezone (e.g., "America/New_York")
 }
 
 message Alert {

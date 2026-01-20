@@ -29,6 +29,7 @@ type aiProps struct {
 	TimeRangeTimeZone    string `mapstructure:"time_range_time_zone"`
 	// Optional comparison time range
 	ComparisonTimeRangeISODuration string `mapstructure:"comparison_time_range_iso_duration"`
+	ComparisonTimeRangeISOOffset   string `mapstructure:"comparison_time_range_iso_offset"`
 	// Optional dashboard context for the agent
 	Explore    string         `mapstructure:"explore"`
 	Dimensions []string       `mapstructure:"dimensions"`
@@ -123,12 +124,9 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 	}
 
 	// Resolve comparison time range
-	var comparisonStart, comparisonEnd time.Time
-	if r.props.ComparisonTimeRangeISODuration != "" {
-		comparisonStart, comparisonEnd, err = r.resolveComparisonTimeRange(timeStart)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
-		}
+	comparisonStart, comparisonEnd, err := r.resolveComparisonTimeRange(timeStart)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
 
 	runner := ai.NewRunner(r.runtime, r.runtime.Activity())
@@ -248,6 +246,9 @@ func (r *aiResolver) resolveTimeRange() (start, end time.Time, err error) {
 
 // resolveComparisonTimeRange resolves the comparison time range.
 func (r *aiResolver) resolveComparisonTimeRange(mainTimeStart time.Time) (start, end time.Time, err error) {
+	if r.props.ComparisonTimeRangeISODuration == "" {
+		return time.Time{}, time.Time{}, nil
+	}
 	// End of comparison = start of main time range
 	end = mainTimeStart
 	dur, err := duration.ParseISO8601(r.props.ComparisonTimeRangeISODuration)
@@ -255,6 +256,16 @@ func (r *aiResolver) resolveComparisonTimeRange(mainTimeStart time.Time) (start,
 		return time.Time{}, time.Time{}, fmt.Errorf("invalid comparison duration %q: %w", r.props.ComparisonTimeRangeISODuration, err)
 	}
 	start = dur.Sub(end)
+
+	// Apply offset if provided
+	if r.props.ComparisonTimeRangeISOOffset != "" {
+		d, err := duration.ParseISO8601(r.props.ComparisonTimeRangeISOOffset)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid comparison offset %q: %w", r.props.ComparisonTimeRangeISOOffset, err)
+		}
+		start = d.Sub(start)
+		end = d.Sub(end)
+	}
 
 	return start, end, nil
 }

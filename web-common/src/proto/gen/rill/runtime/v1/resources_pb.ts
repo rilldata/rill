@@ -3744,9 +3744,16 @@ export class AITimeRange extends Message<AITimeRange> {
   isoDuration = "";
 
   /**
+   * Optional ISO 8601 offset for comparison ranges (e.g., "P7D" to offset by 7 days)
+   *
+   * @generated from field: string iso_offset = 2;
+   */
+  isoOffset = "";
+
+  /**
    * IANA timezone (e.g., "America/New_York")
    *
-   * @generated from field: string time_zone = 2;
+   * @generated from field: string time_zone = 3;
    */
   timeZone = "";
 
@@ -3759,7 +3766,8 @@ export class AITimeRange extends Message<AITimeRange> {
   static readonly typeName = "rill.runtime.v1.AITimeRange";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "iso_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AITimeRange {

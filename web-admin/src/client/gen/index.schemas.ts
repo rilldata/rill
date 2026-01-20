@@ -1229,7 +1229,6 @@ export interface V1ReportOptions {
   explore?: string;
   canvas?: string;
   webOpenMode?: string;
-  filter?: V1Expression;
 }
 
 export interface V1RequestProjectAccessResponse {
