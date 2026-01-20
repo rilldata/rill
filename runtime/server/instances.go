@@ -109,7 +109,6 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
 		FrontendURL:    req.FrontendUrl,
-		Theme:          req.Theme,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -188,7 +187,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		Annotations:          annotations,
 		AIInstructions:       oldInst.AIInstructions,
 		FrontendURL:          valOrDefault(req.FrontendUrl, oldInst.FrontendURL),
-		Theme:                valOrDefault(req.Theme, oldInst.Theme),
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
