@@ -3,57 +3,32 @@
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import ThemeProvider from "@rilldata/web-common/features/dashboards/ThemeProvider.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { parseDocument } from "yaml";
-  import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
-  import { Theme } from "./theme";
   import PreviewComponents from "./PreviewComponents.svelte";
+  import {
+    parseThemeFromYaml,
+    extractThemeColors,
+    themePreviewMode,
+  } from "./theme-preview-utils";
 
   export let filePath: string;
-
-  let previewMode: "light" | "dark" = "light";
 
   // Get file content and parse YAML to create Theme object
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ editorContent } = fileArtifact);
 
-  $: parsedDocument = $editorContent ? parseDocument($editorContent) : null;
-  $: themeData = (parsedDocument?.toJSON() || {}) as V1ThemeSpec;
-
-  // Create Theme instance - this processes the YAML and generates CSS
-  $: theme = themeData ? new Theme(themeData) : new Theme(undefined);
-
-  // Extract colors directly from the parsed YAML (not from Theme class)
-  $: lightModeYaml = (themeData?.light || {}) as Record<string, string>;
-  $: darkModeYaml = (themeData?.dark || {}) as Record<string, string>;
-  $: currentModeYaml = previewMode === "light" ? lightModeYaml : darkModeYaml;
-
-  // Extract palette colors into arrays for easy access
-  $: sequentialColors = Array.from({ length: 9 }, (_, i) => {
-    const key = `color-sequential-${i + 1}`;
-    return currentModeYaml[key] || `var(--color-sequential-${i + 1})`;
-  });
-
-  $: divergingColors = Array.from({ length: 11 }, (_, i) => {
-    const key = `color-diverging-${i + 1}`;
-    return currentModeYaml[key] || `var(--color-diverging-${i + 1})`;
-  });
-
-  $: qualitativeColors = Array.from({ length: 24 }, (_, i) => {
-    const key = `color-qualitative-${i + 1}`;
-    return currentModeYaml[key] || `var(--color-qualitative-${i + 1})`;
-  });
-
-  // Extract theme colors
-  $: primaryColor = currentModeYaml["primary"] || "var(--color-theme-500)";
-  $: backgroundColor =
-    currentModeYaml["background"] ||
-    (previewMode === "light" ? "#f9fafb" : "#111827");
-  $: cardColor =
-    currentModeYaml["card"] ||
-    (previewMode === "light" ? "#ffffff" : "#374151");
+  // Parse theme and extract colors using shared utility
+  $: ({ theme, themeData } = parseThemeFromYaml($editorContent));
+  $: ({
+    sequentialColors,
+    divergingColors,
+    qualitativeColors,
+    primaryColor,
+    backgroundColor,
+    cardColor,
+  } = extractThemeColors(themeData, $themePreviewMode));
 
   function handleModeChange(_: number, value: string) {
-    previewMode = value.toLowerCase() as "light" | "dark";
+    themePreviewMode.set(value.toLowerCase() as "light" | "dark");
   }
 </script>
 
@@ -64,14 +39,14 @@
       <FieldSwitcher
         small
         fields={["Light", "Dark"]}
-        selected={previewMode === "light" ? 0 : 1}
+        selected={$themePreviewMode === "light" ? 0 : 1}
         onClick={handleModeChange}
       />
     </div>
 
     <div
       class="preview-content"
-      class:dark={previewMode === "dark"}
+      class:dark={$themePreviewMode === "dark"}
       style="background-color: {backgroundColor};"
     >
       <ThemeProvider {theme}>

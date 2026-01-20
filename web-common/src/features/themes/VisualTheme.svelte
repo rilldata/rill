@@ -3,13 +3,12 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { parseDocument } from "yaml";
+  import { themePreviewMode } from "./theme-preview-utils";
 
   export let filePath: string;
 
-  let mode: "light" | "dark" = "light";
-
   function handleModeChange(_: number, value: string) {
-    mode = value.toLowerCase() as "light" | "dark";
+    themePreviewMode.set(value.toLowerCase() as "light" | "dark");
   }
 
   // Get file content and parse YAML directly
@@ -22,7 +21,7 @@
 
   $: lightTheme = themeData?.light || {};
   $: darkTheme = themeData?.dark || {};
-  $: currentTheme = mode === "light" ? lightTheme : darkTheme;
+  $: currentTheme = $themePreviewMode === "light" ? lightTheme : darkTheme;
 
   // Combine primary/secondary with other color variables
   $: currentColors = {
@@ -40,6 +39,7 @@
     if (!parsedDocument) return;
 
     // Get or create the mode section (light/dark)
+    const mode = $themePreviewMode;
     let modeSection = parsedDocument.get(mode) as any;
     if (!modeSection) {
       parsedDocument.set(mode, {});
@@ -100,7 +100,7 @@
       <FieldSwitcher
         small
         fields={["Light", "Dark"]}
-        selected={mode === "light" ? 0 : 1}
+        selected={$themePreviewMode === "light" ? 0 : 1}
         onClick={handleModeChange}
       />
     </div>

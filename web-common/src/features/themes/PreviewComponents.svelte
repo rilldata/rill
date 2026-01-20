@@ -21,20 +21,23 @@
     { x: 11, y: 88 },
   ];
 
-  // Generate SVG path for time series line
-  const width = 10000;
-  const height = 100;
+  // SVG viewBox dimensions for sparkline
+  // Large width enables smooth scaling with preserveAspectRatio="none"
+  const SPARKLINE_VIEWBOX_WIDTH = 10000;
+  const SPARKLINE_VIEWBOX_HEIGHT = 100;
   const minY = Math.min(...timeSeriesData.map((d) => d.y));
   const maxY = Math.max(...timeSeriesData.map((d) => d.y));
   const yPadding = (maxY - minY) * 0.1;
 
   function scaleX(x: number): number {
-    return (x / (timeSeriesData.length - 1)) * width;
+    return (x / (timeSeriesData.length - 1)) * SPARKLINE_VIEWBOX_WIDTH;
   }
 
   function scaleY(y: number): number {
     return (
-      height - ((y - minY + yPadding) / (maxY - minY + yPadding * 2)) * height
+      SPARKLINE_VIEWBOX_HEIGHT -
+      ((y - minY + yPadding) / (maxY - minY + yPadding * 2)) *
+        SPARKLINE_VIEWBOX_HEIGHT
     );
   }
 
@@ -48,7 +51,7 @@
 
   $: areaPath =
     linePath +
-    ` L ${scaleX(timeSeriesData.length - 1)} ${height} L ${scaleX(0)} ${height} Z`;
+    ` L ${scaleX(timeSeriesData.length - 1)} ${SPARKLINE_VIEWBOX_HEIGHT} L ${scaleX(0)} ${SPARKLINE_VIEWBOX_HEIGHT} Z`;
 
   // Bar chart data
   const barData = [
@@ -152,7 +155,7 @@
     <div class="kpi-sparkline-wrapper">
       <svg
         class="kpi-sparkline-svg"
-        viewBox="0 0 10000 100"
+        viewBox="0 0 {SPARKLINE_VIEWBOX_WIDTH} {SPARKLINE_VIEWBOX_HEIGHT}"
         preserveAspectRatio="none"
       >
         <defs>
