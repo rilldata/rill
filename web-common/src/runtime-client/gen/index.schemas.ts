@@ -783,7 +783,6 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
   frontendUrl?: string;
-  theme?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -2571,7 +2570,6 @@ export type RuntimeServiceEditInstanceBody = {
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   frontendUrl?: string;
-  theme?: string;
 };
 
 export type RuntimeServiceCompleteBody = {

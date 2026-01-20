@@ -412,7 +412,6 @@ message CreateInstanceRequest {
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
   string frontend_url = 18;
-  string theme = 19;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -441,7 +440,6 @@ message EditInstanceRequest {
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
   optional string frontend_url = 19;
-  optional string theme = 20;
 }
 
 // Response message for RuntimeService.EditInstance

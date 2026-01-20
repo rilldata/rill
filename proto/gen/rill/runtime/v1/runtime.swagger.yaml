@@ -390,8 +390,6 @@ paths:
                   type: string
               frontendUrl:
                 type: string
-              theme:
-                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -4542,8 +4540,6 @@ definitions:
         additionalProperties:
           type: string
       frontendUrl:
-        type: string
-      theme:
         type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
