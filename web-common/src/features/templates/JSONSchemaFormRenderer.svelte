@@ -96,12 +96,19 @@
     }
   }
 
+  function isEnumWithDisplay(
+    prop: JSONSchemaField,
+    displayType: "radio" | "tabs",
+  ) {
+    return Boolean(prop.enum && prop["x-display"] === displayType);
+  }
+
   function isRadioEnum(prop: JSONSchemaField) {
-    return Boolean(prop.enum && prop["x-display"] === radioDisplay);
+    return isEnumWithDisplay(prop, "radio");
   }
 
   function isTabsEnum(prop: JSONSchemaField) {
-    return Boolean(prop.enum && prop["x-display"] === tabsDisplay);
+    return isEnumWithDisplay(prop, "tabs");
   }
 
   function computeVisibleEntries(
@@ -163,15 +170,16 @@
     return result;
   }
 
-  function buildGroupedFields(
+  function buildFieldGroups(
     currentSchema: MultiStepFormSchema,
     currentStep: string | undefined,
+    groupKey: "x-grouped-fields" | "x-tab-group",
   ): Map<string, Record<string, string[]>> {
     const properties = currentSchema.properties ?? {};
     const map = new Map<string, Record<string, string[]>>();
 
     for (const [key, prop] of Object.entries(properties)) {
-      const grouped = prop["x-grouped-fields"];
+      const grouped = prop[groupKey];
       if (!grouped) continue;
       if (!isStepMatch(currentSchema, key, currentStep)) continue;
 
@@ -190,94 +198,83 @@
     }
 
     return map;
+  }
+
+  function buildGroupedFields(
+    currentSchema: MultiStepFormSchema,
+    currentStep: string | undefined,
+  ): Map<string, Record<string, string[]>> {
+    return buildFieldGroups(currentSchema, currentStep, "x-grouped-fields");
   }
 
   function buildTabGroupedFields(
     currentSchema: MultiStepFormSchema,
     currentStep: string | undefined,
   ): Map<string, Record<string, string[]>> {
-    const properties = currentSchema.properties ?? {};
-    const map = new Map<string, Record<string, string[]>>();
+    return buildFieldGroups(currentSchema, currentStep, "x-tab-group");
+  }
 
-    for (const [key, prop] of Object.entries(properties)) {
-      const grouped = prop["x-tab-group"];
-      if (!grouped) continue;
-      if (!isStepMatch(currentSchema, key, currentStep)) continue;
+  function getFieldsForOption(
+    fieldMap: Map<string, Record<string, string[]>>,
+    controllerKey: string,
+    optionValue: string | number | boolean,
+  ) {
+    if (!schema) return [];
+    const properties = schema.properties ?? {};
+    const childKeys = fieldMap.get(controllerKey)?.[String(optionValue)] ?? [];
+    const values = { ...$form, [controllerKey]: optionValue };
 
-      const filteredOptions: Record<string, string[]> = {};
-      const groupedEntries = Object.entries(grouped) as Array<
-        [string, string[]]
-      >;
-      for (const [optionValue, childKeys] of groupedEntries) {
-        filteredOptions[optionValue] = childKeys.filter((childKey) => {
-          const childProp = properties[childKey];
-          if (!childProp) return false;
-          return isStepMatch(currentSchema, childKey, currentStep);
-        });
-      }
-      map.set(key, filteredOptions);
-    }
-
-    return map;
+    return childKeys
+      .map<
+        [string, JSONSchemaField | undefined]
+      >((childKey) => [childKey, properties[childKey]])
+      .filter(
+        (entry): entry is [string, JSONSchemaField] =>
+          Boolean(entry[1]) && isVisibleForValues(schema, entry[0], values),
+      );
   }
 
   function getGroupedFieldsForOption(
     controllerKey: string,
     optionValue: string | number | boolean,
   ) {
-    if (!schema) return [];
-    const properties = schema.properties ?? {};
-    const childKeys =
-      groupedFields.get(controllerKey)?.[String(optionValue)] ?? [];
-    const values = { ...$form, [controllerKey]: optionValue };
-
-    return childKeys
-      .map<
-        [string, JSONSchemaField | undefined]
-      >((childKey) => [childKey, properties[childKey]])
-      .filter(
-        (entry): entry is [string, JSONSchemaField] =>
-          Boolean(entry[1]) && isVisibleForValues(schema, entry[0], values),
-      );
+    return getFieldsForOption(groupedFields, controllerKey, optionValue);
   }
 
   function getTabFieldsForOption(
     controllerKey: string,
     optionValue: string | number | boolean,
   ) {
-    if (!schema) return [];
-    const properties = schema.properties ?? {};
-    const childKeys =
-      tabGroupedFields.get(controllerKey)?.[String(optionValue)] ?? [];
-    const values = { ...$form, [controllerKey]: optionValue };
+    return getFieldsForOption(tabGroupedFields, controllerKey, optionValue);
+  }
 
-    return childKeys
-      .map<
-        [string, JSONSchemaField | undefined]
-      >((childKey) => [childKey, properties[childKey]])
-      .filter(
-        (entry): entry is [string, JSONSchemaField] =>
-          Boolean(entry[1]) && isVisibleForValues(schema, entry[0], values),
-      );
+  function buildEnumOptions(
+    prop: JSONSchemaField,
+    includeDescription: boolean,
+  ) {
+    return (
+      prop.enum?.map((value, idx) => {
+        const option = {
+          value: String(value),
+          label: prop["x-enum-labels"]?.[idx] ?? String(value),
+        };
+        if (includeDescription) {
+          return {
+            ...option,
+            description: prop["x-enum-descriptions"]?.[idx],
+          };
+        }
+        return option;
+      }) ?? []
+    );
   }
 
   function radioOptions(prop: JSONSchemaField) {
-    return (
-      prop.enum?.map((value, idx) => ({
-        value: String(value),
-        label: prop["x-enum-labels"]?.[idx] ?? String(value),
-        description: prop["x-enum-descriptions"]?.[idx],
-      })) ?? []
-    );
+    return buildEnumOptions(prop, true);
   }
 
   function tabOptions(prop: JSONSchemaField) {
-    return (
-      prop.enum?.map((value, idx) => ({
-        value: String(value),
-        label: prop["x-enum-labels"]?.[idx] ?? String(value),
-      })) ?? []
-    );
+    return buildEnumOptions(prop, false);
   }
 
   function isRequired(key: string) {

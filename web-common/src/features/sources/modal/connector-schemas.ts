@@ -44,6 +44,5 @@ export function getConnectorSchema(
 ): MultiStepFormSchema | null {
   const schema =
     multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
-  if (!schema?.properties) return null;
-  return schema;
+  return schema?.properties ? schema : null;
 }

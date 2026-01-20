@@ -42,13 +42,10 @@ export function normalizeConnectorError(
   err: any,
 ): { message: string; details?: string } {
   let message: string;
-  let details: string | undefined = undefined;
+  let details: string | undefined;
 
   if (err instanceof Error) {
     message = err.message;
-  } else if (err?.message && err?.details) {
-    message = err.message;
-    details = err.details !== err.message ? err.details : undefined;
   } else if (err?.response?.data) {
     const originalMessage = err.response.data.message;
     const humanReadable = humanReadableErrorMessage(
@@ -60,6 +57,8 @@ export function normalizeConnectorError(
     details = humanReadable !== originalMessage ? originalMessage : undefined;
   } else if (err?.message) {
     message = err.message;
+    details =
+      err.details && err.details !== err.message ? err.details : undefined;
   } else {
     message = "Unknown error";
   }
@@ -88,6 +87,23 @@ export function hasOnlyDsn(
   return false;
 }
 
+function hasAllRequiredFieldsValid(
+  schema: MultiStepFormSchema,
+  requiredFields: string[],
+  formValues: Record<string, unknown>,
+  formErrors: Record<string, unknown>,
+  step: "connector" | "source" | string,
+): boolean {
+  if (!requiredFields.length) return true;
+  return requiredFields.every((fieldId) => {
+    if (!isStepMatch(schema, fieldId, step)) return true;
+    const value = formValues[fieldId];
+    const errorsForField = formErrors[fieldId] as any;
+    const hasErrors = Boolean(errorsForField?.length);
+    return !isEmpty(value) && !hasErrors;
+  });
+}
+
 /**
  * Returns true when the active multi-step auth method has missing or invalid
  * required fields. Falls back to configured default/first auth method.
@@ -108,14 +124,13 @@ export function isMultiStepConnectorDisabled(
       paramsFormValue,
       currentStep,
     );
-    if (!required.length) return false;
-    return !required.every((fieldId) => {
-      if (!isStepMatch(schema, fieldId, currentStep)) return true;
-      const value = paramsFormValue[fieldId];
-      const errorsForField = paramsFormErrors[fieldId] as any;
-      const hasErrors = Boolean(errorsForField?.length);
-      return !isEmpty(value) && !hasErrors;
-    });
+    return !hasAllRequiredFieldsValid(
+      schema,
+      required,
+      paramsFormValue,
+      paramsFormErrors,
+      currentStep,
+    );
   }
 
   const authInfo = getRadioEnumOptions(schema);
@@ -127,14 +142,13 @@ export function isMultiStepConnectorDisabled(
       paramsFormValue,
       "connector",
     );
-    if (!required.length) return false;
-    return !required.every((fieldId) => {
-      if (!isStepMatch(schema, fieldId, "connector")) return true;
-      const value = paramsFormValue[fieldId];
-      const errorsForField = paramsFormErrors[fieldId] as any;
-      const hasErrors = Boolean(errorsForField?.length);
-      return !isEmpty(value) && !hasErrors;
-    });
+    return !hasAllRequiredFieldsValid(
+      schema,
+      required,
+      paramsFormValue,
+      paramsFormErrors,
+      "connector",
+    );
   }
   const methodFromForm =
     authKey && paramsFormValue?.[authKey] != null
@@ -159,13 +173,13 @@ export function isMultiStepConnectorDisabled(
   const requiredFields = requiredByMethod[method] ?? [];
   if (!requiredFields.length) return true;
 
-  return !requiredFields.every((fieldId) => {
-    if (!isStepMatch(schema, fieldId, "connector")) return true;
-    const value = paramsFormValue[fieldId];
-    const errorsForField = paramsFormErrors[fieldId] as any;
-    const hasErrors = Boolean(errorsForField?.length);
-    return !isEmpty(value) && !hasErrors;
-  });
+  return !hasAllRequiredFieldsValid(
+    schema,
+    requiredFields,
+    paramsFormValue,
+    paramsFormErrors,
+    "connector",
+  );
 }
 
 function getRequiredFieldsForStep(

@@ -225,15 +225,16 @@ export function getRadioEnumOptions(schema: MultiStepFormSchema): {
       hint: enumProperty["x-hint"],
     })) ?? [];
 
-  const defaultValue =
-    enumProperty.default !== undefined && enumProperty.default !== null
-      ? String(enumProperty.default)
-      : options[0]?.value;
+  const hasDefault =
+    enumProperty.default !== undefined && enumProperty.default !== null;
+  const defaultValue = hasDefault
+    ? String(enumProperty.default)
+    : options[0]?.value;
 
   return {
     key: enumKey,
     options,
-    defaultValue: defaultValue || undefined,
+    defaultValue,
   };
 }
 
