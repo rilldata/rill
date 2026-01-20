@@ -1,11 +1,9 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { V1OlapTableInfo } from "@rilldata/web-common/runtime-client";
   import ProjectTablesTable from "./ProjectTablesTable.svelte";
   import { useTablesList, useTableMetadata } from "./selectors";
-
-  let tablesList: any;
-  let tableMetadata: any;
 
   $: ({ instanceId } = $runtime);
 
@@ -13,9 +11,9 @@
 
   // Filter out temporary tables (e.g., __rill_tmp_ prefixed tables)
   $: filteredTables =
-    $tablesList.data?.tables?.filter(
-      (t: { name?: string }) => t.name && !t.name.startsWith("__rill_tmp_"),
-    ) ?? [];
+    ($tablesList.data?.tables?.filter(
+      (t: V1OlapTableInfo) => t.name && !t.name.startsWith("__rill_tmp_"),
+    ) ?? []) as V1OlapTableInfo[];
 
   $: tableMetadata = useTableMetadata(instanceId, "", filteredTables);
 </script>

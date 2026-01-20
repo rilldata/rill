@@ -10,9 +10,17 @@ import {
   type V1OlapTableInfo,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
-import { readable } from "svelte/store";
+import { readable, type Readable } from "svelte/store";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
+
+/** Type for the table metadata store result */
+export type TableMetadataResult = {
+  data: {
+    isView: Map<string, boolean>;
+  };
+  isLoading: boolean;
+  isError: boolean;
+};
 
 export function useProjectDeployment(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1Deployment | undefined>(
@@ -67,11 +75,21 @@ export function useTablesList(instanceId: string, connector: string = "") {
   );
 }
 
+/**
+ * Fetches metadata (view status) for each table.
+ *
+ * Note: This creates a separate query per table (N+1 pattern). This is acceptable here because:
+ * 1. The OLAPGetTable API doesn't support batch requests
+ * 2. Tables are typically few in number on the status page
+ * 3. Queries are cached and run in parallel via svelte-query
+ *
+ * If performance becomes an issue with many tables, consider adding a batch API endpoint.
+ */
 export function useTableMetadata(
   instanceId: string,
   connector: string = "",
   tables: V1OlapTableInfo[] | undefined,
-) {
+): Readable<TableMetadataResult> {
   // If no tables, return empty store immediately
   if (!tables || tables.length === 0) {
     return readable(
@@ -114,7 +132,7 @@ export function useTableMetadata(
         });
       };
 
-      // Fetch view status for each table
+      // Fetch view status for each table in parallel
       for (const tableName of tableNames) {
         const tableQuery = createConnectorServiceOLAPGetTable(
           {
