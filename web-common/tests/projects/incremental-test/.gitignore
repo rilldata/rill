@@ -1,2 +1,6 @@
 .rill/
 tmp/
+
+.DS_Store
+.env
+tmp
