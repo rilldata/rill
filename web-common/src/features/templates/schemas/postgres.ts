@@ -68,8 +68,24 @@ export const postgresSchema: MultiStepFormSchema = {
       enum: ["disable", "allow", "prefer", "require"],
       "x-placeholder": "require",
     },
+    sql: {
+      type: "string",
+      title: "SQL",
+      description: "SQL query to run against your database",
+      "x-display": "textarea",
+      "x-placeholder": "SELECT * FROM my_table",
+      "x-step": "explorer",
+    },
+    name: {
+      type: "string",
+      title: "Model name",
+      description: "Name for the source model",
+      pattern: "^[a-zA-Z0-9_]+$",
+      "x-placeholder": "my_model",
+      "x-step": "explorer",
+    },
   },
-  required: [],
+  required: ["sql", "name"],
   oneOf: [
     {
       title: "Use DSN",
