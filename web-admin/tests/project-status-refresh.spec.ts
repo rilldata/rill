@@ -5,8 +5,12 @@ test.describe("Project Status - Resource Refresh (openrtb)", () => {
   test.beforeEach(async ({ adminPage }) => {
     // Navigate to the project status page
     await adminPage.goto("/e2e/openrtb/-/status");
-    // Wait for the resources table to load
+    // Wait for the resources table to load with actual data
     await expect(adminPage.getByText("Resources")).toBeVisible();
+    // Wait for table rows with "Model" to appear (indicates data is loaded)
+    await expect(
+      adminPage.getByRole("row").filter({ hasText: "Model" }).first(),
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   test("should show Full Refresh option for models", async ({ adminPage }) => {
@@ -111,8 +115,12 @@ test.describe("Project Status - Incremental Model Refresh (incremental-test)", (
   test.beforeEach(async ({ adminPage }) => {
     // Navigate to the incremental-test project status page
     await adminPage.goto("/e2e/incremental-test/-/status");
-    // Wait for the resources table to load
+    // Wait for the resources table to load with actual data
     await expect(adminPage.getByText("Resources")).toBeVisible();
+    // Wait for the specific model rows to appear (indicates data is loaded)
+    await expect(
+      adminPage.getByRole("row").filter({ hasText: "success_partition" }),
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   test("should show Incremental Refresh option for incremental models", async ({
