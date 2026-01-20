@@ -44,7 +44,7 @@ async function verifyChartTooltipDates(
   const centerY = box.y + box.height / 2;
   let verifiedPoints = 0;
   let lastDateText: string | undefined;
-  // Exclude first and last data points (they're at chart edges and may not be hoverable)
+  // Exclude first and last data points as they're not rendered on the chart
   const expectedPoints = apiData.data.length - 2;
 
   for (let x = box.x; x < box.x + box.width; x += HOVER_STEP_PX) {
