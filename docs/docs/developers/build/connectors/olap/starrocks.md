@@ -15,7 +15,7 @@ Rill supports connecting to StarRocks 4.0 or newer versions.
 
 :::info
 
-Rill supports connecting to an existing StarRocks cluster via a read-only OLAP connector and using it to power Rill dashboards with [external tables](/build/connectors/olap#external-olap-tables).
+Rill supports connecting to an existing StarRocks cluster via a read-only OLAP connector and using it to power Rill dashboards with [external tables](/developers/build/connectors/olap#external-olap-tables).
 
 :::
 
