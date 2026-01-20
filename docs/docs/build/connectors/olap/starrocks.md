@@ -2,7 +2,7 @@
 title: StarRocks
 description: Power Rill dashboards using StarRocks
 sidebar_label: StarRocks
-sidebar_position: 5
+sidebar_position: 20
 ---
 
 [StarRocks](https://www.starrocks.io/) is an open-source, high-performance analytical database designed for real-time, multi-dimensional analytics on large-scale data. It supports both primary key and aggregate data models, making it suitable for a variety of analytical workloads including real-time dashboards, ad-hoc queries, and complex analytical tasks.
@@ -80,17 +80,17 @@ Only MySQL-style DSN format is supported. The `starrocks://` URL scheme is **not
 
 ## Configuration Properties
 
-| Property | Description | Default |
-|----------|-------------|---------|
-| `host` | StarRocks FE (Frontend) server hostname | Required (if no DSN) |
-| `port` | MySQL protocol port of StarRocks FE | `9030` |
-| `username` | Username for authentication | `root` |
-| `password` | Password for authentication | - |
-| `catalog` | StarRocks catalog name (for external catalogs like Iceberg, Hive) | `default_catalog` |
-| `database` | StarRocks database name | - |
-| `ssl` | Enable SSL/TLS encryption | `false` |
-| `dsn` | MySQL-format connection string (alternative to individual parameters) | - |
-| `log_queries` | Enable logging of all SQL queries (useful for debugging) | `false` |
+| Property      | Description                                                           | Default              |
+| ------------- | --------------------------------------------------------------------- | -------------------- |
+| `host`        | StarRocks FE (Frontend) server hostname                               | Required (if no DSN) |
+| `port`        | MySQL protocol port of StarRocks FE                                   | `9030`               |
+| `username`    | Username for authentication                                           | `root`               |
+| `password`    | Password for authentication                                           | -                    |
+| `catalog`     | StarRocks catalog name (for external catalogs like Iceberg, Hive)     | `default_catalog`    |
+| `database`    | StarRocks database name                                               | -                    |
+| `ssl`         | Enable SSL/TLS encryption                                             | `false`              |
+| `dsn`         | MySQL-format connection string (alternative to individual parameters) | -                    |
+| `log_queries` | Enable logging of all SQL queries (useful for debugging)              | `false`              |
 
 ## External Catalogs
 
@@ -115,11 +115,11 @@ database: my_database
 
 StarRocks uses a three-level hierarchy: Catalog > Database > Table. In Rill's API:
 
-| Rill Parameter | StarRocks Concept | Example |
-|----------------|-------------------|---------|
-| `database` | Catalog | `default_catalog`, `iceberg_catalog` |
-| `databaseSchema` | Database | `my_database` |
-| `table` | Table | `my_table` |
+| Rill Parameter   | StarRocks Concept | Example                              |
+| ---------------- | ----------------- | ------------------------------------ |
+| `database`       | Catalog           | `default_catalog`, `iceberg_catalog` |
+| `databaseSchema` | Database          | `my_database`                        |
+| `table`          | Table             | `my_table`                           |
 
 ## Creating Metrics Views
 
