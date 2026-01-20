@@ -1,7 +1,5 @@
-import {
-  addZoneOffset,
-  removeLocalTimezoneOffset as remove,
-} from "@rilldata/web-common/lib/time/timezone";
+import { removeLocalTimezoneOffset as remove } from "@rilldata/web-common/lib/time/timezone";
+
 export function convertTimestampPreviewFcn(
   ts,
   removeLocalTimezoneOffset = false,
@@ -16,17 +14,4 @@ export function convertTimestampPreview(d, removeLocalTimezoneOffset = false) {
     pi.ts = convertTimestampPreviewFcn(di.ts, removeLocalTimezoneOffset);
     return pi;
   });
-}
-
-/** used to remove local timezone offset and add dashboard selected zone offset */
-export function adjustOffsetForZone(
-  ts: Date | string | undefined,
-  zone: string,
-  grainDuration: string,
-) {
-  if (!ts) return ts;
-
-  const removedLocalOffsetdate = remove(new Date(ts), grainDuration);
-
-  return addZoneOffset(removedLocalOffsetdate, zone, grainDuration);
 }

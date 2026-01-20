@@ -91,7 +91,7 @@ components:
                 context:
                     $ref: '#/components/schemas/v1AIReportContext'
                 prompt:
-                    title: User prompt for the agent
+                    title: Optional user prompt for the agent
                     type: string
                 timeRange:
                     $ref: '#/components/schemas/v1AIReportTimeRange'
@@ -714,6 +714,9 @@ components:
                     additionalProperties:
                         type: string
                     title: Annotations for the deployment (org/project metadata, etc.)
+                    type: object
+                duckdbConnectorConfig:
+                    title: Duckdb connector config for the deployment
                     type: object
                 frontendUrl:
                     description: Frontend URL for the deployment.

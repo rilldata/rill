@@ -4491,10 +4491,10 @@ definitions:
         title: Agent to use (defaults to "analyst_agent")
       prompt:
         type: string
-        title: User prompt for the agent
+        title: Optional user prompt for the agent
       timeRange:
         $ref: '#/definitions/v1AIReportTimeRange'
-        title: Required time range
+        title: optional time range
       comparisonTimeRange:
         $ref: '#/definitions/v1AIReportTimeRange'
         title: Optional comparison time range
@@ -5142,6 +5142,9 @@ definitions:
       usesArchive:
         type: boolean
         description: Whether the deployment is git based or archive based.
+      duckdbConnectorConfig:
+        type: object
+        title: Duckdb connector config for the deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:

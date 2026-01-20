@@ -4722,6 +4722,13 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
    */
   usesArchive = false;
 
+  /**
+   * Duckdb connector config for the deployment
+   *
+   * @generated from field: google.protobuf.Struct duckdb_connector_config = 6;
+   */
+  duckdbConnectorConfig?: Struct;
+
   constructor(data?: PartialMessage<GetDeploymentConfigResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4735,6 +4742,7 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
     { no: 3, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "updated_on", kind: "message", T: Timestamp },
     { no: 5, name: "uses_archive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "duckdb_connector_config", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentConfigResponse {
@@ -17302,14 +17310,14 @@ export class AIReportData extends Message<AIReportData> {
   agent = "";
 
   /**
-   * User prompt for the agent
+   * Optional user prompt for the agent
    *
    * @generated from field: string prompt = 2;
    */
   prompt = "";
 
   /**
-   * Required time range
+   * optional time range
    *
    * @generated from field: rill.admin.v1.AIReportTimeRange time_range = 3;
    */

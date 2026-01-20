@@ -19,9 +19,7 @@ import {
 import {
   FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
-  FromURLParamTimeGrainMap,
   FromURLParamViewMap,
-  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   parseRillTime,
@@ -33,7 +31,11 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { getAggregationGrain } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  DateTimeUnitToV1TimeGrain,
+  getAggregationGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -356,7 +358,7 @@ export function fromTimeRangesParams(
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
 
-    if (tg in FromURLParamTimeGrainMap) {
+    if (tg in DateTimeUnitToV1TimeGrain) {
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
@@ -366,8 +368,8 @@ export function fromTimeRangesParams(
       const parsed = parseRillTime(preset.timeRange ?? "");
       const grain = getAggregationGrain(parsed);
 
-      if (grain && grain in ToURLParamTimeGrainMapMap) {
-        preset.timeGrain = ToURLParamTimeGrainMapMap[grain];
+      if (grain && grain in V1TimeGrainToDateTimeUnit) {
+        preset.timeGrain = V1TimeGrainToDateTimeUnit[grain];
       } else {
         errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
       }

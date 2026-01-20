@@ -12,6 +12,42 @@ function getDSToffset(start: Date, end: Date) {
   return startDateTime.offset - endDateTime.offset;
 }
 
+// Because many of our labeling functions/components expect a JavaScript Date object,
+// This function takes a UTC ISO string and a selected timezone
+// and returns a Date object (in the user's system time zone)
+// that has the same local time as the original ISO string parsed in the selected timezone.
+// As such, if a data point falls on midnight in the selected timezone,
+// the returned Date object will also fall on midnight in the user's timezone.
+export function convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+  isoString: string,
+  selectedTimezone: string,
+) {
+  const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return DateTime.fromISO(isoString, {
+    zone: selectedTimezone,
+  })
+    .setZone(systemTimeZone, { keepLocalTime: true })
+    .toJSDate();
+}
+
+export function setJSDateTimeValueToTimeValueInSelectedTimeZone(
+  date: Date | undefined,
+  selectedTimeZone: string,
+) {
+  if (!date) return undefined;
+
+  const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return DateTime.fromJSDate(date, {
+    zone: selectedTimeZone,
+  })
+    .setZone(systemTimeZone, {
+      keepLocalTime: true,
+    })
+    .toJSDate();
+}
+
 /**
  * Removes the local timezone offset from a date.
  *

@@ -235,23 +235,17 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 	err = c.optimizeTable(context.Background(), "merge_tbl")
 	require.NoError(t, err)
 
-	var result []struct {
-		ID    int
-		Value string
-	}
-
-	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl ORDER BY id"})
+	res, err := olap.Query(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl FINAL ORDER BY id"})
 	require.NoError(t, err)
 
+	resultSet := make(map[int]string)
 	for res.Next() {
-		var r struct {
-			ID    int
-			Value string
-		}
-		require.NoError(t, res.Scan(&r.ID, &r.Value))
-		result = append(result, r)
+		var id int
+		var value string
+		require.NoError(t, res.Scan(&id, &value))
+		resultSet[id] = value
 	}
-	require.NoError(t, err)
+	require.NoError(t, res.Err())
 	require.NoError(t, res.Close())
 
 	expected := map[int]string{
@@ -260,26 +254,14 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, c *Connection, olap drivers
 		2: "merge",
 		3: "merge",
 		4: "merge",
-	}
-
-	// Convert the result set to a map to represent the set
-	resultSet := make(map[int]string)
-	for _, r := range result {
-		if v, ok := resultSet[r.ID]; !ok {
-			resultSet[r.ID] = r.Value
-		} else {
-			if v == "merge" {
-				resultSet[r.ID] = v
-			}
-		}
-
+		5: "merge",
 	}
 
 	// Check if the expected values are present in the result set
-	for id, expected := range expected {
+	for id, expectedValue := range expected {
 		actual, exists := resultSet[id]
 		require.True(t, exists, "Expected ID %d to be present in the result set", id)
-		require.Equal(t, expected, actual, "Expected value for ID %d to be %s, but got %s", id, expected, actual)
+		require.Equal(t, expectedValue, actual, "Expected value for ID %d to be %s, but got %s", id, expectedValue, actual)
 	}
 }
 
@@ -502,6 +484,7 @@ func testOptimizeTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	})
 	require.NoError(t, err)
 
+	// Run OPTIMIZE
 	err = c.optimizeTable(ctx, tempTableName)
 	require.NoError(t, err)
 
