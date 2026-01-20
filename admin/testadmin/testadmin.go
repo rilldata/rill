@@ -99,7 +99,12 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	// Ports and external URLs - find both ports (guaranteed to be different)
 	port, runtimePort := findTwoPorts(t)
 	externalURL := fmt.Sprintf("http://localhost:%d", port)
-	runtimeExternalURL := fmt.Sprintf("http://localhost:%d", runtimePort)
+	var runtimeExternalURL string
+	if startRt {
+		runtimeExternalURL = fmt.Sprintf("http://localhost:%d", runtimePort)
+	} else {
+		runtimeExternalURL = "http://example.org"
+	}
 	frontendURL := "http://frontend.mock"
 
 	// JWT issuer
@@ -154,7 +159,7 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 		HTTPPort:         port,
 		GRPCPort:         port,
 		AllowedOrigins:   []string{"*"},
-		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
+		SessionKeyPairs:  [][]byte{randomBytes(), randomBytes()},
 		ServePrometheus:  true,
 		AuthDomain:       "gorillio-stage.auth0.com",
 		AuthClientID:     "",
@@ -212,7 +217,7 @@ func (f *Fixture) NewSuperuser(t *testing.T) (*database.User, *client.Client) {
 
 // NewUserWithDomain creates a new user with a random email with the given email domain in the fixture's admin service.
 func (f *Fixture) NewUserWithDomain(t *testing.T, domain string) (*database.User, *client.Client) {
-	data := randomBytes(16)
+	data := randomBytes()
 	emailAddr := fmt.Sprintf("test-%x@%s", data, domain)
 	return f.NewUserWithEmail(t, emailAddr)
 }
@@ -312,7 +317,7 @@ func newRuntimeServer(ctx context.Context, t *testing.T, group *errgroup.Group, 
 		HTTPPort:        runtimePort,
 		GRPCPort:        runtimePort,
 		AllowedOrigins:  []string{"*"},
-		SessionKeyPairs: [][]byte{randomBytes(16), randomBytes(16)},
+		SessionKeyPairs: [][]byte{randomBytes(), randomBytes()},
 		AuthEnable:      true,
 		AuthIssuerURL:   externalURL,        // Admin server as issuer
 		AuthAudienceURL: runtimeExternalURL, // Runtime's own URL
@@ -367,8 +372,8 @@ func findTwoPorts(t *testing.T) (int, int) {
 	return port1, port2
 }
 
-func randomBytes(n int) []byte {
-	b := make([]byte, n)
+func randomBytes() []byte {
+	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
