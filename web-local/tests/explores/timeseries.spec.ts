@@ -1,11 +1,15 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
-import { interceptTimeseriesResponse } from "../utils/dataSpecifcHelpers";
+import {
+  interceptTimeseriesResponse,
+  type TimeSeriesValue,
+} from "../utils/dataSpecifcHelpers";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { DateTime } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
 const HOVER_STEP_PX = 5;
 
@@ -29,22 +33,23 @@ const TIME_RANGE_TEST_CASES: TimeRangeTestCase[] = [
 ];
 
 /**
- * Hovers across a chart and verifies that each unique tooltip date
+ * Hovers across a chart and verifies that each unique tooltip date and value
  * matches the corresponding data point from the API response.
  */
-async function verifyChartTooltipDates(
+async function verifyChartTooltipData(
   page: Page,
-  apiData: { data: Array<{ ts: string }> },
+  apiData: { data: TimeSeriesValue[] },
   grain: V1TimeGrain,
+  measureName: string,
 ) {
-  const chart = page.getByLabel("Measure Chart for total_records").first();
+  const chart = page.getByLabel(`Measure Chart for ${measureName}`).first();
   const box = await chart.boundingBox();
   if (!box) throw new Error("Chart bounding box not found");
 
   const centerY = box.y + box.height / 2;
   let verifiedPoints = 0;
   let lastDateText: string | undefined;
-  // Exclude first and last data points as they're not rendered on the chart
+  // Exclude first and last data points as they're not rendered
   const expectedPoints = apiData.data.length - 2;
 
   for (let x = box.x; x < box.x + box.width; x += HOVER_STEP_PX) {
@@ -62,7 +67,23 @@ async function verifyChartTooltipDates(
     const dateTime = DateTime.fromISO(point.ts, { zone: "UTC" });
     const pattern = formatDateTimeByGrain(dateTime, grain);
 
+    // Verify the date label
     await expect(dateLabel).toHaveText(pattern, { timeout: 2000 });
+
+    // Verify the measure value
+    const valueLabel = page.getByLabel("main value").first();
+    await expect(valueLabel).toBeVisible({ timeout: 2000 });
+    const valueText = await valueLabel.textContent();
+    expect(valueText).toBeTruthy();
+
+    const expectedValue = point.records[measureName];
+    if (expectedValue !== null && expectedValue !== undefined) {
+      const formatter = createMeasureValueFormatter(
+        { formatPreset: "humanize" },
+      );
+      expect(valueText!.trim()).toBe(formatter(expectedValue));
+    }
+
     verifiedPoints++;
 
     if (verifiedPoints >= expectedPoints) break;
@@ -102,7 +123,7 @@ for (const timezone of TIMEZONES) {
         const apiData = await timeseriesPromise;
         expect(apiData.data.length).toBe(testCase.expectedDataPoints);
 
-        await verifyChartTooltipDates(page, apiData, testCase.grain);
+        await verifyChartTooltipData(page, apiData, testCase.grain, "total_records");
       }
     });
   });

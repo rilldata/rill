@@ -199,6 +199,7 @@ It is probably not the most up to date code; but it works very well in practice.
                     text-anchor="end"
                     x={xText}
                     {visibility}
+                    aria-label="{location.key} value"
                   >
                     {#if !location?.yOverride}
                       {location.value
@@ -255,6 +256,7 @@ It is probably not the most up to date code; but it works very well in practice.
                     y={y.label}
                     x={xText}
                     {visibility}
+                    aria-label="{location.key} value"
                   >
                     {#if !location?.yOverride}
                       {location.value
