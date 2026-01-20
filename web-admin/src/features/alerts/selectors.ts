@@ -7,8 +7,8 @@ import {
   createRuntimeServiceGetExplore,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
-  type V1AlertSpec,
 } from "@rilldata/web-common/runtime-client";
+import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { createSmartRefetchInterval } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { derived, type Readable, readable } from "svelte/store";
 

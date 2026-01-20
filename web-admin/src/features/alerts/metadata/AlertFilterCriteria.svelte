@@ -7,7 +7,7 @@
   import type {
     V1Expression,
     V1TimeRange,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
