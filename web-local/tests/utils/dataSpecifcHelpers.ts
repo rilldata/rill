@@ -108,25 +108,10 @@ export function interceptTimeseriesResponse(
  */
 export function getChartContainer(page: Page) {
   // The chart SVG has role="application" and contains path elements for the line
-  return page.locator('svg[role="application"]').filter({ has: page.locator("path") }).first();
-}
-
-/**
- * Hovers over a specific x-position on the chart to trigger tooltip
- * @param page Playwright page
- * @param xPercent Position as percentage of chart width (0-1), default 0.5 (middle)
- */
-export async function hoverOnChart(page: Page, xPercent: number = 0.5) {
-  const chart = getChartContainer(page);
-  const box = await chart.boundingBox();
-  if (!box) throw new Error("Chart container not found");
-
-  const x = box.x + box.width * xPercent;
-  const y = box.y + box.height * 0.5;
-
-  // Move to position and wait for tooltip to appear
-  await page.mouse.move(x, y, { steps: 5 });
-  await page.waitForTimeout(500);
+  return page
+    .locator('svg[role="application"]')
+    .filter({ has: page.locator("path") })
+    .first();
 }
 
 /**
@@ -144,43 +129,6 @@ export async function getDisplayedTimestampLabel(
 }
 
 /**
- * Gets the displayed value from the chart tooltip
- */
-export async function getDisplayedValue(page: Page): Promise<string | null> {
-  const valueTspan = page.locator("svg tspan.widths").first();
-  const isVisible = await valueTspan.isVisible().catch(() => false);
-  if (!isVisible) return null;
-  return valueTspan.textContent();
-}
-
-/**
- * Parses a formatted number string back to a number
- * Handles formats like "19.3k", "1.2M", "100", "1,234"
- */
-export function parseFormattedNumber(formatted: string): number | null {
-  if (!formatted) return null;
-
-  const trimmed = formatted.trim();
-  if (!trimmed) return null;
-
-  const suffixMultipliers: Record<string, number> = {
-    k: 1_000,
-    K: 1_000,
-    M: 1_000_000,
-    B: 1_000_000_000,
-    T: 1_000_000_000_000,
-  };
-
-  const lastChar = trimmed.slice(-1);
-  if (suffixMultipliers[lastChar]) {
-    const numPart = parseFloat(trimmed.slice(0, -1).replace(/,/g, ""));
-    return numPart * suffixMultipliers[lastChar];
-  }
-
-  return parseFloat(trimmed.replace(/,/g, ""));
-}
-
-/**
  * Asserts that the timeseries chart is rendered with data
  */
 export async function assertTimeseriesChartRendered(page: Page) {
@@ -190,28 +138,4 @@ export async function assertTimeseriesChartRendered(page: Page) {
   const paths = chart.locator("path");
   const pathCount = await paths.count();
   expect(pathCount).toBeGreaterThan(0);
-}
-
-/**
- * Asserts that hovering on the chart displays a tooltip with timestamp and value
- */
-export async function assertTimeseriesHoverTooltip(
-  page: Page,
-  xPercent: number = 0.5,
-) {
-  await hoverOnChart(page, xPercent);
-
-  const timestamp = await getDisplayedTimestampLabel(page);
-  const value = await getDisplayedValue(page);
-
-  expect(timestamp || value).toBeTruthy();
-
-  if (timestamp) {
-    expect(timestamp.length).toBeGreaterThan(3);
-  }
-
-  if (value) {
-    const parsed = parseFormattedNumber(value);
-    expect(parsed).not.toBeNull();
-  }
 }
