@@ -87,7 +87,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 :::note Big Number Formatting
 
-[Formatting of your measures](/developer/build/metrics-view#measures) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+[Formatting of your measures](/developers/build/metrics-view#measures) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
 :::
 
 ### Dimensions Leaderboard Panel

@@ -34,7 +34,7 @@ rill service create my-service --project my-project --project-role viewer
 
 ### With Custom Attributes
 
-Custom attributes allow you to pass metadata that can be used in [security policies](/developer/build/metrics-view/security). This is particularly useful for multi-tenant applications or when you need fine-grained access control.
+Custom attributes allow you to pass metadata that can be used in [security policies](/developers/build/metrics-view/security). This is particularly useful for multi-tenant applications or when you need fine-grained access control.
 
 ```bash
 rill service create my-service \
@@ -72,7 +72,7 @@ Service tokens have powerful permissions. Store them securely in a secrets manag
 
 ## Roles and Permissions
 
-Service tokens can be assigned roles at both the organization and project levels. For more details on using attributes with security policies, see the [security policies](/developer/build/metrics-view/security) documentation.
+Service tokens can be assigned roles at both the organization and project levels. For more details on using attributes with security policies, see the [security policies](/developers/build/metrics-view/security) documentation.
 
 
 ## Managing Service Tokens

@@ -35,7 +35,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Overview
 
-Once you've [built your metrics view](/developer/build/metrics-view) and assigned a time series column, you'll be able to start visualizing your measures and dimensions in either an Explore dashboard or Canvas dashboard. This guide will discuss all the features in the time navigator that exists at the top of all dashboards and how to customize it to your needs.
+Once you've [built your metrics view](/developers/build/metrics-view) and assigned a time series column, you'll be able to start visualizing your measures and dimensions in either an Explore dashboard or Canvas dashboard. This guide will discuss all the features in the time navigator that exists at the top of all dashboards and how to customize it to your needs.
 
 ## Time Series Filter Component
 
@@ -130,7 +130,7 @@ Snapping aligns time boundaries to specific grains (day, hour, etc.) rather than
 
 ## As of
 ### Reference
-- **Complete data `watermark`**: Uses the [watermark timestamp](/developer/build/metrics-view/time-series#watermark) from your metrics view. This ensures you only see data that has been fully processed and is considered "complete" according to your data pipeline's watermark settings.
+- **Complete data `watermark`**: Uses the [watermark timestamp](/developers/build/metrics-view/time-series#watermark) from your metrics view. This ensures you only see data that has been fully processed and is considered "complete" according to your data pipeline's watermark settings.
 - **Latest data `latest`**: Uses the most recent data point available in your dataset, regardless of completeness. This is useful when you want to see the freshest data even if it might be incomplete.
 - **Current time `now`**: Uses the current wallclock time as the reference point. This means your time ranges will always be relative to the present moment, which can include future time periods if your data extends beyond the current time.
 

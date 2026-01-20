@@ -21,8 +21,8 @@ AI Chat is powered by [Rill's Model Context Protocol (MCP)](/guide/ai/mcp) integ
 AI Chat uses the same [Rill MCP Server](/guide/ai/mcp) technology that powers external AI integrations with tools like Claude Desktop. This means:
 
 - **Fast!** - Get instant answers powered by Rill's optimized query engine 
-- **Accurate Responses** - The Agent only queries [metrics views](/developer/build/metrics-view) you've already defined, ensuring accuracy and consistency
-- **Secure Data Access** - Respects your [project's access](/developer/build/metrics-view/security) controls and user permissions
+- **Accurate Responses** - The Agent only queries [metrics views](/developers/build/metrics-view) you've already defined, ensuring accuracy and consistency
+- **Secure Data Access** - Respects your [project's access](/developers/build/metrics-view/security) controls and user permissions
 
 ## Accessing AI Chat
 
@@ -112,7 +112,7 @@ You can add `ai_instructions` in two places:
 1. **`rill.yaml`** - Project-wide instructions that apply to all queries across your entire project
 2. **`<metrics_view>.yaml`** - Metrics view-specific instructions for individual dashboards
 
-For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/developer/build/ai-configuration).
+For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/developers/build/ai-configuration).
 
 ## Use in Your Favorite AI Client
 

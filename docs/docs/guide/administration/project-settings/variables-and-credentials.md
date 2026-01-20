@@ -5,7 +5,7 @@ sidebar_position: 50
 ---
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/developer/deploy/deploy-credentials). 
+The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/developers/deploy/deploy-credentials). 
 
 ## Modifying Variables and Credentials via the Settings Page
 Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmental variables defined, please run `rill env push` from your local CLI and Rill will automatically push the credentials in your project's `.env` file to Rill Cloud. If you'd like to manually add the credentials, please see [our naming convention](#credentials-naming-schema) to get started. 
@@ -65,7 +65,7 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/developer/build/connectors/olap/druid) and [ClickHouse](/developer/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)! 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/developers/build/connectors/olap/druid) and [ClickHouse](/developers/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)! 
 
 
 
