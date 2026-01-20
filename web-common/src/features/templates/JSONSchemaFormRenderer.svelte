@@ -5,13 +5,22 @@
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
   import { isStepMatch, isVisibleForValues } from "./schema-utils";
-  import type { Writable } from "svelte/store";
 
-  type FormData = Record<string, unknown>;
+  // Use `any` for form values since field types are determined by JSON schema at runtime
+  type FormData = Record<string, any>;
+
+  // Superforms-compatible store type with optional taint control
+  type SuperFormStore = {
+    subscribe: (run: (value: FormData) => void) => () => void;
+    update: (
+      updater: (value: FormData) => FormData,
+      options?: { taint?: boolean },
+    ) => void;
+  };
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;
-  export let form: Writable<FormData>;
+  export let form: SuperFormStore;
   // Use `any` to be compatible with superforms' complex ValidationErrors type
   export let errors: any;
   export let onStringInputChange: (e: Event) => void;
