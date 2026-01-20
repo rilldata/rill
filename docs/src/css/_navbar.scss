@@ -51,11 +51,41 @@
 
 /* Dropdown items - black text, no decorations */
 /* Target elements with both navbar__item and dropdown classes */
+/* 
+ * PADDING CONSOLIDATION: All padding is consolidated on .navbar__link to match spacing
+ * of other navbar items. The .navbar__item.dropdown container has zero padding to prevent
+ * double padding that creates larger gaps between left-side items.
+ * 
+ * Structure: div.navbar__item.dropdown (padding: 0) > a.navbar__link (all padding here)
+ * For custom dropdowns, the chevron is inside the link, so padding-right accounts for it.
+ */
 .navbar .navbar__item.dropdown {
-  /* Dropdown link - inherits base .navbar__link styles, only adds extra right padding for chevron */
+  /* Remove ALL default padding/margin from dropdown container to prevent double padding */
+  padding: 0 !important;
+  margin: 0 !important;
+  
+  /* Also remove padding from any default Docusaurus styles that might apply */
+  &,
+  &.navbar__item {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Consolidate ALL padding on the link element only - matches other navbar items */
   > .navbar__link {
     position: relative;
-    padding-right: 2rem;
+    /* All padding consolidated here - same as base .navbar__link (0.5rem 0.75rem) */
+    padding: 0.5rem 0.75rem !important;
+    padding-right: 2rem !important; /* Extra right padding for chevron/caret space */
+    margin: 0 !important;
+  }
+  
+  /* Ensure the default caret button (if present as sibling) has no padding/margin */
+  /* Note: For custom dropdowns, this is hidden. For default dropdowns, Docusaurus handles positioning. */
+  > .menu__caret,
+  > button.menu__caret {
+    padding: 0 !important;
+    margin: 0 !important;
   }
   /* Hide the default chevron icon for custom dropdown links */
   &:has(.navbar__link.my-custom-dropdown) {
@@ -120,12 +150,14 @@
   }
 }
 
-/* Dropdown menu - add breathing room between trigger and popover */
+/* Dropdown menu - add breathing room between trigger and popover, align closer to text */
 .navbar .dropdown__menu {
   margin-top: 8px;
+  margin-left: -0.5rem; /* Align dropdown menu closer to the text (offset container padding) */
 }
 
 /* Temporarily disable dropdown hover when closing - prevents re-opening from hover bridge */
+/* This class is used by DropdownNavbarItem.js to close dropdowns on route change */
 .navbar.navbar--closing-dropdown {
   .navbar__item.dropdown {
     /* Disable the hover bridge */
@@ -158,33 +190,57 @@
     background-color: rgba(0, 0, 0, 0.05);
   }
   
-  /* Active dropdown menu items - theme color */
+  /* Active dropdown menu items - theme color and bolder */
   &.dropdown__link--active {
     color: var(--ifm-color-primary);
     text-decoration: none;
-
+    font-weight: 600; /* Make active dropdown menu item bolder */
   }
 }
-/* Custom HTML links (GitHub, Blog) */
+/* Custom HTML links (GitHub, Blog) - ensure consistent spacing with other navbar items */
 .navbar .navbar-icon-link {
   color: var(--ifm-color-black);
   text-decoration: none;
+  // padding: 0.5rem 0.75rem; /* Match base navbar link padding for consistent spacing */
+  border-radius: 0.375rem;
+  transition: background-color 0.15s ease;
   
   &:hover,
   &:focus {
     color: var(--ifm-color-black);
     text-decoration: none;
+    background-color: rgba(0, 0, 0, 0.03); /* Match navbar link hover effect */
   }
 }
 
 /* DocSearch button - smaller text */
 .navbar .DocSearch-Button {
   font-size: 0.875rem; /* 14px */
-  min-width: 16rem; /* Increased width */
+  min-width: 16rem; /* Increased width for desktop */
   border: 0.5px solid var(--ifm-color-gray-300, #e5e7eb);
   
   .DocSearch-Button-Placeholder {
     font-size: 0.875rem;
+  }
+  
+  /* Reduce size on mobile */
+  @media (max-width: 996px) {
+    min-width: 12rem; /* Smaller width on mobile */
+    font-size: 0.8125rem; /* Slightly smaller text */
+    
+    .DocSearch-Button-Placeholder {
+      font-size: 0.8125rem;
+    }
+  }
+  
+  /* Even smaller on very small screens */
+  @media (max-width: 576px) {
+    min-width: 10rem; /* Even smaller width on very small screens */
+    font-size: 0.75rem; /* Smaller text */
+    
+    .DocSearch-Button-Placeholder {
+      font-size: 0.75rem;
+    }
   }
 }
 
@@ -231,9 +287,10 @@
     }
   }
   
-  /* Dropdown menu in dark mode - maintain breathing room */
+  /* Dropdown menu in dark mode - maintain breathing room and alignment */
   .dropdown__menu {
     margin-top: 8px;
+    margin-left: -0.5rem; /* Align dropdown menu closer to the text */
   }
   
   .dropdown__link {
@@ -245,9 +302,10 @@
       background-color: rgba(255, 255, 255, 0.1);
     }
     
-    /* Active dropdown menu items - theme color */
+    /* Active dropdown menu items - theme color and bolder */
     &.dropdown__link--active {
       color: var(--ifm-color-primary);
+      font-weight: 600; /* Make active dropdown menu item bolder */
     }
   }
   
@@ -257,6 +315,7 @@
     &:hover,
     &:focus {
       color: var(--ifm-color-white);
+      background-color: rgba(255, 255, 255, 0.06); /* Match navbar link hover effect in dark mode */
     }
   }
   
@@ -309,17 +368,29 @@
   
   /* Right-hand items in mobile sidebar - match left-hand styling */
   .navbar-sidebar__item {
-    /* Apply same styling to search button */
+    /* Apply same styling to search button - smaller on mobile */
     .DocSearch-Button {
-      padding: 0.75rem 1rem;
+      padding: 0.5rem 0.75rem; /* Reduced padding for mobile */
       margin: 0.25rem 0;
       border-radius: 0.375rem;
       width: 100%;
+      max-width: 100%; /* Ensure it doesn't overflow */
       justify-content: flex-start;
-      font-size: 0.875rem; /* 14px */
+      font-size: 0.8125rem; /* Slightly smaller text on mobile */
+      min-width: auto; /* Remove min-width constraint on mobile */
       
       .DocSearch-Button-Placeholder {
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
+      }
+      
+      /* Even smaller on very small screens */
+      @media (max-width: 576px) {
+        padding: 0.375rem 0.5rem; /* Further reduced padding */
+        font-size: 0.75rem; /* Smaller text */
+        
+        .DocSearch-Button-Placeholder {
+          font-size: 0.75rem;
+        }
       }
     }
     
