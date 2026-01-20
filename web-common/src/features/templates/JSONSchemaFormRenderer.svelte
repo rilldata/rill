@@ -8,13 +8,12 @@
   import type { Writable } from "svelte/store";
 
   type FormData = Record<string, unknown>;
-  type FormErrors = string[] | undefined;
-  type ValidationErrors = Record<string, FormErrors>;
 
   export let schema: MultiStepFormSchema | null = null;
   export let step: string | undefined = undefined;
   export let form: Writable<FormData>;
-  export let errors: ValidationErrors;
+  // Use `any` to be compatible with superforms' complex ValidationErrors type
+  export let errors: any;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
 

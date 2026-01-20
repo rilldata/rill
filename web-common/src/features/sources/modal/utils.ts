@@ -34,7 +34,7 @@ type ErrorWithResponse = {
   response?: {
     data?: {
       message?: string;
-      code?: string;
+      code?: number;
     };
   };
   message?: string;
