@@ -248,12 +248,14 @@ export class AddDataFormManager {
   }
 
   get isExplorerConnector(): boolean {
-    const isWarehouseLike = Boolean(
+    // ClickHouse is excluded because it's used as an OLAP engine destination,
+    // not as a data source to import from (can't create model files from it).
+    if (this.connector.name === "clickhouse") return false;
+    return Boolean(
       this.connector.implementsOlap ||
         this.connector.implementsSqlStore ||
         this.connector.implementsWarehouse,
     );
-    return isWarehouseLike && this.connector.name !== "clickhouse";
   }
 
   /**
@@ -337,7 +339,8 @@ export class AddDataFormManager {
     const isStepFlowConnector =
       this.isMultiStepConnector || this.isExplorerConnector;
 
-    if (isClickhouse) {
+    // ClickHouse-specific labels only apply to the connector step
+    if (isClickhouse && step === "connector") {
       if (clickhouseConnectorType === "rill-managed") {
         return clickhouseSubmitting ? "Connecting..." : "Connect";
       }

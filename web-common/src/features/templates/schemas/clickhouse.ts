@@ -54,6 +54,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
         "DSN connection string (use instead of individual host/port/user settings)",
       "x-placeholder":
         "clickhouse://localhost:9000?username=default&password=password",
+      "x-secret": true,
       "x-visible-if": {
         connector_type: ["self-hosted", "clickhouse-cloud"],
       },

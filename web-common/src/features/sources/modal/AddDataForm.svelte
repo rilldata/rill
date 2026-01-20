@@ -44,15 +44,10 @@
   let connectionTab: ConnectorType = "parameters";
 
   // Wire manager-provided onUpdate after declaration below
-  let handleOnUpdate: <
-    T extends Record<string, unknown>,
-    M = any,
-    In extends Record<string, unknown> = T,
-  >(event: {
-    form: SuperValidated<T, M, In>;
-    formEl: HTMLFormElement;
-    cancel: () => void;
-    result: Extract<ActionResult, { type: "success" | "failure" }>;
+  let handleOnUpdate: (event: {
+    form: SuperValidated<Record<string, unknown>, string, Record<string, unknown>>;
+    result?: Extract<ActionResult, { type: "success" | "failure" }>;
+    cancel?: () => void;
   }) => Promise<void> = async (_event) => {};
 
   const formManager = new AddDataFormManager({
@@ -287,7 +282,6 @@
       });
 
   $: primaryLoadingCopy = (() => {
-    if (connector.name === "clickhouse") return "Connecting...";
     if (isStepFlowConnector) return multiStepLoadingCopy;
     return activeAuthMethod === "public"
       ? "Continuing..."
@@ -301,10 +295,7 @@
     saveAnyway = false;
   }
 
-  $: isSubmitting =
-    connector.name === "clickhouse"
-      ? effectiveClickhouseSubmitting
-      : submitting;
+  $: isSubmitting = submitting;
 
   // Reset errors when form is modified
   $: (() => {
@@ -342,17 +333,8 @@
       return;
     }
 
-    // For other connectors, use manager helper
     saveAnyway = true;
-    const values =
-      connector.name === "clickhouse"
-        ? $paramsForm
-        : useDsnForm
-          ? $dsnForm
-          : $paramsForm;
-    if (connector.name === "clickhouse") {
-      clickhouseSaving = true;
-    }
+    const values = useDsnForm ? $dsnForm : $paramsForm;
     const result = await formManager.saveConnectorAnyway({
       queryClient,
       values,
@@ -362,15 +344,7 @@
     if (result.ok) {
       onClose();
     } else {
-      if (connector.name === "clickhouse") {
-        if (connectionTab === "dsn") {
-          dsnError = result.message;
-          dsnErrorDetails = result.details;
-        } else {
-          paramsError = result.message;
-          paramsErrorDetails = result.details;
-        }
-      } else if (useDsnForm) {
+      if (useDsnForm) {
         dsnError = result.message;
         dsnErrorDetails = result.details;
       } else {
@@ -379,9 +353,6 @@
       }
     }
     saveAnyway = false;
-    if (connector.name === "clickhouse") {
-      clickhouseSaving = false;
-    }
   }
 
   $: yamlPreview = formManager.computeYamlPreview({
@@ -398,11 +369,8 @@
     clickhouseParamsValues: $paramsForm,
     clickhouseDsnValues: $paramsForm,
   });
-  $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
-  $: saveAnywayLoading = isClickhouse
-    ? effectiveClickhouseSubmitting && saveAnyway
-    : submitting && saveAnyway;
+  $: saveAnywayLoading = submitting && saveAnyway;
 
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
@@ -442,22 +410,7 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if connector.name === "clickhouse"}
-        <AddDataFormSection
-          id={paramsFormId}
-          enhance={paramsEnhance}
-          onSubmit={paramsSubmit}
-        >
-          <JSONSchemaFormRenderer
-            schema={connectorSchema}
-            step={isConnectorForm ? "connector" : "source"}
-            form={paramsForm}
-            errors={$paramsErrors}
-            {onStringInputChange}
-            {handleFileUpload}
-          />
-        </AddDataFormSection>
-      {:else if usesLegacyTabs}
+      {#if usesLegacyTabs}
         <Tabs
           bind:value={connectionTab}
           options={CONNECTION_TAB_OPTIONS}
@@ -570,15 +523,10 @@
         {/if}
 
         <Button
-          disabled={connector.name === "clickhouse"
-            ? effectiveClickhouseSubmitting ||
-              (clickhouseUiState?.isSubmitDisabled ?? false)
-            : submitting || isSubmitDisabled}
-          loading={connector.name === "clickhouse"
-            ? effectiveClickhouseSubmitting
-            : submitting}
+          disabled={submitting || isSubmitDisabled}
+          loading={submitting}
           loadingCopy={primaryLoadingCopy}
-          form={connector.name === "clickhouse" ? paramsFormId : formId}
+          form={formId}
           submitForm
           type="primary"
         >
@@ -593,14 +541,10 @@
     class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface-subtle w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
   >
     <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-      {#if dsnError || paramsError || clickhouseError}
+      {#if dsnError || paramsError}
         <SubmissionError
-          message={clickhouseError ??
-            (useDsnForm ? dsnError : paramsError) ??
-            ""}
-          details={clickhouseErrorDetails ??
-            (useDsnForm ? dsnErrorDetails : paramsErrorDetails) ??
-            ""}
+          message={(useDsnForm ? dsnError : paramsError) ?? ""}
+          details={(useDsnForm ? dsnErrorDetails : paramsErrorDetails) ?? ""}
         />
       {/if}
 
