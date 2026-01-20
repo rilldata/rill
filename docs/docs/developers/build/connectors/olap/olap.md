@@ -41,6 +41,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 ### MotherDuck
 ### Druid
 ### Pinot
+### StarRocks
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -82,7 +83,6 @@ Rill supports the use of several different OLAP engines to power your dashboards
     linkLabel="Learn more"
     referenceLink="pinot"
   />
-
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-StarRocks.png" alt="StarRocks" className="starrocks-icon" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
