@@ -417,7 +417,10 @@ export function fromTimeRangesParams(
       ExploreStateURLParams.TimeDimension,
     ) as string;
 
-    preset.timeDimension = timeDimension;
+    // Simply remove from the URL for now
+    if (dimensions.has(timeDimension)) {
+      preset.timeDimension = timeDimension;
+    }
   }
   return { preset, errors };
 }

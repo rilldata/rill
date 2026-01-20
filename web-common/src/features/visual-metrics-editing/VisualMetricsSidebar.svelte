@@ -183,7 +183,6 @@
         ],
         selected: 0,
       },
-
       {
         label: "Description",
         optional: true,
@@ -195,6 +194,25 @@
           },
         ],
         selected: 0,
+      },
+      {
+        label: "Type",
+        optional: true,
+        fields: [
+          {
+            key: "type",
+            label: "Type",
+            options: [
+              { label: "Categorical", value: "categorical" },
+              { label: "Time", value: "time" },
+              { label: "Geospatial", value: "geo" },
+            ],
+          },
+        ],
+
+        selected: editingClone?.type
+          ? ["time", "geo", "categorical"].indexOf(editingClone.type)
+          : 0,
       },
     ],
   };
