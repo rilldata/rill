@@ -1076,7 +1076,7 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 	})
 }
 
-const llmRequestTimeout = 120 * time.Second
+const llmRequestTimeout = 90 * time.Second
 
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {

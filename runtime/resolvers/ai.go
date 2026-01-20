@@ -279,7 +279,7 @@ func (r *aiResolver) generateTitle() string {
 }
 
 // extractSummary extracts the summary from the <summary> tag in the AI response.
-// If no summary tag is found, it falls back to truncating the response.
+// If no summary tag is found, it returns an empty string.
 func extractSummary(response string) string {
 	// Look for <summary>...</summary> pattern
 	start := strings.Index(response, "<summary>")
@@ -287,9 +287,5 @@ func extractSummary(response string) string {
 	if start != -1 && end != -1 && end > start {
 		return strings.TrimSpace(response[start+9 : end])
 	}
-	// Fallback: truncate response to 500 chars
-	if len(response) > 500 {
-		return response[:500] + "..."
-	}
-	return response
+	return ""
 }

@@ -31,8 +31,6 @@
         </mj-text>
 
         <mj-spacer height="20px" />
-
-        {{ if .Summary }}
       </mj-column>
     </mj-section>
     <mj-section background-color="#F5F5F5" padding="15px 25px">
@@ -45,7 +43,6 @@
     <mj-section>
       <mj-column>
         <mj-spacer height="20px" />
-        {{ end }}
 
         <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#3524C7" color="#FFFFFF" font-weight="bold" href="{{ .OpenLink }}">
           View Full Analysis
