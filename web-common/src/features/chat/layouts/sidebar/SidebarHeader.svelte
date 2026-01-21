@@ -20,7 +20,6 @@
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
-  $: hasExistingConversation = !!currentConversationDto?.id;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
   $: conversations = $listConversationsQuery.data?.conversations ?? [];
@@ -46,10 +45,9 @@
       <PlusIcon className="text-gray-500" />
     </IconButton>
 
-    {#if hasExistingConversation && organization && project}
+    {#if currentConversationDto?.id && organization && project}
       <ShareChatPopover
         conversationId={currentConversationDto.id}
-        conversationTitle={currentConversationDto.title ?? ""}
         {instanceId}
         {organization}
         {project}

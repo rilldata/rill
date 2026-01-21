@@ -13,7 +13,6 @@
   } from "@rilldata/web-common/runtime-client";
 
   export let conversationId: string;
-  export let conversationTitle: string;
   export let instanceId: string;
   export let organization: string;
   export let project: string;
@@ -60,11 +59,6 @@
       isSharing = false;
     }
   }
-
-  function truncateTitle(title: string, maxLength: number = 30): string {
-    if (title.length <= maxLength) return title;
-    return title.substring(0, maxLength - 3) + "...";
-  }
 </script>
 
 <Popover bind:open={isOpen}>
@@ -83,9 +77,7 @@
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[320px] p-4">
     <div class="flex flex-col gap-y-3">
-      <h3 class="text-sm font-medium text-gray-800">
-        Share "{truncateTitle(conversationTitle || "Untitled conversation")}"
-      </h3>
+      <h3 class="text-sm font-medium text-gray-800">Share conversation</h3>
       <p class="text-xs text-gray-600">
         Share this conversation with other project members. They can view and
         continue the conversation.
