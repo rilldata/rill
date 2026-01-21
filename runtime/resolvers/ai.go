@@ -35,6 +35,8 @@ type aiProps struct {
 	Dimensions []string       `mapstructure:"dimensions"`
 	Measures   []string       `mapstructure:"measures"`
 	Where      map[string]any `mapstructure:"where"`
+	// IsScheduledInsight indicates if the AI resolver is used for a scheduled insight.
+	IsScheduledInsight bool `mapstructure:"is_scheduled_insight"`
 }
 
 // aiArgs contains the dynamic arguments for the AI resolver.
@@ -162,7 +164,7 @@ func (r *aiResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverRe
 		TimeEnd:             timeEnd,
 		ComparisonTimeStart: comparisonStart,
 		ComparisonTimeEnd:   comparisonEnd,
-		IsScheduledInsight:  true,
+		IsScheduledInsight:  r.props.IsScheduledInsight,
 	}
 
 	routerArgs := &ai.RouterAgentArgs{

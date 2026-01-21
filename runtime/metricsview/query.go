@@ -778,7 +778,7 @@ const QueryJSONSchema = `
         },
         "expression": {
           "type": "string",
-          "description": "Time range expression"
+          "description": "Time range expression. If specifying this no other TimeRange fields should be set."
         },
         "iso_duration": {
           "type": "string",

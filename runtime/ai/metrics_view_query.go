@@ -43,6 +43,8 @@ Request:
 • 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 • Include 'sort' and 'limit' parameters to optimize query performance and avoid unbounded result sets
 • For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+• Prefer using absolute 'start' and 'end' times in 'time_range' and 'comparison_time_range'. For standard ISO8601 durations like 'P7D', 'P1M' etc. prefer using 'iso_duration' and 'iso_offset' over 'expression'.
+  However, if specifying 'expression' no other time range fields should be set. Relative durations are evaluated against the execution time for scheduled insight mode or latest data for ad-hoc analysis.
 
 Response:
 • Returns aggregated data matching your query parameters

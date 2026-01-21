@@ -739,6 +739,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	if aiConfig.Where != nil {
 		props["where"] = aiConfig.Where.AsMap()
 	}
+	props["is_scheduled_insight"] = true
 
 	// Execute AI resolver
 	result, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
