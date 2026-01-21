@@ -8,7 +8,6 @@
     findRadioEnumKey,
     getRadioEnumOptions,
     getSchemaInitialValues,
-    isStepMatch,
   } from "../../templates/schema-utils";
   import { getConnectorSchema } from "./connector-schemas";
   import { isMultiStepConnectorDisabled } from "./utils";
@@ -91,7 +90,7 @@
       ? getConnectorSchema(connector.name) || null
       : null;
     paramsForm.update(
-      ($current) => {
+      (_$current) => {
         const base = schema
           ? getSchemaInitialValues(schema, { step: "connector" })
           : {};
