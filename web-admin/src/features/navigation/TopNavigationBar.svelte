@@ -47,7 +47,12 @@
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
+  const {
+    alerts: alertsFlag,
+    dimensionSearch,
+    dashboardChat,
+    stickyDashboardState,
+  } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -153,7 +158,7 @@
         section: isMetricsExplorer ? "explore" : "canvas",
       });
     }, new Map<string, PathOption>()),
-    showCarryOverParamsToggle: true,
+    carryOverSearchParams: $stickyDashboardState,
   };
 
   $: alertPaths = {

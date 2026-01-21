@@ -11,5 +11,5 @@ export type PathOption = {
 
 export type PathOptions = {
   options: Map<Param, PathOption>;
-  showCarryOverParamsToggle?: boolean;
+  carryOverSearchParams?: boolean;
 };

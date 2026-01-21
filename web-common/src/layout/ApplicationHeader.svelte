@@ -25,7 +25,8 @@
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode, deploy, developerChat } = featureFlags;
+  const { darkMode, deploy, developerChat, stickyDashboardState } =
+    featureFlags;
 
   export let mode: string;
 
@@ -57,7 +58,7 @@
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
-    showCarryOverParamsToggle: true,
+    carryOverSearchParams: $stickyDashboardState,
   } satisfies PathOptions;
 
   $: projectPath = <PathOption>{

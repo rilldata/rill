@@ -5,9 +5,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { PathOption, PathOptions } from "./types";
   import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-  import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage.ts";
 
   export let pathOptions: PathOptions;
   export let current: string;
@@ -17,13 +15,8 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
   export let isEmbedded: boolean = false;
 
-  $: ({ options, showCarryOverParamsToggle } = pathOptions);
+  $: ({ options, carryOverSearchParams } = pathOptions);
   $: selected = options.get(current.toLowerCase());
-
-  const carryOverSearchParamsStore = sessionStorageStore<boolean>(
-    "carry-over-search-params-" + depth,
-    false,
-  );
 
   function linkMaker(
     current: (string | undefined)[],
@@ -31,7 +24,6 @@
     id: string,
     option: PathOption,
     route: string,
-    carryOverSearchParams: boolean, // needed for reactivity
   ) {
     const path = makePath(current, depth, id, option, route);
 
@@ -78,14 +70,7 @@
         }}
         href={isCurrentPage
           ? "#top"
-          : linkMaker(
-              currentPath,
-              depth,
-              current,
-              selected,
-              "",
-              $carryOverSearchParamsStore,
-            )}
+          : linkMaker(currentPath, depth, current, selected, "")}
         class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
@@ -125,7 +110,6 @@
                 id,
                 option,
                 $page.route.id ?? "",
-                $carryOverSearchParamsStore,
               )}
               preloadData={option.preloadData}
               on:click={() => {
@@ -139,15 +123,6 @@
               </span>
             </DropdownMenu.CheckboxItem>
           {/each}
-
-          {#if showCarryOverParamsToggle}
-            <div
-              class="flex flex-row items-center gap-x-2 pt-1 pl-1 font-medium border-t"
-            >
-              <Switch small bind:checked={$carryOverSearchParamsStore} />
-              Carry over state
-            </div>
-          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}
