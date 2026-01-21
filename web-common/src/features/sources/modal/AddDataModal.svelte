@@ -256,7 +256,8 @@
       {/if}
 
       {#if step === 2 && selectedConnector}
-        {@const isClickhouseCloud = initialClickhouseType === "clickhouse-cloud"}
+        {@const isClickhouseCloud =
+          initialClickhouseType === "clickhouse-cloud"}
         {@const displayIcon = isClickhouseCloud
           ? connectorIconMapping["clickhousecloud"]
           : connectorIconMapping[selectedConnector.name ?? ""]}
@@ -271,7 +272,8 @@
               {#if displayIcon}
                 <svelte:component this={displayIcon} size="18px" />
               {/if}
-              <span class="text-lg leading-none font-semibold">{displayName}</span
+              <span class="text-lg leading-none font-semibold"
+                >{displayName}</span
               >
             </div>
           {/if}
