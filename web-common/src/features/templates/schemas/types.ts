@@ -20,6 +20,7 @@ export type JSONSchemaField = {
   properties?: Record<string, JSONSchemaField>;
   required?: string[];
   "x-display"?: "radio" | "select" | "textarea" | "file" | "tabs";
+  "x-monospace"?: boolean;
   "x-step"?: "connector" | "source" | "explorer";
   "x-secret"?: boolean;
   "x-visible-if"?: Record<string, JSONSchemaVisibleIfValue>;
