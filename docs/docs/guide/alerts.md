@@ -2,8 +2,7 @@
 title: "Alerts"
 description: Setting up Alerts in Rill
 sidebar_label: "Alerts"
-sidebar_position: 40
-slug: "/guide/alerts"
+sidebar_position: 50
 ---
 
 <div style={{ 

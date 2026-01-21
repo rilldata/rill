@@ -136,7 +136,7 @@ const config = {
           },
           {
             to: "/guide",
-            label: "Guides",
+            label: "Guide",
             position: "left",
             className: "navbar-user-guide-link",
             activeBaseRegex: "^/guide.*", // Keep Docs active for all doc pages
@@ -1419,7 +1419,7 @@ const config = {
           },
           {
             from: '/explore/public-url',
-            to: '/guide/dashboards/public-url',
+            to: '/guide/dashboards/public-urls',
           },
           {
             from: '/explore/time-series',
@@ -1435,15 +1435,15 @@ const config = {
           },
           {
             from: '/explore/dashboard-101/multi-metrics',
-            to: '/guide/dashboards/dashboard-101/multi-metrics',
+            to: '/guide/dashboards/explore/multi-metrics',
           },
           {
             from: '/explore/dashboard-101/pivot',
-            to: '/guide/dashboards/dashboard-101/pivot',
+            to: '/guide/dashboards/explore/pivot',
           },
           {
             from: '/explore/dashboard-101/tdd',
-            to: '/guide/dashboards/dashboard-101/tdd',
+            to: '/guide/dashboards/explore/tdd',
           },
           // ============================================
           // /reference/* → /developers/build/* or /reference/*

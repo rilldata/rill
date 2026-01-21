@@ -14,9 +14,9 @@ Rill offers two distinct dashboard experiences, each optimized for different use
 
 **[Explore dashboards](/developers/build/dashboards/explore)** are designed for interactive data exploration and analysis. They provide a powerful "slice and dice" experience focused on a single metrics view. Some key features of our Explore dashboards include:
 
-- [Pivot Tables](/guide/dashboards/dashboard-101/pivot)
-- [Time Dimension Detail](/guide/dashboards/dashboard-101/tdd)
-- [Leaderboards](/guide/dashboards/dashboard-101/multi-metrics)
+- [Pivot Tables](/guide/dashboards/explore/pivot)
+- [Time Dimension Detail](/guide/dashboards/explore/tdd)
+- [Leaderboards](/guide/dashboards/explore/multi-metrics)
 
 <img src = '/img/build/dashboard/explore.png' class='rounded-gif' /> <br/>
 
@@ -59,8 +59,8 @@ For comprehensive guidance on using dashboards as an analyst, see our [Analyst's
 
 - [Dashboard navigation and interface](/guide/dashboards/dashboard-101)
 - [Filtering and comparisons](/guide/dashboards/filters)
-- [Pivot tables](/guide/dashboards/dashboard-101/pivot)
-- [Time dimension details](/guide/dashboards/dashboard-101/tdd)
+- [Pivot tables](/guide/dashboards/explore/pivot)
+- [Time dimension details](/guide/dashboards/explore/tdd)
 - [Bookmarks and sharing](/guide/dashboards/bookmarks)
 - [Alerts and notifications](/guide/alerts)
 

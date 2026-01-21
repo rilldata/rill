@@ -37,13 +37,13 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
 <TileIcon
   header="Public URL"
   content="Save dashboard views as bookmarks and share them with your team. Share dashboards externally via public URLs without requiring Rill accounts."
-  link="/guide/dashboards/public-url"
+  link="/guide/dashboards/public-urls"
   icon={<img src="/img/get-started/share.svg" alt="Sharing" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Pivot Table"
   content="Create Excel-style pivot tables with drag-and-drop functionality. Analyze data across multiple dimensions, measures, and time granularities for comprehensive cross-tabulations."
-  link="/guide/dashboards/dashboard-101/pivot"
+  link="/guide/dashboards/explore/pivot"
   icon={<img src="/img/get-started/pivot.svg" alt="Pivot Table" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon

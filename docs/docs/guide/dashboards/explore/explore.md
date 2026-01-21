@@ -49,9 +49,9 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 - _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/guide/dashboards/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
 
-- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/guide/dashboards/dashboard-101/pivot) by selecting either from the UI (see `pink` box)
+- _**Explore or Pivot:**_ You can switch the view from _explore_ to [_pivot_](/guide/dashboards/explore/pivot) by selecting either from the UI (see `pink` box)
 
-- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-url)) .
+- _**Alerts, Bookmarks and Sharing:**_ You can create an [alert](/guide/alerts) by selecting the bell, customizing the default view of the dashboard (see `purple` box) to a predefined set of metrics, dimensions, and filters by selecting the [bookmark](/guide/dashboards/bookmarks), or share the dashboard ([internally by clicking the `Share` button](/guide/administration/users-and-access/user-management#admin-invites-user-from-rill-cloud) or [externally via Public URLs](/guide/dashboards/public-urls)) .
 
 
 ### KPI Widget (Measures) Panel
@@ -81,9 +81,9 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 
 
-- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards)). You can add, remove or reorder your metrics from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](/guide/dashboards/dashboard-101/tdd).
+- _**Measures:**_  All _**metrics**_ that are available in the underlying model \ are viewable on the left-hand side, broken out with summary numbers (e.g. eCPM) and timeseries visualizations (based on your configured `timeseries` column in your [dashboard YAML](/reference/project-files/explore-dashboards)). You can add, remove or reorder your metrics from the page by simply selecting them from the dropdown above the charts (see `yellow` box). If you select any specific measure, you will be navigating to the [Time Dimension Detail](/guide/dashboards/explore/tdd).
 
-- _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](/guide/dashboards/dashboard-101/tdd).
+- _**Time Dimension Detail:**_ A detailed view of a single specific measure that can be further drilled down to understand minute details in your data. As with the Explore page, you can add comparison dimensions to visualize the value for several specific dimension values. For more information see: [Time Dimension Detail](/guide/dashboards/explore/tdd).
 
 :::note Big Number Formatting
 
@@ -117,7 +117,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 <br/>
 
 
-- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](/guide/reports/exports). It is also possible to display [multiple measures in the dimension leaderboard](/guide/dashboards/dashboard-101/multi-metrics).
+- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](/guide/reports/exports). It is also possible to display [multiple measures in the dimension leaderboard](/guide/dashboards/explore/multi-metrics).
 
 
 :::info Search for individual attributes
@@ -171,5 +171,5 @@ banner: Your custom message here!
 - [Filters & Comparisons](/guide/dashboards/filters)
 - [Bookmarks & Sharing](/guide/dashboards/bookmarks)
 - [Exports & Scheduled Reports](/guide/reports/exports)
-- [Public URL](/guide/dashboards/public-url)
+- [Public URL](/guide/dashboards/public-urls)
 - [Alerts](/guide/alerts)

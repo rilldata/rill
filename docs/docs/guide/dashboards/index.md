@@ -9,19 +9,40 @@ sidebar_position: 0
 
 Rill Cloud provides powerful interactive dashboards for exploring, analyzing, and sharing your data. Dashboards make it easy to slice, dice, and drill down into your metrics to discover insights.
 
-## Dashboard Quickstart
+## Explore Dashboards
 
-**[Dashboard Quickstart](/guide/dashboards/dashboard-101)** provides an introduction to navigating and using Rill dashboards. Learn how to:
+**[Explore Dashboard Quickstart](/guide/dashboards/explore/explore)** provides an introduction to navigating and using Rill dashboards. Learn how to:
 - Navigate the dashboard interface with measures, dimensions, and time series
 - Understand the different components and their interactions
 - Get started with your first dashboard exploration
 
-## Filters & Comparisons
+### Multiple Measures
 
-**[Filters & Comparisons](/guide/dashboards/filters)** help you focus your analysis on specific data subsets. You can:
-- Apply powerful filters to metrics and dimensions
-- Use time comparisons to analyze changes over different periods
-- Combine multiple filters for precise data exploration
+**[Multiple Measures](/guide/dashboards/explore/multi-metrics)** allows you to compare multiple metrics simultaneously. You can:
+- Compare multiple metrics side-by-side in the dimension leaderboard
+- Analyze relationships between different measures
+- Gain comprehensive insights across your metrics
+
+### Time Dimension Details
+
+**[Time Dimension Details](/guide/dashboards/explore/tdd)** provides deep-dive analysis into specific time periods. You can:
+- Drill down into specific time periods for granular analysis
+- Compare dimensions across time
+- Export time-based data for reporting
+
+### Pivot Tables
+
+**[Pivot Tables](/guide/dashboards/explore/pivot)** offer Excel-style cross-tabulations for data analysis. Create:
+- Multi-dimensional pivot tables with drag-and-drop functionality
+- Cross-tabulations across dimensions, measures, and time
+- Flat tables for simple column-based views
+
+## Canvas Dashboards
+
+**[Canvas Dashboards](/guide/dashboards/canvas)** provide custom dashboard layouts for personalized views. Create:
+- Custom dashboard layouts with multiple visualizations
+- Personalized views tailored to your needs
+- Flexible arrangements of charts and components
 
 ## Time Series Analysis
 
@@ -30,26 +51,12 @@ Rill Cloud provides powerful interactive dashboards for exploring, analyzing, an
 - Time-based comparisons to understand changes
 - Granular time analysis for detailed insights
 
-## Time Dimension Details
+## Filters & Comparisons
 
-**[Time Dimension Details](/guide/dashboards/dashboard-101/tdd)** provides deep-dive analysis into specific time periods. You can:
-- Drill down into specific time periods for granular analysis
-- Compare dimensions across time
-- Export time-based data for reporting
-
-## Pivot Tables
-
-**[Pivot Tables](/guide/dashboards/dashboard-101/pivot)** offer Excel-style cross-tabulations for data analysis. Create:
-- Multi-dimensional pivot tables with drag-and-drop functionality
-- Cross-tabulations across dimensions, measures, and time
-- Flat tables for simple column-based views
-
-## Multiple Measures
-
-**[Multiple Measures](/guide/dashboards/dashboard-101/multi-metrics)** allows you to compare multiple metrics simultaneously. You can:
-- Compare multiple metrics side-by-side in the dimension leaderboard
-- Analyze relationships between different measures
-- Gain comprehensive insights across your metrics
+**[Filters & Comparisons](/guide/dashboards/filters)** help you focus your analysis on specific data subsets. You can:
+- Apply powerful filters to metrics and dimensions
+- Use time comparisons to analyze changes over different periods
+- Combine multiple filters for precise data exploration
 
 ## Bookmarks
 
@@ -60,14 +67,7 @@ Rill Cloud provides powerful interactive dashboards for exploring, analyzing, an
 
 ## Public URLs
 
-**[Public URLs](/guide/dashboards/public-url)** enable external sharing of your dashboards. Share:
+**[Public URLs](/guide/dashboards/public-urls)** enable external sharing of your dashboards. Share:
 - Dashboards externally with customers and partners
 - Views without requiring Rill accounts
 - Secure, shareable links to specific dashboard configurations
-
-## Canvas Dashboards
-
-**[Canvas Dashboards](/guide/dashboards/canvas)** provide custom dashboard layouts for personalized views. Create:
-- Custom dashboard layouts with multiple visualizations
-- Personalized views tailored to your needs
-- Flexible arrangements of charts and components

@@ -35,7 +35,7 @@ In fact, users who click on a public shareable URL cannot see the parent filters
 ### via the UI
 You can now manage public URLs via the UI. You will find a new "settings" tab in the Rill Cloud UI as an administrator.
 
-<img src = '/img/explore/publicurl/public-url-settings.png' class='rounded-gif' />
+<img src = '/img/explore/publicurl/public-urls-settings.png' class='rounded-gif' />
 <br />
 
 
