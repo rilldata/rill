@@ -150,10 +150,10 @@
   }
 }
 
-/* Dropdown menu - add breathing room between trigger and popover, align closer to text */
+/* Dropdown menu - add breathing room between trigger and popover, left-align with button */
 .navbar .dropdown__menu {
   margin-top: 8px;
-  margin-left: -0.5rem; /* Align dropdown menu closer to the text (offset container padding) */
+  margin-left: 0; /* Left-align dropdown with button */
 }
 
 /* Temporarily disable dropdown hover when closing - prevents re-opening from hover bridge */
@@ -197,18 +197,25 @@
     font-weight: 600; /* Make active dropdown menu item bolder */
   }
 }
-/* Custom HTML links (GitHub, Blog) - ensure consistent spacing with other navbar items */
+/* Custom HTML links (GitHub, Blog) - match .navbar__link styling */
+/* Remove padding from parent container, consolidate on link */
+.navbar .navbar__item:has(.navbar-icon-link) {
+  padding: 0;
+}
+
 .navbar .navbar-icon-link {
   color: var(--ifm-color-black);
   text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   transition: background-color 0.15s ease;
-  
+
   &:hover,
   &:focus {
     color: var(--ifm-color-black);
     text-decoration: none;
-    background-color: rgba(0, 0, 0, 0.03); /* Match navbar link hover effect */
+    background-color: rgba(0, 0, 0, 0.03);
   }
 }
 
@@ -289,7 +296,7 @@
   /* Dropdown menu in dark mode - maintain breathing room and alignment */
   .dropdown__menu {
     margin-top: 8px;
-    margin-left: -0.5rem; /* Align dropdown menu closer to the text */
+    margin-left: 0; /* Left-align dropdown with button */
   }
   
   .dropdown__link {
