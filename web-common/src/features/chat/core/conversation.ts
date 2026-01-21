@@ -107,7 +107,7 @@ export class Conversation {
   }
 
   /**
-   * Get ownership status by checking the query cache.
+   * Get ownership status from the conversation query.
    * Returns true if the current user owns this conversation or if ownership is unknown.
    */
   private getIsOwner(): boolean {
@@ -115,16 +115,8 @@ export class Conversation {
       return true; // New conversations are always owned by the creator
     }
 
-    // Check the query cache for ownership information
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
-    const cachedData =
-      queryClient.getQueryData<V1GetConversationResponse>(cacheKey);
-
-    // Default to true if not in cache (optimistic assumption)
-    return cachedData?.isOwner ?? true;
+    // Default to true if query hasn't loaded yet (optimistic assumption)
+    return get(this.conversationQuery).data?.isOwner ?? true;
   }
 
   // ===== PUBLIC API =====
@@ -397,6 +389,12 @@ export class Conversation {
   /**
    * Fork the current conversation to create a copy owned by the current user.
    * Used when a non-owner wants to continue a shared conversation.
+   *
+   * Note: The cache copying logic here follows the pattern established by
+   * `transitionToRealConversation`—both read from an old cache key and write
+   * to a new one with an updated conversation ID. However, since forking
+   * conceptually creates a new conversation from an existing one, this
+   * responsibility might be better suited for ConversationManager in the future.
    */
   private async forkConversation(): Promise<string> {
     const originalConversationId = this.conversationId;

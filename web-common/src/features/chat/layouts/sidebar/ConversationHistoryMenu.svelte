@@ -1,7 +1,7 @@
 <script lang="ts">
   import { HistoryIcon } from "lucide-svelte";
-  import * as DropdownMenu from "../../../../components/dropdown-menu";
   import IconButton from "../../../../components/button/IconButton.svelte";
+  import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
   import {
@@ -36,7 +36,9 @@
       disableTooltip={isOpen}
     >
       <HistoryIcon size="16px" class="text-gray-500" />
-      <svelte:fragment slot="tooltip-content">History</svelte:fragment>
+      <svelte:fragment slot="tooltip-content"
+        >Conversation history</svelte:fragment
+      >
     </IconButton>
   </DropdownMenu.Trigger>
 

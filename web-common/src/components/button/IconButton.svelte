@@ -29,6 +29,7 @@
   <button
     type="button"
     on:click
+    {disabled}
     aria-label={ariaLabel}
     class:cursor-auto={disabled}
     class:rounded

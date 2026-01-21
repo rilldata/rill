@@ -7,22 +7,18 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import {
-    createRuntimeServiceShareConversation,
-    type RpcStatus,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceShareConversation } from "@rilldata/web-common/runtime-client";
+  import { isHTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
   export let conversationId: string | undefined = undefined;
   export let instanceId: string;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
   export let disabled = false;
-  export let disabledTooltip = "Start a conversation to share";
+
+  const disabledTooltip = "Start a conversation to share";
 
   let isOpen = false;
-
-  // Prevent popover from opening when disabled
-  $: if (disabled && isOpen) isOpen = false;
   let copied = false;
   let isSharing = false;
   let shareError: string | null = null;
@@ -57,9 +53,9 @@
       }, 1500);
     } catch (error) {
       console.error("[ShareChatPopover] Share failed:", error);
-      shareError =
-        (error as { response?: { data?: RpcStatus } })?.response?.data
-          ?.message ?? "Failed to create share link";
+      shareError = isHTTPError(error)
+        ? error.response.data.message
+        : "Failed to create share link";
     } finally {
       isSharing = false;
     }

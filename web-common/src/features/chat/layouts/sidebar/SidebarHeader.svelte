@@ -6,7 +6,7 @@
   import { type V1Conversation } from "../../../../runtime-client";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import type { ConversationManager } from "../../core/conversation-manager";
-  import { ShareChatPopover } from "../../share";
+  import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
 
   export let conversationManager: ConversationManager;
@@ -52,7 +52,6 @@
       {organization}
       {project}
       disabled={!currentConversationDto?.id}
-      disabledTooltip="Start a conversation to share"
     />
 
     <ConversationHistoryMenu

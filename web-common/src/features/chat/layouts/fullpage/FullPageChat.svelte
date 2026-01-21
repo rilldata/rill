@@ -9,7 +9,7 @@
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
-  import { ShareChatPopover } from "../../share";
+  import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
   import {
     conversationSidebarCollapsed,
@@ -79,7 +79,6 @@
         {organization}
         {project}
         disabled={!currentConversation?.id}
-        disabledTooltip="Start a conversation to share"
       />
     </div>
     <div class="chat-content">
@@ -107,76 +106,49 @@
 
 <style lang="postcss">
   .chat-fullpage {
-    display: flex;
-    height: 100%;
-    width: 100%;
+    @apply flex h-full w-full;
     background: var(--surface);
   }
 
-  /* Main Chat Area */
   .chat-main {
-    position: relative;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    @apply relative flex-1 flex flex-col overflow-hidden;
     background: var(--surface);
   }
 
   .chat-header {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0.5rem 1rem;
-    z-index: 10;
-    pointer-events: none;
+    @apply absolute top-0 right-0;
+    @apply flex items-center justify-end;
+    @apply py-2 px-4 z-10 pointer-events-none;
   }
 
   .chat-header :global(*) {
-    pointer-events: auto;
+    @apply pointer-events-auto;
   }
 
   .chat-content {
-    flex: 1;
-    overflow: hidden;
+    @apply flex-1 overflow-hidden flex flex-col;
     background: var(--surface);
-    display: flex;
-    flex-direction: column;
   }
 
   .chat-messages-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+    @apply flex-1 overflow-y-auto w-full flex flex-col;
   }
 
   .chat-input-section {
-    flex-shrink: 0;
+    @apply shrink-0 p-4 flex justify-center;
     background: var(--surface);
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
   }
 
   .chat-input-wrapper {
-    width: 100%;
-    max-width: 48rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    @apply w-full max-w-3xl flex flex-col gap-2;
   }
 
-  /* Responsive behavior for full-page layout */
   @media (max-width: 768px) {
     .chat-messages-wrapper,
     .chat-input-wrapper {
       max-width: none;
-      padding: 0 1rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
 
     .chat-input-section {
