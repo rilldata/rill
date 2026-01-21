@@ -19,9 +19,13 @@
     createQueryServiceTableColumns,
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
+  } from "@rilldata/web-common/runtime-client";
+
+  import {
+    V1TimeGrain,
     type MetricsViewSpecDimension,
     type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
@@ -49,6 +53,7 @@
   } from "../visual-metrics-editing/lib";
   import {
     getAllowedGrainsFromOrder,
+    getGrainOrder,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
 
@@ -215,7 +220,9 @@
   )?.type;
 
   $: availableGrainOptions = getAllowedGrainsFromOrder(
-    typeOfSelectedTimeDimension === "DATE" ? 2 : 0,
+    typeOfSelectedTimeDimension === "DATE"
+      ? getGrainOrder(V1TimeGrain.TIME_GRAIN_DAY)
+      : getGrainOrder(V1TimeGrain.TIME_GRAIN_MINUTE),
   ).map((grain) => {
     const label = V1TimeGrainToDateTimeUnit[grain];
     return {
