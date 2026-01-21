@@ -122,10 +122,8 @@ async function generateSampleDataWithDevChat(
       // LLM can some time read a file and decide not to generate data.
       lastReadFile = path;
     },
-    onWriteFile: (path) => {
+    onWriteFile: () => {
       created = true;
-      overlay.set(null);
-      sourceImportedPath.set(path);
     },
   });
 
