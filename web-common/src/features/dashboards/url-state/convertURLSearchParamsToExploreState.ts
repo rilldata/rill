@@ -27,6 +27,7 @@ export function convertURLSearchParamsToExploreState(
   errors.push(...errorsFromEntity);
 
   if (searchParams.has(ExploreStateURLParams.IgnoreErrors)) {
+    // Ignore all errors. TODO: better handling in the future
     errors = [];
   }
 

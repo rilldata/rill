@@ -1,5 +1,3 @@
-import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
-
 export type Param = string;
 
 export type PathOption = {
@@ -13,5 +11,5 @@ export type PathOption = {
 
 export type PathOptions = {
   options: Map<Param, PathOption>;
-  componentOverride?: typeof BreadcrumbItem;
+  showCarryOverParamsToggle?: boolean;
 };

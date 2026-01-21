@@ -16,15 +16,13 @@
   <ol class="flex flex-row items-center">
     {#each pathParts as pathOptions, depth (depth)}
       {@const current = currentPath[depth]}
-      {@const itemComponent = pathOptions?.componentOverride ?? BreadcrumbItem}
       {#if current && pathOptions?.options}
         {#if depth}
           <Slash />
         {/if}
-        <svelte:component
-          this={itemComponent}
+        <BreadcrumbItem
           {depth}
-          options={pathOptions.options}
+          {pathOptions}
           {current}
           {currentPath}
           isCurrentPage={depth === currentPage}

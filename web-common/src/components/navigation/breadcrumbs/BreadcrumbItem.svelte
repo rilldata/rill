@@ -3,10 +3,13 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import type { PathOptions } from "./types";
-  import { makePath } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
+  import type { PathOption, PathOptions } from "./types";
+  import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage.ts";
 
-  export let options: PathOptions["options"];
+  export let pathOptions: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
   export let depth: number = 0;
@@ -14,9 +17,53 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
   export let isEmbedded: boolean = false;
 
-  $: hasSelect = !!onSelect;
-
+  $: ({ options, showCarryOverParamsToggle } = pathOptions);
   $: selected = options.get(current.toLowerCase());
+
+  const carryOverSearchParamsStore = sessionStorageStore<boolean>(
+    "carry-over-search-params-" + depth,
+    false,
+  );
+
+  function linkMaker(
+    current: (string | undefined)[],
+    depth: number,
+    id: string,
+    option: PathOption,
+    route: string,
+    carryOverSearchParams: boolean, // needed for reactivity
+  ) {
+    const path = makePath(current, depth, id, option, route);
+
+    if (!path || !carryOverSearchParams || $page.url.search === "") return path;
+
+    const url = new URL($page.url);
+    url.pathname = path;
+    url.searchParams.set(ExploreStateURLParams.IgnoreErrors, "true");
+    return url.pathname + url.search;
+  }
+
+  function makePath(
+    current: (string | undefined)[],
+    depth: number,
+    id: string,
+    option: PathOption,
+    route: string,
+  ) {
+    if (onSelect) return undefined;
+    if (option?.href) return option.href;
+
+    const newPath = current
+      .slice(0, option?.depth ?? depth)
+      .filter((p): p is string => !!p);
+
+    if (option?.section) newPath.push(option.section);
+
+    newPath.push(id);
+    const path = `/${newPath.join("/")}`;
+    // add the sub route if it has no variables
+    return path + getNonVariableSubRoute(path, route);
+  }
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
@@ -31,7 +78,14 @@
         }}
         href={isCurrentPage
           ? "#top"
-          : makePath(currentPath, depth, current, selected, "", hasSelect)}
+          : linkMaker(
+              currentPath,
+              depth,
+              current,
+              selected,
+              "",
+              $carryOverSearchParamsStore,
+            )}
         class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
@@ -65,13 +119,13 @@
               class="cursor-pointer"
               checked={selected}
               checkSize={"h-3 w-3"}
-              href={makePath(
+              href={linkMaker(
                 currentPath,
                 depth,
                 id,
                 option,
                 $page.route.id ?? "",
-                hasSelect,
+                $carryOverSearchParamsStore,
               )}
               preloadData={option.preloadData}
               on:click={() => {
@@ -85,6 +139,15 @@
               </span>
             </DropdownMenu.CheckboxItem>
           {/each}
+
+          {#if showCarryOverParamsToggle}
+            <div
+              class="flex flex-row items-center gap-x-2 pt-1 pl-1 font-medium border-t"
+            >
+              <Switch small bind:checked={$carryOverSearchParamsStore} />
+              Carry over state
+            </div>
+          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}
@@ -98,7 +161,7 @@
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform  text-gray-500;
+    @apply transition-transform text-gray-500;
     @apply px-0.5 py-1 rounded;
   }
 

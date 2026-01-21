@@ -6,7 +6,6 @@
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import DashboardsBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/DashboardsBreadcrumbItem.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -104,11 +103,9 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
-  $: organizationPaths = createOrgPaths(
-    organizations,
-    organization,
-    planDisplayName,
-  );
+  $: organizationPaths = {
+    options: createOrgPaths(organizations, organization, planDisplayName),
+  };
 
   function createOrgPaths(
     organizations: V1Organization[],
@@ -156,7 +153,7 @@
         section: isMetricsExplorer ? "explore" : "canvas",
       });
     }, new Map<string, PathOption>()),
-    componentOverride: DashboardsBreadcrumbItem,
+    showCarryOverParamsToggle: true,
   };
 
   $: alertPaths = {

@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import type {
+    PathOption,
+    PathOptions,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
@@ -21,7 +24,6 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
-  import DashboardsBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/DashboardsBreadcrumbItem.svelte";
 
   const { darkMode, deploy, developerChat } = featureFlags;
 
@@ -55,8 +57,8 @@
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
-    componentOverride: DashboardsBreadcrumbItem,
-  };
+    showCarryOverParamsToggle: true,
+  } satisfies PathOptions;
 
   $: projectPath = <PathOption>{
     label: projectTitle,
