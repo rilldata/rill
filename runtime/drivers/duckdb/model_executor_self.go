@@ -563,7 +563,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
 		} else if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, , CHAIN 'env;config', VALIDATION 'none'")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, CHAIN 'env;config', VALIDATION 'none'")
 		}
 
 		if s3Config.SessionToken != "" {
@@ -623,7 +623,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if gcsConfig.KeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
 		} else if gcsConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN,, CHAIN 'env;config', VALIDATION 'none'")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, CHAIN 'env;config', VALIDATION 'none'")
 		}
 		writeScope(&sb, gcsConfig.PathPrefixes)
 		sb.WriteRune(')')
