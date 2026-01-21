@@ -248,13 +248,8 @@ export class AddDataFormManager {
   }
 
   get isExplorerConnector(): boolean {
-    // ClickHouse is excluded because it's used as an OLAP engine destination,
-    // not as a data source to import from (can't create model files from it).
-    if (this.connector.name === "clickhouse") return false;
     return Boolean(
-      this.connector.implementsOlap ||
-        this.connector.implementsSqlStore ||
-        this.connector.implementsWarehouse,
+      this.connector.implementsSqlStore || this.connector.implementsWarehouse,
     );
   }
 
