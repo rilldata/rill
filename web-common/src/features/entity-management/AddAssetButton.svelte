@@ -4,7 +4,12 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { Database, Folder, PlusCircleIcon, FileSpreadsheet } from "lucide-svelte";
+  import {
+    Database,
+    Folder,
+    PlusCircleIcon,
+    FileSpreadsheet,
+  } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";

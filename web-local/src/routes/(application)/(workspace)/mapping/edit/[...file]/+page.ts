@@ -31,7 +31,10 @@ export const load = async ({ params: { file }, parent }) => {
     if (statusCode === 404 || statusCode === 400) {
       throw error(404, "File not found: " + path);
     } else {
-      throw error(e.response?.status ?? 500, e.response?.data?.message ?? "Unknown error");
+      throw error(
+        e.response?.status ?? 500,
+        e.response?.data?.message ?? "Unknown error",
+      );
     }
   }
 };

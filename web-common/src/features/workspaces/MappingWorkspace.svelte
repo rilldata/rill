@@ -78,7 +78,11 @@
     hasUnsavedChanges = true;
   }
 
-  function handleKeydown(e: KeyboardEvent, rowIndex?: number, colIndex?: number) {
+  function handleKeydown(
+    e: KeyboardEvent,
+    rowIndex?: number,
+    colIndex?: number,
+  ) {
     // Handle Ctrl+A or Cmd+A to select all text in the current cell
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
       e.preventDefault();
@@ -100,7 +104,7 @@
       // Focus first cell of new row after DOM updates
       setTimeout(() => {
         const newRowInputs = document.querySelectorAll(
-          `[data-row="${rows.length - 1}"]`
+          `[data-row="${rows.length - 1}"]`,
         );
         if (newRowInputs.length > 0) {
           (newRowInputs[0] as HTMLInputElement).focus();
@@ -112,13 +116,15 @@
   function generateCSV(): string {
     const header = columns.join(",");
     const dataRows = rows.map((row) =>
-      row.map((cell) => {
-        // Escape quotes and wrap in quotes if contains comma or quote
-        if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
-          return `"${cell.replace(/"/g, '""')}"`;
-        }
-        return cell;
-      }).join(",")
+      row
+        .map((cell) => {
+          // Escape quotes and wrap in quotes if contains comma or quote
+          if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
+            return `"${cell.replace(/"/g, '""')}"`;
+          }
+          return cell;
+        })
+        .join(","),
     );
     return [header, ...dataRows].join("\n");
   }
@@ -170,7 +176,9 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
 
     try {
       // Get unique base name (auto-increment if files exist)
-      const uniqueBaseName = isEditing ? baseName : await getUniqueBaseName(baseName);
+      const uniqueBaseName = isEditing
+        ? baseName
+        : await getUniqueBaseName(baseName);
 
       const csvPath = `data/${uniqueBaseName}.csv`;
       const modelPath = `models/${uniqueBaseName}.yaml`;
@@ -238,11 +246,7 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
       </div>
 
       <div class="flex items-center gap-x-2 w-fit flex-none">
-        <Button
-          type="primary"
-          disabled={isSaving}
-          onClick={handleSave}
-        >
+        <Button type="primary" disabled={isSaving} onClick={handleSave}>
           <Save size="14px" />
           {isSaving ? "Saving..." : "Save"}
         </Button>
@@ -265,7 +269,9 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
         <table class="w-full border-collapse">
           <thead>
             <tr class="bg-gray-50">
-              <th class="w-10 border-b border-r p-2 text-center text-gray-500 text-sm">
+              <th
+                class="w-10 border-b border-r p-2 text-center text-gray-500 text-sm"
+              >
                 #
               </th>
               {#each columns as col, colIndex (colIndex)}
@@ -274,7 +280,8 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
                     <input
                       type="text"
                       value={col}
-                      on:input={(e) => updateColumnName(colIndex, e.currentTarget.value)}
+                      on:input={(e) =>
+                        updateColumnName(colIndex, e.currentTarget.value)}
                       on:keydown={handleKeydown}
                       class="flex-1 p-2 font-semibold text-sm bg-transparent border-none outline-none focus:bg-blue-50"
                     />
@@ -295,7 +302,9 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
           <tbody>
             {#each rows as row, rowIndex (rowIndex)}
               <tr class="hover:bg-gray-50">
-                <td class="border-b border-r p-2 text-center text-gray-500 text-sm bg-gray-50">
+                <td
+                  class="border-b border-r p-2 text-center text-gray-500 text-sm bg-gray-50"
+                >
                   {rowIndex + 1}
                 </td>
                 {#each row as cell, colIndex (colIndex)}
@@ -305,7 +314,8 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
                       value={cell}
                       data-row={rowIndex}
                       data-col={colIndex}
-                      on:input={(e) => updateCell(rowIndex, colIndex, e.currentTarget.value)}
+                      on:input={(e) =>
+                        updateCell(rowIndex, colIndex, e.currentTarget.value)}
                       on:keydown={(e) => handleKeydown(e, rowIndex, colIndex)}
                       class="w-full p-2 text-sm bg-white border-none outline-none focus:bg-blue-50"
                     />
@@ -336,7 +346,6 @@ sql: "select * from read_csv('${csvPath}', auto_detect=true, ignore_errors=1, he
     @apply flex justify-between gap-x-2;
     @apply items-center;
   }
-
 
   table {
     border-spacing: 0;
