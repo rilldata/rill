@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,31 +35,22 @@ func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	var beforeCreateFn, afterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 	if opts.beforeCreate != "" {
 		beforeCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			start := time.Now()
 			_, err := conn.ExecContext(ctx, opts.beforeCreate)
-			elapsed := time.Since(start)
-			log.Printf("[naman] beforeCreate query took %s for %s", elapsed, opts.beforeCreate)
 			return err
 		}
 	}
 	if opts.afterCreate != "" {
 		afterCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			start := time.Now()
 			_, err := conn.ExecContext(ctx, opts.afterCreate)
-			elapsed := time.Since(start)
-			log.Printf("[naman] afterCreateFn query took %s or %s ", elapsed, opts.afterCreate)
 			return err
 		}
 	}
-	start := time.Now()
 	res, err := db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{
 		View:           opts.view,
 		InitQueries:    opts.initQueries,
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})
-	elapsed := time.Since(start)
-	log.Printf("[naman] CreateTableAsSelect(%s) took %s", name, elapsed)
 	if err != nil {
 		return nil, c.checkErr(err)
 	}

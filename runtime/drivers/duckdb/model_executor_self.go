@@ -591,7 +591,6 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			if err != nil {
 				return "", "", "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
-			println("[naman] should not be here in BucketRegion")
 			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
 			if err != nil {
 				return "", "", "", err
@@ -601,7 +600,6 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		}
 		writeScope(&sb, s3Config.PathPrefixes)
 		sb.WriteRune(')')
-		println("[naman] should not be here in s3")
 		return sb.String(), dropSecretSQL, connectorType, nil
 	case "gcs":
 		// GCS works via S3 compatibility mode.
