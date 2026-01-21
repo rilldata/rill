@@ -5,11 +5,8 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { InfoIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
-
-  const dispatch = createEventDispatcher();
 
   export let value: string = "";
   export let id: string;
@@ -98,7 +95,6 @@
     onSelectedChange={(newSelection) => {
       if (!newSelection) return;
       value = newSelection.value;
-      dispatch("change", newSelection.value);
       onChange(newSelection.value);
     }}
     onOpenChange={(isOpen) => {
