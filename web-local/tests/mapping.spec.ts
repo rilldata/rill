@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
-import { waitForFileNavEntry, fileNotPresent } from "./utils/waitHelpers";
+import { waitForFileNavEntry } from "./utils/waitHelpers";
 import { deleteFile } from "./utils/commonHelpers";
 
 test.describe("mapping workspace", () => {
