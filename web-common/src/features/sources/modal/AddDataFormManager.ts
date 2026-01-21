@@ -1,5 +1,5 @@
 import { superForm, defaults } from "sveltekit-superforms";
-import type { SuperValidated, Infer, SuperForm } from "sveltekit-superforms";
+import type { SuperValidated } from "sveltekit-superforms";
 import * as yupLib from "yup";
 import {
   yup as yupAdapter,
@@ -822,7 +822,10 @@ export class AddDataFormManager {
     const getSourceYamlPreview = (values: Record<string, unknown>) => {
       // For multi-step connectors in step 2, filter out connector properties
       let filteredValues = values;
-      if (isMultiStepConnector && stepState?.step === "source") {
+      if (
+        (isMultiStepConnector && stepState?.step === "source") ||
+        stepState?.step === "explorer"
+      ) {
         const connectorPropertyKeys = new Set(
           schema
             ? getSchemaFieldMetaList(schema, { step: "connector" })

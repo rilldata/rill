@@ -114,8 +114,6 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  let clickhouseError: string | null = null;
-  let clickhouseErrorDetails: string | undefined = undefined;
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let prevClickhouseConnectorType: ClickHouseConnectorType | null = null;
   let clickhouseUiState: ClickhouseUiState | null = null;
@@ -189,8 +187,8 @@
     }
 
     if (clickhouseUiState?.shouldClearErrors) {
-      clickhouseError = null;
-      clickhouseErrorDetails = undefined;
+      paramsError = null;
+      paramsErrorDetails = undefined;
     }
   } else {
     clickhouseUiState = null;
