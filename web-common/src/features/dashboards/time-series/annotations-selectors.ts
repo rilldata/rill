@@ -100,8 +100,6 @@ function convertV1AnnotationsResponseItemToAnnotation(
     : undefined;
 
   // Only truncate start and ceil end when there is a grain column in the annotation.
-  // what is the format of annotation.duration? Why are we using period instead of the duration directly? - bgh
-  // We should fix this and remove the comment before merging - bgh
   if (period && annotation.duration) {
     startTime = startTime.startOf(TimeUnit[period]);
     if (endTime) {
