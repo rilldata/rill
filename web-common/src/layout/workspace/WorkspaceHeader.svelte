@@ -1,18 +1,16 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
-  import File from "@rilldata/web-common/components/icons/File.svelte";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { getIconComponent } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { Settings } from "lucide-svelte";
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { workspaces } from "./workspace-stores";
   import ConnectorRefreshButton from "@rilldata/web-common/features/connectors/ConnectorRefreshButton.svelte";
@@ -55,11 +53,7 @@
       {:else}
         <span class="flex-none">
           <svelte:component
-            this={resourceKind
-              ? resourceIconMapping[resourceKind]
-              : filePath === "/.env" || filePath === "/rill.yaml"
-                ? Settings
-                : File}
+            this={getIconComponent(resourceKind, filePath)}
             size="19px"
           />
         </span>

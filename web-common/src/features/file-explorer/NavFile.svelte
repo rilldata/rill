@@ -23,14 +23,13 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Save, Settings } from "lucide-svelte";
+  import { Save } from "lucide-svelte";
   import type { Readable } from "svelte/store";
   import CopyIcon from "../../components/icons/CopyIcon.svelte";
-  import File from "../../components/icons/File.svelte";
   import CanvasMenuItems from "../canvas/CanvasMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
-  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
+  import { getIconComponent } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ExploreMenuItems from "../explores/ExploreMenuItems.svelte";
   import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
@@ -118,11 +117,7 @@
         <Alert size="14px" color="red" />
       {:else}
         <svelte:component
-          this={resourceKind
-            ? resourceIconMapping[resourceKind]
-            : filePath === "/.env" || filePath === "/rill.yaml"
-              ? Settings
-              : File}
+          this={getIconComponent(resourceKind, filePath)}
           size="14px"
         />
       {/if}

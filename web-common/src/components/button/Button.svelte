@@ -122,7 +122,7 @@
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-primary-600 text-white;
+    @apply bg-accent-primary text-white;
   }
 
   .primary:hover {

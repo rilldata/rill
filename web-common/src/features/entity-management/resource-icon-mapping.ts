@@ -10,6 +10,8 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import ConnectorIcon from "../../components/icons/ConnectorIcon.svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 import ModelIcon from "@rilldata/web-common/components/icons/ModelIcon.svelte";
+import File from "@rilldata/web-common/components/icons/File.svelte";
+import SettingsIcon from "@rilldata/web-common/components/icons/SettingsIcon.svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
@@ -38,3 +40,14 @@ export const resourceLabelMapping = {
   [ResourceKind.Report]: "Report",
   [ResourceKind.Alert]: "Alert",
 };
+
+export function getIconComponent(
+  kind: ResourceKind | undefined,
+  filePath: string,
+) {
+  return kind
+    ? resourceIconMapping[kind]
+    : filePath === "/.env" || filePath === "/rill.yaml"
+      ? SettingsIcon
+      : File;
+}

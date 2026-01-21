@@ -144,7 +144,7 @@
                 className="text-fg-secondary transition-transform {!showConnectors &&
                   '-rotate-90'}"
               />
-              <h3 class="text-fg-primary">Data Explorer</h3>
+              <h3 class="text-fg-muted">Data Explorer</h3>
             </button>
 
             <div
