@@ -240,7 +240,7 @@
             {#if $dimensionSearch}
               <GlobalDimensionSearch />
             {/if}
-            {#if $dashboardChat}
+            {#if $dashboardChat && !onPublicURLPage}
               <ChatToggle />
             {/if}
             {#if hasUserAccess}
