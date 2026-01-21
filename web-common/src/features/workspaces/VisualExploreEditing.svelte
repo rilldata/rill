@@ -520,7 +520,7 @@
     <!-- <svelte:fragment slot="footer"> -->
     {#if viewingDashboard}
       <footer
-        class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-fg-secondary"
+        class="flex flex-col gap-y-4 mt-auto border-t py-5 pb-6 w-full text-sm text-fg-muted"
       >
         <p>
           For more options,

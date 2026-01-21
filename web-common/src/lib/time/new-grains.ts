@@ -115,7 +115,7 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
 }
 
 // We prevent users from aggregating by second or millisecond
-const allowedAggregationGrains = [
+export const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,

@@ -195,7 +195,7 @@
   }
 
   .editing {
-    @apply bg-gray-100;
+    @apply bg-surface-container-active;
   }
 
   .selected {

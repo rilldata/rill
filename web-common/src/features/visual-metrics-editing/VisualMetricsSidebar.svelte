@@ -341,7 +341,7 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <p class="text-fg-secondary">
+    <p class="text-fg-muted">
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
         edit in YAML
@@ -353,7 +353,7 @@
       {/if}
       <div class="flex gap-x-2 self-end">
         <Button
-          type="secondary"
+          type="plain"
           onClick={() => {
             onCancel(unsavedChanges);
           }}
