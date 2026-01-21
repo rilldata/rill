@@ -60,7 +60,7 @@
     >
       <div class="thinking-icon">
         {#if isExpanded}
-          <CaretDownIcon size="14" color="currentColor" />
+          <CaretDownIcon size="14" />
         {:else}
           <Brain />
         {/if}

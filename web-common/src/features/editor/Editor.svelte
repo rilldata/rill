@@ -99,9 +99,8 @@
         {#if !autoSave || disableAutoSave || forceDisableAutoSave}
           <Tooltip distance={8} activeDelay={300}>
             <Button
-              type="primary"
+              type={!!$error && !$saving ? "destructive" : "primary"}
               loading={$saving}
-              danger={!!$error && !$saving}
               loadingCopy="Saving"
               {disabled}
               onClick={() => save()}

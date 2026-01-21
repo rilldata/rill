@@ -164,7 +164,7 @@
               {#if accessDropdownOpen}
                 <CaretUpIcon size="12px" color="text-fg-primary" />
               {:else}
-                <CaretDownIcon size="12px" color="text-fg-primary" />
+                <CaretDownIcon size="12px" className="text-fg-primary" />
               {/if}
             </div>
           </div>

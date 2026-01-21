@@ -355,8 +355,7 @@
                 role={user.roleName}
               />
               <Button
-                type="text"
-                danger
+                type="destructive"
                 onClick={() => handleRemove(user.userEmail)}
               >
                 Remove

@@ -13,10 +13,9 @@
     <h2 class="italic text-fg-secondary">Unsaved changes</h2>
 
     <Button
-      type="secondary"
+      type={!!errorMessage && !saving ? "destructive" : "secondary"}
       loading={saving}
       loadingCopy="Saving"
-      danger={!!errorMessage && !saving}
       disabled={saving}
       onClick={onAcceptCurrent}
     >

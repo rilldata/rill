@@ -336,11 +336,6 @@
     @apply bg-surface-container px-1 truncate;
   }
 
-  td[data-dimension-cell] {
-    @apply sticky left-0 z-30 bg-surface;
-  }
-
-  tr:hover td[data-dimension-cell],
   tr:hover td[data-comparison-cell] {
     @apply bg-popover-accent;
   }
