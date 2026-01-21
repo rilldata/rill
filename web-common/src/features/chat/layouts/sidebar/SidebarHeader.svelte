@@ -43,6 +43,7 @@
       on:click={handleNewConversation}
     >
       <PlusIcon className="text-gray-500" />
+      <svelte:fragment slot="tooltip-content">New conversation</svelte:fragment>
     </IconButton>
 
     <ShareChatPopover
@@ -62,6 +63,7 @@
 
     <IconButton ariaLabel="Close chat" bgGray on:click={onClose}>
       <Close className="text-gray-500" />
+      <svelte:fragment slot="tooltip-content">Close</svelte:fragment>
     </IconButton>
   </div>
 </div>
