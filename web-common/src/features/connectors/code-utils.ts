@@ -26,9 +26,14 @@ import {
   makeSufficientlyQualifiedTableName,
 } from "./connectors-utils";
 
-const YAML_MODEL_TEMPLATE = `type: model
-materialize: true\n
-connector: {{ connector }}\n
+const YAML_MODEL_TEMPLATE = `# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+materialize: true
+
+connector: {{ connector }}
+
 sql: {{ sql }}{{ dev_section }}
 `;
 
