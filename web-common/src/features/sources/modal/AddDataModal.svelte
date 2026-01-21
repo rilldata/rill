@@ -61,17 +61,24 @@
   $: baseConnectors = $connectorsQuery.data?.connectors ?? [];
 
   // Create a synthetic "clickhousecloud" connector based on the "clickhouse" connector
+  // Insert it right after "clickhouse" in the list to maintain proper ordering
   $: connectors = (() => {
-    const clickhouseConnector = baseConnectors.find(
+    const clickhouseIndex = baseConnectors.findIndex(
       (c) => c.name === "clickhouse",
     );
-    if (clickhouseConnector) {
+    if (clickhouseIndex !== -1) {
+      const clickhouseConnector = baseConnectors[clickhouseIndex];
       const clickhouseCloudConnector: V1ConnectorDriver = {
         ...clickhouseConnector,
         name: "clickhousecloud",
         displayName: "ClickHouse Cloud",
       };
-      return [...baseConnectors, clickhouseCloudConnector];
+      // Insert clickhousecloud right after clickhouse
+      return [
+        ...baseConnectors.slice(0, clickhouseIndex + 1),
+        clickhouseCloudConnector,
+        ...baseConnectors.slice(clickhouseIndex + 1),
+      ];
     }
     return baseConnectors;
   })();
