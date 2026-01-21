@@ -3,12 +3,13 @@ title: "Alerts"
 description: Setting up Alerts in Rill
 sidebar_label: "Alerts"
 sidebar_position: 50
+slug: /guide/alerts
 ---
 
-<div style={{ 
-  position: "relative", 
-  width: "100%", 
-  paddingTop: "56.25%", 
+<div style={{
+  position: "relative",
+  width: "100%",
+  paddingTop: "56.25%",
   borderRadius: "15px",  /* Softer corners */
   boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
 }}>
@@ -23,7 +24,7 @@ sidebar_position: 50
       left: 0,
       width: "100%",
       height: "100%",
-      borderRadius: "10px", 
+      borderRadius: "10px",
     }}
   ></iframe>
 </div>
@@ -122,14 +123,11 @@ To view or make changes to existing alerts, navigate to the project home page an
 
 ## Common use cases
 
-### Troubleshooting 
+### Troubleshooting
 Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
 
-### Pacing 
+### Pacing
 Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. There alerts tend to be more specific (setting up filters and criteria for specific values) and marking progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.
 
 ### Monitoring & Comparison
-Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values. 
-
-
-
+Alerts for monitoring purposes are probably the most common alerting use case, i.e. wanting to be alerted based on relative values to prior periods. For these alerts, rather than absolutes, create criteria for % change of values.
