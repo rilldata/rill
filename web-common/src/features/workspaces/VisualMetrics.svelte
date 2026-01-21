@@ -14,7 +14,6 @@
   import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
@@ -48,6 +47,10 @@
     YAMLDimension,
     YAMLMeasure,
   } from "../visual-metrics-editing/lib";
+  import {
+    getAllowedGrainsFromOrder,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains";
 
   const store = connectorExplorerStore.duplicateStore(
     (connector, database, schema, table) => {
@@ -206,6 +209,20 @@
   $: timeOptions = columns
     .filter(({ type }) => type && TIMESTAMPS.has(type))
     .map(({ name }) => ({ value: name ?? "", label: name ?? "" }));
+
+  $: typeOfSelectedTimeDimension = columns.find(
+    ({ name }) => name === timeDimension,
+  )?.type;
+
+  $: availableGrainOptions = getAllowedGrainsFromOrder(
+    typeOfSelectedTimeDimension === "DATE" ? 2 : 0,
+  ).map((grain) => {
+    const label = V1TimeGrainToDateTimeUnit[grain];
+    return {
+      value: label,
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+    };
+  });
 
   /** display the main error (the first in this array) at the bottom */
   $: mainError = errors?.at(0);
@@ -637,10 +654,7 @@
         full
         truncate
         value={smallestTimeGrain}
-        options={Object.entries(TIME_GRAIN).map(([_, { label }]) => ({
-          value: label,
-          label: label.charAt(0).toUpperCase() + label.slice(1),
-        }))}
+        options={availableGrainOptions}
         placeholder="Select time grain"
         label="Smallest time grain"
         hint="The smallest time unit by which your charts and tables can be bucketed"
