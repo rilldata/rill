@@ -20,10 +20,14 @@ test.describe("mapping workspace", () => {
     await page.waitForURL(/\/mapping\/new/);
 
     // Should see the default filename
-    await expect(page.locator("#mapping-title-input")).toHaveValue("mapping.csv");
+    await expect(page.locator("#mapping-title-input")).toHaveValue(
+      "mapping.csv",
+    );
 
     // Should see Add Column and Add Row buttons
-    await expect(page.getByRole("button", { name: "Add Column" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Add Column" }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Add Row" })).toBeVisible();
 
     // Should see Save button
@@ -120,7 +124,9 @@ test.describe("mapping workspace", () => {
     await expect(page.locator("tbody tr")).toHaveCount(2);
 
     // First cell of new row should be focused
-    const newRowFirstCell = page.locator('tbody input[data-row="1"][data-col="0"]');
+    const newRowFirstCell = page.locator(
+      'tbody input[data-row="1"][data-col="0"]',
+    );
     await expect(newRowFirstCell).toBeFocused();
   });
 
@@ -194,7 +200,9 @@ test.describe("mapping workspace", () => {
     await page.waitForURL(/\/mapping\/new/);
 
     // Title should show mapping_1.csv
-    await expect(page.locator("#mapping-title-input")).toHaveValue("mapping_1.csv");
+    await expect(page.locator("#mapping-title-input")).toHaveValue(
+      "mapping_1.csv",
+    );
 
     await page.getByRole("button", { name: "Save" }).click();
     await page.waitForURL(/\/files\/models\/mapping_1\.yaml/);
