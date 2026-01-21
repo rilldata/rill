@@ -102,17 +102,9 @@
             base[authKey] = persisted;
           }
         }
-        // Drop any source-step fields so a previous source submission (e.g., GCS
-        // URI and model name) doesn't leak into a fresh connector step.
-        const filteredCurrent =
-          schema?.properties && schema.properties
-            ? Object.fromEntries(
-                Object.entries($current).filter(([key]) =>
-                  isStepMatch(schema, key, "connector"),
-                ),
-              )
-            : $current;
-        return { ...base, ...filteredCurrent };
+        // Reset to defaults when returning to connector step, dropping all
+        // previously entered values (both connector and source/explorer fields).
+        return base;
       },
       { taint: false },
     );

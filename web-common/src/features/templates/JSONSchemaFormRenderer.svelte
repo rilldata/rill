@@ -26,9 +26,6 @@
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
 
-  const radioDisplay = "radio";
-  const tabsDisplay = "tabs";
-
   $: stepFilter = step;
   $: groupedFields = schema
     ? buildGroupedFields(schema, stepFilter)
