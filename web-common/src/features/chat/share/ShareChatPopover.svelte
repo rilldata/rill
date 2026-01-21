@@ -12,12 +12,17 @@
     type RpcStatus,
   } from "@rilldata/web-common/runtime-client";
 
-  export let conversationId: string;
+  export let conversationId: string | undefined = undefined;
   export let instanceId: string;
-  export let organization: string;
-  export let project: string;
+  export let organization: string | undefined = undefined;
+  export let project: string | undefined = undefined;
+  export let disabled = false;
+  export let disabledTooltip = "Start a conversation to share";
 
   let isOpen = false;
+
+  // Prevent popover from opening when disabled
+  $: if (disabled && isOpen) isOpen = false;
   let copied = false;
   let isSharing = false;
   let shareError: string | null = null;
@@ -25,7 +30,7 @@
   const shareConversationMutation = createRuntimeServiceShareConversation();
 
   async function handleCreateLink() {
-    if (isSharing) return;
+    if (isSharing || !conversationId || !organization || !project) return;
 
     isSharing = true;
     shareError = null;
@@ -62,17 +67,18 @@
 </script>
 
 <Popover bind:open={isOpen}>
-  <PopoverTrigger>
+  <PopoverTrigger {disabled}>
     <IconButton
       ariaLabel="Share conversation"
       bgGray
       active={isOpen}
+      {disabled}
       disableTooltip={isOpen}
     >
       <Share class="text-gray-500" size="16px" />
-      <svelte:fragment slot="tooltip-content"
-        >Share conversation</svelte:fragment
-      >
+      <svelte:fragment slot="tooltip-content">
+        {disabled ? disabledTooltip : "Share conversation"}
+      </svelte:fragment>
     </IconButton>
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[320px] p-4">

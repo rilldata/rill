@@ -45,14 +45,14 @@
       <PlusIcon className="text-gray-500" />
     </IconButton>
 
-    {#if currentConversationDto?.id && organization && project}
-      <ShareChatPopover
-        conversationId={currentConversationDto.id}
-        {instanceId}
-        {organization}
-        {project}
-      />
-    {/if}
+    <ShareChatPopover
+      conversationId={currentConversationDto?.id}
+      {instanceId}
+      {organization}
+      {project}
+      disabled={!currentConversationDto?.id}
+      disabledTooltip="Start a conversation to share"
+    />
 
     <ConversationHistoryMenu
       {conversations}

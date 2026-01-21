@@ -28,7 +28,6 @@
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
   $: currentConversation = $getConversationQuery?.data?.conversation ?? null;
-  $: hasExistingConversation = !!currentConversation?.id;
 
   let chatInputComponent: ChatInput;
 
@@ -73,16 +72,16 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
-    {#if hasExistingConversation && currentConversation?.id && organization && project}
-      <div class="chat-header">
-        <ShareChatPopover
-          conversationId={currentConversation.id}
-          {instanceId}
-          {organization}
-          {project}
-        />
-      </div>
-    {/if}
+    <div class="chat-header">
+      <ShareChatPopover
+        conversationId={currentConversation?.id}
+        {instanceId}
+        {organization}
+        {project}
+        disabled={!currentConversation?.id}
+        disabledTooltip="Start a conversation to share"
+      />
+    </div>
     <div class="chat-content">
       <div class="chat-messages-wrapper">
         <Messages
