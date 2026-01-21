@@ -49,13 +49,10 @@ Service Account JSON credentials provide the most secure and reliable authentica
 3. In the authentication step:
    - Choose **Service Account JSON**
    - Upload your JSON key file or paste its contents
-   - Name your connector (e.g., `my_gcs`)
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -107,11 +104,10 @@ HMAC keys provide S3-compatible authentication for GCS. This method is useful wh
    - Choose **HMAC Keys**
    - Enter your Access Key ID
    - Enter your Secret Access Key
-   - Name your connector (e.g., `my_gcs_hmac`)
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -166,12 +162,10 @@ For publicly accessible GCS buckets, you don't need to create a connector. Simpl
 3. In the authentication step:
    - Choose **Public**
    - The UI will skip connector creation and proceed directly to data model configuration
-4. In the data model configuration step:
-   - Enter your bucket name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will only create the model file (no connector file is created).
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 

@@ -68,12 +68,10 @@ To determine your [Snowflake account identifier](https://docs.snowflake.com/en/u
 2. Select **Snowflake** as the data source type
 3. In the authentication step:
    - Enter your connection string with keypair authentication
-4. In the data model configuration step:
-   - Enter your SQL query
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 

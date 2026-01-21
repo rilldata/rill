@@ -48,12 +48,10 @@ This two-step flow ensures your credentials are securely stored in the connector
    - Enter your database name
    - Enter your username and password
    - Configure SSL mode if needed
-4. In the data model configuration step:
-   - Enter your SQL query
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 

@@ -46,12 +46,10 @@ Access Key and Secret Key credentials provide the most reliable authentication f
    - Enter your AWS Secret Access Key
    - Specify your database name
    - Specify the workgroup (for Serverless) or cluster identifier
-4. In the data model configuration step:
-   - Enter your SQL query
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
