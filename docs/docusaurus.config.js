@@ -1427,11 +1427,11 @@ const config = {
           },
           {
             from: '/explore/dashboard-101',
-            to: '/guide/dashboards/dashboard-101',
+            to: '/guide/dashboards/explore',
           },
           {
             from: '/explore/dashboard-101/dashboard-101',
-            to: '/guide/dashboards/dashboard-101',
+            to: '/guide/dashboards/explore',
           },
           {
             from: '/explore/dashboard-101/multi-metrics',

@@ -11,7 +11,7 @@ Rill Cloud provides powerful interactive dashboards for exploring, analyzing, an
 
 ## Explore Dashboards
 
-**[Explore Dashboard Quickstart](/guide/dashboards/explore/explore)** provides an introduction to navigating and using Rill dashboards. Learn how to:
+**[Explore Dashboard Quickstart](/guide/dashboards/explore)** provides an introduction to navigating and using Rill dashboards. Learn how to:
 - Navigate the dashboard interface with measures, dimensions, and time series
 - Understand the different components and their interactions
 - Get started with your first dashboard exploration

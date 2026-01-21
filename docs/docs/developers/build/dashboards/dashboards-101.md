@@ -55,9 +55,9 @@ Both dashboard types share common capabilities that make them powerful for data 
 
 ## Learn More About Using Dashboards
 
-For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/guide/dashboards/dashboard-101), which covers:
+For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/guide/dashboards/explore), which covers:
 
-- [Dashboard navigation and interface](/guide/dashboards/dashboard-101)
+- [Dashboard navigation and interface](/guide/dashboards/explore)
 - [Filtering and comparisons](/guide/dashboards/filters)
 - [Pivot tables](/guide/dashboards/explore/pivot)
 - [Time dimension details](/guide/dashboards/explore/tdd)

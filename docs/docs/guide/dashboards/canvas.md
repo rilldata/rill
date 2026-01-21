@@ -42,7 +42,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 <br />
 
 
-Similar to our [Explore dashboards](/guide/dashboards/dashboard-101), Canvas Dashboards also include a similar navigation bar to control the dashboard components.
+Similar to our [Explore dashboards](/guide/dashboards/explore), Canvas Dashboards also include a similar navigation bar to control the dashboard components.
 
 ### Navigation Bar
 

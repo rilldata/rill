@@ -36,7 +36,7 @@ AI Chat uses the same [Rill MCP Server](/guide/ai/mcp) technology that powers ex
 
 You can also access AI Chat directly while exploring a dashboard, making it easy to ask questions about what you're currently viewing:
 
-1. While viewing any [Explore dashboard](/guide/dashboards/dashboard-101), look for the **AI Chat icon** in the top navigation bar
+1. While viewing any [Explore dashboard](/guide/dashboards/explore), look for the **AI Chat icon** in the top navigation bar
 2. Click the AI Chat icon to open the chat panel alongside your dashboard
 3. Ask questions about the data you're currently viewing
 <img src='/img/explore/chat/dashboard-chat.png' class='rounded-gif'/>
@@ -74,7 +74,7 @@ AI Chat provides rich, multi-layered responses to help you understand your data 
    - **Heatmaps** - Visualize distribution across two dimensions
 
 3. **Detailed Results** - Tables or lists with specific numbers and breakdowns
-4. **Dashboard Links** - Direct links to your existing [Explore dashboards](/guide/dashboards/dashboard-101) with filters and time ranges pre-applied based on your question
+4. **Dashboard Links** - Direct links to your existing [Explore dashboards](/guide/dashboards/explore) with filters and time ranges pre-applied based on your question
 5. **Suggested Follow-ups** - Related questions or areas to investigate further
 
 ### Visual Components
@@ -141,7 +141,7 @@ When the AI provides an Explore link, click through to the dashboard for:
 - Exporting data
 
 ### Combine with Dashboards
-Use AI Chat for quick answers and discovery, then switch to [interactive dashboards](/guide/dashboards/dashboard-101) when you need:
+Use AI Chat for quick answers and discovery, then switch to [interactive dashboards](/guide/dashboards/explore) when you need:
 - Fine-grained control over filters
 - Multiple simultaneous comparisons
 - Visual exploration of dimension relationships

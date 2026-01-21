@@ -25,20 +25,8 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
 <TileIcon
   header="Explore Dashboards"
   content="Navigate interactive dashboards with measures, dimensions, and time series visualizations. Slice, dice, and drill down into your metrics in real-time."
-  link="/guide/dashboards/dashboard-101"
+  link="/guide/dashboards/explore"
   icon={<img src="/img/get-started/explore.svg" alt="Explore" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Canvas Dashboards"
-  content="Create custom dashboard layouts with multiple visualizations and components. Design personalized views tailored to your needs."
-  link="/guide/dashboards/canvas"
-  icon={<img src="/img/get-started/chart.svg" alt="Canvas" style={{ width: 24, height: 24 }} />}
-/>
-<TileIcon
-  header="Public URL"
-  content="Save dashboard views as bookmarks and share them with your team. Share dashboards externally via public URLs without requiring Rill accounts."
-  link="/guide/dashboards/public-urls"
-  icon={<img src="/img/get-started/share.svg" alt="Sharing" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Pivot Table"
@@ -47,10 +35,22 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
   icon={<img src="/img/get-started/pivot.svg" alt="Pivot Table" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
+  header="Canvas Dashboards"
+  content="Create custom dashboard layouts with multiple visualizations and components. Design personalized views tailored to your needs."
+  link="/guide/dashboards/canvas"
+  icon={<img src="/img/get-started/chart.svg" alt="Canvas" style={{ width: 24, height: 24 }} />}
+/>
+<TileIcon
   header="Bookmarks"
   content="Save specific dashboard states with filters, metrics, and dimensions. Share bookmarks with your team or set them as default views for quick access to your regular analyses."
   link="/guide/dashboards/bookmarks"
   icon={<img src="/img/get-started/bookmark.svg" alt="Bookmarks" style={{ width: 24, height: 24 }} />}
+/>
+<TileIcon
+  header="Public URL"
+  content="Save dashboard views as bookmarks and share them with your team. Share dashboards externally via public URLs without requiring Rill accounts."
+  link="/guide/dashboards/public-urls"
+  icon={<img src="/img/get-started/share.svg" alt="Sharing" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Reports"
@@ -64,6 +64,7 @@ Rill Cloud is a fully-managed platform that brings powerful, interactive analyti
   link="/guide/alerts"
   icon={<img src="/img/get-started/alert.svg" alt="Alerts" style={{ width: 24, height: 24 }} />}
 />
+
 <TileIcon
   header="Administration"
   content="Manage your organization, projects, billing, and organization-wide settings. Configure branding, preferences, and project deployments."
