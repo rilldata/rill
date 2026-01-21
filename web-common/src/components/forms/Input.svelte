@@ -332,11 +332,6 @@
     word-wrap: break-word;
   }
 
-  .multiline-input:empty:before {
-    content: attr(data-placeholder);
-    @apply text-gray-400;
-  }
-
   .input-wrapper:focus-within {
     @apply border-primary-500;
     @apply ring-2 ring-primary-100;
