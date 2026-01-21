@@ -1,3 +1,5 @@
+import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types.ts";
+
 const variableRouteRegex = /\[.*]/;
 
 /**
@@ -18,4 +20,26 @@ export function getNonVariableSubRoute(path: string, route: string) {
   }
 
   return "/" + routeParts.join("/");
+}
+
+export function makePath(
+  current: (string | undefined)[],
+  depth: number,
+  id: string,
+  option: PathOption,
+  route: string,
+  hasSelect: boolean,
+) {
+  if (hasSelect) return undefined;
+  if (option?.href) return option.href;
+
+  const newPath = current
+    .slice(0, option?.depth ?? depth)
+    .filter((p): p is string => !!p);
+
+  if (option?.section) newPath.push(option.section);
+
+  newPath.push(id);
+  const path = `/${newPath.join("/")}`;
+  return path + getNonVariableSubRoute(path, route);
 }

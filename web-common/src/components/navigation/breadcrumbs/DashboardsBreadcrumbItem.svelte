@@ -3,8 +3,10 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import type { PathOptions } from "./types";
-  import { makePath } from "@rilldata/web-common/components/navigation/breadcrumbs/utils.ts";
+  import { makePath } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
+  import type { PathOption, PathOptions } from "./types";
+  import { get } from "svelte/store";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
 
   export let options: PathOptions["options"];
   export let current: string;
@@ -14,9 +16,30 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
   export let isEmbedded: boolean = false;
 
-  $: hasSelect = !!onSelect;
-
   $: selected = options.get(current.toLowerCase());
+
+  let carryOverSearchParams = false;
+
+  function linkMaker(
+    current: (string | undefined)[],
+    depth: number,
+    id: string,
+    option: PathOption,
+    route: string,
+    carryOverSearchParams: boolean, // needed for reactivity
+  ) {
+    const path = makePath(current, depth, id, option, route, !!onSelect);
+    if (!path) return undefined;
+
+    if (!carryOverSearchParams) return path;
+
+    const url = new URL(window.location.href);
+    if (url.search === "") return path;
+
+    url.pathname = path;
+    url.searchParams.set("ignore_errors", "true");
+    return url.pathname + url.search;
+  }
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
@@ -31,7 +54,14 @@
         }}
         href={isCurrentPage
           ? "#top"
-          : makePath(currentPath, depth, current, selected, "", hasSelect)}
+          : linkMaker(
+              currentPath,
+              depth,
+              current,
+              selected,
+              "",
+              carryOverSearchParams,
+            )}
         class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
@@ -65,13 +95,13 @@
               class="cursor-pointer"
               checked={selected}
               checkSize={"h-3 w-3"}
-              href={makePath(
+              href={linkMaker(
                 currentPath,
                 depth,
                 id,
                 option,
                 $page.route.id ?? "",
-                hasSelect,
+                carryOverSearchParams,
               )}
               preloadData={option.preloadData}
               on:click={() => {
@@ -85,6 +115,11 @@
               </span>
             </DropdownMenu.CheckboxItem>
           {/each}
+
+          <div class="flex flex-row items-center gap-x-2 pt-1 border-t">
+            <Switch small bind:checked={carryOverSearchParams} />
+            Carry over dashboard state
+          </div>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}

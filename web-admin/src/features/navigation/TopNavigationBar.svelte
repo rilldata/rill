@@ -6,6 +6,7 @@
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import DashboardsBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/DashboardsBreadcrumbItem.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
@@ -135,40 +136,48 @@
     return pathMap;
   }
 
-  $: projectPaths = projects.reduce(
-    (map, { name }) =>
-      map.set(name.toLowerCase(), { label: name, preloadData: false }),
-    new Map<string, PathOption>(),
-  );
+  $: projectPaths = {
+    options: projects.reduce(
+      (map, { name }) =>
+        map.set(name.toLowerCase(), { label: name, preloadData: false }),
+      new Map<string, PathOption>(),
+    ),
+  };
 
-  $: visualizationPaths = visualizations.reduce((map, resource) => {
-    const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.explore;
-    return map.set(name.toLowerCase(), {
-      label:
-        (isMetricsExplorer
-          ? resource?.explore?.spec?.displayName
-          : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "canvas",
-      search: $page.url.search,
-    });
-  }, new Map<string, PathOption>());
+  $: visualizationPaths = {
+    options: visualizations.reduce((map, resource) => {
+      const name = resource.meta.name.name;
+      const isMetricsExplorer = !!resource?.explore;
+      return map.set(name.toLowerCase(), {
+        label:
+          (isMetricsExplorer
+            ? resource?.explore?.spec?.displayName
+            : resource?.canvas?.spec?.displayName) || name,
+        section: isMetricsExplorer ? "explore" : "canvas",
+      });
+    }, new Map<string, PathOption>()),
+    componentOverride: DashboardsBreadcrumbItem,
+  };
 
-  $: alertPaths = alerts.reduce((map, alert) => {
-    const name = alert.meta.name.name;
-    return map.set(name.toLowerCase(), {
-      label: alert.alert.spec.displayName || name,
-      section: "-/alerts",
-    });
-  }, new Map<string, PathOption>());
+  $: alertPaths = {
+    options: alerts.reduce((map, alert) => {
+      const name = alert.meta.name.name;
+      return map.set(name.toLowerCase(), {
+        label: alert.alert.spec.displayName || name,
+        section: "-/alerts",
+      });
+    }, new Map<string, PathOption>()),
+  };
 
-  $: reportPaths = reports.reduce((map, report) => {
-    const name = report.meta.name.name;
-    return map.set(name.toLowerCase(), {
-      label: report.report.spec.displayName || name,
-      section: "-/reports",
-    });
-  }, new Map<string, PathOption>());
+  $: reportPaths = {
+    options: reports.reduce((map, report) => {
+      const name = report.meta.name.name;
+      return map.set(name.toLowerCase(), {
+        label: report.report.spec.displayName || name,
+        section: "-/reports",
+      });
+    }, new Map<string, PathOption>()),
+  };
 
   $: pathParts = [
     organizationPaths,

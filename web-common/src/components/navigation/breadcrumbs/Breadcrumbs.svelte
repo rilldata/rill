@@ -14,15 +14,17 @@
 <nav class="flex gap-x-2 items-center">
   <slot name="icon" />
   <ol class="flex flex-row items-center">
-    {#each pathParts as options, depth (depth)}
+    {#each pathParts as pathOptions, depth (depth)}
       {@const current = currentPath[depth]}
-      {#if current && options?.size}
+      {@const itemComponent = pathOptions?.componentOverride ?? BreadcrumbItem}
+      {#if current && pathOptions?.options}
         {#if depth}
           <Slash />
         {/if}
-        <BreadcrumbItem
+        <svelte:component
+          this={itemComponent}
           {depth}
-          {options}
+          options={pathOptions.options}
           {current}
           {currentPath}
           isCurrentPage={depth === currentPage}

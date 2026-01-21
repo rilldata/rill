@@ -21,6 +21,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import DashboardsBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/DashboardsBreadcrumbItem.svelte";
 
   const { darkMode, deploy, developerChat } = featureFlags;
 
@@ -52,7 +53,10 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  $: dashboardOptions = getBreadcrumbOptions(explores, canvases);
+  $: dashboardOptions = {
+    options: getBreadcrumbOptions(explores, canvases),
+    componentOverride: DashboardsBreadcrumbItem,
+  };
 
   $: projectPath = <PathOption>{
     label: projectTitle,
@@ -62,7 +66,7 @@
   };
 
   $: pathParts = [
-    new Map([[projectTitle.toLowerCase(), projectPath]]),
+    { options: new Map([[projectTitle.toLowerCase(), projectPath]]) },
     dashboardOptions,
   ];
 
