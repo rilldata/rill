@@ -53,7 +53,7 @@
         href={isCurrentPage
           ? "#top"
           : linkMaker(currentPath, depth, current, selected, "")}
-        class="text-fg-secondary hover:text-fg-secondary flex flex-row items-center gap-x-2"
+        class="text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2"
         class:current={isCurrentPage}
       >
         <span>{selected?.label}</span>
@@ -100,7 +100,7 @@
                 }
               }}
             >
-              <span class="text-xs text-fg-primary flex-grow">
+              <span class="text-xs text-fg-muted flex-grow">
                 {option.label}
               </span>
             </DropdownMenu.CheckboxItem>
@@ -113,12 +113,12 @@
 
 <style lang="postcss">
   .current {
-    @apply text-fg-primary font-medium;
+    @apply text-fg-muted font-medium;
   }
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform text-fg-secondary;
+    @apply transition-transform text-fg-muted;
     @apply px-0.5 py-1 rounded;
   }
 

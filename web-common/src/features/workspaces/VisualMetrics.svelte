@@ -19,9 +19,12 @@
     createQueryServiceTableColumns,
     createRuntimeServiceAnalyzeConnectors,
     createRuntimeServiceGetInstance,
+  } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
     type MetricsViewSpecDimension,
     type V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
@@ -49,6 +52,7 @@
   } from "../visual-metrics-editing/lib";
   import {
     getAllowedGrainsFromOrder,
+    getGrainOrder,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
 
@@ -215,7 +219,9 @@
   )?.type;
 
   $: availableGrainOptions = getAllowedGrainsFromOrder(
-    typeOfSelectedTimeDimension === "DATE" ? 2 : 0,
+    typeOfSelectedTimeDimension === "DATE"
+      ? getGrainOrder(V1TimeGrain.TIME_GRAIN_DAY)
+      : getGrainOrder(V1TimeGrain.TIME_GRAIN_MINUTE),
   ).map((grain) => {
     const label = V1TimeGrainToDateTimeUnit[grain];
     return {
@@ -567,9 +573,9 @@
                "
               >
                 {#if !hasValidOLAPTableSelected}
-                  <span class="text-fg-secondary truncate">Select table</span>
+                  <span class="text-gray-400 truncate">Select table</span>
                 {:else}
-                  <span class="text-fg-primary truncate">
+                  <span class="text-gray-700 truncate">
                     {modelOrSourceOrTableName}
                   </span>
                 {/if}
@@ -675,13 +681,13 @@
             searchValue = value;
           }}
         >
-          <Search slot="icon" size="16px" className="fill-fg-secondary" />
+          <Search slot="icon" size="16px" color="#374151" />
         </Input>
       </div>
 
       {#if totalSelected}
         <div
-          class="bg-input rounded-[2px] z-20 shadow-md flex gap-x-0 h-9 text-fg-secondary border absolute right-0"
+          class="bg-surface rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {totalSelected}
@@ -691,7 +697,7 @@
             on:click={() => {
               triggerDelete();
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l hover:bg-surface-overlay cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
           >
             <Trash size="16px" />
             Delete
@@ -704,7 +710,7 @@
                 dimensions: new Set(),
               };
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l hover:bg-surface-overlay cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
           >
             <Close size="14px" />
           </button>
@@ -897,7 +903,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-surface-elevated border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

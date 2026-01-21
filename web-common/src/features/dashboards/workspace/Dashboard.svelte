@@ -127,14 +127,14 @@
 
 <ThemeProvider theme={$theme}>
   <article
-    class="flex flex-col overflow-y-hidden"
+    class="flex flex-col overflow-y-hidden bg-surface-container"
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
   >
     <div
       id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-sidebar slide"
+      class="border-b w-fit min-w-full flex flex-col bg-surface-container slide"
       class:left-shift={extraLeftPadding}
     >
       {#if mockUserHasNoAccess}
@@ -196,7 +196,7 @@
             hideStartPivotButton={hidePivot}
           />
         {:else}
-          <div class="relative flex-none bg-gray-200 w-[1px]">
+          <div class="relative flex-none bg-border w-[1px]">
             <Resizer
               dimension={metricsWidth}
               min={MIN_TIMESERIES_WIDTH}

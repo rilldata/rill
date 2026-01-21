@@ -51,7 +51,7 @@
 
 <style lang="postcss">
   pre {
-    @apply bg-sidebar;
+    @apply bg-surface-container;
     border-radius: 4px;
     padding: 1em;
     overflow: auto;
