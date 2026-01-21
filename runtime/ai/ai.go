@@ -278,6 +278,7 @@ type CompiledTool struct {
 	UnmarshalArgs         func(content string) (any, error)
 	UnmarshalResult       func(content string) (any, error)
 	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
+	TextHandler           func(ctx context.Context, input json.RawMessage) (*TextResult, error)
 	RegisterWithMCPServer func(srv *mcp.Server)
 }
 
@@ -381,6 +382,30 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 				return nil, fmt.Errorf("failed to marshal result for tool %q: %w", spec.Name, err)
 			}
 			return data, nil
+		},
+		TextHandler: func(ctx context.Context, input json.RawMessage) (*TextResult, error) {
+			var args In
+			if err := json.Unmarshal(input, &args); err != nil {
+				return nil, err
+			}
+			result, err := t.Handler(ctx, args)
+			if err != nil {
+				return nil, err
+			}
+
+			// Check if result implements TextMarshaler for compact text representation
+			if tm, ok := any(result).(TextMarshaler); ok {
+				return tm.MarshalText()
+			}
+			// Fall back to JSON if TextMarshaler is not implemented or text format disabled
+			data, err := json.Marshal(result)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal result for tool %q: %w", spec.Name, err)
+			}
+			return &TextResult{
+				JSONContent: data,
+				ContentType: MessageContentTypeJSON,
+			}, nil
 		},
 		RegisterWithMCPServer: func(srv *mcp.Server) {
 			mcp.AddTool(srv, spec, func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
@@ -985,18 +1010,32 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		return nil, ctx.Err()
 	}
 
-	outJSON, err := json.Marshal(handlerOut)
-	if err != nil {
-		handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
+	var tr *TextResult
+	if handlerErr == nil {
+		var ok bool
+		tr, ok = handlerOut.(*TextResult)
+		if !ok {
+			jsonContent, err := json.Marshal(handlerOut)
+			if err != nil {
+				return nil, fmt.Errorf("error: failed to marshal result: %w", err)
+			}
+			tr = &TextResult{
+				JSONContent: jsonContent,
+				ContentType: MessageContentTypeJSON,
+			}
+		}
 	}
-
 	var resultMsg *Message
 	if !opts.Unwrap {
 		var resultContentType MessageContentType
 		var resultContent string
 		if handlerErr == nil {
-			resultContentType = MessageContentTypeJSON
-			resultContent = string(outJSON)
+			resultContentType = tr.ContentType
+			if tr.ContentType == MessageContentTypeText {
+				resultContent = string(tr.Content)
+			} else {
+				resultContent = string(tr.JSONContent)
+			}
 		} else {
 			resultContentType = MessageContentTypeError
 			resultContent = handlerErr.Error()
@@ -1011,10 +1050,10 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 		})
 	}
 
-	if opts.Out != nil {
-		err := json.Unmarshal(outJSON, opts.Out)
+	if opts.Out != nil && tr != nil {
+		err := json.Unmarshal(tr.JSONContent, opts.Out)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal result: %w", err)
+			return nil, fmt.Errorf("error: failed to unmarshal result: %w", err)
 		}
 	}
 
@@ -1061,7 +1100,7 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 			if !ok {
 				return nil, fmt.Errorf("access denied to tool %q", opts.Tool)
 			}
-			return t.JSONHandler(ctx, argsJSON)
+			return t.TextHandler(ctx, argsJSON)
 		},
 	})
 }
@@ -1511,6 +1550,21 @@ func NewTextCompletionMessage(role Role, content string) *aiv1.CompletionMessage
 			},
 		},
 	}
+}
+
+// TextMarshaler is an interface for tool result types that want to provide a compact text representation.
+// This is useful for reducing context bloat in agentic applications by converting verbose JSON to compact CSV-style format.
+type TextMarshaler interface {
+	MarshalText() (*TextResult, error)
+}
+
+// TextResult wraps a tool result with its content type.
+// Used by TextHandler to return both content and content type.
+type TextResult struct {
+	Content     string
+	ContentType MessageContentType
+	// JSONContent holds the JSON representation of the result
+	JSONContent []byte
 }
 
 // maybeTruncateMessages keeps recent messages and a few early ones for context.

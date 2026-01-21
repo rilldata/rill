@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -30,6 +32,121 @@ type QueryMetricsViewArgs map[string]any
 type QueryMetricsViewResult struct {
 	Data    []map[string]any `json:"data"`
 	OpenURL string           `json:"open_url,omitempty"`
+}
+
+// MarshalText implements TextMarshaler for compact CSV-style representation.
+// Format:
+// open_url: https://...
+// ---
+// col1,col2,col3
+// val1,val2,val3
+// val4,val5,val6
+func (r *QueryMetricsViewResult) MarshalText() (*TextResult, error) {
+	var sb strings.Builder
+
+	if r.OpenURL != "" {
+		sb.WriteString("open_url: ")
+		sb.WriteString(r.OpenURL)
+		sb.WriteString("\n")
+	}
+
+	if len(r.Data) == 0 {
+		outJSON, err := json.Marshal(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal result to JSON: %w", err)
+		}
+		sb.WriteString("---\n(no data)\n")
+		return &TextResult{
+			Content:     sb.String(),
+			ContentType: MessageContentTypeText,
+			JSONContent: outJSON,
+		}, nil
+	}
+
+	// Collect all column names from all rows (in case rows have different keys)
+	colSet := make(map[string]struct{})
+	for _, row := range r.Data {
+		for k := range row {
+			colSet[k] = struct{}{}
+		}
+	}
+
+	// Sort columns for consistent output
+	cols := make([]string, 0, len(colSet))
+	for k := range colSet {
+		cols = append(cols, k)
+	}
+	sort.Strings(cols)
+
+	// Write header
+	sb.WriteString("---\n")
+	sb.WriteString(strings.Join(cols, ","))
+	sb.WriteString("\n")
+
+	// Write data rows
+	for _, row := range r.Data {
+		vals := make([]string, len(cols))
+		for i, col := range cols {
+			vals[i] = formatCSVValue(row[col])
+		}
+		sb.WriteString(strings.Join(vals, ","))
+		sb.WriteString("\n")
+	}
+
+	outJSON, err := json.Marshal(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal result to JSON: %w", err)
+	}
+
+	return &TextResult{
+		Content:     sb.String(),
+		ContentType: MessageContentTypeText,
+		JSONContent: outJSON,
+	}, nil
+}
+
+// formatCSVValue converts a value to a CSV-safe string.
+// Logic borrowed from writeCSV in runtime/drivers/file/model_executor_olap_self.go
+func formatCSVValue(v any) string {
+	if v == nil {
+		return ""
+	}
+
+	switch val := v.(type) {
+	case string:
+		// Escape commas and quotes in strings
+		if strings.ContainsAny(val, ",\"\n") {
+			return "\"" + strings.ReplaceAll(val, "\"", "\"\"") + "\""
+		}
+		return val
+	case time.Time:
+		// Format time values based on whether they have time/date components
+		// Default to DateTime format which is auto-converted to datetime in Excel
+		if val.Hour() == 0 && val.Minute() == 0 && val.Second() == 0 && val.Nanosecond() == 0 {
+			// If no time component, format as date only
+			return val.In(time.UTC).Format(time.DateOnly)
+		}
+		return val.In(time.UTC).Format(time.DateTime)
+	case []any, map[string]any:
+		// Marshal complex types to JSON
+		mres, err := json.Marshal(val)
+		if err != nil {
+			return fmt.Sprintf("%v", val)
+		}
+		s := jsonval.TrimQuotes(string(mres))
+		// Escape if needed for CSV
+		if strings.ContainsAny(s, ",\"\n") {
+			return "\"" + strings.ReplaceAll(s, "\"", "\"\"") + "\""
+		}
+		return s
+	default:
+		// For other types, convert to string
+		s := fmt.Sprintf("%v", val)
+		if strings.ContainsAny(s, ",\"\n") {
+			return "\"" + strings.ReplaceAll(s, "\"", "\"\"") + "\""
+		}
+		return s
+	}
 }
 
 func (t *QueryMetricsView) Spec() *mcp.Tool {
