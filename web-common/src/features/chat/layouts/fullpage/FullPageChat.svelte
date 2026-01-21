@@ -77,7 +77,6 @@
     <div class="chat-input-section">
       <div class="chat-input-wrapper">
         <ChatInput
-          fullPage
           {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
@@ -93,7 +92,7 @@
     display: flex;
     height: 100%;
     width: 100%;
-    background: var(--surface);
+    @apply bg-surface-container;
   }
 
   /* Main Chat Area */
@@ -102,13 +101,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--surface);
+    background: var(--surface-container);
   }
 
   .chat-content {
     flex: 1;
     overflow: hidden;
-    background: var(--surface);
+    background: var(--surface-container);
     display: flex;
     flex-direction: column;
   }
@@ -123,7 +122,7 @@
 
   .chat-input-section {
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--surface-container);
     padding: 1rem;
     display: flex;
     justify-content: center;

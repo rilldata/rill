@@ -152,11 +152,11 @@
   }
 
   .inline {
-    @apply bg-surface-background;
+    @apply bg-input;
   }
 
   .chat-input-form:focus-within {
-    @apply border-primary-400;
+    @apply border-ring-focus;
   }
 
   .chat-input-form.no-margin {

@@ -129,11 +129,11 @@
   }
 
   td.comparison-cell {
-    @apply bg-surface px-1 truncate;
+    @apply bg-surface-container px-1 truncate;
   }
 
   td.dimension-cell {
-    @apply sticky left-0 z-30 bg-surface;
+    @apply sticky left-0 z-30 bg-surface-container;
   }
 
   :global(tr:hover td.dimension-cell),

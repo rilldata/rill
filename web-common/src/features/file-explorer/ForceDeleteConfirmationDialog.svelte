@@ -44,7 +44,7 @@
       </AlertDialog.Action>
 
       <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} onClick={handleClose} type="plain">
+        <Button large builders={[builder]} onClick={handleClose} type="outline">
           Cancel
         </Button>
       </AlertDialog.Cancel>

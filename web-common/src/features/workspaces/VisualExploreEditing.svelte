@@ -531,7 +531,7 @@
 
         <Button
           class="group"
-          type="subtle"
+          type="secondary"
           gray={viewingDefaults}
           large
           onClick={() => {

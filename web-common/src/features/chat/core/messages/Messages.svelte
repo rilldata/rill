@@ -134,8 +134,7 @@
 <style lang="postcss">
   .chat-messages {
     @apply flex-1;
-    @apply flex flex-col gap-2;
-    background: var(--surface);
+    @apply flex flex-col gap-2 bg-surface-container;
   }
 
   .chat-messages.sidebar {

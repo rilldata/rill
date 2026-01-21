@@ -184,7 +184,7 @@
               </DropdownMenu.CheckboxItem>
             {/each}
           {:else}
-            <div class="ui-copy-disabled p-2 w-full">
+            <div class="text-fg-disabled p-2 w-full">
               No matching leaderboard measures shown
             </div>
           {/if}

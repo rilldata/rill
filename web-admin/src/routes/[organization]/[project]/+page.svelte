@@ -39,21 +39,21 @@
           </DelayedContent>
         {:else if isErrorDisplayName}
           <h1
-            class="text-4xl font-semibold text-fg-primary"
+            class="text-4xl font-semibold text-fg-secondary"
             aria-label="Project title"
           >
-            Welcome to <span class="text-primary-600">{project}</span>
+            Welcome to <span class="text-primary-400">{project}</span>
           </h1>
         {:else}
           <h1
-            class="text-4xl font-semibold text-fg-primary"
+            class="text-4xl font-semibold text-fg-secondary"
             aria-label="Project title"
           >
-            Welcome to <span class="text-primary-600">{projectDisplayName}</span
+            Welcome to <span class="text-primary-400">{projectDisplayName}</span
             >
           </h1>
         {/if}
-        <p class="text-lg text-fg-secondary">
+        <p class="text-lg text-fg-muted">
           {#if $chat}
             Ask questions about your data, or explore your dashboards below
           {:else}

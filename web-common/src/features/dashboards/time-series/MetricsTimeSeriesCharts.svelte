@@ -500,7 +500,7 @@
 
           {#if hasTimeseriesError}
             <div
-              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+              class="flex flex-col p-5 items-center justify-center text-xs text-fg-muted"
             >
               {#if $timeSeriesDataStore.error?.timeseries}
                 <span>

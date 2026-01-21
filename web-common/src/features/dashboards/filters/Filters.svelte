@@ -449,7 +449,7 @@
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
-          class="ui-copy-disabled grid ml-1 items-center"
+          class="text-fg-disabled grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected

@@ -368,7 +368,7 @@
     </div>
 
     <DialogFooter>
-      <Button type="plain" onClick={handleClose}>Cancel</Button>
+      <Button type="outline" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting || $form.name.trim() === "" || !!$errors.name}

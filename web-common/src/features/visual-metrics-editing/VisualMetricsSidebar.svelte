@@ -353,7 +353,7 @@
       {/if}
       <div class="flex gap-x-2 self-end">
         <Button
-          type="plain"
+          type="outline"
           onClick={() => {
             onCancel(unsavedChanges);
           }}

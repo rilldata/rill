@@ -99,7 +99,7 @@
         {#if !autoSave || disableAutoSave || forceDisableAutoSave}
           <Tooltip distance={8} activeDelay={300}>
             <Button
-              type="subtle"
+              type="primary"
               loading={$saving}
               danger={!!$error && !$saving}
               loadingCopy="Saving"

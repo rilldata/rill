@@ -210,7 +210,7 @@
             {/key}
           {/each}
         {:else}
-          <div class="my-2 ui-copy-disabled text-center">
+          <div class="my-2 text-fg-disabled text-center">
             You have no bookmarks for this dashboard.
           </div>
         {/if}
@@ -233,7 +233,7 @@
             {/key}
           {/each}
         {:else}
-          <div class="my-2 ui-copy-disabled text-center">
+          <div class="my-2 text-fg-disabled text-center">
             There are no shared bookmarks for this dashboard.
           </div>
         {/if}

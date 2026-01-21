@@ -10,7 +10,7 @@ const emerald = "var(--color-emerald-700)";
 const gray = "var(--fg-muted)";
 const amber = "var(--color-amber-600)";
 const highlightBackground = "var(--line-highlight)";
-const background = "var(--surface)";
+const background = "var(--surface-container)";
 const tooltipBackground = "var(--popover)";
 const selection = "var(--editor-selection)";
 const cursor = "var(--color-gray-800)";
@@ -87,7 +87,7 @@ export const editorTheme = EditorView.theme(
     },
 
     // ".cm-tooltip": {
-    //   border: "var(--surface)",
+    //   border: "var(--surface-container)",
     //   color: emerald,
     //   backgroundColor: tooltipBackground,
     // },

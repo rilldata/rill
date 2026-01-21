@@ -104,7 +104,7 @@
   >
     <svelte:fragment slot="workspace-controls">
       <p
-        class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+        class="text-fg-muted line-clamp-1 mr-2 text-[11px]"
         transition:fade={{ duration: 200 }}
       >
         {#if refreshedOn}

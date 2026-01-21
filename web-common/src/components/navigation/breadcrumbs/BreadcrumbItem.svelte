@@ -100,7 +100,7 @@
                 }
               }}
             >
-              <span class="text-xs text-fg-muted flex-grow">
+              <span class="text-xs text-fg-secondary flex-grow">
                 {option.label}
               </span>
             </DropdownMenu.CheckboxItem>

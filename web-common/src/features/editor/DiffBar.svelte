@@ -13,7 +13,7 @@
     <h2 class="italic text-fg-secondary">Unsaved changes</h2>
 
     <Button
-      type="subtle"
+      type="secondary"
       loading={saving}
       loadingCopy="Saving"
       danger={!!errorMessage && !saving}

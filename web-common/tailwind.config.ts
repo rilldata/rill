@@ -158,8 +158,4 @@ export default {
       },
     },
   },
-
-  safelist: [
-    "ui-copy-code", // needed for code in measure expressions
-  ],
 } satisfies Config;

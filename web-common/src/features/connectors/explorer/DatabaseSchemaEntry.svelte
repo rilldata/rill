@@ -137,12 +137,12 @@
         >
           {#if error}
             <span class="error">Failed to load more tables.</span>
-            <Button type="plain" small onClick={() => fetchNextPage()}>
+            <Button type="outline" small onClick={() => fetchNextPage()}>
               Retry
             </Button>
           {:else}
             <Button
-              type="plain"
+              type="outline"
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}

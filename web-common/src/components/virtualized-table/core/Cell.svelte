@@ -114,7 +114,7 @@
   $: formattedDataTypeStyle = excluded
     ? "font-normal text-fg-muted"
     : rowSelected
-      ? "font-normal ui-copy-strong"
+      ? "font-normal text-fg-primary font-semibold"
       : "font-normal ui-copy";
 
   const shiftClick = async () => {

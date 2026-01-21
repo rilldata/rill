@@ -5,16 +5,14 @@
   type ButtonType =
     | "primary"
     | "secondary"
-    | "plain"
-    | "subtle"
+    | "destructive"
+    | "outline"
     | "ghost"
-    | "dashed"
     | "link"
     | "text"
-    | "add"
     | "toolbar";
 
-  export let type: ButtonType = "plain";
+  export let type: ButtonType = "outline";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
   export let status: "info" | "error" = "info";
   export let disabled = false;
@@ -38,7 +36,7 @@
   export let fit = false;
   export let noWrap = false;
   export let gray = false;
-  export let danger = false;
+  export let destructive = false;
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
@@ -78,7 +76,7 @@
   class:active
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
-  class:danger={status === "error" || danger}
+  class:destructive={status === "error" || destructive}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
@@ -122,142 +120,71 @@
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-accent-primary text-white;
+    @apply bg-accent-primary text-fg-inverse;
   }
 
   .primary:hover {
-    @apply bg-primary-700;
+    @apply opacity-80;
   }
 
-  .primary:active,
+  /* .primary:active,
   .primary.selected {
     @apply bg-primary-800;
-  }
+  } */
 
   .primary:disabled {
-    @apply bg-gray-400;
+    @apply opacity-50;
   }
 
   .primary.theme {
-    @apply bg-theme-600 text-white;
+    @apply bg-theme-500 text-fg-inverse;
   }
 
-  .primary.theme:hover {
-    @apply bg-theme-700;
+  /* SECONDARY STYLES */
+
+  .secondary {
+    @apply bg-surface-elevated;
   }
 
-  .primary.theme:active,
-  .primary.theme.selected {
-    @apply bg-theme-800;
+  .secondary:hover {
+    @apply opacity-80;
   }
 
-  /* SECONDARY, GHOST, DASHED STYLES */
-
-  .secondary,
-  .ghost,
-  .dashed {
-    @apply bg-transparent text-primary-600;
+  .secondary:disabled {
+    @apply opacity-50;
   }
 
-  .secondary,
-  .dashed {
-    @apply border border-primary-300;
+  /* GHOST STYLES */
+
+  .ghost {
+    @apply bg-transparent text-fg-primary;
   }
 
-  .secondary:hover,
-  .ghost:hover,
-  .dashed:hover {
-    @apply bg-primary-50;
-  }
-
-  .secondary:active,
-  .secondary.selected,
-  .ghost:active,
-  .ghost.selected,
-  .dashed:active,
-  .dashed.selected {
-    @apply bg-primary-100;
-  }
-
-  .secondary.theme,
-  .ghost.theme,
-  .dashed.theme {
-    @apply bg-transparent text-theme-600;
-  }
-
-  .secondary.theme,
-  .dashed.theme {
-    @apply border border-theme-300;
-  }
-
-  .secondary.theme:hover,
-  .ghost.theme:hover,
-  .dashed.theme:hover {
-    @apply bg-theme-50;
-  }
-
-  .secondary.theme:active,
-  .secondary.theme.selected,
-  .ghost.theme:active,
-  .ghost.theme.elected,
-  .dashed.theme:active,
-  .dashed.theme.selected {
-    @apply bg-theme-100;
-  }
-
-  .secondary.loading,
-  .ghost.loading,
-  .dashed.loading {
-    @apply bg-gray-50;
-    @apply border-gray-300;
-    @apply text-fg-secondary;
-  }
-
-  .secondary:disabled,
-  .dashed:disabled {
-    @apply text-fg-secondary bg-gray-50 border-gray-300;
+  .ghost:hover {
+    @apply bg-surface-container-hover;
   }
 
   .ghost:disabled {
-    @apply bg-transparent text-fg-secondary;
+    @apply opacity-50;
   }
 
-  .secondary:active:hover,
-  .secondary.selected:hover,
-  .ghost:active:hover,
-  .ghost.selected:hover,
-  .dashed:active:hover,
-  .dashed.selected:hover {
-    @apply bg-primary-200;
+  /* OUTLINE STYLES */
+
+  .outline {
+    @apply bg-input text-fg-primary border;
   }
 
-  .secondary.theme:active:hover,
-  .secondary.theme.selected:hover,
-  .ghost.theme:active:hover,
-  .ghost.theme.selected:hover,
-  .dashed.theme:active:hover,
-  .dashed.theme.selected:hover {
-    @apply bg-theme-200;
+  .outline:hover {
+    @apply bg-surface-container-hover;
   }
 
-  /* PLAIN STYLES */
-
-  .plain {
-    @apply bg-transparent text-fg-secondary;
-    @apply border;
-  }
-
-  .plain:hover {
+  .outline:active,
+  .outline.selected {
     @apply bg-gray-200;
   }
 
-  .plain:active,
-  .plain.selected {
-    @apply bg-gray-200;
-  }
-
-  .plain.disabled {
-    @apply text-fg-secondary;
+  .outline.disabled {
+    @apply opacity-50;
   }
 
   /* SUBTLE STYLES */
@@ -381,55 +308,51 @@
     @apply text-theme-800;
   }
 
-  /* DANGER STYLES */
+  /* DESTRUCTIVE STYLES */
 
-  .danger.primary {
-    @apply bg-red-500 text-white;
+  .destructive.primary {
+    @apply bg-destructive text-destructive-foreground;
+    @apply opacity-60;
   }
 
-  .danger.primary:hover {
-    @apply bg-red-600;
+  .destructive.primary:hover {
+    @apply opacity-90;
   }
 
-  .danger.primary:active,
-  .danger.selected {
-    @apply bg-red-700;
+  .destructive.primary:disabled {
+    @apply opacity-50;
   }
 
-  .danger.primary:disabled {
-    @apply bg-gray-400;
-  }
-
-  .danger.secondary {
+  .destructive.secondary {
     @apply bg-surface;
     @apply text-red-500;
     @apply border-red-500;
   }
 
-  .danger.secondary:hover {
+  .destructive.secondary:hover {
     @apply text-red-600;
     @apply border-red-600;
   }
 
-  .danger.secondary:disabled {
+  .destructive.secondary:disabled {
     @apply text-fg-secondary;
     @apply bg-gray-50;
     @apply border-gray-300;
   }
 
-  .danger.text {
+  .destructive.text {
     @apply text-fg-secondary p-0;
   }
 
-  .danger.text:hover {
+  .destructive.text:hover {
     @apply text-red-600;
   }
 
-  .danger.subtle {
+  .destructive.subtle {
     @apply bg-red-50 text-red-600;
   }
 
-  .danger.subtle:hover {
+  .destructive.subtle:hover {
     @apply bg-red-100;
   }
 
@@ -478,7 +401,7 @@
     @apply border border-dashed;
   }
 
-  /* TODO: variants for types like danger */
+  /* TODO: variants for types like destructive */
   .active {
     @apply bg-primary-100;
   }

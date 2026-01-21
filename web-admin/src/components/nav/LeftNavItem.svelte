@@ -16,10 +16,10 @@
   }
 
   .selected {
-    @apply bg-gray-100;
+    @apply bg-surface-container-active;
   }
 
   a:hover {
-    @apply bg-gray-50;
+    @apply bg-surface-container-hover;
   }
 </style>

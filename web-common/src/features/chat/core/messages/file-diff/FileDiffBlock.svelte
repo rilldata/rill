@@ -209,7 +209,7 @@
 
   /* Context/unchanged lines */
   .diff-view :global(.d2h-cntx) {
-    background-color: var(--surface);
+    background-color: var(--surface-container);
   }
 
   .diff-view :global(.d2h-cntx .d2h-code-linenumber) {
@@ -218,7 +218,7 @@
 
   .diff-view :global(.d2h-cntx .d2h-code-line-prefix),
   .diff-view :global(.d2h-cntx .d2h-code-line-ctn) {
-    background-color: var(--surface);
+    background-color: var(--surface-container);
   }
 
   /* Hunk header (@@) */

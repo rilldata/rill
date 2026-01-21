@@ -193,7 +193,7 @@
 
           {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
             <span
-              class="w-fit font-semibold ui-copy-inactive"
+              class="w-fit font-semibold text-fg-disabled"
               class:text-red-500={primaryTotal && primaryTotal < 0}
             >
               <PercentageChange

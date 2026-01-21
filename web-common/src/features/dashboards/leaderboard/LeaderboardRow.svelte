@@ -160,7 +160,7 @@
 
   $: dimensionCellClass = `relative size-full flex flex-none justify-between items-center leaderboard-label ${
     atLeastOneActive ? "cursor-pointer" : ""
-  } ${excluded ? "ui-copy-disabled" : ""} ${!excluded && selected ? "ui-copy-strong" : ""}`;
+  } ${excluded ? "text-fg-disabled" : ""} ${!excluded && selected ? "text-fg-primary font-semibold" : ""}`;
 
   function onDimensionCellClick(e: MouseEvent) {
     // Check if user has selected text
@@ -320,7 +320,7 @@
 
 <style lang="postcss">
   td {
-    @apply bg-surface h-[22px] p-0 px-1 truncate text-right;
+    @apply bg-surface-container h-[22px] p-0 px-1 truncate text-right;
   }
 
   tr {

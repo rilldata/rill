@@ -146,7 +146,7 @@
                 x2={xArrow + dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="var(--surface)"
+                stroke="var(--surface-container)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -155,7 +155,7 @@
                 x2={xArrow - dist}
                 y1={yLoc}
                 y2={yLoc + signedDist}
-                stroke="var(--surface)"
+                stroke="var(--surface-container)"
                 stroke-width={strokeWidth + 3}
                 stroke-linecap="round"
               />
@@ -166,7 +166,7 @@
               x2={xArrow}
               y1={output.y + yBuffer}
               y2={output.dy - yBuffer}
-              stroke="var(--surface)"
+              stroke="var(--surface-container)"
               stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />

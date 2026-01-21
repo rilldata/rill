@@ -215,7 +215,7 @@
     >
       {#if !hasFilters}
         <div
-          class="ui-copy-disabled grid ml-1 items-center"
+          class="text-fg-disabled grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected

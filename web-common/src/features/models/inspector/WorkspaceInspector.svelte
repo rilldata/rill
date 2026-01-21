@@ -171,7 +171,7 @@
 <Inspector {filePath}>
   <div class="wrapper" class:grayscale={hasUnsavedChanges}>
     {#if isEmpty}
-      <div class="px-4 py-24 italic ui-copy-disabled text-center">
+      <div class="px-4 py-24 italic text-fg-disabled text-center">
         {source ? "Source" : "Model"} is empty.
       </div>
     {:else if isResourceReconciling}

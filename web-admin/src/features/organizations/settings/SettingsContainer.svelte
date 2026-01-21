@@ -38,7 +38,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-full border border-gray-200 text-fg-primary rounded-sm;
+    @apply w-full border border-gray-200 text-fg-secondary rounded-sm;
   }
 
   .settings-header {
@@ -51,11 +51,11 @@
   }
 
   .settings-body {
-    @apply text-sm text-fg-secondary;
+    @apply text-sm text-fg-tertiary;
   }
 
   .settings-footer {
     @apply flex flex-row items-center px-5 py-2;
-    @apply bg-gray-50 text-fg-secondary text-sm border-t border-gray-200;
+    @apply bg-gray-50 text-fg-tertiary text-sm border-t border-gray-200;
   }
 </style>

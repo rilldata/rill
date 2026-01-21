@@ -310,7 +310,7 @@
 
   tr:hover,
   tr:hover .cell {
-    @apply bg-gray-100;
+    @apply bg-surface-container-hover;
   }
 
   tr:hover .active-cell {

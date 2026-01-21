@@ -602,7 +602,7 @@
 
           <!-- Show "no results" only if both checked and unchecked are empty -->
           {#if uncheckedItems.length === 0 && (curMode !== DimensionFilterMode.Select || checkedItems.length === 0)}
-            <div class="ui-copy-disabled text-center p-2 w-full">
+            <div class="text-fg-disabled text-center p-2 w-full">
               no results
             </div>
           {/if}

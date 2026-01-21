@@ -69,7 +69,7 @@
           Search error. Try again.
         </div>
       {:else if $results.completed && responses.length === 0}
-        <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
+        <div class="text-fg-disabled text-center p-2 w-full">no results</div>
       {:else}
         {#if $results.progress < 100}
           <div class="flex flex-row items-center gap-x-2 px-2">

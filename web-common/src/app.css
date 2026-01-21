@@ -8,14 +8,6 @@
     @apply text-fg-primary;
   }
 
-  .ui-copy-muted {
-    @apply text-fg-primary dark:text-fg-primary;
-  }
-
-  .ui-copy-strong {
-    @apply text-fg-primary font-semibold;
-  }
-
   .ui-copy-number {
     font-feature-settings:
       "case" 0,
@@ -47,20 +39,6 @@
       "calt",
       "ccmp",
       "kern";
-  }
-
-  .ui-copy-inactive {
-    @apply text-fg-secondary;
-  }
-
-  .ui-copy-disabled {
-    @apply ui-copy-inactive;
-  }
-
-  .ui-copy-code {
-    font-family: var(--monospace);
-    font-size: 11px;
-    @apply text-fg-secondary;
   }
 
   .ui-measure-bar-included {
@@ -127,10 +105,10 @@
     --api: var(--color-orange-400);
     --data: var(--color-fuchsia-500);
     --theme: var(--color-pink-500);
-    --component: #65a30d;
-    --alert: #f59e0b;
-    --report: #0284c7;
-    --connector: #6b7280;
+    --component: oklch(0.6482 0.1754 131.68);
+    --alert: oklch(0.7686 0.1647 70.08);
+    --report: oklch(0.5876 0.1389 241.97);
+    --connector: oklch(0.551 0.0234 264.36);
 
     --alert: var(--color-red-light-800);
     --report: var(--color-red-light-800);
@@ -157,7 +135,7 @@
     --popover: var(--white);
     --popover-accent: var(--color-gray-200);
     --popover-foreground: var(--color-neutral-950);
-    --popover-footer: var(--color-neutral-950);
+    --popover-footer: var(--color-neutral-50);
 
     --color-theme-50: var(
       --color-theme-light-50,
@@ -341,25 +319,25 @@
     --api: var(--color-orange-light-300);
     --data: var(--color-fuchsia-light-400);
     --theme: var(--color-pink-light-400);
-    --component: var(--component);
-    --alert: var(--alert);
-    --report: var(--report);
-    --connector: var(--color-gray-500);
+    --component: oklch(0.6482 0.1754 131.68);
+    --alert: oklch(0.7686 0.1647 70.08);
+    --report: oklch(0.5876 0.1389 241.97);
+    --connector: oklch(0.551 0.0234 264.36);
 
     /* These don't match Figma directly, but are visually close */
     --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
     --border: color-mix(in oklab, var(--white) calc(0.08 * 100%), transparent);
 
-    --ring-focus: var(--color-theme-primary-light-500);
+    --ring-focus: var(--color-primary-light-500);
     --ring-offset: var(--white);
 
-    --dimension: var(--color-theme-primary-light-950);
-    --dimension-foreground: var(--color-theme-primary-light-100);
-    --dimension-border: var(--color-theme-primary-light-800);
+    --dimension: var(--color-primary-light-950);
+    --dimension-foreground: var(--color-primary-light-100);
+    --dimension-border: var(--color-primary-light-800);
 
-    --measure: var(--color-theme-secondary-light-950);
-    --measure-foreground: var(--color-theme-secondary-light-100);
-    --measure-border: var(--color-theme-secondary-light-800);
+    --measure: var(--color-secondary-light-950);
+    --measure-foreground: var(--color-secondary-light-100);
+    --measure-border: var(--color-secondary-light-800);
 
     --tooltip: var(--color-rill-gray-dark-500);
 
