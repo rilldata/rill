@@ -1,8 +1,13 @@
 <script lang="ts">
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Chart from "@rilldata/web-common/components/time-series-chart/Chart.svelte";
-  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import BigNumberTooltipContent from "@rilldata/web-common/features/dashboards/big-number/BigNumberTooltipContent.svelte";
   import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -18,7 +23,6 @@
   import { Interval } from "luxon";
   import type { KPISpec } from ".";
   import { BIG_NUMBER_MIN_WIDTH } from ".";
-  import type { ChartDataPoint } from "@rilldata/web-common/components/time-series-chart/types";
 
   type Query<T> = QueryObserverResult<T, HTTPError>;
   type TimeSeriesQuery = Query<V1MetricsViewTimeSeriesResponse>;
@@ -45,6 +49,14 @@
 
   $: measureValueFormatter = measure
     ? createMeasureValueFormatter<null>(measure, "big-number")
+    : () => "no data";
+
+  $: measureValueFormatterTooltip = measure
+    ? createMeasureValueFormatter<null>(measure, "tooltip")
+    : () => "no data";
+
+  $: measureValueFormatterUnabridged = measure
+    ? createMeasureValueFormatter<null>(measure, "unabridged")
     : () => "no data";
 
   $: showSparkline = hasTimeSeries && sparkline !== "none";
@@ -113,113 +125,154 @@
       cellInspectorStore.updateValue(comparisonVal.toString());
     }
   }
+
+  $: displayValue =
+    hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal;
+
+  $: tooltipValue =
+    displayValue !== null && displayValue !== undefined
+      ? measureValueFormatterTooltip(displayValue)
+      : "no data";
+
+  $: copyValue =
+    displayValue !== null && displayValue !== undefined
+      ? measureValueFormatterUnabridged(displayValue)
+      : "no data";
+
+  function shiftClickHandler() {
+    if (copyValue === "no data") return;
+    copyToClipboard(
+      copyValue ?? "",
+      `copied measure value "${copyValue}" to clipboard`,
+    );
+  }
 </script>
 
 <div class="wrapper" class:spark-right={isSparkRight}>
-  <div
-    class="data-wrapper overflow-hidden"
-    style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
-    aria-label="{measure?.name ?? ''} KPI data"
-  >
-    <h2 class="measure-name" title={measure?.displayName || measure?.name}>
-      {#if measure?.displayName}
-        {measure.displayName}
-      {:else if measure?.name}
-        {measure.name}
-      {:else}
-        <div class="loading h-[14px] w-24"></div>
+  <Tooltip distance={8} location="top" alignment="middle" suppress={!measure}>
+    <svelte:fragment slot="tooltip-content">
+      {#if measure}
+        <BigNumberTooltipContent {measure} value={tooltipValue ?? "no data"} />
       {/if}
-    </h2>
+    </svelte:fragment>
 
     <div
-      class="big-number h-9 grid place-content-center"
-      class:hovered-value={hoveredPoints?.[0]?.value != null}
+      class="data-wrapper overflow-hidden cursor-pointer"
+      style:min-width="{BIG_NUMBER_MIN_WIDTH - adjustment}px"
+      aria-label="{measure?.name ?? ''} KPI data"
       role="button"
       tabindex="0"
-      on:mouseover={handleBigNumberMouseOver}
-      on:focus={handleBigNumberFocus}
+      on:click={modified({
+        shift: shiftClickHandler,
+      })}
+      on:keydown={(e) => {
+        if (e.shiftKey && e.key === "Enter") {
+          shiftClickHandler();
+        }
+      }}
     >
-      {#if primaryTotalResult.isError}
-        <AlertTriangleIcon class=" text-red-300" size="34px" />
-      {:else if primaryTotalResult.isLoading}
-        <div class="loading h-6 w-16"></div>
-      {:else if primaryTotalResult.data}
-        <span class:opacity-50={primaryTotalResult.isFetching}>
-          {measureValueFormatter(
-            hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
-          )}
-        </span>
-      {/if}
-    </div>
+      <h2 class="measure-name" title={measure?.displayName || measure?.name}>
+        {#if measure?.displayName}
+          {measure.displayName}
+        {:else if measure?.name}
+          {measure.name}
+        {:else}
+          <div class="loading h-[14px] w-24"></div>
+        {/if}
+      </h2>
 
-    {#if showComparison}
-      <div class="comparison-value-wrapper">
-        {#if comparisonTotalResult.isError}
-          <div class="text-red-400">error loading comparison data</div>
-        {:else if comparisonTotalResult.isLoading}
-          <div class="loading h-[14px] w-6"></div>
-          <div class="loading h-[14px] w-6"></div>
-          <div class="loading h-[14px] w-6"></div>
-        {:else if comparisonTotalResult.data}
-          {#if comparisonOptions?.includes("previous")}
-            <span
-              class="comparison-value"
-              role="button"
-              tabindex="0"
-              on:mouseover={handleComparisonMouseOver}
-              on:focus={handleComparisonFocus}
-            >
-              {measureValueFormatter(comparisonVal)}
-            </span>
-          {/if}
-
-          {#if comparisonOptions?.includes("delta")}
-            <span
-              class="comparison-value"
-              class:text-red-500={primaryTotal !== null &&
-                comparisonVal !== null &&
-                primaryTotal - comparisonVal < 0}
-              class:ui-copy-disabled-faint={comparisonVal === null}
-              class:italic={comparisonVal === null}
-              class:text-sm={comparisonVal === null}
-            >
-              {#if comparisonVal != null && currentValue != null}
-                {getFormattedDiff(comparisonVal, currentValue)}
-              {:else}
-                no change
-              {/if}
-            </span>
-          {/if}
-
-          {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
-            <span
-              class="w-fit font-semibold ui-copy-inactive"
-              class:text-red-500={primaryTotal && primaryTotal < 0}
-            >
-              <PercentageChange
-                color="text-gray-500"
-                showPosSign
-                tabularNumber={false}
-                value={formatMeasurePercentageDifference(comparisonPercChange)}
-              />
-            </span>
-          {/if}
+      <div
+        class="big-number h-9 grid place-content-center"
+        class:hovered-value={hoveredPoints?.[0]?.value != null}
+        role="button"
+        tabindex="0"
+        on:mouseover={handleBigNumberMouseOver}
+        on:focus={handleBigNumberFocus}
+      >
+        {#if primaryTotalResult.isError}
+          <AlertTriangleIcon class=" text-red-300" size="34px" />
+        {:else if primaryTotalResult.isLoading}
+          <div class="loading h-6 w-16"></div>
+        {:else if primaryTotalResult.data}
+          <span class:opacity-50={primaryTotalResult.isFetching}>
+            {measureValueFormatter(
+              hoveredPoints?.[0]?.value != null ? currentValue : primaryTotal,
+            )}
+          </span>
         {/if}
       </div>
 
-      {#if comparisonLabel}
-        <p class="text-sm text-gray-400 break-words">
-          vs {comparisonLabel?.toLowerCase()}
-        </p>
-      {/if}
-    {/if}
+      {#if showComparison}
+        <div class="comparison-value-wrapper">
+          {#if comparisonTotalResult.isError}
+            <div class="text-red-400">error loading comparison data</div>
+          {:else if comparisonTotalResult.isLoading}
+            <div class="loading h-[14px] w-6"></div>
+            <div class="loading h-[14px] w-6"></div>
+            <div class="loading h-[14px] w-6"></div>
+          {:else if comparisonTotalResult.data}
+            {#if comparisonOptions?.includes("previous")}
+              <span
+                class="comparison-value"
+                role="button"
+                tabindex="0"
+                on:mouseover={handleComparisonMouseOver}
+                on:focus={handleComparisonFocus}
+              >
+                {measureValueFormatter(comparisonVal)}
+              </span>
+            {/if}
 
-    {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
-      <span class="text-gray-500">
-        <RangeDisplay {interval} {timeGrain} />
-      </span>
-    {/if}
-  </div>
+            {#if comparisonOptions?.includes("delta")}
+              <span
+                class="comparison-value"
+                class:text-red-500={primaryTotal !== null &&
+                  comparisonVal !== null &&
+                  primaryTotal - comparisonVal < 0}
+                class:ui-copy-disabled-faint={comparisonVal === null}
+                class:italic={comparisonVal === null}
+                class:text-sm={comparisonVal === null}
+              >
+                {#if comparisonVal != null && currentValue != null}
+                  {getFormattedDiff(comparisonVal, currentValue)}
+                {:else}
+                  no change
+                {/if}
+              </span>
+            {/if}
+
+            {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
+              <span
+                class="w-fit font-semibold ui-copy-inactive"
+                class:text-red-500={primaryTotal && primaryTotal < 0}
+              >
+                <PercentageChange
+                  color="text-gray-500"
+                  showPosSign
+                  tabularNumber={false}
+                  value={formatMeasurePercentageDifference(
+                    comparisonPercChange,
+                  )}
+                />
+              </span>
+            {/if}
+          {/if}
+        </div>
+
+        {#if comparisonLabel}
+          <p class="text-sm text-gray-400 break-words">
+            vs {comparisonLabel?.toLowerCase()}
+          </p>
+        {/if}
+      {/if}
+
+      {#if !showSparkline && timeGrain && interval.isValid && !hideTimeRange}
+        <span class="text-gray-500">
+          <RangeDisplay {interval} {timeGrain} />
+        </span>
+      {/if}
+    </div>
+  </Tooltip>
 
   {#if showSparkline}
     <div
