@@ -875,7 +875,7 @@ export class AddDataFormManager {
       return getClickHouseYamlPreview(values, clickhouseConnectorType);
     }
 
-    // Multi-step connectors (gcs, s3, azure)
+    // Multi-step connectors
     if (isMultiStepConnector) {
       if (stepState?.step === "connector") {
         return getConnectorYamlPreview(paramsFormValues);
@@ -886,16 +886,6 @@ export class AddDataFormManager {
         } as Record<string, unknown>;
         return getSourceYamlPreview(combinedValues);
       }
-    }
-
-    // Explorer connectors (athena, snowflake, redshift, etc.)
-    const isExplorerConnector = this.isExplorerConnector;
-    if (isExplorerConnector && stepState?.step === "explorer") {
-      const combinedValues = {
-        ...(stepState?.connectorConfig || {}),
-        ...paramsFormValues,
-      } as Record<string, unknown>;
-      return getSourceYamlPreview(combinedValues);
     }
 
     const currentValues =
