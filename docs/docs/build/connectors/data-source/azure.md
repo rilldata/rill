@@ -59,13 +59,10 @@ Storage Account Key credentials provide reliable authentication for Azure Blob S
    - Choose **Storage Account Key**
    - Enter your Storage Account name
    - Enter your Storage Account Key
-   - Name your connector (e.g., `my_azure`)
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will automatically create both the connector file and model file for you.
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -118,11 +115,10 @@ Connection String provides an alternative authentication method for Azure Blob S
 3. In the authentication step:
    - Choose **Connection String**
    - Enter your Connection String
-   - Name your connector (e.g., `my_azure_conn`)
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -173,11 +169,10 @@ SAS tokens provide fine-grained access control with specific permissions and exp
    - Choose **SAS Token**
    - Enter your Storage Account name
    - Enter your SAS Token
-   - Name your connector (e.g., `my_azure_sas`)
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
+
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
@@ -228,12 +223,10 @@ For publicly accessible Azure Blob Storage containers, you don't need to create 
 3. In the authentication step:
    - Choose **Public**
    - The UI will skip connector creation and proceed directly to data model configuration
-4. In the data model configuration step:
-   - Enter your container name and object path
-   - Configure other model settings as needed
+4. In the data model configuration step, enter your SQL query
 5. Click **Create** to finalize
 
-The UI will only create the model file (no connector file is created).
+After the model YAML is generated, you can add additional [model settings](/build/models/source-models) directly to the file.
 
 ### Manual Configuration
 
