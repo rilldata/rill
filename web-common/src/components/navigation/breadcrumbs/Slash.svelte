@@ -1,1 +1,1 @@
-<span class="text-fg-secondary">/</span>
+<span class="text-fg-muted">/</span>

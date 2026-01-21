@@ -61,7 +61,7 @@
       <Tooltip location="top">
         <button
           disabled={!allowExpandTable}
-          class="text-fg-secondary text-left {allowExpandTable
+          class="text-fg-muted text-left {allowExpandTable
             ? 'hover:text-theme-700'
             : ''}"
           aria-label="Open dimension details"
@@ -105,7 +105,7 @@
           class="font-normal text-right"
         >
           <span
-            class="measure-label line-clamp-2 text-fg-secondary"
+            class="measure-label line-clamp-2 text-fg-muted"
             title={measureLabel(measureName)}
           >
             {#if leaderboardMeasureNames.length > 1}
@@ -115,7 +115,7 @@
             {/if}
           </span>
           {#if measureName === leaderboardSortByMeasureName && sortType === SortType.VALUE}
-            <div class="text-fg-secondary">
+            <div class="text-fg-muted">
               {#if sortedAscending}
                 <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
                   <ArrowDown flip />
@@ -138,7 +138,7 @@
           >
             <PercentOfTotal />
             {#if sortType === SortType.PERCENT && measureName === leaderboardSortByMeasureName}
-              <div class="text-fg-secondary">
+              <div class="text-fg-muted">
                 {#if sortedAscending}
                   <div
                     in:fly|global={{ duration: 200, y: 8 }}
@@ -168,7 +168,7 @@
           >
             <DeltaChange />
             {#if sortType === SortType.DELTA_ABSOLUTE && measureName === leaderboardSortByMeasureName}
-              <div class="text-fg-secondary">
+              <div class="text-fg-muted">
                 {#if sortedAscending}
                   <div
                     in:fly|global={{ duration: 200, y: 8 }}
@@ -198,7 +198,7 @@
           >
             <DeltaChangePercentage />
             {#if sortType === SortType.DELTA_PERCENT && measureName === leaderboardSortByMeasureName}
-              <div class="text-fg-secondary">
+              <div class="text-fg-muted">
                 {#if sortedAscending}
                   <div
                     in:fly|global={{ duration: 200, y: 8 }}

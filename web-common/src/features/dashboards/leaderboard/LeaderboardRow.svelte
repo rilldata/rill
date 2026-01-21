@@ -238,7 +238,7 @@
     {/if}
   </LeaderboardCell>
 
-  {#each Object.keys(values) as measureName}
+  {#each Object.keys(values) as measureName, i (i)}
     <LeaderboardCell
       value={values[measureName]?.toString() || ""}
       dataType="INTEGER"

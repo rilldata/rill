@@ -158,7 +158,7 @@
       builders={[builder]}
       label="Add Asset"
       class="w-full"
-      type="subtle"
+      type="primary"
       selected={active}
     >
       <PlusCircleIcon size="14px" />

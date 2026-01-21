@@ -57,11 +57,6 @@
     @apply ui-copy-inactive;
   }
 
-  /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
-  .ui-copy-disabled-faint {
-    @apply text-fg-secondary;
-  }
-
   .ui-copy-code {
     font-family: var(--monospace);
     font-size: 11px;

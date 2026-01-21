@@ -681,7 +681,7 @@
             searchValue = value;
           }}
         >
-          <Search slot="icon" size="16px" color="#374151" />
+          <Search slot="icon" size="16px" className="text-fg-muted" />
         </Input>
       </div>
 

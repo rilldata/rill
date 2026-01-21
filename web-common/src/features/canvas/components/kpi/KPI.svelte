@@ -179,7 +179,7 @@
               class:text-red-500={primaryTotal !== null &&
                 comparisonVal !== null &&
                 primaryTotal - comparisonVal < 0}
-              class:ui-copy-disabled-faint={comparisonVal === null}
+              class:text-fg-muted={comparisonVal === null}
               class:italic={comparisonVal === null}
               class:text-sm={comparisonVal === null}
             >

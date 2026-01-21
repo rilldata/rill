@@ -99,7 +99,7 @@
 
   {#if clipboardSupported && !disabled}
     <Tooltip.Content
-      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-gray-700 dark:bg-gray-900 text-surface"
+      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-surface"
       sideOffset={16}
     >
       <FormattedDataType

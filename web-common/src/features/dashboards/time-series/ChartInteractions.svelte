@@ -179,7 +179,7 @@
     aria-label={priorRange ? "Undo zoom" : "Zoom"}
   >
     <div class="content-wrapper">
-      <span class="flex-none">
+      <span class="flex-none text-icon-muted">
         <Zoom size="16px" />
       </span>
 

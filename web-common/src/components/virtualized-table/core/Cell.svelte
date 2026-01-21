@@ -112,7 +112,7 @@
       : value;
 
   $: formattedDataTypeStyle = excluded
-    ? "font-normal ui-copy-disabled-faint"
+    ? "font-normal text-fg-muted"
     : rowSelected
       ? "font-normal ui-copy-strong"
       : "font-normal ui-copy";

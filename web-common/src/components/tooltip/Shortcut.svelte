@@ -1,3 +1,3 @@
-<div class="text-right text-fg-secondary">
+<div class="text-right dark:text-fg-secondary text-gray-400">
   <slot />
 </div>

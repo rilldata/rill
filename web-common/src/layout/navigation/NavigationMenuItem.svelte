@@ -26,7 +26,7 @@
 
       <div
         class:ui-copy-muted={!disabled}
-        class:ui-copy-disabled-faint={disabled}
+        class:text-fg-muted={disabled}
         style:font-size="11px"
       >
         <slot name="description" />

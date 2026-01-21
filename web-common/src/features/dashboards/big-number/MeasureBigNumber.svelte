@@ -124,7 +124,7 @@
     this={useDiv ? "div" : "a"}
     role={useDiv ? "presentation" : "button"}
     tabindex={useDiv ? -1 : 0}
-    class="group big-number outline-gray-200 dark:outline-gray-300"
+    class="group big-number outline-border"
     class:shadow-grad={!useDiv}
     class:cursor-pointer={!useDiv}
     on:click={modified({
@@ -140,14 +140,14 @@
     href={tddHref}
   >
     <h2
-      class="line-clamp-2 ui-copy-muted dark:text-fg-secondary hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
+      class="line-clamp-2 text-fg-muted hover:text-theme-700 group-hover:text-theme-700 font-semibold whitespace-normal"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
     </h2>
     <div
       role="button"
-      class="ui-copy-muted dark:text-fg-primary relative w-full h-full overflow-hidden text-ellipsis"
+      class="text-fg-secondary relative w-full h-full overflow-hidden text-ellipsis"
       style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
       style:font-weight="light"
       on:mouseover={handleMouseOver}
@@ -175,9 +175,8 @@
                 {#if !noChange}
                   {formattedDiff}
                 {:else}
-                  <span
-                    class="ui-copy-disabled-faint italic"
-                    style:font-size=".9em">no change</span
+                  <span class="text-fg-muted italic" style:font-size=".9em"
+                    >no change</span
                   >
                 {/if}
               </div>
@@ -232,9 +231,9 @@
           />
         </div>
       {:else if value === null}
-        <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+        <span class="text-fg-muted italic text-sm">no data</span>
       {:else if value === undefined}
-        <span class="ui-copy-disabled-faint italic text-sm">n/a</span>
+        <span class="text-fg-muted italic text-sm">n/a</span>
       {/if}
     </div>
   </svelte:element>
@@ -248,6 +247,10 @@
   }
 
   .shadow-grad:hover {
-    @apply shadow-md bg-gradient-to-b from-surface to-gray-50 outline-1 outline;
+    @apply shadow-md bg-gradient-to-b from-white to-gray-50 outline-1 outline;
+  }
+
+  :global(.dark) .shadow-grad:hover {
+    @apply shadow-md bg-gradient-to-b from-[#363636] to-[#1F1F1F] outline-1 outline;
   }
 </style>

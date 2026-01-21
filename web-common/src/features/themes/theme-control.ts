@@ -15,7 +15,7 @@ function isEmbedEnvironment(): boolean {
 }
 
 class ThemeControl {
-  private current = writable<Theme>("light");
+  public current = writable<"light" | "dark">("light");
   private darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
   private preferenceStore = isEmbedEnvironment()
     ? sessionStorageStore<Theme>("rill:embed:theme-mode", "light")

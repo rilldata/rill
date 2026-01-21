@@ -400,7 +400,7 @@
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30 bg-surface-container;
   }
 
   .with-row-dimension thead tr th:first-of-type .header-cell {

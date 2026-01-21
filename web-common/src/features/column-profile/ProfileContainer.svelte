@@ -42,7 +42,7 @@
         focus:ring-gray-500
         focus:outline-gray-300 flex-1
         justify-between w-full"
-    class:ui-copy-disabled-faint={isFetching}
+    class:text-fg-muted={isFetching}
     class:bg-gray-50={active}
     on:click={modified({
       shift: onShiftClick,

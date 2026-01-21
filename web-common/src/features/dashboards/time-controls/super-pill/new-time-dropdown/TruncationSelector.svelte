@@ -295,7 +295,7 @@
     </DropdownMenu.Group>
 
     {#if dateTimeUnit}
-      <div class="bg-gray-500 border-t rounded-b-sm">
+      <div class="bg-popover-footer border-t rounded-b-sm">
         <div class="flex justify-between items-center p-2">
           <span>Anchor to period end</span>
 

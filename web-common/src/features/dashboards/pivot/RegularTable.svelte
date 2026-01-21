@@ -8,8 +8,8 @@
   import { isEmptyPos, range } from "./regular-table-utils";
   import type { PivotPos, PivotRenderCallback } from "./types";
 
-  const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
-  const NULL_CELL = `<div class="null-cell text-fg-secondary">-</div>`;
+  const LOADING_CELL = `<div load class="loading-cell h-4 rounded" style="width: 100%; min-width: 32px;"/>`;
+  const NULL_CELL = `<div class="null-cell text-fg-muted">-</div>`;
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];
@@ -334,7 +334,7 @@
 
 <div class="relative w-full h-full" style={cssVarStyles}>
   <regular-table
-    class="w-full h-full tdd-table text-fg-primary dark:text-fg-secondary"
+    class="w-full h-full tdd-table text-fg-muted bg-surface-background"
     bind:this={table}
   />
 </div>
