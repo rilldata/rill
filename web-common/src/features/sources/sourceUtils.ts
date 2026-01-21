@@ -186,9 +186,8 @@ export function maybeRewriteToDuckDb(
   switch (connector.name) {
     case "s3":
     case "gcs":
-    case "https":
     case "azure":
-      // Ensure DuckDB creates a temporary secret for the original connector
+      // Ensure DuckDB creates a temporary secret for the original connector.
       if (secretConnectorName) {
         if (connectorInstanceName) {
           if (!formValues.create_secrets_from_connectors) {
@@ -196,6 +195,15 @@ export function maybeRewriteToDuckDb(
           }
         } else {
           // When skipping connector creation, force the default driver name.
+          formValues.create_secrets_from_connectors = secretConnectorName;
+        }
+      }
+    // falls through to rewrite as DuckDB
+    case "https":
+      // HTTP sources are typically public; avoid surfacing secret wiring unless
+      // the user is explicitly targeting a configured connector instance.
+      if (connectorInstanceName && secretConnectorName) {
+        if (!formValues.create_secrets_from_connectors) {
           formValues.create_secrets_from_connectors = secretConnectorName;
         }
       }
