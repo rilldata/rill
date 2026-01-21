@@ -13,24 +13,28 @@ sidebar_position: 15
 
 ## Authentication Methods
 
-To connect to Google Cloud Storage, you need to provide authentication credentials (or skip for public buckets). Rill supports three methods:
+To connect to Google Cloud Storage, you can choose from three authentication options:
 
-1. **Use Service Account JSON** (recommended for production)
-2. **Use HMAC Keys** (alternative authentication method)
-3. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
+1. **Service Account JSON** (recommended for production)
+2. **HMAC Keys** (alternative authentication method)
+3. **Public** (for publicly accessible buckets - no authentication required)
 
 :::tip Authentication Methods
-Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials only work for local development and will cause deployment failures.
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON or HMAC Keys. Public buckets don't require authentication and skip connector creation.
 :::
 
 ## Using the Add Data UI
 
-When you add a GCS data model through the Rill UI, the process follows two steps:
+When you add a GCS data model through the Rill UI, you'll see three authentication options:
 
-1. **Configure Authentication** - Set up your GCS connector with credentials (Service Account JSON or HMAC keys)
-2. **Configure Data Model** - Define which bucket and objects to ingest
+- **Service Account JSON** or **HMAC Keys**: The process follows two steps:
+  1. **Configure Authentication** - Set up your GCS connector with credentials
+  2. **Configure Data Model** - Define which bucket and objects to ingest
+  The UI will automatically create both the connector file and model file for you.
 
-This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
+- **Public**: For publicly accessible buckets, you skip the connector creation step and go directly to:
+  1. **Configure Data Model** - Define which bucket and objects to ingest
+  The UI will only create the model file (no connector file is needed).
 
 ---
 
@@ -75,6 +79,7 @@ Create `models/my_gcs_data.yaml`:
 ```yaml
 type: model
 connector: duckdb
+create_secrets_from_connectors: my_gcs
 
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
@@ -130,6 +135,7 @@ Create `models/my_gcs_data.yaml`:
 ```yaml
 type: model
 connector: duckdb
+create_secrets_from_connectors: my_gcs_hmac
 
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
@@ -151,9 +157,46 @@ Notice that the connector uses `key_id` and `secret`. HMAC keys use S3-compatibl
 
 ---
 
-## Method 3: Local Google Cloud CLI Credentials
+## Method 3: Public Buckets
 
-For local development, you can use credentials from the Google Cloud CLI. This method is **not suitable for production** or Rill Cloud deployments.
+For publicly accessible GCS buckets, you don't need to create a connector. Simply use the GCS URI directly in your model configuration.
+
+### Using the UI
+
+1. Click **Add Data** in your Rill project
+2. Select **Google Cloud Storage (GCS)** as the data model type
+3. In the authentication step:
+   - Choose **Public**
+   - The UI will skip connector creation and proceed directly to data model configuration
+4. In the data model configuration step:
+   - Enter your bucket name and object path
+   - Configure other model settings as needed
+5. Click **Create** to finalize
+
+The UI will only create the model file (no connector file is created).
+
+### Manual Configuration
+
+For public buckets, you only need to create a model file. No connector configuration is required.
+
+Create `models/my_gcs_data.yaml`:
+
+```yaml
+type: model
+connector: duckdb
+
+sql: SELECT * FROM read_parquet('gs://my-public-bucket/path/to/data/*.parquet')
+
+# Add a refresh schedule
+refresh:
+  cron: "0 */6 * * *"
+```
+
+---
+
+## Method 4: Local Google Cloud CLI Credentials
+
+For local development, you can use credentials from the Google Cloud CLI. This method is **not suitable for production** or Rill Cloud deployments. This method is only available through manual configuration, and you don't need to create a connector file.
 
 ### Setup
 
@@ -162,16 +205,7 @@ For local development, you can use credentials from the Google Cloud CLI. This m
    ```bash
    gcloud auth application-default login
    ```
-3. Create your connector and model files
-
-### Connector Configuration
-
-Create `connectors/my_gcs.yaml`:
-
-```yaml
-type: connector
-driver: gcs
-```
+3. Create your model file (no connector needed)
 
 ### Model Configuration
 
@@ -188,7 +222,7 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
-When no explicit credentials are provided in the connector, Rill will automatically use your local Google Cloud CLI credentials.
+Rill will automatically detect and use your local Google Cloud CLI credentials when no connector is specified.
 
 :::warning
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
@@ -198,15 +232,29 @@ This method only works for local development. Deploying to Rill Cloud with this 
 
 ## Using GCS Data in Models
 
-Once your connector is configured, you can reference GCS paths in your model SQL queries using DuckDB's GCS functions.
+Once your connector is configured (or for public buckets, no connector needed), you can reference GCS paths in your model SQL queries using DuckDB's GCS functions.
 
 ### Basic Example
+
+**With a connector (authenticated):**
 
 ```yaml
 type: model
 connector: duckdb
 
 sql: SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
+
+refresh:
+  cron: "0 */6 * * *"
+```
+
+**Public bucket (no connector needed):**
+
+```yaml
+type: model
+connector: duckdb
+
+sql: SELECT * FROM read_parquet('gs://my-public-bucket/data/*.parquet')
 
 refresh:
   cron: "0 */6 * * *"

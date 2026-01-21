@@ -713,6 +713,10 @@ _[boolean]_ - Log raw SQL queries executed through Pinot
 
 _[integer]_ - Maximum number of open connections to the Pinot database 
 
+### `timeout_ms`
+
+_[integer]_ - Query timeout in milliseconds 
+
 ```yaml
 # Example: Pinot connector configuration
 type: connector # Must be `connector` (required)
@@ -726,6 +730,7 @@ controller_port: 9000 # Port number for the Pinot controller
 ssl: true # Enable SSL connection to Pinot  
 log_queries: true # Log raw SQL queries executed through Pinot  
 max_open_conns: 100 # Maximum number of open connections to the Pinot database
+timeout_ms: 30000 # Query timeout in milliseconds
 ```
 
 ## StarRocks
@@ -937,6 +942,18 @@ _[string]_ - Optional custom endpoint URL for S3-compatible storage
 ### `region`
 
 _[string]_ - AWS region of the S3 bucket 
+
+### `aws_role_arn`
+
+_[string]_ - ARN of the IAM role to assume for accessing S3 resources 
+
+### `aws_role_session_name`
+
+_[string]_ - Session name to use when assuming the IAM role 
+
+### `aws_external_id`
+
+_[string]_ - External ID for cross-account role assumption 
 
 ### `path_prefixes`
 
