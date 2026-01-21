@@ -148,14 +148,19 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			secretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
 			validation := ", VALIDATION 'none'"
 			// azure does not support this property
+			var chain string
 			if connector == "azure" {
 				validation = ""
+				chain = "'env;cli'"
+			} else {
+				chain = "'config;env;sso'"
 			}
 			fallbackSecrets = append(fallbackSecrets, fmt.Sprintf(`
 			CREATE OR REPLACE TEMPORARY SECRET  %s (
 			TYPE %s,
-			PROVIDER credential_chain%s
-			)`, secretName, connector, validation))
+			PROVIDER credential_chain,
+			CHAIN %s %s
+			)`, secretName, connector, chain, validation))
 			fallbackDrops = append(fallbackDrops, fmt.Sprintf(`DROP SECRET IF EXISTS %s`, secretName))
 		}
 
