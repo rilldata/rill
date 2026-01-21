@@ -38,6 +38,8 @@
   export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
+  export let initialClickhouseType: ClickHouseConnectorType | undefined =
+    undefined;
 
   let saveAnyway = false;
   let showSaveAnyway = false;
@@ -54,6 +56,12 @@
     cancel?: () => void;
   }) => Promise<void> = async (_event) => {};
 
+  // Use clickhousecloud schema when ClickHouse Cloud is selected
+  const schemaName =
+    initialClickhouseType === "clickhouse-cloud"
+      ? "clickhousecloud"
+      : (connector.name ?? "");
+
   const formManager = new AddDataFormManager({
     connector,
     formType,
@@ -61,6 +69,7 @@
     onDsnUpdate: (e: any) => handleOnUpdate(e),
     getSelectedAuthMethod: () =>
       get(connectorStepStore).selectedAuthMethod ?? undefined,
+    schemaName,
   });
 
   const isMultiStepConnector = formManager.isMultiStepConnector;
@@ -114,13 +123,14 @@
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
-  let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
+  let clickhouseConnectorType: ClickHouseConnectorType =
+    initialClickhouseType ?? "self-hosted";
   let prevClickhouseConnectorType: ClickHouseConnectorType | null = null;
   let clickhouseUiState: ClickhouseUiState | null = null;
   let clickhouseSaving = false;
   let effectiveClickhouseSubmitting = false;
 
-  const connectorSchema = getConnectorSchema(connector.name ?? "");
+  const connectorSchema = getConnectorSchema(schemaName);
   const hasSchema = Boolean(connectorSchema);
   const paramsSchema =
     connectorSchema ??
@@ -138,10 +148,14 @@
   $: useDsnForm = usesLegacyTabs && (onlyDsn || connectionTab === "dsn");
 
   $: if (connector.name === "clickhouse") {
-    const nextType = ($paramsForm?.connector_type ??
-      clickhouseConnectorType) as ClickHouseConnectorType;
-    if (nextType && nextType !== clickhouseConnectorType) {
-      clickhouseConnectorType = nextType;
+    // Only sync clickhouseConnectorType from form when NOT using ClickHouse Cloud
+    // (ClickHouse Cloud has its own button and schema, so we don't want the form to overwrite the type)
+    if (!initialClickhouseType) {
+      const nextType = ($paramsForm?.connector_type ??
+        clickhouseConnectorType) as ClickHouseConnectorType;
+      if (nextType && nextType !== clickhouseConnectorType) {
+        clickhouseConnectorType = nextType;
+      }
     }
     const nextTab = $paramsForm?.connection_mode as ConnectorType | undefined;
     if (
