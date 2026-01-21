@@ -25,10 +25,13 @@
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
+  import type { ClickHouseConnectorType } from "./constants";
+
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
   let isSubmittingForm = false;
+  let initialClickhouseType: ClickHouseConnectorType | undefined = undefined;
 
   const connectorsQuery = createRuntimeServiceListConnectorDrivers({
     query: {
@@ -55,13 +58,30 @@
     },
   });
 
-  $: connectors = $connectorsQuery.data?.connectors ?? [];
+  $: baseConnectors = $connectorsQuery.data?.connectors ?? [];
+
+  // Create a synthetic "clickhousecloud" connector based on the "clickhouse" connector
+  $: connectors = (() => {
+    const clickhouseConnector = baseConnectors.find(
+      (c) => c.name === "clickhouse",
+    );
+    if (clickhouseConnector) {
+      const clickhouseCloudConnector: V1ConnectorDriver = {
+        ...clickhouseConnector,
+        name: "clickhousecloud",
+        displayName: "ClickHouse Cloud",
+      };
+      return [...baseConnectors, clickhouseCloudConnector];
+    }
+    return baseConnectors;
+  })();
 
   onMount(() => {
     function listen(e: PopStateEvent) {
       step = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
       selectedConnector = e.state?.selectedConnector ?? null;
+      initialClickhouseType = e.state?.initialClickhouseType ?? undefined;
     }
     window.addEventListener("popstate", listen);
 
@@ -74,10 +94,25 @@
     // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
 
+    // Handle ClickHouse Cloud - use the actual "clickhouse" connector but pre-select the type
+    let actualConnector = connector;
+    let clickhouseType: ClickHouseConnectorType | undefined = undefined;
+
+    if (connector.name === "clickhousecloud") {
+      const clickhouseConnector = baseConnectors.find(
+        (c) => c.name === "clickhouse",
+      );
+      if (clickhouseConnector) {
+        actualConnector = clickhouseConnector;
+        clickhouseType = "clickhouse-cloud";
+      }
+    }
+
     const state = {
       step: 2,
-      selectedConnector: connector,
+      selectedConnector: actualConnector,
       requestConnector: false,
+      initialClickhouseType: clickhouseType,
     };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state }));
@@ -100,7 +135,12 @@
   }
 
   function resetModal() {
-    const state = { step: 0, selectedConnector: null, requestConnector: false };
+    const state = {
+      step: 0,
+      selectedConnector: null,
+      requestConnector: false,
+      initialClickhouseType: undefined,
+    };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
@@ -209,19 +249,22 @@
       {/if}
 
       {#if step === 2 && selectedConnector}
+        {@const isClickhouseCloud = initialClickhouseType === "clickhouse-cloud"}
+        {@const displayIcon = isClickhouseCloud
+          ? connectorIconMapping["clickhousecloud"]
+          : connectorIconMapping[selectedConnector.name ?? ""]}
+        {@const displayName = isClickhouseCloud
+          ? "ClickHouse Cloud"
+          : selectedConnector.displayName}
         <Dialog.Title class="p-4 border-b border-gray-200">
           {#if $duplicateSourceName !== null}
             Duplicate source
           {:else}
             <div class="flex items-center gap-[6px]">
-              {#if selectedConnector?.name}
-                <svelte:component
-                  this={connectorIconMapping[selectedConnector.name]}
-                  size="18px"
-                />
+              {#if displayIcon}
+                <svelte:component this={displayIcon} size="18px" />
               {/if}
-              <span class="text-lg leading-none font-semibold"
-                >{selectedConnector.displayName}</span
+              <span class="text-lg leading-none font-semibold">{displayName}</span
               >
             </div>
           {/if}
@@ -240,6 +283,7 @@
             onClose={resetModal}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}
+            {initialClickhouseType}
           />
         {/if}
       {/if}

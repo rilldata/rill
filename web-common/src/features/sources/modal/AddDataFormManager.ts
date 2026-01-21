@@ -152,6 +152,7 @@ export class AddDataFormManager {
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
     onDsnUpdate: (event: SuperFormUpdateEvent) => void;
     getSelectedAuthMethod?: () => string | undefined;
+    schemaName?: string; // Override connector.name for schema/validation lookup
   }) {
     const {
       connector,
@@ -159,22 +160,26 @@ export class AddDataFormManager {
       onParamsUpdate,
       onDsnUpdate,
       getSelectedAuthMethod,
+      schemaName,
     } = args;
     this.connector = connector;
     this.formType = formType;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
 
+    // Use schemaName if provided, otherwise fall back to connector.name
+    const effectiveSchemaName = schemaName ?? connector.name ?? "";
+
     // Layout height
-    this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
+    this.formHeight = TALL_FORM_CONNECTORS.has(effectiveSchemaName)
       ? FORM_HEIGHT_TALL
       : FORM_HEIGHT_DEFAULT;
 
     // IDs
-    this.paramsFormId = `add-data-${connector.name}-form`;
-    this.dsnFormId = `add-data-${connector.name}-dsn-form`;
+    this.paramsFormId = `add-data-${effectiveSchemaName}-form`;
+    this.dsnFormId = `add-data-${effectiveSchemaName}-dsn-form`;
 
     const isSourceForm = formType === "source";
-    const schema = getConnectorSchema(connector.name ?? "");
+    const schema = getConnectorSchema(effectiveSchemaName);
     const schemaStep = isSourceForm ? "source" : "connector";
     const schemaFields = schema
       ? getSchemaFieldMetaList(schema, { step: schemaStep })
@@ -196,7 +201,7 @@ export class AddDataFormManager {
 
     // Superforms: params
     const paramsAdapter = getValidationSchemaForConnector(
-      connector.name as string,
+      effectiveSchemaName,
       formType,
     );
     type ParamsOut = FormData;
@@ -384,7 +389,12 @@ export class AddDataFormManager {
     const schema = getConnectorSchema(this.connector.name ?? "");
 
     // Keep connector_type in sync on the params form
-    if (paramsFormValues?.connector_type !== connectorType) {
+    // Skip for clickhouse-cloud since it's a fixed type with its own button/schema
+    // and the defaults are already set by getClickhouseDefaults in AddDataForm
+    if (
+      connectorType !== "clickhouse-cloud" &&
+      paramsFormValues?.connector_type !== connectorType
+    ) {
       paramsForm.update(
         ($form) => ({
           ...$form,
