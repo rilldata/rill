@@ -4,7 +4,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
+  import { Database, Folder, PlusCircleIcon, FileSpreadsheet } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import File from "../../components/icons/File.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
@@ -153,6 +153,13 @@
 
     await goto(`/files/${path}`);
   }
+
+  /**
+   * Navigate to the mapping file workspace
+   */
+  async function handleAddMappingFile() {
+    await goto("/mapping/new");
+  }
 </script>
 
 <DropdownMenu.Root bind:open={active}>
@@ -282,6 +289,9 @@
         </DropdownMenu.Item>
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
           <File size="16px" /> Blank file
+        </DropdownMenu.Item>
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddMappingFile}>
+          <FileSpreadsheet size="16px" /> Mapping file
         </DropdownMenu.Item>
         <DropdownMenu.Item
           class="flex gap-x-2"
