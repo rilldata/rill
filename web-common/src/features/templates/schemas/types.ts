@@ -46,7 +46,9 @@ export type JSONSchemaField = {
 };
 
 export type JSONSchemaCondition = {
-  properties?: Record<string, { const?: string | number | boolean }>;
+  properties?: Record<string, { const?: string | number | boolean; minLength?: number }>;
+  required?: string[];
+  not?: JSONSchemaCondition;
 };
 
 export type JSONSchemaConstraint = {
@@ -62,6 +64,13 @@ export type JSONSchemaConditional = {
   else?: JSONSchemaConstraint;
 };
 
+export type ConnectorCategory =
+  | "sqlStore"
+  | "olap"
+  | "objectStore"
+  | "fileStore"
+  | "warehouse";
+
 export type JSONSchemaObject = {
   $schema?: string;
   type: "object";
@@ -71,6 +80,12 @@ export type JSONSchemaObject = {
   required?: string[];
   allOf?: JSONSchemaConditional[];
   oneOf?: JSONSchemaConstraint[];
+  /**
+   * Connector category for UI enumeration.
+   * "source" = data sources (databases, cloud storage, etc.)
+   * "olap" = OLAP engines (ClickHouse, DuckDB, etc.)
+   */
+  "x-category"?: ConnectorCategory;
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;
