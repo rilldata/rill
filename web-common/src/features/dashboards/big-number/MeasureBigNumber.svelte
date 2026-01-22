@@ -75,6 +75,7 @@
 
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
+  $: console.log(copyValue);
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
@@ -165,12 +166,18 @@
                 role="complementary"
                 class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
                 class:font-semibold={isComparisonPositive}
-                on:mouseenter={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(diff) ?? "no data")}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterTooltip(value) ?? "no data")}
+                on:mouseenter={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(diff) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(diff) ?? "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterTooltip(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
               >
                 {#if !noChange}
                   {formattedDiff}
@@ -185,15 +192,22 @@
             {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
               <div
                 role="complementary"
-                on:mouseenter={() =>
-                  (tooltipValue = numberPartsToString(
+                on:mouseenter={() => {
+                  tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
                     ),
-                  ))}
-                on:mouseleave={() =>
-                  (tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? "no data")}
+                  );
+                  copyValue =
+                    measureValueFormatterUnabridged(comparisonPercChange) ??
+                    "no data";
+                }}
+                on:mouseleave={() => {
+                  tooltipValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                  copyValue =
+                    measureValueFormatterUnabridged(value) ?? "no data";
+                }}
                 class="w-fit ui-copy-inactive"
                 class:text-red-500={!isComparisonPositive}
               >
