@@ -244,13 +244,12 @@ function getGenericEnvVarName(driverName: string, propertyKey: string): string {
     // AWS credentials (used by S3, Athena, Redshift, etc.)
     "aws_access_key_id",
     "aws_secret_access_key",
+    "aws_access_token",
     // Azure
     "azure_storage_connection_string",
     "azure_storage_key",
     "azure_storage_sas_token",
     "azure_storage_account",
-    // Snowflake
-    "privateKey",
   ]);
 
   // Convert property key to SCREAMING_SNAKE_CASE
