@@ -54,6 +54,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			feature_flags,
 			annotations,
 			public_paths,
+			allowed_hosts,
 			ai_instructions,
 			frontend_url
 		FROM instances %s ORDER BY id
@@ -68,7 +69,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var variables, projectVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths []byte
+		var variables, projectVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths, allowedHosts []byte
 		i := &drivers.Instance{}
 		err := rows.Scan(
 			&i.ID,
@@ -90,6 +91,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&featureFlags,
 			&annotations,
 			&publicPaths,
+			&allowedHosts,
 			&i.AIInstructions,
 			&i.FrontendURL,
 		)
@@ -142,6 +144,11 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		}
 
 		i.PublicPaths, err = arrayFromJSON[string](publicPaths)
+		if err != nil {
+			return nil, err
+		}
+
+		i.AllowedHosts, err = arrayFromJSON[string](allowedHosts)
 		if err != nil {
 			return nil, err
 		}
@@ -200,6 +207,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
+	allowedHosts, err := arrayToJSON(inst.AllowedHosts)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
@@ -224,10 +236,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			feature_flags,
 			annotations,
 			public_paths,
+			allowed_hosts,
 			ai_instructions,
 			frontend_url
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -248,6 +261,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		featureFlags,
 		annotations,
 		publicPaths,
+		allowedHosts,
 		inst.AIInstructions,
 		inst.FrontendURL,
 	)
@@ -302,6 +316,11 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
+	allowedHosts, err := arrayToJSON(inst.AllowedHosts)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
@@ -324,8 +343,9 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			feature_flags = $16,
 			annotations = $17,
 			public_paths = $18,
-			ai_instructions = $19,
-			frontend_url = $20
+			allowed_hosts = $19,
+			ai_instructions = $20,
+			frontend_url = $21
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -346,6 +366,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		featureFlags,
 		annotations,
 		publicPaths,
+		allowedHosts,
 		inst.AIInstructions,
 		inst.FrontendURL,
 	)

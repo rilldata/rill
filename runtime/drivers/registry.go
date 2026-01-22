@@ -63,6 +63,8 @@ type Instance struct {
 	Annotations map[string]string
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `db:"public_paths"`
+	// AllowedHosts contains allowed hosts for CORS configured in rill.yaml
+	AllowedHosts []string `db:"allowed_hosts"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.

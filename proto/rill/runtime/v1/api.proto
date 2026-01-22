@@ -450,6 +450,7 @@ message Instance {
   map<string, string> annotations = 14;
   string ai_instructions = 23;
   string frontend_url = 24;
+  repeated string allowed_hosts = 26;
 }
  
 message Connector {

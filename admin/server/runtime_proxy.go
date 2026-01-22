@@ -133,6 +133,28 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	// Track usage of the deployment
 	s.admin.Used.Deployment(depl.ID)
 
+	// Get instance from runtime to check for allowed-hosts configuration
+	var allowedOrigins []string
+	var hasProjectAllowedHosts bool
+	rt, err := s.admin.OpenRuntimeClient(depl)
+	if err == nil {
+		instResp, err := rt.GetInstance(r.Context(), &runtimev1.GetInstanceRequest{
+			InstanceId: depl.RuntimeInstanceID,
+		})
+		if err == nil && instResp != nil && instResp.Instance != nil {
+			// Check if project has specific allowed-hosts configured
+			hasProjectAllowedHosts = len(instResp.Instance.AllowedHosts) > 0
+			// Merge project's allowed-hosts with admin server defaults
+			// Always include frontend URL and admin server defaults to ensure Rill platform access
+			allowedOrigins = s.mergeAllowedOrigins(instResp.Instance.AllowedHosts)
+		}
+		rt.Close()
+	}
+	// If we couldn't get the instance or it has no allowed-hosts, use defaults only
+	if allowedOrigins == nil {
+		allowedOrigins = s.mergeAllowedOrigins(nil)
+	}
+
 	// Determine runtime host.
 	// NOTE: In production, the runtime host serves both the HTTP and gRPC servers.
 	// But in development, the two are presently on different ports, and depl.RuntimeHost is that of the gRPC server.
@@ -180,7 +202,7 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 	defer res.Body.Close()
 
-	// Copy response headers except from "Access-Control-Allow-Origin" (which is also added by the admin server), thus causing browser CORS errors.
+	// Copy response headers except from "Access-Control-Allow-Origin" (which we'll set manually based on allowed-hosts)
 	outHeader := w.Header()
 	for k, v := range res.Header {
 		if strings.EqualFold(k, "Access-Control-Allow-Origin") {
@@ -190,6 +212,11 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			outHeader.Add(k, vv)
 		}
 	}
+
+	// Set CORS headers based on merged allowed-hosts
+	// Pass whether project has specific allowed-hosts so we can respect them even with wildcard defaults
+	s.setCORSHeaders(w, r, allowedOrigins, hasProjectAllowedHosts)
+
 	w.WriteHeader(res.StatusCode)
 
 	// For SSE responses, we need to flush eagerly
@@ -226,4 +253,77 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 
 	return nil
+}
+
+// mergeAllowedOrigins merges project's allowed-hosts with admin server defaults.
+// It always includes the frontend URL and admin server defaults to ensure Rill platform access.
+func (s *Server) mergeAllowedOrigins(projectAllowedHosts []string) []string {
+	// Start with frontend URL (always allowed for Rill platform)
+	merged := []string{s.admin.URLs.Frontend()}
+
+	// Add admin server defaults
+	for _, origin := range s.opts.AllowedOrigins {
+		if origin != "*" {
+			merged = append(merged, origin)
+		}
+	}
+
+	// Add project's allowed-hosts
+	for _, host := range projectAllowedHosts {
+		merged = append(merged, host)
+	}
+
+	// Deduplicate
+	seen := make(map[string]bool)
+	result := []string{}
+	for _, origin := range merged {
+		if !seen[origin] {
+			seen[origin] = true
+			result = append(result, origin)
+		}
+	}
+
+	return result
+}
+
+// setCORSHeaders sets CORS headers based on the allowed origins list.
+// It validates the request's Origin header and sets Access-Control-Allow-Origin if allowed.
+func (s *Server) setCORSHeaders(w http.ResponseWriter, r *http.Request, allowedOrigins []string, hasProjectAllowedHosts bool) {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return
+	}
+
+	// Check if origin is allowed
+	var allowed bool
+
+	// Check against merged list (which includes frontend URL, admin defaults, and project allowed-hosts)
+	for _, allowedOrigin := range allowedOrigins {
+		if origin == allowedOrigin {
+			allowed = true
+			break
+		}
+	}
+
+	// If not in merged list, check if admin defaults have wildcard (for backwards compatibility)
+	// But only if the project hasn't set specific allowed-hosts (to allow testing restrictions)
+	if !allowed && !hasProjectAllowedHosts {
+		for _, o := range s.opts.AllowedOrigins {
+			if o == "*" {
+				// Only use wildcard if project hasn't set specific allowed-hosts
+				// This allows testing project-specific restrictions even in dev
+				allowed = true
+				break
+			}
+		}
+	}
+
+	// Set CORS headers if allowed
+	if allowed {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "HEAD, GET, POST, PUT, PATCH, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+	}
 }

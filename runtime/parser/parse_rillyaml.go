@@ -28,6 +28,7 @@ type RillYAML struct {
 	Defaults       map[ResourceKind]yaml.Node
 	FeatureFlags   map[string]string
 	PublicPaths    []string
+	AllowedHosts   []string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -101,6 +102,8 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
+	// Allowed hosts for CORS (array of strings)
+	AllowedHosts []string `yaml:"allowed_hosts"`
 	// Paths to ignore when watching for changes.
 	// This is ignored in this parser because it's consumed directly by the repo driver.
 	IgnorePaths []string `yaml:"ignore_paths"`
@@ -309,6 +312,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Defaults:       defaults,
 		FeatureFlags:   snakeCaseFeatureFlags,
 		PublicPaths:    tmp.PublicPaths,
+		AllowedHosts:   tmp.AllowedHosts,
 	}
 
 	for i, c := range tmp.Connectors {
