@@ -284,7 +284,7 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 				return value, nil
 			}
 		}
-		return "", fmt.Errorf(`environment variable "%s" not found`, name)
+		return "", fmt.Errorf(`environment variable %q not found`, name)
 	}
 
 	// Parse template (error on missing keys)
