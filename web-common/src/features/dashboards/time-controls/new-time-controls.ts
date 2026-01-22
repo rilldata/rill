@@ -755,8 +755,7 @@ export function allowedGrainsForInterval(
       const bucketCount = interval.length(unit);
 
       return (
-        (bucketCount <= MAX_BUCKETS || (bucketCount >= 1 && unit === "year")) &&
-        bucketCount >= 1
+        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
       );
     })
     .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
