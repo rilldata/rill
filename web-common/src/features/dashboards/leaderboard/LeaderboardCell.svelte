@@ -99,11 +99,11 @@
 
   {#if clipboardSupported && !disabled}
     <Tooltip.Content
-      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-surface"
+      class="flex flex-col max-w-[280px] gap-y-2 p-2 shadow-md bg-tooltip text-fg-inverse"
       sideOffset={16}
     >
       <FormattedDataType
-        customStyle="font-semibold"
+        customStyle="font-semibold !text-fg-inverse"
         isNull={value === null || value === undefined}
         type={dataType}
         {value}
