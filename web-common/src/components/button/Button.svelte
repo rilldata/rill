@@ -6,13 +6,13 @@
     | "primary"
     | "secondary"
     | "destructive"
-    | "outline"
+    | "outlined"
     | "ghost"
     | "link"
     | "text"
     | "toolbar";
 
-  export let type: ButtonType = "outline";
+  export let type: ButtonType = "outlined";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
   export let status: "info" | "error" = "info";
   export let disabled = false;
@@ -109,7 +109,7 @@
     @apply select-none  cursor-pointer;
     @apply rounded-[2px];
     @apply px-3 gap-x-2;
-    @apply h-7  min-h-[28px] min-w-fit;
+    @apply h-7 min-h-[28px] min-w-fit;
     @apply font-medium pointer-events-auto;
   }
 
@@ -143,7 +143,7 @@
   /* SECONDARY STYLES */
 
   .secondary {
-    @apply bg-surface-elevated;
+    @apply bg-input border border-accent-primary-action text-accent-primary-action;
   }
 
   .secondary:hover {
@@ -168,22 +168,22 @@
     @apply opacity-50;
   }
 
-  /* OUTLINE STYLES */
+  /* OUTLINED STYLES */
 
-  .outline {
+  .outlined {
     @apply bg-input text-fg-primary border;
   }
 
-  .outline:hover {
+  .outlined:hover {
     @apply bg-surface-container-hover;
   }
 
-  .outline:active,
-  .outline.selected {
+  .outlined:active,
+  .outlined.selected {
     @apply bg-gray-200;
   }
 
-  .outline.disabled {
+  .outlined.disabled {
     @apply opacity-50;
   }
 
@@ -324,7 +324,7 @@
   }
 
   .destructive.secondary {
-    @apply bg-surface;
+    @apply bg-surface-container;
     @apply text-red-500;
     @apply border-red-500;
   }
@@ -395,24 +395,6 @@
 
   .no-stroke {
     @apply border-none;
-  }
-
-  .dashed {
-    @apply border border-dashed;
-  }
-
-  /* TODO: variants for types like destructive */
-  .active {
-    @apply bg-primary-100;
-  }
-
-  /* ADD BUTTON STYLES */
-
-  .add {
-    @apply w-[34px] h-[26px] rounded-2xl;
-    @apply flex items-center justify-center;
-    @apply border border-dashed border-gray-300;
-    @apply bg-surface-container px-0;
   }
 
   .gray:not(:hover) {

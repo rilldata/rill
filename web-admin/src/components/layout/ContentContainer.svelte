@@ -10,7 +10,7 @@
   <section class="w-full flex flex-col gap-y-3" style:max-width="{maxWidth}px">
     {#if title && showTitle}
       <h1
-        class="text-2xl text-fg-tertiary font-semibold"
+        class="text-2xl text-fg-secondary font-semibold"
         aria-label="Container title"
       >
         {title}

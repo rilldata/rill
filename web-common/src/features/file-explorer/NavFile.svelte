@@ -95,13 +95,13 @@
 <li
   aria-label="{filePath} Nav Entry"
   class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-surface-container-hover"
-  class:bg-gray-100={isCurrentFile}
+  class:bg-surface-container-active={isCurrentFile}
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
     isDotFile
-      ? 'text-red-400 hover:text-fg-secondary dark:text-fg-primary dark:hover:text-fg-primary'
+      ? 'hover:text-fg-secondary text-fg-muted '
       : 'text-fg-primary hover:text-fg-primary'}"
     href="/files{filePath}"
     {id}

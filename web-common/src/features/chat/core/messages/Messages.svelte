@@ -161,7 +161,7 @@
 
   .chat-empty-title {
     @apply text-base font-semibold;
-    @apply text-fg-primary mb-1;
+    @apply text-fg-secondary mb-1;
   }
 
   .chat-messages.fullpage .chat-empty-title {

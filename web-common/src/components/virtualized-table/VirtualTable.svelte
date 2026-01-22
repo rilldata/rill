@@ -400,7 +400,7 @@
   }
 
   .table-wrapper {
-    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface;
+    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-surface-container;
   }
 
   .has-selection tbody {

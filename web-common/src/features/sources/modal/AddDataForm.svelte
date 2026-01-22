@@ -550,8 +550,10 @@
           isMultiStepConnector
             ? multiStepHandleBack()
             : formManager?.handleBack(onBack)}
-        type="secondary">Back</Button
+        type="outlined"
       >
+        Back
+      </Button>
 
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}

@@ -130,7 +130,7 @@
             setItems(Array.from(allItems), excludeMode);
           }
         }}
-        type="outline"
+        type="outlined"
       >
         {#if selectedItems.size === allItems.size}
           Deselect all

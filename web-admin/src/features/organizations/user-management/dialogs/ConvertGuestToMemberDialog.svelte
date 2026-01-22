@@ -92,7 +92,7 @@
       <div>{PROJECT_ROLES_DESCRIPTION_MAP[role]}</div>
     </Dialog.Description>
     <Dialog.Footer>
-      <Button type="outline" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="outlined" onClick={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
         onClick={handleUpgrade}

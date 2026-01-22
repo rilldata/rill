@@ -44,7 +44,12 @@
       </AlertDialog.Action>
 
       <AlertDialog.Cancel asChild let:builder>
-        <Button large builders={[builder]} onClick={handleClose} type="outline">
+        <Button
+          large
+          builders={[builder]}
+          onClick={handleClose}
+          type="outlined"
+        >
           Cancel
         </Button>
       </AlertDialog.Cancel>

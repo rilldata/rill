@@ -194,7 +194,7 @@
 
   footer {
     @apply justify-between items-center flex flex-none;
-    @apply h-10 p-2 w-full rounded-b-sm border-t bg-surface;
+    @apply h-10 p-2 w-full rounded-b-sm border-t bg-surface-container;
   }
 
   section {

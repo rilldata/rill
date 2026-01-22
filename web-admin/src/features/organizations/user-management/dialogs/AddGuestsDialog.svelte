@@ -245,7 +245,7 @@
                 ? `: ${projectsErrorMessage}`
                 : ""}
             </div>
-            <Button type="outline" onClick={() => $projectsQuery?.refetch()}
+            <Button type="outlined" onClick={() => $projectsQuery?.refetch()}
               >Retry</Button
             >
           </div>
@@ -325,7 +325,7 @@
       {/if}
     </form>
     <DialogFooter>
-      <Button type="outline" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="outlined" onClick={() => (open = false)}>Cancel</Button>
       <Button
         type="primary"
         submitForm

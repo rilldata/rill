@@ -102,7 +102,7 @@
       <div class="flex flex-col gap-6 w-full overflow-hidden">
         <div class="flex flex-col">
           <RadixLarge>Environment variables</RadixLarge>
-          <p class="text-sm text-fg-primary font-medium">
+          <p class="text-sm text-fg-tertiary font-medium">
             Manage your environment variables here. <a
               href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
               target="_blank"

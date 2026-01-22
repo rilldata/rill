@@ -79,7 +79,7 @@
           </span>
         {/if}
       {:else}
-        <span class="my-1">
+        <span class="my-1 text-fg-tertiary">
           Unlock the power of BI-as-code with GitHub-backed collaboration,
           version control, and approval workflows.
           <a

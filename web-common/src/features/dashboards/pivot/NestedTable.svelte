@@ -457,12 +457,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-surface;
+    @apply bg-surface-container;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-surface;
+    @apply bg-surface-container;
   }
 
   .with-row-dimension tr:hover > td:first-of-type {

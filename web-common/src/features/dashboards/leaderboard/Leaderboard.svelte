@@ -420,17 +420,17 @@
   {#if allowExpandTable && showExpandTable}
     <Tooltip location="right">
       <button
-        class="transition-color text-fg-muted dark:text-fg-secondary table-message"
+        class="transition-color text-fg-muted table-message"
         on:click={() => setPrimaryDimension(dimensionName)}
       >
-        <div class="pl-8">(Expand Table)</div>
+        <div class="pl-8 text-fg-muted">(Expand Table)</div>
       </button>
       <TooltipContent slot="tooltip-content">
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
   {:else if noAvailableValues}
-    <div class="table-message text-fg-muted dark:text-fg-secondary">
+    <div class="table-message text-fg-muted">
       <div class="pl-8">(No available values)</div>
     </div>
   {/if}

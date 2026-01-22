@@ -23,11 +23,10 @@
     <svelte:fragment slot="sidebar-footer">
       <Button
         type="secondary"
-        gray
         onClick={() => (mcpDialogOpen = true)}
         class="w-full"
       >
-        <APIIcon size="14px" />
+        <APIIcon size="14px" className="!fill-inherit" />
         Connect your own client
       </Button>
     </svelte:fragment>

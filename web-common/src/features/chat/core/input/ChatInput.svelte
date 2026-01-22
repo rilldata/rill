@@ -5,10 +5,11 @@
   import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
-  import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
   import type { ChatConfig } from "@rilldata/web-common/features/chat/core/types.ts";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { ArrowUp } from "lucide-svelte";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -120,25 +121,35 @@
 >
   <div class="chat-input-container" bind:this={element} />
   <div class="chat-input-footer">
-    <button class="text-base ml-1" type="button" on:click={startMention}>
+    <button
+      class="text-base text-fg-muted"
+      type="button"
+      on:click={startMention}
+    >
       @
     </button>
     <div class="grow"></div>
     <div>
       {#if canCancel}
-        <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+        <IconButton
+          ariaLabel="Cancel streaming"
+          disableHover
+          on:click={cancelStream}
+        >
           <span class="stop-icon">
             <StopCircle size="1.2em" />
           </span>
         </IconButton>
       {:else}
-        <IconButton
-          ariaLabel="Send message"
+        <Button
+          type="primary"
+          label="Send message"
           disabled={!canSend}
-          on:click={sendMessage}
+          square
+          onClick={sendMessage}
         >
-          <SendIcon size="1.3em" disabled={!canSend} />
-        </IconButton>
+          <ArrowUp size="16px" />
+        </Button>
       {/if}
     </div>
   </div>
@@ -146,13 +157,9 @@
 
 <style lang="postcss">
   .chat-input-form {
-    @apply flex flex-col gap-1 py-1 mx-4 mb-4;
+    @apply flex flex-col gap-1 p-3 mx-4 mb-4;
     @apply border rounded-md bg-input;
     transition: border-color 0.2s;
-  }
-
-  .inline {
-    @apply bg-input;
   }
 
   .chat-input-form:focus-within {
@@ -164,7 +171,7 @@
   }
 
   :global(.tiptap) {
-    @apply px-2 py-2 outline-none;
+    @apply outline-none;
     @apply text-sm leading-relaxed;
   }
 
@@ -174,7 +181,7 @@
 
   :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
-    @apply text-fg-secondary pointer-events-none absolute;
+    @apply text-fg-muted pointer-events-none absolute;
   }
 
   .stop-icon {
@@ -198,6 +205,6 @@
   }
 
   .chat-input-footer {
-    @apply flex flex-row px-1;
+    @apply flex flex-row;
   }
 </style>

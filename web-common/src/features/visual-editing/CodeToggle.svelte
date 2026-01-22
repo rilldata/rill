@@ -49,7 +49,7 @@
   }
 
   .toggle {
-    @apply bg-surface-container-active;
+    @apply bg-surface-container-hover;
   }
 
   .toggle:hover {

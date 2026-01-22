@@ -80,9 +80,9 @@
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
   {isProtectedDirectory
-    ? 'text-fg-secondary hover:text-fg-secondary dark:text-fg-primary dark:hover:text-fg-primary'
-    : 'text-fg-primary hover:text-fg-primary'} 
-  font-medium hover:bg-gray-300"
+    ? 'hover:text-fg-secondary text-fg-muted '
+    : 'text-fg-primary hover:text-fg-primary'}
+  font-medium hover:bg-surface-container-hover"
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}

@@ -175,7 +175,7 @@
   }
 
   tr {
-    @apply bg-surface;
+    @apply bg-surface-container;
   }
 
   .dragging {

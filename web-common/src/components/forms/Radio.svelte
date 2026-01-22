@@ -36,11 +36,11 @@
           class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
         />
         <div class="flex-1">
-          <div class="text-sm font-medium text-fg-primary mb-1">
+          <div class="text-sm font-medium text-fg-secondary mb-1">
             {option.label}
           </div>
           {#if option.description}
-            <div class="text-sm text-fg-secondary mb-2">
+            <div class="text-sm text-fg-muted mb-2">
               {option.description}
             </div>
           {/if}

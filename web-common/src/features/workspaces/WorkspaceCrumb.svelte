@@ -156,7 +156,7 @@
     </div>
     {#if current && graphSupported && openGraph}
       <Button
-        type="outline"
+        type="outlined"
         square
         onClick={openGraph}
         label="Open resource graph"

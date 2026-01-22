@@ -137,12 +137,12 @@
         >
           {#if error}
             <span class="error">Failed to load more tables.</span>
-            <Button type="outline" small onClick={() => fetchNextPage()}>
+            <Button type="outlined" small onClick={() => fetchNextPage()}>
               Retry
             </Button>
           {:else}
             <Button
-              type="outline"
+              type="outlined"
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
@@ -171,7 +171,7 @@
   }
 
   button:hover {
-    @apply bg-gray-100;
+    @apply bg-surface-container-hover;
   }
 
   .message {

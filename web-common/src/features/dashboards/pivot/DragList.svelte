@@ -445,7 +445,7 @@
   }
 
   .valid:hover {
-    @apply bg-surface;
+    @apply bg-surface-container;
   }
 
   .rounded {

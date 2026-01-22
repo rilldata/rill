@@ -259,7 +259,7 @@
 
   th {
     @apply text-left;
-    @apply pl-4 text-fg-muted bg-surface;
+    @apply pl-4 text-fg-muted bg-surface-container;
     @apply border-b text-sm font-semibold;
     @apply truncate;
   }

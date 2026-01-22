@@ -134,7 +134,7 @@
 
   :global(.wrapper > button) {
     @apply border;
-    @apply px-2 flex items-center justify-center bg-surface;
+    @apply px-2 flex items-center justify-center bg-surface-container;
   }
 
   :global(.wrapper > button:first-child) {

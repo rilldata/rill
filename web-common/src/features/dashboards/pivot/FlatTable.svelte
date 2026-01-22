@@ -256,7 +256,7 @@
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-surface;
+    @apply z-30 bg-surface-container;
   }
 
   tbody .cell {

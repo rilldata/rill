@@ -85,7 +85,7 @@
   }
 
   button:hover {
-    @apply bg-gray-100;
+    @apply bg-surface-container-hover;
   }
 
   .message {

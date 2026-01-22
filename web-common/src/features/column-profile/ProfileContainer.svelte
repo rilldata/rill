@@ -37,8 +37,8 @@
         flex
         space-between
         gap-2
-        hover:bg-gray-100
-        focus:bg-gray-100
+        hover:bg-surface-container-hover
+        focus:bg-surface-container-hover
         focus:ring-gray-500
         focus:outline-gray-300 flex-1
         justify-between w-full"

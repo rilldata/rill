@@ -380,7 +380,7 @@
     </div>
 
     <DialogFooter>
-      <Button type="outline" onClick={handleClose}>Cancel</Button>
+      <Button type="outlined" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
         disabled={$submitting ||

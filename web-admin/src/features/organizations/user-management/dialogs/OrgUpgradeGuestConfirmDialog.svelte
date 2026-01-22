@@ -42,7 +42,7 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button
-        type="outline"
+        type="outlined"
         onClick={() => {
           open = false;
         }}>Cancel</Button

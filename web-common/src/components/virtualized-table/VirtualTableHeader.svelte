@@ -79,7 +79,7 @@
   }
 
   th {
-    @apply truncate p-0 bg-surface;
+    @apply truncate p-0 bg-surface-container;
     height: var(--header-height);
   }
 
