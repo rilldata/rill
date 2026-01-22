@@ -115,7 +115,7 @@
     ? "font-normal text-fg-muted"
     : rowSelected
       ? "font-normal text-fg-primary font-semibold"
-      : "font-normal ui-copy";
+      : "font-normal text-fg-primary";
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);

@@ -66,7 +66,6 @@
   }
 </script>
 
-<!-- FIXME: !color to override the .ui-copy class -->
 <Base
   {isNull}
   {color}

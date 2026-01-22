@@ -18,7 +18,7 @@
     <Spacer size="16px" />
   {/if}
   <Tooltip distance={8} location="right">
-    <span class={assembled ? "ui-copy" : "text-fg-disabled"}>
+    <span class={assembled ? "text-fg-primary" : "text-fg-disabled"}>
       Show more ...
     </span>
     <TooltipContent slot="tooltip-content">

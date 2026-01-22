@@ -43,7 +43,7 @@
       }}
     >
       <div
-        class="text-ellipsis overflow-hidden whitespace-nowrap ui-copy font-semibold"
+        class="text-ellipsis overflow-hidden whitespace-nowrap text-fg-primary font-semibold"
         style="font-size: 11px;"
       >
         <slot />

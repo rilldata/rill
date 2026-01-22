@@ -47,7 +47,7 @@
 <div class="flex flex-col items-center w-full h-full">
   <span class="text-3xl font-normal m-2">Sorry, unexpected query error!</span>
   {#if traceIds.length > 0}
-    <div class="text-sm ui-copy mt-1">
+    <div class="text-sm text-fg-primary mt-1">
       <b>Trace ID{traceIds.length !== 1 ? "s" : ""}</b>: {traceIds.join(", ")}
     </div>
   {/if}

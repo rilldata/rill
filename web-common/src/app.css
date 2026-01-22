@@ -4,10 +4,6 @@
 @tailwind utilities;
 
 @layer utilities {
-  .ui-copy {
-    @apply text-fg-primary;
-  }
-
   .ui-copy-number {
     font-feature-settings:
       "case" 0,
@@ -497,12 +493,12 @@
 }
 
 html {
-  @apply ui-copy;
+  @apply text-fg-primary;
 }
 
 a,
 button {
-  @apply ui-copy;
+  @apply text-fg-primary;
 }
 
 body {
