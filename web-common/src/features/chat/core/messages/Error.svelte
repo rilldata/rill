@@ -24,7 +24,7 @@
         <span>Show details</span>
       </summary>
       <div
-        class="mt-2 rounded border border-gray-200 bg-white p-2 font-mono text-xs text-fg-primary"
+        class="mt-2 rounded border border-gray-200 bg-surface-background p-2 font-mono text-xs text-fg-primary"
       >
         {error}
       </div>

@@ -255,7 +255,7 @@
   }
 
   .error-close {
-    @apply h-6 w-6 rounded border border-red-300 bg-white text-xs text-red-600;
+    @apply h-6 w-6 rounded border border-red-300 bg-surface-background text-xs text-red-600;
     line-height: 1rem;
   }
 
