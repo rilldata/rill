@@ -72,6 +72,7 @@ export const salesforceSchema: MultiStepFormSchema = {
   required: ["soql", "sobject", "name"],
   allOf: [
     {
+      // Username/password auth: when key is empty, require username/password/endpoint
       if: {
         properties: {
           key: { const: "" },
@@ -82,6 +83,7 @@ export const salesforceSchema: MultiStepFormSchema = {
       },
     },
     {
+      // Username/password auth: when key is undefined, require username/password/endpoint
       if: {
         properties: {
           key: { const: undefined },
@@ -89,6 +91,18 @@ export const salesforceSchema: MultiStepFormSchema = {
       },
       then: {
         required: ["username", "password", "endpoint"],
+      },
+    },
+    {
+      // JWT auth: when key is provided, require client_id
+      if: {
+        required: ["key"],
+        properties: {
+          key: { minLength: 1 },
+        },
+      },
+      then: {
+        required: ["client_id", "username"],
       },
     },
   ],

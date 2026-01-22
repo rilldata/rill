@@ -7,18 +7,15 @@
   import type { ActionResult } from "@sveltejs/kit";
   import type { SuperValidated } from "sveltekit-superforms";
 
-  import type { AddDataFormType, ConnectorType } from "./types";
+  import type { AddDataFormType } from "./types";
   import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
-  import { hasOnlyDsn, isEmpty } from "./utils";
+  import { isEmpty } from "./utils";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
   import { type ClickHouseConnectorType } from "./constants";
   import { connectorStepStore } from "./connectorStepStore";
   import YamlPreview from "./YamlPreview.svelte";
-  import {
-    AddDataFormManager,
-    type ClickhouseUiState,
-  } from "./AddDataFormManager";
+  import { AddDataFormManager } from "./AddDataFormManager";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
@@ -37,7 +34,6 @@
 
   let saveAnyway = false;
   let showSaveAnyway = false;
-  let connectionTab: ConnectorType = "parameters";
 
   // Wire manager-provided onUpdate after declaration below
   let handleOnUpdate: (event: {
@@ -60,7 +56,6 @@
     connector,
     formType,
     onParamsUpdate: (e: any) => handleOnUpdate(e),
-    onDsnUpdate: (e: any) => handleOnUpdate(e),
     getSelectedAuthMethod: () =>
       get(connectorStepStore).selectedAuthMethod ?? undefined,
     schemaName,
@@ -71,7 +66,6 @@
   const isStepFlowConnector = isMultiStepConnector || isExplorerConnector;
   const isSourceForm = formManager.isSourceForm;
   const isConnectorForm = formManager.isConnectorForm;
-  const onlyDsn = hasOnlyDsn(connector, isConnectorForm);
   let activeAuthMethod: string | null = null;
   let prevAuthMethod: string | null = null;
   let stepState = $connectorStepStore;
@@ -100,27 +94,9 @@
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // DSN-related variables (still used by formManager for ClickHouse and yaml preview)
-  const dsnFormId = formManager.dsnFormId;
-  const dsnProperties = formManager.dsnProperties;
-  const filteredDsnProperties = formManager.filteredDsnProperties;
-  const {
-    form: dsnForm,
-    errors: dsnErrors,
-    enhance: dsnEnhance,
-    tainted: dsnTainted,
-    submit: dsnSubmit,
-    submitting: dsnSubmitting,
-  } = formManager.dsn;
-  let dsnError: string | null = null;
-  let dsnErrorDetails: string | undefined = undefined;
-
   let clickhouseConnectorType: ClickHouseConnectorType =
     initialClickhouseType ?? "self-hosted";
   let prevClickhouseConnectorType: ClickHouseConnectorType | null = null;
-  let clickhouseUiState: ClickhouseUiState | null = null;
-  let clickhouseSaving = false;
-  let effectiveClickhouseSubmitting = false;
 
   const connectorSchema = getConnectorSchema(schemaName);
 
@@ -133,13 +109,6 @@
       if (nextType && nextType !== clickhouseConnectorType) {
         clickhouseConnectorType = nextType;
       }
-    }
-    const nextTab = $paramsForm?.connection_mode as ConnectorType | undefined;
-    if (
-      (nextTab === "parameters" || nextTab === "dsn") &&
-      nextTab !== connectionTab
-    ) {
-      connectionTab = nextTab;
     }
   }
 
@@ -154,41 +123,6 @@
     }
     prevClickhouseConnectorType = clickhouseConnectorType;
   }
-
-  // ClickHouse-specific derived state handled by the manager
-  $: if (connector.name === "clickhouse") {
-    clickhouseUiState = formManager.computeClickhouseState({
-      connectorType: clickhouseConnectorType,
-      connectionTab,
-      paramsFormValues: $paramsForm,
-      dsnFormValues: $paramsForm,
-      paramsErrors: $paramsErrors as Record<string, unknown>,
-      dsnErrors: $paramsErrors as Record<string, unknown>,
-      paramsForm,
-      dsnForm: paramsForm,
-      paramsSubmitting: $paramsSubmitting,
-      dsnSubmitting: $paramsSubmitting,
-    });
-
-    if (
-      clickhouseUiState?.enforcedConnectionTab &&
-      clickhouseUiState.enforcedConnectionTab !== connectionTab
-    ) {
-      connectionTab = clickhouseUiState.enforcedConnectionTab;
-    }
-
-    if (clickhouseUiState?.shouldClearErrors) {
-      paramsError = null;
-      paramsErrorDetails = undefined;
-    }
-  } else {
-    clickhouseUiState = null;
-  }
-
-  $: effectiveClickhouseSubmitting =
-    connector.name === "clickhouse"
-      ? clickhouseSaving || clickhouseUiState?.submitting || false
-      : submitting;
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
@@ -235,7 +169,6 @@
         step: stepState.step,
         submitting,
         clickhouseConnectorType,
-        clickhouseSubmitting: effectiveClickhouseSubmitting,
         selectedAuthMethod: activeAuthMethod ?? undefined,
       });
 
@@ -256,19 +189,7 @@
   $: isSubmitting = submitting;
 
   // Reset errors when form is modified
-  $: (() => {
-    if (connector.name === "clickhouse") {
-      if ($paramsTainted) {
-        if (connectionTab === "dsn") {
-          dsnError = null;
-        } else {
-          paramsError = null;
-        }
-      }
-    } else {
-      if ($paramsTainted) paramsError = null;
-    }
-  })();
+  $: if ($paramsTainted) paramsError = null;
 
   async function handleSaveAnyway() {
     // Save Anyway should only work for connector forms
@@ -281,7 +202,6 @@
       queryClient,
       values: $paramsForm,
       clickhouseConnectorType,
-      connectionTab,
     });
     if (result.ok) {
       onClose();
@@ -293,18 +213,12 @@
   }
 
   $: yamlPreview = formManager.computeYamlPreview({
-    connectionTab,
-    onlyDsn,
     filteredParamsProperties,
-    filteredDsnProperties,
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     paramsFormValues: $paramsForm,
-    dsnFormValues: $dsnForm,
     clickhouseConnectorType,
-    clickhouseParamsValues: $paramsForm,
-    clickhouseDsnValues: $paramsForm,
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
@@ -312,15 +226,10 @@
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
     queryClient,
-    getConnectionTab: () => connectionTab,
     getSelectedAuthMethod: () => activeAuthMethod || undefined,
     setParamsError: (message: string | null, details?: string) => {
       paramsError = message;
       paramsErrorDetails = details;
-    },
-    setDsnError: (message: string | null, details?: string) => {
-      dsnError = message;
-      dsnErrorDetails = details;
     },
     setShowSaveAnyway: (value: boolean) => {
       showSaveAnyway = value;
@@ -385,7 +294,8 @@
         <div class="p-4 bg-red-50 border border-red-200 rounded-md">
           <p class="text-red-800 font-medium">Missing connector schema</p>
           <p class="text-red-600 text-sm mt-1">
-            No schema found for connector "{connector.name}". Please add a schema in connector-schemas.ts.
+            No schema found for connector "{connector.name}". Please add a
+            schema in connector-schemas.ts.
           </p>
         </div>
       {/if}

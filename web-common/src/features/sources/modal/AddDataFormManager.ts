@@ -1,11 +1,5 @@
 import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
-import * as yupLib from "yup";
-import {
-  yup as yupAdapter,
-  type Infer as YupInfer,
-  type InferIn as YupInferIn,
-} from "sveltekit-superforms/adapters";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
@@ -17,7 +11,6 @@ import {
 import {
   normalizeConnectorError,
   applyClickHouseCloudRequirements,
-  isEmpty,
 } from "./utils";
 import {
   FORM_HEIGHT_DEFAULT,
@@ -43,33 +36,16 @@ import type { QueryClient } from "@tanstack/query-core";
 import {
   filterSchemaValuesForSubmit,
   findRadioEnumKey,
-  getRequiredFieldsForValues,
   getSchemaFieldMetaList,
   getSchemaInitialValues,
   getSchemaSecretKeys,
   getSchemaStringKeys,
-  isVisibleForValues,
   type SchemaFieldMeta,
 } from "../../templates/schema-utils";
-
-const dsnSchema = yupLib.object({
-  dsn: yupLib.string().required("DSN is required"),
-});
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
 type ValidationErrors = Record<string, unknown>;
-
-export type ClickhouseUiState = {
-  properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-  filteredProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-  dsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-  isSubmitDisabled: boolean;
-  formId: string;
-  submitting: boolean;
-  enforcedConnectionTab?: "parameters" | "dsn";
-  shouldClearErrors?: boolean;
-};
 
 type SuperFormUpdateOptions = {
   taint?: boolean;
@@ -87,19 +63,6 @@ type SuperFormErrorsStore = {
   update: (updater: (errors: ValidationErrors) => ValidationErrors) => void;
 };
 
-type ClickhouseStateArgs = {
-  connectorType: ClickHouseConnectorType;
-  connectionTab: "parameters" | "dsn";
-  paramsFormValues: FormData;
-  dsnFormValues: FormData;
-  paramsErrors: ValidationErrors;
-  dsnErrors: ValidationErrors;
-  paramsForm: SuperFormStore;
-  dsnForm: SuperFormStore;
-  paramsSubmitting: boolean;
-  dsnSubmitting: boolean;
-};
-
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
   form: SuperValidated<FormData, string, FormData>;
@@ -114,17 +77,11 @@ const BUTTON_LABELS = {
 export class AddDataFormManager {
   formHeight: string;
   paramsFormId: string;
-  dsnFormId: string;
-  hasDsnFormOption: boolean;
-  hasOnlyDsn: boolean;
   properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
   filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-  dsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-  filteredDsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
 
-  // superforms instances
+  // superforms instance
   params: ReturnType<typeof superForm>;
-  dsn: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
   private clickhouseInitialValues: Record<string, unknown>;
@@ -150,7 +107,6 @@ export class AddDataFormManager {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
     onParamsUpdate: (event: SuperFormUpdateEvent) => void;
-    onDsnUpdate: (event: SuperFormUpdateEvent) => void;
     getSelectedAuthMethod?: () => string | undefined;
     schemaName?: string; // Override connector.name for schema/validation lookup
   }) {
@@ -158,7 +114,6 @@ export class AddDataFormManager {
       connector,
       formType,
       onParamsUpdate,
-      onDsnUpdate,
       getSelectedAuthMethod,
       schemaName,
     } = args;
@@ -176,7 +131,6 @@ export class AddDataFormManager {
 
     // IDs
     this.paramsFormId = `add-data-${effectiveSchemaName}-form`;
-    this.dsnFormId = `add-data-${effectiveSchemaName}-dsn-form`;
 
     const isSourceForm = formType === "source";
     const schema = getConnectorSchema(effectiveSchemaName);
@@ -190,14 +144,6 @@ export class AddDataFormManager {
 
     // Filter properties based on connector type
     this.filteredParamsProperties = this.properties;
-
-    // DSN properties
-    this.dsnProperties = schemaFields.filter((field) => field.key === "dsn");
-    this.filteredDsnProperties = this.dsnProperties;
-
-    // DSN flags
-    this.hasDsnFormOption = false;
-    this.hasOnlyDsn = false;
 
     // Superforms: params
     const paramsAdapter = getValidationSchemaForConnector(
@@ -217,18 +163,6 @@ export class AddDataFormManager {
       SPA: true,
       validators: paramsAdapter,
       onUpdate: onParamsUpdate,
-      resetForm: false,
-      validationMethod: "onsubmit",
-    });
-
-    // Superforms: dsn
-    const dsnAdapter = yupAdapter(dsnSchema);
-    type DsnOut = YupInfer<typeof dsnSchema, "yup">;
-    type DsnIn = YupInferIn<typeof dsnSchema, "yup">;
-    this.dsn = superForm<DsnOut, string, DsnIn>(defaults(dsnAdapter), {
-      SPA: true,
-      validators: dsnAdapter,
-      onUpdate: onDsnUpdate,
       resetForm: false,
       validationMethod: "onsubmit",
     });
@@ -290,16 +224,6 @@ export class AddDataFormManager {
     return true;
   }
 
-  getActiveFormId(args: {
-    connectionTab: "parameters" | "dsn";
-    onlyDsn: boolean;
-  }): string {
-    const { connectionTab, onlyDsn } = args;
-    return onlyDsn || connectionTab === "dsn"
-      ? this.dsnFormId
-      : this.paramsFormId;
-  }
-
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
@@ -324,7 +248,6 @@ export class AddDataFormManager {
     step: "connector" | "source" | string;
     submitting: boolean;
     clickhouseConnectorType?: ClickHouseConnectorType;
-    clickhouseSubmitting?: boolean;
     selectedAuthMethod?: string;
   }): string {
     const {
@@ -332,7 +255,6 @@ export class AddDataFormManager {
       step,
       submitting,
       clickhouseConnectorType,
-      clickhouseSubmitting,
       selectedAuthMethod,
     } = args;
     const isClickhouse = this.connector.name === "clickhouse";
@@ -342,11 +264,9 @@ export class AddDataFormManager {
     // ClickHouse-specific labels only apply to the connector step
     if (isClickhouse && step === "connector") {
       if (clickhouseConnectorType === "rill-managed") {
-        return clickhouseSubmitting ? "Connecting..." : "Connect";
+        return submitting ? "Connecting..." : "Connect";
       }
-      return clickhouseSubmitting
-        ? "Testing connection..."
-        : "Test and Connect";
+      return submitting ? "Testing connection..." : "Test and Connect";
     }
 
     if (isConnectorForm) {
@@ -371,74 +291,6 @@ export class AddDataFormManager {
     }
 
     return "Test and Add data";
-  }
-
-  computeClickhouseState(args: ClickhouseStateArgs): ClickhouseUiState | null {
-    if (this.connector.name !== "clickhouse") return null;
-    const {
-      connectorType,
-      connectionTab,
-      paramsFormValues,
-      dsnFormValues,
-      paramsErrors,
-      dsnErrors,
-      paramsForm,
-      paramsSubmitting,
-      dsnSubmitting,
-    } = args;
-    const schema = getConnectorSchema(this.connector.name ?? "");
-
-    // Keep connector_type in sync on the params form
-    // Skip for clickhouse-cloud since it's a fixed type with its own button/schema
-    // and the defaults are already set by getClickhouseDefaults in AddDataForm
-    if (
-      connectorType !== "clickhouse-cloud" &&
-      paramsFormValues?.connector_type !== connectorType
-    ) {
-      paramsForm.update(
-        ($form) => ({
-          ...$form,
-          connector_type: connectorType,
-        }),
-        { taint: false },
-      );
-    }
-
-    const enforcedConnectionTab =
-      connectorType === "rill-managed" ? ("parameters" as const) : undefined;
-    const activeConnectionTab = enforcedConnectionTab ?? connectionTab;
-
-    const requiredFields = schema
-      ? getRequiredFieldsForValues(schema, paramsFormValues ?? {}, "connector")
-      : new Set<string>();
-    const isSubmitDisabled = Array.from(requiredFields).some((key) => {
-      if (schema && !isVisibleForValues(schema, key, paramsFormValues ?? {})) {
-        return false;
-      }
-      const errorsForField =
-        activeConnectionTab === "dsn" ? dsnErrors?.[key] : paramsErrors?.[key];
-      const value =
-        activeConnectionTab === "dsn"
-          ? dsnFormValues?.[key]
-          : paramsFormValues?.[key];
-      return isEmpty(value) || Boolean((errorsForField as any)?.length);
-    });
-
-    const submitting =
-      activeConnectionTab === "dsn" ? dsnSubmitting : paramsSubmitting;
-    const formId =
-      activeConnectionTab === "dsn" ? this.dsnFormId : this.paramsFormId;
-
-    return {
-      properties: this.properties,
-      filteredProperties: this.filteredParamsProperties,
-      dsnProperties: this.dsnProperties,
-      isSubmitDisabled,
-      formId,
-      submitting,
-      enforcedConnectionTab,
-      shouldClearErrors: connectorType === "rill-managed",
-    };
   }
 
   getClickhouseDefaults(
@@ -479,19 +331,15 @@ export class AddDataFormManager {
   makeOnUpdate(args: {
     onClose: () => void;
     queryClient: QueryClient;
-    getConnectionTab: () => "parameters" | "dsn";
     getSelectedAuthMethod?: () => string | undefined;
     setParamsError: (message: string | null, details?: string) => void;
-    setDsnError: (message: string | null, details?: string) => void;
     setShowSaveAnyway?: (value: boolean) => void;
   }) {
     const {
       onClose,
       queryClient,
-      getConnectionTab,
       getSelectedAuthMethod,
       setParamsError,
-      setDsnError,
       setShowSaveAnyway,
     } = args;
     const connector = this.connector;
@@ -508,7 +356,6 @@ export class AddDataFormManager {
       cancel?: () => void;
     }) => {
       const values = event.form.data;
-      const connectionTab = getConnectionTab();
       const schema = getConnectorSchema(this.connector.name ?? "");
       const stepState = get(connectorStepStore) as ConnectorStepState;
       const stepForFilter =
@@ -523,10 +370,7 @@ export class AddDataFormManager {
             step: stepForFilter,
           })
         : values;
-      const submitValues =
-        this.connector.name === "clickhouse"
-          ? this.filterClickhouseValues(filteredValues, connectionTab)
-          : filteredValues;
+      const submitValues = filteredValues;
       const authKey = schema ? findRadioEnumKey(schema) : null;
       const selectedAuthMethod =
         (authKey && values && values[authKey] != null
@@ -649,13 +493,7 @@ export class AddDataFormManager {
         }
       } catch (e) {
         const { message, details } = this.normalizeError(e);
-        if (isConnectorForm && (this.hasOnlyDsn || connectionTab === "dsn")) {
-          setDsnError(message, details);
-        } else {
-          setParamsError(message, details);
-        }
-      } finally {
-        // no-op: saveAnyway handled in Svelte
+        setParamsError(message, details);
       }
     };
   }
@@ -681,7 +519,6 @@ export class AddDataFormManager {
       });
     };
     clearFieldError(this.params.errors as SuperFormErrorsStore);
-    clearFieldError(this.dsn.errors as SuperFormErrorsStore);
     if (name === "path") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
@@ -734,33 +571,21 @@ export class AddDataFormManager {
    * Compute YAML preview for the current form state.
    */
   computeYamlPreview(ctx: {
-    connectionTab: "parameters" | "dsn";
-    onlyDsn: boolean;
     filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-    filteredDsnProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     paramsFormValues: Record<string, unknown>;
-    dsnFormValues: Record<string, unknown>;
     clickhouseConnectorType?: ClickHouseConnectorType;
-    clickhouseParamsValues?: Record<string, unknown>;
-    clickhouseDsnValues?: Record<string, unknown>;
   }): string {
     const connector = this.connector;
     const {
-      connectionTab,
-      onlyDsn,
       filteredParamsProperties,
-      filteredDsnProperties,
       stepState,
       isMultiStepConnector,
       isConnectorForm,
       paramsFormValues,
-      dsnFormValues,
       clickhouseConnectorType,
-      clickhouseParamsValues,
-      clickhouseDsnValues,
     } = ctx;
 
     const schema = getConnectorSchema(connector.name ?? "");
@@ -780,17 +605,12 @@ export class AddDataFormManager {
       const filteredValues = schema
         ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
         : values;
-      const orderedProperties =
-        onlyDsn || connectionTab === "dsn"
-          ? filteredDsnProperties
-          : connectorPropertiesForPreview;
       return compileConnectorYAML(connector, filteredValues, {
         fieldFilter: (property) => {
-          if (onlyDsn || connectionTab === "dsn") return true;
           if ("internal" in property && property.internal) return false;
           return !("noPrompt" in property && property.noPrompt);
         },
-        orderedProperties,
+        orderedProperties: connectorPropertiesForPreview,
         secretKeys: schemaConnectorSecretKeys,
         stringKeys: schemaConnectorStringKeys,
       });
@@ -816,14 +636,10 @@ export class AddDataFormManager {
       );
       return compileConnectorYAML(connector, finalValues, {
         fieldFilter: (property) => {
-          if (onlyDsn || connectionTab === "dsn") return true;
           if ("internal" in property && property.internal) return false;
           return !("noPrompt" in property && property.noPrompt);
         },
-        orderedProperties:
-          connectionTab === "dsn"
-            ? filteredDsnProperties
-            : filteredParamsProperties,
+        orderedProperties: filteredParamsProperties,
         secretKeys: schemaConnectorSecretKeys,
         stringKeys: schemaConnectorStringKeys,
       });
@@ -878,11 +694,10 @@ export class AddDataFormManager {
 
     // ClickHouse special-case
     if (connector.name === "clickhouse") {
-      const values =
-        connectionTab === "dsn"
-          ? clickhouseDsnValues || {}
-          : clickhouseParamsValues || {};
-      return getClickHouseYamlPreview(values, clickhouseConnectorType);
+      return getClickHouseYamlPreview(
+        paramsFormValues,
+        clickhouseConnectorType,
+      );
     }
 
     // Multi-step connectors
@@ -898,34 +713,28 @@ export class AddDataFormManager {
       }
     }
 
-    const currentValues =
-      onlyDsn || connectionTab === "dsn" ? dsnFormValues : paramsFormValues;
-    if (isConnectorForm) return getConnectorYamlPreview(currentValues);
-    return getSourceYamlPreview(currentValues);
+    if (isConnectorForm) return getConnectorYamlPreview(paramsFormValues);
+    return getSourceYamlPreview(paramsFormValues);
   }
 
   /**
-   * Save connector anyway (non-ClickHouse), returning a result object for the caller to handle.
+   * Save connector anyway, returning a result object for the caller to handle.
    */
   async saveConnectorAnyway(args: {
     queryClient: QueryClient;
     values: FormData;
     clickhouseConnectorType?: ClickHouseConnectorType;
-    connectionTab?: "parameters" | "dsn";
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values, clickhouseConnectorType, connectionTab } =
-      args;
-    const tab = connectionTab ?? "parameters";
+    const { queryClient, values, clickhouseConnectorType } = args;
     const schema = getConnectorSchema(this.connector.name ?? "");
     const prunedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
-    const filteredValues = this.filterClickhouseValues(prunedValues, tab);
     const processedValues = applyClickHouseCloudRequirements(
       this.connector.name,
       (clickhouseConnectorType as ClickHouseConnectorType) ||
         ("self-hosted" as ClickHouseConnectorType),
-      filteredValues,
+      prunedValues,
     );
     try {
       await submitAddConnectorForm(
@@ -939,23 +748,5 @@ export class AddDataFormManager {
       const { message, details } = this.normalizeError(e);
       return { ok: false, message, details } as const;
     }
-  }
-
-  private filterClickhouseValues(
-    values: Record<string, unknown>,
-    connectionTab: "parameters" | "dsn",
-  ): Record<string, unknown> {
-    if (this.connector.name !== "clickhouse") return values;
-    if (connectionTab !== "dsn") {
-      if (!("dsn" in values)) return values;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { dsn: _unused, ...rest } = values;
-      return rest;
-    }
-
-    const allowed = new Set(["dsn", "managed"]);
-    return Object.fromEntries(
-      Object.entries(values).filter(([key]) => allowed.has(key)),
-    );
   }
 }
