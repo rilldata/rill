@@ -73,6 +73,7 @@ export class Conversation {
     V1GetConversationResponse,
     RpcStatus
   >;
+  private readonly unsubscribeFeedbackHydration: () => void;
 
   // Reactive store for conversationId - enables query to auto-update when ID changes
   private readonly conversationIdStore: Writable<string>;
@@ -110,11 +111,13 @@ export class Conversation {
     this.conversationQuery = createQuery(queryOptionsStore, queryClient);
 
     // Hydrate feedback state when conversation data loads
-    this.conversationQuery.subscribe((query) => {
-      if (query.data?.messages) {
-        this.feedback.hydrateFromMessages(query.data.messages);
-      }
-    });
+    this.unsubscribeFeedbackHydration = this.conversationQuery.subscribe(
+      (query) => {
+        if (query.data?.messages) {
+          this.feedback.hydrateFromMessages(query.data.messages);
+        }
+      },
+    );
   }
 
   // ===== PUBLIC API =====
@@ -287,6 +290,7 @@ export class Conversation {
       this.sseClient = null;
     }
 
+    this.unsubscribeFeedbackHydration();
     this.events.clearListeners();
   }
 
