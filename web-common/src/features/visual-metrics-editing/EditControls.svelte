@@ -20,8 +20,8 @@
   export let itemType: "measures" | "dimensions";
   export let name: string;
 
-  let type: "outline" | "ghost";
-  $: type = selected ? "outline" : "ghost";
+  let type: "outlined" | "ghost";
+  $: type = selected ? "outlined" : "ghost";
 
   $: singularType = itemType.slice(0, -1);
 </script>

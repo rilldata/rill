@@ -4,7 +4,7 @@
 
   export let title: string;
   export let description: string | null = null;
-  export let type: ButtonType;
+  export let type: ButtonType = "secondary";
   export let loading = false;
   export let disabled = false;
   export let ctaText: string;
