@@ -24,33 +24,96 @@ type ThemeColors struct {
 	Variables map[string]string `yaml:",inline"`
 }
 
+// deprecatedCSSVariables maps deprecated variable names to their new semantic equivalents.
+// Old themes using these names will continue to work through automatic mapping.
+// Note: "background" and "foreground" have special handling in validate() for multi-variable mapping.
+var deprecatedCSSVariables = map[string]string{
+	"surface":           "surface-container",
+	"card":              "surface-card",
+	"card-foreground":   "fg-secondary",
+	"muted":             "surface-muted",
+	"muted-foreground":  "fg-muted",
+	"accent":            "popover-accent",
+	"accent-foreground": "fg-accent",
+	"ring":              "ring-focus",
+}
+
+// backgroundMappings defines which variables are set when "background" is specified
+var backgroundMappings = []string{"surface-background", "surface-elevated"}
+
 var allowedCSSVariables = map[string]bool{
-	// Primary theme colors (for backward compatibility)
+	// Primary theme colors
 	"primary":   true,
 	"secondary": true,
 
-	// Core theme colors
-	"ring":       true,
-	"radius":     true,
-	"surface":    true,
-	"background": true,
-	"foreground": true,
+	// Surface semantic variables
+	"surface-background":       true,
+	"surface-container":        true,
+	"surface-container-hover":  true,
+	"surface-container-active": true,
+	"surface-elevated":         true,
+	"surface-overlay":          true,
+	"surface-muted":            true,
+	"surface-card":             true,
 
-	// UI component colors
-	"card":                   true,
-	"card-foreground":        true,
-	"popover":                true,
-	"popover-foreground":     true,
-	"primary-foreground":     true,
-	"secondary-foreground":   true,
-	"muted":                  true,
-	"muted-foreground":       true,
-	"accent":                 true,
-	"accent-foreground":      true,
+	// Foreground semantic variables
+	"fg-primary":   true,
+	"fg-secondary": true,
+	"fg-tertiary":  true,
+	"fg-inverse":   true,
+	"fg-muted":     true,
+	"fg-disabled":  true,
+	"fg-accent":    true,
+
+	// Accent semantic variables
+	"accent-primary":          true,
+	"accent-primary-action":   true,
+	"accent-secondary":        true,
+	"accent-secondary-action": true,
+
+	// Icon semantic variables
+	"icon-default":  true,
+	"icon-muted":    true,
+	"icon-disabled": true,
+	"icon-accent":   true,
+
+	// Border and input
+	"border": true,
+	"input":  true,
+
+	// Ring (focus states)
+	"ring-focus":  true,
+	"ring-offset": true,
+
+	// Tooltip
+	"tooltip": true,
+
+	// Destructive actions
 	"destructive":            true,
 	"destructive-foreground": true,
-	"border":                 true,
-	"input":                  true,
+
+	// Popover
+	"popover":            true,
+	"popover-accent":     true,
+	"popover-foreground": true,
+	"popover-footer":     true,
+
+	// Non-deprecated misc
+	"radius": true,
+
+	// Deprecated but still allowed (mapped automatically)
+	"ring":                 true,
+	"surface":              true,
+	"background":           true,
+	"foreground":           true,
+	"card":                 true,
+	"card-foreground":      true,
+	"muted":                true,
+	"muted-foreground":     true,
+	"accent":               true,
+	"accent-foreground":    true,
+	"primary-foreground":   true,
+	"secondary-foreground": true,
 
 	// Sequential palette (9 colors)
 	"color-sequential-1": true,
@@ -186,6 +249,9 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 }
 
 func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
+	// Create a new map for the final variables with deprecated names mapped to new ones
+	finalVariables := make(map[string]string)
+
 	for k, v := range t.Variables {
 		if !allowedCSSVariables[k] {
 			return nil, fmt.Errorf("invalid CSS variable: %q", k)
@@ -193,6 +259,35 @@ func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
 		_, err := csscolorparser.Parse(v)
 		if err != nil {
 			return nil, fmt.Errorf("invalid value %q for CSS variable %q: %w", v, k, err)
+		}
+
+		// Special handling for "background" - maps to multiple surface variables
+		if k == "background" {
+			for _, newName := range backgroundMappings {
+				if _, alreadySet := t.Variables[newName]; !alreadySet {
+					finalVariables[newName] = v
+				}
+			}
+			continue
+		}
+
+		// Special handling for "foreground" - maps to fg-primary (hierarchy generated in frontend)
+		if k == "foreground" {
+			if _, alreadySet := t.Variables["fg-primary"]; !alreadySet {
+				finalVariables["fg-primary"] = v
+			}
+			continue
+		}
+
+		// Check if this is a deprecated variable that should be mapped
+		if newName, isDeprecated := deprecatedCSSVariables[k]; isDeprecated {
+			// Only map to the new name if it's not already explicitly set
+			if _, alreadySet := t.Variables[newName]; !alreadySet {
+				finalVariables[newName] = v
+			}
+			// Don't output the deprecated name
+		} else {
+			finalVariables[k] = v
 		}
 	}
 
@@ -213,6 +308,6 @@ func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
 	return &runtimev1.ThemeColors{
 		Primary:   t.Primary,
 		Secondary: t.Secondary,
-		Variables: t.Variables,
+		Variables: finalVariables,
 	}, nil
 }

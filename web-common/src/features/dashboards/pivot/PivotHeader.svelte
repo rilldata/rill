@@ -80,6 +80,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply w-20 flex items-center gap-x-1 flex-shrink-0;
+    @apply w-20 flex items-center gap-x-1 flex-shrink-0 text-fg-secondary;
   }
 </style>

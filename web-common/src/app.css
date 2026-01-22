@@ -72,6 +72,7 @@
 
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
+    /* SEMANTIC VARIABLES */
     --surface-background: var(--white);
     --surface-container: var(--color-neutral-50);
     --surface-container-hover: var(--color-primary-50);
@@ -79,6 +80,7 @@
     --surface-elevated: var(--white);
     --surface-overlay: var(--white);
     --surface-muted: var(--color-neutral-100);
+    --surface-card: var(--surface-container);
 
     --fg-primary: var(--color-neutral-950);
     --fg-secondary: var(--color-gray-700);
@@ -97,18 +99,6 @@
     --icon-muted: var(--color-gray-500);
     --icon-disabled: var(--color-gray-400);
     --icon-accent: var(--color-primary-500);
-
-    --canvas: var(--color-cyan-600);
-    --explore: var(--color-indigo-700);
-    --metrics: var(--color-violet-600);
-    --model: var(--color-cyan-600);
-    --api: var(--color-orange-400);
-    --data: var(--color-fuchsia-500);
-    --theme: var(--color-pink-500);
-    --component: oklch(0.6482 0.1754 131.68);
-    --alert: oklch(0.7686 0.1647 70.08);
-    --report: oklch(0.5876 0.1389 241.97);
-    --connector: oklch(0.551 0.0234 264.36);
 
     --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
     --border: var(--color-neutral-200);
@@ -133,6 +123,20 @@
     --popover-accent: var(--color-gray-200);
     --popover-foreground: var(--color-neutral-950);
     --popover-footer: var(--color-neutral-50);
+
+    /* END SEMANTIC VARIABLES */
+
+    --canvas: var(--color-cyan-600);
+    --explore: var(--color-indigo-700);
+    --metrics: var(--color-violet-600);
+    --model: var(--color-cyan-600);
+    --api: var(--color-orange-400);
+    --data: var(--color-fuchsia-500);
+    --theme: var(--color-pink-500);
+    --component: oklch(0.6482 0.1754 131.68);
+    --alert: oklch(0.7686 0.1647 70.08);
+    --report: oklch(0.5876 0.1389 241.97);
+    --connector: oklch(0.551 0.0234 264.36);
 
     --color-theme-50: var(
       --color-theme-light-50,
@@ -290,6 +294,7 @@
     --surface-elevated: var(--color-rill-gray-dark-300);
     --surface-overlay: var(--color-rill-gray-dark-400);
     --surface-muted: var(--color-neutral-light-800);
+    --surface-card: var(--surface-container);
 
     --fg-primary: var(--color-neutral-light-50);
     --fg-secondary: var(--color-gray-light-300);

@@ -22,6 +22,6 @@
 <style lang="postcss">
   .header-cell {
     @apply flex gap-x-2 px-4 items-center relative size-full;
-    @apply bg-gray-100 font-bold;
+    @apply bg-surface-elevated font-bold;
   }
 </style>
