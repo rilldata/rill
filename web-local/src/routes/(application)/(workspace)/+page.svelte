@@ -43,6 +43,10 @@
     background-image: url("/img/welcome-bg-art.png");
   }
 
+  :global(.dark) .wrapper {
+    background-image: url("/img/welcome-bg-art-dark.png");
+  }
+
   .column {
     @apply flex flex-col items-center gap-y-6;
   }
