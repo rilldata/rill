@@ -27,7 +27,7 @@
   <div class="flex gap-x-2 items-center min-h-[20px]">
     <ReportIcon size={"14px"} />
     <span
-      class="text-fg-primary text-sm font-semibold group-hover:text-primary-600 truncate"
+      class="text-fg-primary text-sm font-semibold group-hover:text-accent-primary-action truncate"
     >
       {title}
     </span>

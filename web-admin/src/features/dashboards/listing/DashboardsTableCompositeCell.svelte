@@ -34,7 +34,7 @@
   <div class="flex gap-x-2 items-center min-h-[20px]">
     <ResourceTypeBadge kind={resourceKind} />
     <span
-      class="text-fg-secondary text-sm font-semibold group-hover:text-primary-600 truncate"
+      class="text-fg-secondary text-sm font-semibold group-hover:text-accent-primary-action truncate"
     >
       {title !== "" ? title : name}
     </span>

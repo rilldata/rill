@@ -153,6 +153,6 @@
 
   /* Hover effect on list items */
   .resource-list-item:hover {
-    @apply bg-gray-50;
+    @apply bg-surface-container-hover;
   }
 </style>
