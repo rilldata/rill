@@ -240,7 +240,7 @@
   .canvas {
     @apply relative w-full overflow-hidden rounded-lg border;
     border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
+    background-color: var(--surface-background, #ffffff);
     height: 260px;
   }
 </style>

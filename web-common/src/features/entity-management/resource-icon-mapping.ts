@@ -41,6 +41,20 @@ export const resourceLabelMapping = {
   [ResourceKind.Alert]: "Alert",
 };
 
+export const resourceShorthandMapping = {
+  [ResourceKind.Source]: "source",
+  [ResourceKind.Connector]: "connector",
+  [ResourceKind.Model]: "model",
+  [ResourceKind.MetricsView]: "metrics",
+  [ResourceKind.Explore]: "explore",
+  [ResourceKind.API]: "API",
+  [ResourceKind.Component]: "component",
+  [ResourceKind.Canvas]: "canvas",
+  [ResourceKind.Theme]: "theme",
+  [ResourceKind.Report]: "report",
+  [ResourceKind.Alert]: "alert",
+};
+
 export function getIconComponent(
   kind: ResourceKind | undefined,
   filePath: string,

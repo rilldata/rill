@@ -1,7 +1,10 @@
 <script lang="ts">
   import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import {
+    resourceIconMapping,
+    resourceShorthandMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
@@ -55,7 +58,10 @@
     kind && resourceIconMapping[kind]
       ? resourceIconMapping[kind]
       : DEFAULT_ICON;
-  $: color = kind ? undefined : DEFAULT_COLOR;
+  $: color =
+    kind && resourceShorthandMapping[kind]
+      ? `var(--${resourceShorthandMapping[kind]})`
+      : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
   $: hasError = !!data?.resource?.meta?.reconcileError;
   $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -108,7 +114,7 @@
   class:route-highlighted={routeHighlighted}
   class:error={hasError}
   class:root={data?.isRoot}
-  style={`--node-accent:${color}`}
+  style:--node-accent={color}
   style:width={width ? `${width}px` : undefined}
   data-kind={kind}
   on:click={handleClick}
@@ -205,8 +211,8 @@
 
 <style lang="postcss">
   .node {
-    @apply relative flex items-center gap-x-3 rounded-lg border border-accent bg-surface-container px-3 py-2 cursor-pointer shadow-sm;
-    border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
+    @apply relative border flex items-center gap-x-3 rounded-lg border bg-surface-container px-3 py-2 cursor-pointer shadow-sm;
+
     transition:
       box-shadow 120ms ease,
       border-color 120ms ease,
@@ -222,20 +228,13 @@
     background-color: color-mix(
       in srgb,
       var(--node-accent) 8%,
-      var(--surface, #ffffff)
+      var(--surface-background, #ffffff)
     );
   }
 
   .node.selected {
     @apply shadow border-2;
     border-color: var(--node-accent);
-    transform: translateY(-1px);
-  }
-
-  .node.route-highlighted {
-    @apply shadow border-2;
-    border-color: var(--node-accent);
-    transform: translateY(-1px);
   }
 
   .node.error {

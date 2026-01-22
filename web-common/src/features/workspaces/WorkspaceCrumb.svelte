@@ -215,6 +215,6 @@
   .graph-trigger:focus-visible {
     @apply outline-none ring ring-offset-1;
     ring-color: var(--ring, #93c5fd);
-    ring-offset-color: var(--surface, #ffffff);
+    ring-offset-color: var(--surface-background, #ffffff);
   }
 </style>

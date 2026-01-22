@@ -1,6 +1,9 @@
 <script lang="ts">
   import { Handle, Position } from "@xyflow/svelte";
-  import { resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import {
+    resourceIconMapping,
+    resourceShorthandMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { goto } from "$app/navigation";
 
@@ -49,7 +52,13 @@
     positionAbsoluteY,
   );
 
-  $: color = data?.kind ? undefined : "#6B7280";
+  const DEFAULT_COLOR = "#6B7280";
+
+  $: kind = data.kind;
+  $: color =
+    kind && resourceShorthandMapping[kind]
+      ? `var(--${resourceShorthandMapping[kind]})`
+      : DEFAULT_COLOR;
   $: Icon = resourceIconMapping[data?.kind] || null;
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;
@@ -76,7 +85,7 @@
   class="summary-node"
   class:active={isActive}
   class:empty={isEmpty}
-  style={`--summary-accent:${color}`}
+  style:--summary-accent={color}
   on:click={navigateByKind}
   role="button"
   tabindex={isEmpty ? -1 : 0}
@@ -115,15 +124,10 @@
 <style lang="postcss">
   .summary-node {
     @apply relative flex items-center gap-4 rounded-lg border px-5 py-4 shadow-sm min-w-[280px];
-    background-color: var(--surface, #ffffff);
-    border-color: color-mix(
-      in srgb,
-      var(--summary-accent, #94a3b8) 35%,
-      var(--border, #e5e7eb)
-    );
+    @apply bg-surface-elevated text-fg-secondary border;
   }
   .summary-node.active {
-    @apply border-2;
+    @apply border-2 shadow-lg;
     border-color: color-mix(
       in srgb,
       var(--summary-accent, #94a3b8) 70%,
@@ -134,12 +138,13 @@
     background-color: color-mix(
       in srgb,
       var(--summary-accent, #94a3b8) 15%,
-      var(--surface, #ffffff)
+      var(--surface-background, #ffffff)
     );
   }
   .summary-node.empty {
     @apply opacity-50 cursor-default;
   }
+
   .summary-node:not(.empty):hover {
     @apply cursor-pointer;
     border-color: color-mix(
@@ -160,11 +165,9 @@
     @apply flex items-baseline gap-2;
   }
   .label {
-    @apply text-base font-medium;
-    color: var(--muted-foreground, #4b5563);
+    @apply text-base font-medium text-fg-muted;
   }
   .count {
-    @apply text-3xl font-semibold leading-tight;
-    color: var(--foreground, #111827);
+    @apply text-3xl font-semibold leading-tight text-fg-primary;
   }
 </style>

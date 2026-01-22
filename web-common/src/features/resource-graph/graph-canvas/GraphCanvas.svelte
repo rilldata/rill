@@ -367,14 +367,12 @@
 
   .graph-container {
     @apply relative w-full overflow-hidden rounded-lg border;
-    /* border-color: var(--border, #e5e7eb); */
-    background-color: var(--surface, #ffffff);
   }
 
   .state {
     @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm;
     border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
+    background-color: var(--surface-background, #ffffff);
     color: var(--fg-muted, #6b7280);
   }
 
