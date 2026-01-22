@@ -15,12 +15,12 @@
 
 <style lang="postcss">
   .element {
-    @apply bg-surface-muted text-fg-secondary rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
+    @apply bg-surface-elevated text-fg-secondary rounded-[2px] px-1 line-clamp-1 truncate flex-none h-5 flex items-center select-none cursor-default;
     font-family: "Source Code Variable", monospace;
     @apply font-medium w-fit;
   }
 
   .element:hover {
-    @apply bg-gray-700;
+    @apply bg-surface-container-hover;
   }
 </style>
