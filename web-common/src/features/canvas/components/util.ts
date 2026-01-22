@@ -25,6 +25,11 @@ import type {
   ComponentCommonProperties,
   ComponentSpec,
 } from "./types";
+import ChartIcon from "@rilldata/web-common/features/canvas/icons/ChartIcon.svelte";
+import TableIcon from "@rilldata/web-common/features/canvas/icons/TableIcon.svelte";
+import TextIcon from "@rilldata/web-common/features/canvas/icons/TextIcon.svelte";
+import BigNumberIcon from "@rilldata/web-common/features/canvas/icons/BigNumberIcon.svelte";
+import LeaderboardIcon from "@rilldata/web-common/features/canvas/icons/LeaderboardIcon.svelte";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -122,6 +127,12 @@ const baseComponentMap = {
   table: PivotCanvasComponent,
   pivot: PivotCanvasComponent,
 } as const;
+const IconMap = {
+  markdown: TextIcon,
+  kpi_grid: BigNumberIcon,
+  leaderboard: LeaderboardIcon,
+  table: TableIcon,
+};
 
 const chartComponentMap = Object.fromEntries(
   CHART_TYPES.map((type) => [type, getCanvasChartComponent(type)]),
@@ -191,6 +202,11 @@ export function getHeaderForComponent(
 ) {
   if (!componentType) return "Component";
   return DISPLAY_MAP[componentType] || "Component";
+}
+
+export function getIconForComponent(componentType: CanvasComponentType | null) {
+  if (!componentType) return ChartIcon;
+  return IconMap[componentType] || ChartIcon;
 }
 
 export function getComponentMetricsViewFromSpec(

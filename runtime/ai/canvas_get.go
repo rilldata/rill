@@ -64,10 +64,11 @@ func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanva
 
 	specMap := protoToJSON(canvasSpec)
 
-	var components, metricsViews map[string]any
+	components := map[string]any{}
+	metricsViews := map[string]any{}
 	for name, res := range resolvedCanvas.ResolvedComponents {
 		component := res.GetComponent()
-		if component == nil {
+		if component == nil || component.State.ValidSpec == nil {
 			continue
 		}
 		components[name] = protoToJSON(component.State.ValidSpec)
@@ -75,7 +76,7 @@ func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanva
 
 	for name, res := range resolvedCanvas.ReferencedMetricsViews {
 		metricsView := res.GetMetricsView()
-		if metricsView == nil {
+		if metricsView == nil || metricsView.State.ValidSpec == nil {
 			continue
 		}
 		metricsViews[name] = protoToJSON(metricsView.State.ValidSpec)
@@ -89,10 +90,6 @@ func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanva
 }
 
 func protoToJSON(spec proto.Message) map[string]any {
-	if spec == nil {
-		return nil
-	}
-
 	specJson, err := protojson.Marshal(spec)
 	if err != nil {
 		return nil

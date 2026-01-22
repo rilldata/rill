@@ -14,14 +14,20 @@ import {
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import type { InlineContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
 import type { V1ComponentSpec } from "@rilldata/web-common/runtime-client";
-import { getHeaderForComponent } from "@rilldata/web-common/features/canvas/components/util.ts";
+import {
+  getHeaderForComponent,
+  getIconForComponent,
+} from "@rilldata/web-common/features/canvas/components/util.ts";
 
 type ContextConfigPerType = {
   editable: boolean;
   typeLabel?: string;
   getLabel: (ctx: InlineContext, meta: InlineContextMetadata) => string;
   getTooltip?: (ctx: InlineContext, meta: InlineContextMetadata) => string;
-  getIcon?: (ctx: InlineContext) => any | undefined;
+  getIcon?: (
+    ctx: InlineContext,
+    meta: InlineContextMetadata,
+  ) => any | undefined;
 };
 
 /**
@@ -60,7 +66,10 @@ export const InlineContextConfig: Record<
         ctx.canvasComponent!,
         meta.componentSpecs[ctx.canvasComponent!],
       ),
-    getIcon: () => resourceIconMapping[ResourceKind.Canvas],
+    getIcon: (ctx, meta) => {
+      const componentSpec = meta.componentSpecs[ctx.canvasComponent!];
+      return getIconForComponent(componentSpec?.renderer as any);
+    },
     getTooltip: (ctx, meta) =>
       `For ${InlineContextConfig[InlineContextType.Canvas].getLabel(ctx, meta)}`,
   },
@@ -138,9 +147,8 @@ export function getCanvasComponentLabel(
   const header = getHeaderForComponent(componentSpec?.renderer as any);
 
   const rowColMatch = rowColMatcher.exec(componentName);
-  console.log(rowColMatch);
   if (!rowColMatch) return header;
-  const rowColPart = ` Row: ${rowColMatch[1]}, Col: ${rowColMatch[2]}`;
+  const rowColPart = ` at Row: ${rowColMatch[1]}, Col: ${rowColMatch[2]}`;
 
   return header + rowColPart;
 }

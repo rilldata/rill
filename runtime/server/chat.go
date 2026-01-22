@@ -247,12 +247,14 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:         req.AnalystAgentContext.Explore,
+			Canvas:          req.AnalystAgentContext.Canvas,
+			CanvasComponent: req.AnalystAgentContext.CanvasComponent,
+			Dimensions:      req.AnalystAgentContext.Dimensions,
+			Measures:        req.AnalystAgentContext.Measures,
+			Where:           metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:       req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:         req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs
@@ -368,12 +370,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	var analystAgentArgs *ai.AnalystAgentArgs
 	if req.AnalystAgentContext != nil {
 		analystAgentArgs = &ai.AnalystAgentArgs{
-			Explore:    req.AnalystAgentContext.Explore,
-			Dimensions: req.AnalystAgentContext.Dimensions,
-			Measures:   req.AnalystAgentContext.Measures,
-			Where:      metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
-			TimeStart:  req.AnalystAgentContext.TimeStart.AsTime(),
-			TimeEnd:    req.AnalystAgentContext.TimeEnd.AsTime(),
+			Explore:         req.AnalystAgentContext.Explore,
+			Canvas:          req.AnalystAgentContext.Canvas,
+			CanvasComponent: req.AnalystAgentContext.CanvasComponent,
+			Dimensions:      req.AnalystAgentContext.Dimensions,
+			Measures:        req.AnalystAgentContext.Measures,
+			Where:           metricsview.NewExpressionFromProto(req.AnalystAgentContext.Where),
+			TimeStart:       req.AnalystAgentContext.TimeStart.AsTime(),
+			TimeEnd:         req.AnalystAgentContext.TimeEnd.AsTime(),
 		}
 	}
 	var developerAgentArgs *ai.DeveloperAgentArgs

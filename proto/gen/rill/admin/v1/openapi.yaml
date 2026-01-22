@@ -2305,7 +2305,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.79.1
+    version: v0.79.4
 openapi: 3.0.3
 paths:
     /v1/ai/complete:

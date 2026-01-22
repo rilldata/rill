@@ -10802,6 +10802,10 @@ func (m *AnalystAgentContext) validate(all bool) error {
 
 	// no validation rules for Explore
 
+	// no validation rules for Canvas
+
+	// no validation rules for CanvasComponent
+
 	if all {
 		switch v := interface{}(m.GetWhere()).(type) {
 		case interface{ ValidateAll() error }:

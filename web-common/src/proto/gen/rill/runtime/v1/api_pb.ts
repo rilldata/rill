@@ -4501,6 +4501,16 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   explore = "";
 
   /**
+   * @generated from field: string canvas = 10;
+   */
+  canvas = "";
+
+  /**
+   * @generated from field: string canvas_component = 11;
+   */
+  canvasComponent = "";
+
+  /**
    * Optional dimensions.
    *
    * @generated from field: repeated string dimensions = 5;
@@ -4544,6 +4554,8 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   static readonly typeName = "rill.runtime.v1.AnalystAgentContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "canvas_component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },

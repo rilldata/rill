@@ -4049,6 +4049,10 @@ definitions:
       explore:
         type: string
         description: Optional explore dashboard.
+      canvas:
+        type: string
+      canvasComponent:
+        type: string
       dimensions:
         type: array
         items:

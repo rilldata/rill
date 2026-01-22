@@ -1065,6 +1065,8 @@ message Message {
 message AnalystAgentContext {
   // Optional explore dashboard.
   string explore = 4;
+  string canvas = 10;
+  string canvas_component = 11;
   // Optional dimensions.
   repeated string dimensions = 5;
   // Optional measures.
