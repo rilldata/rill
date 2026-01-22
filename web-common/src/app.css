@@ -52,14 +52,6 @@
   .ui-measure-bar-excluded {
     @apply bg-gray-100;
   }
-
-  .ui-editor-text-error {
-    color: var(--ui-editor-error-foreground);
-  }
-
-  .ui-editor-bg-error {
-    @apply bg-red-50;
-  }
 }
 
 @layer base {
@@ -69,8 +61,6 @@
 
     --white: oklch(100% 0 0);
     --radius: 0.5rem;
-
-    --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
     /* SEMANTIC VARIABLES */
     --surface-background: var(--white);
