@@ -4,7 +4,11 @@
   import { TabsContent } from "@rilldata/web-common/components/tabs";
   import SchemaField from "./SchemaField.svelte";
   import type { JSONSchemaField, MultiStepFormSchema } from "./schemas/types";
-  import { isStepMatch, isVisibleForValues } from "./schema-utils";
+  import {
+    getConditionalValues,
+    isStepMatch,
+    isVisibleForValues,
+  } from "./schema-utils";
 
   // Use `any` for form values since field types are determined by JSON schema at runtime
   type FormData = Record<string, any>;
@@ -98,6 +102,34 @@
             if (!visible && key in $form && $form[key] !== "") {
               $form[key] = "";
             }
+          }
+          return $form;
+        },
+        { taint: false },
+      );
+    }
+  }
+
+  // Apply const values and conditional defaults from allOf/if/then branches.
+  // This ensures that schema-defined constraints are always enforced.
+  $: if (schema) {
+    const currentValues = $form;
+    const conditionalValues = getConditionalValues(schema, currentValues);
+
+    // Check if any conditional values differ from current form values
+    const needsUpdate = Object.entries(conditionalValues).some(
+      ([key, value]) => {
+        if (!isStepMatch(schema, key, stepFilter)) return false;
+        return currentValues[key] !== value;
+      },
+    );
+
+    if (needsUpdate) {
+      form.update(
+        ($form) => {
+          for (const [key, value] of Object.entries(conditionalValues)) {
+            if (!isStepMatch(schema, key, stepFilter)) continue;
+            $form[key] = value;
           }
           return $form;
         },

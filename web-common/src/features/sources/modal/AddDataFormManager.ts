@@ -8,10 +8,7 @@ import {
   submitAddConnectorForm,
   submitAddSourceForm,
 } from "./submitAddDataForm";
-import {
-  normalizeConnectorError,
-  applyClickHouseCloudRequirements,
-} from "./utils";
+import { normalizeConnectorError } from "./utils";
 import {
   FORM_HEIGHT_DEFAULT,
   FORM_HEIGHT_TALL,
@@ -84,7 +81,6 @@ export class AddDataFormManager {
   params: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
-  private clickhouseInitialValues: Record<string, unknown>;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -166,12 +162,6 @@ export class AddDataFormManager {
       resetForm: false,
       validationMethod: "onsubmit",
     });
-
-    // ClickHouse-specific defaults
-    this.clickhouseInitialValues =
-      connector.name === "clickhouse" && schema
-        ? getSchemaInitialValues(schema, { step: "connector" })
-        : {};
   }
 
   get isSourceForm(): boolean {
@@ -291,41 +281,6 @@ export class AddDataFormManager {
     }
 
     return "Test and Add data";
-  }
-
-  getClickhouseDefaults(
-    connectorType: ClickHouseConnectorType,
-  ): Record<string, unknown> | null {
-    if (this.connector.name !== "clickhouse") return null;
-
-    // Get schema defaults for the appropriate connector type
-    const schemaName =
-      connectorType === "clickhouse-cloud" ? "clickhousecloud" : "clickhouse";
-    const schema = getConnectorSchema(schemaName);
-    if (!schema) return null;
-
-    const schemaDefaults = getSchemaInitialValues(schema, {
-      step: "connector",
-    });
-
-    // Merge with any user-provided values from initial form (excluding connector_type)
-    const baseDefaults = { ...this.clickhouseInitialValues };
-    delete (baseDefaults as Record<string, unknown>).connector_type;
-
-    // For rill-managed, override managed and connector_type (schema default is self-hosted)
-    if (connectorType === "rill-managed") {
-      return {
-        ...baseDefaults,
-        ...schemaDefaults,
-        managed: true,
-        connector_type: "rill-managed",
-      };
-    }
-
-    return {
-      ...baseDefaults,
-      ...schemaDefaults,
-    };
   }
 
   makeOnUpdate(args: {
@@ -569,6 +524,7 @@ export class AddDataFormManager {
 
   /**
    * Compute YAML preview for the current form state.
+   * Schema conditionals handle connector-specific requirements (e.g., managed flag, SSL).
    */
   computeYamlPreview(ctx: {
     filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
@@ -580,12 +536,10 @@ export class AddDataFormManager {
   }): string {
     const connector = this.connector;
     const {
-      filteredParamsProperties,
       stepState,
       isMultiStepConnector,
       isConnectorForm,
       paramsFormValues,
-      clickhouseConnectorType,
     } = ctx;
 
     const schema = getConnectorSchema(connector.name ?? "");
@@ -611,35 +565,6 @@ export class AddDataFormManager {
           return !("noPrompt" in property && property.noPrompt);
         },
         orderedProperties: connectorPropertiesForPreview,
-        secretKeys: schemaConnectorSecretKeys,
-        stringKeys: schemaConnectorStringKeys,
-      });
-    };
-
-    const getClickHouseYamlPreview = (
-      values: Record<string, unknown>,
-      chType: ClickHouseConnectorType | undefined,
-    ) => {
-      const filteredValues = schema
-        ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
-        : values;
-      // Convert to managed boolean and apply CH Cloud requirements for preview
-      const managed = chType === "rill-managed";
-      const previewValues = {
-        ...filteredValues,
-        managed,
-      } as Record<string, unknown>;
-      const finalValues = applyClickHouseCloudRequirements(
-        connector.name,
-        chType as ClickHouseConnectorType,
-        previewValues,
-      );
-      return compileConnectorYAML(connector, finalValues, {
-        fieldFilter: (property) => {
-          if ("internal" in property && property.internal) return false;
-          return !("noPrompt" in property && property.noPrompt);
-        },
-        orderedProperties: filteredParamsProperties,
         secretKeys: schemaConnectorSecretKeys,
         stringKeys: schemaConnectorStringKeys,
       });
@@ -692,15 +617,7 @@ export class AddDataFormManager {
       return getConnectorYamlPreview(rewrittenFormValues);
     };
 
-    // ClickHouse special-case
-    if (connector.name === "clickhouse") {
-      return getClickHouseYamlPreview(
-        paramsFormValues,
-        clickhouseConnectorType,
-      );
-    }
-
-    // Multi-step connectors
+    // Multi-step connectors (S3, GCS, Azure)
     if (isMultiStepConnector) {
       if (stepState?.step === "connector") {
         return getConnectorYamlPreview(paramsFormValues);
@@ -719,23 +636,18 @@ export class AddDataFormManager {
 
   /**
    * Save connector anyway, returning a result object for the caller to handle.
+   * Schema conditionals handle connector-specific requirements (e.g., SSL).
    */
   async saveConnectorAnyway(args: {
     queryClient: QueryClient;
     values: FormData;
     clickhouseConnectorType?: ClickHouseConnectorType;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
-    const { queryClient, values, clickhouseConnectorType } = args;
+    const { queryClient, values } = args;
     const schema = getConnectorSchema(this.connector.name ?? "");
-    const prunedValues = schema
+    const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;
-    const processedValues = applyClickHouseCloudRequirements(
-      this.connector.name,
-      (clickhouseConnectorType as ClickHouseConnectorType) ||
-        ("self-hosted" as ClickHouseConnectorType),
-      prunedValues,
-    );
     try {
       await submitAddConnectorForm(
         queryClient,
