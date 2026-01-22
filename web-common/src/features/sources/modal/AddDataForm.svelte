@@ -10,14 +10,9 @@
   import type { AddDataFormType, ConnectorType } from "./types";
   import MultiStepConnectorFlow from "./MultiStepConnectorFlow.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
-  import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
-  import { TabsContent } from "@rilldata/web-common/components/tabs";
   import { hasOnlyDsn, isEmpty } from "./utils";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
-  import {
-    CONNECTION_TAB_OPTIONS,
-    type ClickHouseConnectorType,
-  } from "./constants";
+  import { type ClickHouseConnectorType } from "./constants";
   import { connectorStepStore } from "./connectorStepStore";
   import YamlPreview from "./YamlPreview.svelte";
   import {
@@ -27,7 +22,6 @@
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import { get } from "svelte/store";
   import { getConnectorSchema } from "./connector-schemas";
-  import { propertiesToSchema } from "./properties-to-schema";
   import {
     getRequiredFieldsForValues,
     isVisibleForValues,
@@ -106,9 +100,7 @@
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  // Form 2: DSN
-  // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
-  const hasDsnFormOption = formManager.hasDsnFormOption;
+  // DSN-related variables (still used by formManager for ClickHouse and yaml preview)
   const dsnFormId = formManager.dsnFormId;
   const dsnProperties = formManager.dsnProperties;
   const filteredDsnProperties = formManager.filteredDsnProperties;
@@ -131,21 +123,6 @@
   let effectiveClickhouseSubmitting = false;
 
   const connectorSchema = getConnectorSchema(schemaName);
-  const hasSchema = Boolean(connectorSchema);
-  const paramsSchema =
-    connectorSchema ??
-    propertiesToSchema(
-      filteredParamsProperties as any,
-      isConnectorForm ? "connector" : "source",
-    );
-  const dsnSchema =
-    connectorSchema ??
-    propertiesToSchema(
-      filteredDsnProperties as any,
-      isConnectorForm ? "connector" : "source",
-    );
-  const usesLegacyTabs = !hasSchema && hasDsnFormOption;
-  $: useDsnForm = usesLegacyTabs && (onlyDsn || connectionTab === "dsn");
 
   $: if (connector.name === "clickhouse") {
     // Only sync clickhouseConnectorType from form when NOT using ClickHouse Cloud
@@ -226,65 +203,30 @@
       return multiStepSubmitDisabled;
     }
 
-    if (connectorSchema) {
-      const requiredFields = getRequiredFieldsForValues(
-        connectorSchema,
-        $paramsForm,
-        isConnectorForm ? "connector" : "source",
-      );
-      for (const field of requiredFields) {
-        if (!isVisibleForValues(connectorSchema, field, $paramsForm)) continue;
-        const value = $paramsForm[field];
-        const errorsForField = $paramsErrors[field] as any;
-        if (isEmpty(value) || errorsForField?.length) return true;
-      }
-      return false;
+    // No schema = disable submit (schema is required for all connectors)
+    if (!connectorSchema) {
+      return true;
     }
 
-    if (useDsnForm) {
-      // DSN form: check required DSN properties
-      for (const property of dsnProperties) {
-        const key = String(property.key);
-        const value = $dsnForm[key];
-        // DSN should be present even if not marked required in metadata
-        const mustBePresent = property.required || key === "dsn";
-        if (
-          mustBePresent &&
-          (isEmpty(value) || /**/ ($dsnErrors[key] as any)?.length)
-        ) {
-          return true;
-        }
-      }
-      return false;
-    } else {
-      // Parameters form: check required properties
-      for (const property of properties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $paramsForm[key];
-
-          // Normal validation for all properties
-          if (isEmpty(value) || /**/ ($paramsErrors[key] as any)?.length)
-            return true;
-        }
-      }
-      return false;
+    const requiredFields = getRequiredFieldsForValues(
+      connectorSchema,
+      $paramsForm,
+      isConnectorForm ? "connector" : "source",
+    );
+    for (const field of requiredFields) {
+      if (!isVisibleForValues(connectorSchema, field, $paramsForm)) continue;
+      const value = $paramsForm[field];
+      const errorsForField = $paramsErrors[field] as any;
+      if (isEmpty(value) || errorsForField?.length) return true;
     }
+    return false;
   })();
 
   $: formId = isStepFlowConnector
     ? multiStepFormId || paramsFormId
-    : useDsnForm
-      ? dsnFormId
-      : paramsFormId;
+    : paramsFormId;
 
-  $: submitting = (() => {
-    if (useDsnForm) {
-      return $dsnSubmitting;
-    } else {
-      return $paramsSubmitting;
-    }
-  })();
+  $: submitting = $paramsSubmitting;
 
   $: primaryButtonLabel = isStepFlowConnector
     ? multiStepButtonLabel
@@ -323,23 +265,8 @@
           paramsError = null;
         }
       }
-    } else if (useDsnForm) {
-      if ($dsnTainted) dsnError = null;
     } else {
       if ($paramsTainted) paramsError = null;
-    }
-  })();
-
-  // Clear errors when switching tabs
-  $: (() => {
-    if (usesLegacyTabs) {
-      if (connectionTab === "dsn") {
-        paramsError = null;
-        paramsErrorDetails = undefined;
-      } else {
-        dsnError = null;
-        dsnErrorDetails = undefined;
-      }
     }
   })();
 
@@ -350,23 +277,17 @@
     }
 
     saveAnyway = true;
-    const values = useDsnForm ? $dsnForm : $paramsForm;
     const result = await formManager.saveConnectorAnyway({
       queryClient,
-      values,
+      values: $paramsForm,
       clickhouseConnectorType,
       connectionTab,
     });
     if (result.ok) {
       onClose();
     } else {
-      if (useDsnForm) {
-        dsnError = result.message;
-        dsnErrorDetails = result.details;
-      } else {
-        paramsError = result.message;
-        paramsErrorDetails = result.details;
-      }
+      paramsError = result.message;
+      paramsErrorDetails = result.details;
     }
     saveAnyway = false;
   }
@@ -426,46 +347,7 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if usesLegacyTabs}
-        <Tabs
-          bind:value={connectionTab}
-          options={CONNECTION_TAB_OPTIONS}
-          disableMarginTop
-        >
-          <TabsContent value="parameters">
-            <AddDataFormSection
-              id={paramsFormId}
-              enhance={paramsEnhance}
-              onSubmit={paramsSubmit}
-            >
-              <JSONSchemaFormRenderer
-                schema={paramsSchema}
-                step={isConnectorForm ? "connector" : "source"}
-                form={paramsForm}
-                errors={$paramsErrors}
-                {onStringInputChange}
-                {handleFileUpload}
-              />
-            </AddDataFormSection>
-          </TabsContent>
-          <TabsContent value="dsn">
-            <AddDataFormSection
-              id={dsnFormId}
-              enhance={dsnEnhance}
-              onSubmit={dsnSubmit}
-            >
-              <JSONSchemaFormRenderer
-                schema={dsnSchema}
-                step={isConnectorForm ? "connector" : "source"}
-                form={dsnForm}
-                errors={$dsnErrors}
-                {onStringInputChange}
-                {handleFileUpload}
-              />
-            </AddDataFormSection>
-          </TabsContent>
-        </Tabs>
-      {:else if isStepFlowConnector}
+      {#if isStepFlowConnector}
         <MultiStepConnectorFlow
           {connector}
           {formManager}
@@ -484,7 +366,7 @@
           bind:formId={multiStepFormId}
           bind:shouldShowSkipLink
         />
-      {:else if hasSchema}
+      {:else if connectorSchema}
         <AddDataFormSection
           id={paramsFormId}
           enhance={paramsEnhance}
@@ -500,20 +382,12 @@
           />
         </AddDataFormSection>
       {:else}
-        <AddDataFormSection
-          id={paramsFormId}
-          enhance={paramsEnhance}
-          onSubmit={paramsSubmit}
-        >
-          <JSONSchemaFormRenderer
-            schema={paramsSchema}
-            step={isConnectorForm ? "connector" : "source"}
-            form={paramsForm}
-            errors={$paramsErrors}
-            {onStringInputChange}
-            {handleFileUpload}
-          />
-        </AddDataFormSection>
+        <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+          <p class="text-red-800 font-medium">Missing connector schema</p>
+          <p class="text-red-600 text-sm mt-1">
+            No schema found for connector "{connector.name}". Please add a schema in connector-schemas.ts.
+          </p>
+        </div>
       {/if}
     </div>
 
@@ -558,10 +432,10 @@
       class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6 justify-between"
     >
       <div class="flex flex-col gap-6 flex-1 overflow-y-auto">
-        {#if dsnError || paramsError}
+        {#if paramsError}
           <SubmissionError
-            message={(useDsnForm ? dsnError : paramsError) ?? ""}
-            details={(useDsnForm ? dsnErrorDetails : paramsErrorDetails) ?? ""}
+            message={paramsError ?? ""}
+            details={paramsErrorDetails ?? ""}
           />
         {/if}
 
