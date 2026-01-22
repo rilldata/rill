@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const snowflakeSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Snowflake",
+  "x-category": "warehouse",
   properties: {
     connection_mode: {
       type: "string",

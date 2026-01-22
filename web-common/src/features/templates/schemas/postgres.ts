@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const postgresSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "PostgreSQL",
+  "x-category": "sqlStore",
   properties: {
     connection_mode: {
       type: "string",

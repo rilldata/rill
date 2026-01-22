@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const sqliteSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "SQLite",
+  "x-category": "sqlStore",
   properties: {
     db: {
       type: "string",

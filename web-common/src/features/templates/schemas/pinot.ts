@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const pinotSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Apache Pinot",
+  "x-category": "olap",
   properties: {
     connection_mode: {
       type: "string",

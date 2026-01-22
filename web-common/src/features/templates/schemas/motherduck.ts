@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const motherduckSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "MotherDuck",
+  "x-category": "olap",
   properties: {
     path: {
       type: "string",
