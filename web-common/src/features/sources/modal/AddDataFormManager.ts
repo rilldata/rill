@@ -304,7 +304,9 @@ export class AddDataFormManager {
     const schema = getConnectorSchema(schemaName);
     if (!schema) return null;
 
-    const schemaDefaults = getSchemaInitialValues(schema, { step: "connector" });
+    const schemaDefaults = getSchemaInitialValues(schema, {
+      step: "connector",
+    });
 
     // Merge with any user-provided values from initial form (excluding connector_type)
     const baseDefaults = { ...this.clickhouseInitialValues };
