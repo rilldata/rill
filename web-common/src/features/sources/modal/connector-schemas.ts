@@ -1,4 +1,7 @@
-import type { MultiStepFormSchema } from "../../templates/schemas/types";
+import type {
+  ConnectorCategory,
+  MultiStepFormSchema,
+} from "../../templates/schemas/types";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
@@ -18,6 +21,7 @@ import { motherduckSchema } from "../../templates/schemas/motherduck";
 import { druidSchema } from "../../templates/schemas/druid";
 import { pinotSchema } from "../../templates/schemas/pinot";
 import { s3Schema } from "../../templates/schemas/s3";
+import { SOURCES, OLAP_ENGINES } from "./constants";
 
 export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   athena: athenaSchema,
@@ -40,6 +44,29 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   gcs: gcsSchema,
   azure: azureSchema,
 };
+
+/**
+ * Connector information derived from JSON schemas.
+ */
+export interface ConnectorInfo {
+  name: string;
+  displayName: string;
+  category: ConnectorCategory;
+}
+
+/**
+ * All connectors enumerated from JSON schemas, sorted by display order.
+ */
+export const connectors: ConnectorInfo[] = [...SOURCES, ...OLAP_ENGINES]
+  .filter((name) => multiStepFormSchemas[name]?.["x-category"])
+  .map((name) => {
+    const schema = multiStepFormSchemas[name];
+    return {
+      name,
+      displayName: schema.title ?? name,
+      category: schema["x-category"] as ConnectorCategory,
+    };
+  });
 
 export function getConnectorSchema(
   connectorName: string,
