@@ -204,7 +204,6 @@
                 {timeString}
                 minTimeGrain={minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE}
                 {timeControlsReady}
-                {selectedTimeRange}
                 {exploreName}
                 {showTimeComparison}
                 timeSeriesWidth={metricsWidth}

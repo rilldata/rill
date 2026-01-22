@@ -20,6 +20,7 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
@@ -32,14 +33,16 @@
     type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import {
+    allowedGrainsForInterval,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
   import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
   import {
     TimeRangePreset,
     type AvailableTimeGrain,
-    type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
   import {
     V1TimeGrain,
@@ -47,7 +50,7 @@
   } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Tooltip } from "bits-ui";
-  import { DateTime } from "luxon";
+  import { DateTime, Interval } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -64,8 +67,6 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import { Interval } from "luxon";
-  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 
   const { rillTime } = featureFlags;
 
@@ -76,10 +77,11 @@
   export let interval: Interval<true> | undefined;
   export let activeTimeGrain: V1TimeGrain | undefined;
   export let timeString: string | undefined;
+  export let minTimeGrain: V1TimeGrain | undefined;
   export let showTimeComparison: boolean | undefined;
   export let timeControlsReady: boolean;
-  export let minTimeGrain: V1TimeGrain;
-  export let selectedTimeRange: DashboardTimeControls | undefined;
+
+  const StateManagers = getStateManagers();
 
   const {
     selectors: {
@@ -95,9 +97,14 @@
       measures: { setMeasureVisibility },
     },
     validSpecStore,
-  } = getStateManagers();
+  } = StateManagers;
 
-  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(StateManagers);
+  const timeSeriesDataStore = useTimeSeriesDataStore(StateManagers);
+
+  // Unable to remove this without causing difficult to debug issues
+  // Though it should be passed as a prop from Dashboard.svelte
+  $: ({ selectedTimeRange } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
 
@@ -124,9 +131,6 @@
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
 
-  $: timeString = selectedTimeRange?.name;
-
-  $: activeTimeGrain = selectedTimeRange?.interval ?? minTimeGrain;
   $: isScrubbing = $exploreState?.selectedScrubRange?.isScrubbing;
   $: isAllTime = timeString === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
@@ -347,14 +351,7 @@
 
 <svelte:window on:click={maybeClearMeasureSelection} />
 
-<TimeSeriesChartContainer
-  enableFullWidth={showTimeDimensionDetail}
-  end={endValue}
-  start={startValue}
-  {workspaceWidth}
-  {timeSeriesWidth}
-  bottom={showTimeDimensionDetail ? 25 : 10}
->
+<div class="max-w-full h-fit flex flex-col max-h-full pr-2">
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}
       <BackToExplore />
@@ -399,7 +396,7 @@
                   <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
                     <TooltipContent>
                       <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
-                      aggregation not supported. Displaying by
+                      aggregation not supported on this dashboard. Displaying by
                       <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
                     </TooltipContent>
                   </Tooltip.Content>
@@ -441,128 +438,135 @@
     {/if}
   </div>
 
-  <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
-    <div class="relative w-full">
-      <ChartInteractions
-        {exploreName}
-        {showComparison}
-        timeGrain={activeTimeGrain}
-      />
-      {#if tddChartType === TDDChart.DEFAULT}
-        <div class="translate-x-5">
-          {#if $exploreState?.selectedTimeRange && startValue && endValue}
-            <SimpleDataGraphic
-              height={26}
-              overflowHidden={false}
-              top={29}
-              bottom={0}
-              right={showTimeDimensionDetail ? 10 : 25}
-              xMin={startValue}
-              xMax={endValue}
-            >
-              <Axis superlabel side="top" placement="start" />
-            </SimpleDataGraphic>
-          {/if}
-        </div>
-      {/if}
+  <TimeSeriesChartContainer
+    enableFullWidth={showTimeDimensionDetail}
+    end={endValue}
+    start={startValue}
+    {workspaceWidth}
+    {timeSeriesWidth}
+    bottom={showTimeDimensionDetail ? 25 : 10}
+  >
+    <div class="z-10 gap-x-9 flex flex-row pt-4" style:padding-left="118px">
+      <div class="relative w-full">
+        <ChartInteractions
+          {exploreName}
+          {showComparison}
+          timeGrain={activeTimeGrain}
+        />
+        {#if tddChartType === TDDChart.DEFAULT}
+          <div class="translate-x-5">
+            {#if $exploreState?.selectedTimeRange && startValue && endValue}
+              <SimpleDataGraphic
+                height={26}
+                overflowHidden={false}
+                top={29}
+                bottom={0}
+                right={showTimeDimensionDetail ? 10 : 25}
+                xMin={startValue}
+                xMax={endValue}
+              >
+                <Axis superlabel side="top" placement="start" />
+              </SimpleDataGraphic>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
-  </div>
 
-  {#if renderedMeasures}
-    <div
-      class:pb-4={!showTimeDimensionDetail}
-      class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
-    >
-      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-      {#each renderedMeasures as measure, i (measure.name)}
-        <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = measure.name ? totals?.[measure.name] : null}
-        {@const comparisonValue = measure.name
-          ? totalsComparisons?.[measure.name]
-          : undefined}
-        {@const isValidPercTotal = measure.name
-          ? $isMeasureValidPercentOfTotal(measure.name)
-          : false}
+    {#if renderedMeasures}
+      <div
+        class:pb-4={!showTimeDimensionDetail}
+        class="flex flex-col gap-y-2 overflow-y-scroll h-full max-h-fit"
+      >
+        <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
+        {#each renderedMeasures as measure, i (measure.name)}
+          <!-- FIXME: I can't select the big number by the measure id. -->
+          {@const bigNum = measure.name ? totals?.[measure.name] : null}
+          {@const comparisonValue = measure.name
+            ? totalsComparisons?.[measure.name]
+            : undefined}
+          {@const isValidPercTotal = measure.name
+            ? $isMeasureValidPercentOfTotal(measure.name)
+            : false}
 
-        <div class="flex flex-row gap-x-4">
-          <MeasureBigNumber
-            {measure}
-            value={bigNum}
-            isMeasureExpanded={showTimeDimensionDetail}
-            {showComparison}
-            {comparisonValue}
-            errorMessage={$timeSeriesDataStore?.error?.totals}
-            status={hasTotalsError
-              ? EntityStatus.Error
-              : $timeSeriesDataStore?.isFetching
-                ? EntityStatus.Running
-                : EntityStatus.Idle}
-          />
-
-          {#if hasTimeseriesError}
-            <div
-              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
-            >
-              {#if $timeSeriesDataStore.error?.timeseries}
-                <span>
-                  Error: {$timeSeriesDataStore.error.timeseries}
-                </span>
-              {:else}
-                <span>Unable to fetch data from the API</span>
-              {/if}
-            </div>
-          {:else if showTimeDimensionDetail && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
-            <TDDAlternateChart
-              timeGrain={activeTimeGrain}
-              chartType={tddChartType}
-              {expandedMeasureName}
-              totalsData={formattedData}
-              {dimensionData}
-              xMin={startValue}
-              xMax={endValue}
-              isTimeComparison={showComparison}
-              isScrubbing={Boolean(isScrubbing)}
-              onChartHover={(dimension, ts) => {
-                updateChartInteractionStore(
-                  ts,
-                  dimension,
-                  isAllTime,
-                  formattedData,
-                );
-              }}
-              onChartBrush={(interval) => {
-                const { start, end } = adjustTimeInterval(
-                  interval,
-                  $exploreState?.selectedTimezone,
-                );
-
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
-                  start,
-                  end,
-                  isScrubbing: true,
-                });
-              }}
-              onChartBrushEnd={(interval) => {
-                const { start, end } = adjustTimeInterval(
-                  interval,
-                  $exploreState?.selectedTimezone,
-                );
-
-                metricsExplorerStore.setSelectedScrubRange(exploreName, {
-                  start,
-                  end,
-                  isScrubbing: false,
-                });
-              }}
-              onChartBrushClear={() => {
-                metricsExplorerStore.setSelectedScrubRange(
-                  exploreName,
-                  undefined,
-                );
-              }}
+          <div class="flex flex-row gap-x-4">
+            <MeasureBigNumber
+              {measure}
+              value={bigNum}
+              isMeasureExpanded={showTimeDimensionDetail}
+              {showComparison}
+              {comparisonValue}
+              errorMessage={$timeSeriesDataStore?.error?.totals}
+              status={hasTotalsError
+                ? EntityStatus.Error
+                : $timeSeriesDataStore?.isFetching
+                  ? EntityStatus.Running
+                  : EntityStatus.Idle}
             />
-          {:else if formattedData && effectiveGrain}
-            {#key activeTimeGrain}
+
+            {#if hasTimeseriesError}
+              <div
+                class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+              >
+                {#if $timeSeriesDataStore.error?.timeseries}
+                  <span>
+                    Error: {$timeSeriesDataStore.error.timeseries}
+                  </span>
+                {:else}
+                  <span>Unable to fetch data from the API</span>
+                {/if}
+              </div>
+            {:else if showTimeDimensionDetail && expandedMeasureName && tddChartType != TDDChart.DEFAULT}
+              <TDDAlternateChart
+                timeGrain={activeTimeGrain}
+                chartType={tddChartType}
+                {expandedMeasureName}
+                totalsData={formattedData}
+                {dimensionData}
+                xMin={startValue}
+                xMax={endValue}
+                isTimeComparison={showComparison}
+                isScrubbing={Boolean(isScrubbing)}
+                onChartHover={(dimension, ts) => {
+                  updateChartInteractionStore(
+                    ts,
+                    dimension,
+                    isAllTime,
+                    formattedData,
+                  );
+                }}
+                onChartBrush={(interval) => {
+                  const { start, end } = adjustTimeInterval(
+                    interval,
+                    $exploreState?.selectedTimezone,
+                  );
+
+                  metricsExplorerStore.setSelectedScrubRange(exploreName, {
+                    start,
+                    end,
+                    isScrubbing: true,
+                  });
+                }}
+                onChartBrushEnd={(interval) => {
+                  const { start, end } = adjustTimeInterval(
+                    interval,
+                    $exploreState?.selectedTimezone,
+                  );
+
+                  metricsExplorerStore.setSelectedScrubRange(exploreName, {
+                    start,
+                    end,
+                    isScrubbing: false,
+                  });
+                }}
+                onChartBrushClear={() => {
+                  metricsExplorerStore.setSelectedScrubRange(
+                    exploreName,
+                    undefined,
+                  );
+                }}
+              />
+            {:else if formattedData && effectiveGrain}
               <MeasureChart
                 bind:mouseoverValue
                 {measure}
@@ -598,17 +602,17 @@
                   );
                 }}
               />
-            {/key}
-          {:else}
-            <div class="flex items-center justify-center w-24">
-              <Spinner status={EntityStatus.Running} />
-            </div>
-          {/if}
-        </div>
-      {/each}
-    </div>
-  {/if}
-</TimeSeriesChartContainer>
+            {:else}
+              <div class="flex items-center justify-center w-24">
+                <Spinner status={EntityStatus.Running} />
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </TimeSeriesChartContainer>
+</div>
 
 <ReplacePivotDialog
   open={showReplacePivotModal}
