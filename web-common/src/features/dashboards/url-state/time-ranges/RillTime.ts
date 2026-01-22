@@ -1,7 +1,4 @@
-import {
-  DEFAULT_TIME_RANGES,
-  PERIOD_TO_DATE_RANGES,
-} from "@rilldata/web-common/lib/time/config.ts";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
