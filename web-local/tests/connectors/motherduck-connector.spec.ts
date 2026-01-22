@@ -56,10 +56,11 @@ test.describe("MotherDuck welcome flow", () => {
     await expect(connectorEditor).toContainText(`path: "${path}"`);
 
     // Now update the connector file to use case-insensitive env function syntax
+    // Replace entire quoted value to avoid nested quote issues in YAML
     const currentContent = await connectorEditor.textContent();
     const updatedContent = currentContent!.replace(
-      "{{ .env.MOTHERDUCK_TOKEN }}",
-      '{{ env "motherduck_TOKEN" }}',
+      '"{{ .env.MOTHERDUCK_TOKEN }}"',
+      `'{{ env "motherduck_TOKEN" }}'`,
     );
     await updateCodeEditor(page, updatedContent);
     await page.getByRole("button", { name: "Save" }).click();
