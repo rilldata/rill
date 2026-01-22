@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const salesforceSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Salesforce",
+  "x-category": "warehouse",
   properties: {
     soql: {
       type: "string",
