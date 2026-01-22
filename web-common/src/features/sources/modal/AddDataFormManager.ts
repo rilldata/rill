@@ -297,34 +297,32 @@ export class AddDataFormManager {
     connectorType: ClickHouseConnectorType,
   ): Record<string, unknown> | null {
     if (this.connector.name !== "clickhouse") return null;
+
+    // Get schema defaults for the appropriate connector type
+    const schemaName =
+      connectorType === "clickhouse-cloud" ? "clickhousecloud" : "clickhouse";
+    const schema = getConnectorSchema(schemaName);
+    if (!schema) return null;
+
+    const schemaDefaults = getSchemaInitialValues(schema, { step: "connector" });
+
+    // Merge with any user-provided values from initial form (excluding connector_type)
     const baseDefaults = { ...this.clickhouseInitialValues };
     delete (baseDefaults as Record<string, unknown>).connector_type;
 
-    if (connectorType === "clickhouse-cloud") {
-      return {
-        ...baseDefaults,
-        managed: false,
-        port: "8443",
-        ssl: true,
-        connector_type: "clickhouse-cloud",
-        connection_mode: "parameters",
-      };
-    }
-
+    // For rill-managed, override managed and connector_type (schema default is self-hosted)
     if (connectorType === "rill-managed") {
       return {
         ...baseDefaults,
+        ...schemaDefaults,
         managed: true,
         connector_type: "rill-managed",
-        connection_mode: "parameters",
       };
     }
 
     return {
       ...baseDefaults,
-      managed: false,
-      connector_type: "self-hosted",
-      connection_mode: "parameters",
+      ...schemaDefaults,
     };
   }
 
