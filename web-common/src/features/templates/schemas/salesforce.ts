@@ -45,6 +45,7 @@ export const salesforceSchema: MultiStepFormSchema = {
       title: "JWT private key",
       description: "PEM-formatted private key for JWT auth",
       "x-display": "textarea",
+      "x-placeholder": "your_private_key",
       "x-secret": true,
     },
     client_id: {
