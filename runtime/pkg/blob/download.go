@@ -77,7 +77,7 @@ func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (res drive
 		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
 			return b.ListObjectsForGlob(ctx, opts.Glob, pz, tk)
 		},
-		drivers.DefaultPageSize)
+		1000)
 	if err != nil {
 		return nil, err
 	}

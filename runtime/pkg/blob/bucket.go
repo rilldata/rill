@@ -2,12 +2,12 @@ package blob
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"cloud.google.com/go/storage"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -48,17 +48,19 @@ func (b *Bucket) Underlying() *blob.Bucket {
 func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	var startAfter string
+	driverPageToken := blob.FirstPageToken
 	if pageToken != "" {
-		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken, &startAfter); err != nil {
 			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
+
 	// If it's not a glob, we're pulling a single file.
 	// TODO: Should we add support for listing out directories without ** at the end?
 	if !fileutil.IsGlob(glob) {
 		attrs, err := b.bucket.Attributes(ctx, glob)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		return []drivers.ObjectStoreEntry{{
@@ -66,7 +68,7 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 			IsDir:     false,
 			Size:      attrs.Size,
 			UpdatedOn: attrs.ModTime,
-		}}, nil
+		}}, "", nil
 	}
 
 	// Extract the prefix (if any) that we can push down to the storage provider.
@@ -75,52 +77,105 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		prefix = ""
 	}
 
-	// Build iterator
-	it := b.bucket.List(&blob.ListOptions{
-		Prefix: prefix,
-		BeforeList: func(as func(interface{}) bool) error {
-			var q *storage.Query
-			if as(&q) {
-				// Only fetch the fields we need.
-				_ = q.SetAttrSelection([]string{"Name", "Size", "Created", "Updated"})
-			}
-			return nil
-		},
-	})
-
-	// Build output
+	// Fetch pages until we have enough matching results (accounting for glob filtering)
 	var entries []drivers.ObjectStoreEntry
-	for {
-		obj, err := it.Next(ctx)
+	skipUntilAfter := startAfter != ""
+	var lastSeenKey string
+	for len(entries) < validPageSize {
+		fetchSize := validPageSize * 2
+		retval, nextDriverPageToken, err := b.bucket.ListPage(ctx, driverPageToken, fetchSize, &blob.ListOptions{
+			Prefix: prefix,
+			BeforeList: func(as func(interface{}) bool) error {
+				// Handle GCS
+				var q *storage.Query
+				if as(&q) {
+					// Only fetch the fields we need.
+					_ = q.SetAttrSelection([]string{"Name", "Size", "Created", "Updated"})
+					if startAfter != "" {
+						q.StartOffset = startAfter
+					}
+				}
+				// Handle S3
+				var s3Input *s3.ListObjectsV2Input
+				if as(&s3Input) {
+					if startAfter != "" {
+						s3Input.StartAfter = aws.String(startAfter)
+					}
+				}
+				return nil
+			},
+		})
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			return nil, "", err
+		}
+
+		// If no results, we're done
+		if len(retval) == 0 {
+			break
+		}
+
+		// Filter by glob pattern and skip startAfter entries
+		for _, obj := range retval {
+			lastSeenKey = obj.Key
+			// Workaround for some object stores not marking IsDir correctly.
+			if strings.HasSuffix(obj.Key, "/") {
+				obj.IsDir = true
+			}
+
+			// Skip entries until we're past startAfter (exclusive pagination)
+			// This handles the case where StartOffset/StartAfter is inclusive but we want exclusive
+			if skipUntilAfter {
+				if obj.Key <= startAfter {
+					continue
+				}
+				skipUntilAfter = false
+			}
+
+			ok, err := doublestar.Match(glob, obj.Key)
+			if err != nil {
+				return nil, "", err
+			}
+			if !ok {
+				continue
+			}
+
+			entries = append(entries, drivers.ObjectStoreEntry{
+				Path:      obj.Key,
+				IsDir:     obj.IsDir,
+				Size:      obj.Size,
+				UpdatedOn: obj.ModTime,
+			})
+
+			// Stop if we've collected enough entries
+			if len(entries) == validPageSize {
 				break
 			}
-			return nil, err
 		}
 
-		// Workaround for some object stores not marking IsDir correctly.
-		if strings.HasSuffix(obj.Key, "/") {
-			obj.IsDir = true
+		if len(entries) == validPageSize {
+			break
 		}
 
-		ok, err := doublestar.Match(glob, obj.Key)
-		if err != nil {
-			return nil, err
-		}
-		if !ok {
-			continue
+		if nextDriverPageToken == nil {
+			driverPageToken = nil
+			break
 		}
 
-		entries = append(entries, drivers.ObjectStoreEntry{
-			Path:      obj.Key,
-			IsDir:     obj.IsDir,
-			Size:      obj.Size,
-			UpdatedOn: obj.ModTime,
-		})
+		driverPageToken = nextDriverPageToken
 	}
 
-	return entries, nil
+	// Generate next page token with both driverPageToken and startAfter
+	nextToken := ""
+	if len(entries) == validPageSize {
+		if lastSeenKey != "" {
+			nextToken = pagination.MarshalPageToken(driverPageToken, lastSeenKey)
+		}
+	} else if driverPageToken != nil {
+		// Even if we didn't fill the page, if there's a next driver token, return it
+		nextToken = pagination.MarshalPageToken(driverPageToken, "")
+	}
+
+	return entries, nextToken, nil
 }
 
 func (b *Bucket) ListObjects(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {

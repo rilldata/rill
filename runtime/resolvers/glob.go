@@ -193,7 +193,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		func(ctx context.Context, pz uint32, tk string) ([]drivers.ObjectStoreEntry, string, error) {
 			return store.ListObjectsForGlob(ctx, url.Host, url.Path, pz, tk)
 		},
-		drivers.DefaultPageSize)
+		1000)
 	if err != nil {
 		return nil, err
 	}
