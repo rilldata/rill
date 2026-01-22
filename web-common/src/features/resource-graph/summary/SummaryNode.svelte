@@ -124,7 +124,12 @@
 <style lang="postcss">
   .summary-node {
     @apply relative flex items-center gap-4 rounded-lg border px-5 py-4 shadow-sm min-w-[280px];
-    @apply bg-surface-elevated text-fg-secondary border;
+    @apply bg-surface-elevated text-fg-secondary;
+    border-color: color-mix(
+      in srgb,
+      var(--summary-accent, #94a3b8) 35%,
+      var(--border, #e5e7eb)
+    );
   }
   .summary-node.active {
     @apply border-2 shadow-lg;
