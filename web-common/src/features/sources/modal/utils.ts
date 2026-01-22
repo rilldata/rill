@@ -4,7 +4,6 @@ import type { MultiStepFormSchema } from "./types";
 import {
   findRadioEnumKey,
   getRadioEnumOptions,
-  getSchemaFieldMetaList,
   isStepMatch,
 } from "../../templates/schema-utils";
 
