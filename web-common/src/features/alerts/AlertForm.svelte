@@ -296,7 +296,7 @@
   >
     <div>{dialogTitle}</div>
     <Button type="link" noStroke compact onClick={handleCancel}>
-      <X strokeWidth={3} size={16} class="text-black" />
+      <X strokeWidth={3} size={16} class="text-fg-secondary" />
     </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
@@ -308,7 +308,7 @@
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-gray-100 h-[600px] overflow-auto">
+    <div class="p-3 bg-surface-container h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
