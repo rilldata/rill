@@ -685,6 +685,9 @@ definitions:
             max_open_conns:
               type: integer
               description: Maximum number of open connections to the Pinot database
+            timeout_ms:
+              type: integer
+              description: Query timeout in milliseconds
           examples:
             - # Example: Pinot connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -699,6 +702,7 @@ definitions:
               ssl: true                                        # Enable SSL connection to Pinot
               log_queries: true                                # Log raw SQL queries executed through Pinot
               max_open_conns: 100                              # Maximum number of open connections to the Pinot database
+              timeout_ms: 30000                               # Query timeout in milliseconds
           required:
             - driver
             - dsn
@@ -838,6 +842,15 @@ definitions:
             region:
               type: string
               description: AWS region of the S3 bucket
+            aws_role_arn:
+              type: string
+              description: ARN of the IAM role to assume for accessing S3 resources
+            aws_role_session_name:
+              type: string
+              description: Session name to use when assuming the IAM role
+            aws_external_id:
+              type: string
+              description: External ID for cross-account role assumption
             path_prefixes:
                type: [string, array]
                description: |
@@ -1179,6 +1192,18 @@ definitions:
             description: Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
             examples: 
               - post_exec: DETACH DATABASE IF EXISTS postgres_db
+          create_secrets_from_connectors:
+            type:
+              - string
+              - array
+            items:
+              type: string
+            description: List of connector names for which temporary secrets should be created before executing the SQL. This allows DuckDB-based models to access cloud storage (S3, GCS, Azure) using credentials from named connectors.
+            examples:
+              - create_secrets_from_connectors: my_s3_connector
+              - create_secrets_from_connectors:
+                  - my_s3_connector
+                  - my_other_s3_connector
           retry:
             type: object
             description: Refers to the retry configuration for the model. (optional)
@@ -1619,6 +1644,9 @@ definitions:
           format:
             type: string
             description: 'Format of the data source (e.g., csv, json, parquet).'
+          invalidate_on_change:
+            type: boolean
+            description: When true, the model will be invalidated and re-processed if the source file changes.
       redshift:
         type: object
         properties:

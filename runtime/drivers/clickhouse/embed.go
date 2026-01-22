@@ -329,6 +329,8 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	}
 
 	config := []byte(fmt.Sprintf(`<clickhouse>
+    <timezone>UTC</timezone>
+
     <logger>
         <level>debug</level>
         <console>true</console>
