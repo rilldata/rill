@@ -80,7 +80,6 @@
 
   // Form 1: Individual parameters
   const paramsFormId = formManager.paramsFormId;
-  const properties = formManager.properties;
   const filteredParamsProperties = formManager.filteredParamsProperties;
   let multiStepFormId = paramsFormId;
   const {
