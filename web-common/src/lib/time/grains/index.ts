@@ -7,7 +7,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
 import type { AvailableTimeGrain, TimeGrain } from "../types";
-import { allowedGrainsForInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (

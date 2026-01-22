@@ -65,7 +65,7 @@
     updateChartInteractionStore,
   } from "./utils";
   import { Interval } from "luxon";
-  import { allowedGrainsForInterval } from "../time-controls/new-time-controls";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 
   const { rillTime } = featureFlags;
 

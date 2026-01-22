@@ -314,10 +314,8 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
 
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
-  DateTimeUnitToV1TimeGrain,
   getAllowedGrains,
   GrainAliasToV1TimeGrain,
-  isGrainAllowed,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
 import {
@@ -724,45 +722,4 @@ export function constructNewString({
   overrideRillTimeRef(rillTime, newAsOfString);
 
   return rillTime.toString();
-}
-const MAX_BUCKETS = 1500;
-
-const ALLOWABLE_AGGREGATION_GRAINS: DateTimeUnit[] = [
-  "minute",
-  "hour",
-  "day",
-  "week",
-  "month",
-  "quarter",
-  "year",
-];
-
-export function allowedGrainsForInterval(
-  interval: Interval<true> | undefined,
-  minTimeGrain?: V1TimeGrain,
-): V1TimeGrain[] {
-  minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
-  if (!interval) return [];
-
-  const validGrains = ALLOWABLE_AGGREGATION_GRAINS.filter((unit) => {
-    return isGrainAllowed(unit, minTimeGrain);
-  });
-
-  const allowedGrains = validGrains
-    .filter((unit) => {
-      const grain = DateTimeUnitToV1TimeGrain[unit];
-      if (!grain) return false;
-      const bucketCount = interval.length(unit);
-
-      return (
-        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
-      );
-    })
-    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
-
-  if (allowedGrains.length) {
-    return allowedGrains;
-  } else {
-    return [minTimeGrain];
-  }
 }

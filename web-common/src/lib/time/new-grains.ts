@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { DateTimeUnit } from "luxon";
+import { type Interval, type DateTimeUnit } from "luxon";
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
@@ -115,7 +115,7 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
 }
 
 // We prevent users from aggregating by second or millisecond
-const allowedAggregationGrains = [
+export const allowedAggregationGrains = [
   V1TimeGrain.TIME_GRAIN_MINUTE,
   V1TimeGrain.TIME_GRAIN_HOUR,
   V1TimeGrain.TIME_GRAIN_DAY,
@@ -408,4 +408,39 @@ export function getTruncationGrain(rillTime: RillTime | undefined) {
   }
 
   return undefined;
+}
+
+const MAX_BUCKETS = 1500;
+
+const ALLOWABLE_AGGREGATION_GRAINS: DateTimeUnit[] =
+  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
+
+export function allowedGrainsForInterval(
+  interval: Interval<true> | undefined,
+  minTimeGrain?: V1TimeGrain,
+): V1TimeGrain[] {
+  minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+  if (!interval) return [];
+
+  const validGrains = ALLOWABLE_AGGREGATION_GRAINS.filter((unit) => {
+    return isGrainAllowed(unit, minTimeGrain);
+  });
+
+  const allowedGrains = validGrains
+    .filter((unit) => {
+      const grain = DateTimeUnitToV1TimeGrain[unit];
+      if (!grain) return false;
+      const bucketCount = interval.length(unit);
+
+      return (
+        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
+      );
+    })
+    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
+
+  if (allowedGrains.length) {
+    return allowedGrains;
+  } else {
+    return [minTimeGrain];
+  }
 }

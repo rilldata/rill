@@ -19,7 +19,7 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { allowedGrainsForInterval } from "../../time-controls/new-time-controls";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 import { DateTime, Interval } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { getRangePrecision } from "@rilldata/web-common/lib/time/new-grains";
@@ -56,21 +56,22 @@ function getValidatedTimeGrain(
   const allowedGrains = allowedGrainsForInterval(interval, minTimeGrain);
   const requestedPrecision = selectedTimeRange.interval;
 
+  let rangePrecision: V1TimeGrain | undefined;
   try {
     const parsed = parseRillTime(selectedTimeRange.name);
-    const rangePrecision = getRangePrecision(parsed);
-
-    const finalGrain =
-      requestedPrecision && allowedGrains.includes(requestedPrecision)
-        ? requestedPrecision
-        : rangePrecision && allowedGrains.includes(rangePrecision)
-          ? rangePrecision
-          : allowedGrains[0];
-
-    return finalGrain ?? minTimeGrain;
+    rangePrecision = getRangePrecision(parsed);
   } catch {
-    return undefined;
+    // Parsing fails for non-rill-time names like "CUSTOM" - use fallbacks below
   }
+
+  const finalGrain =
+    requestedPrecision && allowedGrains.includes(requestedPrecision)
+      ? requestedPrecision
+      : rangePrecision && allowedGrains.includes(rangePrecision)
+        ? rangePrecision
+        : allowedGrains[0];
+
+  return finalGrain ?? minTimeGrain;
 }
 
 /**

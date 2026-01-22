@@ -6,9 +6,9 @@ import { DateTime, Interval } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
 import {
   ALL_TIME_RANGE_ALIAS,
-  allowedGrainsForInterval,
   deriveInterval,
 } from "../../dashboards/time-controls/new-time-controls";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 import {

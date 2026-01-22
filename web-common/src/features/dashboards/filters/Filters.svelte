@@ -33,13 +33,14 @@
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
-    allowedGrainsForInterval,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
+
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
