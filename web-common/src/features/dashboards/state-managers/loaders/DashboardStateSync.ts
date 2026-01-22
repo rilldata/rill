@@ -24,8 +24,54 @@ import { DateTime, Interval } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { getRangePrecision } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "../../url-state/time-ranges/parser";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
+
+/**
+ * Validates and adjusts the time grain for a selected time range based on allowed grains.
+ * Returns the validated grain, or undefined if validation cannot be performed.
+ */
+function getValidatedTimeGrain(
+  selectedTimeRange: DashboardTimeControls | undefined,
+  minTimeGrain: V1TimeGrain,
+): V1TimeGrain | undefined {
+  if (
+    !selectedTimeRange?.start ||
+    !selectedTimeRange?.end ||
+    !selectedTimeRange.name
+  ) {
+    return undefined;
+  }
+
+  const interval = Interval.fromDateTimes(
+    DateTime.fromJSDate(selectedTimeRange.start),
+    DateTime.fromJSDate(selectedTimeRange.end),
+  );
+
+  if (!interval.isValid) {
+    return undefined;
+  }
+
+  const allowedGrains = allowedGrainsForInterval(interval, minTimeGrain);
+  const requestedPrecision = selectedTimeRange.interval;
+
+  try {
+    const parsed = parseRillTime(selectedTimeRange.name);
+    const rangePrecision = getRangePrecision(parsed);
+
+    const finalGrain =
+      requestedPrecision && allowedGrains.includes(requestedPrecision)
+        ? requestedPrecision
+        : rangePrecision && allowedGrains.includes(rangePrecision)
+          ? rangePrecision
+          : allowedGrains[0];
+
+    return finalGrain ?? minTimeGrain;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Keeps explore state and url in sync.
@@ -158,47 +204,14 @@ export class DashboardStateSync {
         initExploreState.selectedTimezone,
       );
 
-      if (
-        initExploreState.selectedTimeRange?.start &&
-        initExploreState.selectedTimeRange?.end &&
-        initExploreState.selectedTimeRange.name
-      ) {
-        const interval = Interval.fromDateTimes(
-          DateTime.fromJSDate(initExploreState.selectedTimeRange?.start),
-          DateTime.fromJSDate(initExploreState.selectedTimeRange?.end),
-        );
-
-        const minTimeGrain =
-          metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
-
-        if (interval.isValid) {
-          const allowedGrains = allowedGrainsForInterval(
-            interval,
-            minTimeGrain,
-          );
-
-          const requestedPrecision =
-            initExploreState.selectedTimeRange.interval;
-
-          try {
-            const parsed = parseRillTime(
-              initExploreState.selectedTimeRange.name,
-            );
-            const rangePrecision = getRangePrecision(parsed);
-
-            const finalGrain =
-              requestedPrecision && allowedGrains.includes(requestedPrecision)
-                ? requestedPrecision
-                : rangePrecision && allowedGrains.includes(rangePrecision)
-                  ? rangePrecision
-                  : allowedGrains[0];
-
-            initExploreState.selectedTimeRange.interval =
-              finalGrain ?? minTimeGrain;
-          } catch {
-            // no-op
-          }
-        }
+      const minTimeGrain =
+        metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+      const validatedGrain = getValidatedTimeGrain(
+        initExploreState.selectedTimeRange,
+        minTimeGrain,
+      );
+      if (validatedGrain && initExploreState.selectedTimeRange) {
+        initExploreState.selectedTimeRange.interval = validatedGrain;
       }
     }
 
@@ -291,42 +304,15 @@ export class DashboardStateSync {
         partialExplore.selectedTimezone,
       );
 
-      if (
-        partialExplore.selectedTimeRange?.start &&
-        partialExplore.selectedTimeRange?.end &&
-        partialExplore.selectedTimeRange.name
-      ) {
-        const interval = Interval.fromDateTimes(
-          DateTime.fromJSDate(partialExplore.selectedTimeRange?.start),
-          DateTime.fromJSDate(partialExplore.selectedTimeRange?.end),
-        );
-        const minTimeGrain =
-          metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_DAY;
+      const minTimeGrain =
+        metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
+      const validatedGrain = getValidatedTimeGrain(
+        partialExplore.selectedTimeRange,
+        minTimeGrain,
+      );
 
-        if (interval.isValid) {
-          const allowedGrains = allowedGrainsForInterval(
-            interval,
-            minTimeGrain,
-          );
-
-          const requestedPrecision = partialExplore.selectedTimeRange.interval;
-
-          try {
-            const parsed = parseRillTime(partialExplore.selectedTimeRange.name);
-            const rangePrecision = getRangePrecision(parsed);
-
-            const finalGrain =
-              requestedPrecision && allowedGrains.includes(requestedPrecision)
-                ? requestedPrecision
-                : rangePrecision && allowedGrains.includes(rangePrecision)
-                  ? rangePrecision
-                  : allowedGrains[0];
-
-            partialExplore.selectedTimeRange.interval = finalGrain;
-          } catch {
-            // no-op
-          }
-        }
+      if (validatedGrain && partialExplore.selectedTimeRange) {
+        partialExplore.selectedTimeRange.interval = validatedGrain;
       }
     }
 
