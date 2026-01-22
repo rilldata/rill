@@ -1,5 +1,4 @@
 import { humanReadableErrorMessage } from "../errors/errors";
-import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import type { MultiStepFormSchema } from "./types";
 import {
@@ -8,7 +7,6 @@ import {
   getSchemaFieldMetaList,
   isStepMatch,
 } from "../../templates/schema-utils";
-import { getConnectorSchema } from "./connector-schemas";
 
 /**
  * Returns true for undefined, null, empty string, or whitespace-only string.
@@ -85,27 +83,6 @@ export function normalizeConnectorError(
   }
 
   return { message, details };
-}
-
-/**
- * Indicates whether a connector in "connector" mode exposes only a DSN field
- * (i.e., DSN exists and no other config properties are present).
- */
-export function hasOnlyDsn(
-  connector: V1ConnectorDriver | undefined,
-  isConnectorForm: boolean,
-): boolean {
-  if (!isConnectorForm) return false;
-  const schema = getConnectorSchema(connector?.name ?? "");
-  if (schema) {
-    const fields = getSchemaFieldMetaList(schema, { step: "connector" }).filter(
-      (field) => !field.internal,
-    );
-    const hasDsn = fields.some((field) => field.key === "dsn");
-    const hasOthers = fields.some((field) => field.key !== "dsn");
-    return hasDsn && !hasOthers;
-  }
-  return false;
 }
 
 type FormErrors = string[] | undefined;
