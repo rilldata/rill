@@ -301,8 +301,8 @@
     --icon-accent: var(--color-primary-light-400);
 
     --canvas: var(--color-cyan-light-500);
-    --explore: var(--color-indigo-light-500);
-    --metrics: var(--color-violet-light-500);
+    --explore: var(--color-indigo-light-400);
+    --metrics: var(--color-violet-light-400);
     --model: var(--color-cyan-light-500);
     --api: var(--color-orange-light-300);
     --data: var(--color-fuchsia-light-400);
