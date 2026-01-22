@@ -93,7 +93,7 @@
   $: deltaColumn.update(deltaElementWidth);
 
   $: barColor = excluded
-    ? "var(--color-gray-100)"
+    ? "var(--surface-container-active)"
     : selected || hovered
       ? "var(--color-theme-200)"
       : "var(--color-theme-100)";
@@ -185,9 +185,6 @@
   class:border-b={borderBottom}
   class:border-t={borderTop}
   class="relative"
-  style:background={leaderboardMeasureNames.length === 1
-    ? dimensionGradients
-    : undefined}
   on:pointerover={() => (hovered = true)}
   on:pointerout={() => (hovered = false)}
   on:click={(e) => {
@@ -320,7 +317,7 @@
 
 <style lang="postcss">
   td {
-    @apply bg-surface-container h-[22px] p-0 px-1 truncate text-right;
+    @apply h-[22px] p-0 px-1 truncate text-right;
   }
 
   tr {
@@ -333,7 +330,7 @@
   }
 
   td[data-comparison-cell] {
-    @apply bg-surface-container px-1 truncate;
+    @apply bg-transparent px-1 truncate;
   }
 
   tr:hover td[data-comparison-cell] {

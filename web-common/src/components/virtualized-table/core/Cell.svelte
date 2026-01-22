@@ -79,15 +79,13 @@
   let activityStatus;
   $: {
     if (cellActive) {
-      // Specific cell active color, used to be bg-gray-200
-      // bg-gray-100 to match the hover color, and not too hard on the eyes
-      activityStatus = "bg-gray-100 ";
+      activityStatus = "bg-surface-container-hover";
     } else if (rowActive && !cellActive) {
-      activityStatus = "bg-gray-100 ";
+      activityStatus = "bg-surface-container-hover ";
     } else if (colSelected) {
-      activityStatus = "bg-surface-container";
+      activityStatus = "bg-transparent";
     } else {
-      activityStatus = "bg-surface-container";
+      activityStatus = "bg-transparent";
     }
   }
 

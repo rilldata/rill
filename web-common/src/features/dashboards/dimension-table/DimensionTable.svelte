@@ -210,7 +210,7 @@ TableCells – the cell contents.
       <div
         role="grid"
         tabindex="0"
-        class="relative bg-surface-container"
+        class="relative"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"

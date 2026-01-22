@@ -70,7 +70,7 @@
     enableResize={true}
     position="top-left"
     borderRight={true}
-    bgClass="bg-surface-container"
+    bgClass="bg-transparent"
     onClick={sortByDimensionValue}
     onResize={onResizeColumn}
   >
@@ -100,7 +100,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass="bg-surface-container"
+      bgClass="bg-transparent"
     >
       <Cell
         label="Filter dimension value"

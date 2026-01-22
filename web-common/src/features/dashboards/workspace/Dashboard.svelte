@@ -127,7 +127,7 @@
 
 <ThemeProvider theme={$theme}>
   <article
-    class="flex flex-col overflow-y-hidden bg-surface-container"
+    class="flex flex-col overflow-y-hidden bg-surface-elevated"
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}

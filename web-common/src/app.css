@@ -46,7 +46,7 @@
   }
 
   .ui-measure-bar-excluded {
-    @apply bg-gray-100;
+    @apply bg-surface-overlay;
   }
 }
 

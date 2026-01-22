@@ -83,7 +83,7 @@
               style:min-width="200px"
             >
               <div
-                class="text-gray-300 justify-self-start"
+                class="text-fg-muted justify-self-start"
                 style:max-width="280px"
                 aria-label="tooltip-name-description"
               >
@@ -233,7 +233,7 @@
   }
 
   th[data-dimension-header] {
-    @apply sticky left-0 z-30 bg-surface-container text-left;
+    @apply sticky left-0 z-30 bg-transparent text-left;
   }
 
   th:not(:first-of-type) {

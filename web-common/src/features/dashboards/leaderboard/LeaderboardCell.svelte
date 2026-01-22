@@ -108,7 +108,7 @@
         type={dataType}
         {value}
       />
-      <div class="flex flex-row gap-x-6 items-baseline text-gray-100">
+      <div class="flex flex-row gap-x-6 items-baseline text-fg-muted">
         <div>
           <StackingWord key="shift">Copy</StackingWord>
           this value to clipboard
@@ -129,16 +129,10 @@
   }
 
   td.comparison-cell {
-    @apply bg-surface-container px-1 truncate;
+    @apply bg-transparent px-1 truncate;
   }
 
   td.dimension-cell {
-    @apply sticky left-0 z-30 bg-surface-container;
-  }
-
-  :global(tr:hover td.dimension-cell),
-  :global(tr:hover td.measure-cell),
-  :global(tr:hover td.comparison-cell) {
-    @apply bg-gray-100;
+    @apply sticky left-0 z-30;
   }
 </style>
