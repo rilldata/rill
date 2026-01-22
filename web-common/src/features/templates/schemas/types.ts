@@ -46,7 +46,10 @@ export type JSONSchemaField = {
 };
 
 export type JSONSchemaCondition = {
-  properties?: Record<string, { const?: string | number | boolean; minLength?: number }>;
+  properties?: Record<
+    string,
+    { const?: string | number | boolean; minLength?: number }
+  >;
   required?: string[];
   not?: JSONSchemaCondition;
 };
