@@ -725,7 +725,7 @@ export function constructNewString({
 
   return rillTime.toString();
 }
-const MAX_BUCKETS = 731;
+const MAX_BUCKETS = 1500;
 
 const ALLOWABLE_AGGREGATION_GRAINS: DateTimeUnit[] = [
   "minute",
