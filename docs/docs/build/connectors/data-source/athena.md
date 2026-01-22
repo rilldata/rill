@@ -29,14 +29,14 @@ Create a connector with your credentials to connect to Athena. Here's an example
 type: connector
 
 driver: athena
-aws_access_key_id: "{{ .env.connector.athena.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.connector.athena.aws_secret_access_key }}"
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
 output_location: "s3://bucket/path/folder"
 region: "us-east-1"
 ```
 
 :::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `athena.yaml` file and populate the `.env` file with `connector.athena.aws_access_key_id` and `connector.athena.aws_secret_access_key`.
+You can also use the Add Data form in Rill Developer, which will automatically create the `athena.yaml` file and populate the `.env` file with `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 :::
 
 ### Local AWS Credentials (Local Development Only)

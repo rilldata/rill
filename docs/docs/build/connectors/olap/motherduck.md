@@ -40,7 +40,7 @@ Your MotherDuck access token provides access to your data. Keep it secure and ne
 
 ## Configuring Rill Developer with MotherDuck
 
-Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `.connector.motherduck.token`.
+Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `MOTHERDUCK_TOKEN`.
 
 For more information on supported parameters, see our [MotherDuck connector YAML reference docs](/reference/project-files/connectors#motherduck).
 
@@ -49,7 +49,7 @@ For more information on supported parameters, see our [MotherDuck connector YAML
 type: connector 
 driver: duckdb 
 
-token: '{{ .env.connector.motherduck.token }}' 
+token: '{{ .env.MOTHERDUCK_TOKEN }}' 
 path: "md:my_database" 
 schema_name: "my_schema"
 ```

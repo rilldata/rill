@@ -80,7 +80,7 @@ type: connector
 driver: azure
 
 azure_storage_account: rilltest
-azure_storage_key: "{{ .env.connector.azure.azure_storage_key }}"
+azure_storage_key: "{{ .env.AZURE_STORAGE_KEY }}"
 ```
 
 **Step 2: Create model configuration**
@@ -134,7 +134,7 @@ Create `connectors/my_azure_conn.yaml`:
 type: connector
 driver: azure
 
-azure_storage_connection_string: "{{ .env.connector.azure.azure_storage_connection_string }}"
+azure_storage_connection_string: "{{ .env.AZURE_STORAGE_CONNECTION_STRING }}"
 ```
 
 **Step 2: Create model configuration**
@@ -190,7 +190,7 @@ type: connector
 driver: azure
 
 azure_storage_account: rilltest 
-azure_storage_sas_token: "{{ .env.connector.azure.azure_storage_sas_token }}"
+azure_storage_sas_token: "{{ .env.AZURE_STORAGE_SAS_TOKEN }}"
 ```
 
 **Step 2: Create model configuration**
