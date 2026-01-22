@@ -146,7 +146,7 @@
   }
 
   .secondary:hover {
-    @apply opacity-80;
+    @apply bg-surface-container-hover;
   }
 
   .secondary:disabled {
