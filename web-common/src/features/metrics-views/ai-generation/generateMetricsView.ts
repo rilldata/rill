@@ -958,12 +958,15 @@ export function createCanvasDashboardFromMetricsViewWithAgent(
   const prompt = `Create a canvas dashboard at ${canvasFilePath} based on the "${metricsViewName}" metrics view. Include appropriate visualizations like KPI grids, charts, and leaderboards based on the available measures and dimensions.`;
 
   // 3. Set up file creation detection
-  // Listen to conversation events to detect when canvas file is created
-  // Note: This will add to current conversation if sidebar already open
+  // Get conversation manager and start a new conversation
   const conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
     agent: ToolName.DEVELOPER_AGENT,
   });
+
+  // Start a new conversation instead of continuing existing one
+  conversationManager.enterNewConversationMode();
+
   const currentConversation = get(conversationManager.getCurrentConversation());
 
   // Set up timeout fallback (30s)
@@ -992,4 +995,64 @@ export function createCanvasDashboardFromMetricsViewWithAgent(
 
   // 4. Start the chat with the generation prompt
   sidebarActions.startChat(prompt);
+}
+
+/**
+ * Creates a Canvas dashboard from a table (source or model) using the developer agent.
+ * First creates a metrics view from the table, then generates the canvas dashboard.
+ */
+export async function createCanvasDashboardFromTableWithAgent(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  tableName: string,
+): Promise<void> {
+  const isAiEnabled = get(featureFlags.ai);
+  const abortController = new AbortController();
+
+  // Show overlay while creating metrics view
+  overlay.set({
+    title: `Creating Metrics View${isAiEnabled ? " with AI" : ""}...`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort("Metrics view creation cancelled by user");
+        },
+      },
+    },
+  });
+
+  try {
+    // Step 1: Create metrics view from table
+    const resource = await createMetricsViewFromTable(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      tableName,
+      abortController,
+    );
+
+    const metricsViewName = resource.meta?.name?.name;
+    if (!metricsViewName) {
+      throw new Error("Failed to get metrics view name from created resource");
+    }
+
+    // Remove overlay before starting agent
+    overlay.set(null);
+
+    // Step 2: Generate canvas dashboard using developer agent
+    // This will open the chat sidebar and handle the rest of the flow
+    createCanvasDashboardFromMetricsViewWithAgent(instanceId, metricsViewName);
+  } catch (err) {
+    // Remove overlay on error
+    overlay.set(null);
+
+    eventBus.emit("notification", {
+      message: "Failed to create Metrics View for " + tableName,
+      detail: err.response?.data?.message ?? err.message,
+    });
+  }
 }
