@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const azureSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "Azure Blob Storage",
+  "x-category": "objectStore",
   properties: {
     auth_method: {
       type: "string",

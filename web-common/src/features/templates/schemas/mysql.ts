@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const mysqlSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "MySQL",
+  "x-category": "sqlStore",
   properties: {
     connection_mode: {
       type: "string",

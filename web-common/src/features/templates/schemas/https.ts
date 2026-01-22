@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const httpsSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "HTTP(S)",
+  "x-category": "fileStore",
   properties: {
     path: {
       type: "string",

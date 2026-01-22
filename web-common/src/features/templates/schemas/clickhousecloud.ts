@@ -3,6 +3,8 @@ import type { MultiStepFormSchema } from "./types";
 export const clickhousecloudSchema: MultiStepFormSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
+  title: "ClickHouse Cloud",
+  "x-category": "olap",
   properties: {
     connector_type: {
       type: "string",
