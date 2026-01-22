@@ -504,9 +504,16 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		// StarRocks returns DECIMAL for division, which gets mapped to string.
+		// Cast to DOUBLE for consistent numeric handling across all dialects.
+		expr := fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total)
+		if a.Dialect == drivers.DialectStarRocks {
+			expr = fmt.Sprintf("CAST(%s AS DOUBLE)", expr)
+		}
+
 		return &runtimev1.MetricsViewSpec_Measure{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("%s/%#f", a.Dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
 			DisplayName:        fmt.Sprintf("%s (Σ%%)", m.DisplayName),
@@ -1100,8 +1107,8 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	if spine.TimeRange != nil {
 		// if spine generates more than 1000 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
-		if bins > 1000 {
-			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
+		if bins > 1500 {
+			return nil, errors.New("failed to apply time spine: time range has more than 1500 bins")
 		}
 
 		timeDim := a.MetricsView.TimeDimension

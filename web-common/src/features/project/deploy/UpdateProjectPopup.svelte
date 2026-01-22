@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Popover from "@rilldata/web-common/components/popover";
   import ProjectSelector from "@rilldata/web-common/features/project/deploy/ProjectSelector.svelte";
@@ -8,6 +9,7 @@
   import { getManageProjectAccess } from "@rilldata/web-common/features/project/selectors.ts";
   import type { Project } from "@rilldata/web-common/proto/gen/rill/admin/v1/api_pb";
   import Rocket from "svelte-radix/Rocket.svelte";
+  import { getActiveResourceStore } from "@rilldata/web-common/features/entity-management/nav-utils.ts";
 
   export let open = false;
   export let matchingProjects: Project[];
@@ -21,8 +23,14 @@
 
   $: enableUpdate = !!selectedProject;
 
+  const currentResource = getActiveResourceStore();
   $: deployUrl = selectedProject
-    ? getUpdateProjectRoute(selectedProject.orgName, selectedProject.name)
+    ? getUpdateProjectRoute(
+        $page,
+        $currentResource,
+        selectedProject.orgName,
+        selectedProject.name,
+      )
     : "";
 
   let showRequestProjectAccess = false;

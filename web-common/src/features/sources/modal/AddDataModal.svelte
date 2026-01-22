@@ -232,7 +232,7 @@
             <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
           </div>
         {:else if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close={resetModal} on:back={back} />
+          <LocalSourceUpload onClose={resetModal} onBack={back} />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
@@ -247,7 +247,7 @@
       {#if step === 2 && requestConnector}
         <div class="p-6">
           <Dialog.Title>Request a connector</Dialog.Title>
-          <RequestConnectorForm on:close={resetModal} on:back={back} />
+          <RequestConnectorForm onClose={resetModal} onBack={back} />
         </div>
       {/if}
     </Dialog.Content>
