@@ -65,6 +65,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
       description:
         "URL-safe base64 or PEM private key for SNOWFLAKE_JWT authenticator",
       "x-display": "textarea",
+      "x-placeholder": "your_private_key",
       "x-secret": true,
     },
     authenticator: {
