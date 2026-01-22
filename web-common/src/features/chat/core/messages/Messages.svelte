@@ -51,24 +51,30 @@
   $: isConversationEmpty =
     ($getConversationQuery.data?.messages?.length ?? 0) === 0;
 
-  // Track previous block count to detect new content
+  // Track previous block count to detect new content and previous block type to detect block changing.
+  // This is used to determine whether to scroll to bottom of messages container or not.
   let previousBlockCount = 0;
+  let previousBlockType = "";
 
   // Auto-scroll behavior:
-  // - Always scroll when new blocks are added (new message sent or response started)
+  // - Always scroll when new blocks are added or if the last block changes (new message sent or response started)
   // - Only scroll during streaming if user is near the bottom (respect scroll position)
   afterUpdate(() => {
     const currentBlockCount = blocks.length;
-    const hasNewBlocks = currentBlockCount > previousBlockCount;
+    const currentBlockType = blocks[currentBlockCount - 1]?.type ?? "";
+    const hasBlockChanged =
+      currentBlockCount > previousBlockCount ||
+      currentBlockType !== previousBlockType;
     previousBlockCount = currentBlockCount;
+    previousBlockType = currentBlockType;
 
     if (messagesContainer && layout === "sidebar") {
-      if (hasNewBlocks || isNearBottom(messagesContainer)) {
+      if (hasBlockChanged || isNearBottom(messagesContainer)) {
         scrollToBottom(messagesContainer);
       }
     } else if (layout === "fullpage") {
       const parentWrapper = messagesContainer.closest(".chat-messages-wrapper");
-      if (parentWrapper && (hasNewBlocks || isNearBottom(parentWrapper))) {
+      if (parentWrapper && (hasBlockChanged || isNearBottom(parentWrapper))) {
         scrollToBottom(parentWrapper);
       }
     }

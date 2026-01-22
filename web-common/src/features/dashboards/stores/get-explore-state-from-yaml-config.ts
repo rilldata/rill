@@ -6,7 +6,6 @@ import { getTimeControlState } from "@rilldata/web-common/features/dashboards/ti
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
-import { FromURLParamTimeGrainMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
@@ -24,7 +23,10 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import { isGrainAllowed } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  DateTimeUnitToV1TimeGrain,
+  isGrainAllowed,
+} from "@rilldata/web-common/lib/time/new-grains";
 
 export function getExploreStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
@@ -102,7 +104,7 @@ function getExploreTimeStateFromYAMLConfig(
 
     if (defaultPreset.timeGrain) {
       exploreTimeState.selectedTimeRange.interval =
-        FromURLParamTimeGrainMap[defaultPreset.timeGrain];
+        DateTimeUnitToV1TimeGrain[defaultPreset.timeGrain];
     } else {
       const grainForRange = getGrainForRange(
         defaultPreset.timeRange,
@@ -175,6 +177,7 @@ function getDefaultComparisonTimeRangeName(
     timeRange,
     undefined,
     allTimeRange,
+    timezone,
   );
 
   return comparisonTimeRangeName;
