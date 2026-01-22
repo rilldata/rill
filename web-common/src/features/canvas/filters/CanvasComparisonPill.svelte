@@ -48,6 +48,7 @@
   $: comparisonOptions = getComparisonOptionsForCanvas(
     selectedTimeRange,
     allowCustomTimeRange,
+    activeTimeZone,
   );
 
   function onSelectComparisonRange(
@@ -101,6 +102,7 @@
       {minTimeGrain}
       maxDate={minDate}
       minDate={maxDate}
+      timeGrain={activeTimeGrain}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
