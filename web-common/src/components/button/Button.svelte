@@ -122,7 +122,7 @@
     @apply bg-accent-primary text-fg-inverse;
   }
 
-  .primary:hover {
+  .primary:hover:not(:disabled) {
     @apply opacity-80;
   }
 
@@ -145,7 +145,7 @@
     @apply bg-input border border-accent-primary-action text-accent-primary-action;
   }
 
-  .secondary:hover {
+  .secondary:hover:not(:disabled) {
     @apply bg-surface-container-hover;
   }
 
@@ -173,7 +173,7 @@
     @apply bg-input text-fg-primary border;
   }
 
-  .outlined:hover {
+  .outlined:hover:not(:disabled) {
     @apply bg-surface-container-hover;
   }
 
@@ -192,7 +192,7 @@
     @apply bg-primary-50 text-primary-700;
   }
 
-  .subtle:hover {
+  .subtle:hover:not(:disabled) {
     @apply bg-primary-100;
   }
 
@@ -215,7 +215,7 @@
     @apply text-primary-600 p-0;
   }
 
-  .link:hover {
+  .link:hover:not(:disabled) {
     @apply text-primary-700;
   }
 
@@ -285,7 +285,7 @@
     @apply gap-x-1.5;
   }
 
-  .toolbar:hover {
+  .toolbar:hover:not(:disabled) {
     @apply bg-gray-600/15;
   }
 
@@ -295,7 +295,7 @@
   }
 
   .toolbar:disabled {
-    @apply text-fg-secondary;
+    @apply opacity-50;
   }
 
   .text.theme:hover {

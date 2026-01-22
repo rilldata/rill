@@ -71,8 +71,8 @@
   bind:clientHeight={sidebarHeight}
   transition:slide={{ axis: "x" }}
 >
-  <div class="input-wrapper sticky top-0 bg-surface-container z-10">
-    <Search theme bind:value={searchText} />
+  <div class="input-wrapper sticky top-0 z-10">
+    <Search theme background bind:value={searchText} />
   </div>
 
   <PivotDrag title="Time" items={timeGrainOptions} {tableMode} />
@@ -88,7 +88,7 @@
     @apply h-full border-r z-0 w-60;
     transition-property: width;
     will-change: width;
-    @apply select-none bg-surface-container;
+    @apply select-none bg-surface-elevated;
   }
 
   .input-wrapper {

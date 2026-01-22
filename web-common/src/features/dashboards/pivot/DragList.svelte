@@ -435,7 +435,7 @@
   }
 
   .horizontal {
-    @apply flex flex-row flex-wrap bg-input w-full p-1 px-2 gap-x-2 h-fit;
+    @apply flex flex-row flex-wrap bg-surface-elevated w-full p-1 px-2 gap-x-2 h-fit;
     @apply items-center;
     @apply border;
   }
