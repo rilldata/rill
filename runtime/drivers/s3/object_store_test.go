@@ -14,7 +14,7 @@ import (
 )
 
 func TestObjectStore(t *testing.T) {
-	// testmode.Expensive(t)
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
 	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 
 func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	Path := "glob_*/y=202*/*"
+	Path := "glob_test/y=202*/*"
 	expected := []string{
 		"glob_test/y=2023/aab.csv",
 		"glob_test/y=2024/aaa.csv",
