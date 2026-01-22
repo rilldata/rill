@@ -606,9 +606,6 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 
 // convertAIReportData converts proto AIReportData to YAML struct
 func convertAIReportData(data *adminv1.AIReportData) *aiReportDataYAML {
-	if data == nil {
-		return nil
-	}
 	res := &aiReportDataYAML{
 		Agent:  data.Agent,
 		Prompt: data.Prompt,
