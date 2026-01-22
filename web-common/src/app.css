@@ -91,7 +91,7 @@
     --accent-primary: var(--color-primary-500);
     --accent-primary-action: var(--color-primary-500);
     --accent-secondary: var(--color-primary-500);
-    --accent-secondary-action: var(--color-econdary-500);
+    --accent-secondary-action: var(--color-secondary-500);
 
     --icon-default: var(--color-neutral-700);
     --icon-muted: var(--color-gray-500);
@@ -109,9 +109,6 @@
     --alert: oklch(0.7686 0.1647 70.08);
     --report: oklch(0.5876 0.1389 241.97);
     --connector: oklch(0.551 0.0234 264.36);
-
-    --alert: var(--color-red-light-800);
-    --report: var(--color-red-light-800);
 
     --input: color-mix(in oklab, var(--white) calc(0.07 * 100%), transparent);
     --border: var(--color-neutral-200);

@@ -71,14 +71,12 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
 
 export function resourceKindStyleName(kind: ResourceKind | undefined) {
   switch (kind) {
-    case ResourceKind.ProjectParser:
-      return "bg-Parser/15 text-Parser";
     case ResourceKind.Alert:
       return "bg-Alert/15 text-Alert";
     case ResourceKind.Report:
       return "bg-Report/15 text-Report";
     case ResourceKind.Source:
-      return "bg-Source/15 text-Source";
+      return "bg-Model/15 text-Model";
     case ResourceKind.Connector:
       return "bg-Connector/15 text-Connector";
     case ResourceKind.Model:
@@ -95,8 +93,6 @@ export function resourceKindStyleName(kind: ResourceKind | undefined) {
       return "bg-Canvas/15 text-Canvas";
     case ResourceKind.API:
       return "bg-API/15 text-API";
-    case ResourceKind.RefreshTrigger:
-      return "bg-Refresh/15 text-Refresh";
     default:
       return undefined;
   }
