@@ -143,7 +143,10 @@ export function getCanvasComponentLabel(
   componentName: string,
   componentSpec: V1ComponentSpec | undefined,
 ) {
-  if (componentSpec?.displayName) return componentSpec.displayName;
+  const userDefinedTitle =
+    (componentSpec?.rendererProperties?.title as string | undefined) ||
+    componentSpec?.displayName;
+  if (userDefinedTitle) return userDefinedTitle;
   const header = getHeaderForComponent(componentSpec?.renderer as any);
 
   const rowColMatch = rowColMatcher.exec(componentName);

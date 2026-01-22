@@ -4532,6 +4532,15 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
   where?: Expression;
 
   /**
+   * Filter expressions as key-value pairs for the canvas.
+   * Key: Metrics view name
+   * Value: Expression object
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
+   */
+  wherePerMetricsView: { [key: string]: Expression } = {};
+
+  /**
    * Optional start of a time range.
    *
    * @generated from field: google.protobuf.Timestamp time_start = 8;
@@ -4559,6 +4568,7 @@ export class AnalystAgentContext extends Message$1<AnalystAgentContext> {
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 12, name: "where_per_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 8, name: "time_start", kind: "message", T: Timestamp },
     { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);

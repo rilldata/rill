@@ -1073,6 +1073,10 @@ message AnalystAgentContext {
   repeated string measures = 6;
   // Optional filters.
   rill.runtime.v1.Expression where = 7;
+  // Filter expressions as key-value pairs for the canvas.
+  // Key: Metrics view name
+  // Value: Expression object
+  map<string, rill.runtime.v1.Expression> where_per_metrics_view = 12;
   // Optional start of a time range.
   google.protobuf.Timestamp time_start = 8;
   // Optional end of a time range.

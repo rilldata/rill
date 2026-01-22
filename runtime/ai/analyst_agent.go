@@ -29,8 +29,9 @@ type AnalystAgentArgs struct {
 	Dimensions []string `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 	Measures   []string `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
 
-	Canvas          string `json:"canvas" yaml:"canvas" jsonschema:"Optional canvas name. If provided, the exploration will be limited to this canvas."`
-	CanvasComponent string `json:"canvas_component" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
+	Canvas              string                             `json:"canvas" yaml:"canvas" jsonschema:"Optional canvas name. If provided, the exploration will be limited to this canvas."`
+	CanvasComponent     string                             `json:"canvas_component" yaml:"canvas_component" jsonschema:"Optional canvas component name. If provided, the exploration will be limited to this canvas component."`
+	WherePerMetricsView map[string]*metricsview.Expression `json:"where_per_metrics_view" yaml:"where_per_metrics_view" jsonschema:"Optional filter for queries per metrics view. If provided, this filter will be applied to queries for each metrics view."`
 
 	Where     *metricsview.Expression `json:"where" yaml:"where" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
 	TimeStart time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
@@ -146,7 +147,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
-		tools = append(tools, ListMetricsViewsName, GetMetricsViewName)
+		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName)
 
@@ -216,6 +217,18 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 			return "", err
 		}
 	}
+
+	if args.WherePerMetricsView != nil {
+		wherePerMetricsView := map[string]string{}
+		for metricsViewName, whereExpr := range args.WherePerMetricsView {
+			wherePerMetricsView[metricsViewName], err = metricsview.ExpressionToSQL(whereExpr)
+			if err != nil {
+				return "", err
+			}
+		}
+		data["where_per_metrics_view"] = wherePerMetricsView
+	}
+
 	data["forked"] = session.Forked()
 
 	// Generate the system prompt
@@ -253,10 +266,15 @@ Your goal is to analyze the contents of the canvas "{{ .canvas }}". Different co
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The canvas definition has been provided in your tool calls.
 
-Here is an overview of the settings the user has currently applied to the dashboard (Components can have local settings applied):
+Here is an overview of the settings the user has currently applied to the dashboard (Components can have local settings applied), use these while querying for data unless user asks for specifics:
 {{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
+{{ if .where_per_metrics_view }}{{range $mv, $filter := .where_per_metrics_view}}Use where filters for metrics view "{{ $mv }}": "{{ $filter }}"
+{{end}}{{ end }}
 
+You should:
+1. Carefully study the canvas and metrics view definition to understand the measures and dimensions available for analysis.
+2. Remember the time range of available data and use it to inform and filter your queries.
 {{ if .canvas_component }}
 The user is looking at "{{ .canvas_component }}".
 {{ end }}

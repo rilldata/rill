@@ -5,9 +5,17 @@ import {
 import type {
   RuntimeServiceCompleteBody,
   V1AnalystAgentContext,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
-import { derived, type Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
+import {
+  createInExpression,
+  createLikeExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 
 export const canvasChatConfig = {
   agent: ToolName.ANALYST_AGENT,
@@ -25,17 +33,69 @@ export const canvasChatConfig = {
 function getActiveCanvasContext(): Readable<
   Partial<RuntimeServiceCompleteBody>
 > {
+  const instanceId = get(runtime).instanceId;
   const canvasNameStore = getCanvasNameStore();
 
-  return derived([canvasNameStore], ([canvasName]) => {
-    const analystAgentContext: V1AnalystAgentContext = {
-      canvas: canvasName,
-    };
+  return derived([canvasNameStore], ([canvasName], set) => {
+    const canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
+    if (!canvasStore?.canvasEntity) {
+      set({ analystAgentContext: { canvas: canvasName } });
+      return;
+    }
 
-    // TODO: canvas state
+    const canvasFiltersStore = derived(
+      [
+        canvasStore.canvasEntity.filterManager.activeUIFiltersStore,
+        canvasStore.canvasEntity.timeManager.state.interval,
+      ],
+      ([filters, selectedInterval]) => {
+        return {
+          filters,
+          selectedInterval,
+        };
+      },
+    );
 
-    return {
-      analystAgentContext,
-    } satisfies Partial<RuntimeServiceCompleteBody>;
+    return canvasFiltersStore.subscribe(({ filters, selectedInterval }) => {
+      const analystAgentContext: V1AnalystAgentContext = {
+        canvas: canvasName,
+      };
+
+      if (selectedInterval?.isValid) {
+        analystAgentContext.timeStart = selectedInterval.start.toISO();
+        analystAgentContext.timeEnd = selectedInterval.end.toISO();
+      }
+
+      if (filters.dimensionFilters.size) {
+        analystAgentContext.wherePerMetricsView = {};
+        filters.dimensionFilters.forEach((dfi, mv) => {
+          mv = mv.split("::")[0];
+
+          if (!dfi.selectedValues) return;
+
+          let filter: V1Expression;
+          if (dfi.mode === DimensionFilterMode.Contains) {
+            const addNull = !dfi.inputText?.length || "null" === dfi.inputText;
+            filter = addNull
+              ? createInExpression(dfi.name, [null], !dfi.isInclude)
+              : createLikeExpression(
+                  dfi.name,
+                  dfi.inputText ?? "",
+                  !dfi.isInclude,
+                );
+          } else {
+            filter = createInExpression(
+              dfi.name,
+              dfi.selectedValues,
+              !dfi.isInclude,
+            );
+          }
+
+          analystAgentContext.wherePerMetricsView![mv] = filter;
+        });
+      }
+
+      set({ analystAgentContext });
+    });
   });
 }

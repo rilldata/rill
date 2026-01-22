@@ -4066,6 +4066,14 @@ definitions:
       where:
         $ref: '#/definitions/v1Expression'
         description: Optional filters.
+      wherePerMetricsView:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Expression'
+        title: |-
+          Filter expressions as key-value pairs for the canvas.
+          Key: Metrics view name
+          Value: Expression object
       timeStart:
         type: string
         format: date-time

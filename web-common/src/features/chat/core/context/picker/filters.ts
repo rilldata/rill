@@ -20,6 +20,7 @@ export function getFilteredPickerItems(
         searchText.length === 0 ||
         label.toLowerCase().includes(searchText.toLowerCase()) ||
         value.toLowerCase().includes(searchText.toLowerCase());
+      console.log(options);
 
       const parentsToKeep = new Set<string>();
       const filteredOptions = new Array<PickerItem | null>(options.length).fill(
