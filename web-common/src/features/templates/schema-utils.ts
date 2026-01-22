@@ -333,3 +333,42 @@ function filterValuesByTabGroups(
 
   return result;
 }
+
+/**
+ * Returns values that should be enforced based on allOf/if/then conditionals.
+ * This includes:
+ * - `const` values from matching conditional branches (must be enforced)
+ * - `default` values from matching conditional branches (applied when field is empty)
+ */
+export function getConditionalValues(
+  schema: MultiStepFormSchema,
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  for (const conditional of schema.allOf ?? []) {
+    const condition = conditional.if?.properties;
+    const matches = matchesCondition(condition, values);
+    const branch = matches ? conditional.then : conditional.else;
+
+    if (!branch?.properties) continue;
+
+    for (const [key, prop] of Object.entries(branch.properties)) {
+      // Enforce const values - these must always be applied
+      if (prop.const !== undefined) {
+        result[key] = prop.const;
+      }
+      // Apply default values only when current value is empty/unset
+      else if (
+        prop.default !== undefined &&
+        (values[key] === undefined ||
+          values[key] === null ||
+          values[key] === "")
+      ) {
+        result[key] = prop.default;
+      }
+    }
+  }
+
+  return result;
+}

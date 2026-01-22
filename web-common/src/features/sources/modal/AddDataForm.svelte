@@ -93,35 +93,17 @@
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
-  let clickhouseConnectorType: ClickHouseConnectorType =
-    initialClickhouseType ?? "self-hosted";
-  let prevClickhouseConnectorType: ClickHouseConnectorType | null = null;
-
   const connectorSchema = getConnectorSchema(schemaName);
 
-  $: if (connector.name === "clickhouse") {
-    // Only sync clickhouseConnectorType from form when NOT using ClickHouse Cloud
-    // (ClickHouse Cloud has its own button and schema, so we don't want the form to overwrite the type)
-    if (!initialClickhouseType) {
-      const nextType = ($paramsForm?.connector_type ??
-        clickhouseConnectorType) as ClickHouseConnectorType;
-      if (nextType && nextType !== clickhouseConnectorType) {
-        clickhouseConnectorType = nextType;
-      }
-    }
-  }
-
-  $: if (
-    connector.name === "clickhouse" &&
-    clickhouseConnectorType &&
-    clickhouseConnectorType !== prevClickhouseConnectorType
-  ) {
-    const defaults = formManager.getClickhouseDefaults(clickhouseConnectorType);
-    if (defaults) {
-      paramsForm.update(() => defaults, { taint: false } as any);
-    }
-    prevClickhouseConnectorType = clickhouseConnectorType;
-  }
+  // Derive ClickHouse type from form values - no need for separate state tracking.
+  // The renderer now handles conditional defaults via schema's allOf/if/then.
+  $: currentClickhouseType = ((): ClickHouseConnectorType | undefined => {
+    if (initialClickhouseType === "clickhouse-cloud") return "clickhouse-cloud";
+    if (connector.name !== "clickhouse") return undefined;
+    return (
+      ($paramsForm?.connector_type as ClickHouseConnectorType) ?? "self-hosted"
+    );
+  })();
 
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
@@ -167,7 +149,7 @@
         isConnectorForm,
         step: stepState.step,
         submitting,
-        clickhouseConnectorType,
+        clickhouseConnectorType: currentClickhouseType,
         selectedAuthMethod: activeAuthMethod ?? undefined,
       });
 
@@ -200,7 +182,7 @@
     const result = await formManager.saveConnectorAnyway({
       queryClient,
       values: $paramsForm,
-      clickhouseConnectorType,
+      clickhouseConnectorType: currentClickhouseType,
     });
     if (result.ok) {
       onClose();
@@ -217,7 +199,7 @@
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     paramsFormValues: $paramsForm,
-    clickhouseConnectorType,
+    clickhouseConnectorType: currentClickhouseType,
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
