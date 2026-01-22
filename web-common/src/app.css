@@ -62,7 +62,7 @@
     --surface-background: var(--white);
     --surface-container: var(--color-neutral-50);
     --surface-container-hover: var(--color-primary-50);
-    --surface-container-active: var(--color-primary-200);
+    --surface-container-active: var(--color-primary-100);
     --surface-elevated: var(--white);
     --surface-overlay: var(--white);
     --surface-muted: var(--color-neutral-100);
