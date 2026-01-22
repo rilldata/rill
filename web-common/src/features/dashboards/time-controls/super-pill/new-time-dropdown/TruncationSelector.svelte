@@ -36,6 +36,7 @@
   let open = false;
   let now = DateTime.now().setZone(zone);
   let interval: ReturnType<typeof setInterval> | undefined = undefined;
+  let disableTooltip = false;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -137,8 +138,6 @@
       }) + (inFuture ? " from now" : " ago")
     );
   }
-
-  let disableTooltip = false;
 </script>
 
 <DropdownMenu.Root bind:open disableFocusFirstItem>

@@ -24,7 +24,7 @@ While Rill **can** infer credentials from your local environment (AWS CLI, Azure
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
 2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/build/connectors/templating) for more details)
-3. **Credentials configured via CLI** - For [AWS](/build/connectors/data-source/s3#local-aws-credentials-local-development-only) / [Azure](/build/connectors/data-source/azure#azure-cli-authentication-local-development-only) / [Google Cloud](/build/connectors/data-source/gcs#method-3-local-google-cloud-cli-credentials) - **NOT RECOMMENDED for production use**
+3. **Credentials configured via CLI** - For [AWS](/build/connectors/data-source/s3#method-4-local-aws-credentials-local-development-only) / [Azure](/build/connectors/data-source/azure#method-5-azure-cli-authentication-local-development-only) / [Google Cloud](/build/connectors/data-source/gcs#method-4-local-google-cloud-cli-credentials) - **NOT RECOMMENDED for production use**
 
 For more details, please refer to the corresponding [connector](/build/connectors) or [OLAP engine](/build/connectors/olap) page.
 
@@ -77,12 +77,6 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 :::
 
-## Deploying to Rill Cloud 
-
-If you have configured your credentials via the `.env` file this will be deployed with your project. 
-
-If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials).
-
 ## Cloning an Existing Project from Rill Cloud
 
 If you cloned the project using `rill project clone <project-name>` and are an admin of that project, the credentials will be pulled automatically. Note that there are some limitations with monorepos where credentials may not be pulled correctly. In those cases, credentials are also pulled when running `rill start`, assuming you have already authenticated via the CLI with `rill login`.
@@ -107,7 +101,7 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### rill env push
 
-As a project admin, you can either use `rill env configure` after deploying a project or `rill env push` to specify a particular set of credentials that your Rill Cloud project will use. If choosing the latter, you can update your *`<RILL_PROJECT_HOME>/.env`* file with the appropriate variables and credentials that are required. Alternatively, if this file has already been updated, you can run `rill env push` from your project's root directory.
+As a project admin, you can use `rill env push` to push your credentials to your Rill Cloud project.  
 - Rill Cloud will use the specified credentials and variables in this `.env` file for the deployed project.
 - Other users will also be able to use `rill env pull` to retrieve these defined credentials for local use (with Rill Developer).
 

@@ -312,6 +312,8 @@
           | TimeComparisonOption
           | undefined,
         allTimeRange,
+
+        activeTimeZone,
       );
 
     makeTimeSeriesTimeRangeAndUpdateAppState(range, timeGrain, {

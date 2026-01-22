@@ -35,30 +35,28 @@ export const MessageContentType = {
  */
 export const ToolName = {
   ROUTER_AGENT: "router_agent",
+
+  // Analyst Agent tools
   ANALYST_AGENT: "analyst_agent",
-  DEVELOPER_AGENT: "developer_agent",
-  CREATE_CHART: "create_chart",
+  LIST_METRICS_VIEWS: "list_metrics_views",
+  GET_METRICS_VIEW: "get_metrics_view",
+  QUERY_METRICS_VIEW_SUMMARY: "query_metrics_view_summary",
   QUERY_METRICS_VIEW: "query_metrics_view",
-  LIST_FILES: "list_files",
-  READ_FILE: "read_file",
-  WRITE_FILE: "write_file",
+  CREATE_CHART: "create_chart",
+
+  // Developer Agent tools
+  DEVELOPER_AGENT: "developer_agent",
   DEVELOP_MODEL: "develop_model",
   DEVELOP_METRICS_VIEW: "develop_metrics_view",
+  LIST_FILES: "list_files",
+  SEARCH_FILES: "search_files",
+  READ_FILE: "read_file",
+  WRITE_FILE: "write_file",
 } as const;
 
 // =============================================================================
-// TOOL FILTERING
+// CHAT CONFIG
 // =============================================================================
-
-/**
- * High-level agent tools that should not be rendered in the UI
- * These are internal orchestration agents, not user-facing tools
- */
-const HIDDEN_AGENT_TOOLS: readonly string[] = [
-  ToolName.ROUTER_AGENT,
-  ToolName.ANALYST_AGENT,
-  ToolName.DEVELOPER_AGENT,
-];
 
 export type ChatConfig = {
   agent: string;
@@ -67,39 +65,5 @@ export type ChatConfig = {
   >;
   emptyChatLabel: string;
   placeholder: string;
-  enableMention: boolean; // TODO: should be a list of allowed mentions in the future
+  minChatHeight: string;
 };
-
-/**
- * Check if a tool call should be hidden from the UI
- */
-export function isHiddenAgentTool(toolName: string | undefined): boolean {
-  return !!toolName && HIDDEN_AGENT_TOOLS.includes(toolName);
-}
-
-// =============================================================================
-// WRITE FILE TYPES
-// =============================================================================
-
-/**
- * Data structure for write_file tool call arguments
- */
-export interface WriteFileCallData {
-  path: string;
-  contents: string;
-}
-
-/**
- * Data structure for write_file tool result
- */
-export interface WriteFileResultData {
-  diff?: string;
-  is_new_file?: boolean;
-  resources?: Array<{
-    kind: string;
-    name: string;
-    reconcile_status: string;
-    reconcile_error: string;
-  }>;
-  parse_error?: string;
-}

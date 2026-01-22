@@ -105,9 +105,8 @@
     timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
   ) as (d: Date) => string;
 
-  function highlightCell(e) {
-    const { x, y } = e.detail;
-
+  function highlightCell(x: number | undefined, y: number | undefined) {
+    if (x === undefined || y === undefined) return;
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
     let time: Date | undefined = undefined;
 
@@ -124,8 +123,8 @@
 
   const debounceHighlightCell = debounce(highlightCell, 50);
 
-  function toggleFilter(e) {
-    toggleDimensionValueSelection(dimensionName, e.detail);
+  function toggleFilter(label: string | null) {
+    toggleDimensionValueSelection(dimensionName, label);
   }
 
   function toggleAllSearchItems() {
@@ -243,14 +242,12 @@
         start: $chartInteractionColumn?.scrubStart,
         end: $chartInteractionColumn?.scrubEnd,
       }}
-      on:toggle-pin={togglePin}
-      on:toggle-filter={toggleFilter}
-      on:toggle-sort={(e) => {
-        toggleSort(
-          e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
-        );
+      onTogglePin={togglePin}
+      onToggleFilter={toggleFilter}
+      onToggleSort={(type) => {
+        toggleSort(type === "dimension" ? SortType.DIMENSION : SortType.VALUE);
       }}
-      on:highlight={debounceHighlightCell}
+      onHighlight={debounceHighlightCell}
     />
   {/if}
 

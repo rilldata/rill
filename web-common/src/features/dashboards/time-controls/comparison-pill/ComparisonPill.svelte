@@ -115,6 +115,7 @@
       minDate={DateTime.fromJSDate(allTimeRange.start)}
       timeComparisonOptionsState={$timeComparisonOptionsState}
       {minTimeGrain}
+      timeGrain={activeTimeGrain}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
       currentInterval={interval}

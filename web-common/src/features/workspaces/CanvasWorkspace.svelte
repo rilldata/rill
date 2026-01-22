@@ -21,7 +21,8 @@
   import PreviewButton from "../explores/PreviewButton.svelte";
   import CanvasBuilder from "../canvas/CanvasBuilder.svelte";
   import SaveDefaultsButton from "../canvas/components/SaveDefaultsButton.svelte";
-  import CanvasProvider from "../canvas/CanvasProvider.svelte";
+  import CanvasLoadingState from "../canvas/CanvasLoadingState.svelte";
+  import CanvasInitialization from "../canvas/CanvasInitialization.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -40,8 +41,6 @@
     hasUnsavedChanges,
     saveState: { saving },
   } = fileArtifact);
-
-  let ready = false;
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
@@ -77,60 +76,74 @@
 </script>
 
 {#key canvasName}
-  <WorkspaceContainer>
-    <WorkspaceHeader
-      slot="header"
-      {filePath}
-      resource={data}
-      hasUnsavedChanges={$hasUnsavedChanges}
-      titleInput={fileName}
-      codeToggle
-      onTitleChange={onChangeCallback}
-      resourceKind={ResourceKind.Canvas}
-    >
-      <div class="flex gap-x-2" slot="cta">
-        {#if ready}
-          <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
-        {/if}
+  <CanvasInitialization
+    {canvasName}
+    {instanceId}
+    let:ready
+    let:isReconciling
+    let:isLoading
+    let:errorMessage
+  >
+    <WorkspaceContainer>
+      <WorkspaceHeader
+        slot="header"
+        {filePath}
+        resource={data}
+        hasUnsavedChanges={$hasUnsavedChanges}
+        titleInput={fileName}
+        codeToggle
+        onTitleChange={onChangeCallback}
+        resourceKind={ResourceKind.Canvas}
+      >
+        <div class="flex gap-x-2" slot="cta">
+          {#if ready}
+            <SaveDefaultsButton {canvasName} {instanceId} saving={$saving} />
+          {/if}
 
-        <PreviewButton
-          href="/canvas/{canvasName}"
-          disabled={allErrors.length > 0 || resourceIsReconciling}
-          reconciling={resourceIsReconciling}
-        />
-      </div>
-    </WorkspaceHeader>
-
-    <WorkspaceEditorContainer
-      slot="body"
-      error={mainError}
-      showError={!!$remoteContent && selectedView === "code"}
-    >
-      {#if selectedView === "code"}
-        <CanvasEditor
-          bind:autoSave={$autoSave}
-          {canvasName}
-          {fileArtifact}
-          {lineBasedRuntimeErrors}
-        />
-      {:else if selectedView === "viz"}
-        <CanvasProvider {canvasName} {instanceId} bind:ready>
-          <CanvasBuilder
-            {canvasName}
-            openSidebar={workspace.inspector.open}
-            {fileArtifact}
+          <PreviewButton
+            href="/canvas/{canvasName}"
+            disabled={allErrors.length > 0 || resourceIsReconciling}
+            reconciling={resourceIsReconciling}
           />
-        </CanvasProvider>
-      {/if}
-    </WorkspaceEditorContainer>
-    <svelte:fragment slot="inspector">
-      {#if ready}
-        <VisualCanvasEditing
-          {canvasName}
-          {fileArtifact}
-          autoSave={selectedView === "viz" || $autoSave}
-        />
-      {/if}
-    </svelte:fragment>
-  </WorkspaceContainer>
+        </div>
+      </WorkspaceHeader>
+
+      <WorkspaceEditorContainer
+        slot="body"
+        error={mainError}
+        showError={!!$remoteContent && selectedView === "code"}
+      >
+        {#if selectedView === "code"}
+          <CanvasEditor
+            bind:autoSave={$autoSave}
+            {canvasName}
+            {fileArtifact}
+            {lineBasedRuntimeErrors}
+          />
+        {:else if selectedView === "viz"}
+          <CanvasLoadingState
+            {ready}
+            {isReconciling}
+            {isLoading}
+            {errorMessage}
+          >
+            <CanvasBuilder
+              {canvasName}
+              openSidebar={workspace.inspector.open}
+              {fileArtifact}
+            />
+          </CanvasLoadingState>
+        {/if}
+      </WorkspaceEditorContainer>
+      <svelte:fragment slot="inspector">
+        {#if ready}
+          <VisualCanvasEditing
+            {canvasName}
+            {fileArtifact}
+            autoSave={selectedView === "viz" || $autoSave}
+          />
+        {/if}
+      </svelte:fragment>
+    </WorkspaceContainer>
+  </CanvasInitialization>
 {/key}

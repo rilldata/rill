@@ -67,6 +67,8 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB, drivers.DialectClickHouse:
 		return q.resolveDuckDBAndClickhouse(ctx, olap, priority)
+	case drivers.DialectStarRocks:
+		return q.resolveStarRocks(ctx, olap, priority)
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, priority)
 	default:
@@ -78,7 +80,60 @@ func (q *ColumnTimeRange) resolveDuckDBAndClickhouse(ctx context.Context, olap d
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
 		safeName(q.ColumnName),
-		drivers.DialectDuckDB.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+	)
+
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		summary := &runtimev1.TimeRangeSummary{}
+		rowMap := make(map[string]any)
+		err = rows.MapScan(rowMap)
+		if err != nil {
+			return err
+		}
+		if v := rowMap["min"]; v != nil {
+			minTime, ok := v.(time.Time)
+			if !ok {
+				return fmt.Errorf("not a timestamp column")
+			}
+			summary.Min = timestamppb.New(minTime)
+			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
+		}
+		q.Result = summary
+		return nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	return errors.New("no rows returned")
+}
+
+func (q *ColumnTimeRange) resolveStarRocks(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	// If schema is not provided, look up the table to get the correct schema
+	if q.DatabaseSchema == "" {
+		table, err := olap.InformationSchema().Lookup(ctx, q.Database, "", q.TableName)
+		if err != nil {
+			return fmt.Errorf("failed to lookup table %q: %w", q.TableName, err)
+		}
+		q.DatabaseSchema = table.DatabaseSchema
+	}
+
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
+		olap.Dialect().EscapeIdentifier(q.ColumnName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{
@@ -159,7 +214,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
 			safeName(q.ColumnName),
-			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Query(ctx, &drivers.Statement{

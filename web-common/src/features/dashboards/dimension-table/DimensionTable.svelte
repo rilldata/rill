@@ -9,7 +9,7 @@ TableCells – the cell contents.
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { createEventDispatcher, setContext } from "svelte";
+  import { setContext } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { DimensionTableRow } from "./dimension-table-types";
   import {
@@ -20,13 +20,15 @@ TableCells – the cell contents.
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
-  const dispatch = createEventDispatcher();
-
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
   export let dimensionName: string;
   export let isFetching: boolean;
+  export let onSelectItem: (data: {
+    index: number;
+    meta: boolean;
+  }) => void = () => {};
 
   const {
     actions: {
@@ -144,8 +146,8 @@ TableCells – the cell contents.
   $: virtualWidth = $columnVirtualizer?.getTotalSize() ?? 0;
 
   let activeIndex;
-  function setActiveIndex(event) {
-    activeIndex = event.detail;
+  function setActiveIndex(index: number) {
+    activeIndex = index;
   }
   function clearActiveIndex() {
     activeIndex = false;
@@ -163,24 +165,23 @@ TableCells – the cell contents.
     }
   }
 
-  function onSelectItem(event) {
+  function onSelectItemHandler(data: { index: number; meta: boolean }) {
     // store previous scroll position before re-render
     rowScrollOffset = $rowVirtualizer?.scrollOffset ?? 0;
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
-    dispatch("select-item", event.detail);
+    onSelectItem(data);
   }
 
-  async function handleColumnHeaderClick(event) {
+  function handleColumnHeaderClick(columnName: string) {
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
-    const columnName = event.detail;
+
     dimensionTable.handleDimensionMeasureColumnHeaderClick(columnName);
   }
 
-  async function handleResizeDimensionColumn(event) {
+  function handleResizeDimensionColumn(size: number) {
     rowScrollOffset = $rowVirtualizer?.scrollOffset ?? 0;
     colScrollOffset = $columnVirtualizer?.scrollOffset ?? 0;
 
-    const { size } = event.detail;
     manualDimensionColumnWidth = Math.max(config.minColumnWidth, size);
   }
 </script>
@@ -223,7 +224,7 @@ TableCells – the cell contents.
           noPin={true}
           sortByMeasure={$sortByMeasure}
           columns={measureColumns}
-          on:click-column={handleColumnHeaderClick}
+          onClickColumn={handleColumnHeaderClick}
         />
         <!-- dimension value and gutter column -->
         <div class="flex">
@@ -236,11 +237,9 @@ TableCells – the cell contents.
             {excludeMode}
             {dimensionName}
             {toggleComparisonDimension}
-            on:select-item={(event) => onSelectItem(event)}
           />
           {#if dimensionColumn}
             <DimensionValueHeader
-              on:resize-column={handleResizeDimensionColumn}
               virtualRowItems={virtualRows}
               totalHeight={virtualHeight}
               width={estimateColumnSize[0]}
@@ -251,9 +250,9 @@ TableCells – the cell contents.
               {excludeMode}
               {scrolling}
               {horizontalScrolling}
-              on:dimension-sort
-              on:select-item={(event) => onSelectItem(event)}
-              on:inspect={setActiveIndex}
+              onSelectItem={onSelectItemHandler}
+              onInspect={setActiveIndex}
+              onResizeColumn={handleResizeDimensionColumn}
             />
           {/if}
         </div>
@@ -268,8 +267,8 @@ TableCells – the cell contents.
             {selectedIndex}
             {scrolling}
             {excludeMode}
-            on:select-item={(event) => onSelectItem(event)}
-            on:inspect={setActiveIndex}
+            onSelectItem={onSelectItemHandler}
+            onInspect={setActiveIndex}
             cellLabel="Filter dimension value"
           />
         {:else if isFetching || $selectedValues.isFetching}

@@ -149,17 +149,29 @@ function getLegacyDAXTestCases(): TestCase[] {
       "rill-QTD",
       "Quarter to Date",
       false,
-      V1TimeGrain.TIME_GRAIN_WEEK,
+      V1TimeGrain.TIME_GRAIN_DAY,
       undefined,
     ],
     ["rill-MTD", "Month to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
     ["rill-YTD", "Year to Date", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
 
-    ["rill-PDC", "Yesterday", false, undefined, undefined],
-    ["rill-PWC", "Previous week", false, undefined, undefined],
-    ["rill-PQC", "Previous quarter", false, undefined, undefined],
-    ["rill-PMC", "Previous month", false, undefined, undefined],
-    ["rill-PYC", "Previous year", false, undefined, undefined],
+    ["rill-PDC", "Yesterday", false, V1TimeGrain.TIME_GRAIN_HOUR, undefined],
+    ["rill-PWC", "Previous week", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
+    [
+      "rill-PQC",
+      "Previous quarter",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    [
+      "rill-PMC",
+      "Previous month",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    ["rill-PYC", "Previous year", false, V1TimeGrain.TIME_GRAIN_DAY, undefined],
   ];
 }
 

@@ -23,6 +23,17 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config.ts";
+  import { createInfiniteQuery } from "@tanstack/svelte-query";
+  import { onMount, onDestroy } from "svelte";
+  import {
+    adminServiceListProjectMemberUsers,
+    getAdminServiceListProjectMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import {
+    adminServiceListProjectInvites,
+    getAdminServiceListProjectInvitesQueryKey,
+  } from "@rilldata/web-admin/client";
+  import type { V1ProjectMemberUser } from "@rilldata/web-admin/client";
 
   export let organization: string;
   export let project: string;
@@ -107,6 +118,36 @@
       },
     },
   );
+
+  $: projectMembersInfiniteQuery = createInfiniteQuery({
+    queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+      organization,
+      project,
+      {
+        pageSize: PAGE_SIZE,
+      },
+    ),
+    queryFn: ({ signal, pageParam }) =>
+      adminServiceListProjectMemberUsers(
+        organization,
+        project,
+        {
+          pageSize: PAGE_SIZE,
+          pageToken: pageParam ?? "",
+        },
+        signal,
+      ),
+    getNextPageParam: (lastPage) => {
+      return lastPage?.nextPageToken !== ""
+        ? lastPage?.nextPageToken
+        : undefined;
+    },
+    initialPageParam: "",
+    enabled,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
   $: listProjectInvites = createAdminServiceListProjectInvites(
     organization,
     project,
@@ -119,6 +160,31 @@
       },
     },
   );
+  // Infinite query for project invites
+  $: projectInvitesInfiniteQuery = createInfiniteQuery({
+    queryKey: getAdminServiceListProjectInvitesQueryKey(organization, project, {
+      pageSize: PAGE_SIZE,
+    }),
+    queryFn: ({ signal, pageParam }) =>
+      adminServiceListProjectInvites(
+        organization,
+        project,
+        {
+          pageSize: PAGE_SIZE,
+          pageToken: pageParam ?? "",
+        },
+        signal,
+      ),
+    getNextPageParam: (lastPage) => {
+      return lastPage?.nextPageToken !== ""
+        ? lastPage?.nextPageToken
+        : undefined;
+    },
+    initialPageParam: "",
+    enabled,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     "autogroup:members",
@@ -141,12 +207,35 @@
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
+  // Get the total count for autogroup:members from the usergroups query (excludes guests)
+  $: autogroupMembersTotalCount =
+    orgMemberUsergroups.find((g) => g.groupName === "autogroup:members")
+      ?.usersCount ?? 0;
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
-  $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
-  $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
+  $: projectInvitesList =
+    $projectInvitesInfiniteQuery?.data?.pages?.flatMap(
+      (p) => p?.invites ?? [],
+    ) ??
+    $listProjectInvites?.data?.invites ??
+    [];
+  $: projectMemberUsersList = (() => {
+    const infiniteMembers =
+      $projectMembersInfiniteQuery?.data?.pages?.flatMap(
+        (p) => p?.members ?? [],
+      ) ?? null;
+    const base = (infiniteMembers ??
+      $listProjectMemberUsers?.data?.members ??
+      []) as V1ProjectMemberUser[];
+    const currentUserEmail = $currentUser.data?.user?.email;
+    if (!currentUserEmail) return base;
+    return [...base].sort((a, b) => {
+      if (a.userEmail === currentUserEmail) return -1;
+      if (b.userEmail === currentUserEmail) return 1;
+      return 0;
+    });
+  })();
 
-  // Memoized Sets for efficient O(1) lookups instead of expensive O(n) .some() operations
   $: projectMemberEmailSet = new Set(
     projectMemberUsersList.map((pm) => pm.userEmail),
   );
@@ -159,6 +248,19 @@
   $: projectUserGroupNameSet = new Set(
     projectUserGroups.map((pg) => pg.groupName),
   );
+
+  // FIXME: https://linear.app/rilldata/issue/APP-570/add-a-new-endpoint-to-get-current-users-project-membership-by-email
+  // Synthetic current-user row to ensure visibility before their real membership loads from the infinite query
+  $: syntheticCurrentUser = (() => {
+    const u = $currentUser.data?.user;
+    if (!u?.email) return null;
+    return {
+      userEmail: u.email,
+      userName: u.displayName ?? u.email,
+      userPhotoUrl: u.photoUrl ?? null,
+      // roleName intentionally omitted
+    } as V1ProjectMemberUser;
+  })();
 
   $: searchList = buildSearchList(
     allOrgMemberUsersRows,
@@ -176,6 +278,42 @@
   );
 
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
+
+  // IntersectionObserver-based infinite loading using an observed element
+  let membersScrollEl: HTMLDivElement;
+  let loadMoreTrigger: HTMLDivElement;
+  let observer: IntersectionObserver | null = null;
+
+  onMount(() => {
+    if (!loadMoreTrigger) return;
+    observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const hasNext = $projectMembersInfiniteQuery?.hasNextPage ?? false;
+        const isFetchingNext =
+          $projectMembersInfiniteQuery?.isFetchingNextPage ?? false;
+        if (hasNext && !isFetchingNext) {
+          const fetchNext = $projectMembersInfiniteQuery?.fetchNextPage;
+          if (typeof fetchNext === "function") fetchNext();
+        }
+        const hasNextInv = $projectInvitesInfiniteQuery?.hasNextPage ?? false;
+        const isFetchingNextInv =
+          $projectInvitesInfiniteQuery?.isFetchingNextPage ?? false;
+        if (hasNextInv && !isFetchingNextInv) {
+          const fetchNextInv = $projectInvitesInfiniteQuery?.fetchNextPage;
+          if (typeof fetchNextInv === "function") fetchNextInv();
+        }
+      }
+    });
+    observer.observe(loadMoreTrigger);
+  });
+
+  onDestroy(() => {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  });
 </script>
 
 <div class="flex flex-col p-4">
@@ -184,8 +322,21 @@
     <div class="grow"></div>
   </div>
   <UserAndGroupInviteForm {organization} {project} {searchList} />
-  <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2">
+  <div
+    class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2"
+    bind:this={membersScrollEl}
+  >
     <div class="mt-2">
+      {#if syntheticCurrentUser && !projectMemberEmailSet.has(syntheticCurrentUser.userEmail)}
+        <UserItem
+          {organization}
+          {project}
+          user={syntheticCurrentUser}
+          orgRole={undefined}
+          manageProjectAdmins={false}
+          manageProjectMembers={false}
+        />
+      {/if}
       {#each projectMemberUsersList as user}
         <UserItem
           {organization}
@@ -216,6 +367,12 @@
         />
       {/each}
     </div>
+    {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
+      <div class="flex items-center justify-center py-2">
+        <span class="text-xs text-gray-500">Loading more…</span>
+      </div>
+    {/if}
+    <div class="h-px" bind:this={loadMoreTrigger} />
   </div>
   <div class="mt-2 general-access-container bg-white pt-2">
     <div class="text-xs text-gray-500 font-semibold uppercase">
@@ -262,8 +419,8 @@
               <li>{user.userName}</li>
             </div>
           {/each}
-          {#if userGroupMemberUsers.length > 6}
-            <li>and {userGroupMemberUsers.length - 6} more</li>
+          {#if autogroupMembersTotalCount > 6}
+            <li>and {autogroupMembersTotalCount - 6} more</li>
           {/if}
         </ul>
       </TooltipContent>

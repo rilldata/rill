@@ -22,9 +22,8 @@
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import ThemeProvider from "../ThemeProvider.svelte";
-  import { page } from "$app/stores";
   import { createResolvedThemeStore } from "../../themes/selectors";
-  import { writable, type Writable } from "svelte/store";
+  import { readable, type Readable } from "svelte/store";
   import { DateTime, Interval } from "luxon";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -32,6 +31,7 @@
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
+  export let embedThemeName: Readable<string | null> | null = null;
 
   const DEFAULT_TIMESERIES_WIDTH = 580;
   const MIN_TIMESERIES_WIDTH = 440;
@@ -119,10 +119,17 @@
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
 
-  const urlThemeName: Writable<string | null> = writable(null);
-  $: urlThemeName.set($page.url.searchParams.get("theme"));
+  // For non-embedded dashboards, theme can come from URL params.
+  // For embedded dashboards, embedThemeName prop takes precedence.
+  const urlThemeName = readable<string | null>(null, (set) => {
+    set(null);
+    return () => {};
+  });
 
-  $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
+  let themeSource: Readable<string | null> = urlThemeName;
+  $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
+
+  $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
 
   $: maybeInterval = selectedTimeRange
     ? Interval.fromDateTimes(

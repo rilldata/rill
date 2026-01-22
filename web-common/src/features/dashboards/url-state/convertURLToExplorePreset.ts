@@ -1,4 +1,5 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -18,16 +19,23 @@ import {
 import {
   FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
-  FromURLParamTimeGrainMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import {
+  parseRillTime,
+  validateRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+import {
+  DateTimeUnitToV1TimeGrain,
+  getAggregationGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -183,6 +191,28 @@ export function convertURLToExplorePreset(
     }
   }
 
+  if (
+    searchParams.has(ExploreStateURLParams.LeaderboardShowContextForAllMeasures)
+  ) {
+    const rawValue = searchParams.get(
+      ExploreStateURLParams.LeaderboardShowContextForAllMeasures,
+    );
+    const normalized = rawValue?.toLowerCase();
+    if (normalized === "true" || normalized === "1") {
+      preset.exploreLeaderboardShowContextForAllMeasures = true;
+    } else if (
+      normalized === "false" ||
+      normalized === "0" ||
+      normalized === ""
+    ) {
+      preset.exploreLeaderboardShowContextForAllMeasures = false;
+    } else {
+      errors.push(
+        getSingleFieldError("leaderboard context toggle", rawValue ?? ""),
+      );
+    }
+  }
+
   return { preset, errors };
 }
 
@@ -328,10 +358,23 @@ export function fromTimeRangesParams(
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
 
-    if (tg in FromURLParamTimeGrainMap) {
+    if (tg in DateTimeUnitToV1TimeGrain) {
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
+    }
+  } else {
+    try {
+      const parsed = parseRillTime(preset.timeRange ?? "");
+      const grain = getAggregationGrain(parsed);
+
+      if (grain && grain in V1TimeGrainToDateTimeUnit) {
+        preset.timeGrain = V1TimeGrainToDateTimeUnit[grain];
+      } else {
+        errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -564,6 +607,21 @@ function fromPivotUrlParams(
       ExploreStateURLParams.PivotTableMode,
     ) as string;
     preset.pivotTableMode = tableMode;
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotRowLimit)) {
+    const rowLimitStr = searchParams.get(
+      ExploreStateURLParams.PivotRowLimit,
+    ) as string;
+    const rowLimit = parseInt(rowLimitStr, 10);
+    // Use shared constants to validate row limit values
+    if (
+      !isNaN(rowLimit) &&
+      rowLimit > 0 &&
+      (PIVOT_ROW_LIMIT_OPTIONS as readonly number[]).includes(rowLimit)
+    ) {
+      preset.pivotRowLimit = rowLimit;
+    }
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

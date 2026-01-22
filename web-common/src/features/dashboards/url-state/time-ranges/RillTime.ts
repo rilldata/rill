@@ -16,6 +16,7 @@ import {
   V1TimeGrainToDateTimeUnit,
   type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
+import type { TimeRangeMeta } from "@rilldata/web-common/lib/time/types";
 
 const absTimeRegex =
   /(?<year>\d{4})(-(?<month>\d{2})(-(?<day>\d{2})(T(?<hour>\d{2})(:(?<minute>\d{2})(:(?<second>\d{2})Z)?)?)?)?)?/;
@@ -521,9 +522,11 @@ export class RillLegacyDaxInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    const entry = PERIOD_TO_DATE_RANGES[this.name];
+    const timeRangeMeta = DEFAULT_TIME_RANGES[this.name] as
+      | TimeRangeMeta
+      | undefined;
 
-    return entry?.defaultGrain;
+    return timeRangeMeta?.defaultGrain || V1TimeGrain.TIME_GRAIN_DAY;
   }
 
   public toString() {

@@ -1,25 +1,28 @@
 import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import {
+  getNextLimitLabel,
+  LOADING_CELL,
+  SHOW_MORE_BUTTON,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
-import {
-  addZoneOffset,
-  removeLocalTimezoneOffset,
-} from "@rilldata/web-common/lib/time/timezone";
+import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
 import type { ComponentType, SvelteComponent } from "svelte";
 import PivotDeltaCell from "./PivotDeltaCell.svelte";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import PivotMeasureCell from "./PivotMeasureCell.svelte";
+import PivotShowMoreCell from "./PivotShowMoreCell.svelte";
 import {
   cellComponent,
   createIndexMap,
   getAccessorForCell,
   getTimeGrainFromDimension,
+  isShowMoreRow,
   isTimeDimension,
 } from "./pivot-utils";
 import {
@@ -96,12 +99,10 @@ function createColumnDefinitionForDimensions(
           isTimeDimension(dimensionNames?.[level], timeConfig?.timeDimension)
         ) {
           const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
-          const duration = timeGrainToDuration(timeGrain);
 
-          const dt = addZoneOffset(
-            removeLocalTimezoneOffset(new Date(value), duration),
-            timeConfig?.timeZone,
-            duration,
+          const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+            value,
+            timeConfig?.timeZone || "UTC",
           );
           const timeFormatter = timeFormat(
             timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
@@ -159,18 +160,17 @@ function formatDimensionValue(
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
     if (
       value === "Total" ||
-      value === "LOADING_CELL" ||
+      value === LOADING_CELL ||
       value === undefined ||
       value === null
     )
       return value;
 
     const timeGrain = getTimeGrainFromDimension(dimension);
-    const duration = timeGrainToDuration(timeGrain);
-    const dt = addZoneOffset(
-      removeLocalTimezoneOffset(new Date(value), duration),
-      timeConfig?.timeZone,
-      duration,
+
+    const dt = convertISOStringToJSDateWithSameTimeAsSelectedTimeZone(
+      value,
+      timeConfig?.timeZone || "UTC",
     );
     const timeFormatter = timeFormat(
       timeGrain ? TIME_GRAIN[timeGrain]?.d3format : "%H:%M",
@@ -318,6 +318,9 @@ function getFlatColumnDef(
       },
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
+        const row = info.row;
+        const isShowMore = isShowMoreRow(row);
+
         if (m.type === "comparison_percent") {
           return cellComponent(PercentageChange, {
             isNull: measureValue == null,
@@ -336,7 +339,8 @@ function getFlatColumnDef(
         }
         const value = m.formatter(measureValue);
 
-        if (value == null) return cellComponent(PivotMeasureCell, {});
+        if (value == null)
+          return cellComponent(PivotMeasureCell, { isShowMoreRow: isShowMore });
         return value;
       },
     };
@@ -418,6 +422,9 @@ function getNestedColumnDef(
   const rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
   const nestedLabel = getRowNestedLabel(rowDimensions);
 
+  // Check if there are nested dimensions (more than one row dimension)
+  const hasNestedDimensions = rowDimensions.length > 1;
+
   // Create row dimension columns
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
     rowDimensionsForColumnDef.map((d) => {
@@ -426,8 +433,25 @@ function getNestedColumnDef(
         accessorFn: (row) => row[d.name],
         header: nestedLabel,
         cell: ({ row, getValue }) => {
+          const value = getValue() as string;
+
+          // Handle Show More button
+          if (value === SHOW_MORE_BUTTON) {
+            const rowData = row.original;
+            const dimensionLabel =
+              rowDimensions?.[row.depth]?.label ||
+              rowDimensions?.[row.depth]?.name;
+            const currentLimit = rowData.__currentLimit as number;
+            const label = `Increase limit to ${getNextLimitLabel(currentLimit)} on "${dimensionLabel}"`;
+            return cellComponent(PivotShowMoreCell, {
+              value: label,
+              row,
+              hasNestedDimensions,
+            });
+          }
+
           const formattedDimensionValue = formatDimensionValue(
-            getValue() as string,
+            value,
             row.depth,
             config.time,
             rowDimensionNames,
@@ -436,6 +460,7 @@ function getNestedColumnDef(
           return cellComponent(PivotExpandableCell, {
             value: formattedDimensionValue,
             row,
+            hasNestedDimensions,
           });
         },
       };
@@ -468,6 +493,13 @@ function getNestedColumnDef(
         },
         cell: (info) => {
           const measureValue = info.getValue() as number | null | undefined;
+          const row = info.row;
+          const isShowMore = isShowMoreRow(row);
+
+          if (isShowMore) {
+            return cellComponent(PivotMeasureCell, { isShowMoreRow: true });
+          }
+
           if (m.type === "comparison_percent") {
             return cellComponent(PercentageChange, {
               isNull: measureValue == null,
@@ -486,7 +518,10 @@ function getNestedColumnDef(
           }
           const value = m.formatter(measureValue);
 
-          if (value == null) return cellComponent(PivotMeasureCell, {});
+          if (value == null)
+            return cellComponent(PivotMeasureCell, {
+              isShowMoreRow: isShowMore,
+            });
           return value;
         },
       };

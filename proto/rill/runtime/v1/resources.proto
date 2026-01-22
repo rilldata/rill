@@ -219,6 +219,7 @@ message MetricsViewSpec {
     DIMENSION_TYPE_UNSPECIFIED = 0;
     DIMENSION_TYPE_CATEGORICAL = 1;
     DIMENSION_TYPE_TIME = 2;
+    DIMENSION_TYPE_GEOSPATIAL = 3;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -525,6 +526,7 @@ message ExplorePreset {
   optional string pivot_sort_by = 26;
   optional bool pivot_sort_asc = 27;
   optional string pivot_table_mode = 28;
+  optional int32 pivot_row_limit = 33;
 }
 
 enum ExploreComparisonMode {

@@ -7,7 +7,7 @@ import (
 )
 
 func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name string
+	var name, branch string
 
 	jwtCmd := &cobra.Command{
 		Use:    "jwt [<project-name>]",
@@ -41,18 +41,19 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				Org:     ch.Org,
 				Project: name,
+				Branch:  branch,
 			})
 			if err != nil {
 				return err
 			}
-			if res.ProdDeployment == nil {
+			if res.Deployment == nil {
 				ch.PrintfWarn("Project does not have a production deployment\n")
 				return nil
 			}
 
 			ch.Printf("Runtime info\n")
-			ch.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
-			ch.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
+			ch.Printf("  Host: %s\n", res.Deployment.RuntimeHost)
+			ch.Printf("  Instance: %s\n", res.Deployment.RuntimeInstanceId)
 			ch.Printf("  JWT: %s\n", res.Jwt)
 
 			return nil
@@ -61,6 +62,7 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	jwtCmd.Flags().SortFlags = false
 	jwtCmd.Flags().StringVar(&name, "project", "", "Project Name")
+	jwtCmd.Flags().StringVar(&branch, "branch", "", "Target deployment by Git branch (default: primary deployment)")
 
 	return jwtCmd
 }
