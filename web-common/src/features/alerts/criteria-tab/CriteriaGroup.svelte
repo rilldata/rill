@@ -11,6 +11,7 @@
 
   export let superFormInstance: SuperForm<AlertFormValues>;
   export let timeControls: TimeControls;
+
   $: ({ form } = superFormInstance);
 
   function handleDeleteCriteria(index: number) {
@@ -27,7 +28,7 @@
 
 {#if $form["criteria"]}
   <div class="flex flex-col gap-2">
-    {#each $form["criteria"] as _, index}
+    {#each $form["criteria"] as _, index (index)}
       {#if index > 0}
         <div class="flex flex-row items-center justify-center">
           <div class="mr-2">

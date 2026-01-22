@@ -40,13 +40,7 @@
     </AlertDialog.Header>
     <AlertDialog.Footer class="gap-y-2">
       <AlertDialog.Cancel asChild let:builder>
-        <Button
-          builders={[builder]}
-          type="secondary"
-          large
-          gray={confirmation.action === "delete"}
-          onClick={onCancel}
-        >
+        <Button builders={[builder]} type="outlined" large onClick={onCancel}>
           {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
         </Button>
       </AlertDialog.Cancel>
@@ -55,8 +49,7 @@
         <Button
           large
           builders={[builder]}
-          status={confirmation.action === "delete" ? "error" : "info"}
-          type="primary"
+          type={confirmation.action === "delete" ? "destructive" : "primary"}
           onClick={onConfirm}
         >
           {#if confirmation.action === "delete"}

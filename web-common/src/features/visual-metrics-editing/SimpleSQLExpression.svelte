@@ -158,7 +158,7 @@
   }
 
   label {
-    @apply text-sm font-medium text-fg-primary;
+    @apply text-sm font-medium text-fg-secondary;
   }
 
   .option-wrapper > .selected {

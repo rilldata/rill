@@ -44,9 +44,7 @@
           open = false;
         }}>Cancel</Button
       >
-      <Button type="primary" status="error" onClick={handleDelete}
-        >Yes, delete</Button
-      >
+      <Button type="destructive" onClick={handleDelete}>Yes, delete</Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

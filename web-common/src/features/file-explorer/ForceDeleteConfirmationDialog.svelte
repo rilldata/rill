@@ -36,8 +36,7 @@
             handleClose();
             onDelete();
           }}
-          type="primary"
-          status="error"
+          type="destructive"
         >
           Delete
         </Button>

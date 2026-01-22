@@ -1,8 +1,5 @@
-<script lang="ts">
-  import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import LoadingSpinner from "../icons/LoadingSpinner.svelte";
-
-  type ButtonType =
+<script lang="ts" context="module">
+  export type ButtonType =
     | "primary"
     | "secondary"
     | "destructive"
@@ -11,10 +8,14 @@
     | "link"
     | "text"
     | "toolbar";
+</script>
+
+<script lang="ts">
+  import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
   export let type: ButtonType = "outlined";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
-  export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
   export let submitForm = false;
@@ -36,7 +37,6 @@
   export let fit = false;
   export let noWrap = false;
   export let gray = false;
-  export let destructive = false;
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
@@ -76,7 +76,6 @@
   class:active
   class:!w-fit={fit}
   class:whitespace-nowrap={noWrap}
-  class:destructive={status === "error" || destructive}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
@@ -310,50 +309,20 @@
 
   /* DESTRUCTIVE STYLES */
 
-  .destructive.primary {
+  .destructive {
     @apply bg-destructive text-destructive-foreground;
-    @apply opacity-60;
   }
 
-  .destructive.primary:hover {
-    @apply opacity-90;
+  :global(.dark) .destructive {
+    @apply bg-destructive/65;
   }
 
-  .destructive.primary:disabled {
+  .destructive:hover {
+    @apply bg-destructive;
+  }
+
+  .destructive:disabled {
     @apply opacity-50;
-  }
-
-  .destructive.secondary {
-    @apply bg-surface-container;
-    @apply text-red-500;
-    @apply border-red-500;
-  }
-
-  .destructive.secondary:hover {
-    @apply text-red-600;
-    @apply border-red-600;
-  }
-
-  .destructive.secondary:disabled {
-    @apply text-fg-secondary;
-    @apply bg-gray-50;
-    @apply border-gray-300;
-  }
-
-  .destructive.text {
-    @apply text-fg-secondary p-0;
-  }
-
-  .destructive.text:hover {
-    @apply text-red-600;
-  }
-
-  .destructive.subtle {
-    @apply bg-red-50 text-red-600;
-  }
-
-  .destructive.subtle:hover {
-    @apply bg-red-100;
   }
 
   /* SHAPE STYLES */

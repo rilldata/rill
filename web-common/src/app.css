@@ -126,7 +126,7 @@
 
     --tooltip: var(--color-neutral-900);
 
-    --destructive: var(--color-red-600);
+    --destructive: oklch(0.7106 0.1661 22.22);
     --destructive-foreground: var(--color-red-50);
 
     --popover: var(--white);
@@ -338,7 +338,12 @@
 
     --tooltip: var(--color-rill-gray-dark-500);
 
-    --destructive: var(--color-red-light-400);
+    /* This is not exactly as designed */
+    --destructive: color-mix(
+      in oklab,
+      oklch(0.7106 0.1661 22.22) calc(0.9 * 100%),
+      transparent
+    );
     --destructive-foreground: var(--color-red-light-50);
 
     --popover: var(--color-rill-gray-dark-500);

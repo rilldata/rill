@@ -288,10 +288,12 @@
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
-          <Label class="font-medium text-sm" for="auto-save">{label}</Label>
+          <Label class="font-medium text-fg-secondary text-sm" for="auto-save"
+            >{label}</Label
+          >
           {#if hint}
             <Tooltip location="left">
-              <div class="text-fg-secondary">
+              <div class="text-fg-muted">
                 <InfoCircle size="13px" />
               </div>
               <TooltipContent slot="tooltip-content">
