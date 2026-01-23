@@ -10,7 +10,7 @@
   <a href="https://github.com/rilldata/rill/releases"><img src="https://img.shields.io/github/tag/rilldata/rill.svg" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/rilldata/rill.svg" alt="License"></a>
 
-</p>
+[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/developers/get-started/install) • [Quickstart](https://docs.rilldata.com/developers/get-started/quickstart) • [Guides](https://docs.rilldata.com/developers/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
 
 <p align="center">
   <a href="https://docs.rilldata.com/">Docs</a> · <a href="#quickstart">Quickstart</a> · <a href="https://github.com/rilldata/rill-examples">Examples</a> · <a href="#capabilities">Capabilities</a> · <a href="https://docs.rilldata.com/home/contribute">Contributing</a> · <a href="https://datatalks.rilldata.com/">Data Talks</a>

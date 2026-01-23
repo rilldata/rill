@@ -4461,6 +4461,7 @@ definitions:
       - OPERATION_NIN
       - OPERATION_LIKE
       - OPERATION_NLIKE
+      - OPERATION_CAST
     default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
@@ -5089,6 +5090,9 @@ definitions:
       usesArchive:
         type: boolean
         description: Whether the deployment is git based or archive based.
+      duckdbConnectorConfig:
+        type: object
+        title: Duckdb connector config for the deployment
   v1GetDeploymentCredentialsResponse:
     type: object
     properties:
@@ -5243,11 +5247,15 @@ definitions:
       gitBranch:
         type: string
         description: The branch to use for the deployment.
-      gitEditBranch:
+      editable:
+        type: boolean
+        description: Whether editing is allowed. Set to true for dev deployments.
+      primaryBranch:
         type: string
-        description: |-
-          A unique branch name generated for temporary/ephemeral use in edit mode where files may be mutated.
-          This enables checkpointing progress across hibernations and also more easily pinning to a specific commit of the base branch to delay conflict resolution.
+        description: Primary branch of the project.
+      managedGitRepo:
+        type: boolean
+        description: Whether the git repo is managed by Rill.
       archiveDownloadUrl:
         type: string
         description: Signed URL for downloading a tarball of project files. If this is set, the git_* fields will be empty (and vice versa).

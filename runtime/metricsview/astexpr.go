@@ -131,12 +131,51 @@ func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
+	case OperatorCast:
+		return b.writeCast(cond)
 	default:
 		if !cond.Operator.Valid() {
 			return fmt.Errorf("invalid expression operator %q", cond.Operator)
 		}
 		return b.writeBinaryCondition(cond.Expressions, cond.Operator)
 	}
+}
+
+func (b *sqlExprBuilder) writeCast(cond *Condition) error {
+	b.writeString("CAST(")
+	err := b.writeExpression(cond.Expressions[0])
+	if err != nil {
+		return err
+	}
+	b.writeString(" AS ")
+	switch v := cond.Expressions[1].Value.(type) {
+	case runtimev1.Type:
+		typeStr, err := b.ast.Dialect.CastToDataType(v.Code)
+		if err != nil {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		b.writeString(typeStr)
+	case map[string]any:
+		// runtimev1.Type will be serialized as map[string]any
+		codeVal, ok := v["code"]
+		if !ok {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		codeFloat, ok := codeVal.(float64)
+		if !ok {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		code := runtimev1.Type_Code(int32(codeFloat))
+		typeStr, err := b.ast.Dialect.CastToDataType(code)
+		if err != nil {
+			return fmt.Errorf("unsupported cast type code: %v", cond.Expressions[1].Value)
+		}
+		b.writeString(typeStr)
+	default:
+		return fmt.Errorf("unsupported cast type: %T", cond.Expressions[1].Value)
+	}
+	b.writeByte(')')
+	return nil
 }
 
 func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {

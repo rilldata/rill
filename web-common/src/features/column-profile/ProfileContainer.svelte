@@ -5,7 +5,6 @@
     LIST_SLIDE_DURATION,
   } from "@rilldata/web-common/layout/config";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
 
   export let active = false;
@@ -18,8 +17,7 @@
   export let hideNullPercentage = false;
   export let mode = "summaries";
   export let onShiftClick: () => void;
-
-  const dispatch = createEventDispatcher();
+  export let onSelect: () => void;
 
   let columns: string;
   $: summarySize =
@@ -48,9 +46,7 @@
     class:bg-gray-50={active}
     on:click={modified({
       shift: onShiftClick,
-      click: () => {
-        dispatch("select");
-      },
+      click: onSelect,
     })}
   >
     <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">

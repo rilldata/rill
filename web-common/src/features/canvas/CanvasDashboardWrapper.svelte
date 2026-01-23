@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
@@ -60,6 +61,8 @@
         <slot />
       </div>
     </div>
+
+    <CellInspector />
   </main>
 </ThemeProvider>
 
