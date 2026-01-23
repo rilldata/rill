@@ -23,7 +23,9 @@ func TestObjectStore(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test.rilldata.com"
-	t.Run("testListObjectsForGlobPagination", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket) })
+	t.Run("testListObjectsForGlobPagination/pageSize=1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination/pageSize=2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination/pageSize=3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
@@ -59,7 +61,9 @@ func TestObjectStoreHMAC(t *testing.T) {
 	objectStore, ok := conn.AsObjectStore()
 	require.True(t, ok)
 	bucket := "integration-test.rilldata.com"
-	t.Run("testListObjectsForGlobPagination", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket) })
+	t.Run("testListObjectsForGlobPagination/pageSize=1", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 1) })
+	t.Run("testListObjectsForGlobPagination/pageSize=2", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 2) })
+	t.Run("testListObjectsForGlobPagination/pageSize=3", func(t *testing.T) { testListObjectsForGlobPagination(t, objectStore, bucket, 3) })
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
@@ -85,36 +89,45 @@ func TestObjectStoreHMACPathPrefixes(t *testing.T) {
 	t.Run("testPathRootLevelOfAllowedPrefix", func(t *testing.T) { testPathRootLevelOfAllowedPrefix(t, objectStore, bucket) })
 }
 
-func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
+func testListObjectsForGlobPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string, pageSize uint32) {
 	ctx := context.Background()
-	Path := "glob_*/y=202*/*"
+	path := "glob_test/y=202*/*"
+
 	expected := []string{
 		"glob_test/y=2023/aab.csv",
 		"glob_test/y=2024/aaa.csv",
 		"glob_test/y=2024/bbb.csv",
 	}
 
-	pageSize := 1
-
 	var pageToken string
 	var collected []string
-	pageCount := 0
-
+	var pageCount int // number of non-final pages
 	for {
-		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, Path, uint32(pageSize), pageToken)
+		objects, nextToken, err := objectStore.ListObjectsForGlob(ctx, bucket, path, pageSize, pageToken)
 		require.NoError(t, err)
+
+		if nextToken != "" {
+			require.Len(t, objects, int(pageSize))
+		} else {
+			require.NotEmpty(t, objects)
+			require.LessOrEqual(t, len(objects), int(pageSize))
+		}
+
+		for _, obj := range objects {
+			collected = append(collected, obj.Path)
+		}
 
 		if nextToken == "" {
 			break
 		}
+
 		pageCount++
-		require.Len(t, objects, 1)
-		collected = append(collected, objects[0].Path)
 		pageToken = nextToken
 	}
 
 	require.Equal(t, expected, collected)
-	require.Equal(t, len(expected), pageCount)
+	expectedPages := (len(expected) + int(pageSize) - 1) / int(pageSize)
+	require.Equal(t, expectedPages, pageCount+1)
 }
 
 func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {

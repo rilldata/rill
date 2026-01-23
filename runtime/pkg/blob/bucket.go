@@ -79,10 +79,8 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 
 	// Fetch pages until we have enough matching results (accounting for glob filtering)
 	var entries []drivers.ObjectStoreEntry
-	skipUntilAfter := startAfter != ""
 	for len(entries) < validPageSize && driverPageToken != nil {
-		fetchSize := validPageSize * 2
-		retval, nextDriverPageToken, err := b.bucket.ListPage(ctx, driverPageToken, fetchSize, &blob.ListOptions{
+		retval, nextDriverPageToken, err := b.bucket.ListPage(ctx, driverPageToken, validPageSize, &blob.ListOptions{
 			Prefix: prefix,
 			BeforeList: func(as func(interface{}) bool) error {
 				// Handle GCS
@@ -109,20 +107,15 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		}
 
 		// Filter by glob pattern and skip startAfter entries
-		for _, obj := range retval {
-			// Workaround for some object stores not marking IsDir correctly.
-			if strings.HasSuffix(obj.Key, "/") {
-				obj.IsDir = true
-			}
-
-			// Skip entries until we're past startAfter (exclusive pagination)
-			// This handles the case where StartOffset/StartAfter is inclusive but we want exclusive
-			if skipUntilAfter {
+		lastProcessedIdx := -1
+		for i, obj := range retval {
+			// Skip entries until we're past startAfter
+			if startAfter != "" {
 				if obj.Key <= startAfter {
 					continue
 				}
-				skipUntilAfter = false
 			}
+			lastProcessedIdx = i
 
 			ok, err := doublestar.Match(glob, obj.Key)
 			if err != nil {
@@ -132,13 +125,17 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 				continue
 			}
 
+			// Workaround for some object stores not marking IsDir correctly.
+			if strings.HasSuffix(obj.Key, "/") {
+				obj.IsDir = true
+			}
+
 			entries = append(entries, drivers.ObjectStoreEntry{
 				Path:      obj.Key,
 				IsDir:     obj.IsDir,
 				Size:      obj.Size,
 				UpdatedOn: obj.ModTime,
 			})
-			startAfter = obj.Key
 
 			// Stop if we've collected enough entries
 			if len(entries) == validPageSize {
@@ -147,6 +144,12 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		}
 
 		if len(entries) == validPageSize {
+			if lastProcessedIdx == len(retval)-1 {
+				driverPageToken = nextDriverPageToken
+				startAfter = ""
+			} else if lastProcessedIdx != -1 {
+				startAfter = retval[lastProcessedIdx].Key
+			}
 			break
 		}
 
@@ -154,15 +157,9 @@ func (b *Bucket) ListObjectsForGlob(ctx context.Context, glob string, pageSize u
 		startAfter = ""
 	}
 
-	// Generate next page token with both driverPageToken and startAfter
 	nextToken := ""
-	if len(entries) == validPageSize {
-		if startAfter != "" {
-			nextToken = pagination.MarshalPageToken(driverPageToken, startAfter)
-		}
-	} else if driverPageToken != nil {
-		// Even if we didn't fill the page, if there's a next driver token, return it
-		nextToken = pagination.MarshalPageToken(driverPageToken, "")
+	if driverPageToken != nil {
+		nextToken = pagination.MarshalPageToken(driverPageToken, startAfter)
 	}
 
 	return entries, nextToken, nil
