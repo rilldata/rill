@@ -74,6 +74,11 @@ export type ConnectorCategory =
   | "fileStore"
   | "warehouse";
 
+export type ButtonLabels = {
+  idle: string;
+  loading: string;
+};
+
 export type JSONSchemaObject = {
   $schema?: string;
   type: "object";
@@ -89,6 +94,18 @@ export type JSONSchemaObject = {
    * "olap" = OLAP engines (ClickHouse, DuckDB, etc.)
    */
   "x-category"?: ConnectorCategory;
+  /**
+   * Backend connector name when different from schema name.
+   * Used when a UI variant (e.g., "clickhousecloud") should submit
+   * to a different backend connector (e.g., "clickhouse").
+   */
+  "x-backend-connector"?: string;
+  /**
+   * Custom button labels per field value.
+   * Maps field key -> value -> button labels.
+   * Example: { "connector_type": { "rill-managed": { idle: "Connect", loading: "Connecting..." } } }
+   */
+  "x-button-labels"?: Record<string, Record<string, ButtonLabels>>;
 };
 
 export type MultiStepFormSchema = JSONSchemaObject;

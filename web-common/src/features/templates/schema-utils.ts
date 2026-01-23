@@ -1,4 +1,5 @@
 import type {
+  ButtonLabels,
   JSONSchemaConditional,
   JSONSchemaField,
   MultiStepFormSchema,
@@ -371,4 +372,36 @@ export function getConditionalValues(
   }
 
   return result;
+}
+
+/**
+ * Returns the backend connector name for a schema.
+ * If x-backend-connector is specified, returns that; otherwise returns the schemaName.
+ */
+export function getBackendConnectorName(
+  schema: MultiStepFormSchema | null,
+  schemaName: string,
+): string {
+  return schema?.["x-backend-connector"] ?? schemaName;
+}
+
+/**
+ * Returns custom button labels from the schema based on current form values.
+ * Looks up x-button-labels[fieldKey][fieldValue] for each field in values.
+ */
+export function getSchemaButtonLabels(
+  schema: MultiStepFormSchema | null,
+  values: Record<string, unknown>,
+): ButtonLabels | null {
+  const buttonLabelsMap = schema?.["x-button-labels"];
+  if (!buttonLabelsMap) return null;
+
+  for (const [fieldKey, valueLabels] of Object.entries(buttonLabelsMap)) {
+    const currentValue = values[fieldKey];
+    if (currentValue === undefined || currentValue === null) continue;
+    const labels = valueLabels[String(currentValue)];
+    if (labels) return labels;
+  }
+
+  return null;
 }

@@ -12,7 +12,6 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import { isEmpty } from "./utils";
   import JSONSchemaFormRenderer from "../../templates/JSONSchemaFormRenderer.svelte";
-  import { type ClickHouseConnectorType } from "./constants";
   import { connectorStepStore } from "./connectorStepStore";
   import YamlPreview from "./YamlPreview.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
@@ -21,16 +20,16 @@
   import { getConnectorSchema } from "./connector-schemas";
   import {
     getRequiredFieldsForValues,
+    getSchemaButtonLabels,
     isVisibleForValues,
   } from "../../templates/schema-utils";
 
   export let connector: V1ConnectorDriver;
+  export let schemaName: string;
   export let formType: AddDataFormType;
   export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
-  export let initialClickhouseType: ClickHouseConnectorType | undefined =
-    undefined;
 
   let saveAnyway = false;
   let showSaveAnyway = false;
@@ -45,12 +44,6 @@
     result?: Extract<ActionResult, { type: "success" | "failure" }>;
     cancel?: () => void;
   }) => Promise<void> = async (_event) => {};
-
-  // Use clickhousecloud schema when ClickHouse Cloud is selected
-  const schemaName =
-    initialClickhouseType === "clickhouse-cloud"
-      ? "clickhousecloud"
-      : (connector.name ?? "");
 
   const formManager = new AddDataFormManager({
     connector,
@@ -95,16 +88,6 @@
 
   const connectorSchema = getConnectorSchema(schemaName);
 
-  // Derive ClickHouse type from form values - no need for separate state tracking.
-  // The renderer now handles conditional defaults via schema's allOf/if/then.
-  $: currentClickhouseType = ((): ClickHouseConnectorType | undefined => {
-    if (initialClickhouseType === "clickhouse-cloud") return "clickhouse-cloud";
-    if (connector.name !== "clickhouse") return undefined;
-    return (
-      ($paramsForm?.connector_type as ClickHouseConnectorType) ?? "self-hosted"
-    );
-  })();
-
   // Hide Save Anyway once we advance to the model step in step flow connectors.
   $: if (
     isStepFlowConnector &&
@@ -143,18 +126,22 @@
 
   $: submitting = $paramsSubmitting;
 
+  // Get button labels from schema (e.g., rill-managed ClickHouse uses "Connect")
+  $: schemaButtonLabels = getSchemaButtonLabels(connectorSchema, $paramsForm);
+
   $: primaryButtonLabel = isStepFlowConnector
     ? multiStepButtonLabel
     : formManager.getPrimaryButtonLabel({
         isConnectorForm,
         step: stepState.step,
         submitting,
-        clickhouseConnectorType: currentClickhouseType,
+        schemaButtonLabels,
         selectedAuthMethod: activeAuthMethod ?? undefined,
       });
 
   $: primaryLoadingCopy = (() => {
     if (isStepFlowConnector) return multiStepLoadingCopy;
+    if (schemaButtonLabels?.loading) return schemaButtonLabels.loading;
     return activeAuthMethod === "public"
       ? "Continuing..."
       : "Testing connection...";
@@ -182,7 +169,6 @@
     const result = await formManager.saveConnectorAnyway({
       queryClient,
       values: $paramsForm,
-      clickhouseConnectorType: currentClickhouseType,
     });
     if (result.ok) {
       onClose();
@@ -199,7 +185,6 @@
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
     paramsFormValues: $paramsForm,
-    clickhouseConnectorType: currentClickhouseType,
   });
   $: shouldShowSaveAnywayButton = isConnectorForm && showSaveAnyway;
   $: saveAnywayLoading = submitting && saveAnyway;
