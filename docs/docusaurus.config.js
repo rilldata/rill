@@ -1159,7 +1159,7 @@ const config = {
           },
           {
             from: '/guides/setting-up-mcp',
-            to: '/guide/ai/mcpp',
+            to: '/guide/ai/mcp',
           },
           {
             from: '/guides/rill-basics',
