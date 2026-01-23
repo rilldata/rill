@@ -361,6 +361,7 @@
             <button
               {...builder}
               use:builder.action
+              aria-label="Select aggregation grain"
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
               by <b>

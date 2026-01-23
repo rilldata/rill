@@ -4,18 +4,12 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { DateTime, Duration, Interval } from "luxon";
+import { Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
-import type {
-  AvailableTimeGrain,
-  DashboardTimeControls,
-  TimeGrain,
-} from "../types";
-import {
-  allowedGrainsForInterval,
-  getRangePrecision,
-} from "@rilldata/web-common/lib/time/new-grains";
-import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import type { AvailableTimeGrain, TimeGrain } from "../types";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
+import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
+import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -230,40 +224,30 @@ export function getNextSmallerGrain(
 }
 
 /**
- * Validates and adjusts the time grain for a selected time range based on allowed grains.
+ * Validates and adjusts the time grain for a given interval based on allowed grains.
  * Returns the validated grain, or undefined if validation cannot be performed.
+ *
+ * @param interval - The time interval to validate against
+ * @param minTimeGrain - The minimum allowed time grain
+ * @param requestedPrecision - The requested grain (e.g., from URL or state)
+ * @param rangeName - The range name string (e.g., "24h as of latest/h+1h", "inf") used to derive precision
  */
 export function getValidatedTimeGrain(
-  selectedTimeRange: DashboardTimeControls | undefined,
+  interval: Interval | undefined,
   minTimeGrain: V1TimeGrain,
+  requestedPrecision: V1TimeGrain | undefined,
+  parsed: RillTime | undefined,
 ): V1TimeGrain | undefined {
-  if (
-    !selectedTimeRange?.start ||
-    !selectedTimeRange?.end ||
-    !selectedTimeRange.name
-  ) {
+  if (!interval || !interval.isValid) {
     return undefined;
   }
 
-  const interval = Interval.fromDateTimes(
-    DateTime.fromJSDate(selectedTimeRange.start),
-    DateTime.fromJSDate(selectedTimeRange.end),
+  const allowedGrains = allowedGrainsForInterval(
+    interval as Interval<true>,
+    minTimeGrain,
   );
 
-  if (!interval.isValid) {
-    return undefined;
-  }
-
-  const allowedGrains = allowedGrainsForInterval(interval, minTimeGrain);
-  const requestedPrecision = selectedTimeRange.interval;
-
-  let rangePrecision: V1TimeGrain | undefined;
-  try {
-    const parsed = parseRillTime(selectedTimeRange.name);
-    rangePrecision = getRangePrecision(parsed);
-  } catch {
-    // Parsing fails for non-rill-time names like "CUSTOM" - use fallbacks below
-  }
+  const rangePrecision = parsed && getRangePrecision(parsed);
 
   const finalGrain =
     requestedPrecision && allowedGrains.includes(requestedPrecision)

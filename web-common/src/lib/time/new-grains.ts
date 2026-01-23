@@ -1,8 +1,3 @@
-import {
-  RillLegacyDaxInterval,
-  RillLegacyIsoInterval,
-  type RillTime,
-} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { type Interval, type DateTimeUnit } from "luxon";
@@ -352,16 +347,6 @@ export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "5y as of latest/Y",
 };
 
-export function getRangePrecision(rillTime: RillTime) {
-  const asOfSnap = rillTime.asOfLabel?.snap;
-
-  const asOfSnapV1Grain = GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
-  const rangeV1Grain = rillTime.rangeGrain;
-  const intervalV1Grain = rillTime.interval.getGrain();
-
-  return getSmallestGrain([asOfSnapV1Grain, rangeV1Grain, intervalV1Grain]);
-}
-
 export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
   if (grains.length === 0) {
     return undefined;
@@ -377,37 +362,6 @@ export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
     },
     undefined as V1TimeGrain | undefined,
   );
-}
-
-export function getAggregationGrain(rillTime: RillTime | undefined) {
-  if (!rillTime) return undefined;
-
-  const asOfSnap = rillTime.asOfLabel?.snap;
-
-  const asOfSnapV1Grain = GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
-  const rangeV1Grain = rillTime.rangeGrain;
-  const intervalV1Grain = rillTime.interval.getGrain();
-
-  return getSmallestGrain([asOfSnapV1Grain, rangeV1Grain, intervalV1Grain]);
-}
-
-export function getTruncationGrain(rillTime: RillTime | undefined) {
-  if (!rillTime) return undefined;
-
-  const asOfSnap = rillTime.asOfLabel?.snap;
-
-  if (asOfSnap) return GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
-
-  if (rillTime.interval instanceof RillLegacyIsoInterval) {
-    return rillTime.interval.getGrain();
-  }
-
-  if (rillTime.interval instanceof RillLegacyDaxInterval) {
-    if (rillTime.interval.name.endsWith("C")) return undefined;
-    return V1TimeGrain.TIME_GRAIN_DAY;
-  }
-
-  return undefined;
 }
 
 const MAX_BUCKETS = 1500;

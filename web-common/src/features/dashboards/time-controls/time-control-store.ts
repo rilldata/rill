@@ -26,6 +26,7 @@ import {
   findValidTimeGrain,
   getAllowedTimeGrains,
   getDefaultTimeGrain,
+  getValidatedTimeGrain,
 } from "@rilldata/web-common/lib/time/grains";
 import {
   allowedGrainsForInterval,
@@ -228,13 +229,24 @@ export function getTimeControlState(
 
   const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
 
-  const activeTimeGrain = selectedTimeRange?.interval;
+  let parsed: RillTime | undefined;
 
-  const grainAllowed =
-    activeTimeGrain && aggregationOptions.includes(activeTimeGrain);
+  if (selectedTimeRange?.name) {
+    try {
+      parsed = parseRillTime(selectedTimeRange?.name);
+    } catch {
+      // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
+    }
+  }
 
-  if (!grainAllowed && selectedTimeRange) {
-    selectedTimeRange.interval = minTimeGrain;
+  const validatedGrain = getValidatedTimeGrain(
+    interval,
+    minTimeGrain,
+    selectedTimeRange?.interval,
+    parsed,
+  );
+  if (selectedTimeRange && validatedGrain) {
+    selectedTimeRange.interval = validatedGrain;
   }
 
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(

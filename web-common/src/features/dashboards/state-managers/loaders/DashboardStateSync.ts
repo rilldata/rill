@@ -19,8 +19,8 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { parseRillTime } from "../../url-state/time-ranges/parser";
+import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -155,14 +155,17 @@ export class DashboardStateSync {
         initExploreState.selectedTimezone,
       );
 
-      const minTimeGrain =
-        metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
-      const validatedGrain = getValidatedTimeGrain(
-        initExploreState.selectedTimeRange,
-        minTimeGrain,
-      );
-      if (validatedGrain && initExploreState.selectedTimeRange) {
-        initExploreState.selectedTimeRange.interval = validatedGrain;
+      const selectedRange = initExploreState.selectedTimeRange;
+      if (selectedRange && selectedRange.name && !selectedRange?.interval) {
+        try {
+          const parsed = parseRillTime(selectedRange.name);
+
+          const rangePrecision = getRangePrecision(parsed);
+
+          selectedRange.interval = rangePrecision;
+        } catch {
+          // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
+        }
       }
     }
 
@@ -255,15 +258,17 @@ export class DashboardStateSync {
         partialExplore.selectedTimezone,
       );
 
-      const minTimeGrain =
-        metricsViewSpec.smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
-      const validatedGrain = getValidatedTimeGrain(
-        partialExplore.selectedTimeRange,
-        minTimeGrain,
-      );
+      const selectedRange = partialExplore.selectedTimeRange;
+      if (selectedRange && selectedRange.name && !selectedRange?.interval) {
+        try {
+          const parsed = parseRillTime(selectedRange.name);
 
-      if (validatedGrain && partialExplore.selectedTimeRange) {
-        partialExplore.selectedTimeRange.interval = validatedGrain;
+          const rangePrecision = getRangePrecision(parsed);
+
+          selectedRange.interval = rangePrecision;
+        } catch {
+          // Parsing fails for non-rill-time names like "CUSTOM" - use undefined
+        }
       }
     }
 

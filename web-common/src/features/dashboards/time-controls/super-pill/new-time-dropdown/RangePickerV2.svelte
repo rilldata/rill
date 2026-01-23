@@ -24,9 +24,9 @@
   } from "../../../url-state/time-ranges/RillTime";
   import {
     getGrainOrder,
-    getTruncationGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
+  import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
