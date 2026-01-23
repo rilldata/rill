@@ -28,6 +28,7 @@ import {
   getDefaultTimeGrain,
 } from "@rilldata/web-common/lib/time/grains";
 import {
+  allowedGrainsForInterval,
   GrainAliasToV1TimeGrain,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
@@ -101,6 +102,8 @@ export type TimeControlState = {
   allTimeRange?: TimeRange;
   defaultTimeRange?: TimeRange;
   timeDimension?: string;
+  interval?: Interval;
+  aggregationOptions?: V1TimeGrain[];
 
   ready?: boolean;
 } & TimeRangeState &
@@ -212,6 +215,28 @@ export function getTimeControlState(
     return undefined;
   }
 
+  const maybeInterval = selectedTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start, {
+          zone: selectedTimezone,
+        }),
+        DateTime.fromJSDate(selectedTimeRange.end, { zone: selectedTimezone }),
+      )
+    : undefined;
+
+  const interval = maybeInterval?.isValid ? maybeInterval : undefined;
+
+  const aggregationOptions = allowedGrainsForInterval(interval, minTimeGrain);
+
+  const activeTimeGrain = selectedTimeRange?.interval;
+
+  const grainAllowed =
+    activeTimeGrain && aggregationOptions.includes(activeTimeGrain);
+
+  if (!grainAllowed && selectedTimeRange) {
+    selectedTimeRange.interval = minTimeGrain;
+  }
+
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
     exploreSpec.timeRanges,
     allTimeRange,
@@ -227,9 +252,9 @@ export function getTimeControlState(
     allTimeRange,
     defaultTimeRange,
     timeDimension,
-
+    interval,
+    aggregationOptions,
     ...timeRangeState,
-
     ...comparisonTimeRangeState,
   } as TimeControlState;
 }

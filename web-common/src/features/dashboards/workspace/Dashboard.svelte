@@ -24,9 +24,7 @@
   import ThemeProvider from "../ThemeProvider.svelte";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import { readable, type Readable } from "svelte/store";
-  import { DateTime, Interval } from "luxon";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  // import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -97,11 +95,8 @@
     comparisonTimeStart,
     comparisonTimeEnd,
     ready: timeControlsReady = false,
-    selectedTimeRange,
-    minTimeGrain,
+    // selectedTimeRange,
   } = $timeControlsStore);
-
-  $: activeTimeZone = $exploreState?.selectedTimezone;
 
   $: timeRange = {
     start,
@@ -131,21 +126,21 @@
 
   $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
 
-  $: maybeInterval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : undefined;
+  // $: maybeInterval = selectedTimeRange
+  //   ? Interval.fromDateTimes(
+  //       DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+  //       DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+  //     )
+  //   : undefined;
 
-  $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
+  // $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
 
-  $: timeString =
-    selectedTimeRange?.name === TimeRangePreset.CUSTOM
-      ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
-      : selectedTimeRange?.name;
+  // $: timeString =
+  //   selectedTimeRange?.name === TimeRangePreset.CUSTOM
+  //     ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
+  //     : selectedTimeRange?.name;
 
-  $: activeTimeGrain = selectedTimeRange?.interval;
+  // $: activeTimeGrain = selectedTimeRange?.interval;
 </script>
 
 <ThemeProvider theme={$theme}>
@@ -199,13 +194,7 @@
           {#key exploreName}
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
-                {interval}
-                {activeTimeGrain}
-                {timeString}
-                minTimeGrain={minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE}
-                {timeControlsReady}
                 {exploreName}
-                {showTimeComparison}
                 timeSeriesWidth={metricsWidth}
                 workspaceWidth={exploreContainerWidth}
                 hideStartPivotButton={hidePivot}

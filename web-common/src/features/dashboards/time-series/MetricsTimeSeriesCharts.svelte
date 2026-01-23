@@ -4,10 +4,8 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
@@ -33,10 +31,7 @@
     type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    allowedGrainsForInterval,
-    V1TimeGrainToDateTimeUnit,
-  } from "@rilldata/web-common/lib/time/new-grains";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { formatDateTimeByGrain } from "@rilldata/web-common/lib/time/ranges/formatter";
   import { setJSDateTimeValueToTimeValueInSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
@@ -44,13 +39,9 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import {
-    V1TimeGrain,
-    type MetricsViewSpecMeasure,
-  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-  import { Tooltip } from "bits-ui";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -74,12 +65,6 @@
   export let workspaceWidth: number;
   export let timeSeriesWidth: number;
   export let hideStartPivotButton = false;
-  export let interval: Interval<true> | undefined;
-  export let activeTimeGrain: V1TimeGrain | undefined;
-  export let timeString: string | undefined;
-  export let minTimeGrain: V1TimeGrain | undefined;
-  export let showTimeComparison: boolean | undefined;
-  export let timeControlsReady: boolean;
 
   const StateManagers = getStateManagers();
 
@@ -102,10 +87,14 @@
   const timeControlsStore = useTimeControlStore(StateManagers);
   const timeSeriesDataStore = useTimeSeriesDataStore(StateManagers);
 
-  // Unable to remove this without causing difficult to debug issues
-  // Though it should be passed as a prop from Dashboard.svelte
-  $: ({ selectedTimeRange } = $timeControlsStore);
+  $: ({
+    selectedTimeRange,
+    aggregationOptions,
+    ready: timeControlsReady,
+    showTimeComparison,
+  } = $timeControlsStore);
 
+  $: activeTimeGrain = selectedTimeRange?.interval;
   $: ({ instanceId } = $runtime);
 
   let scrubStart;
@@ -130,6 +119,8 @@
   $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
+
+  $: timeString = selectedTimeRange?.name;
 
   $: isScrubbing = $exploreState?.selectedScrubRange?.isScrubbing;
   $: isAllTime = timeString === TimeRangePreset.ALL_TIME;
@@ -278,11 +269,6 @@
     "timeseries",
   );
 
-  $: timeGrainOptions = allowedGrainsForInterval(interval, minTimeGrain);
-
-  $: grainAllowed =
-    activeTimeGrain && timeGrainOptions.includes(activeTimeGrain);
-
   $: annotationsForMeasures = renderedMeasures.map((measure) =>
     getAnnotationsForMeasure({
       instanceId,
@@ -294,8 +280,6 @@
   );
 
   let grainDropdownOpen = false;
-
-  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
@@ -371,7 +355,7 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime && effectiveGrain}
+      {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
           <DropdownMenu.Trigger asChild let:builder>
             <button
@@ -380,7 +364,7 @@
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
               by <b>
-                {V1TimeGrainToDateTimeUnit[effectiveGrain]}
+                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
               </b>
               <span
                 class:-rotate-90={grainDropdownOpen}
@@ -388,7 +372,9 @@
               >
                 <CaretDownIcon />
               </span>
-              {#if !grainAllowed && minTimeGrain && activeTimeGrain}
+              <!-- It is not currently practical on explore to have time grain aggregation warnings -->
+              <!-- The state management is not set up to have discrepancies between the URL and effective values-->
+              <!-- {#if !grainAllowed && minTimeGrain && activeTimeGrain}
                 <Tooltip.Root portal="body">
                   <Tooltip.Trigger>
                     <AlertCircleOutline className="size-3.5 " />
@@ -401,12 +387,12 @@
                     </TooltipContent>
                   </Tooltip.Content>
                 </Tooltip.Root>
-              {/if}
+              {/if} -->
             </button>
           </DropdownMenu.Trigger>
 
           <DropdownMenu.Content align="start" class="w-48">
-            {#each timeGrainOptions as option (option)}
+            {#each aggregationOptions ?? [] as option (option)}
               <DropdownMenu.CheckboxItem
                 checkRight
                 role="menuitem"
@@ -566,7 +552,7 @@
                   );
                 }}
               />
-            {:else if formattedData && effectiveGrain}
+            {:else if formattedData && activeTimeGrain}
               <MeasureChart
                 bind:mouseoverValue
                 {measure}
@@ -581,7 +567,7 @@
                 zone={$exploreState?.selectedTimezone}
                 xAccessor="ts_position"
                 labelAccessor="ts"
-                timeGrain={effectiveGrain}
+                timeGrain={activeTimeGrain}
                 yAccessor={measure.name}
                 xMin={startValue}
                 xMax={endValue}
@@ -598,7 +584,7 @@
                       $exploreState?.selectedTimezone || "UTC",
                       { keepLocalTime: true },
                     ),
-                    effectiveGrain,
+                    activeTimeGrain,
                   );
                 }}
               />
