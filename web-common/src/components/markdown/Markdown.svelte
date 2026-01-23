@@ -158,7 +158,7 @@
   }
 
   :global(.chat-markdown th) {
-    @apply bg-gray-50 border border-gray-200 font-medium;
+    @apply bg-surface-background border border-gray-200 font-medium;
     padding: 0.25rem 0.5rem;
     text-align: left;
   }
@@ -169,6 +169,6 @@
   }
 
   :global(.chat-markdown tr:nth-child(even)) {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 </style>

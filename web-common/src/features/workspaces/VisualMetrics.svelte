@@ -573,9 +573,9 @@
                "
               >
                 {#if !hasValidOLAPTableSelected}
-                  <span class="text-gray-400 truncate">Select table</span>
+                  <span class="text-fg-muted truncate">Select table</span>
                 {:else}
-                  <span class="text-gray-700 truncate">
+                  <span class="text-fg-secondary truncate">
                     {modelOrSourceOrTableName}
                   </span>
                 {/if}
@@ -697,7 +697,7 @@
             on:click={() => {
               triggerDelete();
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Trash size="16px" />
             Delete
@@ -710,7 +710,7 @@
                 dimensions: new Set(),
               };
             }}
-            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-gray-50 cursor-pointer"
+            class="flex gap-x-2 text-inherit items-center px-2 border-l border-slate-100 hover:bg-surface-background cursor-pointer"
           >
             <Close size="14px" />
           </button>

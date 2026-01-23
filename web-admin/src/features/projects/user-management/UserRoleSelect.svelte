@@ -44,7 +44,7 @@
       <DropdownMenuItem
         on:click={() => onSelect(value)}
         class="text-xs hover:bg-gray-100 {selected?.value === value
-          ? 'bg-gray-50'
+          ? 'bg-surface-background'
           : ''}"
       >
         <div class="flex flex-col">

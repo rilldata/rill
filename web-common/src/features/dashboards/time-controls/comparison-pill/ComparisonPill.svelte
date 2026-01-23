@@ -155,6 +155,6 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
+    @apply bg-surface-background cursor-pointer;
   } */
 </style>

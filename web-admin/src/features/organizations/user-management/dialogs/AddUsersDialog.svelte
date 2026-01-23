@@ -222,7 +222,7 @@
                 <DropdownMenuItem
                   on:click={() => ($form.role = value)}
                   class="text-xs hover:bg-gray-100 {$form.role === value
-                    ? 'bg-gray-50'
+                    ? 'bg-surface-background'
                     : ''}"
                 >
                   <div class="flex flex-col">

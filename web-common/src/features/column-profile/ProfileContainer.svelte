@@ -43,7 +43,7 @@
         focus:outline-gray-300 flex-1
         justify-between w-full"
     class:text-fg-muted={isFetching}
-    class:bg-gray-50={active}
+    class:bg-surface-background={active}
     on:click={modified({
       shift: onShiftClick,
       click: onSelect,

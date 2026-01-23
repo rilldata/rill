@@ -159,7 +159,7 @@
     <DropdownMenu.Content align="start" class="w-[200px]">
       {#if organizationPermissions.manageOrgAdmins}
         <DropdownMenu.Item
-          class="font-normal flex flex-col items-start hover:bg-gray-50 {role ===
+          class="font-normal flex flex-col items-start hover:bg-surface-background {role ===
           'admin'
             ? 'bg-gray-100'
             : ''}"
@@ -172,7 +172,7 @@
         </DropdownMenu.Item>
       {/if}
       <DropdownMenu.Item
-        class="font-normal flex flex-col items-start hover:bg-gray-50 {role ===
+        class="font-normal flex flex-col items-start hover:bg-surface-background {role ===
         'editor'
           ? 'bg-gray-100'
           : ''}"
@@ -184,7 +184,7 @@
         >
       </DropdownMenu.Item>
       <DropdownMenu.Item
-        class="font-normal flex flex-col items-start hover:bg-gray-50 {role ===
+        class="font-normal flex flex-col items-start hover:bg-surface-background {role ===
         'viewer'
           ? 'bg-gray-100'
           : ''}"

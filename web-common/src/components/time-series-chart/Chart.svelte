@@ -191,9 +191,9 @@
               />
               <span>{formatterFunction(point.value)}</span>
               {#if hasComparison}
-                <span class="text-gray-400"
-                  >{formatDate(point.originalDate)}</span
-                >
+                <span class="text-fg-muted">
+                  {formatDate(point.originalDate)}
+                </span>
               {/if}
             </div>
           {/if}
@@ -249,7 +249,7 @@
           >
             <RangeDisplay {interval} {timeGrain} />
             {#if comparisonPoint}
-              <span class="text-gray-400">
+              <span class="text-fg-muted">
                 vs. {formatDate(comparisonPoint.originalDate)}
               </span>
             {/if}

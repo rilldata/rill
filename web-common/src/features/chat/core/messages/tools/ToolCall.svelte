@@ -179,7 +179,7 @@
   }
 
   .tool-tab:hover {
-    @apply text-fg-secondary bg-gray-50;
+    @apply text-fg-secondary bg-surface-background;
   }
 
   .tool-tab.active {
@@ -187,7 +187,7 @@
   }
 
   .tool-tab-content {
-    @apply bg-gray-50/50 border border-gray-100;
+    @apply bg-surface-background/50 border border-gray-100;
     @apply rounded-md overflow-hidden;
   }
 

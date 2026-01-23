@@ -98,10 +98,10 @@
   }
 
   .tdd:hover {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   .tdd[data-state="open"] {
-    @apply bg-gray-50 border-gray-400;
+    @apply bg-surface-background border-gray-400;
   }
 </style>

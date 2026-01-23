@@ -80,6 +80,6 @@
     @apply mt-4;
     @apply w-[700px] px-[26px] py-2;
     @apply border border-gray-200 rounded-sm;
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 </style>

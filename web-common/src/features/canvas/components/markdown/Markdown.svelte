@@ -143,13 +143,13 @@
     @apply w-full border-collapse my-4;
   }
   :global(.canvas-markdown th) {
-    @apply bg-gray-50 border px-4 py-2 text-left text-sm font-medium;
+    @apply bg-surface-background border px-4 py-2 text-left text-sm font-medium;
   }
   :global(.canvas-markdown td) {
     @apply border px-4 py-2 text-sm;
   }
   :global(.canvas-markdown tr:nth-child(even)) {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
   :global(.canvas-markdown tr:hover) {
     @apply bg-gray-100;

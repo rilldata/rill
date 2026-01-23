@@ -44,7 +44,7 @@
   }
 
   button:hover:not(.selected) {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   .option-wrapper {

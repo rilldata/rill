@@ -56,6 +56,6 @@
 
   .settings-footer {
     @apply flex flex-row items-center px-5 py-2;
-    @apply bg-gray-50 text-fg-tertiary text-sm border-t border-gray-200;
+    @apply bg-surface-background text-fg-tertiary text-sm border-t border-gray-200;
   }
 </style>

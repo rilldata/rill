@@ -179,7 +179,7 @@
 
   /* Doest apply to all instances except alert/report. So this seems unintentional
   :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50 border-gray-400 z-50;
+    @apply bg-surface-background border-gray-400 z-50;
   }
   */
 </style>

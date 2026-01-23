@@ -25,7 +25,7 @@
   {#if searchBarOpen}
     <div
       transition:slideRight={{}}
-      class="flex items-center gap-x-2 pr-2 w-60 bg-gray-50 border border-primary-300"
+      class="flex items-center gap-x-2 pr-2 w-60 bg-surface-background border border-primary-300"
     >
       <Search
         bind:value={searchText}

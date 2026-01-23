@@ -95,7 +95,9 @@
       <Rill />
     </a>
 
-    <span class="rounded-full px-2 border text-fg-primary bg-gray-50">
+    <span
+      class="rounded-full px-2 border text-fg-primary bg-surface-background"
+    >
       {mode}
     </span>
 

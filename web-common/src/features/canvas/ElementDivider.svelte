@@ -114,7 +114,7 @@
       {#if !isSpreadEvenly}
         <Tooltip distance={8} location="bottom">
           <button
-            class="h-7 px-1 grid place-content-center border-t hover:bg-gray-50 active:bg-gray-100 text-fg-secondary"
+            class="h-7 px-1 grid place-content-center border-t hover:bg-surface-background active:bg-gray-100 text-fg-secondary"
             on:click={(e) => {
               e.stopPropagation();
               e.preventDefault();

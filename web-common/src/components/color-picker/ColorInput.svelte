@@ -37,7 +37,7 @@
   class="color-wrapper bg-input"
   class:small
   class:pointer-events-none={disabled}
-  class:bg-gray-50={disabled}
+  class:bg-surface-background={disabled}
   class:text-fg-secondary={disabled}
 >
   {#if labelFirst}

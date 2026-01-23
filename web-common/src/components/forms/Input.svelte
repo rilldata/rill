@@ -300,7 +300,7 @@
   }
 
   .input-wrapper:has(input:disabled) {
-    @apply bg-gray-50 border-gray-200 cursor-not-allowed;
+    @apply bg-surface-background border-gray-200 cursor-not-allowed;
   }
 
   input {
@@ -317,7 +317,7 @@
   }
 
   input:disabled {
-    @apply bg-gray-50 text-fg-secondary cursor-not-allowed;
+    @apply bg-surface-background text-fg-secondary cursor-not-allowed;
   }
 
   input {

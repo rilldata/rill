@@ -87,7 +87,7 @@
 {#if colorMapConfig?.enable && colorValues.length > 0}
   <div>
     <button
-      class="w-full p-1 flex items-center justify-between hover:bg-gray-50"
+      class="w-full p-1 flex items-center justify-between hover:bg-surface-background"
       on:click={toggleExpanded}
     >
       <span class="text-xs font-medium">Color mapping</span>

@@ -6,7 +6,9 @@
   export let error: string | null | undefined = undefined;
 </script>
 
-<div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
+<div
+  class="rounded-lg border border-gray-200 bg-surface-background p-3 text-sm"
+>
   <div class="flex items-start gap-2">
     <div class="mt-0.5 text-red-500">
       <AlertCircle size="14px" />

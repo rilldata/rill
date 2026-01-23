@@ -208,7 +208,7 @@
   }
 
   .graph-overlay__body {
-    @apply flex-1 flex flex-col w-full bg-gray-50 min-h-0;
+    @apply flex-1 flex flex-col w-full bg-surface-background min-h-0;
   }
 
   .graph-overlay__graph {

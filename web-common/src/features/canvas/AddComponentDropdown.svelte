@@ -93,8 +93,8 @@
         {...builder}
         aria-label={getAriaLabel(rowIndex, columnIndex)}
         title="Insert widget"
-        class:bg-gray-50={open}
-        class="pointer-events-auto bg-surface-container active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-gray-50 text-fg-secondary disabled:opacity-50"
+        class:bg-surface-background={open}
+        class="pointer-events-auto bg-surface-container active:bg-gray-100 disabled:pointer-events-none h-7 px-2 grid place-content-center z-50 hover:bg-surface-background text-fg-secondary disabled:opacity-50"
         on:mouseenter={onMouseEnter}
       >
         <PlusCircle size="15px" />

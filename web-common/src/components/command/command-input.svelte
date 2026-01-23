@@ -11,7 +11,7 @@
 </script>
 
 <div
-  class="flex items-center border border-gray-200 bg-gray-50 has-[:focus]:border-primary-400 rounded-md px-3 disabled:cursor-not-allowed disabled:opacity-50"
+  class="flex items-center border border-gray-200 bg-surface-background has-[:focus]:border-primary-400 rounded-md px-3 disabled:cursor-not-allowed disabled:opacity-50"
   data-cmdk-input-wrapper=""
 >
   <Search size="16" className="mr-2 shrink-0" />

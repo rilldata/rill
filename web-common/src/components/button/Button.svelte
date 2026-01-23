@@ -202,11 +202,11 @@
   }
 
   .subtle.loading {
-    @apply bg-gray-50 text-fg-secondary;
+    @apply bg-surface-background text-fg-secondary;
   }
 
   .subtle:disabled {
-    @apply text-fg-secondary/30 bg-gray-50;
+    @apply text-fg-secondary/30 bg-surface-background;
   }
 
   /* LINK STYLES */
@@ -371,6 +371,6 @@
   }
 
   .gray:not(.ghost):not(:hover) {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 </style>

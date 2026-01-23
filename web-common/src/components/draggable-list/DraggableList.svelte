@@ -223,7 +223,7 @@
               class:mb-7={isLastItem}
               style:pointer-events={isDragItem ? "none" : "auto"}
               style:height="{ITEM_HEIGHT}px"
-              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-gray-50 rounded-sm text-left"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-surface-background rounded-sm text-left"
               class:cursor-grab={draggable}
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}

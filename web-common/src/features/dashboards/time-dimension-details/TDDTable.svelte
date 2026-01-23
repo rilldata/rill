@@ -92,7 +92,7 @@
       "bg-primary-50",
       "bg-primary-100",
       "bg-primary-200",
-      "bg-gray-50",
+      "bg-surface-background",
       "bg-gray-100",
       "bg-gray-200",
     ];
@@ -214,7 +214,11 @@
       x - tableData?.fixedColCount,
     );
     if (x > 0) {
-      element.classList.remove("bg-gray-50", "bg-gray-100", "bg-gray-200");
+      element.classList.remove(
+        "bg-surface-background",
+        "bg-gray-100",
+        "bg-gray-200",
+      );
       element.classList.add(cellBgColor);
     }
     if (x === 0) {

@@ -195,7 +195,7 @@
       on:click={setAccessInviteOnly}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'invite-only'
-        ? 'bg-gray-50'
+        ? 'bg-surface-background'
         : ''}"
     >
       <div class="flex items-start gap-2">
@@ -213,7 +213,7 @@
       on:click={setAccessEveryone}
       class="flex flex-col items-start py-2 data-[highlighted]:bg-gray-100 {accessType ===
       'everyone'
-        ? 'bg-gray-50'
+        ? 'bg-surface-background'
         : ''}"
     >
       <div class="flex items-start gap-2">

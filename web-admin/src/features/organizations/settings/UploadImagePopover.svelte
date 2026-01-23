@@ -91,7 +91,7 @@
       </div>
       {#if !open}
         <div
-          class="absolute -bottom-2 -right-2 rounded-2xl bg-gray-200 group-hover:bg-gray-500 w-6 h-6 px-1.5 py-[5px]"
+          class="absolute -bottom-2 -right-2 rounded-2xl bg-surface-container group-hover:bg-surface-elevated w-6 h-6 px-1.5 py-[5px]"
         >
           <EditIcon
             size="16px"

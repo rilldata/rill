@@ -470,7 +470,7 @@
   }
 
   .with-row-dimension.with-col-dimension tr > th:first-of-type {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   /* The totals row */
@@ -517,7 +517,7 @@
   /* Show more row styling */
   .show-more-row,
   .show-more-row .cell {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   .show-more-row:hover,

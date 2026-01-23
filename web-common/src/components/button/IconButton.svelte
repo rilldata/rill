@@ -39,7 +39,7 @@
       ? ''
       : bgGray
         ? 'hover:bg-gray-200'
-        : 'hover:bg-gray-50'}"
+        : 'hover:bg-surface-background'}"
     class:bg-gray-100={active}
     style:width="{size}px"
     style:height="{size}px"

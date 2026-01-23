@@ -181,7 +181,7 @@
   }
 
   .exclude {
-    @apply bg-gray-50 text-fg-secondary;
+    @apply bg-surface-background text-fg-secondary;
   }
 
   .exclude:hover,
@@ -203,7 +203,7 @@
   .time:hover,
   .time.active,
   .time:active {
-    @apply bg-gray-50;
+    @apply bg-surface-background;
   }
 
   .time.active,
