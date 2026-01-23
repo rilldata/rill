@@ -84,3 +84,36 @@ export function getBackendConnectorName(schemaName: string): string {
   const schema = getConnectorSchema(schemaName);
   return schema?.["x-backend-connector"] ?? schemaName;
 }
+
+/**
+ * Determine if a connector has multi-step form flow (connector → source).
+ * Object store connectors (S3, GCS, Azure) require separate auth and source steps.
+ */
+export function isMultiStepConnector(
+  schema: MultiStepFormSchema | null,
+): boolean {
+  return schema?.["x-category"] === "objectStore";
+}
+
+/**
+ * Determine if a connector supports explorer mode (SQL query interface).
+ * SQL stores and warehouses can browse tables and write custom queries.
+ */
+export function isExplorerConnector(
+  schema: MultiStepFormSchema | null,
+): boolean {
+  const category = schema?.["x-category"];
+  return category === "sqlStore" || category === "warehouse";
+}
+
+/**
+ * Get the form height CSS class for a connector's add data modal.
+ * Some connectors with more fields use a taller form.
+ */
+export function getFormHeight(schema: MultiStepFormSchema | null): string {
+  const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
+  const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";
+  return schema?.["x-form-height"] === "tall"
+    ? FORM_HEIGHT_TALL
+    : FORM_HEIGHT_DEFAULT;
+}

@@ -10,11 +10,11 @@ import {
 } from "./submitAddDataForm";
 import { normalizeConnectorError } from "./utils";
 import {
-  FORM_HEIGHT_DEFAULT,
-  FORM_HEIGHT_TALL,
-  MULTI_STEP_CONNECTORS,
-  TALL_FORM_CONNECTORS,
-} from "./constants";
+  getConnectorSchema,
+  getFormHeight,
+  isExplorerConnector as isExplorerConnectorSchema,
+  isMultiStepConnector as isMultiStepConnectorSchema,
+} from "./connector-schemas";
 import {
   connectorStepStore,
   setConnectorConfig,
@@ -27,7 +27,6 @@ import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ActionResult } from "@sveltejs/kit";
-import { getConnectorSchema } from "./connector-schemas";
 import type { QueryClient } from "@tanstack/query-core";
 import {
   filterSchemaValuesForSubmit,
@@ -122,16 +121,14 @@ export class AddDataFormManager {
     this.schemaName = schemaName ?? connector.name ?? "";
     const effectiveSchemaName = this.schemaName;
 
-    // Layout height
-    this.formHeight = TALL_FORM_CONNECTORS.has(effectiveSchemaName)
-      ? FORM_HEIGHT_TALL
-      : FORM_HEIGHT_DEFAULT;
-
     // IDs
     this.paramsFormId = `add-data-${effectiveSchemaName}-form`;
 
     const isSourceForm = formType === "source";
     const schema = getConnectorSchema(effectiveSchemaName);
+
+    // Layout height (derived from schema metadata)
+    this.formHeight = getFormHeight(schema);
     const schemaStep = isSourceForm ? "source" : "connector";
     const schemaFields = schema
       ? getSchemaFieldMetaList(schema, { step: schemaStep })
@@ -175,13 +172,13 @@ export class AddDataFormManager {
   }
 
   get isMultiStepConnector(): boolean {
-    return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
+    const schema = getConnectorSchema(this.schemaName);
+    return isMultiStepConnectorSchema(schema);
   }
 
   get isExplorerConnector(): boolean {
-    return Boolean(
-      this.connector.implementsSqlStore || this.connector.implementsWarehouse,
-    );
+    const schema = getConnectorSchema(this.schemaName);
+    return isExplorerConnectorSchema(schema);
   }
 
   /**
@@ -296,11 +293,10 @@ export class AddDataFormManager {
       setShowSaveAnyway,
     } = args;
     const connector = this.connector;
-    const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
-      connector.name ?? "",
-    );
-    const isExplorerConnector = this.isExplorerConnector;
-    const isStepFlowConnector = isMultiStepConnector || isExplorerConnector;
+    const schema = getConnectorSchema(this.schemaName);
+    const isMultiStep = isMultiStepConnectorSchema(schema);
+    const isExplorer = isExplorerConnectorSchema(schema);
+    const isStepFlowConnector = isMultiStep || isExplorer;
     const isConnectorForm = this.formType === "connector";
 
     return async (event: {
@@ -309,7 +305,6 @@ export class AddDataFormManager {
       cancel?: () => void;
     }) => {
       const values = event.form.data;
-      const schema = getConnectorSchema(this.schemaName);
       const stepState = get(connectorStepStore) as ConnectorStepState;
       const stepForFilter =
         isStepFlowConnector &&
@@ -333,7 +328,7 @@ export class AddDataFormManager {
         "";
       // Fast-path: public auth skips validation/test and goes straight to source step.
       if (
-        isMultiStepConnector &&
+        isMultiStep &&
         stepState.step === "connector" &&
         selectedAuthMethod === "public"
       ) {
@@ -407,9 +402,9 @@ export class AddDataFormManager {
             );
             setConnectorConfig(connectorValues);
             setConnectorInstanceName(null);
-            if (isMultiStepConnector) {
+            if (isMultiStep) {
               setStep("source");
-            } else if (isExplorerConnector) {
+            } else if (isExplorer) {
               setStep("explorer");
             }
             return;
@@ -426,9 +421,9 @@ export class AddDataFormManager {
           );
           setConnectorConfig(connectorValues);
           setConnectorInstanceName(connectorInstanceName);
-          if (isMultiStepConnector) {
+          if (isMultiStep) {
             setStep("source");
-          } else if (isExplorerConnector) {
+          } else if (isExplorer) {
             setStep("explorer");
           }
           return;
