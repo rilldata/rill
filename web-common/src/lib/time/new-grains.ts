@@ -2,10 +2,7 @@ import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { type Interval, type DateTimeUnit } from "luxon";
 
-
 const MAX_BUCKETS = 1500;
-
-
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
@@ -127,7 +124,6 @@ export const allowedAggregationGrains = [
 
 const ALLOWABLE_AGGREGATION_UNITS: DateTimeUnit[] =
   allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
-
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
