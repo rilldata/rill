@@ -4,10 +4,18 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { Duration, Interval } from "luxon";
+import { DateTime, Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
-import type { AvailableTimeGrain, TimeGrain } from "../types";
-import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
+import type {
+  AvailableTimeGrain,
+  DashboardTimeControls,
+  TimeGrain,
+} from "../types";
+import {
+  allowedGrainsForInterval,
+  getRangePrecision,
+} from "@rilldata/web-common/lib/time/new-grains";
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -219,4 +227,50 @@ export function getNextSmallerGrain(
   }
 
   return availableGrains[0];
+}
+
+/**
+ * Validates and adjusts the time grain for a selected time range based on allowed grains.
+ * Returns the validated grain, or undefined if validation cannot be performed.
+ */
+export function getValidatedTimeGrain(
+  selectedTimeRange: DashboardTimeControls | undefined,
+  minTimeGrain: V1TimeGrain,
+): V1TimeGrain | undefined {
+  if (
+    !selectedTimeRange?.start ||
+    !selectedTimeRange?.end ||
+    !selectedTimeRange.name
+  ) {
+    return undefined;
+  }
+
+  const interval = Interval.fromDateTimes(
+    DateTime.fromJSDate(selectedTimeRange.start),
+    DateTime.fromJSDate(selectedTimeRange.end),
+  );
+
+  if (!interval.isValid) {
+    return undefined;
+  }
+
+  const allowedGrains = allowedGrainsForInterval(interval, minTimeGrain);
+  const requestedPrecision = selectedTimeRange.interval;
+
+  let rangePrecision: V1TimeGrain | undefined;
+  try {
+    const parsed = parseRillTime(selectedTimeRange.name);
+    rangePrecision = getRangePrecision(parsed);
+  } catch {
+    // Parsing fails for non-rill-time names like "CUSTOM" - use fallbacks below
+  }
+
+  const finalGrain =
+    requestedPrecision && allowedGrains.includes(requestedPrecision)
+      ? requestedPrecision
+      : rangePrecision && allowedGrains.includes(rangePrecision)
+        ? rangePrecision
+        : allowedGrains[0];
+
+  return finalGrain ?? minTimeGrain;
 }

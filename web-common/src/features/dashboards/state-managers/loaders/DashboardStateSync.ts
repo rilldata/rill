@@ -19,60 +19,10 @@ import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
-import { DateTime, Interval } from "luxon";
+import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { getRangePrecision } from "@rilldata/web-common/lib/time/new-grains";
-import { parseRillTime } from "../../url-state/time-ranges/parser";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
-
-/**
- * Validates and adjusts the time grain for a selected time range based on allowed grains.
- * Returns the validated grain, or undefined if validation cannot be performed.
- */
-function getValidatedTimeGrain(
-  selectedTimeRange: DashboardTimeControls | undefined,
-  minTimeGrain: V1TimeGrain,
-): V1TimeGrain | undefined {
-  if (
-    !selectedTimeRange?.start ||
-    !selectedTimeRange?.end ||
-    !selectedTimeRange.name
-  ) {
-    return undefined;
-  }
-
-  const interval = Interval.fromDateTimes(
-    DateTime.fromJSDate(selectedTimeRange.start),
-    DateTime.fromJSDate(selectedTimeRange.end),
-  );
-
-  if (!interval.isValid) {
-    return undefined;
-  }
-
-  const allowedGrains = allowedGrainsForInterval(interval, minTimeGrain);
-  const requestedPrecision = selectedTimeRange.interval;
-
-  let rangePrecision: V1TimeGrain | undefined;
-  try {
-    const parsed = parseRillTime(selectedTimeRange.name);
-    rangePrecision = getRangePrecision(parsed);
-  } catch {
-    // Parsing fails for non-rill-time names like "CUSTOM" - use fallbacks below
-  }
-
-  const finalGrain =
-    requestedPrecision && allowedGrains.includes(requestedPrecision)
-      ? requestedPrecision
-      : rangePrecision && allowedGrains.includes(rangePrecision)
-        ? rangePrecision
-        : allowedGrains[0];
-
-  return finalGrain ?? minTimeGrain;
-}
 
 /**
  * Keeps explore state and url in sync.
