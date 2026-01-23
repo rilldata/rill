@@ -1,5 +1,5 @@
-import { superForm, defaults } from "sveltekit-superforms";
 import type { SuperValidated } from "sveltekit-superforms";
+import type { Writable } from "svelte/store";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector } from "./FormValidation";
@@ -32,7 +32,6 @@ import {
   filterSchemaValuesForSubmit,
   findRadioEnumKey,
   getSchemaFieldMetaList,
-  getSchemaInitialValues,
   getSchemaSecretKeys,
   getSchemaStringKeys,
   type SchemaFieldMeta,
@@ -47,21 +46,16 @@ type SuperFormUpdateOptions = {
   taint?: boolean;
 };
 
-type SuperFormStore = {
+type FormStore = Writable<FormData> & {
   update: (
     updater: (value: FormData) => FormData,
     options?: SuperFormUpdateOptions,
   ) => void;
 };
 
-type SuperFormErrorsStore = {
+type ErrorsStore = Writable<ValidationErrors> & {
   set: (errors: ValidationErrors) => void;
   update: (updater: (errors: ValidationErrors) => ValidationErrors) => void;
-};
-
-// Minimal onUpdate event type carrying Superforms's validated form
-type SuperFormUpdateEvent = {
-  form: SuperValidated<FormData, string, FormData>;
 };
 
 const BUTTON_LABELS = {
@@ -76,8 +70,9 @@ export class AddDataFormManager {
   properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
   filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
 
-  // superforms instance
-  params: ReturnType<typeof superForm>;
+  // Form stores (passed in from caller)
+  private formStore: FormStore;
+  private errorsStore: ErrorsStore;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
   private schemaName: string;
@@ -102,19 +97,23 @@ export class AddDataFormManager {
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
-    onParamsUpdate: (event: SuperFormUpdateEvent) => void;
+    formStore: FormStore;
+    errorsStore: ErrorsStore;
     getSelectedAuthMethod?: () => string | undefined;
     schemaName?: string; // Override connector.name for schema/validation lookup
   }) {
     const {
       connector,
       formType,
-      onParamsUpdate,
+      formStore,
+      errorsStore,
       getSelectedAuthMethod,
       schemaName,
     } = args;
     this.connector = connector;
     this.formType = formType;
+    this.formStore = formStore;
+    this.errorsStore = errorsStore;
     this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Use schemaName if provided, otherwise fall back to connector.name
@@ -139,28 +138,6 @@ export class AddDataFormManager {
 
     // Filter properties based on connector type
     this.filteredParamsProperties = this.properties;
-
-    // Superforms: params
-    const paramsAdapter = getValidationSchemaForConnector(
-      effectiveSchemaName,
-      formType,
-    );
-    type ParamsOut = FormData;
-    type ParamsIn = FormData;
-    const initialFormValues = schema
-      ? getSchemaInitialValues(schema, { step: schemaStep })
-      : {};
-    const paramsDefaults = defaults<ParamsOut, string, ParamsIn>(
-      initialFormValues as Partial<ParamsOut>,
-      paramsAdapter,
-    );
-    this.params = superForm<ParamsOut, string, ParamsIn>(paramsDefaults, {
-      SPA: true,
-      validators: paramsAdapter,
-      onUpdate: onParamsUpdate,
-      resetForm: false,
-      validationMethod: "onsubmit",
-    });
   }
 
   get isSourceForm(): boolean {
@@ -356,12 +333,12 @@ export class AddDataFormManager {
             if (!fieldErrors[key]) fieldErrors[key] = [];
             fieldErrors[key].push(issue.message);
           }
-          const errorsStore = this.params.errors as SuperFormErrorsStore;
+          const errorsStore = this.errorsStore;
           errorsStore.set(fieldErrors);
           event.cancel?.();
           return;
         }
-        const errorsStore = this.params.errors as SuperFormErrorsStore;
+        const errorsStore = this.errorsStore;
         errorsStore.set({});
       } else if (!event.form.valid) {
         return;
@@ -455,7 +432,7 @@ export class AddDataFormManager {
     const key = name || target.id;
 
     // Clear stale field-level errors as soon as the user edits the input.
-    const clearFieldError = (store: SuperFormErrorsStore) => {
+    const clearFieldError = (store: ErrorsStore) => {
       if (!store?.update || !key) return;
       store.update(($errors) => {
         if (!$errors || !Object.prototype.hasOwnProperty.call($errors, key)) {
@@ -466,7 +443,7 @@ export class AddDataFormManager {
         return next;
       });
     };
-    clearFieldError(this.params.errors as SuperFormErrorsStore);
+    clearFieldError(this.errorsStore);
     if (name === "path") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
@@ -475,7 +452,7 @@ export class AddDataFormManager {
       if (nameTainted) return;
       const inferred = inferSourceName(this.connector, value);
       if (inferred) {
-        const formStore = this.params.form as SuperFormStore;
+        const formStore = this.formStore;
         formStore.update(
           ($form) => {
             $form.name = inferred;
@@ -493,7 +470,7 @@ export class AddDataFormManager {
       const parsed = JSON.parse(content);
       const sanitized = JSON.stringify(parsed);
       if (this.connector.name === "bigquery" && parsed.project_id) {
-        const formStore = this.params.form as SuperFormStore;
+        const formStore = this.formStore;
         formStore.update(
           ($form) => {
             $form.project_id = parsed.project_id;
