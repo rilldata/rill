@@ -26,7 +26,7 @@
   </div>
   <div class="flex gap-2">
     {#if mode === DimensionFilterMode.Select}
-      <Button onClick={onToggleSelectAll} type="outlined">
+      <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
           Deselect all
         {:else}

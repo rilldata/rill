@@ -2,8 +2,9 @@
   export type ButtonType =
     | "primary"
     | "secondary"
+    | "tertiary"
+    | "neutral"
     | "destructive"
-    | "outlined"
     | "ghost"
     | "link"
     | "text"
@@ -14,7 +15,7 @@
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
-  export let type: ButtonType = "outlined";
+  export let type: ButtonType = "tertiary";
   export let onClick: ((event: MouseEvent) => void) | undefined = undefined;
   export let disabled = false;
   export let compact = false;
@@ -36,7 +37,7 @@
   export let target: string | undefined = undefined;
   export let fit = false;
   export let noWrap = false;
-  export let gray = false;
+  // export let gray = false;
   export let preload = true;
   export let active = false;
   export let loadingCopy = "Loading";
@@ -65,7 +66,6 @@
   class:square
   class:circle
   class:selected
-  class:gray
   class:loading
   class:large
   class:small
@@ -171,22 +171,31 @@
     @apply opacity-50;
   }
 
-  /* OUTLINED STYLES */
+  /* TERTIARY STYLES */
 
-  .outlined {
+  .tertiary {
     @apply bg-input text-fg-primary border;
   }
 
-  .outlined:hover:not(:disabled) {
+  .tertiary:hover:not(:disabled) {
     @apply bg-surface-container-hover;
   }
 
-  .outlined:active,
-  .outlined.selected {
-    @apply bg-gray-200;
+  .tertiary.disabled {
+    @apply opacity-50;
   }
 
-  .outlined.disabled {
+  /* NEUTRAL STYLES */
+
+  .neutral {
+    @apply bg-surface-muted text-fg-secondary;
+  }
+
+  .neutral:hover:not(:disabled) {
+    @apply opacity-80;
+  }
+
+  .neutral.disabled {
     @apply opacity-50;
   }
 

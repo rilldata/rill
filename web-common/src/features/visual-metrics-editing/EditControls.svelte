@@ -20,8 +20,8 @@
   export let itemType: "measures" | "dimensions";
   export let name: string;
 
-  let type: "outlined" | "ghost";
-  $: type = selected ? "outlined" : "ghost";
+  let type: "tertiary" | "ghost";
+  $: type = selected ? "tertiary" : "ghost";
 
   $: singularType = itemType.slice(0, -1);
 </script>
@@ -30,7 +30,6 @@
   <Button
     {type}
     noStroke
-    gray={!selected}
     square
     onClick={onEdit}
     label="Edit {singularType} {name}"
@@ -47,7 +46,6 @@
     {type}
     noStroke
     square
-    gray={!selected}
     onClick={onDelete}
     label="Delete {singularType} {name}"
   >
@@ -63,7 +61,6 @@
     {type}
     noStroke
     square
-    gray={!selected}
     onClick={onDuplicate}
     label="Duplicate {singularType} {name}"
   >
@@ -79,7 +76,6 @@
     {type}
     noStroke
     square
-    gray={!selected}
     disabled={first}
     label="Move {singularType} {name} to top"
     onClick={() => onMoveTo(true)}
@@ -96,7 +92,6 @@
     {type}
     noStroke
     square
-    gray={!selected}
     disabled={last}
     label="Move {singularType} {name} to bottom"
     onClick={() => onMoveTo(false)}

@@ -550,7 +550,7 @@
           isMultiStepConnector
             ? multiStepHandleBack()
             : formManager?.handleBack(onBack)}
-        type="outlined"
+        type="tertiary"
       >
         Back
       </Button>

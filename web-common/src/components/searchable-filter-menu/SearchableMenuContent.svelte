@@ -133,7 +133,7 @@
 
   {#if allowSelectAll && allowMultiSelect}
     <footer>
-      <Button onClick={onToggleSelectAll} type="outlined">
+      <Button onClick={onToggleSelectAll} type="tertiary">
         {#if allSelected}
           Deselect all
         {:else}

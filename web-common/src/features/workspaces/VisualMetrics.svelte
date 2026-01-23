@@ -728,7 +728,6 @@
             <Button
               type="ghost"
               square
-              gray
               noStroke
               onClick={() => {
                 collapsed[type] = !collapsed[type];
@@ -749,7 +748,6 @@
             <Button
               type="ghost"
               square
-              gray
               noStroke
               label="Add new {type.slice(0, -1)}"
               onClick={() => {

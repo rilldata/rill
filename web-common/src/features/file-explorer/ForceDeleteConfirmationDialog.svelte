@@ -47,7 +47,7 @@
           large
           builders={[builder]}
           onClick={handleClose}
-          type="outlined"
+          type="tertiary"
         >
           Cancel
         </Button>

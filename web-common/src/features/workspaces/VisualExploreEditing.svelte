@@ -537,8 +537,7 @@
 
         <Button
           class="group"
-          type="secondary"
-          gray={viewingDefaults}
+          type={viewingDefaults ? "tertiary" : "secondary"}
           large
           onClick={() => {
             if (viewingDefaults) {

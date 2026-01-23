@@ -40,7 +40,7 @@
     </AlertDialog.Header>
     <AlertDialog.Footer class="gap-y-2">
       <AlertDialog.Cancel asChild let:builder>
-        <Button builders={[builder]} type="outlined" large onClick={onCancel}>
+        <Button builders={[builder]} type="tertiary" large onClick={onCancel}>
           {#if confirmation.action === "cancel"}Keep editing{:else}Cancel{/if}
         </Button>
       </AlertDialog.Cancel>

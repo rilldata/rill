@@ -28,7 +28,7 @@
             description="Continue working with your current version. You can update later when you're ready."
             disabled={loading}
             ctaText="Skip changes"
-            type="outlined"
+            type="tertiary"
             onClick={() => (open = false)}
           />
           <CTACard

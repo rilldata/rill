@@ -361,7 +361,7 @@
 
     <DialogFooter>
       <Button
-        type="outlined"
+        type="tertiary"
         onClick={() => {
           open = false;
           handleReset();

@@ -53,6 +53,6 @@
         <CriteriaForm {superFormInstance} {timeControls} {index} />
       </div>
     {/each}
-    <Button type="outlined" onClick={handleAddCriteria}>+ Add Criteria</Button>
+    <Button type="tertiary" onClick={handleAddCriteria}>+ Add Criteria</Button>
   </div>
 {/if}

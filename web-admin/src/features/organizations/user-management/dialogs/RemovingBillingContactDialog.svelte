@@ -24,7 +24,7 @@
     </Alert.Header>
     <Alert.Footer>
       <Button
-        type="outlined"
+        type="tertiary"
         onClick={() => {
           open = false;
         }}
