@@ -95,6 +95,12 @@ export type JSONSchemaObject = {
    */
   "x-category"?: ConnectorCategory;
   /**
+   * Form height for the add data modal.
+   * "tall" = larger form for connectors with more fields
+   * "default" = standard form height
+   */
+  "x-form-height"?: "default" | "tall";
+  /**
    * Backend connector name when different from schema name.
    * Used when a UI variant (e.g., "clickhousecloud") should submit
    * to a different backend connector (e.g., "clickhouse").

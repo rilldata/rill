@@ -5,6 +5,7 @@ export const snowflakeSchema: MultiStepFormSchema = {
   type: "object",
   title: "Snowflake",
   "x-category": "warehouse",
+  "x-form-height": "tall",
   properties: {
     connection_mode: {
       type: "string",

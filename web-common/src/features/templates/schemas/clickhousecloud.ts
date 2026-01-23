@@ -5,6 +5,7 @@ export const clickhousecloudSchema: MultiStepFormSchema = {
   type: "object",
   title: "ClickHouse Cloud",
   "x-category": "olap",
+  "x-form-height": "tall",
   "x-backend-connector": "clickhouse",
   properties: {
     connector_type: {

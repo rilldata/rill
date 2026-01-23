@@ -5,6 +5,7 @@ export const clickhouseSchema: MultiStepFormSchema = {
   type: "object",
   title: "ClickHouse",
   "x-category": "olap",
+  "x-form-height": "tall",
   "x-button-labels": {
     connector_type: {
       "rill-managed": { idle: "Connect", loading: "Connecting..." },

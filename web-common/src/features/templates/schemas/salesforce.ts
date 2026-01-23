@@ -5,6 +5,7 @@ export const salesforceSchema: MultiStepFormSchema = {
   type: "object",
   title: "Salesforce",
   "x-category": "warehouse",
+  "x-form-height": "tall",
   properties: {
     soql: {
       type: "string",
