@@ -141,7 +141,7 @@ notify:
 
 ### Slack Notifications
 
-Before using Slack notifications, you must [configure the Slack integration](/developers/build/connectors/data-source/slack) for your project.
+Before using Slack notifications, you must [configure the Slack integration](/developers/build/connectors/integrations/slack) for your project.
 
 ```yaml
 notify:
