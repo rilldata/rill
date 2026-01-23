@@ -34,6 +34,8 @@ export enum ExploreStateURLParams {
 
   GzippedParams = "gzipped_state",
   TemporaryFilters = "temp",
+
+  IgnoreErrors = "ignore_errors",
 }
 
 export const ExploreStateKeyToURLParamMap: Partial<
