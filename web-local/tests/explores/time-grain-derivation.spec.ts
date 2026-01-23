@@ -17,17 +17,16 @@ test.describe("Time grain derivation from URL", () => {
       `${baseUrl}/explore/AdBids_metrics_explore?tr=${encodeURIComponent(timeRange)}`,
     );
 
-    // Wait for the explore to load and the URL to update with derived grain
-    await page.waitForTimeout(2000);
+    // Wait for the time grain selector to appear and contain the expected grain
+    const timeGrainSelector = page.getByLabel("Select aggregation grain");
+    await expect(timeGrainSelector).toContainText(`by ${expectedGrain}`, {
+      timeout: 10000,
+    });
 
     // Check the grain parameter in the URL
     const url = new URL(page.url());
     const grain = url.searchParams.get("grain");
     expect(grain).toBe(expectedGrain);
-
-    // Also verify the time grain selector dropdown shows the correct grain
-    const timeGrainSelector = page.getByLabel("Select aggregation grain");
-    await expect(timeGrainSelector).toContainText(`by ${expectedGrain}`);
   }
 
   // Basic ISO duration tests

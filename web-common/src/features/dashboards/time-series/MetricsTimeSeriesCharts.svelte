@@ -373,22 +373,6 @@
               >
                 <CaretDownIcon />
               </span>
-              <!-- It is not currently practical on explore to have time grain aggregation warnings -->
-              <!-- The state management is not set up to have discrepancies between the URL and effective values-->
-              <!-- {#if !grainAllowed && minTimeGrain && activeTimeGrain}
-                <Tooltip.Root portal="body">
-                  <Tooltip.Trigger>
-                    <AlertCircleOutline className="size-3.5 " />
-                  </Tooltip.Trigger>
-                  <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
-                    <TooltipContent>
-                      <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
-                      aggregation not supported on this dashboard. Displaying by
-                      <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
-                    </TooltipContent>
-                  </Tooltip.Content>
-                </Tooltip.Root>
-              {/if} -->
             </button>
           </DropdownMenu.Trigger>
 
