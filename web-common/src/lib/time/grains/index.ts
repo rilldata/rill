@@ -51,6 +51,7 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
 }
 
 // Return time grains that are allowed for a given time range.
+// This should be deprecated in favor of using allowedGrainsForInterval directly
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   const interval = Interval.fromDateTimes(start, end);
   return allowedGrainsForInterval(interval.isValid ? interval : undefined).map(

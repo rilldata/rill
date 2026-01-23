@@ -151,7 +151,6 @@ test.describe("Time grain derivation from URL", () => {
     // 3 years = 12 quarters
     await testGrainDerivation(page, "3y as of latest/Q", "quarter");
   });
-  
 
   test("derives quarter grain for 20y as of latest/M", async ({ page }) => {
     // 20 years = 240 months (under 1500 at month grain)
