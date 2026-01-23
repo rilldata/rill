@@ -63,7 +63,7 @@ grain          = "s" | "m" | "h" | "D" | "W" | "M" | "Q" | "Y"
 | `ref` | Contextual reference time | Internal use, modified by `as of` |
 | `now` | Current wallclock time | Real-time dashboards |
 | `watermark` | Data completeness marker | Production dashboards with ETL delays |
-| `latest` | Most recent data timestamp | Show data up to latest available |
+| `latest` | Most recent data timestamp | Show data up to (but not including) latest available |
 | `earliest` | Oldest data timestamp | Full historical analysis |
 
 ### Reference Point Examples
@@ -458,11 +458,11 @@ inf → 2020-01-01T00:32:36Z to 2025-05-14T06:32:37Z
 
 | Goal | Expression |
 |------|------------|
-| Last 7 days including today | `7D as of watermark/D+1D` |
-| Current week including today | `1W as of watermark/W+1W` |
-| Current month including today | `1M as of watermark/M+1M` |
-| Current quarter including today | `1Q as of watermark/Q+1Q` |
-| Current year including today | `1Y as of watermark/Y+1Y` |
+| Last 7 days including today | `7D as of now/D+1D` |
+| Current week including today | `1W as of now/W+1W` |
+| Current month including today | `1M as of now/M+1M` |
+| Current quarter including today | `1Q as of now/Q+1Q` |
+| Current year including today | `1Y as of now/Y+1Y` |
 
 ### Watermark Boundary Examples
 

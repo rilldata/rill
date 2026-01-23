@@ -13,7 +13,9 @@ For new configurations, we recommend using the modern [Time Range Syntax](/refer
 
 ## Time Range Extensions
 
-These extensions specify time ranges relative to the watermark (complete data point).
+These extensions specify time ranges relative to a reference point. The reference point varies by context:
+- **Dashboards**: Uses `latest` (most recent data timestamp)
+- **Alerts**: Uses `watermark` (data completeness marker)
 
 | Rill Extension | Description | Equivalent Modern Syntax |
 |----------------|-------------|--------------------------|
@@ -85,7 +87,7 @@ Combined durations:
 
 ## Migration to Modern Syntax
 
-The modern syntax provides equivalent functionality with more flexibility:
+The modern syntax provides equivalent functionality with more flexibility. Notably, the modern `DTD` syntax supports intraday ranges (e.g., `ref/D to ref/h+1h`) while `rill-TD` cannot.
 
 | Legacy | Modern Equivalent |
 |--------|-------------------|
