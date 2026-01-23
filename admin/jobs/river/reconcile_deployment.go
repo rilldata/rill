@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/riverqueue/river"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +29,7 @@ type ReconcileDeploymentWorker struct {
 // such as starting, updating, stopping, and deleting deployments.
 // We handle all deployment state transitions in this job to ensure consistency and to avoid concurrent conflicting operations on the same deployment.
 func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[ReconcileDeploymentArgs]) error {
+	observability.AddRequestAttributes(ctx, attribute.String("args.deployment_id", job.Args.DeploymentID))
 	depl, err := w.admin.DB.FindDeployment(ctx, job.Args.DeploymentID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {

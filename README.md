@@ -28,7 +28,7 @@
 
 <div align="center">
 
-[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/get-started/quickstart) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
+[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/developers/get-started/install) • [Quickstart](https://docs.rilldata.com/developers/get-started/quickstart) • [Guides](https://docs.rilldata.com/developers/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
 
 </div>
 

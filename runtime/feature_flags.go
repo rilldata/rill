@@ -62,6 +62,8 @@ var defaultFeatureFlags = map[string]string{
 	"generate_canvas": "false",
 	// Controls if the developer agent tool is available.
 	"developer_agent": "true",
+	// Controls if the dashboard state is persisted when navigating to a different dashboard.
+	"sticky_dashboard_state": "false",
 }
 
 // ResolveFeatureFlags resolves feature flags for the given instance and the provided user attributes.

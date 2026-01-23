@@ -1,0 +1,58 @@
+import { createQuery } from "@tanstack/svelte-query";
+import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { derived } from "svelte/store";
+import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
+
+/**
+ * Metadata used to map a value to a label.
+ * Currently only metrics view metadata exists but it is meant for any type.
+ */
+export type InlineContextMetadata = Record<string, MetricsViewMetadata>;
+export type MetricsViewMetadata = {
+  metricsViewSpec: V1MetricsViewSpec;
+  measures: Record<string, MetricsViewSpecMeasure>;
+  dimensions: Record<string, MetricsViewSpecDimension>;
+};
+
+/**
+ * Creates a store that contains a map of metrics view names to their metadata.
+ * Each metrics view metadata has a reference to its spec, and a map of for measure and dimension spec by their names.
+ */
+export function getInlineChatContextMetadata() {
+  const metricsViewsQuery = createQuery(
+    getValidMetricsViewsQueryOptions(),
+    queryClient,
+  );
+
+  return derived(metricsViewsQuery, (metricsViewsResp) => {
+    const metricsViews = metricsViewsResp.data ?? [];
+    return Object.fromEntries(
+      metricsViews.map((mv) => {
+        const mvName = mv.meta?.name?.name ?? "";
+        const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
+
+        const measures = Object.fromEntries(
+          metricsViewSpec?.measures?.map((m) => [m.name!, m]) ?? [],
+        );
+
+        const dimensions = Object.fromEntries(
+          metricsViewSpec?.dimensions?.map((d) => [d.name!, d]) ?? [],
+        );
+
+        return [
+          mvName,
+          <MetricsViewMetadata>{
+            metricsViewSpec,
+            measures,
+            dimensions,
+          },
+        ];
+      }),
+    ) as InlineContextMetadata;
+  });
+}

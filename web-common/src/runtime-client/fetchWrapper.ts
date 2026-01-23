@@ -17,6 +17,7 @@ export interface HTTPError {
   };
   message: string;
   name: string;
+  traceId?: string;
 }
 
 export function isHTTPError(error: unknown): error is HTTPError {
@@ -69,6 +70,9 @@ export async function fetchWrapper({
 
   if (resp.ok) return json;
 
+  // Extract trace ID from response headers
+  const traceId = resp.headers?.get("x-trace-id");
+
   // Return runtime errors in the same form as the Axios client had previously
   if (json?.code && json?.message) {
     return Promise.reject({
@@ -76,11 +80,13 @@ export async function fetchWrapper({
         status: resp.status,
         data: json,
       },
+      traceId,
     });
   } else {
     // Fallback error handling
     const err = new Error();
     (err as any).response = json;
+    (err as any).traceId = traceId;
     return Promise.reject(err);
   }
 }

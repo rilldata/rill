@@ -174,6 +174,11 @@ When building a new canvas dashboard, follow this recommended structure:
 - **Part-to-whole**: Use `donut_chart` or `stacked_bar_normalized`
 - **Two-dimensional patterns**: Use `heatmap`
 - **Dual-metric comparison**: Use `combo_chart` for two measures with different scales
+- **Funnel analysis**: Use `funnel_chart` to visualize sequential stage drop-offs
+
+
+# Field guidelines
+The field names are case sensitive and should match exactly to the fields present in the metrics view.
 
 **Time dimension restrictions:**
 The time dimension (timeseries field from the metrics view) is special and can ONLY be used in the x-axis field for temporal charts. Never use the time dimension in:
@@ -268,7 +273,7 @@ leaderboard:
     - total_revenue
     - average_order_value
     - order_count
-  num_rows: 15
+  num_rows: 7
 ```
 
 **Important:** Never use time dimensions in leaderboard dimensions. Leaderboards are for categorical ranking, not time-series analysis.

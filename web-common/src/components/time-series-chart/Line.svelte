@@ -4,16 +4,12 @@
     MainAreaColorGradientLight,
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import type { ScaleLinear, ScaleTime } from "d3-scale";
+  import type { ScaleLinear } from "d3-scale";
   import { area, curveLinear, line } from "d3-shape";
+  import type { ChartDataPoint } from "./types";
 
-  type DataPoint = {
-    date: Date;
-    value: number | null | undefined;
-  };
-
-  export let data: DataPoint[];
-  export let xScale: ScaleTime<number, number>;
+  export let data: ChartDataPoint[];
+  export let xScale: ScaleLinear<number, number>;
   export let yScale: ScaleLinear<number, number>;
   export let color = MainLineColor;
   export let strokeWidth = 4;
@@ -21,15 +17,15 @@
 
   $: curveFunction = curveLinear;
 
-  $: lineFunction = line<DataPoint>()
+  $: lineFunction = line<ChartDataPoint>()
     .defined(isDefined)
-    .x(dateAccessor)
+    .x(indexAccessor)
     .y(valueAccessor)
     .curve(curveFunction);
 
-  $: areaFunction = area<DataPoint>()
+  $: areaFunction = area<ChartDataPoint>()
     .defined(isDefined)
-    .x(dateAccessor)
+    .x(indexAccessor)
     .y0(valueAccessor)
     .y1(yScale.range()[0])
     .curve(curveFunction);
@@ -38,15 +34,15 @@
 
   $: path = lineFunction(data);
 
-  function isDefined(d: DataPoint) {
+  function isDefined(d: ChartDataPoint) {
     return d.value !== null && d.value !== undefined;
   }
 
-  function dateAccessor(d: DataPoint) {
-    return xScale(d.date);
+  function indexAccessor(d: ChartDataPoint) {
+    return xScale(d.index);
   }
 
-  function valueAccessor(d: DataPoint): number {
+  function valueAccessor(d: ChartDataPoint): number {
     // We can safely assert this will be a number because we're using .defined()
     // to filter out null/undefined values before this accessor is called
     return yScale(d.value as number);
