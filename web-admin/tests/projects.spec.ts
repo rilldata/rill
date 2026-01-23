@@ -9,4 +9,23 @@ test.describe("Projects", () => {
       adminPage.getByRole("link", { name: "Settings" }),
     ).toBeVisible();
   });
+
+  test("status page should show Local Development section", async ({
+    adminPage,
+  }) => {
+    await adminPage.goto("/e2e/openrtb/-/status");
+
+    // Check Local Development header is visible
+    await expect(adminPage.getByText("Local Development")).toBeVisible();
+
+    // Check Learn more link is visible
+    await expect(
+      adminPage.getByRole("link", { name: "Learn more ->" }),
+    ).toBeVisible();
+
+    // Check clone command is visible (for non-GitHub connected project)
+    await expect(
+      adminPage.getByText("rill project clone openrtb"),
+    ).toBeVisible();
+  });
 });
