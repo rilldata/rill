@@ -77,7 +77,7 @@
   >
     <span slot="action">
       Create <a
-        href="https://docs.rilldata.com/explore/alerts"
+        href="https://docs.rilldata.com/guide/alerts"
         target="_blank"
         rel="noopener noreferrer"
       >
