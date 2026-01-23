@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ProjectClone from "@rilldata/web-admin/features/projects/status/ProjectClone.svelte";
   import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/status/ProjectDeploymentStatus.svelte";
   import ProjectGithubConnection from "@rilldata/web-admin/features/projects/github/ProjectGithubConnection.svelte";
   import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/ProjectParseErrors.svelte";
@@ -15,6 +16,7 @@
     <div class="flex gap-x-20 items-start">
       <ProjectGithubConnection {organization} {project} />
       <ProjectDeploymentStatus {organization} {project} />
+      <ProjectClone {organization} {project} />
     </div>
 
     <ProjectResources />
