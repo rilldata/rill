@@ -88,9 +88,8 @@
 
   $: stepState = $connectorStepStore;
 
-  // Form IDs and properties
+  // Form IDs
   const paramsFormId = formManager.paramsFormId;
-  const filteredParamsProperties = formManager.filteredParamsProperties;
   let multiStepFormId = paramsFormId;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
@@ -189,7 +188,6 @@
   }
 
   $: yamlPreview = formManager.computeYamlPreview({
-    filteredParamsProperties,
     stepState,
     isMultiStepConnector: isStepFlowConnector,
     isConnectorForm,
