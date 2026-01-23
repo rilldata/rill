@@ -212,6 +212,7 @@ describe("findValidTimeGrain", () => {
       const defaultTimeGrain = findValidTimeGrain(
         testCase.timeGrain,
         timeGrainOptions,
+
         testCase.minTimeGrain,
       );
       expect(defaultTimeGrain).toEqual(testCase.expected);
@@ -426,11 +427,12 @@ describe("getValidatedTimeGrain", () => {
       const parsed = parseRillTime("24h as of latest/m");
       const result = getValidatedTimeGrain(
         interval,
+
         V1TimeGrain.TIME_GRAIN_MINUTE,
         undefined,
         parsed,
       );
-      
+
       expect(result).toBe(V1TimeGrain.TIME_GRAIN_MINUTE);
     });
   });

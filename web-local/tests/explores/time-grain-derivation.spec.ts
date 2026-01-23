@@ -62,17 +62,14 @@ test.describe("Time grain derivation from URL", () => {
 
   // Edge cases around bucket limits (1500 max)
   test("derives hour grain for 24h as of latest/h", async ({ page }) => {
-
     await testGrainDerivation(page, "24h as of latest/h", "hour");
   });
 
   test("derives day grain for 90d as of latest/d", async ({ page }) => {
-
     await testGrainDerivation(page, "90d as of latest/d", "day");
   });
 
   test("derives month grain for 2y as of latest/M", async ({ page }) => {
-   
     await testGrainDerivation(page, "2y as of latest/M", "month");
   });
 

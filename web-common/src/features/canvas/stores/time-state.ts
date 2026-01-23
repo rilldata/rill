@@ -8,7 +8,6 @@ import {
   ALL_TIME_RANGE_ALIAS,
   deriveInterval,
 } from "../../dashboards/time-controls/new-time-controls";
-import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { parseRillTime } from "../../dashboards/url-state/time-ranges/parser";
 import {
@@ -21,7 +20,6 @@ import {
   minTimeGrainToDefaultTimeRange,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
-import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
 import type { TimeManager } from "./time-manager";
 import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
