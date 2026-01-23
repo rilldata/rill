@@ -18,6 +18,7 @@ import {
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
+const AI_PANE_CHANGE_THROTTLE_TIMEOUT = 200;
 
 export default function initEmbedPublicAPI(): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
@@ -143,9 +144,28 @@ export default function initEmbedPublicAPI(): () => void {
     height: document.body.scrollHeight,
   });
 
+  // Subscribe to AI pane state changes
+  const aiPaneChangeThrottler = new Throttler(
+    AI_PANE_CHANGE_THROTTLE_TIMEOUT,
+    AI_PANE_CHANGE_THROTTLE_TIMEOUT,
+  );
+  let previousAiPaneState = get(chatOpen);
+  const aiPaneUnsubscribe = chatOpen.subscribe((isOpen) => {
+    // Only emit if the state actually changed
+    if (isOpen !== previousAiPaneState) {
+      previousAiPaneState = isOpen;
+      aiPaneChangeThrottler.throttle(() => {
+        emitNotification("aiPaneChanged", {
+          open: isOpen,
+        });
+      });
+    }
+  });
+
   return () => {
     unsubscribe();
     resizeUnsub();
+    aiPaneUnsubscribe();
   };
 }
 

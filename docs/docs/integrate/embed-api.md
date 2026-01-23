@@ -332,6 +332,28 @@ Fired whenever the iframe content is resized.
 { "method": "resized", "params": { "width": 1200, "height": 800 } }
 ```
 
+### `aiPaneChanged({ open: boolean })`
+
+Fired whenever the AI pane visibility state changes (opened or closed).
+
+- `open`: `true` if the AI pane is now open, `false` if it is now closed
+
+This event fires when:
+- The AI pane is opened or closed by the user clicking the AI button
+- The AI pane state is changed programmatically via the `setAiPane()` method
+- The AI pane state changes for any other reason
+
+```json
+{ "method": "aiPaneChanged", "params": { "open": true } }
+```
+
+Example when the AI pane is closed:
+```json
+{ "method": "aiPaneChanged", "params": { "open": false } }
+```
+
+**Note:** This notification is only emitted for Explore dashboards when the chat feature is enabled.
+
 
 ## Error Handling
 
@@ -410,6 +432,10 @@ window.addEventListener("message", async (event) => {
 
   if (event.data?.method === "resized") {
     console.log("Iframe resized:", event.data.params.width, "x", event.data.params.height);
+  }
+
+  if (event.data?.method === "aiPaneChanged") {
+    console.log("AI pane changed:", event.data.params.open ? "opened" : "closed");
   }
 });
 ```
