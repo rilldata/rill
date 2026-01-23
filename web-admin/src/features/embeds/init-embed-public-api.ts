@@ -11,6 +11,10 @@ import {
 import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
 import { getEmbedThemeStoreInstance } from "@rilldata/web-common/features/embeds/embed-theme";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import {
+  chatOpen,
+  sidebarActions,
+} from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
 const RESIZE_THROTTLE_TIMEOUT = 200;
@@ -82,6 +86,22 @@ export default function initEmbedPublicAPI(): () => void {
     }
     const themeValue = !theme || theme === "default" ? null : theme;
     embedThemeStore.set(themeValue);
+    return true;
+  });
+
+  registerRPCMethod("getAiPane", () => {
+    return { open: get(chatOpen) };
+  });
+
+  registerRPCMethod("setAiPane", (open: boolean) => {
+    if (typeof open !== "boolean") {
+      throw new Error("Expected open to be a boolean");
+    }
+    if (open) {
+      sidebarActions.openChat();
+    } else {
+      sidebarActions.closeChat();
+    }
     return true;
   });
 
