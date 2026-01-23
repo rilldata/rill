@@ -75,3 +75,12 @@ export function getConnectorSchema(
     multiStepFormSchemas[connectorName as keyof typeof multiStepFormSchemas];
   return schema?.properties ? schema : null;
 }
+
+/**
+ * Get the backend connector name for a given schema name.
+ * Returns x-backend-connector if specified, otherwise returns the schema name.
+ */
+export function getBackendConnectorName(schemaName: string): string {
+  const schema = getConnectorSchema(schemaName);
+  return schema?.["x-backend-connector"] ?? schemaName;
+}

@@ -1,21 +1,3 @@
-export type ClickHouseConnectorType =
-  | "rill-managed"
-  | "self-hosted"
-  | "clickhouse-cloud";
-
-export const CONNECTOR_TYPE_OPTIONS: {
-  value: ClickHouseConnectorType;
-  label: string;
-}[] = [
-  { value: "rill-managed", label: "Rill-managed ClickHouse" },
-  { value: "self-hosted", label: "Self-hosted ClickHouse" },
-];
-
-export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
-  { value: "parameters", label: "Enter parameters" },
-  { value: "dsn", label: "Enter connection string" },
-];
-
 export type GCSAuthMethod = "public" | "credentials" | "hmac";
 
 export const GCS_AUTH_OPTIONS: {

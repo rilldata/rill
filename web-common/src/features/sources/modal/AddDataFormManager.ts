@@ -26,7 +26,6 @@ import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
-import type { ClickHouseConnectorType } from "./constants";
 import type { ActionResult } from "@sveltejs/kit";
 import { getConnectorSchema } from "./connector-schemas";
 import type { QueryClient } from "@tanstack/query-core";
@@ -39,6 +38,7 @@ import {
   getSchemaStringKeys,
   type SchemaFieldMeta,
 } from "../../templates/schema-utils";
+import type { ButtonLabels } from "../../templates/schemas/types";
 
 type FormData = Record<string, unknown>;
 // Use unknown to be compatible with superforms' complex ValidationErrors type
@@ -81,6 +81,7 @@ export class AddDataFormManager {
   params: ReturnType<typeof superForm>;
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
+  private schemaName: string;
 
   // Centralized error normalization for this manager
   private normalizeError(e: unknown): { message: string; details?: string } {
@@ -94,7 +95,7 @@ export class AddDataFormManager {
     values: Record<string, unknown>,
     step: "connector" | "source" | "explorer",
   ): Record<string, unknown> {
-    const schema = getConnectorSchema(this.connector.name ?? "");
+    const schema = getConnectorSchema(this.schemaName);
     if (!schema?.properties) return values;
     return filterSchemaValuesForSubmit(schema, values, { step });
   }
@@ -118,7 +119,8 @@ export class AddDataFormManager {
     this.getSelectedAuthMethod = getSelectedAuthMethod;
 
     // Use schemaName if provided, otherwise fall back to connector.name
-    const effectiveSchemaName = schemaName ?? connector.name ?? "";
+    this.schemaName = schemaName ?? connector.name ?? "";
+    const effectiveSchemaName = this.schemaName;
 
     // Layout height
     this.formHeight = TALL_FORM_CONNECTORS.has(effectiveSchemaName)
@@ -237,26 +239,22 @@ export class AddDataFormManager {
     isConnectorForm: boolean;
     step: "connector" | "source" | string;
     submitting: boolean;
-    clickhouseConnectorType?: ClickHouseConnectorType;
+    schemaButtonLabels?: ButtonLabels | null;
     selectedAuthMethod?: string;
   }): string {
     const {
       isConnectorForm,
       step,
       submitting,
-      clickhouseConnectorType,
+      schemaButtonLabels,
       selectedAuthMethod,
     } = args;
-    const isClickhouse = this.connector.name === "clickhouse";
     const isStepFlowConnector =
       this.isMultiStepConnector || this.isExplorerConnector;
 
-    // ClickHouse-specific labels only apply to the connector step
-    if (isClickhouse && step === "connector") {
-      if (clickhouseConnectorType === "rill-managed") {
-        return submitting ? "Connecting..." : "Connect";
-      }
-      return submitting ? "Testing connection..." : "Test and Connect";
+    // Use schema-provided button labels when available (e.g., rill-managed ClickHouse)
+    if (schemaButtonLabels && step === "connector") {
+      return submitting ? schemaButtonLabels.loading : schemaButtonLabels.idle;
     }
 
     if (isConnectorForm) {
@@ -311,7 +309,7 @@ export class AddDataFormManager {
       cancel?: () => void;
     }) => {
       const values = event.form.data;
-      const schema = getConnectorSchema(this.connector.name ?? "");
+      const schema = getConnectorSchema(this.schemaName);
       const stepState = get(connectorStepStore) as ConnectorStepState;
       const stepForFilter =
         isStepFlowConnector &&
@@ -526,13 +524,16 @@ export class AddDataFormManager {
    * Compute YAML preview for the current form state.
    * Schema conditionals handle connector-specific requirements (e.g., managed flag, SSL).
    */
+  /**
+   * Compute YAML preview for the current form state.
+   * Schema conditionals handle connector-specific requirements.
+   */
   computeYamlPreview(ctx: {
     filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     paramsFormValues: Record<string, unknown>;
-    clickhouseConnectorType?: ClickHouseConnectorType;
   }): string {
     const connector = this.connector;
     const {
@@ -542,7 +543,7 @@ export class AddDataFormManager {
       paramsFormValues,
     } = ctx;
 
-    const schema = getConnectorSchema(connector.name ?? "");
+    const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
       ? getSchemaFieldMetaList(schema, { step: "connector" })
       : null;
@@ -641,10 +642,9 @@ export class AddDataFormManager {
   async saveConnectorAnyway(args: {
     queryClient: QueryClient;
     values: FormData;
-    clickhouseConnectorType?: ClickHouseConnectorType;
   }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
     const { queryClient, values } = args;
-    const schema = getConnectorSchema(this.connector.name ?? "");
+    const schema = getConnectorSchema(this.schemaName);
     const processedValues = schema
       ? filterSchemaValuesForSubmit(schema, values, { step: "connector" })
       : values;

@@ -20,19 +20,18 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import {
     connectors,
+    getBackendConnectorName,
     getConnectorSchema,
     type ConnectorInfo,
   } from "./connector-schemas";
   import { ICONS } from "./icons";
   import { resetConnectorStep } from "./connectorStepStore";
 
-  import type { ClickHouseConnectorType } from "./constants";
-
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
+  let selectedSchemaName: string | null = null;
   let requestConnector = false;
   let isSubmittingForm = false;
-  let initialClickhouseType: ClickHouseConnectorType | undefined = undefined;
 
   // Filter connectors by category from JSON schemas
   $: sourceConnectors = connectors.filter((c) => c.category !== "olap");
@@ -41,13 +40,15 @@
   /**
    * Convert a ConnectorInfo (from schema) to a V1ConnectorDriver-compatible object.
    * Derives implements* flags from the schema's x-category.
+   * Uses x-backend-connector for the name when specified.
    */
   function toConnectorDriver(info: ConnectorInfo): V1ConnectorDriver {
     const schema = getConnectorSchema(info.name);
     const category = schema?.["x-category"];
+    const backendName = getBackendConnectorName(info.name);
 
     return {
-      name: info.name,
+      name: backendName,
       displayName: info.displayName,
       implementsObjectStore: category === "objectStore",
       implementsOlap: category === "olap",
@@ -62,7 +63,7 @@
       step = e.state?.step ?? 0;
       requestConnector = e.state?.requestConnector ?? false;
       selectedConnector = e.state?.selectedConnector ?? null;
-      initialClickhouseType = e.state?.initialClickhouseType ?? undefined;
+      selectedSchemaName = e.state?.schemaName ?? null;
     }
     window.addEventListener("popstate", listen);
 
@@ -75,24 +76,11 @@
     // Reset multi-step state (auth selection, connector config) when switching connectors.
     resetConnectorStep();
 
-    // Handle ClickHouse Cloud - use the actual "clickhouse" connector but pre-select the type
-    let actualConnectorInfo = connectorInfo;
-    let clickhouseType: ClickHouseConnectorType | undefined = undefined;
-
-    if (connectorInfo.name === "clickhousecloud") {
-      // Use the clickhouse schema but mark it as ClickHouse Cloud
-      actualConnectorInfo = {
-        ...connectorInfo,
-        name: "clickhouse",
-      };
-      clickhouseType = "clickhouse-cloud";
-    }
-
     const state = {
       step: 2,
-      selectedConnector: toConnectorDriver(actualConnectorInfo),
+      selectedConnector: toConnectorDriver(connectorInfo),
+      schemaName: connectorInfo.name,
       requestConnector: false,
-      initialClickhouseType: clickhouseType,
     };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state }));
@@ -118,8 +106,8 @@
     const state = {
       step: 0,
       selectedConnector: null,
+      schemaName: null,
       requestConnector: false,
-      initialClickhouseType: undefined,
     };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
@@ -224,15 +212,12 @@
         </div>
       {/if}
 
-      {#if step === 2 && selectedConnector}
-        {@const isClickhouseCloud =
-          initialClickhouseType === "clickhouse-cloud"}
-        {@const displayIcon = isClickhouseCloud
-          ? connectorIconMapping["clickhousecloud"]
-          : connectorIconMapping[selectedConnector.name ?? ""]}
-        {@const displayName = isClickhouseCloud
-          ? "ClickHouse Cloud"
-          : selectedConnector.displayName}
+      {#if step === 2 && selectedConnector && selectedSchemaName}
+        {@const schema = getConnectorSchema(selectedSchemaName)}
+        {@const displayIcon =
+          connectorIconMapping[selectedSchemaName] ??
+          connectorIconMapping[selectedConnector.name ?? ""]}
+        {@const displayName = schema?.title ?? selectedConnector.displayName}
         <Dialog.Title class="p-4 border-b border-gray-200">
           {#if $duplicateSourceName !== null}
             Duplicate source
@@ -257,11 +242,11 @@
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
+            schemaName={selectedSchemaName}
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
             bind:isSubmitting={isSubmittingForm}
-            {initialClickhouseType}
           />
         {/if}
       {/if}
