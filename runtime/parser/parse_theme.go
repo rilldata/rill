@@ -27,19 +27,18 @@ type ThemeColors struct {
 // deprecatedCSSVariables maps deprecated variable names to their new semantic equivalents.
 // Old themes using these names will continue to work through automatic mapping.
 // Note: "background" and "foreground" have special handling in validate() for multi-variable mapping.
-var deprecatedCSSVariables = map[string]string{
-	"surface":           "surface-container",
-	"card":              "surface-card",
-	"card-foreground":   "fg-secondary",
-	"muted":             "surface-muted",
-	"muted-foreground":  "fg-muted",
-	"accent":            "popover-accent",
-	"accent-foreground": "fg-accent",
-	"ring":              "ring-focus",
+var deprecatedCSSVariables = map[string][]string{
+	"surface":           {"surface-background", "surface-elevated"},
+	"background":        {"surface-container"},
+	"card":              {"surface-card"},
+	"card-foreground":   {"fg-secondary"},
+	"muted":             {"surface-muted"},
+	"muted-foreground":  {"fg-muted"},
+	"accent":            {"popover-accent"},
+	"accent-foreground": {"fg-accent"},
+	"ring":              {"ring-focus"},
+	"foreground":        {"fg-primary"},
 }
-
-// backgroundMappings defines which variables are set when "background" is specified
-var backgroundMappings = []string{"surface-background", "surface-elevated"}
 
 var allowedCSSVariables = map[string]bool{
 	// Primary theme colors
@@ -261,29 +260,13 @@ func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
 			return nil, fmt.Errorf("invalid value %q for CSS variable %q: %w", v, k, err)
 		}
 
-		// Special handling for "background" - maps to multiple surface variables
-		if k == "background" {
-			for _, newName := range backgroundMappings {
+		// Check if this is a deprecated variable that should be mapped
+		if newNames, isDeprecated := deprecatedCSSVariables[k]; isDeprecated {
+			for _, newName := range newNames {
+				// Only map to the new name if it's not already explicitly set
 				if _, alreadySet := t.Variables[newName]; !alreadySet {
 					finalVariables[newName] = v
 				}
-			}
-			continue
-		}
-
-		// Special handling for "foreground" - maps to fg-primary (hierarchy generated in frontend)
-		if k == "foreground" {
-			if _, alreadySet := t.Variables["fg-primary"]; !alreadySet {
-				finalVariables["fg-primary"] = v
-			}
-			continue
-		}
-
-		// Check if this is a deprecated variable that should be mapped
-		if newName, isDeprecated := deprecatedCSSVariables[k]; isDeprecated {
-			// Only map to the new name if it's not already explicitly set
-			if _, alreadySet := t.Variables[newName]; !alreadySet {
-				finalVariables[newName] = v
 			}
 			// Don't output the deprecated name
 		} else {
