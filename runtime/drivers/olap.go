@@ -601,9 +601,9 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 
 		if tz == "" {
 			if shift == "" {
-				return fmt.Sprintf("date_trunc('%s', %s, 'UTC')::DateTime64", specifier, expr), nil
+				return fmt.Sprintf("date_trunc('%s', %s)::DateTime64", specifier, expr), nil
 			}
-			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s, 'UTC')::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
+			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s)::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
 		}
 
 		if shift == "" {
