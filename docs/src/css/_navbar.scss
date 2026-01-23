@@ -1,23 +1,18 @@
 /* =========================
    Navbar Styles
+
+   Class hooks added by Navbar/index.js:
+   - .dropdown--custom: Dropdown with custom chevron (has .my-custom-dropdown link)
+   - .navbar__item--has-icon-link: Navbar item containing .navbar-icon-link
+   - .navbar__dropdown--has-active: Dropdown with active menu item
+   - .navbar__item--has-active-link: Non-dropdown item with active link
+   - .menu__list-item--has-icon-link: Mobile menu item with icon link
+   - .navbar-sidebar__item--has-icon-link: Sidebar item with icon link
    ========================= */
 
-/* Hide caret for custom dropdown links - global rule */
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) .menu__caret,
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button.menu__caret,
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) .clean-btn.menu__caret,
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) .menu__caret svg,
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button[class*="caret"],
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button[aria-label*="dropdown"],
-.navbar .navbar__item.dropdown:has(.navbar__link.my-custom-dropdown) button[aria-label*="Collapse"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* Base navbar link styles - all text black, no decorations */
+/* =========================
+   Base Navbar Link Styles
+   ========================= */
 .navbar .navbar__link {
   color: var(--ifm-color-black);
   text-decoration: none;
@@ -25,18 +20,17 @@
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   transition: background-color 0.15s ease;
-  
+
   &:hover {
     background-color: rgba(0, 0, 0, 0.03);
   }
-  
-  /* Active links don't need hover effect */
+
   &.navbar__link--active:hover {
     background-color: transparent;
   }
 }
 
-/* Active navbar link - theme color */
+/* Active navbar link styling */
 .navbar .navbar__link--active,
 .navbar__item .navbar__link--active {
   color: var(--ifm-color-primary);
@@ -49,94 +43,38 @@
   text-decoration-skip: none;
 }
 
-/* Dropdown items - black text, no decorations */
-/* Target elements with both navbar__item and dropdown classes */
-/* 
- * PADDING CONSOLIDATION: All padding is consolidated on .navbar__link to match spacing
- * of other navbar items. The .navbar__item.dropdown container has zero padding to prevent
- * double padding that creates larger gaps between left-side items.
- * 
- * Structure: div.navbar__item.dropdown (padding: 0) > a.navbar__link (all padding here)
- * For custom dropdowns, the chevron is inside the link, so padding-right accounts for it.
- */
+/* =========================
+   Hide Default Caret for Custom Dropdowns
+   The caret is added via ::after pseudo-element by Infima CSS on .dropdown > .navbar__link
+   ========================= */
+.navbar .dropdown > .navbar__link.my-custom-dropdown::after {
+  content: none !important;
+}
+
+/* =========================
+   Dropdown Container Styles
+   ========================= */
 .navbar .navbar__item.dropdown {
-  /* Remove ALL default padding/margin from dropdown container to prevent double padding */
-  padding: 0 !important;
-  margin: 0 !important;
-  
-  /* Also remove padding from any default Docusaurus styles that might apply */
-  &,
-  &.navbar__item {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  /* Consolidate ALL padding on the link element only - matches other navbar items */
+  padding: 0;
+  margin: 0;
+  position: relative;
+
+  /* Consolidate padding on the link element */
   > .navbar__link {
     position: relative;
-    /* All padding consolidated here - same as base .navbar__link (0.5rem 0.75rem) */
-    padding: 0.5rem 0.75rem !important;
-    padding-right: 2rem !important; /* Extra right padding for chevron/caret space */
-    margin: 0 !important;
+    padding: 0.5rem 0.75rem;
+    padding-right: 2rem; /* Space for chevron */
+    margin: 0;
   }
-  
-  /* Ensure the default caret button (if present as sibling) has no padding/margin */
-  /* Note: For custom dropdowns, this is hidden. For default dropdowns, Docusaurus handles positioning. */
+
+  /* Ensure caret buttons have no extra spacing */
   > .menu__caret,
   > button.menu__caret {
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 0;
+    margin: 0;
   }
-  /* Hide the default chevron icon for custom dropdown links */
-  &:has(.navbar__link.my-custom-dropdown) {
-    .menu__caret,
-    button.menu__caret,
-    .clean-btn.menu__caret,
-    button[class*="caret"],
-    button[aria-label*="dropdown"],
-    button[aria-label*="Collapse"],
-    .navbar__link.my-custom-dropdown ~ .menu__caret,
-    .navbar__link.my-custom-dropdown + .menu__caret,
-    .navbar__link.my-custom-dropdown .menu__caret,
-    .navbar__link.my-custom-dropdown::after {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      width: 0 !important;
-      height: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-  }
-  
-  /* Rotate custom chevron on hover and when dropdown is open */
-  &:has(.navbar__link.my-custom-dropdown) {
-    .navbar__link.my-custom-dropdown .custom-chevron {
-      transition: transform 0.2s ease;
-    }
-    
-    &:hover .navbar__link.my-custom-dropdown .custom-chevron,
-    &.dropdown--show .navbar__link.my-custom-dropdown .custom-chevron,
-    .navbar__link.my-custom-dropdown[aria-expanded="true"] .custom-chevron {
-      transform: translateY(0%) rotate(180deg);
-    }
-  }
-  /* Active dropdown - theme color when any sub-page is active */
-  /* JavaScript adds 'navbar__dropdown--has-active' class when dropdown menu has active item */
-  &.navbar__dropdown--has-active > .navbar__link {
-    color: var(--ifm-color-primary);
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 14px;
-    text-decoration-color: var(--ifm-color-primary);
-    text-decoration-style: solid;
-    text-decoration-skip-ink: none;
-    text-decoration-skip: none;
-  }
-  
-  /* Extend hover area downward to bridge gap to dropdown menu */
-  position: relative;
-  
+
+  /* Hover bridge - extends hover area to dropdown menu */
   &::before {
     content: '';
     position: absolute;
@@ -148,58 +86,110 @@
     pointer-events: auto;
     z-index: 1000;
   }
-}
 
-/* Dropdown menu - add breathing room between trigger and popover, left-align with button */
-.navbar .dropdown__menu {
-  margin-top: 8px;
-  margin-left: 0; /* Left-align dropdown with button */
-}
-
-/* Temporarily disable dropdown hover when closing - prevents re-opening from hover bridge */
-/* This class is used by DropdownNavbarItem.js to close dropdowns on route change */
-.navbar.navbar--closing-dropdown {
-  .navbar__item.dropdown {
-    /* Disable the hover bridge */
-    &::before {
-      pointer-events: none !important;
-    }
-    
-    /* Hide dropdown menu regardless of hover state */
-    .dropdown__menu {
-      display: none !important;
-      opacity: 0 !important;
-      visibility: hidden !important;
-      pointer-events: none !important;
-    }
+  /* Active dropdown styling */
+  &.navbar__dropdown--has-active > .navbar__link {
+    color: var(--ifm-color-primary);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 14px;
+    text-decoration-color: var(--ifm-color-primary);
+    text-decoration-style: solid;
+    text-decoration-skip-ink: none;
+    text-decoration-skip: none;
   }
 }
 
-/* Dropdown menu items - black text with hover effects */
+/* =========================
+   Custom Dropdown Styles (dropdown--custom)
+   ========================= */
+.navbar .navbar__item.dropdown.dropdown--custom {
+  /* Custom chevron positioning and animation */
+  .navbar__link.my-custom-dropdown {
+    position: relative;
+
+    .custom-chevron {
+      position: absolute;
+      right: 0.5rem;
+      top: 30%;
+      transform: translateY(0%);
+      transition: transform 0.2s ease;
+      opacity: 0.7;
+      width: 14px;
+      height: 14px;
+      display: block;
+      pointer-events: none;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+    }
+  }
+
+  /* Rotate chevron on hover/open */
+  &:hover .navbar__link.my-custom-dropdown .custom-chevron,
+  &.dropdown--show .navbar__link.my-custom-dropdown .custom-chevron {
+    transform: translateY(0%) rotate(180deg);
+  }
+
+  .navbar__link.my-custom-dropdown[aria-expanded="true"] .custom-chevron {
+    transform: translateY(0%) rotate(180deg);
+  }
+}
+
+/* =========================
+   Dropdown Menu Styles
+   ========================= */
+.navbar .dropdown__menu {
+  margin-top: 8px;
+  margin-left: 0;
+}
+
 .navbar .dropdown__link {
   color: var(--ifm-color-black);
   text-decoration: none;
   border-radius: 0.375rem;
   padding: 0.375rem 0.75rem;
   display: block;
-  
+
   &:hover,
   &:focus {
     color: var(--ifm-color-black);
     text-decoration: none;
     background-color: rgba(0, 0, 0, 0.05);
   }
-  
-  /* Active dropdown menu items - theme color and bolder */
+
   &.dropdown__link--active {
     color: var(--ifm-color-primary);
     text-decoration: none;
-    font-weight: 600; /* Make active dropdown menu item bolder */
+    font-weight: 600;
   }
 }
-/* Custom HTML links (GitHub, Blog) - match .navbar__link styling */
-/* Remove padding from parent container, consolidate on link */
-.navbar .navbar__item:has(.navbar-icon-link) {
+
+/* =========================
+   Dropdown Closing State
+   Used by DropdownNavbarItem.js on route change
+   ========================= */
+.navbar.navbar--closing-dropdown .navbar__item.dropdown {
+  &::before {
+    pointer-events: none;
+  }
+
+  .dropdown__menu {
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* =========================
+   Icon Link Styles (navbar__item--has-icon-link)
+   Replaces :has(.navbar-icon-link) selectors
+   ========================= */
+.navbar .navbar__item.navbar__item--has-icon-link {
   padding: 0;
 }
 
@@ -219,40 +209,42 @@
   }
 }
 
-/* DocSearch button - smaller text */
+/* =========================
+   DocSearch Button Styles
+   ========================= */
 .navbar .DocSearch-Button {
-  font-size: 0.875rem; /* 14px */
-  min-width: 16rem; /* Increased width for desktop */
+  font-size: 0.875rem;
+  min-width: 16rem;
   border: 0.5px solid var(--ifm-color-gray-300, #e5e7eb);
-  
+
   .DocSearch-Button-Placeholder {
     font-size: 0.875rem;
   }
-  
-  /* Reduce size on mobile */
+
   @media (max-width: 996px) {
-    min-width: 12rem; /* Smaller width on mobile */
-    font-size: 0.8125rem; /* Slightly smaller text */
-    
+    min-width: 12rem;
+    font-size: 0.8125rem;
+
     .DocSearch-Button-Placeholder {
       font-size: 0.8125rem;
     }
   }
-  
-  /* Even smaller on very small screens */
+
   @media (max-width: 576px) {
-    min-width: 10rem; /* Even smaller width on very small screens */
-    font-size: 0.75rem; /* Smaller text */
-    
+    min-width: 10rem;
+    font-size: 0.75rem;
+
     .DocSearch-Button-Placeholder {
       font-size: 0.75rem;
     }
   }
 }
 
-/* Right-hand navbar items - only for smaller widths */
+/* =========================
+   Mobile/Tablet Breakpoint Styles
+   ========================= */
 @media (max-width: 996px) {
-  .navbar .navbar__item:has(.navbar-icon-link) {
+  .navbar .navbar__item.navbar__item--has-icon-link {
     padding: 0;
   }
 
@@ -267,88 +259,78 @@
   }
 }
 
-/* Dark mode adjustments */
+/* =========================
+   Dark Mode Styles
+   ========================= */
 [data-theme='dark'] .navbar {
   .navbar__link {
     color: var(--ifm-color-white);
-    
+
     &:hover,
     &:focus {
       color: var(--ifm-color-white);
       background-color: rgba(255, 255, 255, 0.06);
     }
-    
-    /* Active links don't need hover effect */
+
     &.navbar__link--active:hover {
       background-color: transparent;
     }
   }
-  
-  /* Active navbar link - theme color in dark mode */
+
   .navbar__item--has-active-link .navbar__link,
   .navbar__item .navbar__link--active,
   .navbar__link--active {
     color: var(--ifm-color-primary);
   }
-  
-  .navbar__item.dropdown {
-    /* Active dropdown in dark mode - theme color */
-    &.navbar__dropdown--has-active > .navbar__link {
-      color: var(--ifm-color-primary);
-    }
+
+  .navbar__item.dropdown.navbar__dropdown--has-active > .navbar__link {
+    color: var(--ifm-color-primary);
   }
-  
-  /* Dropdown menu in dark mode - maintain breathing room and alignment */
+
   .dropdown__menu {
     margin-top: 8px;
-    margin-left: 0; /* Left-align dropdown with button */
+    margin-left: 0;
   }
-  
+
   .dropdown__link {
     color: var(--ifm-color-white);
-    
+
     &:hover,
     &:focus {
       color: var(--ifm-color-white);
       background-color: rgba(255, 255, 255, 0.1);
     }
-    
-    /* Active dropdown menu items - theme color and bolder */
+
     &.dropdown__link--active {
       color: var(--ifm-color-primary);
-      font-weight: 600; /* Make active dropdown menu item bolder */
+      font-weight: 600;
     }
   }
-  
+
   .navbar-icon-link {
     color: var(--ifm-color-white);
-    
+
     &:hover,
     &:focus {
       color: var(--ifm-color-white);
-      background-color: rgba(255, 255, 255, 0.06); /* Match navbar link hover effect in dark mode */
+      background-color: rgba(255, 255, 255, 0.06);
     }
   }
-  
-  /* DocSearch button in dark mode */
+
   .DocSearch-Button {
     border: 0.5px solid rgba(255, 255, 255, 0.2);
   }
-  
-  /* Right-hand navbar items in dark mode - only for smaller widths */
+
   @media (max-width: 996px) {
     .navbar-icon-link {
       &:hover,
       &:focus {
-        background-color: none;
+        background-color: transparent;
       }
     }
-    
-    /* Search button styling in dark mode */
-    .navbar__item .DocSearch-Button {
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
+
+    .navbar__item .DocSearch-Button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
     }
   }
 }
@@ -357,111 +339,102 @@
    Mobile Sidebar Panel Styles
    ========================= */
 .navbar-sidebar {
-  /* Fix spacing for navbar items in mobile sidebar */
   .navbar-sidebar__item {
     margin: 0;
     padding: 0;
   }
-  
-  /* Fix spacing for dropdown items in mobile sidebar */
+
   .navbar-sidebar__item.dropdown {
     .dropdown__menu {
       padding: 0.5rem 0;
       margin: 0;
     }
-    
+
     .dropdown__link {
       padding: 0.625rem 1.5rem 0.625rem 1.75rem;
       margin: 0.125rem 0;
       border-radius: 0.375rem;
     }
   }
-  
-  /* Right-hand items in mobile sidebar - match left-hand styling */
-  .navbar-sidebar__item {
-    /* Apply same styling to search button - smaller on mobile */
-    .DocSearch-Button {
-      padding: 0.5rem 0.75rem; /* Reduced padding for mobile */
-      margin: 0.25rem 0;
-      border-radius: 0.375rem;
-      width: 100%;
-      max-width: 100%; /* Ensure it doesn't overflow */
-      justify-content: flex-start;
-      font-size: 0.8125rem; /* Slightly smaller text on mobile */
-      min-width: auto; /* Remove min-width constraint on mobile */
-      
+
+  /* DocSearch button in sidebar */
+  .navbar-sidebar__item .DocSearch-Button {
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0;
+    border-radius: 0.375rem;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-start;
+    font-size: 0.8125rem;
+    min-width: auto;
+
+    .DocSearch-Button-Placeholder {
+      font-size: 0.8125rem;
+    }
+
+    @media (max-width: 576px) {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.75rem;
+
       .DocSearch-Button-Placeholder {
-        font-size: 0.8125rem;
-      }
-      
-      /* Even smaller on very small screens */
-      @media (max-width: 576px) {
-        padding: 0.375rem 0.5rem; /* Further reduced padding */
-        font-size: 0.75rem; /* Smaller text */
-        
-        .DocSearch-Button-Placeholder {
-          font-size: 0.75rem;
-        }
-      }
-    }
-    
-    /* Apply same styling to HTML links (GitHub, Blog) - match .menu__link */
-    /* Remove hover from all possible parent containers */
-    &:has(.navbar-icon-link),
-    .menu__list-item:has(.navbar-icon-link) {
-      background: none !important;
-
-      &:hover {
-        background: none !important;
-      }
-    }
-
-    .menu__list-item:has(.navbar-icon-link) .menu__link {
-      background: none !important;
-
-      &:hover {
-        background: none !important;
-      }
-    }
-
-    .navbar-icon-link {
-      display: block;
-      padding: 0.25rem 0.5rem 0.25rem 0;
-      color: var(--ifm-color-black);
-      text-decoration: none;
-      font-weight: 500;
-      font-size: var(--default-font);
-
-      &:hover,
-      &:focus {
-        color: var(--ifm-color-primary);
-        font-weight: 600;
-        background: none !important;
+        font-size: 0.75rem;
       }
     }
   }
-  
-  /* Dark mode for mobile sidebar HTML links */
-  [data-theme='dark'] & {
-    .navbar-sidebar__item {
-      .navbar-icon-link {
-        color: var(--ifm-color-white);
-        
-        &:hover,
-        &:focus {
-          color: var(--ifm-color-primary);
-          font-weight: 600;
-        }
+
+  /* Icon links in sidebar - using class hooks */
+  .navbar-sidebar__item--has-icon-link,
+  .menu__list-item--has-icon-link {
+    background: none;
+
+    &:hover {
+      background: none;
+    }
+
+    .menu__link {
+      background: none;
+
+      &:hover {
+        background: none;
       }
     }
   }
-  
-  /* Ensure consistent spacing between all items */
+
+  .navbar-sidebar__item .navbar-icon-link {
+    display: block;
+    padding: 0.25rem 0.5rem 0.25rem 0;
+    color: var(--ifm-color-black);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--default-font);
+
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-primary);
+      font-weight: 600;
+      background: none;
+    }
+  }
+
+  /* Consistent spacing */
   .navbar-sidebar__items {
     padding: 1rem 0.5rem;
-    
+
     > .navbar-sidebar__item {
       margin-bottom: 0.25rem;
+    }
+  }
+}
+
+/* Dark mode for mobile sidebar */
+[data-theme='dark'] .navbar-sidebar {
+  .navbar-sidebar__item .navbar-icon-link {
+    color: var(--ifm-color-white);
+
+    &:hover,
+    &:focus {
+      color: var(--ifm-color-primary);
+      font-weight: 600;
     }
   }
 }

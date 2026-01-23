@@ -119,9 +119,40 @@ export default function NavbarWrapper(props) {
       });
     };
 
+    const markCustomDropdowns = () => {
+      // Add class hook for dropdowns with custom dropdown links (replaces :has(.my-custom-dropdown))
+      const customDropdownLinks = document.querySelectorAll('.navbar__link.my-custom-dropdown');
+      customDropdownLinks.forEach((link) => {
+        const dropdownItem = link.closest('.navbar__item.dropdown');
+        if (dropdownItem) {
+          dropdownItem.classList.add('dropdown--custom');
+        }
+      });
+    };
+
+    const markIconLinkItems = () => {
+      // Add class hook for navbar items containing icon links (replaces :has(.navbar-icon-link))
+      const iconLinks = document.querySelectorAll('.navbar-icon-link');
+      iconLinks.forEach((link) => {
+        const navItem = link.closest('.navbar__item');
+        if (navItem) {
+          navItem.classList.add('navbar__item--has-icon-link');
+        }
+        // Also mark parent list items in mobile sidebar
+        const menuListItem = link.closest('.menu__list-item');
+        if (menuListItem) {
+          menuListItem.classList.add('menu__list-item--has-icon-link');
+        }
+        // Mark sidebar items
+        const sidebarItem = link.closest('.navbar-sidebar__item');
+        if (sidebarItem) {
+          sidebarItem.classList.add('navbar-sidebar__item--has-icon-link');
+        }
+      });
+    };
+
     const replaceCustomDropdownCarets = () => {
       // Add custom SVG chevron for custom dropdown links
-      // CSS already hides the default caret, so we just need to add our custom one
       const customDropdownLinks = document.querySelectorAll('.navbar__link.my-custom-dropdown');
       customDropdownLinks.forEach((link) => {
         const dropdownItem = link.closest('.navbar__item.dropdown');
@@ -134,17 +165,6 @@ export default function NavbarWrapper(props) {
           if (!chevronContainer) {
             chevronContainer = document.createElement('span');
             chevronContainer.className = 'custom-chevron';
-            chevronContainer.style.position = 'absolute';
-            chevronContainer.style.right = '0.5rem';
-            chevronContainer.style.top = '30%';
-            chevronContainer.style.transform = 'translateY(0%)';
-            chevronContainer.style.transition = 'transform 0.2s ease';
-            chevronContainer.style.opacity = '0.7';
-            chevronContainer.style.width = '14px';
-            chevronContainer.style.height = '14px';
-            chevronContainer.style.display = 'block';
-            chevronContainer.style.pointerEvents = 'none';
-            link.style.position = 'relative';
             link.appendChild(chevronContainer);
           }
 
@@ -155,9 +175,6 @@ export default function NavbarWrapper(props) {
           svg.setAttribute('viewBox', '0 0 24 24');
           svg.setAttribute('fill', 'currentColor');
           svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-          svg.style.width = '14px';
-          svg.style.height = '14px';
-          svg.style.display = 'block';
 
           const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           path.setAttribute('fill-rule', 'evenodd');
@@ -166,8 +183,6 @@ export default function NavbarWrapper(props) {
 
           svg.appendChild(path);
           chevronContainer.appendChild(svg);
-
-          // CSS will handle the rotation on hover/open
         }
       });
     };
@@ -176,6 +191,8 @@ export default function NavbarWrapper(props) {
     const updateNavbar = () => {
       markActiveDropdowns();
       markActiveNavItems();
+      markCustomDropdowns();
+      markIconLinkItems();
       addDataTextAttributes();
       replaceCustomDropdownCarets();
     };
