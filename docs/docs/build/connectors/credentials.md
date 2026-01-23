@@ -40,19 +40,12 @@ Project variables work exactly the same way as credentials and can be defined wh
 
 ### Passing Environment Variables
 
-You can pass environment variables directly to Rill Developer using the `--env` flag. This is useful for referencing existing environment variables without exposing their values in your command history or configuration files.
+Environment variables in your local shell are not automatically passed to Rill Developer. You can pass these to Rill Developer using the `--env` flag. This is useful for referencing existing environment variables without exposing their values in your command history or configuration files.
 
-For example, to use the `GOOGLE_APPLICATION_CREDENTIALS` environment variable:
+For example, to use the `AWS_ACCESS_KEY_ID` environment variable:
 
 ```bash
-rill start --env $GOOGLE_APPLICATION_CREDENTIALS
-```
-
-This will pull in the value of `GOOGLE_APPLICATION_CREDENTIALS` from your environment and make it available to your Rill project without exposing the credential value in your command. In Rill, you would reference it using: `"{{ env.GOOGLE_APPLICATION_CREDENTIALS }}"`
-
-:::warning Development Only
-
-Passing environment variables via `rill start --env` is intended for **local development purposes only**. These credentials are **not** automatically passed to Rill Cloud when you deploy your project. For production deployments, you must configure credentials separately in Rill Cloud using the project settings or `rill env push`.
+rill start --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 
 :::
 
