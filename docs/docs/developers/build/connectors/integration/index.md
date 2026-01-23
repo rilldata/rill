@@ -20,7 +20,7 @@ External integrations extend Rill's capabilities by connecting to third-party se
     icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
     content="Create and define a OpenAI Connector with your own API key."
-    link="/developers/build/connectors/integrations/openai"
+    link="/developers/build/connectors/integration/openai"
     linkLabel="Learn more"
     referenceLink="openai"
   />
@@ -28,7 +28,7 @@ External integrations extend Rill's capabilities by connecting to third-party se
     icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="slack-icon" />}
     header="Slack"
     content="Connect to Slack to send alerts and messages from Rill."
-    link="/developers/build/connectors/integrations/slack"
+    link="/developers/build/connectors/integration/slack"
     linkLabel="Learn more"
     referenceLink="slack"
   />

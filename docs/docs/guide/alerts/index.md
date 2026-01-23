@@ -102,7 +102,7 @@ Email is the default notification target for alerts and is automatically enabled
 
 ### Configuring Slack targets
 
-Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](/developers/build/connectors/integrations/slack) documentation.
+Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](/developers/build/connectors/integration/slack) documentation.
 
 
 <img src = '/img/explore/alerts/slack-notifications.png' class='centered' />

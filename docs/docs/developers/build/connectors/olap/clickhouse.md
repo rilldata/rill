@@ -50,7 +50,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 ### Connection String (DSN)
 
-Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
+Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integration/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
 
 ```bash
 connector.clickhouse.dsn="clickhouse://<hostname>:<port>?username=<username>&password=<password>"

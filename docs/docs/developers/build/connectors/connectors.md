@@ -273,7 +273,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="AI" className="sheets-icon" />}
     header="AI"
     content="Define your own OpenAI Connector and define your own API key."
-    link="/developers/build/connectors/integrations/openai"
+    link="/developers/build/connectors/integration/openai"
     linkLabel="Learn more"
     referenceLink="openai"
   />
@@ -281,7 +281,7 @@ We're constantly adding new data connectors. If you don't see what you need, [le
     icon={<img src="/img/build/connectors/icons/Logo-Slack.svg" alt="Slack" className="sheets-icon" />}
     header="Slack"
     content="Connect to Slack to send alerts and messages from Rill."
-    link="/developers/build/connectors/integrations/slack"
+    link="/developers/build/connectors/integration/slack"
     linkLabel="Learn more"
     referenceLink="slack"
   />

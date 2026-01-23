@@ -669,7 +669,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/openai',
-            to: '/developers/build/connectors/integrations/openai',
+            to: '/developers/build/connectors/integration/openai',
           },
           {
             from: '/build/connectors/data-source/postgres',
@@ -689,7 +689,7 @@ const config = {
           },
           {
             from: '/build/connectors/data-source/slack',
-            to: '/developers/build/connectors/integrations/slack',
+            to: '/developers/build/connectors/integration/slack',
           },
           {
             from: '/build/connectors/data-source/snowflake',
@@ -863,7 +863,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/slack',
-            to: '/developers/build/connectors/integrations/slack',
+            to: '/developers/build/connectors/integration/slack',
           },
           {
             from: '/build/connect/data-source/local-file',
@@ -879,7 +879,7 @@ const config = {
           },
           {
             from: '/build/connect/data-source/openai',
-            to: '/developers/build/connectors/integrations/openai',
+            to: '/developers/build/connectors/integration/openai',
           },
           // ============================================
           // /connect/* → /developers/build/connectors/*
@@ -982,7 +982,7 @@ const config = {
           },
           {
             from: '/connect/data-source/slack',
-            to: '/developers/build/connectors/integrations/slack',
+            to: '/developers/build/connectors/integration/slack',
           },
           {
             from: '/connect/data-source/local-file',
@@ -998,7 +998,7 @@ const config = {
           },
           {
             from: '/connect/data-source/openai',
-            to: '/developers/build/connectors/integrations/openai',
+            to: '/developers/build/connectors/integration/openai',
           },
           // ============================================
           // /deploy/* → /developers/deploy/*
