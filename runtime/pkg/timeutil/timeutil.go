@@ -131,8 +131,8 @@ func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, first
 		if firstMonth > 12 {
 			firstMonth = 12
 		}
-		monthsToSubtract := (3 + int(tm.Month()) - firstMonth%3) % 3
 		tm = tm.In(tz)
+		monthsToSubtract := (3 + int(tm.Month()) - firstMonth%3) % 3
 		tm = time.Date(tm.Year(), tm.Month(), 1, 0, 0, 0, 0, tz)
 		tm = tm.AddDate(0, -monthsToSubtract, 0)
 		return tm.In(time.UTC)
