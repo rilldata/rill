@@ -257,7 +257,9 @@ export function prepareSourceFormData(
   const schema = getConnectorSchema(connector.name ?? "");
   const connectorPropertyKeys = new Set<string>();
   if (schema) {
-    const connectorFields = getSchemaFieldMetaList(schema, { step: "connector" })
+    const connectorFields = getSchemaFieldMetaList(schema, {
+      step: "connector",
+    })
       .filter((field) => !field.internal)
       .map((field) => field.key);
     for (const key of connectorFields) {
