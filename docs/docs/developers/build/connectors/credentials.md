@@ -23,7 +23,7 @@ While Rill **can** infer credentials from your local environment (AWS CLI, Azure
 :::
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
-2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/developers/build/connectors/templating) for more details)
+2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [passing environmental variables](/developers/build/connectors/templating) for more details)
 3. **Credentials configured via CLI** - For [AWS](/developers/build/connectors/data-source/s3#method-4-local-aws-credentials-local-development-only) / [Azure](/developers/build/connectors/data-source/azure#method-5-azure-cli-authentication-local-development-only) / [Google Cloud](/developers/build/connectors/data-source/gcs#method-4-local-google-cloud-cli-credentials) - **NOT RECOMMENDED for production use**
 
 For more details, please refer to the corresponding [connector](/developers/build/connectors) or [OLAP engine](/developers/build/connectors/olap) page.
@@ -37,6 +37,24 @@ If you plan to deploy a project (to Rill Cloud), it is not recommended to pass i
 ## Variables
 
 Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value`, set in the `.env` file in the project directory, or defined in the rill.yaml.
+
+### Passing Environment Variables
+
+Environment variables in your local shell are not automatically passed to Rill Developer. You can pass these to Rill Developer using the `--env` flag. This is useful for referencing existing environment variables without exposing their values in your command history or configuration files.
+
+For example, to use the `AWS_ACCESS_KEY_ID` environment variable:
+
+```bash
+rill start --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+```
+
+This will pull in the value of AWS_ACCESS_KEY_ID from your environment and make it available to your Rill project without exposing the credential value in your command or .env file. In Rill, you would reference it using: `"{{ .env.AWS_ACCESS_KEY_ID }}"`.
+
+:::warning Development Only
+
+Passing environment variables via rill start --env is intended for local development purposes only. These credentials are not automatically passed to Rill Cloud when you deploy your project. For production deployments, you must configure credentials separately in Rill Cloud using the project settings or rill env push.
+
+:::
 
 ### What is a `.env` file?
 
