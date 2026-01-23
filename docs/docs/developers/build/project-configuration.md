@@ -397,7 +397,7 @@ canvases:
       - P12M
 
 # These are example mock users to test your security policies.
-# Learn more: https://docs.rilldata.com/manage/security
+# Learn more: https://docs.rilldata.com/developers/build/metrics-view/security
 mock_users:
   - email: john@yourcompany.com
   - email: jane@partnercompany.com

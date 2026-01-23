@@ -27,6 +27,6 @@ You have successfully deployed your project from Rill Developer to Rill Cloud in
 
 While you have completed the Basics Course, there are still many more features in our product, with new ones coming out regularly! Please continue on to our next series, **Rill's Advanced Features**, to dive into our more advanced features and advanced modeling/dashboarding. Or, if you are looking for administration topics, please refer to **Administration Topics**.
 
-For guidance on how to use Rill Cloud and its features, please refer to our [**Explore section**](https://docs.rilldata.com/explore/dashboard-101) of our docs for more information!
+For guidance on how to use Rill Cloud and its features, please refer to our [**Explore section**](https://docs.rilldata.com/guide/dashboard-101) of our docs for more information!
 
 

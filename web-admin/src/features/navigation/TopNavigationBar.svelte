@@ -219,7 +219,7 @@
       <ViewAsUserChip />
     {/if}
     <!-- NOTE: only project admin and editor can manage project members -->
-    <!-- https://docs.rilldata.com/manage/roles-permissions#project-level-permissions -->
+    <!-- https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions -->
     {#if onProjectPage && manageProjectMembers}
       <ShareProjectPopover
         {organization}

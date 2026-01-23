@@ -47,7 +47,7 @@ See the full documentation to set up [private key authentication](#using-keypair
 
 :::info Finding the Snowflake account identifier
 
-To determine your [Snowflake account identifier](https://docs.snowflake.com/en/guide/admin-account-identifier), one easy way is to check your Snowflake account URL. The account identifier to use in your connection string should be everything before `.snowflakecomputing.com`!
+To determine your [Snowflake account identifier](https://docs.snowflake.com/en/user-guide/admin-account-identifier), one easy way is to check your Snowflake account URL. The account identifier to use in your connection string should be everything before `.snowflakecomputing.com`!
 
 :::
 

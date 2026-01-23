@@ -173,7 +173,7 @@ From the Users page on the Organization page, you can inivte a user to the organ
 <br />
 **Project level access requests**
 
-  Please refer to the <a href='https://docs.rilldata.com/manage/user-management#admin-invites-user' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
+  Please refer to the <a href='https://docs.rilldata.com/guide/administration/users-and-access/user-management' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
 
 
 
