@@ -429,7 +429,7 @@
 </div>
 <div class="flex flex-row items-center px-3.5 py-3 border-t border-gray-200">
   <a
-    href="https://docs.rilldata.com/manage/roles-permissions#project-level-permissions"
+    href="https://docs.rilldata.com/guide/administration/users-and-access/roles-permissions#project-level-permissions"
     target="_blank"
     class="text-xs text-primary-600 hover::text-primary-700"
     >Learn more about sharing</a

@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import type {
+    PathOption,
+    PathOptions,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
@@ -22,7 +25,8 @@
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
 
-  const { darkMode, deploy, developerChat } = featureFlags;
+  const { darkMode, deploy, developerChat, stickyDashboardState } =
+    featureFlags;
 
   export let mode: string;
 
@@ -52,7 +56,10 @@
 
   $: hasValidDashboard = Boolean(defaultDashboard);
 
-  $: dashboardOptions = getBreadcrumbOptions(explores, canvases);
+  $: dashboardOptions = {
+    options: getBreadcrumbOptions(explores, canvases),
+    carryOverSearchParams: $stickyDashboardState,
+  } satisfies PathOptions;
 
   $: projectPath = <PathOption>{
     label: projectTitle,
@@ -62,7 +69,7 @@
   };
 
   $: pathParts = [
-    new Map([[projectTitle.toLowerCase(), projectPath]]),
+    { options: new Map([[projectTitle.toLowerCase(), projectPath]]) },
     dashboardOptions,
   ];
 

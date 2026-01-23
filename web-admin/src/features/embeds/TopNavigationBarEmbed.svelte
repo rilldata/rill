@@ -22,7 +22,7 @@
 
   $: shouldRender =
     navigationEnabled ||
-    (dashboardChat &&
+    ($dashboardChat &&
       (activeResource?.kind === ResourceKind.Explore.toString() ||
         activeResource?.kind === ResourceKind.MetricsView.toString()));
 
@@ -35,8 +35,8 @@
   );
   $: currentResourceName = currentResource?.meta?.name?.name;
 
-  $: breadcrumbOptions = dashboards?.reduce(
-    (map, { meta, explore, canvas }) => {
+  $: breadcrumbOptions = {
+    options: dashboards?.reduce((map, { meta, explore, canvas }) => {
       const name = meta.name.name;
       const isExplore = !!explore;
       return map.set(name.toLowerCase(), {
@@ -47,9 +47,8 @@
         href: `/-/embed/${isExplore ? "explore" : "canvas"}/${name}`,
         preloadData: false,
       });
-    },
-    new Map(),
-  );
+    }, new Map()),
+  };
 </script>
 
 {#if $isErrorStoreEmpty && shouldRender}
@@ -72,13 +71,13 @@
           {#if currentResource}
             {#if $twoTieredNavigation}
               <TwoTieredBreadcrumbItem
-                options={breadcrumbOptions}
+                pathOptions={breadcrumbOptions}
                 current={currentResourceName}
                 isCurrentPage
               />
             {:else}
               <BreadcrumbItem
-                options={breadcrumbOptions}
+                pathOptions={breadcrumbOptions}
                 current={currentResourceName}
                 isCurrentPage
                 isEmbedded
@@ -91,7 +90,7 @@
       <div class="flex-1" />
     {/if}
 
-    {#if dashboardChat && (activeResource?.kind === ResourceKind.Explore.toString() || activeResource?.kind === ResourceKind.MetricsView.toString())}
+    {#if $dashboardChat && (activeResource?.kind === ResourceKind.Explore.toString() || activeResource?.kind === ResourceKind.MetricsView.toString())}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />
         <ChatToggle />

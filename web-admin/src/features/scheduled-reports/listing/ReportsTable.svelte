@@ -74,7 +74,7 @@
   >
     <span slot="action">
       Schedule <a
-        href="https://docs.rilldata.com/explore/exports"
+        href="https://docs.rilldata.com/guide/reports/exports"
         target="_blank"
         rel="noopener noreferrer"
       >
