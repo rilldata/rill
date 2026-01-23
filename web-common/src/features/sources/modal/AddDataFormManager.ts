@@ -25,7 +25,6 @@ import {
 import { get } from "svelte/store";
 import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
-import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ActionResult } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/query-core";
 import {
@@ -34,7 +33,6 @@ import {
   getSchemaFieldMetaList,
   getSchemaSecretKeys,
   getSchemaStringKeys,
-  type SchemaFieldMeta,
 } from "../../templates/schema-utils";
 import type { ButtonLabels } from "../../templates/schemas/types";
 
@@ -67,8 +65,6 @@ const BUTTON_LABELS = {
 export class AddDataFormManager {
   formHeight: string;
   paramsFormId: string;
-  properties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
-  filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
 
   // Form stores (passed in from caller)
   private formStore: FormStore;
@@ -128,16 +124,6 @@ export class AddDataFormManager {
 
     // Layout height (derived from schema metadata)
     this.formHeight = getFormHeight(schema);
-    const schemaStep = isSourceForm ? "source" : "connector";
-    const schemaFields = schema
-      ? getSchemaFieldMetaList(schema, { step: schemaStep })
-      : [];
-
-    // Base properties
-    this.properties = schemaFields;
-
-    // Filter properties based on connector type
-    this.filteredParamsProperties = this.properties;
   }
 
   get isSourceForm(): boolean {
@@ -501,19 +487,14 @@ export class AddDataFormManager {
    * Schema conditionals handle connector-specific requirements.
    */
   computeYamlPreview(ctx: {
-    filteredParamsProperties: Array<ConnectorDriverProperty | SchemaFieldMeta>;
     stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     paramsFormValues: Record<string, unknown>;
   }): string {
     const connector = this.connector;
-    const {
-      stepState,
-      isMultiStepConnector,
-      isConnectorForm,
-      paramsFormValues,
-    } = ctx;
+    const { stepState, isMultiStepConnector, isConnectorForm, paramsFormValues } =
+      ctx;
 
     const schema = getConnectorSchema(this.schemaName);
     const schemaConnectorFields = schema
