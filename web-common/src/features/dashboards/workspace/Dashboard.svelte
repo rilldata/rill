@@ -24,7 +24,6 @@
   import ThemeProvider from "../ThemeProvider.svelte";
   import { createResolvedThemeStore } from "../../themes/selectors";
   import { readable, type Readable } from "svelte/store";
-  // import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -95,7 +94,6 @@
     comparisonTimeStart,
     comparisonTimeEnd,
     ready: timeControlsReady = false,
-    // selectedTimeRange,
   } = $timeControlsStore);
 
   $: timeRange = {
@@ -125,22 +123,6 @@
   $: themeSource = isEmbedded && embedThemeName ? embedThemeName : urlThemeName;
 
   $: theme = createResolvedThemeStore(themeSource, exploreQuery, instanceId);
-
-  // $: maybeInterval = selectedTimeRange
-  //   ? Interval.fromDateTimes(
-  //       DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-  //       DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-  //     )
-  //   : undefined;
-
-  // $: interval = maybeInterval?.isValid ? maybeInterval : undefined;
-
-  // $: timeString =
-  //   selectedTimeRange?.name === TimeRangePreset.CUSTOM
-  //     ? `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`
-  //     : selectedTimeRange?.name;
-
-  // $: activeTimeGrain = selectedTimeRange?.interval;
 </script>
 
 <ThemeProvider theme={$theme}>
