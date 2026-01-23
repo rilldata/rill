@@ -503,17 +503,23 @@
         }
       }}
       onColorChange={(primary, secondary, isDarkMode) => {
-        // TODO: Update to support dark mode - currently always sets light mode
-        // Use new theme structure: theme.light or theme.dark
         const modeKey = isDarkMode ? "dark" : "light";
-        updateProperties({
-          theme: {
-            [modeKey]: {
-              primary,
-              secondary,
-            },
-          },
-        });
+        const altMode = isDarkMode ? "light" : "dark";
+
+        // check if theme exists for alt mode
+        const setAltMode = !parsedDocument.hasIn(["theme", altMode]);
+
+        parsedDocument.setIn(["theme", modeKey, "primary"], primary);
+        parsedDocument.setIn(["theme", modeKey, "secondary"], secondary);
+
+        if (setAltMode) {
+          parsedDocument.setIn(["theme", altMode, "primary"], primary);
+          parsedDocument.setIn(["theme", altMode, "secondary"], secondary);
+        }
+
+        killState();
+
+        updateEditorContent(parsedDocument.toString(), false, autoSave);
       }}
     />
 

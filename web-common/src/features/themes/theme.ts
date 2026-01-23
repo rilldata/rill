@@ -7,6 +7,7 @@ import { generateColorPalette } from "./palette-generator";
 import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
 import { getChroma, resolveThemeObject } from "./theme-utils";
+import { createDarkVariation } from "./color-generation";
 
 export class Theme {
   colors: { light: Colors; dark: Colors };
@@ -101,9 +102,6 @@ export class Theme {
   ${this.stringifyVars(darkColors)}
 }`.trim();
 
-    // Debug: log the generated CSS
-    console.log("Generated theme CSS:", css);
-
     return css;
   }
 
@@ -125,23 +123,23 @@ export class Theme {
       return { dark: {}, light: lightColors };
     }
 
-    const darkColors = this.processColors(spec.dark ?? {});
+    const darkColors = this.processColors(spec.dark ?? {}, true);
     const lightColors = this.processColors(spec.light ?? {});
 
     return { dark: darkColors, light: lightColors };
   }
 
-  private processColors(colors: V1ThemeColors) {
+  private processColors(colors: V1ThemeColors, dark: boolean = false) {
     const finalColors: Colors = {};
     const { primary, secondary, variables } = colors;
-
-    // Debug: log what variables we're receiving from the backend
-    console.log("Theme variables from backend:", variables);
 
     if (primary) {
       const primaryReference = getChroma(primary);
       const primaryPalette = generateColorPalette(primaryReference);
-      for (const [i, color] of primaryPalette.entries()) {
+      const finalColorPalette = dark
+        ? createDarkVariation(primaryPalette)
+        : primaryPalette;
+      for (const [i, color] of finalColorPalette.entries()) {
         finalColors[`color-theme-${TailwindColorSpacing[i]}`] = color;
       }
       finalColors.primary = primaryReference;
@@ -150,7 +148,10 @@ export class Theme {
     if (secondary) {
       const secondaryReference = getChroma(secondary);
       const secondaryPalette = generateColorPalette(secondaryReference);
-      for (const [i, color] of secondaryPalette.entries()) {
+      const finalColorPalette = dark
+        ? createDarkVariation(secondaryPalette)
+        : secondaryPalette;
+      for (const [i, color] of finalColorPalette.entries()) {
         finalColors[`color-theme-secondary-${TailwindColorSpacing[i]}`] = color;
       }
       finalColors.secondary = secondaryReference;
